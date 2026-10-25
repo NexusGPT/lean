@@ -32,8 +32,18 @@ const signature = (dfy) => {
   return m ? `${m[1]}(${m[2].replace(/\s+/g, ' ').trim()}) -> ${m[3].trim()}` : null;
 };
 
+const LSC = process.env.LSC_BIN || '/Users/assem/nexus/nexus-organisation/work/lean-tools/node_modules/.bin/lsc';
+// "lsc accepts": does LemmaScript's `lsc gen --backend=dafny` take the file (exit 0)? Reach comparison only.
+function lscAccepts(file) {
+  if (!fs.existsSync(LSC)) return 'no binary';
+  const d = fs.mkdtempSync(path.join(tmp, 'lsc-'));
+  const f = path.join(d, 'x.ts');
+  fs.copyFileSync(file, f);
+  const r = spawnSync(LSC, ['gen', '--backend=dafny', f], { cwd: d, encoding: 'utf8' });
+  return r.status === 0 ? 'yes' : 'no';
+}
 const rows = [];
-const add = (kind, name, check, ok, detail) => rows.push({ kind, name, check, ok, detail });
+const add = (kind, name, check, ok, detail, lsc = '') => rows.push({ kind, name, check, ok, detail, lsc });
 
 // ----- shared fixtures -----
 const sharedDir = path.join(root, 'fixtures/shared');
@@ -43,7 +53,7 @@ for (const name of fs.readdirSync(sharedDir).sort()) {
   const th = theorems[name];
   if (!th) { add('shared', name, 'theorem', false, 'no entry in tests/theorems.json'); continue; }
   const l = run('node', [lint, ts]);
-  add('shared', name, 'lint', l.status === 0, l.status === 0 ? 'inside the subset' : l.stdout.trim().split('\n')[0]);
+  add('shared', name, 'lint', l.status === 0, l.status === 0 ? 'inside the subset' : l.stdout.trim().split('\n')[0], lscAccepts(ts));
   const out = path.join(tmp, `${name}.dfy`);
   const args = [translate, ts, '--fn', th.fn, '--out', out];
   for (const e of th.ensures ?? []) args.push('--ensures', e);
@@ -75,7 +85,7 @@ const tflags = (c, withInv) => {
 for (const c of cases) {
   const file = path.join(casesDir, c.file);
   const l = run('node', [lint, file]);
-  add('construct', c.name, 'lint', l.status === 0, l.status === 0 ? 'inside the subset' : l.stdout.trim().split('\n')[0]);
+  add('construct', c.name, 'lint', l.status === 0, l.status === 0 ? 'inside the subset' : l.stdout.trim().split('\n')[0], lscAccepts(file));
   const out = path.join(tmp, `case_${c.name}.dfy`);
   const t = run('node', [translate, file, '--fn', c.fn, '--out', out, ...tflags(c, true)]);
   if (t.status !== 0) { add('construct', c.name, 'translate', false, (t.stderr || t.stdout).trim().split('\n')[0]); continue; }
@@ -167,7 +177,7 @@ for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) 
   if (!want) { add('escape', name, 'expect line', false, 'missing `// expect: <rule>`'); continue; }
   const l = run('node', [lint, file]);
   const hit = l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s`).test(line));
-  add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED');
+  add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', lscAccepts(file));
   const fn = (src.match(/^export (?:async )?function (\w+)/m) ?? [])[1];
   if (fn) {
     const t = run('node', [translate, file, '--fn', fn, '--out', path.join(tmp, `esc_${name}.dfy`)]);
@@ -186,8 +196,8 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
 const w = (k, s) => Math.max(s.length, ...rows.map((r) => String(r[k]).length));
 const cols = ['kind', 'name', 'check'];
 const widths = Object.fromEntries(cols.map((c) => [c, w(c, c)]));
-const line = (r) => `| ${cols.map((c) => String(r[c]).padEnd(widths[c])).join(' | ')} | ${r.ok ? 'PASS' : 'FAIL'} | ${r.detail}`;
-console.log(`| ${cols.map((c) => c.padEnd(widths[c])).join(' | ')} | res  | detail`);
+const line = (r) => `| ${cols.map((c) => String(r[c]).padEnd(widths[c])).join(' | ')} | ${r.ok ? 'PASS' : 'FAIL'} | ${r.lsc.padEnd(11)} | ${r.detail}`;
+console.log(`| ${cols.map((c) => c.padEnd(widths[c])).join(' | ')} | res  | lsc accepts | detail`);
 for (const r of rows) console.log(line(r));
 const failed = rows.filter((r) => !r.ok).length;
 console.log(`| TOTAL | ${rows.length} checks | ${failed === 0 ? 'ALL PASS' : `${failed} FAILED`} |`);

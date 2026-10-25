@@ -50,3 +50,11 @@ Pure functions over `number`, `bigint`, `boolean`, `string`, arrays, records, tu
 - **No recursion, no `return` inside a loop in `--core`.**
 - **Loop equality needs a prover.** `--core` turns a loop, `filter`, `map`, `reduce`, `Math.min` and `Math.max` into private helper functions named `<f>_<helper>_<suffix>`, the form `spec/` accepts. Dafny proves a property of one function when its helper carries the right `ensures`. Proving that a parent loop equals a candidate loop needs a relational support lemma, which the prover writes. Measured on a parent and a candidate of `sum_of_positives` that differ only in `0 < x` against `x > 0`: the translation is accepted, and `Equal_sum_of_positives` is refuted without a support lemma.
 - **Hints are untrusted.** A wrong `@invariant` fails the proof; it never passes a wrong one.
+
+## Comparison with LemmaScript
+
+The test table has a column `lsc accepts`: whether `lsc gen --backend=dafny` (LemmaScript 0.6.5, installed outside the repo) exits 0 on the file. The package ships no `SUBSET.md`, so the comparison is by behaviour. It measures reach only. `lsc gen` translates without verifying, so "yes" means "translated", not "proved".
+
+- `lsc gen` accepted 14 of 18 escapes, among them `as` casts, `!`, `any`, `async`, classes, `eval`, global mutation, `null` and `/`. Our lint refuses them, because a gate must not translate what it cannot model.
+- `lsc gen` refused 4 escapes: `Math.random`, `Promise`, `Object` and `try/catch`.
+- `lsc gen` accepted all 3 shared fixtures and all 13 construct cases that our lint accepts.
