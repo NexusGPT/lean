@@ -1,0 +1,5 @@
+{
+  "ext": "xx",
+  "lint": ["python3", "-I", "langs/xx/lint.py", "{src}"],
+  "translate": ["python3", "-I", "langs/xx/translate.py", "{src}", "{out}", "{suffix}"]
+}

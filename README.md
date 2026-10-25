@@ -44,7 +44,7 @@ A language merges only when it passes `conformance/run.py`: every shared fixture
 
 ## Status
 
-Scaffold. The first measurement (how many real changed functions enter the TypeScript subset) is running on a private corpus; its numbers will be published here.
+Theorem generator, checker and conformance runner work end to end on Dafny fixtures (`python3 -I conformance/run.py`). The language packages are being built. The first measurement (how many real changed functions enter the TypeScript subset) is running on a private corpus; its numbers will be published here.
 
 ## License
 
