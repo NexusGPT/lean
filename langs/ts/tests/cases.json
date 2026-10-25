@@ -1,0 +1,222 @@
+[
+ {
+  "name": "clamp",
+  "file": "clamp.ts",
+  "fn": "clamp",
+  "requires": [
+   "lo <= hi"
+  ],
+  "ensures": [
+   "lo <= result <= hi"
+  ],
+  "core": true,
+  "samples": [
+   [
+    5,
+    0,
+    10
+   ],
+   [
+    -3,
+    0,
+    10
+   ],
+   [
+    42,
+    0,
+    10
+   ]
+  ]
+ },
+ {
+  "name": "clamp_min_max",
+  "file": "clamp.ts",
+  "fn": "clampMinMax",
+  "requires": [
+   "lo <= hi"
+  ],
+  "ensures": [
+   "lo <= result <= hi"
+  ],
+  "core": true,
+  "samples": [
+   [
+    5,
+    0,
+    10
+   ],
+   [
+    -3,
+    0,
+    10
+   ],
+   [
+    42,
+    0,
+    10
+   ]
+  ]
+ },
+ {
+  "name": "squares",
+  "file": "squares.ts",
+  "fn": "squares",
+  "requires": [
+   "n >= 0"
+  ],
+  "ensures": [
+   "|result| == n"
+  ],
+  "invariants": [
+   "0 <= i <= n",
+   "|out| == i"
+  ],
+  "samples": [
+   [
+    0
+   ],
+   [
+    1
+   ],
+   [
+    5
+   ]
+  ]
+ },
+ {
+  "name": "optional_bump",
+  "file": "optional.ts",
+  "fn": "bump",
+  "ensures": [
+   "result == (if x.Some? then x.value + 1 else d)"
+  ],
+  "core": true
+ },
+ {
+  "name": "optional_or_default",
+  "file": "optional.ts",
+  "fn": "orDefault",
+  "ensures": [
+   "result == (if x.Some? then x.value else d)"
+  ],
+  "core": true
+ },
+ {
+  "name": "optional_lift",
+  "file": "optional.ts",
+  "fn": "lift",
+  "ensures": [
+   "result.Some? ==> result.value > 0"
+  ],
+  "core": true
+ },
+ {
+  "name": "midpoint_real",
+  "file": "midpoint.ts",
+  "fn": "mid",
+  "flags": [
+   "--real"
+  ],
+  "requires": [
+   "a <= b"
+  ],
+  "ensures": [
+   "a <= result <= b"
+  ],
+  "core": true
+ },
+ {
+  "name": "count_down",
+  "file": "count_down.ts",
+  "fn": "countDown",
+  "requires": [
+   "n >= 0"
+  ],
+  "ensures": [
+   "result == n"
+  ],
+  "core": true,
+  "samples": [
+   [
+    0
+   ],
+   [
+    3
+   ],
+   [
+    7
+   ]
+  ]
+ },
+ {
+  "name": "swap_tuple",
+  "file": "swap.ts",
+  "fn": "swap",
+  "ensures": [
+   "result.0 == p.1 && result.1 == p.0"
+  ],
+  "core": true
+ },
+ {
+  "name": "map_reduce",
+  "file": "map_reduce.ts",
+  "fn": "sumDoubled",
+  "ensures": [
+   "true"
+  ],
+  "core": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     -4,
+     5
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "string_concat",
+  "file": "strings.ts",
+  "fn": "greet",
+  "ensures": [
+   "|result| == |name| + 6"
+  ],
+  "core": true
+ },
+ {
+  "name": "call_chain",
+  "file": "calls.ts",
+  "fn": "quad",
+  "ensures": [
+   "result == 4 * x"
+  ],
+  "core": true,
+  "samples": [
+   [
+    3
+   ],
+   [
+    -2
+   ]
+  ]
+ },
+ {
+  "name": "bigint_add",
+  "file": "calls.ts",
+  "fn": "addBig",
+  "ensures": [
+   "result == a + b"
+  ],
+  "core": true
+ }
+]

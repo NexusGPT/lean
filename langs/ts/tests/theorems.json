@@ -1,17 +1,78 @@
 {
-  "sum_positive": {
-    "fn": "sumPositive",
-    "ensures": ["result >= 0"],
-    "invariants": ["total >= 0"]
-  },
-  "record_update": {
-    "fn": "deposit",
-    "ensures": ["result.id == a.id", "result.balance == a.balance + amount"],
-    "invariants": []
-  },
-  "filter_then_sum": {
-    "fn": "sumOfPositives",
-    "ensures": ["result >= 0"],
-    "invariants": ["total >= 0"]
-  }
+ "sum_positive": {
+  "fn": "sumPositive",
+  "ensures": [
+   "result >= 0"
+  ],
+  "invariants": [
+   "total >= 0"
+  ],
+  "samples": [
+   [
+    []
+   ],
+   [
+    [
+     1,
+     -2,
+     3
+    ]
+   ],
+   [
+    [
+     -1,
+     -1
+    ]
+   ],
+   [
+    [
+     5,
+     5,
+     5
+    ]
+   ]
+  ]
+ },
+ "record_update": {
+  "fn": "deposit",
+  "ensures": [
+   "result.id == a.id",
+   "result.balance == a.balance + amount"
+  ],
+  "invariants": []
+ },
+ "filter_then_sum": {
+  "fn": "sumOfPositives",
+  "ensures": [
+   "result >= 0"
+  ],
+  "invariants": [
+   "total >= 0"
+  ],
+  "samples": [
+   [
+    []
+   ],
+   [
+    [
+     1,
+     -2,
+     3
+    ]
+   ],
+   [
+    [
+     -1,
+     -1
+    ]
+   ],
+   [
+    [
+     5,
+     5,
+     5
+    ]
+   ]
+  ]
+ }
 }

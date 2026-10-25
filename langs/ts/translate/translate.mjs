@@ -654,8 +654,21 @@ export function translate(file, fnName, opts = {}) {
     const M = assignedOutside(s).map((m) => ({ ...m, d: dtype(symType(m.sym, m.node), m.node) }));
     if (!M.length) return tr(rest, fin, fn);
     const isOf = ts.isForOfStatement(s), isFor = ts.isForStatement(s);
-    const free = freeVars(s, isOf ? s.expression : null).filter((v) => !M.some((m) => m.name === v.name))
-      .map((v) => ({ ...v, d: dtype(symType(v.sym, v.node), v.node) }));
+    const userHints = [...hintsOf(sf, s).invariants, ...invariants.filter((x) => x.loop === null || x.loop === id).map((x) => x.expr)];
+    // names a hint mentions must be parameters of the helper too (for example a bound `n` the body never reads)
+    const hintWords = new Set(userHints.flatMap((h) => h.match(/[A-Za-z_]\w*/g) ?? []));
+    const inScopeVars = [];
+    const scan = (x) => {
+      if (ts.isParameter(x) || ts.isVariableDeclaration(x)) {
+        if (ts.isIdentifier(x.name) && x.end <= s.pos && !insideNode(x, s)) inScopeVars.push({ name: x.name.text, sym: checker.getSymbolAtLocation(x.name), node: x.name });
+      }
+      ts.forEachChild(x, scan);
+    };
+    scan(fn);
+    const free = freeVars(s, isOf ? s.expression : null);
+    for (const v of inScopeVars) if (hintWords.has(v.name) && !free.some((f) => f.name === v.name)) free.push(v);
+    const freeTyped = free.filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: dtype(symType(v.sym, v.node), v.node) }));
+    free.length = 0; free.push(...freeTyped);
     const hn = `${curBase}_loop${id}${sfx}`;
     const mNames = M.map((m) => dn(m.name));
     const constParams = free.map((v) => `${dn(v.name)}: ${v.d}`);
@@ -701,12 +714,15 @@ export function translate(file, fnName, opts = {}) {
     const call = `${hn}(${selfArgs.join(', ')})`;
     const resT = M.length === 1 ? M[0].d : `(${M.map((m) => m.d).join(', ')})`;
     // hints: the loop keeps an inductive property of its state: I(in) ==> I(out)
-    const hints = [...hintsOf(sf, s).invariants, ...invariants.filter((x) => x.loop === null || x.loop === id).map((x) => x.expr)];
+    const hints = [...userHints];
     for (const m of M) {
       if ((m.d === 'int' || m.d === 'real') && keepsNonneg(m.name, s.statement, factsIn)) hints.push(`${dn(m.name)} >= ${m.d === 'real' ? '0.0' : '0'}`);
     }
+    // a while loop ends only when its condition is false: say so about the final state
+    const exitFact = !isOf && !isFor ? [`  ensures (var ${tupleOf(mNames)} := ${call}; ${exit})`] : [];
     const specs = [...requiresL.map((r) => `  requires ${r}`),
       ...hints.map((h) => `  ensures (${h}) ==> (var ${tupleOf(mNames)} := ${call}; ${h})`),
+      ...exitFact,
       `  decreases ${decreases}`];
     coreHelpers.push([`function ${hn}(${params.join(', ')}): ${resT}`, ...specs, '{',
       indentBlock(`if ${exit} then ${tupleOf(mNames)}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
