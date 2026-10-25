@@ -15,6 +15,10 @@ python3 -I spec/check.py   --obligations obligations.dfy [--parent p.dfy --candi
   - `{"<f>": {"post": "<Dafny boolean over the parameters and result>"}}`
   - `{"<f>": {"pairs": [{"args": [3], "result": 5}]}}` (concrete input-output pairs)
 
+## Private helpers
+
+A translator turns a loop, filter, map, reduce, min or max into a private helper named `<f>_<helper>_<suffix>`, for example `total_loop0_parent`. A function whose base name starts with the base name of a scoped function plus `_` is a private helper. A helper is a definition only: it gets no lemma. The generator refuses a helper that no scoped function reaches, directly or through other helpers, in the parent and in the candidate (a helper nothing reaches is a smuggled entry point). A helper may differ between parent and candidate; its effect is covered by the lemmas of the scoped function that calls it.
+
 ## The theorem
 
 For every function `f` in the scope file, with parameters `args` and Dafny type `T` of the result:
@@ -40,7 +44,7 @@ lemma Edit_f_pair<i>()
 
 A function with `in_scope` equal to `false` gets `Equal_f` only. The names, the parameter lists and the result type come from the parent. `InScope_f` and `Post_f` come from the scope and edit files. The producer supplies the two function files and nothing else.
 
-Only the lemma bodies are free: each lemma ends with `{ // PROOF <name>` ... `} // END <name>`. The generator leaves them empty, and Dafny proves them unaided when it can. A prover may fill a body.
+Only the lemma bodies are free: each lemma ends with `{ // PROOF <name>` ... `} // END <name>`. The generator leaves them empty, and Dafny proves them unaided when it can. A prover may fill a body, and may append support lemmas between `// BEGIN SUPPORT` and `// END SUPPORT` (for example an induction lemma that two loop helpers agree). The checker proves support lemmas too, removes the block before it compares the theorem, and refuses `assume`, `{:axiom}`, `{:verify false}` and `extern` there. In a fixture, `proofs.json` (`{"support": "...", "bodies": {"<lemma>": "..."}}`) stands in for the prover.
 
 ## What the gate refuses
 

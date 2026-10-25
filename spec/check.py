@@ -19,15 +19,18 @@ BODY_BAN = [r'\bassume\b', r'\{\s*:\s*axiom\b', r'\{\s*:\s*verify\s+false', r'\b
 
 
 def lemma_spans(lines):
-    spans = {}
+    spans, order = {}, []
     for i, l in enumerate(lines, 1):
         m = re.match(r'lemma\s+(\w+)', l)
         if m:
-            cur = m.group(1)
-            spans[cur] = [i, None]
+            spans[m.group(1)] = [i, None]
+            order.append(m.group(1))
         m = re.match(r'\} // END (\w+)', l)
         if m and m.group(1) in spans:
             spans[m.group(1)][1] = i
+    for k, name in enumerate(order):  # support lemmas have no END marker
+        if spans[name][1] is None:
+            spans[name][1] = spans[order[k + 1]][0] - 1 if k + 1 < len(order) else len(lines)
     return spans
 
 
@@ -58,6 +61,10 @@ def check(path, derive=None):
         for pat in BODY_BAN:
             if re.search(pat, theorem.strip_comments(m.group(2))):
                 return [(m.group(1), 'error', 'proof body uses a forbidden construct')], notes
+    for m in theorem.SUPPORT_RE.finditer(text):
+        for pat in BODY_BAN:
+            if re.search(pat, theorem.strip_comments(m.group(0))):
+                return [('(support)', 'error', 'support block uses a forbidden construct')], notes
     lines = text.split('\n')
     spans = lemma_spans(lines)
     if not spans:

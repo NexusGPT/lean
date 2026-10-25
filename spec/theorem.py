@@ -98,8 +98,30 @@ def parse_functions(text, suffix, label):
             raise Refusal(f'{label}: function {name} has no body (an unproved specification is not code)')
         if base in found:
             raise Refusal(f'{label}: function {name} is defined twice')
-        found[base] = {'params': params, 'ret': ret}
+        found[base] = {'params': params, 'ret': ret, 'pos': m.start()}
+    order = sorted(found, key=lambda b: found[b]['pos'])
+    for i, b in enumerate(order):
+        end = found[order[i + 1]]['pos'] if i + 1 < len(order) else len(clean)
+        found[b]['body'] = clean[found[b]['pos']:end]
     return found
+
+
+def split_helpers(funcs_defined, scoped, suffix, label):
+    """Functions named <scoped>_<x>_<suffix> are private helpers. Return the
+    helper names; refuse a helper that no scoped function reaches."""
+    helpers = [b for b in funcs_defined if b not in scoped and any(b.startswith(f + '_') for f in scoped)]
+    reached, todo = set(), list(scoped)
+    while todo:
+        cur = todo.pop()
+        body = funcs_defined[cur]['body']
+        for h in helpers:
+            if h not in reached and re.search(r'\b' + re.escape(h + '_' + suffix) + r'\b', body):
+                reached.add(h)
+                todo.append(h)
+    lost = sorted(set(helpers) - reached)
+    if lost:
+        raise Refusal(f'{label}: helper {", ".join(lost)} is not called by any scoped function (a smuggled entry point)')
+    return helpers
 
 
 def check_forbidden(text, label):
@@ -121,7 +143,14 @@ def generate(parent_text, cand_text, scope, edit):
     funcs = scope.get('functions')
     if not isinstance(funcs, dict) or not funcs:
         raise Refusal('scope: "functions" must be a non-empty object')
-    unscoped = sorted(set(cf) - set(funcs))
+    for f in funcs:
+        if f not in pf:
+            raise Refusal(f'scope lists {f}, which the parent does not define')
+        if f not in cf:
+            raise Refusal(f'scope lists {f}, which the candidate does not define')
+    hp = split_helpers(pf, list(funcs), 'parent', 'parent')
+    hc = split_helpers(cf, list(funcs), 'candidate', 'candidate')
+    unscoped = sorted(set(cf) - set(funcs) - set(hc))
     if unscoped:
         raise Refusal('candidate defines functions that the scope does not list: ' + ', '.join(unscoped))
     for f in funcs:
@@ -129,8 +158,8 @@ def generate(parent_text, cand_text, scope, edit):
             raise Refusal(f'scope lists {f}, which the parent does not define')
         if f not in cf:
             raise Refusal(f'scope lists {f}, which the candidate does not define')
-        if pf[f] != cf[f]:
-            raise Refusal(f'{f}: signature of candidate differs from parent: {cf[f]} vs {pf[f]}')
+        if (pf[f]['params'], pf[f]['ret']) != (cf[f]['params'], cf[f]['ret']):
+            raise Refusal(f'{f}: signature of candidate differs from parent')
     extra_edits = sorted(set(edit) - set(funcs))
     if extra_edits:
         raise Refusal('edit lists functions that the scope does not: ' + ', '.join(extra_edits))
@@ -188,9 +217,25 @@ def generate(parent_text, cand_text, scope, edit):
     return '\n'.join(out) + '\n'
 
 
+SUPPORT_RE = re.compile(r'// BEGIN SUPPORT\n.*?// END SUPPORT\n?', re.S)
+
+
 def skeleton(text):
-    """The file with every lemma body emptied: what the theorem is."""
+    """The file with every lemma body emptied and the support block removed: what the theorem is."""
+    text = SUPPORT_RE.sub('', text)
     return re.sub(r'(\{ // PROOF (\S+)\n).*?(\} // END \2)', r'\1\3', text, flags=re.S)
+
+
+def fill(text, support='', bodies=None):
+    """Play the prover: put proof bodies into the lemmas and append support lemmas."""
+    for name, body in (bodies or {}).items():
+        text, n = re.subn(r'(\{ // PROOF ' + re.escape(name) + r'\n)(.*?)(\} // END ' + re.escape(name) + r')',
+                          lambda m: m.group(1) + body.rstrip('\n') + '\n' + m.group(3), text, flags=re.S)
+        if n != 1:
+            raise Refusal(f'proof names a lemma that does not exist: {name}')
+    if support.strip():
+        text = text.rstrip('\n') + '\n// BEGIN SUPPORT\n' + support.rstrip('\n') + '\n// END SUPPORT\n'
+    return text
 
 
 def main(argv=None):

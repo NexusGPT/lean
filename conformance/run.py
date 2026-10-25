@@ -175,6 +175,14 @@ def pipeline(lang, d):
                            '--scope', scope, '--edit', edit, '--out', obl])
         if rc != 0:
             return None, 'theorem generator refused the inputs'
+        pj = os.path.join(d, 'proofs.json')
+        if os.path.exists(pj):  # the stand-in for the prover: bodies and support lemmas
+            pr = json.load(open(pj))
+            try:
+                filled = theorem.fill(open(obl).read(), pr.get('support', ''), pr.get('bodies'))
+                open(obl, 'w').write(filled)
+            except theorem.Refusal as e:
+                return None, str(e)
         derive = (open(outs['parent']).read(), open(outs['candidate']).read(),
                   json.load(open(scope)), json.load(open(edit)))
         rows, _ = check.check(obl, derive)
