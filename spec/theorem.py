@@ -1,0 +1,217 @@
+"""The theorem generator of the gate.
+
+    python3 -I spec/theorem.py --parent p.dfy --candidate c.dfy \
+        --scope scope.json --edit edit.json --out obligations.dfy
+
+Everything in the theorem comes from the parent file, the scope file and the
+edit file. The candidate file is only the thing the theorem is about: the
+generator reads its function signatures to refuse a mismatch, and never takes a
+statement from it. See spec/README.md for the exact theorem shape.
+"""
+import argparse, json, re, sys
+
+FORBIDDEN = [
+    (r'\bassume\b', 'assume'),
+    (r'\{\s*:\s*axiom\b', '{:axiom}'),
+    (r'\{\s*:\s*verify\s+false', '{:verify false}'),
+    (r'\{\s*:\s*extern\b', '{:extern}'),
+    (r'\bexterns?\b', 'extern'),
+]
+IDENT = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
+
+
+class Refusal(Exception):
+    pass
+
+
+def strip_comments(text):
+    text = re.sub(r'/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text, flags=re.S)
+    return re.sub(r'//[^\n]*', lambda m: ' ' * len(m.group(0)), text)
+
+
+def balanced(text, start):
+    """text[start] == '('; return index after the matching ')'."""
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == '(':
+            depth += 1
+        elif text[i] == ')':
+            depth -= 1
+            if depth == 0:
+                return i + 1
+    raise Refusal('unbalanced parenthesis in a function signature')
+
+
+def split_top(s):
+    out, depth, cur = [], 0, ''
+    for ch in s:
+        if ch in '(<[{':
+            depth += 1
+        elif ch in ')>]}':
+            depth -= 1
+        if ch == ',' and depth == 0:
+            out.append(cur)
+            cur = ''
+        else:
+            cur += ch
+    if cur.strip():
+        out.append(cur)
+    return [p.strip() for p in out]
+
+
+def parse_functions(text, suffix, label):
+    """Return {base_name: {'params': [(name, type)], 'ret': type}} for every
+    function named <base>_<suffix>. Refuses a function without a body."""
+    clean = strip_comments(text)
+    found = {}
+    for m in re.finditer(r'\bfunction\s+(?:method\s+)?(?:\{[^}]*\}\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*(<[^>(]*>)?\s*\(', clean):
+        name = m.group(1)
+        if suffix is None:
+            base = name
+        elif not name.endswith('_' + suffix):
+            raise Refusal(f'{label}: function {name} does not end in _{suffix}')
+        else:
+            base = name[: -len(suffix) - 1]
+        if not IDENT.match(base):
+            raise Refusal(f'{label}: bad function name {name}')
+        if m.group(2):
+            raise Refusal(f'{label}: generic function {name} is outside the subset of the generator')
+        open_i = m.end() - 1
+        close_i = balanced(clean, open_i)
+        params = []
+        for p in split_top(clean[open_i + 1: close_i - 1]):
+            if ':' not in p:
+                raise Refusal(f'{label}: parameter "{p}" of {name} has no type')
+            pn, pt = p.split(':', 1)
+            params.append((pn.strip(), re.sub(r'\s+', ' ', pt.strip())))
+        rest = clean[close_i:]
+        rm = re.match(r'\s*:\s*([^\n{]*?)\s*(?=\n|\{|requires\b|ensures\b|decreases\b|reads\b|$)', rest)
+        if not rm or not rm.group(1):
+            raise Refusal(f'{label}: function {name} has no return type')
+        ret = re.sub(r'\s+', ' ', rm.group(1))
+        # the body: a "{" before the next top-level declaration keyword
+        tail = rest[rm.end():]
+        nxt = re.search(r'\n\s*(function|lemma|method|predicate|datatype|type|const|ghost|module|include)\b', tail)
+        region = tail[: nxt.start()] if nxt else tail
+        region = re.sub(r'\{\s*:[^}]*\}', '', region)
+        if '{' not in region:
+            raise Refusal(f'{label}: function {name} has no body (an unproved specification is not code)')
+        if base in found:
+            raise Refusal(f'{label}: function {name} is defined twice')
+        found[base] = {'params': params, 'ret': ret}
+    return found
+
+
+def check_forbidden(text, label):
+    clean = strip_comments(text)
+    for pat, name in FORBIDDEN:
+        if re.search(pat, clean):
+            raise Refusal(f'{label}: contains {name}, which can make a proof vacuous')
+
+
+def lemma_names(skeleton_text):
+    return re.findall(r'^lemma\s+([A-Za-z0-9_]+)', skeleton_text, flags=re.M)
+
+
+def generate(parent_text, cand_text, scope, edit):
+    check_forbidden(parent_text, 'parent')
+    check_forbidden(cand_text, 'candidate')
+    pf = parse_functions(parent_text, 'parent', 'parent')
+    cf = parse_functions(cand_text, 'candidate', 'candidate')
+    funcs = scope.get('functions')
+    if not isinstance(funcs, dict) or not funcs:
+        raise Refusal('scope: "functions" must be a non-empty object')
+    unscoped = sorted(set(cf) - set(funcs))
+    if unscoped:
+        raise Refusal('candidate defines functions that the scope does not list: ' + ', '.join(unscoped))
+    for f in funcs:
+        if f not in pf:
+            raise Refusal(f'scope lists {f}, which the parent does not define')
+        if f not in cf:
+            raise Refusal(f'scope lists {f}, which the candidate does not define')
+        if pf[f] != cf[f]:
+            raise Refusal(f'{f}: signature of candidate differs from parent: {cf[f]} vs {pf[f]}')
+    extra_edits = sorted(set(edit) - set(funcs))
+    if extra_edits:
+        raise Refusal('edit lists functions that the scope does not: ' + ', '.join(extra_edits))
+
+    out = []
+    out.append('// Generated by spec/theorem.py. Everything between BEGIN THEOREM and END THEOREM')
+    out.append('// comes from the parent, the scope and the edit. Only lemma bodies are free.')
+    out.append('// BEGIN PARENT')
+    out.append(parent_text.rstrip('\n'))
+    out.append('// END PARENT')
+    out.append('// BEGIN CANDIDATE')
+    out.append(cand_text.rstrip('\n'))
+    out.append('// END CANDIDATE')
+    out.append('// BEGIN THEOREM')
+    for f, spec in funcs.items():
+        sig = pf[f]
+        params = ', '.join(f'{n}: {t}' for n, t in sig['params'])
+        names = ', '.join(n for n, _ in sig['params'])
+        ins = spec.get('in_scope')
+        if not isinstance(ins, str) or not ins.strip():
+            raise Refusal(f'scope: {f} needs "in_scope" (a Dafny boolean expression, or false)')
+        ed = edit.get(f)
+        out.append(f'predicate InScope_{f}({params}) {{ {ins.strip()} }}')
+        out.append(f'lemma Equal_{f}({params})')
+        out.append(f'  requires !InScope_{f}({names})')
+        out.append(f'  ensures {f}_parent({names}) == {f}_candidate({names})')
+        out.append('{ // PROOF Equal_' + f)
+        out.append('} // END Equal_' + f)
+        if ins.strip() == 'false':
+            if ed:
+                raise Refusal(f'{f} is wholly outside S and cannot carry an edit')
+            continue
+        if not isinstance(ed, dict) or (('post' in ed) == ('pairs' in ed)):
+            raise Refusal(f'edit: {f} is inside S and needs exactly one of "post" or "pairs"')
+        if 'post' in ed:
+            out.append(f'predicate Post_{f}({params}, result: {sig["ret"]}) {{ {ed["post"].strip()} }}')
+            out.append(f'lemma Edit_{f}({params})')
+            out.append(f'  requires InScope_{f}({names})')
+            out.append(f'  ensures Post_{f}({names}, {f}_candidate({names}))')
+            out.append('{ // PROOF Edit_' + f)
+            out.append('} // END Edit_' + f)
+        else:
+            if not ed['pairs']:
+                raise Refusal(f'edit: {f} has an empty "pairs" list')
+            for i, pr in enumerate(ed['pairs'], 1):
+                args = pr['args']
+                if len(args) != len(sig['params']):
+                    raise Refusal(f'edit: {f} pair {i} has {len(args)} args, the function takes {len(sig["params"])}')
+                a = ', '.join(str(x) for x in args)
+                out.append(f'lemma Edit_{f}_pair{i}()')
+                out.append(f'  ensures InScope_{f}({a}) && {f}_candidate({a}) == {pr["result"]}')
+                out.append(f'{{ // PROOF Edit_{f}_pair{i}')
+                out.append(f'}} // END Edit_{f}_pair{i}')
+    out.append('// END THEOREM')
+    return '\n'.join(out) + '\n'
+
+
+def skeleton(text):
+    """The file with every lemma body emptied: what the theorem is."""
+    return re.sub(r'(\{ // PROOF (\S+)\n).*?(\} // END \2)', r'\1\3', text, flags=re.S)
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--parent', required=True)
+    ap.add_argument('--candidate', required=True)
+    ap.add_argument('--scope', required=True)
+    ap.add_argument('--edit', required=True)
+    ap.add_argument('--out', required=True)
+    a = ap.parse_args(argv)
+    try:
+        text = generate(open(a.parent).read(), open(a.candidate).read(),
+                        json.load(open(a.scope)), json.load(open(a.edit)))
+    except Refusal as e:
+        print('theorem: refused: ' + str(e), file=sys.stderr)
+        return 1
+    with open(a.out, 'w') as fh:
+        fh.write(text)
+    print(f'theorem: wrote {a.out} ({len(lemma_names(text))} lemmas)')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
