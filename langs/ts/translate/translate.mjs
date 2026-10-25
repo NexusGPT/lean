@@ -80,6 +80,7 @@ export function translate(file, fnName, opts = {}) {
   const records = new Map(); // name -> [{name, type}]
   const helpers = new Map(); // name -> Dafny text of a monomorphic prelude function
   let usesOption = false;
+  let curBase = ''; // snake_case name of the top-level function being translated (--core)
   let loopCount = 0;
   const intVars = new Set(); // real mode: counters of `for (let i ...)` loops stay int
   const NUM = real ? 'real' : 'int';
@@ -121,7 +122,8 @@ export function translate(file, fnName, opts = {}) {
 
   // ----- monomorphic prelude functions (the generator refuses generic functions) -----
   function helper(kind, types) {
-    const name = `${kind}_${types.map(mangle).join('_')}${sfx}`;
+    // --core: a private helper of the function that uses it, named <f>_<helper>_<suffix> (see spec/README.md)
+    const name = core ? `${curBase}_${kind.toLowerCase()}_${types.map(mangle).join('_')}${sfx}` : `${kind}_${types.map(mangle).join('_')}`;
     if (helpers.has(name)) return name;
     const [A, B] = types;
     let text;
@@ -501,7 +503,6 @@ export function translate(file, fnName, opts = {}) {
 
   // ===== --core shape: pure functions, loops as recursive helpers =====
   const coreHelpers = []; // loop helper function texts, in order
-  let curBase = '';
 
   // sign facts: which names are known >= 0 under the guards of the path
   const guardFacts = (c) => {
