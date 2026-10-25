@@ -162,7 +162,7 @@ for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(c
   const unchanged = run('node', [lint, f, '--changed', path.join(casesDir, 'mixed_good.json')]);
   add('changed', 'mixed.ts', 'bad function untouched: accepted', unchanged.status === 0, unchanged.status === 0 ? 'exit 0' : unchanged.stdout.trim().split('\n')[0]);
   const touched = run('node', [lint, f, '--changed', path.join(casesDir, 'mixed_bad.json')]);
-  add('changed', 'mixed.ts', 'bad function changed: refused', touched.status === 1 && /\scast\s/.test(touched.stdout), touched.status === 1 ? 'exit 1, cast' : 'ACCEPTED');
+  add('changed', 'mixed.ts', 'bad function changed: refused', touched.status === 1 && /\snondeterminism\s/.test(touched.stdout), touched.status === 1 ? 'exit 1, nondeterminism' : 'ACCEPTED');
   const all = run('node', [lint, f]);
   add('changed', 'mixed.ts', 'no ranges: refused', all.status === 1, all.status === 1 ? 'exit 1' : 'ACCEPTED');
 }

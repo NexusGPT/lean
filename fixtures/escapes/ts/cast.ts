@@ -1,5 +1,5 @@
-// expect: cast
+// expect: param-assign
 export function firstLength(x: readonly number[]): number {
-  const y = x as number[];
-  return y.length;
+  x = [];
+  return x.length;
 }

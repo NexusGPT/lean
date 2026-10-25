@@ -1,23 +1,34 @@
 #!/usr/bin/env node
-// lean-ts translate: turns functions of the TypeScript subset into Dafny, the shared core form.
-// number is `int` by default, `real` with --real.
+// lean-ts translate, version 2: turns the functions of a TypeScript file into Dafny, the shared core form.
 //
-// Two shapes of output:
-//   proof shape (default)  one function per run (--fn); a function with loops becomes a Dafny `method`
-//                          so the loop keeps its invariants. --ensures/--requires/--invariant add the theorem.
-//   --core                 what conformance/run.py expects: every top-level function of the file becomes a pure
-//                          Dafny `function` named <snake_case>[_<suffix>]; a loop becomes a recursive helper function.
+// What is new in version 2 (the real-code idioms the first trial refused, 0 of 27 functions):
+//   externals   an imported value, a module constant, a value from another file, a pure library global:
+//               an uninterpreted Dafny function in the PRELUDE, identical for parent and candidate.
+//               Equality outside the scope then means: the same calls, the same results.
+//   arrows      `export const f = (a: T): R => ...` is a function.
+//   async       an async unit returns T, not Promise<T>; `await call(...)` is an external call.
+//   null        null and undefined are both "absent": Option<T>; `x == null`, `x?.p`, `x ?? y` translate.
+//   records     any object type the checker can list, from any file, becomes a datatype in the prelude;
+//               a type with methods becomes an opaque type with accessor externals.
+//   strings     seq<char>: concat, length, index, slice, includes, startsWith, endsWith, indexOf,
+//               template literals; trim, case changes, split, replace stay externals.
+//   sets, maps  set<T> and map<K,V>, with add/delete/set on locals as functional updates.
+//   arrays      includes, some, every, find, findIndex, indexOf, slice, concat, join, flat, flatMap, at.
+//   division    Math.floor(a / b) and a % b on integers through JavaScript-faithful helpers.
+//   switch      an if/else chain; destructuring becomes field reads; literal unions become their base type.
 //
-// Usage: node translate.mjs <file.ts> --fn <name> --out <file.dfy> [--real]
-//          [--requires E]... [--ensures E]... [--invariant [N:]E]...
-//        node translate.mjs <file.ts> --core --out <file.dfy> [--suffix parent|candidate] [--real]
-// `result` in --ensures names the returned value. An --invariant without N applies to every loop; with N to loop N
-// (0-based, source order). Loop variables of loop N are seqN / idxN. Hints in the source (`// @invariant E`,
-// `// @decreases E` right before a loop) are read too; they are untrusted: Dafny checks them.
+// Output: the main file (functions of this file; loops as private recursive helpers) and a prelude
+// (datatypes, opaque types, helpers with bodies, bodiless externals) written with --prelude. The gate
+// merges the parent's and the candidate's preludes; a declaration that differs between them is refused.
+//
+// Usage: node translate.mjs <file.ts> --core --out <file.dfy> [--prelude <file.dfy>] [--suffix parent|candidate]
+//          [--real] [--only f,g] [--project <tsconfig>|--no-project]
+//        node translate.mjs <file.ts> --fn <name> --out <file.dfy> [--real] [--requires E]... [--ensures E]...
+//          [--invariant [N:]E]...      (proof shape: one function, loops as a Dafny method; kept for the fixtures)
 // Exit 0: file written. Exit 1: outside the subset, or not covered by the translator.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf } from '../common.mjs';
 import { lintFile } from '../lint/lint.mjs';
 
 const K = ts.SyntaxKind;
@@ -30,18 +41,18 @@ const RESERVED = new Set(['abstract', 'allocated', 'as', 'assert', 'assume', 'bo
   'ghost', 'if', 'import', 'in', 'include', 'inductive', 'int', 'invariant', 'is', 'iterator', 'label', 'lemma', 'map', 'match', 'method', 'modifies',
   'modify', 'module', 'multiset', 'nameonly', 'nat', 'new', 'newtype', 'null', 'object', 'old', 'opaque', 'predicate', 'print', 'provides', 'reads',
   'real', 'refines', 'requires', 'return', 'returns', 'reveal', 'seq', 'set', 'static', 'string', 'then', 'this', 'trait', 'true', 'type', 'unchanged',
-  'var', 'while', 'witness', 'yield', 'yields', 'result', 'Option', 'None', 'Some']);
-const dn = (name) => (RESERVED.has(name) ? `${name}_` : name);
+  'var', 'while', 'witness', 'yield', 'yields', 'result', 'Option', 'None', 'Some', 'value']);
+const dn = (name) => { let n = name.replace(/[^A-Za-z0-9_]/g, '_'); if (n.startsWith('_')) n = 'u' + n; return RESERVED.has(n) ? `${n}_` : n; };
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const indentBlock = (s, n = 1) => s.split('\n').map((l) => '  '.repeat(n) + l).join('\n');
-// a Dafny let-expression inside an if/else branch needs parentheses
 const wrapLet = (s) => (/^\s*var /.test(s) ? `(\n${indentBlock(s)}\n)` : s);
+const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0; return h.toString(36); };
 
 export function translate(file, fnName, opts = {}) {
-  const { real = false, requires = [], ensures = [], invariants = [], core = false, suffix = '' } = opts;
+  const { real = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
-  const { sf, checker } = loadProgram(file);
+  const { sf, checker } = loadProgram(file, { project });
   const fns = topLevelFunctions(sf);
   const target = fnName ? fns.get(fnName) : null;
   if (fnName && !target) throw new Unsupported(`no top-level function named ${fnName} in ${file}`);
@@ -50,112 +61,241 @@ export function translate(file, fnName, opts = {}) {
   const where = (n) => `${path.basename(file)}:${lineOf(sf, n.getStart(sf))}`;
   const fail = (n, msg) => { throw new Unsupported(`${where(n)}: ${msg}`); };
 
-  // ----- which functions to emit: the target (or all, with --core) and same-file callees, callees first -----
+  // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
   const order = [];
   const visiting = new Set();
-  function collect(fn) {
-    if (order.includes(fn)) return;
-    if (visiting.has(fn)) fail(fn, `recursion through ${fn.name.text} is outside the translator`);
-    visiting.add(fn);
+  let currentUnit = null;
+  function collect(u) {
+    if (order.includes(u)) return;
+    if (visiting.has(u)) fail(u.node, `recursion through ${u.name} is outside the translator`);
+    visiting.add(u);
     const walk = (n) => {
       if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) {
         const callee = fns.get(n.expression.text);
-        if (callee) collect(callee);
+        if (callee && originOf(checker, n.expression, sf, null).kind === 'unit') collect(callee);
       }
       ts.forEachChild(n, walk);
     };
-    walk(fn.body);
-    visiting.delete(fn);
-    order.push(fn);
+    walk(u.body);
+    visiting.delete(u);
+    order.push(u);
   }
-  if (target) collect(target); else for (const f of fns.values()) collect(f);
+  if (target) collect(target);
+  else if (only) { for (const name of only) { const u = fns.get(name); if (!u) fail(sf, `no top-level function named ${name}`); collect(u); } }
+  else for (const u of fns.values()) collect(u);
 
   // ----- the subset gate: refuse before translating -----
-  const gate = lintFile(file, order.map((f) => [lineOf(sf, f.getStart(sf)), lineOf(sf, f.getEnd())]));
+  const gate = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project });
   if (gate.length) {
     throw new Unsupported(`outside the subset:\n${gate.map((g) => `  ${g.file}:${g.line}:${g.col}  ${g.rule}  ${g.msg}`).join('\n')}`);
   }
 
-  // ----- shared state -----
-  const records = new Map(); // name -> [{name, type}]
-  const helpers = new Map(); // name -> Dafny text of a monomorphic prelude function
+  // ----- prelude registry (shared declarations) -----
+  const prelude = new Map(); // name -> text
+  const recordByShape = new Map(); // 'a: int, b: string' -> datatype name
+  const recordAlias = new Map(); // a name folded into another datatype with the same fields
+  const addPrelude = (name, text) => { if (!prelude.has(name)) prelude.set(name, text); return name; };
   let usesOption = false;
-  let curBase = ''; // snake_case name of the top-level function being translated (--core)
-  let loopCount = 0;
-  const intVars = new Set(); // real mode: counters of `for (let i ...)` loops stay int
   const NUM = real ? 'real' : 'int';
+  const curUnitName = () => (currentUnit ? dn(snake(currentUnit.name)) : 'g');
+  let loopCount = 0;
+  const intVars = new Set();
   const fname = (tsName) => (core ? dn(snake(tsName)) + sfx : dn(tsName));
 
   // ----- types -----
-  const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & TF.Undefined);
-  function dtype(t, n) {
+  const isSetT = (t) => !!t.symbol && (t.symbol.name === 'Set' || t.symbol.name === 'ReadonlySet');
+  const isMapT = (t) => !!t.symbol && (t.symbol.name === 'Map' || t.symbol.name === 'ReadonlyMap');
+  const isPromiseT = (t) => !!t.symbol && t.symbol.name === 'Promise';
+  const nonNull = (t) => (t.flags & TF.Union ? t.types.filter((x) => !(x.flags & (TF.Undefined | TF.Null))) : [t]);
+  const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
+  const isNullish = (t) => !!(t.flags & (TF.Undefined | TF.Null));
+  const baseOf = (t) => { const p = nonNull(t); if (p.length === 1) return p[0]; if (p.every((x) => x.flags & TF.BooleanLiteral)) return checker.getBooleanType ? checker.getBooleanType() : p[0]; return t; };
+  const isCallable = (t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length > 0;
+  const isAny = (t) => !!(t.flags & (TF.Any | TF.Unknown));
+  const isRecordish = (t) => !!(t.flags & (TF.Object | TF.Intersection)) && !isArrayLike(checker, t) && !isSetT(t) && !isMapT(t) && !isPromiseT(t);
+  const stringIndex = (t) => (t.flags & TF.Object ? checker.getIndexInfoOfType(t, ts.IndexKind.String) : null);
+  const anyType = () => { addPrelude('Any', 'type Any(==)'); return 'Any'; };
+
+  function dtype(t, n, depth = 0) {
+    if (depth > 8) fail(n, 'type nesting too deep');
     const f = t.flags;
-    if (f & TF.NumberLike) return NUM;
+    if (f & (TF.Any | TF.Unknown)) return anyType();
+    if (f & (TF.NumberLike)) return NUM;
     if (f & TF.BigIntLike) return 'int';
     if (f & TF.BooleanLike) return 'bool';
     if (f & TF.StringLike) return 'string';
+    if (f & TF.EnumLike) return (t.flags & TF.NumberLike) ? 'int' : 'string';
+    if (f & (TF.Void | TF.Undefined | TF.Null)) return 'Unit';
     if (f & TF.Union) {
-      const parts = t.types.filter((x) => !(x.flags & TF.Undefined));
+      const parts = nonNull(t);
       if (parts.length !== t.types.length) {
         usesOption = true;
-        const inner = parts.every((x) => x.flags & TF.BooleanLiteral) ? 'bool' : parts.length === 1 ? dtype(parts[0], n) : fail(n, 'unsupported union');
+        if (!parts.length) return 'Option<Unit>';
+        const inner = parts.every((x) => x.flags & TF.BooleanLiteral) ? 'bool' : parts.length === 1 ? dtype(parts[0], n, depth + 1) : unionType(parts, n, depth);
         return `Option<${inner}>`;
       }
-      fail(n, 'unsupported union type');
+      return unionType(parts, n, depth);
     }
+    if (f & TF.Intersection) return recordType(t, n, depth);
     if (f & TF.Object) {
-      if (checker.isTupleType(t)) return `(${checker.getTypeArguments(t).map((a) => dtype(a, n)).join(', ')})`;
-      if (checker.isArrayType(t)) return `seq<${dtype(checker.getTypeArguments(t)[0], n)}>`;
-      const name = t.aliasSymbol?.name ?? (t.symbol && t.symbol.name !== '__type' && t.symbol.name !== '__object' ? t.symbol.name : null);
-      if (!name) fail(n, 'anonymous record type; give it a name with `type Name = {...}`');
-      if (!records.has(name)) {
-        records.set(name, []); // reserve first: allows nested use
-        const fields = checker.getPropertiesOfType(t).map((p) => ({ name: p.name, type: dtype(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), n) }));
-        records.set(name, fields);
+      if (checker.isTupleType(t)) {
+        const ds = checker.getTypeArguments(t).map((a) => dtype(a, n, depth + 1));
+        const lit = checker.getTypeArguments(t).every((a) => a.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral));
+        const rest = !!t.target?.hasRestElement;
+        if (ds.length && (lit || rest) && ds.every((d) => d === ds[0])) return `seq<${ds[0]}>`; // a literal list (`as const`) or an open tuple [T, ...T[]]: a sequence
+        return `(${ds.join(', ')})`;
       }
-      return name;
+      if (checker.isArrayType(t)) return `seq<${dtype(checker.getTypeArguments(t)[0], n, depth + 1)}>`;
+      if (isSetT(t)) return `set<${dtype(checker.getTypeArguments(t)[0], n, depth + 1)}>`;
+      if (isMapT(t)) { const [k, vv] = checker.getTypeArguments(t); return `map<${dtype(k, n, depth + 1)}, ${dtype(vv, n, depth + 1)}>`; }
+      if (isPromiseT(t)) return dtype(checker.getTypeArguments(t)[0], n, depth + 1);
+      if (isCallable(t)) {
+        const sg = checker.getSignaturesOfType(t, ts.SignatureKind.Call)[0];
+        const ps = sg.getParameters().map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, n), n, depth + 1));
+        let rt = sg.getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+        return `(${ps.join(', ')}) -> ${dtype(rt, n, depth + 1)}`;
+      }
+      const ix = stringIndex(t);
+      if (ix && !checker.getPropertiesOfType(t).length) return `map<string, ${dtype(ix.type, n, depth + 1)}>`;
+      return recordType(t, n, depth);
     }
     return fail(n, `type ${checker.typeToString(t)} is not translatable`);
   }
+  function unionType(parts, n, depth) {
+    if (parts.every((x) => x.flags & (TF.StringLiteral | TF.StringLike))) return 'string';
+    if (parts.every((x) => x.flags & (TF.NumberLiteral | TF.NumberLike))) return NUM;
+    if (parts.every((x) => x.flags & TF.BooleanLike)) return 'bool';
+    if (parts.some(isAny)) return anyType();
+    // a union of records (a discriminated union), or of a primitive with a record: opaque. Every read on it is an
+    // uninterpreted accessor, every construction an uninterpreted injection; the proof asks the same calls on both sides
+    if (parts.every((x) => isRecordish(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike)))) return anyType();
+    return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
+  }
+  const typeNameOf = (t) => t.aliasSymbol?.name ?? (t.symbol && t.symbol.name !== '__type' && t.symbol.name !== '__object' ? t.symbol.name : null);
+  function recordType(t, n, depth) {
+    const props = checker.getPropertiesOfType(t);
+    const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
+    let name = typeNameOf(t);
+    if (name && /^(Pick|Omit|Partial|Required|Readonly|Record|__type|__object|type|default)$/.test(name)) name = null;
+    if (hasMethods || !props.length) {
+      // opaque: values pass through untouched; reads become accessor externals
+      name = `Ext_${mangle(name ?? checker.typeToString(t))}`;
+      addPrelude(name, `type ${name}`);
+      return name;
+    }
+    const fields = props.map((p) => ({ name: p.name, type: checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional) })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    if (!name) name = `Rec_${hash(fields.map((f) => f.name).join(','))}`;
+    name = dn(mangle(name));
+    if (recordAlias.has(name)) return recordAlias.get(name);
+    const key = `datatype ${name}`;
+    if (!prelude.has(key)) {
+      prelude.set(key, ''); // reserve for nested use
+      const fs_ = fields.map((f) => {
+        let d = dtype(f.type, n, depth + 1);
+        if (f.optional && !d.startsWith('Option<')) { usesOption = true; d = `Option<${d}>`; }
+        return `${dn(f.name)}: ${d}`;
+      });
+      // two types with the same fields are one datatype: a structural literal is an Account when Account has its fields
+      const shape = fs_.join(', ');
+      const canon = recordByShape.get(shape);
+      if (canon && canon !== name && prelude.get(key) === '') { prelude.delete(key); recordAlias.set(name, canon); return canon; }
+      recordByShape.set(shape, name);
+      prelude.set(key, `datatype ${name} = ${name}(${shape})`);
+    }
+    return name;
+  }
   const typeOf = (n) => checker.getTypeAtLocation(n);
+  const anyTarget = () => checker.getAnyType();
   const symType = (sym, n) => (checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n));
 
-  // ----- monomorphic prelude functions (the generator refuses generic functions) -----
+  // ----- externals -----
+  function external(name, paramTypes, retType) {
+    const id = `ext_${mangle(name)}${paramTypes.length ? '_' + paramTypes.map(mangle).join('_') : ''}`;
+    const ps = paramTypes.map((t, i) => `a${i}: ${t}`).join(', ');
+    addPrelude(id, `function ${id}(${ps}): ${retType}`);
+    return id;
+  }
+  function externalValue(id) {
+    const t = typeOf(id);
+    if (isCallable(t)) fail(id, `${id.text} is a function value; call it`);
+    const rt = dtype(t, id);
+    return `${external(id.text, [], rt)}()`;
+  }
+  function externalCall(calleeName, n, args, recvCode = null, recvType = null) {
+    const sig = checker.getResolvedSignature(n);
+    const params = sig ? sig.getParameters() : [];
+    const loose = !sig || (recvType === 'Any');
+    const ptype = (a, i) => { const p = params[Math.min(i, params.length - 1)]; if (loose || !p) return undefined; const t = checker.getTypeOfSymbolAtLocation(p, a); return isAny(t) && !isAny(typeOf(a)) ? typeOf(a) : t; };
+    const pts = args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a) : dtype(typeOf(a), a); });
+    let rt = sig ? sig.getReturnType() : typeOf(n);
+    if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+    const rd = dtype(rt, n);
+    const codes = args.map((a, i) => expr(a, ptype(a, i)));
+    if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); return `${id}(${[recvCode, ...codes].join(', ')})`; }
+    const id = external(calleeName, pts, rd);
+    return `${id}(${codes.join(', ')})`;
+  }
+
+  // ----- prelude helpers with bodies -----
   function helper(kind, types) {
-    // --core: a private helper of the function that uses it, named <f>_<helper>_<suffix> (see spec/README.md)
-    const name = core ? `${curBase}_${kind.toLowerCase()}_${types.map(mangle).join('_')}${sfx}` : `${kind}_${types.map(mangle).join('_')}`;
-    if (helpers.has(name)) return name;
+    const name = `${kind}_${types.map(mangle).join('_')}`;
+    if (prelude.has(name)) return name;
     const [A, B] = types;
     let text;
-    if (kind === 'Filter') {
-      text = `function ${name}(s: seq<${A}>, p: ${A} -> bool): (r: seq<${A}>)
+    switch (kind) {
+      case 'Filter': text = `function ${name}(s: seq<${A}>, p: ${A} -> bool): (r: seq<${A}>)
   ensures |r| <= |s|
   ensures forall i :: 0 <= i < |r| ==> p(r[i])
   decreases |s|
-{
-  if |s| == 0 then []
-  else (if p(s[0]) then [s[0]] else []) + ${name}(s[1..], p)
-}`;
-    } else if (kind === 'Map') {
-      text = `function ${name}(s: seq<${A}>, f: ${A} -> ${B}): (r: seq<${B}>)
+{ if |s| == 0 then [] else (if p(s[0]) then [s[0]] else []) + ${name}(s[1..], p) }`; break;
+      case 'Map': text = `function ${name}(s: seq<${A}>, f: ${A} -> ${B}): (r: seq<${B}>)
   ensures |r| == |s|
   ensures forall i :: 0 <= i < |s| ==> r[i] == f(s[i])
   decreases |s|
-{
-  if |s| == 0 then [] else [f(s[0])] + ${name}(s[1..], f)
-}`;
-    } else if (kind === 'Fold') {
-      text = `function ${name}(s: seq<${A}>, f: (${B}, ${A}) -> ${B}, init: ${B}): ${B}
+{ if |s| == 0 then [] else [f(s[0])] + ${name}(s[1..], f) }`; break;
+      case 'Fold': text = `function ${name}(s: seq<${A}>, f: (${B}, ${A}) -> ${B}, init: ${B}): ${B}
   decreases |s|
-{
-  if |s| == 0 then init else ${name}(s[1..], f, f(init, s[0]))
-}`;
-    } else if (kind === 'Min') {
-      text = `function ${name}(a: ${A}, b: ${A}): ${A} { if a < b then a else b }`;
-    } else {
-      text = `function ${name}(a: ${A}, b: ${A}): ${A} { if a > b then a else b }`;
+{ if |s| == 0 then init else ${name}(s[1..], f, f(init, s[0])) }`; break;
+      case 'Find': usesOption = true; text = `function ${name}(s: seq<${A}>, p: ${A} -> bool): Option<${A}>
+  decreases |s|
+{ if |s| == 0 then None else if p(s[0]) then Some(s[0]) else ${name}(s[1..], p) }`; break;
+      case 'FindIndex': text = `function ${name}(s: seq<${A}>, p: ${A} -> bool): int
+  decreases |s|
+{ if |s| == 0 then -1 else if p(s[0]) then 0 else (var r := ${name}(s[1..], p); if r < 0 then -1 else r + 1) }`; break;
+      case 'IndexOf': text = `function ${name}(s: seq<${A}>, x: ${A}): int
+  decreases |s|
+{ if |s| == 0 then -1 else if s[0] == x then 0 else (var r := ${name}(s[1..], x); if r < 0 then -1 else r + 1) }`; break;
+      case 'Slice': text = `function ${name}(s: seq<${A}>, a: int, b: int): seq<${A}>
+{ var n := |s|; var lo := if a < 0 then (if n + a < 0 then 0 else n + a) else (if a > n then n else a);
+  var hi := if b < 0 then (if n + b < 0 then 0 else n + b) else (if b > n then n else b);
+  if lo < hi then s[lo..hi] else [] }`; break;
+      case 'At': usesOption = true; text = `function ${name}(s: seq<${A}>, i: int): Option<${A}>
+{ var j := if i < 0 then |s| + i else i; if 0 <= j < |s| then Some(s[j]) else None }`; break;
+      case 'Join': text = `function ${name}(s: seq<string>, sep: string): string
+  decreases |s|
+{ if |s| == 0 then "" else if |s| == 1 then s[0] else s[0] + sep + ${name}(s[1..], sep) }`; break;
+      case 'Flat': text = `function ${name}(s: seq<seq<${A}>>): seq<${A}>
+  decreases |s|
+{ if |s| == 0 then [] else s[0] + ${name}(s[1..]) }`; break;
+      case 'Includes': text = `function ${name}(s: string, t: string): bool
+{ exists i :: 0 <= i <= |s| - |t| && s[i..i + |t|] == t }`; break;
+      case 'IndexOfStr': text = `function ${name}(s: string, t: string): int
+{ if exists i :: 0 <= i <= |s| - |t| && s[i..i + |t|] == t then (var i :| 0 <= i <= |s| - |t| && s[i..i + |t|] == t && forall j :: 0 <= j < i ==> s[j..j + |t|] != t; i) else -1 }`; break;
+      case 'FloorDiv': text = `function ${name}(a: int, b: int): int
+{ if b == 0 then 0 else if (a >= 0) == (b > 0) || a % b == 0 then (if b > 0 then a / b else -(a / -b)) else (if b > 0 then a / b else -(a / -b)) - (if b > 0 then 1 else 1) + (if (a % b == 0) then 1 else 0) }`; break;
+      case 'TruncDiv': text = `function ${name}(a: int, b: int): int
+{ if b == 0 then 0 else (var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q) }`; break;
+      case 'JsRem': text = `function ${name}(a: int, b: int): int
+{ if b == 0 then 0 else a - b * ${helper('TruncDiv', ['int'])}(a, b) }`; break;
+      case 'Min': text = `function ${name}(a: ${A}, b: ${A}): ${A} { if a < b then a else b }`; break;
+      case 'Max': text = `function ${name}(a: ${A}, b: ${A}): ${A} { if a > b then a else b }`; break;
+      case 'Abs': text = `function ${name}(a: ${A}): ${A} { if a < ${A === 'real' ? '0.0' : '0'} then -a else a }`; break;
+      case 'SetOf': text = `function ${name}(s: seq<${A}>): set<${A}> { set x | x in s }`; break;
+      case 'Repeat': text = `function ${name}(s: string, n: int): string decreases n { if n <= 0 then "" else s + ${name}(s, n - 1) }`; break;
+      case 'Reverse': text = `function ${name}(s: seq<${A}>): seq<${A}> decreases |s| { if |s| == 0 then [] else ${name}(s[1..]) + [s[0]] }`; break;
+      default: fail(sf, `no helper ${kind}`);
     }
-    helpers.set(name, text);
+    prelude.set(name, text);
     return name;
   }
 
@@ -171,13 +311,63 @@ export function translate(file, fnName, opts = {}) {
     for (let i = 0; i < s.length; i++) { if (s[i] === '(') d++; else if (s[i] === ')') d--; if (d === 0 && i < s.length - 1) return s; }
     return s.slice(1, -1);
   };
+  const isLiteralish = (node) => { while (ts.isParenthesizedExpression(node)) node = node.expression; return ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node) || ts.isNumericLiteral(node) || ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node) || node.kind === K.TrueKeyword || node.kind === K.FalseKeyword; };
   function coerce(code, node, expected) {
-    if (!expected || !isOptional(expected)) return code;
+    if (!expected) return code;
     const nt = typeOf(node);
-    if (isOptional(nt)) return code;
-    if (nt.flags & TF.Undefined) return 'None';
-    usesOption = true;
-    return `Some(${code})`;
+    if (isLiteralish(node)) {
+      // a literal is already built in the expected shape; only absence needs lifting
+      if (isOptional(expected) && !isOptional(nt) && !isNullish(nt)) { usesOption = true; return `Some(${code})`; }
+      if (dtype(expected, node) === 'Any' && dtype(nt, node) !== 'Any') return convert(code, nt, expected, node);
+      return code;
+    }
+    if (isOptional(expected)) {
+      if (isOptional(nt)) return code;
+      if (isNullish(nt)) return 'None';
+      usesOption = true;
+      return `Some(${convertD(code, dtype(nt, node), innerOf(dtype(expected, node)))})`; // the union may flatten several literals beside null
+    }
+    return convert(code, nt, expected, node);
+  }
+  // a value of type `from` where a value of type `to` is expected: identity when the Dafny types agree,
+  // otherwise an uninterpreted conversion (opaque in or out of Any, a cast between record shapes)
+  function convert(code, from, to, node) {
+    if (!from || !to) return code;
+    return convertD(code, dtype(from, node), dtype(to, node));
+  }
+  const innerOf = (d) => d.slice('Option<'.length, -1);
+  function convertD(code, fd, td) {
+    if (fd === td) return code;
+    if (td === 'Any') return `${external(`Any_of_${mangle(fd)}`, [fd], 'Any')}(${code})`;
+    if (fd === 'Any') return `${external(`Any_as_${mangle(td)}`, ['Any'], td)}(${code})`;
+    if (td.startsWith('Option<') && !fd.startsWith('Option<')) { usesOption = true; return `Some(${convertD(code, fd, innerOf(td))})`; }
+    if (td.startsWith('Option<') && fd.startsWith('Option<')) { usesOption = true; const v = `o_${hash(code).slice(0, 4)}`; return `(var ${v} := ${code}; if ${v}.Some? then Some(${convertD(`${v}.value`, innerOf(fd), innerOf(td))}) else None)`; }
+    return `${external(`cast_${mangle(fd)}_${mangle(td)}`, [fd], td)}(${code})`;
+  }
+  const strEsc = (s) => JSON.stringify(s);
+
+  // JavaScript truthiness of a value used as a condition, by its static type
+  function truthy(n) {
+    while (ts.isParenthesizedExpression(n)) n = n.expression;
+    if (ts.isBinaryExpression(n) && (n.operatorToken.kind === K.AmpersandAmpersandToken || n.operatorToken.kind === K.BarBarToken)) {
+      return `(${truthy(n.left)} ${n.operatorToken.kind === K.AmpersandAmpersandToken ? '&&' : '||'} ${truthy(n.right)})`;
+    }
+    if (ts.isPrefixUnaryExpression(n) && n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
+    const t = typeOf(n);
+    if (isOptional(t)) {
+      const inner = baseOf(t);
+      const v = rawOperand(n);
+      if (inner.flags & TF.BooleanLike) return `(${v}.Some? && ${v}.value)`;
+      if (inner.flags & TF.StringLike) return `(${v}.Some? && |${v}.value| > 0)`;
+      if (inner.flags & TF.NumberLike) return `(${v}.Some? && ${v}.value != ${real ? '0.0' : '0'})`;
+      return `${v}.Some?`;
+    }
+    if (isAny(t)) return `${external('truthy_Any', ['Any'], 'bool')}(${expr(n)})`;
+    if (t.flags & TF.BooleanLike) return expr(n);
+    if (t.flags & TF.StringLike) return `(|${expr(n)}| > 0)`;
+    if (t.flags & (TF.NumberLike | TF.BigIntLike)) return `(${expr(n)} != ${real ? '0.0' : '0'})`;
+    if (isNullish(t)) return 'false';
+    return 'true';
   }
 
   // ----- expressions -----
@@ -185,16 +375,19 @@ export function translate(file, fnName, opts = {}) {
     switch (n.kind) {
       case K.ParenthesizedExpression: return expr(n.expression, expected);
       case K.ConditionalExpression:
-        return `(if ${outerParens(expr(n.condition))} then ${outerParens(expr(n.whenTrue, expected))} else ${outerParens(expr(n.whenFalse, expected))})`;
+        return `(if ${outerParens(truthy(n.condition))} then ${outerParens(expr(n.whenTrue, expected))} else ${outerParens(expr(n.whenFalse, expected))})`;
       default: return coerce(rawExpr(n, expected), n, expected);
     }
   }
   function ident(n) {
     if (n.text === 'undefined') return 'None';
-    const sym = checker.getSymbolAtLocation(n);
+    const o = originOf(checker, n, sf, currentUnit?.node ?? null);
+    if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return externalValue(n);
+    if (o.kind === 'global') return externalValue(n);
     let code = dn(n.text);
-    if (sym && sym.valueDeclaration && !ts.isFunctionDeclaration(sym.valueDeclaration)) {
-      if (isOptional(symType(sym, n)) && !isOptional(typeOf(n))) code += '.value';
+    if (o.sym && o.sym.valueDeclaration && o.kind === 'local') {
+      const dt = symType(o.sym, n);
+      if (isOptional(dt) && !isOptional(typeOf(n)) && !isNullish(typeOf(n))) code += '.value';
     }
     if (real && intVars.has(n.text)) return `(${code} as real)`;
     return code;
@@ -204,43 +397,71 @@ export function translate(file, fnName, opts = {}) {
     return real ? `(${expr(arg)}).Floor` : outerParens(expr(arg));
   }
   const lenOf = (s) => (real ? `(|${s}| as real)` : `|${s}|`);
+  function stringOf(e) {
+    const t = typeOf(e);
+    if (t.flags & TF.StringLike) return expr(e);
+    if (t.flags & TF.BooleanLike) return `(if ${expr(e)} then "true" else "false")`;
+    const id = external('to_string', [dtype(t, e)], 'string');
+    return `${id}(${expr(e)})`;
+  }
 
   function rawExpr(n, expected) {
     switch (n.kind) {
       case K.Identifier: return ident(n);
       case K.NumericLiteral: return numLit(n.text, n);
       case K.BigIntLiteral: return n.text.replace(/n$/, '');
-      case K.StringLiteral: return JSON.stringify(n.text);
+      case K.StringLiteral: case K.NoSubstitutionTemplateLiteral: return strEsc(n.text);
+      case K.TemplateExpression: {
+        const parts = [strEsc(n.head.text)];
+        for (const sp of n.templateSpans) { parts.push(stringOf(sp.expression)); if (sp.literal.text) parts.push(strEsc(sp.literal.text)); }
+        return `(${parts.join(' + ')})`;
+      }
       case K.TrueKeyword: return 'true';
       case K.FalseKeyword: return 'false';
+      case K.NullKeyword: return 'None';
+      case K.SatisfiesExpression: return expr(n.expression, expected);
+      case K.AsExpression: case K.TypeAssertionExpression: {
+        // identity at run time; the types may differ, so the value is converted (opaque when they do)
+        const tn = n.type;
+        if (tn && ts.isTypeReferenceNode(tn) && tn.typeName.getText(sf) === 'const') return expr(n.expression, expected);
+        return convert(expr(n.expression), typeOf(n.expression), typeOf(n), n);
+      }
+      case K.AwaitExpression: return awaitExpr(n);
+      case K.ArrowFunction: return lambda(n, n.parameters.length);
+      case K.TaggedTemplateExpression: {
+        // tag`a${x}b`: an uninterpreted function of the literal parts and the holes, keyed by the tag
+        const tpl = n.template;
+        const strs = ts.isNoSubstitutionTemplateLiteral(tpl) ? [tpl.text] : [tpl.head.text, ...tpl.templateSpans.map((sp) => sp.literal.text)];
+        const holes = ts.isNoSubstitutionTemplateLiteral(tpl) ? [] : tpl.templateSpans.map((sp) => sp.expression);
+        const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
+        const id = external(`tag_${mangle(n.tag.getText(sf))}_${holes.length}`, ['seq<string>', ...holes.map(() => anyType())], rd);
+        return `${id}(${[`[${strs.map(strEsc).join(', ')}]`, ...holes.map((h) => expr(h, anyTarget()))].join(', ')})`;
+      }
+      case K.RegularExpressionLiteral: { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return `${external(`regex_${hash(n.text)}`, [], 'Ext_RegExp')}()`; }
+      case K.TypeOfExpression: return `${external('typeof_Any', [anyType()], 'string')}(${expr(n.expression, anyTarget())})`;
+      case K.NonNullExpression: {
+        const t = typeOf(n.expression);
+        if (!isOptional(t)) return expr(n.expression);
+        const d = dtype(baseOf(t), n); const v = `nn_${hash(n.getText(sf)).slice(0, 4)}`;
+        return `(var ${v} := ${rawOperand(n.expression)}; if ${v}.Some? then ${v}.value else ${external(`absent_${mangle(d)}`, [], d)}())`;
+      }
       case K.PrefixUnaryExpression:
-        if (n.operator === K.ExclamationToken) return `!${expr(n.operand)}`;
+        if (n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
         return `(-${expr(n.operand)})`;
       case K.BinaryExpression: return binary(n);
-      case K.PropertyAccessExpression: {
-        const name = n.name.text;
-        const recvT = typeOf(n.expression);
-        if (name === 'length' && (isArrayLike(checker, recvT) || recvT.flags & TF.StringLike)) return lenOf(expr(n.expression));
-        return `${expr(n.expression)}.${dn(name)}`;
-      }
-      case K.ElementAccessExpression: {
-        const recvT = typeOf(n.expression);
-        if (checker.isTupleType(recvT)) {
-          if (!ts.isNumericLiteral(n.argumentExpression)) fail(n, 'tuple index must be a literal');
-          return `${expr(n.expression)}.${n.argumentExpression.text}`;
-        }
-        return `${expr(n.expression)}[${index(n.argumentExpression)}]`;
-      }
+      case K.PropertyAccessExpression: return propAccess(n);
+      case K.ElementAccessExpression: return elemAccess(n);
       case K.ArrayLiteralExpression: {
         const ctx = expected ?? checker.getContextualType(n) ?? typeOf(n);
-        if (checker.isTupleType(typeOf(n)) || checker.isTupleType(ctx)) {
+        if ((checker.isTupleType(typeOf(n)) || checker.isTupleType(ctx)) && !dtype(checker.isTupleType(ctx) ? ctx : typeOf(n), n).startsWith('seq<')) {
           const targs = checker.isTupleType(ctx) ? checker.getTypeArguments(ctx) : [];
           return `(${n.elements.map((e, i) => expr(e, targs[i])).join(', ')})`;
         }
-        const et = checker.isArrayType(ctx) ? checker.getTypeArguments(ctx)[0] : undefined;
+        const base = baseOf(ctx);
+        const et = checker.isArrayType(base) ? checker.getTypeArguments(base)[0] : checker.isTupleType(base) ? checker.getTypeArguments(base)[0] : undefined;
         const segs = []; let cur = [];
         for (const e of n.elements) {
-          if (ts.isSpreadElement(e)) { if (cur.length) segs.push(`[${cur.join(', ')}]`); cur = []; segs.push(expr(e.expression)); }
+          if (ts.isSpreadElement(e)) { if (cur.length) segs.push(`[${cur.join(', ')}]`); cur = []; segs.push(seqOf(e.expression)); }
           else cur.push(expr(e, et));
         }
         if (cur.length || !segs.length) segs.push(`[${cur.join(', ')}]`);
@@ -248,111 +469,428 @@ export function translate(file, fnName, opts = {}) {
       }
       case K.ObjectLiteralExpression: return objectLit(n, expected);
       case K.CallExpression: return call(n);
+      case K.NewExpression: return newExpr(n);
       default: return fail(n, `expression ${ts.SyntaxKind[n.kind]} is not translated`);
     }
   }
+  // an iterable as a sequence (arrays stay; sets go through an external order)
+  function seqOf(e) {
+    const t = baseOf(typeOf(e));
+    if (isAny(t)) return `${external('Any_to_seq', [anyType()], 'seq<Any>')}(${expr(e, anyTarget())})`;
+    if (isSetT(t)) { const A = dtype(checker.getTypeArguments(t)[0], e); return `${external('set_to_seq', [`set<${A}>`], `seq<${A}>`)}(${expr(e)})`; }
+    if (isMapT(t)) fail(e, 'spreading a map is not translated');
+    return expr(e);
+  }
+  function awaitExpr(n) {
+    let inner = n.expression; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
+    if (!ts.isCallExpression(inner)) return expr(inner);
+    return call(inner, true);
+  }
   function binary(n) {
     const op = n.operatorToken.kind;
-    const isUndef = (e) => ts.isIdentifier(e) && e.text === 'undefined';
-    if ((op === K.EqualsEqualsEqualsToken || op === K.ExclamationEqualsEqualsToken) && (isUndef(n.left) || isUndef(n.right))) {
-      const other = isUndef(n.left) ? n.right : n.left;
-      return `${rawOperand(other)}.${op === K.EqualsEqualsEqualsToken ? 'None?' : 'Some?'}`;
+    const isNul = (e) => e.kind === K.NullKeyword || (ts.isIdentifier(e) && e.text === 'undefined');
+    const eqOps = new Set([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken]);
+    if (eqOps.has(op) && (isNul(n.left) || isNul(n.right))) {
+      const other = isNul(n.left) ? n.right : n.left;
+      const neg = op === K.ExclamationEqualsEqualsToken || op === K.ExclamationEqualsToken;
+      const dict = dictRead(other);
+      if (dict) return neg ? `(${dict.key} in ${dict.map})` : `!(${dict.key} in ${dict.map})`;
+      if (isAny(typeOf(other))) return `${neg ? '!' : ''}${external('is_nullish_Any', ['Any'], 'bool')}(${expr(other)})`;
+      if (!isOptional(typeOf(other)) && !isNullish(typeOf(other))) return neg ? 'true' : 'false';
+      return `${rawOperand(other)}.${neg ? 'Some?' : 'None?'}`;
     }
     if (op === K.QuestionQuestionToken) {
+      const lt = typeOf(n.left);
+      if (!isOptional(lt)) return expr(n.left);
       const l = rawOperand(n.left);
-      return `(if ${l}.Some? then ${l}.value else ${outerParens(expr(n.right))})`;
+      return `(if ${l}.Some? then ${l}.value else ${outerParens(expr(n.right, baseOf(lt)))})`;
     }
-    const map = { [K.EqualsEqualsEqualsToken]: '==', [K.ExclamationEqualsEqualsToken]: '!=' };
+    if (op === K.AmpersandAmpersandToken || op === K.BarBarToken) {
+      const t = typeOf(n);
+      if (!(t.flags & TF.BooleanLike)) {
+        // value-returning && / ||: a && b is b when a is truthy, else a. Translated when both sides share a Dafny type
+        const ld = dtype(typeOf(n.left), n), rd = dtype(typeOf(n.right), n), td = dtype(t, n);
+        if (ld === td && rd === td) return op === K.AmpersandAmpersandToken ? `(if ${truthy(n.left)} then ${outerParens(expr(n.right))} else ${outerParens(expr(n.left))})` : `(if ${truthy(n.left)} then ${outerParens(expr(n.left))} else ${outerParens(expr(n.right))})`;
+        fail(n, '`&&` and `||` as values of mixed types are not translated; use a conditional expression');
+      }
+      const o = op === K.AmpersandAmpersandToken ? '&&' : '||';
+      return `(${truthy(n.left)} ${o} ${truthy(n.right)})`;
+    }
+    if (op === K.PercentToken) {
+      if (real) fail(n, '`%` in real mode is not translated');
+      return `${helper('JsRem', ['int'])}(${expr(n.left)}, ${expr(n.right)})`;
+    }
+    if (op === K.SlashToken) {
+      const lt = typeOf(n.left);
+      if (lt.flags & TF.BigIntLike) return `${helper('TruncDiv', ['int'])}(${expr(n.left)}, ${expr(n.right)})`;
+      if (real) return `(if ${expr(n.right)} == 0.0 then 0.0 else ${expr(n.left)} / ${expr(n.right)})`;
+      // reached only under Math.floor / Math.trunc (the lint refuses bare `/` on numbers)
+      return `__DIV__(${expr(n.left)}, ${expr(n.right)})`;
+    }
+    const map = { [K.EqualsEqualsEqualsToken]: '==', [K.ExclamationEqualsEqualsToken]: '!=', [K.EqualsEqualsToken]: '==', [K.ExclamationEqualsToken]: '!=' };
     const o = map[op] ?? n.operatorToken.getText(sf);
+    const lt0 = typeOf(n.left), rt0 = typeOf(n.right);
+    if ((isAny(lt0) || isAny(rt0)) && !map[op]) {
+      // arithmetic or ordering on an opaque value: an uninterpreted operator over Any, typed by the result
+      const names = { '+': 'plus', '-': 'minus', '*': 'times', '<': 'lt', '<=': 'le', '>': 'gt', '>=': 'ge' };
+      const rd = (o === '+' || o === '-' || o === '*') ? (isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n)) : 'bool';
+      const A = anyType();
+      return `${external(`op_${names[o] ?? mangle(o)}_Any`, [A, A], rd)}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
+    }
+    if (o === '+' && !(isAny(lt0) || isAny(rt0)) && ((lt0.flags & TF.StringLike) || (rt0.flags & TF.StringLike)) && !((lt0.flags & TF.StringLike) && (rt0.flags & TF.StringLike))) {
+      return `(${stringOf(n.left)} + ${stringOf(n.right)})`;
+    }
+    if (map[op]) {
+      // comparing an Option with a plain value: lift the plain side
+      const lt = typeOf(n.left), rt = typeOf(n.right);
+      if (isAny(lt) || isAny(rt)) return `(${expr(n.left, anyTarget())} ${o} ${expr(n.right, anyTarget())})`;
+      const l = isOptional(lt) ? rawOperand(n.left) : expr(n.left, isOptional(rt) ? rt : undefined);
+      const r = isOptional(rt) ? rawOperand(n.right) : expr(n.right, isOptional(lt) ? lt : undefined);
+      return `(${l} ${o} ${r})`;
+    }
     return `(${expr(n.left)} ${o} ${expr(n.right)})`;
   }
-  // an operand compared against undefined keeps its declared (Option) form
+  // an operand kept in its declared (Option) form
   function rawOperand(e) {
-    if (ts.isParenthesizedExpression(e)) return rawOperand(e.expression);
-    if (ts.isIdentifier(e)) return dn(e.text);
+    while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (ts.isIdentifier(e)) {
+      const o = originOf(checker, e, sf, currentUnit?.node ?? null);
+      if (o.kind === 'local' || o.kind === 'unit') return dn(e.text);
+      return ident(e);
+    }
+    if (ts.isPropertyAccessExpression(e)) return propAccess(e, true);
+    if (ts.isElementAccessExpression(e) || ts.isCallExpression(e)) return rawExpr(e);
     return expr(e);
   }
   function objectLit(n, expected) {
-    const ctx = expected ?? checker.getContextualType(n);
-    const first = n.properties[0];
+    const ctx = expected ?? checker.getContextualType(n) ?? typeOf(n);
     let recT = ctx && !isOptional(ctx) ? ctx : null;
-    if (ctx && isOptional(ctx)) recT = ctx.types.find((x) => !(x.flags & TF.Undefined));
+    if (ctx && isOptional(ctx)) recT = baseOf(ctx);
+    const first = n.properties[0];
     if (first && ts.isSpreadAssignment(first)) recT = typeOf(first.expression);
-    if (!recT) fail(n, 'record literal without a known record type');
+    if (!recT || !isRecordish(recT)) recT = typeOf(n);
     const rname = dtype(recT, n);
     const propT = (name) => { const p = checker.getPropertyOfType(recT, name); return p ? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n) : undefined; };
+    const propOpt = (name) => { const p = checker.getPropertyOfType(recT, name); return !!p && !!(p.flags & ts.SymbolFlags.Optional); };
     const keyOf = (p) => (ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf).replace(/^["']|["']$/g, ''));
+    const fieldCode = (key, valueNode) => {
+      const pt = propT(key);
+      let code = expr(valueNode, pt);
+      if (propOpt(key) && !isOptional(pt ?? typeOf(valueNode)) && !isOptional(typeOf(valueNode))) { usesOption = true; code = `Some(${code})`; }
+      return [key, code];
+    };
     const fields = [];
     for (const p of n.properties) {
       if (ts.isSpreadAssignment(p)) continue;
-      if (ts.isShorthandPropertyAssignment(p)) fields.push([p.name.text, expr(p.name, propT(p.name.text))]);
-      else if (ts.isPropertyAssignment(p)) fields.push([keyOf(p), expr(p.initializer, propT(keyOf(p)))]);
+      if (ts.isShorthandPropertyAssignment(p)) fields.push(fieldCode(p.name.text, p.name));
+      else if (ts.isPropertyAssignment(p)) fields.push(fieldCode(keyOf(p), p.initializer));
     }
     if (first && ts.isSpreadAssignment(first)) {
       const base = expr(first.expression);
       if (!fields.length) return base;
       return `${base}.(${fields.map(([k, v]) => `${dn(k)} := ${outerParens(v)}`).join(', ')})`;
     }
+    // missing optional fields are None
+    const given = new Set(fields.map(([k]) => k));
+    for (const p of checker.getPropertiesOfType(recT)) if (!given.has(p.name) && (p.flags & ts.SymbolFlags.Optional)) { usesOption = true; fields.push([p.name, 'None']); }
     return `${rname}(${fields.map(([k, v]) => `${dn(k)} := ${outerParens(v)}`).join(', ')})`;
   }
-  function lambda(cb) {
-    const ps = cb.parameters.map((p) => `${dn(p.name.text)}: ${dtype(typeOf(p.name), p)}`);
-    return `(${ps.join(', ')}) => ${outerParens(expr(cb.body))}`;
+  function lambda(cb, arity) {
+    const names = [];
+    const lets = [];
+    cb.parameters.forEach((p, i) => {
+      if (ts.isIdentifier(p.name)) names.push(`${dn(p.name.text)}: ${dtype(typeOf(p.name), p)}`);
+      else { const pn = `pp${i}_`; names.push(`${pn}: ${dtype(typeOf(p.name), p)}`); lets.push(...destructure(p.name, pn)); }
+    });
+    for (let i = cb.parameters.length; i < arity; i++) names.push(`uu${i}_: int`);
+    let body;
+    if (ts.isBlock(cb.body)) {
+      // a callback body is its own function: its returns are its own, not the enclosing loop's
+      const saved = loopCtx.splice(0, loopCtx.length);
+      try { body = tr([...cb.body.statements], () => fail(cb, 'callback path ends without a return'), { fn: cb, node: cb, name: 'callback', params: cb.parameters, body: cb.body }); }
+      finally { loopCtx.push(...saved); }
+    } else body = outerParens(expr(cb.body));
+    return `((${names.join(', ')}) => ${lets.length ? `(${lets.join(' ')} ${body})` : body})`;
   }
-  const elemType = (arrNode) => checker.getTypeArguments(typeOf(arrNode))[0];
-  function call(n) {
+  // `const {a, b: c} = e` → let-lines binding each name
+  function destructure(pattern, sourceCode) {
+    const out = [];
+    if (ts.isIdentifier(pattern)) return [`var ${dn(pattern.text)} := ${sourceCode};`];
+    if (ts.isObjectBindingPattern(pattern)) {
+      for (const el of pattern.elements) {
+        const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text;
+        const code = `${sourceCode}.${dn(prop)}`;
+        if (ts.isIdentifier(el.name)) out.push(`var ${dn(el.name.text)} := ${code};`);
+        else out.push(...destructure(el.name, code));
+      }
+      return out;
+    }
+    if (ts.isArrayBindingPattern(pattern)) {
+      pattern.elements.forEach((el, i) => {
+        if (ts.isOmittedExpression(el)) return;
+        const code = `${sourceCode}[${i}]`;
+        if (ts.isIdentifier(el.name)) out.push(`var ${dn(el.name.text)} := ${code};`);
+        else out.push(...destructure(el.name, code));
+      });
+      return out;
+    }
+    return fail(pattern, 'pattern is not translated');
+  }
+  const elemType = (arrNode) => { const t = baseOf(typeOf(arrNode)); return checker.getTypeArguments(t)[0]; };
+  function propAccess(n, keepOption = false) {
+    const name = n.name.text;
+    if (ts.isIdentifier(n.expression)) {
+      const o = originOf(checker, n.expression, sf, currentUnit?.node ?? null);
+      if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module' || o.kind === 'global') {
+        // a member of an external object: ext_<obj>_<member>()
+        const t = typeOf(n);
+        if (isCallable(t)) fail(n, `${n.expression.text}.${name} is a function; call it`);
+        return `${external(`${n.expression.text}_${name}`, [], dtype(t, n))}()`;
+      }
+    }
+    const recvT = typeOf(n.expression);
+    const declaredOpaque = (() => { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e)) return false; const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (!o.sym || o.kind !== 'local') return false; const dt = symType(o.sym, e); try { return dtype(isOptional(dt) ? baseOf(dt) : dt, n) === 'Any'; } catch { return false; } })();
+    if (isAny(recvT) || (isOptional(recvT) && isAny(baseOf(recvT))) || declaredOpaque) {
+      const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
+      const rv = declaredOpaque ? rawOperand(n.expression) : expr(n.expression, anyTarget());
+      return `${external(`Any_${name}`, [anyType()], rd)}(${rv})`;
+    }
+    if (n.questionDotToken) {
+      // a?.b : Option propagation
+      const r = rawOperand(n.expression);
+      const inner = baseOf(recvT);
+      usesOption = true;
+      const fieldT = typeOf(n);
+      const fieldCode = fieldOf(`${r}.value`, inner, name, n);
+      const alreadyOpt = isOptional(checker.getTypeOfPropertyOfType ? (checker.getPropertyOfType(inner, name) ? checker.getTypeOfSymbolAtLocation(checker.getPropertyOfType(inner, name), n) : fieldT) : fieldT);
+      return `(if ${r}.Some? then ${alreadyOpt ? fieldCode : `Some(${fieldCode})`} else None)`;
+    }
+    if (name === 'length' && (isArrayLike(checker, recvT) || recvT.flags & TF.StringLike)) return lenOf(expr(n.expression));
+    if (name === 'size' && (isSetT(recvT) || isMapT(recvT))) return lenOf(expr(n.expression));
+    if (keepOption) n.__keepOption = true;
+    const base = fieldOf(expr(n.expression), recvT, name, n);
+    n.__keepOption = false;
+    return base;
+  }
+  function fieldOf(recvCode, recvT, name, n) {
+    if (isRecordish(recvT)) {
+      const props = checker.getPropertiesOfType(recvT);
+      const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
+      const T = dtype(recvT, n);
+      const ft = typeOf(n);
+      if (hasMethods || !props.length || !checker.getPropertyOfType(recvT, name)) {
+        // an opaque type, or a field reached through an index signature: an uninterpreted accessor
+        if (T.startsWith('map<')) return `(if ${strEsc(name)} in ${recvCode} then Some(${recvCode}[${strEsc(name)}]) else None)`;
+        return `${external(`${T}_${name}`, [T], dtype(ft, n))}(${recvCode})`;
+      }
+    }
+    const p = isRecordish(recvT) ? checker.getPropertyOfType(recvT, name) : null;
+    if (p) {
+      const declared = checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n);
+      const here = typeOf(n);
+      if ((isOptional(declared) || (p.flags & ts.SymbolFlags.Optional)) && !isOptional(here) && !isNullish(here) && !n.__keepOption) return `${recvCode}.${dn(name)}.value`;
+    }
+    return `${recvCode}.${dn(name)}`;
+  }
+  // `m[k]` on a string-indexed object: {map, key} or null
+  function dictRead(e) {
+    while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isElementAccessExpression(e)) return null;
+    const rt = baseOf(typeOf(e.expression));
+    const ix = stringIndex(rt);
+    if (!ix || checker.getPropertiesOfType(rt).length) return null;
+    return { map: expr(e.expression), key: expr(e.argumentExpression) };
+  }
+  function elemAccess(n) {
+    const recvT = typeOf(n.expression);
+    if (checker.isTupleType(recvT) && !dtype(recvT, n).startsWith('seq<')) {
+      if (!ts.isNumericLiteral(n.argumentExpression)) fail(n, 'tuple index must be a literal');
+      return `${expr(n.expression)}.${n.argumentExpression.text}`;
+    }
+    const at = typeOf(n.argumentExpression);
+    if (isAny(recvT) || isAny(at)) {
+      const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
+      return `${external('Any_index', [anyType(), anyType()], rd)}(${expr(n.expression, anyTarget())}, ${expr(n.argumentExpression, anyTarget())})`;
+    }
+    const base = baseOf(recvT);
+    if (ts.isStringLiteral(n.argumentExpression) && isRecordish(base)) return fieldOf(expr(n.expression), base, n.argumentExpression.text, n);
+    const d = dictRead(n);
+    if (d) { const V = dtype(stringIndex(base).type, n); return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`; }
+    if (isRecordish(base)) {
+      // a key from a finite set of literals: a chain of field reads, each lifted to the expression's type
+      const keys = (at.flags & TF.Union ? at.types : [at]).filter((x) => x.flags & TF.StringLiteral).map((x) => x.value);
+      if (!keys.length) fail(n, 'record key is not a literal');
+      const R = expr(n.expression), Kc = expr(n.argumentExpression);
+      const td = dtype(typeOf(n), n);
+      const read = (k) => {
+        const p = checker.getPropertyOfType(base, k);
+        const pt = p ? checker.getTypeOfSymbolAtLocation(p, n) : null;
+        let code = fieldOf(R, base, k, n);
+        if (p && pt) { const fd = dtype(pt, n); const opt = !!(p.flags & ts.SymbolFlags.Optional) && !fd.startsWith('Option<'); const fdd = opt ? `Option<${fd}>` : fd; if (opt) usesOption = true; if (fdd !== td) code = td.startsWith('Option<') && !fdd.startsWith('Option<') ? `Some(${code})` : code; }
+        return code;
+      };
+      if (keys.length === 1) return read(keys[0]);
+      let out = read(keys[keys.length - 1]);
+      for (let i = keys.length - 2; i >= 0; i--) out = `(if ${Kc} == ${strEsc(keys[i])} then ${read(keys[i])} else ${out})`;
+      return out;
+    }
+    if (recvT.flags & TF.StringLike) return `[${expr(n.expression)}[${index(n.argumentExpression)}]]`; // s[i] is a one-char string
+    return `${expr(n.expression)}[${index(n.argumentExpression)}]`;
+  }
+  function newExpr(n) {
+    const name = n.expression.getText(sf);
+    const t = typeOf(n);
+    if (name === 'Set') {
+      const A = dtype(checker.getTypeArguments(t)[0], n);
+      if (!n.arguments?.length) return `(var s0: set<${A}> := {}; s0)`;
+      return `${helper('SetOf', [A])}(${seqOf(n.arguments[0])})`;
+    }
+    if (name === 'RegExp') { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return externalCall('RegExp_new', n, [...(n.arguments ?? [])]); }
+    if (name === 'Map') {
+      const [kt, vt] = checker.getTypeArguments(t);
+      const Kd = dtype(kt, n), Vd = dtype(vt, n);
+      if (!n.arguments?.length) return `(map[] : map<${Kd}, ${Vd}>)`;
+      const id = external('map_of_pairs', [`seq<(${Kd}, ${Vd})>`], `map<${Kd}, ${Vd}>`);
+      return `${id}(${seqOf(n.arguments[0])})`;
+    }
+    // any other constructor: an uninterpreted external of its arguments, typed by what it builds
+    return externalCall(`new_${mangle(name)}`, n, [...(n.arguments ?? [])]);
+  }
+  const cbArity = { map: 2, filter: 2, some: 2, every: 2, find: 2, findIndex: 2, flatMap: 2, reduce: 3 };
+  function call(n, awaited = false) {
     const f = n.expression;
     if (ts.isIdentifier(f)) {
+      const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       const callee = fns.get(f.text);
-      if (!core && kindOf.get(callee) === 'method') fail(n, `${f.text} loops, so it is a Dafny method and cannot be called inside an expression`);
-      const sig = checker.getResolvedSignature(n);
-      const args = n.arguments.map((a, i) => expr(a, checker.getTypeOfSymbolAtLocation(sig.parameters[i], a)));
-      return `${fname(f.text)}(${args.join(', ')})`;
+      if (o.kind === 'unit' && callee) {
+        if (!core && kindOf.get(callee) === 'method') fail(n, `${f.text} loops, so it is a Dafny method and cannot be called inside an expression`);
+        const sig = checker.getResolvedSignature(n);
+        const args = n.arguments.map((a, i) => expr(a, sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined));
+        return `${fname(f.text)}(${args.join(', ')})`;
+      }
+      if (o.kind === 'local') {
+        // a function-typed parameter or local: applied as a Dafny function value
+        const sig = checker.getResolvedSignature(n);
+        const args = n.arguments.map((a, i) => expr(a, sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined));
+        return `${ident(f)}(${args.join(', ')})`;
+      }
+      return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
     }
+    if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
     const recv = f.expression, name = f.name.text;
+    const recvT = typeOf(recv);
+    const base = baseOf(recvT);
+    if (isAny(base)) return externalCall(`${awaited ? 'await_' : ''}Any_${name}`, n, [...n.arguments], expr(recv, anyTarget()), anyType());
     if (ts.isIdentifier(recv) && recv.text === 'Math') {
       const [a, b] = n.arguments;
-      if (name === 'floor') return real ? `((${expr(a)}).Floor as real)` : expr(a);
-      return `${helper(name === 'min' ? 'Min' : 'Max', [NUM])}(${expr(a)}, ${expr(b)})`;
+      if (name === 'floor' || name === 'trunc') {
+        if (real) return `((${expr(a)}).Floor as real)`;
+        const inner = ts.isParenthesizedExpression(a) ? a.expression : a;
+        if (ts.isBinaryExpression(inner) && inner.operatorToken.kind === K.SlashToken) {
+          return `${helper(name === 'floor' ? 'FloorDiv' : 'TruncDiv', ['int'])}(${expr(inner.left)}, ${expr(inner.right)})`;
+        }
+        return expr(a);
+      }
+      if (name === 'min' || name === 'max') return `${helper(name === 'min' ? 'Min' : 'Max', [NUM])}(${expr(a)}, ${expr(b)})`;
+      if (name === 'abs') return `${helper('Abs', [NUM])}(${expr(a)})`;
+      return externalCall(`Math_${name}`, n, [...n.arguments]);
     }
-    const A = () => dtype(elemType(recv), n);
-    if (name === 'filter') return `${helper('Filter', [A()])}(${expr(recv)}, ${lambda(n.arguments[0])})`;
-    if (name === 'map') {
+    if (ts.isIdentifier(recv)) {
+      const o = originOf(checker, recv, sf, currentUnit?.node ?? null);
+      if ((o.kind === 'import' || o.kind === 'other' || o.kind === 'module' || o.kind === 'global') && !(isArrayLike(checker, base) || base.flags & TF.StringLike || isSetT(base) || isMapT(base))) {
+        return externalCall(`${awaited ? 'await_' : ''}${recv.text}_${name}`, n, [...n.arguments]);
+      }
+    }
+    if (isArrayLike(checker, base)) {
+      const A = () => dtype(elemType(recv), n);
+      const R = expr(recv);
       const cb = n.arguments[0];
-      return `${helper('Map', [A(), dtype(typeOf(cb.body), cb)])}(${expr(recv)}, ${lambda(cb)})`;
+      switch (name) {
+        case 'filter': return `${helper('Filter', [A()])}(${R}, ${lambda(cb, 1)})`;
+        case 'map': return `${helper('Map', [A(), dtype(typeOf(n), n).replace(/^seq<(.*)>$/, '$1')])}(${R}, ${lambda(cb, 1)})`;
+        case 'flatMap': { const inner = dtype(typeOf(n), n); return `${helper('Flat', [inner.replace(/^seq<(.*)>$/, '$1')])}(${helper('Map', [A(), inner])}(${R}, ${lambda(cb, 1)}))`; }
+        case 'reduce': { const U = dtype(typeOf(cb.parameters[0].name), cb); return `${helper('Fold', [A(), U])}(${R}, ${lambda(cb, 2)}, ${expr(n.arguments[1], typeOf(cb.parameters[0].name))})`; }
+        case 'some': return `(exists ii_ :: 0 <= ii_ < |${R}| && ${lambda(cb, 1)}(${R}[ii_]))`;
+        case 'every': return `(forall ii_ :: 0 <= ii_ < |${R}| ==> ${lambda(cb, 1)}(${R}[ii_]))`;
+        case 'find': return `${helper('Find', [A()])}(${R}, ${lambda(cb, 1)})`;
+        case 'findIndex': return `${helper('FindIndex', [A()])}(${R}, ${lambda(cb, 1)})`;
+        case 'includes': return `(${expr(n.arguments[0], elemType(recv))} in ${R})`;
+        case 'indexOf': return `${helper('IndexOf', [A()])}(${R}, ${expr(n.arguments[0], elemType(recv))})`;
+        case 'slice': return `${helper('Slice', [A()])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '0'}, ${n.arguments[1] ? expr(n.arguments[1]) : `|${R}|`})`;
+        case 'concat': return `(${[R, ...n.arguments.map(seqOf)].join(' + ')})`;
+        case 'join': return `${helper('Join', ['string'])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '","'})`;
+        case 'flat': return `${helper('Flat', [A().replace(/^seq<(.*)>$/, '$1')])}(${R})`;
+        case 'at': return `${helper('At', [A()])}(${R}, ${expr(n.arguments[0])})`;
+        case 'sort': return cb ? `${external(`sort_${mangle(A())}`, [`seq<${A()}>`, `(${A()}, ${A()}) -> ${NUM}`], `seq<${A()}>`)}(${R}, ${lambda(cb, 2)})` : `${external(`sort_default_${mangle(A())}`, [`seq<${A()}>`], `seq<${A()}>`)}(${R})`;
+        case 'reverse': return `${helper('Reverse', [A()])}(${R})`;
+        default: return fail(n, `array method .${name}() is not translated`);
+      }
     }
-    if (name === 'reduce') {
-      const cb = n.arguments[0];
-      const U = dtype(typeOf(cb.parameters[0].name), cb);
-      return `${helper('Fold', [A(), U])}(${expr(recv)}, ${lambda(cb)}, ${expr(n.arguments[1], typeOf(cb.parameters[0].name))})`;
+    if (base.flags & TF.StringLike) {
+      const S = expr(recv);
+      const a0 = () => expr(n.arguments[0]);
+      switch (name) {
+        case 'includes': return `${helper('Includes', ['string'])}(${S}, ${a0()})`;
+        case 'startsWith': return `(var tt_ := ${a0()}; |tt_| <= |${S}| && ${S}[..|tt_|] == tt_)`;
+        case 'endsWith': return `(var tt_ := ${a0()}; |tt_| <= |${S}| && ${S}[|${S}| - |tt_|..] == tt_)`;
+        case 'indexOf': return `${helper('IndexOfStr', ['string'])}(${S}, ${a0()})`;
+        case 'slice': case 'substring': return `${helper('Slice', ['char'])}(${S}, ${n.arguments[0] ? expr(n.arguments[0]) : '0'}, ${n.arguments[1] ? expr(n.arguments[1]) : `|${S}|`})`;
+        case 'charAt': return `${helper('Slice', ['char'])}(${S}, ${a0()}, ${a0()} + 1)`;
+        case 'at': return `${helper('At', ['char'])}(${S}, ${a0()})`;
+        case 'concat': return `(${[S, ...n.arguments.map((a) => expr(a))].join(' + ')})`;
+        case 'repeat': return `${helper('Repeat', ['string'])}(${S}, ${a0()})`;
+        default: return externalCall(`str_${name}`, n, [...n.arguments], S, 'string');
+      }
     }
-    return fail(n, `call .${name}() is not translated`);
+    if (isSetT(base)) {
+      const S = expr(recv);
+      const A = dtype(checker.getTypeArguments(base)[0], n);
+      if (name === 'has') return `(${expr(n.arguments[0], checker.getTypeArguments(base)[0])} in ${S})`;
+      if (name === 'values' || name === 'keys') return `${external('set_to_seq', [`set<${A}>`], `seq<${A}>`)}(${S})`;
+      return fail(n, `Set.${name}() is not translated as an expression`);
+    }
+    if (isMapT(base)) {
+      const M = expr(recv);
+      const [kt, vt] = checker.getTypeArguments(base);
+      const Kd = dtype(kt, n), Vd = dtype(vt, n);
+      if (name === 'has') return `(${expr(n.arguments[0], kt)} in ${M})`;
+      if (name === 'get') { usesOption = true; const k = expr(n.arguments[0], kt); return `(if ${k} in ${M} then Some(${M}[${k}]) else None)`; }
+      if (name === 'keys') return `${external('map_keys', [`map<${Kd}, ${Vd}>`], `seq<${Kd}>`)}(${M})`;
+      if (name === 'values') return `${external('map_values', [`map<${Kd}, ${Vd}>`], `seq<${Vd}>`)}(${M})`;
+      if (name === 'entries') return `${external('map_entries', [`map<${Kd}, ${Vd}>`], `seq<(${Kd}, ${Vd})>`)}(${M})`;
+      return fail(n, `Map.${name}() is not translated as an expression`);
+    }
+    // a method on a record or an opaque value: uninterpreted, keyed by the receiver type
+    const T = dtype(base, n);
+    return externalCall(`${awaited ? 'await_' : ''}${T}_${name}`, n, [...n.arguments], expr(recv), T);
   }
 
   // ----- shared statement analysis -----
-  const retType = (fn) => checker.getSignatureFromDeclaration(fn).getReturnType();
+  const retType = (u) => { let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; return t; };
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;
   const isUpdate = (x) => (ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken);
-  const isPush = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.name.text === 'push';
+  const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set']);
+  const isMutCall = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT.has(x.expression.name.text) && ts.isIdentifier(x.expression.expression);
   const hasLoopOrMutation = (body) => {
+    if (!ts.isBlock(body)) return false;
     let found = false;
     const walk = (x) => {
-      if (ts.isForStatement(x) || ts.isForOfStatement(x) || ts.isWhileStatement(x) || isAssign(x) || isUpdate(x) || isPush(x)) found = true;
+      if (ts.isForStatement(x) || ts.isForOfStatement(x) || ts.isWhileStatement(x) || isAssign(x) || isUpdate(x) || isMutCall(x)) found = true;
       if (!found) ts.forEachChild(x, walk);
     };
     ts.forEachChild(body, walk);
     return found;
   };
-  const containsReturn = (node) => { let f = false; const w = (x) => { if (ts.isReturnStatement(x)) f = true; if (!f) ts.forEachChild(x, w); }; w(node); return f; };
+  const containsReturn = (node) => { let f = false; const w = (x) => { if (ts.isReturnStatement(x) || ts.isThrowStatement(x)) f = true; if (!f && !ts.isArrowFunction(x)) ts.forEachChild(x, w); }; w(node); return f; };
   const flatten = (s) => (ts.isBlock(s) ? [...s.statements] : [s]);
   const terminates = (s) => {
-    if (ts.isReturnStatement(s)) return true;
+    if (ts.isReturnStatement(s) || ts.isContinueStatement(s) || ts.isBreakStatement(s) || ts.isThrowStatement(s)) return true;
     if (ts.isBlock(s)) return s.statements.length > 0 && terminates(s.statements[s.statements.length - 1]);
     if (ts.isIfStatement(s)) return !!s.elseStatement && terminates(s.thenStatement) && terminates(s.elseStatement);
+    if (ts.isSwitchStatement(s)) { const cl = s.caseBlock.clauses; return cl.some((c) => ts.isDefaultClause(c)) && cl.every((c) => c.statements.length && terminates(c.statements[c.statements.length - 1])); }
     return false;
   };
   const insideNode = (decl, node) => decl.pos >= node.pos && decl.end <= node.end;
-  // names assigned inside `node` whose variable is declared outside it, in order of first assignment
   function assignedOutside(node) {
     const names = [];
     const note = (id) => {
@@ -364,69 +902,94 @@ export function translate(file, fnName, opts = {}) {
     };
     const walk = (x) => {
       if (isAssign(x) && ts.isIdentifier(x.left)) note(x.left);
+      if (isAssign(x) && ts.isPropertyAccessExpression(x.left)) { let r = x.left; while (ts.isPropertyAccessExpression(r)) r = r.expression; if (ts.isIdentifier(r)) note(r); }
+      if (isAssign(x) && ts.isElementAccessExpression(x.left) && ts.isIdentifier(x.left.expression)) note(x.left.expression);
       if (isUpdate(x) && ts.isIdentifier(x.operand)) note(x.operand);
-      if (isPush(x) && ts.isIdentifier(x.expression.expression)) note(x.expression.expression);
+      if (isMutCall(x)) note(x.expression.expression);
       ts.forEachChild(x, walk);
     };
     walk(node);
     return names;
   }
+  // switch → [{cond, stmts}], default stmts; each clause ends in return or break (lint rule); break is dropped
+  function switchChain(s) {
+    const scrut = s.expression;
+    const chain = []; let dflt = null; let pendingConds = [];
+    for (const c of s.caseBlock.clauses) {
+      if (ts.isCaseClause(c)) {
+        pendingConds.push(`(${expr(scrut)} == ${expr(c.expression, typeOf(scrut))})`);
+        if (!c.statements.length) continue;
+      }
+      const body = c.statements.filter((x) => !ts.isBreakStatement(x)).flatMap((x) => (ts.isBlock(x) ? [...x.statements].filter((y) => !ts.isBreakStatement(y)) : [x]));
+      if (ts.isDefaultClause(c)) { dflt = body; pendingConds = []; continue; }
+      chain.push({ cond: pendingConds.join(' || '), stmts: body });
+      pendingConds = [];
+    }
+    if (dflt === null && chain.length && !(retType(currentUnit).flags & (TF.Void | TF.Undefined))) {
+      // no default and a value must come out: TypeScript accepted the switch as exhaustive, so the last case is the fall-back
+      dflt = chain.pop().stmts;
+    }
+    return { chain, dflt: dflt ?? [] };
+  }
 
-  // ===== proof shape: methods with loops =====
+  // ===== proof shape (methods with loops): unchanged from version 1, used by the fixtures =====
   const kindOf = new Map();
-  const bodyExpr = (list, fn) => {
-    if (!list.length) fail(fn, 'a path ends without a return');
+  const bodyExpr = (list, u) => {
+    if (!list.length) fail(u.node, 'a path ends without a return');
     const [s, ...rest] = list;
-    if (ts.isReturnStatement(s)) return expr(s.expression, retType(fn));
+    if (ts.isReturnStatement(s)) return expr(s.expression, retType(u));
     if (ts.isVariableStatement(s)) {
       const d = s.declarationList.declarations[0];
+      if (!ts.isIdentifier(d.name)) return `${destructure(d.name, outerParens(expr(d.initializer))).join('\n')}\n${bodyExpr(rest, u)}`;
       const t = typeOf(d.name);
-      return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};\n${bodyExpr(rest, fn)}`;
+      return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};\n${bodyExpr(rest, u)}`;
     }
     if (ts.isIfStatement(s)) {
       const thenL = [...flatten(s.thenStatement), ...(terminates(s.thenStatement) ? [] : rest)];
       const elseS = s.elseStatement;
       const elseL = [...(elseS ? flatten(elseS) : []), ...(elseS && terminates(elseS) ? [] : rest)];
-      return `if ${outerParens(expr(s.expression))} then\n${indentBlock(wrapLet(bodyExpr(thenL, fn)))}\nelse\n${indentBlock(wrapLet(bodyExpr(elseL, fn)))}`;
+      return `if ${outerParens(truthy(s.expression))} then\n${indentBlock(wrapLet(bodyExpr(thenL, u)))}\nelse\n${indentBlock(wrapLet(bodyExpr(elseL, u)))}`;
     }
-    if (ts.isBlock(s)) return bodyExpr([...s.statements, ...rest], fn);
+    if (ts.isBlock(s)) return bodyExpr([...s.statements, ...rest], u);
     return fail(s, `statement ${ts.SyntaxKind[s.kind]} cannot be an expression`);
   };
   const one = () => (real ? '1.0' : '1');
-  function stmts(list, ind, fn, out) { for (const s of list) stmt(s, ind, fn, out); }
-  function stmt(s, ind, fn, out) {
+  function stmts(list, ind, u, out) { for (const s of list) stmt(s, ind, u, out); }
+  function stmt(s, ind, u, out) {
     const pad = '  '.repeat(ind);
     const emit = (line) => out.push(pad + line);
     switch (s.kind) {
-      case K.Block: return stmts(s.statements, ind, fn, out);
+      case K.Block: return stmts(s.statements, ind, u, out);
       case K.EmptyStatement: return;
       case K.VariableStatement: {
         const d = s.declarationList.declarations[0];
         const t = typeOf(d.name);
+        if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer))).forEach(emit);
         return emit(`var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};`);
       }
       case K.ExpressionStatement: return emit(assignText(s.expression));
-      case K.ReturnStatement: return emit(`return ${outerParens(expr(s.expression, retType(fn)))};`);
+      case K.ThrowStatement: return fail(s, 'throw is translated in --core mode only');
+      case K.ReturnStatement: return emit(`return ${outerParens(expr(s.expression, retType(u)))};`);
       case K.IfStatement: {
-        emit(`if ${outerParens(expr(s.expression))} {`);
-        stmts(flatten(s.thenStatement), ind + 1, fn, out);
+        emit(`if ${outerParens(truthy(s.expression))} {`);
+        stmts(flatten(s.thenStatement), ind + 1, u, out);
         let e = s.elseStatement;
         while (e && ts.isIfStatement(e)) {
-          emit(`} else if ${outerParens(expr(e.expression))} {`);
-          stmts(flatten(e.thenStatement), ind + 1, fn, out);
+          emit(`} else if ${outerParens(truthy(e.expression))} {`);
+          stmts(flatten(e.thenStatement), ind + 1, u, out);
           e = e.elseStatement;
         }
-        if (e) { emit('} else {'); stmts(flatten(e), ind + 1, fn, out); }
+        if (e) { emit('} else {'); stmts(flatten(e), ind + 1, u, out); }
         return emit('}');
       }
       case K.ForOfStatement: {
         const id = loopCount++;
         const x = s.initializer.declarations[0].name;
-        emit(`var seq${id} := ${outerParens(expr(s.expression))};`);
+        emit(`var seq${id} := ${outerParens(seqOf(s.expression))};`);
         emit(`var idx${id} := 0;`);
         loopHeader(id, s, ind, out, [`0 <= idx${id} <= |seq${id}|`], `|seq${id}| - idx${id}`, `idx${id} < |seq${id}|`, new Set([x.text]));
         emit(`  var ${dn(x.text)}: ${dtype(typeOf(x), x)} := seq${id}[idx${id}];`);
-        stmts(flatten(s.statement), ind + 1, fn, out);
+        stmts(flatten(s.statement), ind + 1, u, out);
         emit(`  idx${id} := idx${id} + 1;`);
         return emit('}');
       }
@@ -439,7 +1002,7 @@ export function translate(file, fnName, opts = {}) {
         const cond = forCond(L);
         const dec = forDecreases(L, cond);
         loopHeader(id, s, ind, out, [`${dn(L.i)} >= ${L.start}`], dec, cond, new Set([L.i]));
-        stmts(flatten(s.statement), ind + 1, fn, out);
+        stmts(flatten(s.statement), ind + 1, u, out);
         emit(`  ${dn(L.i)} := ${dn(L.i)} + 1;`);
         emit('}');
         if (real && !wasInt) intVars.delete(L.i);
@@ -448,8 +1011,8 @@ export function translate(file, fnName, opts = {}) {
       case K.WhileStatement: {
         const id = loopCount++;
         const h = hintsOf(sf, s);
-        loopHeader(id, s, ind, out, h.invariants, h.decreases, outerParens(expr(s.expression)), new Set());
-        stmts(flatten(s.statement), ind + 1, fn, out);
+        loopHeader(id, s, ind, out, h.invariants, h.decreases, outerParens(truthy(s.expression)), new Set());
+        stmts(flatten(s.statement), ind + 1, u, out);
         return emit('}');
       }
       default: return fail(s, `statement ${ts.SyntaxKind[s.kind]} is not translated`);
@@ -466,9 +1029,33 @@ export function translate(file, fnName, opts = {}) {
     out.push(`${pad}  decreases ${decreases ?? '/* DECREASES NEEDED */ 0'}`);
     out.push(`${pad}{`);
   }
-  // text of `x = e`, `x += e`, `x++`, `xs.push(e)` as a Dafny statement `x := ...;`
+  // text of `x = e`, `x += e`, `x++`, `xs.push(e)`, `s.add(e)`, `m.set(k, v)`, `s.delete(e)` as `name := new value`
   function newValue(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (ts.isAwaitExpression(e)) return null;
+    if (ts.isBinaryExpression(e) && ts.isElementAccessExpression(e.left) && ts.isIdentifier(e.left.expression)) {
+      const arr = e.left.expression; const t = baseOf(typeOf(arr));
+      if (!isArrayLike(checker, t)) fail(e, 'index assignment on a non-array');
+      return [arr.text, `${dn(arr.text)}[${index(e.left.argumentExpression)} := ${outerParens(expr(e.right, checker.getTypeArguments(t)[0]))}]`, arr];
+    }
+    if (ts.isBinaryExpression(e) && ts.isPropertyAccessExpression(e.left)) {
+      // x.a.b = v on a local record: x := x.(a := x.a.(b := v))
+      const chain = []; let root = e.left;
+      while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
+      if (!ts.isIdentifier(root)) fail(e, 'assignment target is not a local record');
+      const value = outerParens(expr(e.right, typeOf(e.left)));
+      const build = (i, recvCode, recvT) => {
+        const pa = chain[i]; const fname_ = pa.name.text;
+        if (!isRecordish(recvT) || !checker.getPropertyOfType(recvT, fname_)) fail(pa, `field ${fname_} is not a declared field of a record`);
+        const p = checker.getPropertyOfType(recvT, fname_);
+        const ft = checker.getTypeOfSymbolAtLocation(p, pa);
+        let inner;
+        if (i === chain.length - 1) inner = (p.flags & ts.SymbolFlags.Optional) && !isOptional(typeOf(e.right)) ? (usesOption = true, `Some(${value})`) : value;
+        else { if (isOptional(ft)) fail(pa, 'assignment through an optional field is not translated'); inner = build(i + 1, `${recvCode}.${dn(fname_)}`, ft); }
+        return `${recvCode}.(${dn(fname_)} := ${inner})`;
+      };
+      return [root.text, build(0, dn(root.text), typeOf(root)), root];
+    }
     if (ts.isBinaryExpression(e)) {
       const name = dn(e.left.text);
       const op = e.operatorToken.kind;
@@ -477,13 +1064,20 @@ export function translate(file, fnName, opts = {}) {
       return [e.left.text, `${name} ${sym} ${expr(e.right)}`];
     }
     if (isUpdate(e)) { const name = dn(e.operand.text); return [e.operand.text, `${name} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${one()}`]; }
-    if (isPush(e)) {
-      const r = e.expression.expression;
-      return [r.text, `${dn(r.text)} + [${outerParens(expr(e.arguments[0], checker.getTypeArguments(typeOf(r))[0]))}]`];
+    if (isMutCall(e)) {
+      const r = e.expression.expression, m = e.expression.name.text;
+      const t = baseOf(typeOf(r));
+      const R = dn(r.text);
+      const a0 = e.arguments[0];
+      const piece = ts.isSpreadElement(a0) ? seqOf(a0.expression) : `[${outerParens(expr(a0, checker.getTypeArguments(t)[0]))}]`;
+      if (m === 'push') return [r.text, `${R} + ${piece}`];
+      if (m === 'unshift') return [r.text, `${piece} + ${R}`];
+      if (isSetT(t)) { const A = checker.getTypeArguments(t)[0]; return [r.text, m === 'add' ? `${R} + {${expr(e.arguments[0], A)}}` : `${R} - {${expr(e.arguments[0], A)}}`]; }
+      if (isMapT(t)) { const [kt, vt] = checker.getTypeArguments(t); return [r.text, m === 'set' ? `${R}[${expr(e.arguments[0], kt)} := ${expr(e.arguments[1], vt)}]` : `${R} - {${expr(e.arguments[0], kt)}}`]; }
     }
     return fail(e, 'statement expression is not translated');
   }
-  function assignText(e) { const [n, v] = newValue(e); return `${dn(n)} := ${v};`; }
+  function assignText(e) { const nv = newValue(e); if (!nv) fail(e, 'a bare await statement has no effect in the core'); const [n, v] = nv; return `${dn(n)} := ${v};`; }
   function forParts(s) {
     const decl = s.initializer.declarations[0];
     const i = decl.name.text;
@@ -502,9 +1096,10 @@ export function translate(file, fnName, opts = {}) {
   }
 
   // ===== --core shape: pure functions, loops as recursive helpers =====
-  const coreHelpers = []; // loop helper function texts, in order
-
-  // sign facts: which names are known >= 0 under the guards of the path
+  const coreHelpers = [];
+  const loopCtx = []; // {cont, brk, ret} of the enclosing core loop
+  // a `return v` inside a loop helper becomes (Some(v), state...); outside any loop it is the value itself
+  const retIn = (code) => (loopCtx.length ? loopCtx[loopCtx.length - 1].ret(code) : code);
   const guardFacts = (c) => {
     const out = new Set();
     const lit = (e) => ts.isNumericLiteral(e) && Number(e.text) >= 0;
@@ -523,7 +1118,7 @@ export function translate(file, fnName, opts = {}) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (ts.isNumericLiteral(e)) return true;
     if (ts.isIdentifier(e)) return facts.has(e.text);
-    if (ts.isPropertyAccessExpression(e)) return e.name.text === 'length';
+    if (ts.isPropertyAccessExpression(e)) return e.name.text === 'length' || e.name.text === 'size';
     if (ts.isBinaryExpression(e)) {
       const op = e.operatorToken.kind;
       if (op === K.PlusToken || op === K.AsteriskToken) return nonneg(e.left, facts) && nonneg(e.right, facts);
@@ -536,7 +1131,6 @@ export function translate(file, fnName, opts = {}) {
     }
     return false;
   };
-  // the elements of `for (const x of p)` where `const p = ....filter((x) => x > k)` satisfy the predicate
   function filterProvenance(iterNode) {
     if (!ts.isIdentifier(iterNode)) return null;
     const sym = checker.getSymbolAtLocation(iterNode);
@@ -545,16 +1139,15 @@ export function translate(file, fnName, opts = {}) {
     const init = d.initializer;
     if (!init || !ts.isCallExpression(init) || !ts.isPropertyAccessExpression(init.expression) || init.expression.name.text !== 'filter') return null;
     const cb = init.arguments[0];
-    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1) return null;
+    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name)) return null;
     return cb;
   }
   function elementFacts(s) {
     const facts = new Set();
     const cb = filterProvenance(s.expression);
-    if (cb) { const p = cb.parameters[0].name.text; for (const f of guardFacts(cb.body)) if (f === p) facts.add(s.initializer.declarations[0].name.text); }
+    if (cb) { const p = cb.parameters[0].name.text; for (const f of guardFacts(cb.body)) if (f === p && ts.isIdentifier(s.initializer.declarations[0].name)) facts.add(s.initializer.declarations[0].name.text); }
     return facts;
   }
-  // do all updates of `v` inside `node` keep v >= 0?
   function keepsNonneg(v, node, facts) {
     let ok = true, seen = false;
     const visit = (x, f) => {
@@ -587,20 +1180,17 @@ export function translate(file, fnName, opts = {}) {
     visit(node, facts);
     return ok && seen;
   }
-
-  const paramNamesOf = (list) => list.map((p) => p.name);
-  // identifiers used inside `node` whose variable is declared outside it (parameters and earlier locals)
   function freeVars(node, skipNode) {
     const out = [];
     const walk = (x) => {
       if (x === skipNode) return;
       if (ts.isIdentifier(x) && x.text !== 'undefined') {
         const par = x.parent;
-        const isName = (ts.isPropertyAccessExpression(par) && par.name === x) || (ts.isPropertyAssignment(par) && par.name === x) || (ts.isParameter(par) && par.name === x) || (ts.isVariableDeclaration(par) && par.name === x);
+        const isName = (ts.isPropertyAccessExpression(par) && par.name === x) || (ts.isPropertyAssignment(par) && par.name === x) || (ts.isParameter(par) && par.name === x) || (ts.isVariableDeclaration(par) && par.name === x) || (ts.isBindingElement(par) && (par.name === x || par.propertyName === x));
         if (!isName) {
-          const sym = checker.getSymbolAtLocation(x);
-          const d = sym?.valueDeclaration;
-          if (d && !ts.isFunctionDeclaration(d) && !insideNode(d, node) && !out.some((o) => o.name === x.text)) out.push({ name: x.text, sym, node: x });
+          const o = originOf(checker, x, sf, currentUnit?.node ?? null);
+          const d = o.decl;
+          if (o.kind === 'local' && d && !insideNode(d, node) && !out.some((q) => q.name === x.text)) out.push({ name: x.text, sym: o.sym, node: x });
         }
       }
       ts.forEachChild(x, walk);
@@ -611,86 +1201,113 @@ export function translate(file, fnName, opts = {}) {
   const tupleOf = (names) => (names.length === 1 ? names[0] : `(${names.join(', ')})`);
 
   // translate a statement list to ONE Dafny expression; `fin()` gives the value when the list ends
-  function tr(list, fin, fn) {
+  function tr(list, fin, u) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
-    const more = (r = rest) => tr(r, fin, fn);
+    const more = (r = rest) => tr(r, fin, u);
     switch (s.kind) {
-      case K.Block: return tr([...s.statements, ...rest], fin, fn);
+      case K.Block: return tr([...s.statements, ...rest], fin, u);
       case K.EmptyStatement: return more();
-      case K.ReturnStatement: return expr(s.expression, retType(fn));
+      case K.ReturnStatement: { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(code); }
+      case K.ThrowStatement: { const R = dtype(retType(u), s); return retIn(`${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`); }
       case K.VariableStatement: {
-        const d = s.declarationList.declarations[0];
-        const t = typeOf(d.name);
-        return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};\n${more()}`;
+        const out = [];
+        for (const d of s.declarationList.declarations) {
+          if (!ts.isIdentifier(d.name)) { out.push(...destructure(d.name, outerParens(expr(d.initializer)))); continue; }
+          const t = typeOf(d.name);
+          out.push(`var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};`);
+        }
+        return `${out.join('\n')}\n${more()}`;
       }
       case K.ExpressionStatement: {
-        const [n, v] = newValue(s.expression);
-        const sym = checker.getSymbolAtLocation(s.expression.left ?? s.expression.operand ?? s.expression.expression.expression);
+        const nv = newValue(s.expression);
+        if (!nv) return more(); // a bare await: an effect the core does not model, dropped on both sides
+        const [n, v, rootNode] = nv;
+        const e = ts.isParenthesizedExpression(s.expression) ? s.expression.expression : s.expression;
+        const target = rootNode ?? e.left ?? e.operand ?? e.expression.expression;
+        const sym = checker.getSymbolAtLocation(target);
         return `var ${dn(n)}: ${dtype(symType(sym, s), s)} := ${v};\n${more()}`;
       }
-      case K.IfStatement: {
-        if (containsReturn(s)) {
-          const thenL = [...flatten(s.thenStatement), ...(terminates(s.thenStatement) ? [] : rest)];
-          const elseS = s.elseStatement;
-          const elseL = [...(elseS ? flatten(elseS) : []), ...(elseS && terminates(elseS) ? [] : rest)];
-          return `if ${outerParens(expr(s.expression))} then\n${indentBlock(wrapLet(tr(thenL, fin, fn)))}\nelse\n${indentBlock(wrapLet(tr(elseL, fin, fn)))}`;
-        }
-        const M = assignedOutside(s);
-        if (!M.length) return more();
-        const names = M.map((m) => dn(m.name));
-        const state = () => tupleOf(names);
-        const thenE = tr(flatten(s.thenStatement), state, fn);
-        const elseE = s.elseStatement ? tr(flatten(s.elseStatement), state, fn) : state();
-        return `var ${tupleOf(names)} := if ${outerParens(expr(s.expression))} then\n${indentBlock(wrapLet(thenE))}\nelse\n${indentBlock(wrapLet(elseE))};\n${more()}`;
-      }
-      case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: return coreLoop(s, rest, fin, fn);
+      case K.IfStatement: return ifChain([{ cond: truthy(s.expression), stmts: flatten(s.thenStatement) }], s.elseStatement ? flatten(s.elseStatement) : [], s, rest, fin, u);
+      case K.SwitchStatement: { const { chain, dflt } = switchChain(s); return ifChain(chain, dflt, s, rest, fin, u); }
+      case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: return coreLoop(s, rest, fin, u);
+      case K.ContinueStatement: if (!loopCtx.length) fail(s, 'continue outside a loop'); return loopCtx[loopCtx.length - 1].cont();
+      case K.BreakStatement: if (!loopCtx.length) fail(s, 'break outside a loop'); return loopCtx[loopCtx.length - 1].brk();
       default: return fail(s, `statement ${ts.SyntaxKind[s.kind]} is not translated`);
     }
   }
+  // an if/else-if chain (or a switch) as an expression; branches that return end the path
+  // a break or continue of the ENCLOSING loop inside this statement (not one of a nested loop)
+  const containsJump = (node) => { let f = false; const w = (x) => { if (ts.isContinueStatement(x) || ts.isBreakStatement(x)) f = true; if (!f && !ts.isArrowFunction(x) && !ts.isForStatement(x) && !ts.isForOfStatement(x) && !ts.isWhileStatement(x) && !ts.isSwitchStatement(x)) ts.forEachChild(x, w); }; w(node); return f; };
+  function ifChain(chain, dflt, node, rest, fin, u) {
+    const anyReturn = containsReturn(node) || (loopCtx.length > 0 && containsJump(node));
+    const allTerminate = chain.every((c) => c.stmts.length && terminates(c.stmts[c.stmts.length - 1])) && dflt.length && terminates(dflt[dflt.length - 1]);
+    if (anyReturn) {
+      const branch = (ss) => tr([...ss, ...(ss.length && terminates(ss[ss.length - 1]) ? [] : rest)], fin, u);
+      let out = indentBlock(wrapLet(branch(dflt)));
+      for (let i = chain.length - 1; i >= 0; i--) out = `if ${outerParens(chain[i].cond)} then\n${indentBlock(wrapLet(branch(chain[i].stmts)))}\nelse\n${out}`;
+      return out.replace(/^if/, 'if');
+    }
+    const M = assignedOutside(node);
+    if (!M.length) return tr(rest, fin, u);
+    const names = M.map((m) => dn(m.name));
+    const state = () => tupleOf(names);
+    let out = indentBlock(wrapLet(dflt.length ? tr(dflt, state, u) : state()));
+    for (let i = chain.length - 1; i >= 0; i--) out = `if ${outerParens(chain[i].cond)} then\n${indentBlock(wrapLet(tr(chain[i].stmts, state, u)))}\nelse\n${out}`;
+    return `var ${tupleOf(names)} := ${out};\n${tr(rest, fin, u)}`;
+  }
 
-  function coreLoop(s, rest, fin, fn) {
+  function coreLoop(s, rest, fin, u) {
     const id = loopCount++;
-    if (containsReturn(s)) fail(s, 'return inside a loop is not translated in --core mode; compute the value and return after the loop');
+    const returns = containsReturn(s);
     const M = assignedOutside(s).map((m) => ({ ...m, d: dtype(symType(m.sym, m.node), m.node) }));
-    if (!M.length) return tr(rest, fin, fn);
+    if (!M.length && !returns) return tr(rest, fin, u);
+    const RD = dtype(retType(u), s);
+    if (returns) usesOption = true;
     const isOf = ts.isForOfStatement(s), isFor = ts.isForStatement(s);
     const userHints = [...hintsOf(sf, s).invariants, ...invariants.filter((x) => x.loop === null || x.loop === id).map((x) => x.expr)];
-    // names a hint mentions must be parameters of the helper too (for example a bound `n` the body never reads)
     const hintWords = new Set(userHints.flatMap((h) => h.match(/[A-Za-z_]\w*/g) ?? []));
     const inScopeVars = [];
     const scan = (x) => {
-      if (ts.isParameter(x) || ts.isVariableDeclaration(x)) {
+      if (ts.isParameter(x) || ts.isVariableDeclaration(x) || ts.isBindingElement(x)) {
         if (ts.isIdentifier(x.name) && x.end <= s.pos && !insideNode(x, s)) inScopeVars.push({ name: x.name.text, sym: checker.getSymbolAtLocation(x.name), node: x.name });
       }
       ts.forEachChild(x, scan);
     };
-    scan(fn);
+    scan(u.fn);
     const free = freeVars(s, isOf ? s.expression : null);
     for (const v of inScopeVars) if (hintWords.has(v.name) && !free.some((f) => f.name === v.name)) free.push(v);
     const freeTyped = free.filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: dtype(symType(v.sym, v.node), v.node) }));
     free.length = 0; free.push(...freeTyped);
-    const hn = `${curBase}_loop${id}${sfx}`;
+    const hn = `${curUnitName()}_loop${id}${sfx}`;
     const mNames = M.map((m) => dn(m.name));
+    const retName = `ret${id}`;
+    const outNames = returns ? [retName, ...mNames] : mNames; // what the helper returns
     const constParams = free.map((v) => `${dn(v.name)}: ${v.d}`);
     const stateParams = M.map((m) => `${dn(m.name)}: ${m.d}`);
     const constArgs = free.map((v) => dn(v.name));
-    const sA = (m) => mNames; // state args
     const requiresL = [];
     let lead = [], leadArgsNext = [], leadArgsFirst = [], exit, bind = '', decreases, factsIn = new Set();
     let lp = null;
     if (isOf) {
       const x = s.initializer.declarations[0].name;
-      const T = dtype(typeOf(x), x);
+      const itT = baseOf(typeOf(s.expression));
+      let T, src;
+      if (isAny(itT)) { T = anyType(); src = seqOf(s.expression); }
+      else if (isRecordish(itT)) { T = dtype(typeOf(x), x); const IT = dtype(itT, s); src = `${external(`${mangle(IT)}_to_seq`, [IT], `seq<${T}>`)}(${expr(s.expression)})`; }
+      else if (itT.flags & TF.StringLike) { T = 'string'; src = `${helper('Map', ['char', 'string'])}(${expr(s.expression)}, ((c: char) => [c]))`; }
+      else if (isSetT(itT)) { T = dtype(checker.getTypeArguments(itT)[0], s); src = seqOf(s.expression); }
+      else if (isMapT(itT)) { const [kt, vt] = checker.getTypeArguments(itT); const Kd = dtype(kt, s), Vd = dtype(vt, s); T = `(${Kd}, ${Vd})`; src = `${external('map_entries', [`map<${Kd}, ${Vd}>`], `seq<(${Kd}, ${Vd})>`)}(${expr(s.expression)})`; }
+      else { T = dtype(typeOf(x), x); src = outerParens(expr(s.expression)); }
       const sq = `seq${id}`, ix = `idx${id}`;
       lead = [`${sq}: seq<${T}>`, `${ix}: int`];
       leadArgsNext = [sq, `${ix} + 1`];
-      leadArgsFirst = [outerParens(expr(s.expression)), '0'];
+      leadArgsFirst = [src, '0'];
       requiresL.push(`0 <= ${ix} <= |${sq}|`);
       const cb = filterProvenance(s.expression);
-      if (cb) requiresL.push(`forall k :: 0 <= k < |${sq}| ==> (${lambda(cb)})(${sq}[k])`);
+      if (cb) requiresL.push(`forall k :: 0 <= k < |${sq}| ==> ${lambda(cb, 1)}(${sq}[k])`);
       exit = `${ix} >= |${sq}|`;
-      bind = `var ${dn(x.text)}: ${T} := ${sq}[${ix}];\n`;
+      bind = ts.isIdentifier(x) ? `var ${dn(x.text)}: ${T} := ${sq}[${ix}];\n` : destructure(x, `${sq}[${ix}]`).join('\n') + '\n';
       decreases = `|${sq}| - ${ix}`;
       factsIn = elementFacts(s);
     } else if (isFor) {
@@ -705,83 +1322,117 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isNumericLiteral(s.initializer.declarations[0].initializer)) factsIn = new Set([lp.i]);
     } else {
       const h = hintsOf(sf, s);
-      exit = `!(${outerParens(expr(s.expression))})`;
+      exit = `!(${outerParens(truthy(s.expression))})`;
       decreases = h.decreases ?? fail(s, 'while needs `// @decreases <expr>`');
     }
     const next = () => `${hn}(${[...leadArgsNext, ...constArgs, ...mNames].join(', ')})`;
-    const bodyE = tr(flatten(s.statement), next, fn);
+    const exitVal = () => (returns ? tupleOf(['None', ...mNames]) : tupleOf(mNames));
+    loopCtx.push({ cont: next, brk: exitVal, ret: (code) => (returns ? tupleOf([`Some(${outerParens(code)})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
+    let bodyE;
+    try { bodyE = tr(flatten(s.statement), next, u); } finally { loopCtx.pop(); }
     const params = [...lead, ...constParams, ...stateParams];
     const selfArgs = [...lead.map((p) => p.split(':')[0]), ...constArgs, ...mNames];
-    const call = `${hn}(${selfArgs.join(', ')})`;
-    const resT = M.length === 1 ? M[0].d : `(${M.map((m) => m.d).join(', ')})`;
-    // hints: the loop keeps an inductive property of its state: I(in) ==> I(out)
+    const callS = `${hn}(${selfArgs.join(', ')})`;
+    const outTypes = returns ? [`Option<${RD}>`, ...M.map((m) => m.d)] : M.map((m) => m.d);
+    const resT = outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`;
     const hints = [...userHints];
     for (const m of M) {
       if ((m.d === 'int' || m.d === 'real') && keepsNonneg(m.name, s.statement, factsIn)) hints.push(`${dn(m.name)} >= ${m.d === 'real' ? '0.0' : '0'}`);
     }
-    // a while loop ends only when its condition is false: say so about the final state
-    const exitFact = !isOf && !isFor ? [`  ensures (var ${tupleOf(mNames)} := ${call}; ${exit})`] : [];
+    const exitFact = !isOf && !isFor && !returns ? [`  ensures (var ${tupleOf(outNames)} := ${callS}; ${exit})`] : [];
     const specs = [...requiresL.map((r) => `  requires ${r}`),
-      ...hints.map((h) => `  ensures (${h}) ==> (var ${tupleOf(mNames)} := ${call}; ${h})`),
+      ...hints.map((h) => `  ensures (${h}) ==> (var ${tupleOf(outNames)} := ${callS}; ${h})`),
       ...exitFact,
       `  decreases ${decreases}`];
     coreHelpers.push([`function ${hn}(${params.join(', ')}): ${resT}`, ...specs, '{',
-      indentBlock(`if ${exit} then ${tupleOf(mNames)}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
+      indentBlock(`if ${exit} then ${exitVal()}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
     if (isFor && real) intVars.delete(lp.i);
     const first = `${hn}(${[...leadArgsFirst, ...constArgs, ...mNames].join(', ')})`;
-    return `var ${tupleOf(mNames)} := ${first};\n${tr(rest, fin, fn)}`;
+    if (!returns) return `var ${tupleOf(mNames)} := ${first};\n${tr(rest, fin, u)}`;
+    // a return from inside the loop ends the function (or the enclosing loop helper) with that value
+    const after = tr(rest, fin, u);
+    return `var ${tupleOf(outNames)} := ${first};\nif ${retName}.Some? then\n${indentBlock(retIn(`${retName}.value`))}\nelse\n${indentBlock(wrapLet(after))}`;
   }
 
   // ----- emit functions -----
-  for (const fn of order) kindOf.set(fn, hasLoopOrMutation(fn.body) ? 'method' : 'function');
-  const sigParams = (fn) => fn.parameters.map((p) => `${dn(p.name.text)}: ${dtype(typeOf(p.name), p)}`).join(', ');
+  for (const u of order) kindOf.set(u, hasLoopOrMutation(u.body) ? 'method' : 'function');
+  function sigParams(u) {
+    const parts = []; const lets = [];
+    u.params.forEach((p, i) => {
+      const t = typeOf(p.name);
+      let d = dtype(t, p);
+      if (p.questionToken && !d.startsWith('Option<')) { usesOption = true; d = `Option<${d}>`; }
+      if (ts.isIdentifier(p.name)) parts.push(`${dn(p.name.text)}: ${d}`);
+      else { const pn = `arg${i}_`; parts.push(`${pn}: ${d}`); lets.push(...destructure(p.name, pn)); }
+    });
+    return { text: parts.join(', '), lets };
+  }
   const chunks = [];
-  for (const fn of order) {
-    const isTarget = fn === target || (core && !target);
-    const rt = dtype(retType(fn), fn);
-    const name = fname(fn.name.text);
+  for (const u of order) {
+    currentUnit = u;
+    loopCount = 0;
+    const rt = dtype(retType(u), u.node);
+    const name = fname(u.name);
     const specs = [];
-    const argNames = fn.parameters.map((p) => dn(p.name.text)).join(', ');
-    // in --core the result is not named (the generator reads the return type), so `result` becomes the call
+    const argNames = u.params.map((p, i) => (ts.isIdentifier(p.name) ? dn(p.name.text) : `arg${i}_`)).join(', ');
     const sub = (e) => (core ? e.replace(/\bresult\b/g, `${name}(${argNames})`) : e);
-    if (fn === target) {
+    if (u === target) {
       for (const r of requires) specs.push(`  requires ${sub(r)}`);
       for (const e of ensures) specs.push(`  ensures ${sub(e)}`);
     }
+    const sp = sigParams(u);
+    const bodyList = ts.isBlock(u.body) ? [...u.body.statements] : null;
     if (core) {
-      curBase = dn(snake(fn.name.text));
-      const body = tr(fn.body.statements, () => fail(fn, 'a path ends without a return'), fn);
-      chunks.push(...coreHelpers.splice(0), [`function ${name}(${sigParams(fn)}): ${rt}`, ...specs, '{', indentBlock(body), '}'].join('\n'));
-    } else if (kindOf.get(fn) === 'function') {
-      chunks.push([`function ${name}(${sigParams(fn)}): (result: ${rt})`, ...specs, '{', indentBlock(bodyExpr(fn.body.statements, fn)), '}'].join('\n'));
+      const body = bodyList ? tr(bodyList, () => (retType(u).flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(u.node, 'a path ends without a return')), u) : expr(u.body, retType(u));
+      const full = sp.lets.length ? `${sp.lets.join('\n')}\n${body}` : body;
+      chunks.push(...coreHelpers.splice(0), [`function ${name}(${sp.text}): ${rt}`, ...specs, '{', indentBlock(full), '}'].join('\n'));
+    } else if (kindOf.get(u) === 'function') {
+      const body = bodyList ? bodyExpr(bodyList, u) : expr(u.body, retType(u));
+      const full = sp.lets.length ? `${sp.lets.join('\n')}\n${body}` : body;
+      chunks.push([`function ${name}(${sp.text}): (result: ${rt})`, ...specs, '{', indentBlock(full), '}'].join('\n'));
     } else {
       const lines = [];
-      stmts(fn.body.statements, 1, fn, lines);
-      chunks.push([`method ${name}(${sigParams(fn)}) returns (result: ${rt})`, ...specs, '{', ...lines, '}'].join('\n'));
+      for (const l of sp.lets) lines.push('  ' + l);
+      stmts(bodyList, 1, u, lines);
+      chunks.push([`method ${name}(${sp.text}) returns (result: ${rt})`, ...specs, '{', ...lines, '}'].join('\n'));
     }
+    currentUnit = null;
   }
 
+  // integer division placeholders left by `/` under Math.floor are resolved in call(); a leftover is a defect
+  const main = chunks.join('\n\n');
+  if (main.includes('__DIV__')) throw new Unsupported('internal: an integer division was not placed under Math.floor');
+
   const pre = [];
-  if (usesOption) pre.push('datatype Option<T> = None | Some(value: T)');
-  for (const [name, fields] of records) pre.push(`datatype ${name} = ${name}(${fields.map((f) => `${dn(f.name)}: ${f.type}`).join(', ')})`);
-  pre.push(...helpers.values());
-  const what = fnName ? `function ${fnName}` : 'all functions';
-  const header = `// Generated by lean-ts translate from ${path.basename(file)}, ${what}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.`;
-  return [header, ...pre, ...chunks].join('\n\n') + '\n';
+  if (prelude.size || usesOption) {
+    pre.push('datatype Unit = Unit');
+    if (usesOption) pre.push('datatype Option<T> = None | Some(value: T)');
+    for (const [k, text] of prelude) pre.push(text);
+  }
+  const header = `// Generated by lean-ts translate (version 2) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.`;
+  if (opts.preludeOut) {
+    const preludeText = `// Generated by lean-ts translate (version 2): shared declarations. Identical for parent and candidate, or the gate refuses.\n` + pre.map((t) => `// PRELUDE ${t.match(/^(?:datatype|type|function)\s+([A-Za-z0-9_]+)/)?.[1] ?? hash(t)}\n${t}\n// END PRELUDE`).join('\n') + '\n';
+    return { main: `${header}\ninclude "${path.basename(opts.preludeOut)}"\n\n${main}\n`, prelude: preludeText };
+  }
+  return { main: [header, ...pre, main].join('\n\n') + '\n', prelude: null };
 }
 
 const isMain = path.resolve(process.argv[1] ?? '') === new URL(import.meta.url).pathname;
 if (isMain) {
   const args = process.argv.slice(2);
-  const opts = { real: false, requires: [], ensures: [], invariants: [], core: false, suffix: '' };
+  const opts = { real: false, requires: [], ensures: [], invariants: [], core: false, suffix: '', only: null, project: true, preludeOut: null };
   let file = null, fn = null, out = null;
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--fn') fn = args[++i];
     else if (a === '--out') out = args[++i];
+    else if (a === '--prelude') opts.preludeOut = args[++i];
     else if (a === '--real') opts.real = true;
     else if (a === '--core') opts.core = true;
     else if (a === '--suffix') opts.suffix = args[++i] ?? '';
+    else if (a === '--only') opts.only = args[++i].split(',').map((s) => s.trim()).filter(Boolean);
+    else if (a === '--project') opts.project = args[++i];
+    else if (a === '--no-project') opts.project = false;
     else if (a === '--requires') opts.requires.push(args[++i]);
     else if (a === '--ensures') opts.ensures.push(args[++i]);
     else if (a === '--invariant') {
@@ -791,14 +1442,15 @@ if (isMain) {
     else { console.error(`unknown argument ${a}`); process.exit(2); }
   }
   if (!file || !out || (!fn && !opts.core)) {
-    console.error('usage: translate.mjs <file.ts> --fn <name> --out <file.dfy> [--real] [--requires E] [--ensures E] [--invariant [N:]E]\n       translate.mjs <file.ts> --core --out <file.dfy> [--suffix parent|candidate] [--real]');
+    console.error('usage: translate.mjs <file.ts> --core --out <file.dfy> [--prelude <file.dfy>] [--suffix parent|candidate] [--only f,g] [--real] [--project <tsconfig>|--no-project]\n       translate.mjs <file.ts> --fn <name> --out <file.dfy> [--real] [--requires E] [--ensures E] [--invariant [N:]E]');
     process.exit(2);
   }
   try {
-    const dfy = translate(file, fn, opts);
+    const res = translate(file, fn, opts);
     fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
-    fs.writeFileSync(out, dfy);
-    console.log(`wrote ${out}`);
+    fs.writeFileSync(out, res.main);
+    if (opts.preludeOut) { fs.mkdirSync(path.dirname(path.resolve(opts.preludeOut)), { recursive: true }); fs.writeFileSync(opts.preludeOut, res.prelude); }
+    console.log(`wrote ${out}${opts.preludeOut ? ` and ${opts.preludeOut}` : ''}`);
   } catch (e) {
     if (e instanceof Unsupported) { console.error(`translate: ${e.message}`); process.exit(1); }
     throw e;

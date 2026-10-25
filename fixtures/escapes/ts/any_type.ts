@@ -1,4 +1,5 @@
-// expect: any
-export function id(x: any): number {
-  return x;
+// expect: param-mutation
+export function grow(x: any): number {
+  x.push(1);
+  return x.length;
 }
