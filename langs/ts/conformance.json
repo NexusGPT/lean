@@ -1,0 +1,5 @@
+{
+  "ext": "ts",
+  "lint": ["node", "langs/ts/lint/lint.mjs", "{src}"],
+  "translate": ["node", "langs/ts/translate/translate.mjs", "{src}", "--core", "--suffix", "{suffix}", "--out", "{out}"]
+}
