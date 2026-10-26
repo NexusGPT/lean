@@ -594,7 +594,15 @@ export function translate(file, fnName, opts = {}) {
   }
   function awaitExpr(n) {
     let inner = n.expression; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
-    if (!ts.isCallExpression(inner)) return expr(inner);
+    if (!ts.isCallExpression(inner)) {
+      // awaiting a held promise: a transition of the world on that value, returning the awaited type
+      if (!unitEffectful()) fail(n, 'internal: await in a unit not marked effectful');
+      addPrelude('World', 'type World');
+      const pt = typeOf(inner); const aw = checker.getAwaitedType ? checker.getAwaitedType(pt) : null; const rd = aw ? dtype(aw, n) : anyType();
+      const pd = (() => { try { return dtype(pt, n); } catch { return anyType(); } })();
+      const id = external('await_value', ['World', pd], `(World, ${rd})`);
+      return hoist(`${id}(${WORLD}, ${expr(inner)})`, rd);
+    }
     return call(inner, true);
   }
   function binary(n) {
@@ -909,14 +917,14 @@ export function translate(file, fnName, opts = {}) {
     if (isRecordish(base)) {
       // a key from a finite set of literals: a chain of field reads, each lifted to the expression's type
       const keys = (at.flags & TF.Union ? at.types : [at]).filter((x) => x.flags & TF.StringLiteral).map((x) => x.value);
-      if (!keys.length) fail(n, 'record key is not a literal');
+      if (!keys.length) { const rd = dtype(typeOf(n), n), bd = dtype(base, n); return `${external(`index_${mangle(bd)}`, [bd, 'string'], rd)}(${expr(n.expression)}, ${expr(n.argumentExpression)})`; } // a computed key: uninterpreted lookup
       const R = expr(n.expression), Kc = expr(n.argumentExpression);
       const td = dtype(typeOf(n), n);
       const read = (k) => {
         const p = checker.getPropertyOfType(base, k);
         const pt = p ? checker.getTypeOfSymbolAtLocation(p, n) : null;
         let code = fieldOf(R, base, k, n);
-        if (p && pt) { const fd = dtype(pt, n); const opt = !!(p.flags & ts.SymbolFlags.Optional) && !fd.startsWith('Option<'); const fdd = opt ? `Option<${fd}>` : fd; if (opt) usesOption = true; if (fdd !== td) code = td.startsWith('Option<') && !fdd.startsWith('Option<') ? `Some(${code})` : code; }
+        if (p && pt) { const fd = dtype(pt, n); const opt = !!(p.flags & ts.SymbolFlags.Optional) && !fd.startsWith('Option<'); const fdd = opt ? `Option<${fd}>` : fd; if (opt) usesOption = true; if (fdd !== td) code = convertD(code, fdd, td); } // every branch of the key chain is lifted to the expression's type
         return code;
       };
       if (keys.length === 1) return read(keys[0]);

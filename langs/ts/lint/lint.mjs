@@ -28,6 +28,7 @@ const EFFECT_MODULES = /^(node:.*|fs|fs\/promises|path|os|http|https|http2|net|d
 // pure library globals the translator models as externals (uninterpreted functions)
 const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'Set', 'Map', 'BigInt', ...EFFECT_WORLD]);
 const ARRAY_METHODS = new Set(['map', 'filter', 'reduce', 'some', 'every', 'find', 'findIndex', 'includes', 'indexOf', 'slice', 'concat', 'join', 'flatMap', 'flat', 'at', 'push', 'sort', 'reverse', 'entries', 'keys', 'values', 'forEach']);
+const NUMBER_METHODS = new Set(['toFixed', 'toString', 'toPrecision', 'toExponential']);
 const STRING_METHODS = new Set(['includes', 'startsWith', 'endsWith', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase', 'slice', 'substring', 'indexOf', 'lastIndexOf', 'split', 'replace', 'replaceAll', 'padStart', 'padEnd', 'charAt', 'charCodeAt', 'codePointAt', 'at', 'localeCompare', 'normalize', 'repeat', 'match', 'test', 'concat']);
 const SET_METHODS = new Set(['has', 'add', 'delete', 'size', 'values', 'keys', 'entries', 'forEach', 'clear']);
 const MAP_METHODS = new Set(['has', 'get', 'set', 'delete', 'size', 'values', 'keys', 'entries', 'forEach', 'clear']);
@@ -266,7 +267,17 @@ export function lintFile(file, ranges = null, opts = {}) {
       const name = e.expression.name.text, r = e.expression.expression;
       const rt = tOf(r);
       const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && !isParam(declOf(r).decl) && ownedHere(declOf(r).decl);
-      if (nonNull(rt).some(isAny)) return v(e, 'param-mutation', `.${name}() as a statement on an opaque value may mutate it`);
+      if (nonNull(rt).some(isAny)) {
+        // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
+        // plain field read would not (reads are pure), so that is the one shape refused
+        if (ts.isIdentifier(r) && currentFn) {
+          let later = false; const walk = (x) => { if (later) return; if (x.getStart(sf) > e.getEnd() && ts.isPropertyAccessExpression(x) && ts.isIdentifier(x.expression) && x.expression.text === r.text && !(x.parent && ts.isCallExpression(x.parent) && x.parent.expression === x)) later = true; ts.forEachChild(x, walk); };
+          walk(currentFn.body);
+          if (later) return v(e, 'opaque-mutation', `.${name}() on \`${r.text}\` may change it, and \`${r.text}\` is read later; read it before the call or through a method`);
+          return expr(e);
+        }
+        return v(e, 'opaque-mutation', `.${name}() as a statement on an opaque value may mutate it; name the receiver first`);
+      }
       if ((name === 'push' || name === 'unshift') && isArrayExpr(r)) {
         if (!localOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
         if (e.arguments.length !== 1) v(e, 'unsupported-call', `${name} takes exactly one value (or one spread array)`);
@@ -316,7 +327,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const fnHere = callbackStack.length ? callbackStack[callbackStack.length - 1] : currentFn;
     if (!fnHere || !fnHere.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return v(e, 'async', '`await` outside an async function');
     const inner = ts.isParenthesizedExpression(e.expression) ? e.expression.expression : e.expression;
-    if (!ts.isCallExpression(inner)) return v(e, 'async', 'await applies to a call only');
+    if (!ts.isCallExpression(inner)) return expr(inner); // awaiting a held promise: a transition of the world on that value
     // the awaited call is an external (or a local async unit): its arguments are checked, the call itself is uninterpreted
     inner.arguments.forEach((a) => ts.isSpreadElement(a) ? v(a, 'spread', 'spread arguments are outside the subset') : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
     if (ts.isPropertyAccessExpression(inner.expression) && !ts.isIdentifier(inner.expression.expression)) { expr(inner.expression.expression); return; }
@@ -490,6 +501,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         return e.arguments.forEach((a) => ts.isArrowFunction(a) ? v(a, 'function-value', 'unexpected callback') : expr(a));
       }
       if (parts.every(isStr) && STRING_METHODS.has(name)) { expr(recv); return argsOf(e); }
+      if (parts.every((t) => !!(t.flags & TF.NumberLike)) && NUMBER_METHODS.has(name)) { expr(recv); return argsOf(e); } // a formatting of a number: pure
       if (parts.every(isSetT) && SET_METHODS.has(name)) { if (name === 'forEach' || name === 'clear') return v(e, 'unsupported-call', `Set.${name} is outside the subset`); expr(recv); return e.arguments.forEach(expr); }
       if (parts.every(isMapT) && MAP_METHODS.has(name)) { if (name === 'forEach' || name === 'clear') return v(e, 'unsupported-call', `Map.${name} is outside the subset`); expr(recv); return e.arguments.forEach(expr); }
       // a method call on an external value (an imported object or a record with methods): uninterpreted
@@ -559,6 +571,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       return;
     }
     if (parts.every(hasStringIndex) && isStr(at)) return; // a dictionary read
+    if (parts.every(isRecordish) && isStr(at)) return; // a record read by a computed string key: an uninterpreted lookup of (record, key)
     return v(e, 'dynamic-key', 'only arrays indexed by a number and strings indexed by a number are allowed; other keys are dynamic');
   }
 
