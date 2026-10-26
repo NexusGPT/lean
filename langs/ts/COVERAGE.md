@@ -127,8 +127,8 @@ reading no value model can give; the lint says what to write instead).
 | `do..while` | 196 | a first-step flag runs the body before testing the condition; with `// @decreases` proved, else an opaque block | same | done (dev) |
 | `break`, `continue` | 578, 1,837 | exact | same | done |
 | `&&`, `\|\|` as values of one type | 6,855 | exact | same | done |
-| `&&`, `\|\|` as values of mixed types (`a && b.c`, `x \|\| "default"` with `x: number \| undefined`) | | exact: a conditional on truthiness with both sides lifted to the result type (dev); `??` lifted the same way | same | done (dev) |
-| an effect inside a conditional branch (`cond ? await a() : b`, `a && await b()`) | | exact: the branch's transitions happen only when it is taken; the world and the value come out as one pair (dev) | same | done (dev) |
+| `&&`, `\|\|` as values of mixed types (`a && b.c`, `x \|\| "default"` with `x: number \| undefined`) | | exact typed truthiness, one evaluation of the deciding operand, sum/Nullish lifting; unknown truthiness remains source-sensitive | conditional argument mutation remains refused | partial (lane) |
+| an effect inside a conditional branch (`cond ? await a() : b`, `a && await b()`) | | exact conditional world/value pairs, including nested logical conditions; no eager right-side effects | conditional argument mutation remains refused | partial (lane) |
 | `throw` outside a `try` | 5,417 | a concrete fault value in the returned world, with an unused result placeholder; same-file callers test the fault before continuing | same; loops with abrupt completions use a local opaque transition | partial (lane) |
 | `try`/`catch` | 5,378 | exact on straight-line try statements: transition and same-file call checkpoints include conditions and return expressions; loops and callbacks select the local opaque fallback | same; opaque bodies need fuller completion readings | partial (lane) |
 | `try`/`finally` without catch | 332 | exact on straight-line try statements: cleanup runs on normal, return and throw paths; complex statements retain their opaque fallback | same; concrete cleanup alias and shadowing conflicts remain refused | partial (lane) |

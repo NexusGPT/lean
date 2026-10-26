@@ -17,7 +17,7 @@ Two versions are **equal outside the scope S** when, for every input outside S a
 
 An effect is a transition of a world: `effect(w, op, args) = (w', result)`. The same operation on the same arguments in the same world gives the same result; in a different world it may not. Two reads of the clock are two transitions.
 
-In the proof lane every effectful call takes the current world and returns the next one. A function with an effect takes `wld: World` first and returns `(World, R)`. The world is threaded in source order; an effect under a condition that a value decides (`a && f()`, `c ? f() : g()`, a callback) is refused, because its position in the order is not fixed by the translation.
+In the proof lane every effectful call takes the current world and returns the next one. A function with an effect takes `wld: World` first and returns `(World, R)`. The world is threaded in source order; a logical operand or conditional branch returns its world and value only when selected. The deciding operand is evaluated once. Conditional calls that update value-model arguments remain refused as `conditional-effect`; use an explicit `if` branch.
 
 A parent and a candidate are compared under the same initial world. When one side asks the environment something the other never asked, no answer is invented for it: the world token makes the two histories different values, and equality is not provable.
 
