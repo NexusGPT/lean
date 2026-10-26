@@ -10,15 +10,19 @@ const idOf = (x) => { if (x === null || (typeof x !== 'object' && typeof x !== '
 const seen = (x) => x !== null && (typeof x === 'object' || typeof x === 'function') && ids.has(x);
 const isObj = (x) => x !== null && (typeof x === 'object' || typeof x === 'function');
 const snap = (x) => { // the contents of a receiver or argument: primitives by value, objects by id
-  if (Array.isArray(x)) { const out = []; for (let i = 0; i < x.length; i++) out[i] = i in x ? (isObj(x[i]) ? { id: idOf(x[i]) } : x[i]) : { hole: true }; return { kind: 'array', items: out }; }
-  if (x instanceof Map) { const out = []; for (const [k, v] of Map.prototype.entries.call(x)) out[out.length] = [isObj(k) ? { id: idOf(k) } : k, isObj(v) ? { id: idOf(v) } : v]; return { kind: 'map', entries: out }; }
-  if (x instanceof Set) { const out = []; for (const v of Set.prototype.values.call(x)) out[out.length] = isObj(v) ? { id: idOf(v) } : v; return { kind: 'set', items: out }; }
-  if (isObj(x)) { const out = {}; for (const k of Object.keys(x)) out[k] = isObj(x[k]) ? { id: idOf(x[k]) } : x[k]; return { kind: 'record', fields: out }; }
+  if (Array.isArray(x)) { const out = []; let accessor = false; for (let i = 0; i < x.length; i++) { const dsc = Object.getOwnPropertyDescriptor(x, i); if (dsc && (dsc.get || dsc.set)) accessor = true; out[i] = i in x ? (isObj(x[i]) ? { id: idOf(x[i]) } : x[i]) : { hole: true }; } return accessor ? { kind: 'array', items: out, accessor: true } : { kind: 'array', items: out }; }
+  if (isMapLike(x)) { const out = []; for (const [k, v] of Object.getPrototypeOf(x).entries.call(x)) out[out.length] = [isObj(k) ? { id: idOf(k) } : k, isObj(v) ? { id: idOf(v) } : v]; return { kind: 'map', entries: out }; }
+  if (isSetLike(x)) { const out = []; for (const v of Object.getPrototypeOf(x).values.call(x)) out[out.length] = isObj(v) ? { id: idOf(v) } : v; return { kind: 'set', items: out }; }
+  if (isObj(x)) { const out = {}; let accessor = false; for (const k of Object.keys(x)) { const dsc = Object.getOwnPropertyDescriptor(x, k); if (dsc && (dsc.get || dsc.set)) accessor = true; out[k] = isObj(x[k]) ? { id: idOf(x[k]) } : x[k]; } if (Object.getOwnPropertySymbols(x).length) accessor = true; return accessor ? { kind: 'record', fields: out, accessor: true } : { kind: 'record', fields: out }; }
   return { kind: 'primitive', value: x };
 };
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const ser = (v) => JSON.stringify(v, (k, x) => (typeof x === 'bigint' ? `${x}n` : typeof x === 'symbol' ? `Symbol(${x.description ?? ''})` : x === undefined ? '$undefined' : typeof x === 'number' && Object.is(x, -0) ? '-0' : typeof x === 'number' && Number.isNaN(x) ? 'NaN' : x)); // every primitive the engine can hold, written so that two different values never read the same
+const same = (a, b) => ser(a) === ser(b);
+const tag = (x) => Object.prototype.toString.call(x);
+const isMapLike = (x) => tag(x) === '[object Map]';
+const isSetLike = (x) => tag(x) === '[object Set]';
 
-export function startRecording(records) {
+export function startRecording(records, realm = { Array, Map, Set, Object }) { // realm: the constructors whose prototypes carry the calls (the host's for lane B's sandbox, a vm context's own for a foreign corpus)
   const patch = (proto, name, op, { receiverIsFirstArg = false } = {}) => {
     const original = proto[name];
     if (typeof original !== 'function') return;
@@ -40,10 +44,10 @@ export function startRecording(records) {
       return result;
     };
   };
-  for (const name of ['push', 'unshift', 'pop', 'shift', 'splice', 'reverse', 'sort', 'slice', 'concat', 'map', 'filter']) patch(Array.prototype, name, `Array.prototype.${name}`);
-  for (const name of ['set', 'get', 'has', 'delete']) patch(Map.prototype, name, `Map.prototype.${name}`);
-  for (const name of ['add', 'has', 'delete']) patch(Set.prototype, name, `Set.prototype.${name}`);
-  patch(Object, 'assign', 'Object.assign', { receiverIsFirstArg: true });
+  for (const name of ['push', 'unshift', 'pop', 'shift', 'splice', 'reverse', 'sort', 'slice', 'concat', 'map', 'filter']) patch(realm.Array.prototype, name, `Array.prototype.${name}`);
+  for (const name of ['set', 'get', 'has', 'delete']) patch(realm.Map.prototype, name, `Map.prototype.${name}`);
+  for (const name of ['add', 'has', 'delete']) patch(realm.Set.prototype, name, `Set.prototype.${name}`);
+  patch(realm.Object, 'assign', 'Object.assign', { receiverIsFirstArg: true });
 }
 export function stopRecording() { while (ORIGINALS.length) { const [proto, name, original] = ORIGINALS.pop(); proto[name] = original; } }
 export async function withRecording(records, fn) { startRecording(records); try { return await fn(); } finally { stopRecording(); } }
@@ -52,11 +56,16 @@ export async function withRecording(records, fn) { startRecording(records); try 
 const items = (s) => (s.kind === 'array' ? s.items : s.kind === 'set' ? s.items : null);
 export function checkRecords(records, table) {
   const rows = new Map(); for (const o of table.operations) rows.set(o.op, o);
-  const defects = [];
+  const defects = [], outOfModel = [], callbackEffects = [];
   for (const r of records) {
     const row = rows.get(r.op); if (!row || row.status !== 'generated') continue;
     const bad = (why, expected) => defects.push({ op: r.op, why, expected, record: r });
     if (r.threw) continue; // a throw is outside the total model: the lint refuses the shapes that throw
+    const kind = { array: 'array', map: 'map', set: 'set', record: 'record' }[row.receiver];
+    if (kind && r.before.kind !== kind) { outOfModel.push(r); continue; } // an array-like, a subclass or a primitive receiver: the typed subset never passes one
+    if (r.before.accessor || r.beforeArgs.some((a) => a && a.accessor)) { outOfModel.push(r); continue; } // an accessor or a symbol key on the receiver or an argument: refused by the lint
+    if (r.op === 'Object.assign' && r.beforeArgs.some((a) => a && a.kind === 'primitive' && a.value !== null && a.value !== undefined)) { outOfModel.push(r); continue; } // a string source spreads its indices: outside the record model
+    if ((r.op === 'Array.prototype.map' || r.op === 'Array.prototype.filter') && !same(r.before, r.after)) { callbackEffects.push(r); continue; } // the callback wrote into the receiver: the row requires a pure callback, which the lint checks
     const mutated = !same(r.before, r.after);
     if (row.mutatesReceiver !== mutated && !(row.mutatesReceiver && !mutated && noopAllowed(r))) bad(`receiver ${mutated ? 'changed' : 'unchanged'}`, `mutatesReceiver ${row.mutatesReceiver}`);
     if (row.result === 'receiver' && r.resultKind !== 'receiver') bad(`result ${r.resultKind}`, 'result is the receiver');
@@ -65,12 +74,14 @@ export function checkRecords(records, table) {
     if (row.fresh && r.resultKind !== 'fresh' && row.result === 'fresh') bad('no fresh object', 'fresh true');
     const content = contentCheck(r); if (content) bad(content.why, content.expected);
   }
+  defects.outOfModel = outOfModel.length; defects.callbackEffects = callbackEffects.length;
   return defects;
 }
-const noopAllowed = (r) => (r.op === 'Set.prototype.add' || r.op === 'Map.prototype.delete' || r.op === 'Set.prototype.delete' || (r.op === 'Array.prototype.pop' && items(r.before)?.length === 0) || (r.op === 'Array.prototype.shift' && items(r.before)?.length === 0) || (r.op === 'Array.prototype.reverse' && items(r.before)?.length <= 1) || r.op === 'Array.prototype.sort' || r.op === 'Object.assign' || (r.op === 'Array.prototype.splice' && same(r.before, r.after)) || r.op === 'Map.prototype.set');
+const noopAllowed = (r) => (((r.op === 'Array.prototype.push' || r.op === 'Array.prototype.unshift') && r.argIds.length === 0) || r.op === 'Set.prototype.add' || r.op === 'Map.prototype.delete' || r.op === 'Set.prototype.delete' || (r.op === 'Array.prototype.pop' && items(r.before)?.length === 0) || (r.op === 'Array.prototype.shift' && items(r.before)?.length === 0) || (r.op === 'Array.prototype.reverse' && items(r.before)?.length <= 1) || r.op === 'Array.prototype.sort' || r.op === 'Object.assign' || (r.op === 'Array.prototype.splice' && same(r.before, r.after)) || r.op === 'Map.prototype.set');
 function contentCheck(r) {
   const b = r.before, a = r.after; const prim = (s) => (s.kind === 'primitive' ? s.value : { id: null, ref: true, s });
   const argVal = (i) => (r.beforeArgs[i] && r.beforeArgs[i].kind === 'primitive' ? r.beforeArgs[i].value : r.argIds[i] !== null ? { id: r.argIds[i] } : undefined);
+  const keyVal = (i) => { const v = argVal(i); return typeof v === 'number' && Object.is(v, -0) ? 0 : v; }; // CanonicalizeKeyedCollectionKey: -0 is +0
   switch (r.op) {
     case 'Array.prototype.push': { const want = items(b).concat(r.argIds.map((_, i) => argVal(i))); return same(items(a), want) && r.resultValue === want.length ? null : { why: 'push contents or length', expected: JSON.stringify(want) }; }
     case 'Array.prototype.unshift': { const want = r.argIds.map((_, i) => argVal(i)).concat(items(b)); return same(items(a), want) && r.resultValue === want.length ? null : { why: 'unshift contents or length', expected: JSON.stringify(want) }; }
@@ -78,8 +89,8 @@ function contentCheck(r) {
     case 'Array.prototype.shift': { const want = items(b).slice(1); return same(items(a), want) ? null : { why: 'shift contents', expected: JSON.stringify(want) }; }
     case 'Array.prototype.reverse': { const want = items(b).slice().reverse(); return same(items(a), want) ? null : { why: 'reverse contents', expected: JSON.stringify(want) }; }
     case 'Array.prototype.concat': case 'Array.prototype.slice': case 'Array.prototype.map': case 'Array.prototype.filter': return same(b, a) ? null : { why: 'receiver changed', expected: 'unchanged' };
-    case 'Map.prototype.set': { const k = argVal(0), v = argVal(1); const es = b.entries.slice(); let found = false; for (let i = 0; i < es.length; i++) if (same(es[i][0], k)) { es[i] = [k, v]; found = true; } if (!found) es.push([k, v]); return same(a.entries, es) ? null : { why: 'Map.set entries', expected: JSON.stringify(es) }; }
-    case 'Set.prototype.add': { const v = argVal(0); const xs = b.items.slice(); let has = false; for (const x of xs) if (same(x, v)) has = true; if (!has) xs.push(v); return same(a.items, xs) ? null : { why: 'Set.add items', expected: JSON.stringify(xs) }; }
+    case 'Map.prototype.set': { const k = keyVal(0), v = argVal(1); const es = b.entries.slice(); let found = false; for (let i = 0; i < es.length; i++) if (same(es[i][0], k)) { es[i] = [k, v]; found = true; } if (!found) es.push([k, v]); return same(a.entries, es) ? null : { why: 'Map.set entries', expected: JSON.stringify(es) }; }
+    case 'Set.prototype.add': { const v = keyVal(0); const xs = b.items.slice(); let has = false; for (const x of xs) if (same(x, v)) has = true; if (!has) xs.push(v); return same(a.items, xs) ? null : { why: 'Set.add items', expected: JSON.stringify(xs) }; }
     case 'Object.assign': { const want = Object.assign({}, b.fields); for (let i = 0; i < r.beforeArgs.length; i++) if (r.beforeArgs[i].kind === 'record') Object.assign(want, r.beforeArgs[i].fields); return same(a.fields, want) ? null : { why: 'Object.assign fields', expected: JSON.stringify(want) }; }
     default: return null;
   }
