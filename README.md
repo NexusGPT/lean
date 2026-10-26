@@ -14,9 +14,9 @@
 
 ---
 
-Every change to a program is a claim: *I changed this, and nothing else.* Tests sample that claim. Review guesses at it. **lean checks it.**
+**lean is a differential equivalence checker for TypeScript.** Give it the old version and the new version of a function, and a declared scope of what was meant to change, and it decides whether the two behave the same everywhere else: by proof when it can, by execution when it cannot, and it says which.
 
-Give lean the old version and the new version of a function and it answers with one of four words, each backed by something you can re-run:
+Every change to a program is a claim: *I changed this, and nothing else.* Tests sample that claim. Review guesses at it. lean checks it, and answers with one of four words, each backed by something you can re-run:
 
 | verdict | what it means | what backs it |
 |---|---|---|
@@ -27,7 +27,7 @@ Give lean the old version and the new version of a function and it answers with 
 
 A bounded pass never becomes a proof. A proof never comes from a model's opinion. The producer of the change is never consulted.
 
-This is a **regression verifier** for TypeScript: an equivalence checker between the parent and the candidate of a change. The ideas come from compiler translation validation, regression verification and differential testing; the engineering is ours.
+In the literature this is a **regression verifier**: the parent and the candidate of a change are the two programs, and the theorem is that they agree outside the scope. The ideas come from compiler translation validation, regression verification and differential testing; the engineering is ours.
 
 ## Quick start
 
