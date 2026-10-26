@@ -63,7 +63,7 @@ transition the parent did not make, or makes it with another argument or in anot
 | A method of a record, a class instance, an `any` | `date.getTime()` | `ext_Ext_Date_getTime(wld, date)` |
 | A method of a field of `this`, a method-call statement on any receiver | `this.items.push(x)` | a transition on the field's value |
 | A clock, randomness, the environment, a console, a fetch | `Date.now()`, `new Date()`, `Math.random()`, `console.log(x)` | `ext_Date_now(wld)`, `ext_new_Date(wld)`, `ext_Math_random(wld)`, a transition of the console |
-| `new X(...)` for any `X` but `Set`, `Map`, `RegExp`, `Error`, `Date`, `URL`, `Array`, typed arrays | `new Client(cfg)` | `ext_new_Client(wld, cfg)` |
+| `new X(...)` for any `X` but `Set`, `Map`, `Error`, `Date`, `Array`, typed arrays | `new Client(cfg)` | `ext_new_Client(wld, cfg)` |
 | `.then`, `.catch`, `.finally` on a promise | `p.catch(() => null)` | a transition with the handler as an opaque function value |
 | Unknown record enumeration | `Object.keys/values/entries(r)` for a parameter, escaped or mutated record | source-sensitive transition; own keys/order cannot be recovered from the structural datatype |
 
@@ -83,26 +83,31 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Effectful callbacks handed to an outside library | `register(x => svc.log(x))` | an opaque function value by its text |
 | `as T`, `<T>x` | a compatible assertion or opaque conversion | identity when Dafny types agree, else `ext_cast_A_B(x)`; tests of assertion-derived values remain uninterpreted |
 | Undecided type tests | assertion-derived values, unknown catch values, public structural class instances, optional or undeclared record keys | uninterpreted membership/tag functions of their values; an undeclared key is not known absent |
-| `throw e` | `throw new Error("bad")` | the function's result is `ext_throw_R(e)` |
 | Tagged templates | ``sql`select ${id}` `` | `ext_tag_sql_1(["select ", ""], id)` |
 | `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first); an untyped `let x;` is `None` of the Option of its first assigned type, every narrowed read takes `.value` |
 
 ## What is a fault
 
-A `try`/`catch` is exact. Every transition of the world inside the body may fault: after each statement of the body
-that makes a transition, or throws, the translation tests `ext_faulted(world)`; on a fault the catch path binds
-`ext_fault_value(world)` to the catch variable, clears the flag, and runs the handler, the `finally` block and what
-follows the try. A `throw` inside the body raises the fault with the thrown value. A pure computation never faults
-in the model (`JSON.parse`, `Number` and array indexing are pure functions of their arguments), so a catch that only
-guards a pure call is a branch never taken. The execution lane lets a typed answer fault on a seeded draw, so catch
-paths run there too.
+An uncaught `throw e` raises a concrete optional fault in the returned world and ends the unit;
+the ordinary result slot is unused. A same-file exception call propagates that outcome before using
+its result. Throwing functions and their callers need the world; ordinary callees keep their reading.
+
+Inside an exact try, transition checkpoints abort evaluation before the next expression and catch
+binds and clears the fault. Outside method lookup precedes arguments. Finally runs on normal,
+return and throw paths, preserving the saved completion unless cleanup returns or throws.
+General transition checkpoints do not spread through the whole unit or its callees.
+`JSON.parse/stringify`, `new URL/RegExp`, `BigInt` and URI codecs are may-fault transitions;
+other implicit library exceptions remain a gap. Lane B executes the actual JavaScript.
 
 ## What is an opaque block
 
-A `try` without a catch, a `try` whose body loops over a transition, and a `while` loop without `// @decreases`
-become one uninterpreted transition named by the block's own text, taking the variables the block reads and
-returning the ones it assigns. The same block on both sides is the same transition; a changed block is a different
-one, never proved equal and never proved different (the execution lane decides it).
+A try containing loops, callbacks, unsafe expression sequencing or duplicate bindings retains a
+text-keyed opaque transition, including complex finally statements and object-valued completions.
+A loop containing an explicit throw or exception call uses an opaque completion too. Ordinary loops
+and callbacks keep their existing reading. A `while` without `// @decreases` remains opaque.
+The transition takes the locals read and returns the locals assigned, the world and any result.
+A statement that cannot fall through has a terminal result. Changed block text cannot silently
+prove equal, and same-file callee dependency guards catch changes hidden behind the block.
 
 ## What is refused
 
@@ -111,6 +116,9 @@ one, never proved equal and never proved different (the execution lane decides i
 | `dynamic-key` | record keys that are unrestricted strings, numbers, missing fields, method values or calls inside the key; optional/union receivers must first be narrowed | `r[k]` with `k: string` and `r: { a: number }` |
 | `index-assign` | dynamic writes to records | `r[k] = v` with `k: "a" \| "b"` |
 | `instanceof-constructor` | dynamic constructor expressions, constructor values and custom `Symbol.hasInstance` hooks | `x instanceof chooseConstructor()` |
+| `exception-callback` | throwing callbacks or throwing units passed as values outside an opaque try | `xs.map(throwingUnit)` |
+| `exception-binding` | a try local shadows a binding read by its finally | `try { const x = 1; return x; } finally { x += 1; }` |
+| `exception-return` | a returned object alias directly referenced by its finally | `try { return xs; } finally { xs.push(1); }` |
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
 | `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |
 | `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |

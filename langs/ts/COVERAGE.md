@@ -42,7 +42,7 @@ reading no value model can give; the lint says what to write instead).
 | regular expressions | 1,950 | an opaque constant per literal, externals for `test`, `match`, `replace` | the same; an exact reading of regular expressions is a project of its own | by design |
 | `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` and `new Date()` with no argument are transitions (dev 364eb1e); `new Date(x)` a pure value; methods uninterpreted | same | done (dev) |
 | `Math.*` | | `min`/`max` exact on nonempty argument sequences (lane); possibly empty spreads refused (`math-empty`); `abs`, `floor`, `trunc` exact; the rest uninterpreted; `Math.random` a transition | `ceil`, `round`, `sign`, `pow` on integers exact | gap (small) |
-| `JSON.stringify`, `JSON.parse` | 1,714, 699 | uninterpreted functions of their argument | same (a serialisation is a function of its value) | done |
+| `JSON.stringify`, `JSON.parse` | 1,714, 699 | may-fault transitions; checkpoints inside exact try regions | an argument-only Result reading | partial (lane) |
 | `Symbol`, `Symbol.iterator` | 37 | refused (`unsupported-syntax` on use) | a symbol is an opaque constant per declaration; iterator protocol is section 6 | gap (small) |
 | `null` and `undefined` as one value | | `None` | JavaScript distinguishes them (`== null` conflates); a two-constructor `Absent` datatype would keep the distinction | partial |
 
@@ -129,11 +129,11 @@ reading no value model can give; the lint says what to write instead).
 | `&&`, `\|\|` as values of one type | 6,855 | exact | same | done |
 | `&&`, `\|\|` as values of mixed types (`a && b.c`, `x \|\| "default"` with `x: number \| undefined`) | | exact: a conditional on truthiness with both sides lifted to the result type (dev); `??` lifted the same way | same | done (dev) |
 | an effect inside a conditional branch (`cond ? await a() : b`, `a && await b()`) | | exact: the branch's transitions happen only when it is taken; the world and the value come out as one pair (dev) | same | done (dev) |
-| `throw` outside a `try` | 5,417 | the function's result is `ext_throw_R(e)` | a thrown value is a second result channel: `Result<R, Any>`; the caller's `try` would then read it | partial (section 5, exceptions across calls) |
-| `try`/`catch` | 5,378 | exact: a fault flag on the world after each transition of the body; the catch path binds the fault value | same; plus: a same-file callee's `throw` should raise the caller's fault (today it is the callee's result) | partial |
-| `try`/`finally` without catch | 332 | opaque block | the `finally` statements run on both paths | gap (small) |
-| a pure call that throws in JavaScript (`JSON.parse`, `new URL`, array holes) | | never faults in the model | a `may fault` set of pure library functions whose fault is a predicate of the argument | gap (small) |
-| exceptions across same-file calls | | the callee's throw is its result; the caller sees a value | the callee's fault raises in the caller: a callee with a `throw` returns `Result`, and the call site tests it | gap |
+| `throw` outside a `try` | 5,417 | a concrete fault value in the returned world, with an unused result placeholder; same-file callers test the fault before continuing | same; loops with abrupt completions use a local opaque transition | partial (lane) |
+| `try`/`catch` | 5,378 | exact on straight-line try statements: transition and same-file call checkpoints include conditions and return expressions; loops and callbacks select the local opaque fallback | same; opaque bodies need fuller completion readings | partial (lane) |
+| `try`/`finally` without catch | 332 | exact on straight-line try statements: cleanup runs on normal, return and throw paths; complex statements retain their opaque fallback | same; concrete cleanup alias and shadowing conflicts remain refused | partial (lane) |
+| a pure call that throws in JavaScript (`JSON.parse`, `new URL`, array holes) | | JSON parse/stringify, URL/RegExp construction, BigInt and URI codecs are may-fault transitions | an argument-only Result reading; other implicit faults still need readings | partial (lane) |
+| exceptions across same-file calls | | throwing units and their callers thread the world fault channel; ordinary callees keep their reading | same; higher-order calls need a completion channel | partial (lane) |
 
 ## 6. Async, scheduling and iteration
 

@@ -28,18 +28,94 @@ const EFFECT_WORLD = new Set(['Date', 'console', 'process', 'window', 'document'
 // modules whose exports are effects by nature; everything else imported is an uninterpreted external
 const EFFECT_MODULES = /^(node:.*|fs|fs\/promises|path|os|http|https|http2|net|dns|tls|child_process|cluster|worker_threads|process|stream|crypto|readline|zlib|util|events|timers|timers\/promises|axios|node-fetch|undici|got|ioredis|redis|pg|mysql2?|mongodb|mongoose|@prisma\/client|knex|typeorm|sequelize|nodemailer|ws|socket\.io|express|fastify|@nestjs\/.*|@aws-sdk\/.*|aws-sdk|@google-cloud\/.*|openai|@anthropic-ai\/.*|stripe|twilio)$/;
 // pure library globals the translator models as externals (uninterpreted functions)
-const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'Set', 'Map', 'BigInt', ...EFFECT_WORLD]);
+const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI', 'encodeURIComponent', 'decodeURIComponent', 'Set', 'Map', 'BigInt', ...EFFECT_WORLD]);
 const ARRAY_METHODS = new Set(['map', 'filter', 'reduce', 'some', 'every', 'find', 'findIndex', 'includes', 'indexOf', 'slice', 'concat', 'join', 'flatMap', 'flat', 'at', 'push', 'sort', 'reverse', 'entries', 'keys', 'values', 'forEach']);
 const NUMBER_METHODS = new Set(['toFixed', 'toString', 'toPrecision', 'toExponential']);
 const STRING_METHODS = new Set(['includes', 'startsWith', 'endsWith', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase', 'slice', 'substring', 'indexOf', 'lastIndexOf', 'split', 'replace', 'replaceAll', 'padStart', 'padEnd', 'charAt', 'charCodeAt', 'codePointAt', 'at', 'localeCompare', 'normalize', 'repeat', 'match', 'test', 'concat']);
 const SET_METHODS = new Set(['has', 'add', 'delete', 'size', 'values', 'keys', 'entries', 'forEach', 'clear']);
 const MAP_METHODS = new Set(['has', 'get', 'set', 'delete', 'size', 'values', 'keys', 'entries', 'forEach', 'clear']);
 
+// these argument-only library operations can fail even on correctly typed inputs
+export function mayFaultPure(n, checker, sf) {
+  const f = (ts.isCallExpression(n) || ts.isNewExpression(n)) ? n.expression : null;
+  if (!f) return false;
+  if (ts.isNewExpression(n)) return ts.isIdentifier(f) && ['URL', 'RegExp'].includes(f.text) && originOf(checker, f, sf, null).kind === 'global';
+  if (ts.isIdentifier(f)) return ['BigInt', 'encodeURI', 'encodeURIComponent', 'decodeURI', 'decodeURIComponent'].includes(f.text) && originOf(checker, f, sf, null).kind === 'global';
+  return ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && f.expression.text === 'JSON' && ['parse', 'stringify'].includes(f.name.text) && originOf(checker, f.expression, sf, null).kind === 'global';
+}
+
+// throwing units and their callers share the outcome channel; ordinary callees keep their reading
+export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
+  const out = new Set();
+  const byDecl = new Map([...units.values()].map((u) => [u.fn, u.name]));
+  const edges = new Map([...units.keys()].map((name) => [name, new Set()]));
+  for (const u of units.values()) {
+    if (!u.body) continue;
+    const walk = (n) => {
+      if (ts.isFunctionLike(n)) return;
+      if (ts.isThrowStatement(n) || ts.isTryStatement(n) || mayFaultPure(n, checker, sf)) out.add(u.name);
+      if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
+        const callee = byDecl.get(checker.getResolvedSignature(n)?.declaration);
+        if (callee) edges.get(callee).add(u.name);
+      }
+      ts.forEachChild(n, walk);
+    };
+    walk(u.body);
+  }
+  for (const name of out) for (const adjacent of edges.get(name)) out.add(adjacent);
+  return out;
+}
+
+// a complex try retains its text-keyed transition; its callers are still admitted
+export function opaqueExceptionTry(n, checker) {
+  let opaque = false;
+  const names = new Set();
+  if (ts.isTryStatement(n)) {
+    let fn = n.parent;
+    while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
+    const outside = (x) => {
+      if (x === n || (ts.isFunctionLike(x) && x !== fn)) return;
+      if ((ts.isParameter(x) || ts.isVariableDeclaration(x) || ts.isBindingElement(x)) && ts.isIdentifier(x.name)) names.add(x.name.text);
+      ts.forEachChild(x, outside);
+    };
+    if (fn) outside(fn);
+  }
+  const hasCall = (x) => { let found = false; const w = (a) => { if (ts.isCallExpression(a) || ts.isNewExpression(a) || ts.isAwaitExpression(a) || (ts.isPropertyAccessExpression(a) && a.expression.kind === K.ThisKeyword)) found = true; ts.forEachChild(a, w); }; w(x); return found; };
+  const walk = (x) => {
+    if (opaque) return;
+    if (ts.isIterationStatement(x, false) || ts.isFunctionLike(x)) { opaque = true; return; }
+    if (ts.isCallExpression(x)) {
+      const f = x.expression;
+      if (ts.isPropertyAccessExpression(f) && ['map', 'flatMap', 'filter', 'reduce', 'forEach', 'some', 'every', 'find', 'findIndex', 'sort'].includes(f.name.text) && x.arguments.length) opaque = true;
+      const d = checker.getResolvedSignature(x)?.declaration;
+      if (d && (ts.isFunctionTypeNode(d) || ts.isCallSignatureDeclaration(d))) opaque = true;
+    }
+    if ((ts.isVariableDeclaration(x) || ts.isBindingElement(x)) && ts.isIdentifier(x.name)) {
+      if (names.has(x.name.text)) opaque = true;
+      names.add(x.name.text);
+    }
+    if ((ts.isConditionalExpression(x) && hasCall(x)) ||
+        (ts.isBinaryExpression(x) && [K.AmpersandAmpersandToken, K.BarBarToken, K.QuestionQuestionToken, K.QuestionQuestionEqualsToken, K.BarBarEqualsToken, K.AmpersandAmpersandEqualsToken].includes(x.operatorToken.kind) && hasCall(x)) ||
+        (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.questionDotToken && x.arguments.some(hasCall)) ||
+        ((ts.isSwitchStatement(x) || ts.isCaseClause(x)) && hasCall(x.expression)) ||
+        (ts.isBindingElement(x) && x.initializer && hasCall(x.initializer))) opaque = true;
+    if (n.finallyBlock && ts.isReturnStatement(x) && x.expression) {
+      const t = checker.getTypeAtLocation(x.expression);
+      const parts = t.isUnion() ? t.types : [t];
+      if (!parts.every((p) => p.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.Null | TF.Undefined | TF.Void | TF.Never))) opaque = true;
+    }
+    ts.forEachChild(x, walk);
+  };
+  walk(n);
+  return opaque;
+}
+
 export function lintFile(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
   const { sf, checker, diagnostics } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
   const out = [];
   const units = topLevelFunctions(sf);
+  const exceptionUnits = exceptionUnitsOf(sf, checker, units);
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
@@ -50,6 +126,11 @@ export function lintFile(file, ranges = null, opts = {}) {
   const aliasLocals = new Set(); // declarations of locals bound to another name's object (an alias): never mutated here
   const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   const ownedHere = (decl) => { const cb = callbackStack[callbackStack.length - 1]; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
+
+  const enclosingOpaqueTry = (n) => {
+    for (let p = n.parent; p; p = p.parent) if (ts.isTryStatement(p) && opaqueExceptionTry(p, checker)) return true;
+    return false;
+  };
 
   const v = (node, rule, msg) => {
     const pos = node.getStart(sf), end = node.getEnd();
@@ -119,6 +200,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const name = id.text;
     if (name === 'undefined') return;
     const o = originOf(checker, id, sf, current);
+    if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id)) return v(id, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
     if (o.kind === 'local' || o.kind === 'unit') return;
     if (o.kind === 'module' || o.kind === 'import' || o.kind === 'other' || o.kind === 'type') return; // externals
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
@@ -171,7 +253,9 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
       case K.ContinueStatement: if (loopDepth > 0) return; return v(s, 'break-continue', 'continue outside a loop');
-      case K.ThrowStatement: return expr(s.expression); // modelled as an uninterpreted result of the function
+      case K.ThrowStatement:
+        if (callbackStack.length && !enclosingOpaqueTry(s)) return v(s, 'exception-callback', 'move the throw to a same-file unit and call it directly');
+        return expr(s.expression);
       case K.TryStatement: {
         // an opaque block (version 3): its text names it; what it reads and writes are its inputs and outputs
         stmt(s.tryBlock);
@@ -540,7 +624,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
       const o = declOf(f);
-      if (o.kind === 'local') return argsOf(e); // a function-typed parameter or local
+      if (o.kind === 'local') return argsOf(e);
       if (o.kind === 'unit') {
         const u = units.get(f.text);
         if (u && !e.arguments.some(ts.isSpreadElement) && !u.params.some((p) => p.dotDotDotToken)) { const req = u.params.filter((p) => !p.initializer && !p.questionToken && !p.dotDotDotToken).length; if (e.arguments.length < req || e.arguments.length > u.params.length) v(e, 'unsupported-call', `${f.text} takes ${req === u.params.length ? req : `${req} to ${u.params.length}`} arguments`); }
@@ -721,6 +805,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     w(cb.body); return !bad;
   }
   function checkCallbackControl(cb) {
+    if (enclosingOpaqueTry(cb)) return; // the enclosing try owns this completion as one opaque transition
     const w = (n, depth = 0) => {
       if (ts.isFunctionLike(n)) return;
       if (ts.isTryStatement(n) || ts.isThrowStatement(n) || (ts.isReturnStatement(n) && depth > 0)) v(n, 'callback-control', 'try, throw or a return from an inner loop in a callback needs an explicit for-of loop');
@@ -730,6 +815,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     w(cb.body);
   }
   function callback(a, arity) {
+    if (ts.isIdentifier(a) && exceptionUnits.has(a.text) && !enclosingOpaqueTry(a)) return v(a, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
     if (ts.isIdentifier(a)) {
       // a named callback: a same-file function (not async, not a method) or a local function value
       const o = declOf(a); checkIdent(a, true);
@@ -952,6 +1038,30 @@ export function lintFile(file, ranges = null, opts = {}) {
     else if (ts.isExpressionStatement(st) && (ts.isStringLiteral(st.expression) || ts.isNoSubstitutionTemplateLiteral(st.expression))) continue; // a directive ("use client", "use strict") is not code
     else v(st, 'toplevel-effect', 'code at module level runs on import; it is outside the subset');
   }
+  // only a finally that reads an alias or a shadowed binding needs these refusals
+  const finallyGate = (n) => {
+    if (ts.isTryStatement(n) && n.finallyBlock && overlaps(sf, n, ranges)) {
+      const reads = new Map();
+      const cleanup = (x) => { if (ts.isIdentifier(x)) reads.set(checker.getSymbolAtLocation(x), x.text); ts.forEachChild(x, cleanup); };
+      cleanup(n.finallyBlock);
+      const body = (x) => {
+        if (ts.isFunctionLike(x)) return;
+        if ((ts.isVariableDeclaration(x) || ts.isBindingElement(x)) && ts.isIdentifier(x.name)) {
+          const sym = checker.getSymbolAtLocation(x.name);
+          if ([...reads].some(([other, name]) => name === x.name.text && other !== sym)) v(x.name, 'exception-binding', 'use a distinct name for a local that shadows a value read by finally');
+        }
+        if (ts.isReturnStatement(x) && x.expression) {
+          let value = x.expression;
+          while (ts.isParenthesizedExpression(value) || ts.isAsExpression(value) || ts.isNonNullExpression(value)) value = value.expression;
+          if (ts.isIdentifier(value) && !nonNull(tOf(value)).every((t) => isPrim(t)) && reads.has(checker.getSymbolAtLocation(value))) v(value, 'exception-return', 'return a primitive or copy the value; finally can change the returned alias');
+        }
+        ts.forEachChild(x, body);
+      };
+      body(n.tryBlock); if (n.catchClause) body(n.catchClause);
+    }
+    ts.forEachChild(n, finallyGate);
+  };
+  finallyGate(sf);
   // compiler diagnostics (strict mode) that fall inside a checked region; unresolved-module codes get their own rule
   for (const d of diagnostics) {
     if (d.file !== sf || d.start === undefined) continue;
