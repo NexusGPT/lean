@@ -167,6 +167,36 @@ for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(c
   add('changed', 'mixed.ts', 'no ranges: refused', all.status === 1, all.status === 1 ? 'exit 1' : 'ACCEPTED');
 }
 
+// ----- pairs: parent against candidate through the theorem and Dafny -----
+const pairsDir = path.join(here, 'pairs');
+for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : []) {
+  const d = path.join(pairsDir, name);
+  const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
+  const tmpd = path.join(tmp, `pair_${name}`); fs.mkdirSync(tmpd, { recursive: true });
+  const tr = (which, extra) => run('node', [translate, path.join(d, `${which}.ts`), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...extra]);
+  const p1 = tr('parent', []);
+  const eff = p1.status === 0 ? (fs.readFileSync(path.join(tmpd, 'parent.dfy'), 'utf8').match(/^\/\/ EFFECTFUL: (.*)$/m)?.[1] ?? '') : '';
+  const c1 = tr('candidate', eff ? ['--effectful', eff] : []);
+  const eff2 = c1.status === 0 ? (fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8').match(/^\/\/ EFFECTFUL: (.*)$/m)?.[1] ?? '') : '';
+  if (eff2 !== eff) tr('parent', eff2 ? ['--effectful', eff2] : []);
+  fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])) }));
+  fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
+  const th = run('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')]);
+  add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
+  if (th.status !== 0) continue;
+  const v = run('dafny', ['verify', '--verification-time-limit', '30', path.join(tmpd, 'theorem.dfy')]);
+  const text = v.stdout + v.stderr;
+  const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
+  const spans = {}; let cur = null;
+  lines.forEach((ln, i) => { const m = ln.match(/^lemma (Equal_\w+)\(/); if (m) { cur = m[1]; spans[cur] = [i + 1, null]; } if (ln.startsWith('} // END Equal_') && cur) spans[cur][1] = i + 1; });
+  const errs = [...text.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1]));
+  for (const [f, want] of Object.entries(exp.equal)) {
+    const sp = spans[`Equal_${f}`];
+    const proved = !!sp && !errs.some((L) => sp[0] <= L && L <= sp[1]);
+    add('pair', name, `Equal_${f} ${want ? 'proved' : 'not proved'}`, proved === want, sp ? (proved ? 'proved' : 'not proved') : 'lemma missing');
+  }
+}
+
 // ----- escapes -----
 const escDir = path.join(root, 'fixtures/escapes/ts');
 for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) {

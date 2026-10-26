@@ -1,0 +1,2 @@
+{"scope": ["same", "always", "store", "pure_only"], "equal": {"same": false, "always": true, "store": true, "pure_only": true},
+ "why": "the parent reads the clock twice and compares; the candidate returns true. Under the world axiom two reads are two transitions, so they are not provably equal. The three untouched functions prove equal."}
