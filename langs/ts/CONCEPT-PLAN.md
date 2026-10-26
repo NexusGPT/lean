@@ -43,7 +43,7 @@ One row per reading group. A group is DONE when its reading is in the translator
 | 16 | Module forms | dynamic `import()`, `require()`, `globalThis` | transitions whose result is a module handle; the world | `module_forms` | next |
 | 17 | Null versus undefined | `=== null` against `=== undefined` on one value | a two-constructor `Absent` where a unit distinguishes them | `null_undefined` | next |
 | 18 | Clock read | `new Date()` without arguments | a transition of the world | `clock` (escape) | done (dev) |
-| 19 | Heap layer | aliases, objects from the world, `===` on objects | references into a heap carried by the world; results and final heaps compared up to a renaming of fresh allocations | `heap` | after the rows above |
+| 19 | Heap layer | aliases, objects from the world, `===` on objects | world heap refs; anchored observations up to fresh-ref bijection; canonical allocation order supplies an identity certificate; safe value specialisation ([design](design/heap-layer.md)) | [standalone toy](design/heap-layer-toy.dfy), execution/graph probes | design + verified toy (lane/heap-layer); translator and lane B migration pending; screened core: 4 alias units, 0 closure units |
 
 ## Order and gates
 

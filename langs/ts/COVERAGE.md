@@ -37,7 +37,7 @@ reading no value model can give; the lint says what to write instead).
 | string ordering `<` | | refused (`string-order`) | lexicographic by code unit, exact | gap (small) |
 | `==` loose equality | 398 | refused except against `null`/`undefined` | by design: the lint says `===` | by design |
 | `===` on primitives | 19,845 | exact | same | done |
-| `===` on objects and arrays | | refused (`reference-equality`) | by design in a value model; the heap layer (section 4) would give it an address reading | by design until the heap layer |
+| `===` on objects and arrays | | refused (`reference-equality`) | exact Ref identity for represented objects; fresh refs compared under one observation-wide correspondence ([design](design/heap-layer.md)) | gap (layer 2; design and toy only) |
 | `typeof` | 3,351 | exact by the static type when it decides the tag, an Option deciding between its tag and `"undefined"` (dev); uninterpreted on `any` and on unions | same | done (dev) |
 | regular expressions | 1,950 | an opaque constant per literal, externals for `test`, `match`, `replace` | the same; an exact reading of regular expressions is a project of its own | by design |
 | `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` and `new Date()` with no argument are transitions (dev 364eb1e); `new Date(x)` a pure value; methods uninterpreted | same | done (dev) |
@@ -53,10 +53,10 @@ reading no value model can give; the lint says what to write instead).
 | object literal, field read, spread `{...a, f: v}` | 23,412 literals, 4,151 spreads | exact (a datatype per shape) | same | done |
 | field assignment on a local the function built | 3,914 | exact (a datatype update) | same | done |
 | field, slot or contents assignment on a parameter | 815 + 523 | exact: the parameter is an output of the function (references layer 1) | same, plus the heap layer for objects shared between parameters | done (layer 1) |
-| mutation through a local alias of a parameter | 4,620 locals bound to another name | refused (`alias-mutation`) | the heap layer: one object, two names | gap (layer 2) |
+| mutation through a local alias of a parameter | 4,620 locals bound to another name | refused (`alias-mutation`) | one Ref shared by both names; reads project from the world heap, writes update its single cell; initial objects remain observation anchors ([design](design/heap-layer.md)) | gap (layer 2; design and toy only) |
 | mutation of a field of `this` | 739 assign, 779 mutating method | exact: a field any method assigns lives in the world | same | done |
 | mutation of a field of a field of `this` | | refused (`receiver-mutation`) | a path update like a parameter path | gap (small) |
-| mutation of an object reached from the world (a query result, a module object) | 80 computed targets | refused (`property-assign`) | the heap layer | gap (layer 2) |
+| mutation of an object reached from the world (a query result, a module object) | 80 computed targets | refused (`property-assign`) | world transitions return existing or fresh refs into the same heap; subsequent reads/writes use that heap ([design](design/heap-layer.md)) | gap (layer 2; design and toy only) |
 | `delete obj.f` | 498 | exact on dev: an optional field of a local or parameter record becomes `None`; a dictionary key leaves the map; `delete this.m[k]` is a world-field write; a field of `this` itself stays refused | same | done (dev) |
 | dictionary `Record<string, V>`: read, write by key, `in`, `Object.keys/entries/values` | 1,105 keys, 740 entries | exact map; `in` uninterpreted; `Object.keys/values/entries/assign/fromEntries` pure uninterpreted functions of their argument (dev) | `in` exact on a dictionary; `Object.keys` as a sequence whose order is a fact of the value (uninterpreted, stated) | partial (dev) |
 | computed member access `obj[k]` on a record | 5,278 | exact on arrays and dictionaries; refused on a record with a non-literal key (`dynamic-key`) | a record read by a dynamic key is a dictionary read: translate the record as a map when it is read dynamically | gap |
@@ -87,7 +87,7 @@ reading no value model can give; the lint says what to write instead).
 | nested function value (arrow) as a callback to an array method | 14,867 nested values | exact lambda when pure | same | done |
 | callback with an effect inside (`xs.map(async (x) => await f(x))`, `forEach` with a call) | 2,209 async callbacks | `forEach` with a sync arrow is a loop over the sequence (dev 364eb1e; a `return` ends one step); an async `forEach` callback is refused with the bug named (`forEach` does not wait); other callbacks with effects stay opaque values by text | `map`/`filter` with effects under `Promise.all` as a loop producing a sequence | partial |
 | closure that assigns an outer variable | 65 | refused (`closure-mutation`) | the loop reading above when the callback is a loop body; by design otherwise | partial |
-| closure that mutates an outer object | 1,831 | refused | the loop reading; the heap layer for the rest | gap |
+| closure that mutates an outer object | 1,831 | refused | synchronous callback takes current heap and captures refs; scalar bindings need loop state/cells; escaping invocation remains outside the first heap core ([design](design/heap-layer.md)) | gap (design and toy only) |
 | nested function declaration | 215 | a local function value, checked and translated like `const f = (...) => ...` (dev) | same | done (dev) |
 | recursion, mutual recursion | | exact with a fuel | same | done |
 | generics on the unit | 902 | exact (type parameters with equality) | same | done |
