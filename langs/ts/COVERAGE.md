@@ -155,13 +155,13 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | imported function, imported value, module constant | | transition / uninterpreted | same | done |
-| module-level `let` state | | refused (`toplevel-state`) | a world field, like a field of `this` | gap (small) |
+| module-level `let` state | | module-keyed get/set world transitions; const collections too; literal primitive consts stay values; aliases crossing effects use an opaque unit | a world field, like a field of `this` | partial (lane) |
 | code at module level that runs on import | | refused (`toplevel-effect`) | by design for a unit; lane B runs it | by design |
-| `process.env`, `window`, `document`, `localStorage`, `navigator` | 1,245, 500, 535, 63, 81 | transitions of the world | same | done |
+| `process.env`, `window`, `document`, `localStorage`, `navigator` | 1,245, 500, 535, 63, 81 | process/window property and element reads are world transitions; existing outside calls retained | same | partial (lane) |
 | `console` | 992 | a transition | same | done |
 | `fetch`, `WebSocket`, `AbortController`, `Response`, `Request`, `Headers`, `FormData` | 298, 17, 127, 110, 33, 19, 71 | transitions / uninterpreted constructors | same | done |
-| `require()`, dynamic `import()` | 10, 164 | refused / transition | a dynamic import is a transition whose result is a module handle | gap (small) |
-| `globalThis`, `global` | 86, 15 | refused (`global-read`) | the world | gap (small) |
+| `require()`, dynamic `import()` | 10, 164 | loader transitions return an opaque Ext_Module handle, boxed to the resolved type; specifiers are arguments, including nonliterals | a dynamic import is a transition whose result is a module handle | done (lane) |
+| `globalThis`, `global` | 86, 15 | property/element reads are world transitions; assignments stay refused; unsupported combinations retain an opaque unit | the world | partial (lane) |
 | `crypto`, `Buffer`, `TextEncoder`, `URL`, `Intl` | 144, 457, 16, 260, 68 | transitions / uninterpreted | `Buffer` and `TextEncoder` are pure functions of their input (uninterpreted is right); `crypto.randomUUID` is a transition | done |
 | `eval`, `new Function` | 2 | refused | by design | by design |
 

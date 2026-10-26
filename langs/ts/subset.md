@@ -109,6 +109,20 @@ The transition takes the locals read and returns the locals assigned, the world 
 A statement that cannot fall through has a terminal result. Changed block text cannot silently
 prove equal, and same-file callee dependency guards catch changes hidden behind the block.
 
+## Module state and loaders
+
+| Construct | Reading |
+|---|---|
+| Module `let`/`var`, const Map/Set/array/object | World fields of the paired logical file, keyed by binding and declaration text; unknown initial value even for mutable literals. Reads and scalar writes are transitions; Map/Set/array statement mutations write the field. |
+| Primitive module const | A literal value when written literally; otherwise the existing outside constant. |
+| `await import(spec)`, `require(spec)` | A loader transition returns `Ext_Module`, boxed to the resolved TypeScript-facing type. Member reads are accessors; calls are transitions. Nonliteral specifiers remain explicit arguments. |
+| `globalThis`, `global`, `window`, `process.env` reads | Ordered world transitions; property names and computed keys are explicit arguments. |
+| Module object alias across an effect, or a combination without a direct reading | One opaque unit transition keyed by the complete source, with world, receiver and parameters. |
+
+See [module forms](design/module-forms.md). Effectful initializers on newly admitted
+module let/var remain `toplevel-effect`; existing const initializers retain their outside
+fallback. No initializer is executed or assumed by the proof lane.
+
 ## What is refused
 
 | Rule | Refused | Example that is refused |
@@ -124,7 +138,7 @@ prove equal, and same-file callee dependency guards catch changes hidden behind 
 | `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |
 | `class`, `inheritance` | `super` as a value (`const f = super.m`, `super.x`); `super.m(...)` as a call is read as a transition on the receiver | `const f = super.m` |
 | `receiver-mutation` | assignment through a field of a field of `this` | `this.stats.n += 1` |
-| `global-mutation`, `global-read`, `toplevel-state`, `toplevel-effect` | module `let`/`var`, assignment to anything the function does not own, code at module level that runs on import | `counter = counter + 1` |
+| `global-mutation`, `global-read`, `toplevel-state`, `toplevel-effect` | unresolved globals, global assignment, module state binding patterns, effectful let/var initializers and executable module statements | `let counter = Date.now()` |
 | `alias-mutation` | changing a value through a local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`); the [heap reading](design/heap-layer.md) is a design and verified toy only | `const t = user.tags; t.push(1)` |
 | `param-assign`, `param-mutation`, `property-assign`, `index-assign`, `in-place-mutation` | rebinding a parameter (`p = v`); a field or slot of what the function does not own (a module object, a cast, a value from the world); `sort`/`reverse` on a named array | `(x as any).f = 1` |
 | `react-handler-capture` | a React closure captures a local that changes during render or is declared later; a captured record mutated by the render | `let n = 0; const f = useCallback(() => save(n), [n]); n++;` |
