@@ -94,7 +94,7 @@ transition the parent did not make, or makes it with another argument or in anot
 | `await f(x)`, `await p` | `await repo.find(id)` | `ext_await_Repo_find(wld, repo, id)` |
 | A method of a record, a class instance, an `any` | `date.getTime()` | `ext_Ext_Date_getTime(wld, date)` |
 | A method of a field of `this`, a method-call statement on any receiver | `this.items.push(x)` | a transition on the field's value |
-| A clock, randomness, the environment, a console, a fetch | `Date.now()`, `new Date()`, `Math.random()`, `console.log(x)` | `ext_Date_now(wld)`, `ext_new_Date(wld)`, `ext_Math_random(wld)`, a transition of the console |
+| A clock, randomness, the environment, a console, a fetch | `Date.now()`, `new Date()`, `performance.now()`, `process.hrtime()`, `Math.random()`, `console.log(x)` | ordered world transitions; lane B records clock requests and supplies seeded instants; `new Date(x)` stays a value conversion |
 | `new X(...)` for any `X` but `Set`, `Map`, `Error`, `Date`, `Array`, typed arrays | `new Client(cfg)` | `ext_new_Client(wld, cfg)` |
 | consumed `.then`, `.catch`, `.finally` on a native promise | `return p.then(r => r.value)` in an async unit | inline arrow continuation or named same-file/imported call; catch reads and clears the fault; finally runs on both paths and preserves the outcome unless it faults; other forms keep the outside-call reading with opaque handlers |
 | consumed `new Promise` | `await new Promise<number>(resolve => resolve(n))` | synchronous terminal settlement bodies return the resolve value or raise the reject fault; a single outside callback bridge is opaque by text, captures and callees |
@@ -109,7 +109,7 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Part | Example | Modelled as |
 |---|---|---|
 | Other Object operations and dictionaries | `Object.assign/freeze/fromEntries`, dictionary `Object.keys/values/entries` | existing pure uninterpreted calls; no new exact mutation or freezing claim |
-| Numeric special boundary | variable or zero divisors, parsing, string numeric coercions, Number special constants and explicit -0 | complete unit opaque by source and reachable same-file dependencies; callers also opaque; previously admitted forms remain admitted |
+| Numeric special boundary | variable or zero divisors, parsing, string numeric coercions, Number special constants, explicit -0, and performance/hrtime observers in integer files | complete unit opaque by source and reachable same-file dependencies; callers also opaque; previously admitted forms remain admitted |
 | Numeric predicates | `Number.isNaN`, `Number.isFinite`, global `isNaN/isFinite` | pure uninterpreted predicates; no blanket finite answer |
 | Module constants, enum members | `LIMITS.max` | `ext_LIMITS_max()` |
 | `any`, `unknown`, overlapping or unclassified unions, `never`, `object`, symbols | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |

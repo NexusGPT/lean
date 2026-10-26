@@ -1,0 +1,267 @@
+Clock read validation
+Branch: lane/clock-read
+Baseline: 03ec3bc3676c52cb5fd79422403a1c89d8197dd3, exported with git archive into /Users/assem/nexus/nexus-organisation/work/lean-lanes/clock-read/results-bench/before
+
+Commands ran from /Users/assem/nexus/nexus-organisation/work/lean-lanes/clock-read.
+The harness was run unchanged, with --k 10 --jobs 2 and --concepts "new Date|Date.now".
+Before --lean: /Users/assem/nexus/nexus-organisation/work/lean-lanes/clock-read/results-bench/before
+After --lean: /Users/assem/nexus/nexus-organisation/work/lean-lanes/clock-read
+Harness: /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/harness/concept_bench.py
+
+Lint output:
+langs/ts/tests/pairs/clock_read/parent.ts: inside the subset
+langs/ts/tests/pairs/clock_read/candidate.ts: inside the subset
+
+Escape output:
+fixtures/escapes/ts/clock_initializer.ts:3:5  toplevel-effect  move the effectful module initializer into a function
+fixtures/escapes/ts/clock_initializer.ts:4:64  toplevel-effect  move the effectful module initializer into a function
+2 violation(s)
+
+Runtime output:
+clock fakes: seeded replay, advancing reads, typed results, arguments, fixed values and subclassing PASS
+
+Bench output before:
+# Concept bench
+
+2 concepts, K=10 real instances each (at most 3 per repo, units of at most 120 lines), lean at /Users/assem/nexus/nexus-organisation/work/lean-lanes/clock-read/results-bench/before
+
+| concept | n | inside | translated | mutants witnessed | top blockers |
+|---|---|---|---|---|---|
+| new Date | 10 | 9 | 8 | 15/19 | translate: seed-changelog.ts:64: an effect in a for header (1), async-reduce (1) |
+| Date.now | 10 | 5 | 4 | 8/12 | unsupported-call (1), string-code-unit (1), translate: ttl-cache.ts:20: type parameter V is not one of th (1) |
+
+Bench output after:
+# Concept bench
+
+2 concepts, K=10 real instances each (at most 3 per repo, units of at most 120 lines), lean at /Users/assem/nexus/nexus-organisation/work/lean-lanes/clock-read
+
+| concept | n | inside | translated | mutants witnessed | top blockers |
+|---|---|---|---|---|---|
+| new Date | 10 | 9 | 8 | 15/19 | translate: seed-changelog.ts:64: an effect in a for header (1), async-reduce (1) |
+| Date.now | 10 | 5 | 4 | 8/12 | unsupported-call (1), string-code-unit (1), translate: ttl-cache.ts:20: type parameter V is not one of th (1) |
+
+Witnessed units (a unit with at least one witnessed planted mutant):
+before: new Date: 6/10
+before: Date.now: 3/10
+after: new Date: 6/10
+after: Date.now: 3/10
+
+Pair probe commands:
+node langs/ts/translate/translate.mjs <pair>/<side>.ts --core --suffix <side> --no-project --out <probe>/<side>.dfy --prelude <probe>/<side>.pre.dfy
+python3 -I spec/theorem.py --parent <probe>/parent.dfy --candidate <probe>/candidate.dfy --scope <probe>/scope.json --edit <probe>/edit.json --out <probe>/theorem.dfy
+dafny verify --verification-time-limit 30 <probe>/theorem.dfy
+node langs/ts/exec/run.mjs --parent <pair>/parent.ts --candidate <pair>/candidate.ts --unit <unit> --n 30 --no-project --out <probe>/<unit>.json
+Probe files: /Users/assem/nexus/nexus-organisation/work/lean-lanes/clock-read/results-bench/pairs-after
+
+Pair probe output before:
+counter {"equal": {"counter_bump": false, "counter_flush": true, "counter_label": true, "counter_constructor": true}, "b": {"Counter.bump": "WITNESS", "Counter.flush": "PASS-bounded", "Counter.label": "PASS-bounded"}}
+service {"equal": {"chat_service_label": false, "chat_service_regenerate": false, "chat_service_dto": true, "chat_service_constructor": true}, "b": {"ChatService.label": "WITNESS", "ChatService.regenerate": "WITNESS", "ChatService.dto": "PASS-bounded"}}
+optional_calls {"equal": {"notify": true, "label_of": false}, "b": {"notify": "PASS-bounded", "labelOf": "WITNESS"}}
+
+Pair probe output after:
+clock_read {"equal": {"once": true, "date_once": true, "window_size": false, "date_window": false, "across_port": false, "fixed": true, "performance_once": true, "performance_window": false, "high_resolution": true, "high_resolution_window": false, "untouched": true, "numeric_opaque": true}, "b": {"once": "PASS-bounded", "dateOnce": "PASS-bounded", "windowSize": "WITNESS", "dateWindow": "WITNESS", "acrossPort": "WITNESS", "fixed": "PASS-bounded", "performanceOnce": "PASS-bounded", "performanceWindow": "WITNESS", "highResolution": "PASS-bounded", "highResolutionWindow": "WITNESS", "untouched": "PASS-bounded", "numericOpaque": "PASS-bounded"}}
+counter {"equal": {"counter_bump": false, "counter_flush": true, "counter_label": true, "counter_constructor": true}, "b": {"Counter.bump": "WITNESS", "Counter.flush": "PASS-bounded", "Counter.label": "PASS-bounded"}}
+service {"equal": {"chat_service_label": false, "chat_service_regenerate": false, "chat_service_dto": true, "chat_service_constructor": true}, "b": {"ChatService.label": "WITNESS", "ChatService.regenerate": "WITNESS", "ChatService.dto": "PASS-bounded"}}
+optional_calls {"equal": {"notify": true, "label_of": false}, "b": {"notify": "PASS-bounded", "labelOf": "WITNESS"}}
+clock {"equal": {"same": false, "always": true, "store": true, "pure_only": true}, "b": {"same": "WITNESS", "always": "PASS-bounded", "store": "PASS-bounded", "pureOnly": "PASS-bounded"}}
+
+Clock theorem output (the five failed lemmas are the required negative cases):
+Prover error: Model parsing error: Invalid model: invalid element name 1834.0, at line 181 (  T@U!val!34 -> 1834.0)
+
+Prover error: Model parsing error: Invalid model: invalid element name 1201.0, at line 49 (  T@U!val!24 -> (- 1201.0))
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 26 ($generated@@255 -> 0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 1201.0, at line 45 (  T@U!val!25 -> (- 1201.0))
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 76 (  T@U!val!26 -> 0.0)
+
+Prover error: Could not parse any models
+
+results-bench/pairs-after/clock_read/theorem.dfy(249,0): Error: a postcondition could not be proved on this return path
+    |
+249 | { // PROOF Equal_window_size
+    | ^
+
+results-bench/pairs-after/clock_read/theorem.dfy(248,34): Related location: this is the postcondition that could not be proved
+    |
+248 |   ensures window_size_parent(wld) == window_size_candidate(wld)
+    |                                   ^^
+
+results-bench/pairs-after/clock_read/theorem.dfy(255,0): Error: a postcondition could not be proved on this return path
+    |
+255 | { // PROOF Equal_date_window
+    | ^
+
+results-bench/pairs-after/clock_read/theorem.dfy(254,34): Related location: this is the postcondition that could not be proved
+    |
+254 |   ensures date_window_parent(wld) == date_window_candidate(wld)
+    |                                   ^^
+
+results-bench/pairs-after/clock_read/theorem.dfy(261,0): Error: a postcondition could not be proved on this return path
+    |
+261 | { // PROOF Equal_across_port
+    | ^
+
+results-bench/pairs-after/clock_read/theorem.dfy(260,37): Related location: this is the postcondition that could not be proved
+    |
+260 |   ensures across_port_parent(wld, n) == across_port_candidate(wld, n)
+    |                                      ^^
+
+results-bench/pairs-after/clock_read/theorem.dfy(279,0): Error: a postcondition could not be proved on this return path
+    |
+279 | { // PROOF Equal_performance_window
+    | ^
+
+results-bench/pairs-after/clock_read/theorem.dfy(278,41): Related location: this is the postcondition that could not be proved
+    |
+278 |   ensures performance_window_parent(wld) == performance_window_candidate(wld)
+    |                                          ^^
+
+results-bench/pairs-after/clock_read/theorem.dfy(291,0): Error: a postcondition could not be proved on this return path
+    |
+291 | { // PROOF Equal_high_resolution_window
+    | ^
+
+results-bench/pairs-after/clock_read/theorem.dfy(290,45): Related location: this is the postcondition that could not be proved
+    |
+290 |   ensures high_resolution_window_parent(wld) == high_resolution_window_candidate(wld)
+    |                                              ^^
+
+
+Dafny program verifier finished with 7 verified, 5 errors
+
+The prover emitted model-printing diagnostics for real-valued countermodels; it still reported the expected five failed postconditions and seven verified lemmas.
+
+Before/after identical: counter, service, optional_calls.
+
+First lane B witness per negative unit:
+windowSize {"input":0,"args":[],"parent":{"outcome":{"returned":0},"mutated":[],"receiver":{},"trace":[{"op":"call","path":"Date.now","args":[]}],"pending":[]},"candidate":{"outcome":{"returned":8},"mutated":[],"receiver":{},"trace":[{"op":"call","path":"Date.now","args":[]},{"op":"call","path":"Date.now","args":[]}],"pending":[]},"where":{"field":"outcome"}}
+dateWindow {"input":0,"args":[],"parent":{"outcome":{"returned":0},"mutated":[],"receiver":{},"trace":[{"op":"new","path":"Date","args":[]}],"pending":[]},"candidate":{"outcome":{"returned":8},"mutated":[],"receiver":{},"trace":[{"op":"new","path":"Date","args":[]},{"op":"new","path":"Date","args":[]}],"pending":[]},"where":{"field":"outcome"}}
+acrossPort {"input":0,"args":[420],"parent":{"outcome":{"returned":1700000007922},"mutated":[null],"receiver":{},"trace":[{"op":"call","path":"Date.now","args":[]},{"op":"get","path":"module:console.log","args":[]},{"op":"call","path":"module:console.log","args":[420]}],"pending":[]},"candidate":{"outcome":{"returned":1700000007922},"mutated":[null],"receiver":{},"trace":[{"op":"get","path":"module:console.log","args":[]},{"op":"call","path":"module:console.log","args":[420]},{"op":"call","path":"Date.now","args":[]}],"pending":[]},"where":{"field":"trace","index":0,"parent":{"op":"call","path":"Date.now","args":[]},"candidate":{"op":"get","path":"module:console.log","args":[]}}}
+performanceWindow {"input":0,"args":[],"parent":{"outcome":{"returned":0},"mutated":[],"receiver":{},"trace":[{"op":"call","path":"performance.now","args":[]}],"pending":[]},"candidate":{"outcome":{"returned":8},"mutated":[],"receiver":{},"trace":[{"op":"call","path":"performance.now","args":[]},{"op":"call","path":"performance.now","args":[]}],"pending":[]},"where":{"field":"outcome"}}
+highResolutionWindow {"input":0,"args":[],"parent":{"outcome":{"returned":true},"mutated":[],"receiver":{},"trace":[{"op":"call","path":"process.hrtime","args":[]}],"pending":[]},"candidate":{"outcome":{"returned":false},"mutated":[],"receiver":{},"trace":[{"op":"call","path":"process.hrtime","args":[]},{"op":"call","path":"process.hrtime","args":[]}],"pending":[]},"where":{"field":"outcome"}}
+
+Whole suite, run once:
+node langs/ts/tests/run.mjs
+| TOTAL | 1233 checks | ALL PASS |
+
+The suite completed before the final high-resolution integer guard. The lead approved targeted validation of that guard without repeating the whole suite.
+The final guard also preserves native method identity and samples fractional performance timestamps.
+
+Final targeted validation output:
+clock_read_integer {"equal": {"integral": false, "alias_integral": false, "tuple_integral": false, "same": true, "fixed": true}, "b": {"integral": "WITNESS", "aliasIntegral": "WITNESS", "tupleIntegral": "PASS-bounded", "same": "PASS-bounded", "fixed": "PASS-bounded"}}
+clock_read {"equal": {"once": true, "date_once": true, "window_size": false, "date_window": false, "across_port": false, "fixed": true, "performance_once": true, "performance_window": false, "high_resolution": true, "high_resolution_window": false, "untouched": true, "numeric_opaque": true}, "b": {"once": "PASS-bounded", "dateOnce": "PASS-bounded", "windowSize": "WITNESS", "dateWindow": "WITNESS", "acrossPort": "WITNESS", "fixed": "PASS-bounded", "performanceOnce": "PASS-bounded", "performanceWindow": "WITNESS", "highResolution": "PASS-bounded", "highResolutionWindow": "WITNESS", "untouched": "PASS-bounded", "numericOpaque": "PASS-bounded"}}
+counter {"equal": {"counter_bump": false, "counter_flush": true, "counter_label": true, "counter_constructor": true}, "b": {"Counter.bump": "WITNESS", "Counter.flush": "PASS-bounded", "Counter.label": "PASS-bounded"}}
+service {"equal": {"chat_service_label": false, "chat_service_regenerate": false, "chat_service_dto": true, "chat_service_constructor": true}, "b": {"ChatService.label": "WITNESS", "ChatService.regenerate": "WITNESS", "ChatService.dto": "PASS-bounded"}}
+optional_calls {"equal": {"notify": true, "label_of": false}, "b": {"notify": "PASS-bounded", "labelOf": "WITNESS"}}
+
+Final integer-clock theorem output:
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 273 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 273 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 273 (  0.0)
+
+Prover error: Could not parse any models
+
+results-bench/pairs-final/clock_read_integer/theorem.dfy(101,0): Error: a postcondition could not be proved on this return path
+    |
+101 | { // PROOF Equal_integral
+    | ^
+
+results-bench/pairs-final/clock_read_integer/theorem.dfy(100,31): Related location: this is the postcondition that could not be proved
+    |
+100 |   ensures integral_parent(wld) == integral_candidate(wld)
+    |                                ^^
+
+results-bench/pairs-final/clock_read_integer/theorem.dfy(107,0): Error: a postcondition could not be proved on this return path
+    |
+107 | { // PROOF Equal_alias_integral
+    | ^
+
+results-bench/pairs-final/clock_read_integer/theorem.dfy(106,37): Related location: this is the postcondition that could not be proved
+    |
+106 |   ensures alias_integral_parent(wld) == alias_integral_candidate(wld)
+    |                                      ^^
+
+results-bench/pairs-final/clock_read_integer/theorem.dfy(113,0): Error: a postcondition could not be proved on this return path
+    |
+113 | { // PROOF Equal_tuple_integral
+    | ^
+
+results-bench/pairs-final/clock_read_integer/theorem.dfy(112,37): Related location: this is the postcondition that could not be proved
+    |
+112 |   ensures tuple_integral_parent(wld) == tuple_integral_candidate(wld)
+    |                                      ^^
+
+
+Dafny program verifier finished with 2 verified, 3 errors
+
+Fractional performance witness:
+{
+ "input": 0,
+ "args": [],
+ "parent": {
+  "outcome": {
+   "returned": false
+  },
+  "mutated": [],
+  "receiver": {},
+  "trace": [
+   {
+    "op": "call",
+    "path": "performance.now",
+    "args": []
+   }
+  ],
+  "pending": []
+ },
+ "candidate": {
+  "outcome": {
+   "returned": true
+  },
+  "mutated": [],
+  "receiver": {},
+  "trace": [
+   {
+    "op": "call",
+    "path": "performance.now",
+    "args": []
+   }
+  ],
+  "pending": []
+ },
+ "where": {
+  "field": "outcome"
+ }
+}
+
+Final integer pair lint output:
+langs/ts/tests/pairs/clock_read_integer/parent.ts: inside the subset
+langs/ts/tests/pairs/clock_read_integer/candidate.ts: inside the subset
+
+Final code concept bench output:
+# Concept bench
+
+2 concepts, K=10 real instances each (at most 3 per repo, units of at most 120 lines), lean at /Users/assem/nexus/nexus-organisation/work/lean-lanes/clock-read
+
+| concept | n | inside | translated | mutants witnessed | top blockers |
+|---|---|---|---|---|---|
+| new Date | 10 | 9 | 8 | 15/19 | translate: seed-changelog.ts:64: an effect in a for header (1), async-reduce (1) |
+| Date.now | 10 | 5 | 4 | 8/12 | unsupported-call (1), string-code-unit (1), translate: ttl-cache.ts:20: type parameter V is not one of th (1) |
+
+No domain is below its before admission, translation or witnessed-mutant score.
+Final before/after identical: counter, service, optional_calls.

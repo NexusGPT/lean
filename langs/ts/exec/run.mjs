@@ -109,17 +109,33 @@ async function observeJsx(v, env) {
 export function sandbox(env, root) {
   const cache = new Map();
   const react = reactRuntime(env);
-  const fixedNow = 1700000000000;
-  const FakeDate = new Proxy(Date, { construct(t, args) { return args.length ? new Date(...args) : new Date(fixedNow); }, get(t, p) { if (p === 'now') return () => fixedNow; return t[p]; }, apply() { return new Date(fixedNow).toString(); } });
+  const epoch = 1700000000000;
+  const dateNow = (...args) => epoch + env.clock('Date.now', args);
+  const FakeDate = new Proxy(Date, {
+    construct(t, args, newTarget) { return Reflect.construct(t, args.length ? args : [epoch + env.clock('Date', [], 'new')], newTarget); },
+    get(t, p) { return p === 'now' ? dateNow : Reflect.get(t, p); },
+    apply(t, receiver, args) { return new Date(epoch + env.clock('Date', args)).toString(); },
+  });
+  const hrtime = (...args) => {
+    const ns = BigInt(env.clock('process.hrtime', args)) * 1000000n;
+    const previous = args[0];
+    const delta = previous === undefined ? ns : ns - (BigInt(previous[0]) * 1000000000n + BigInt(previous[1]));
+    const nanos = (delta % 1000000000n + 1000000000n) % 1000000000n;
+    return [Number((delta - nanos) / 1000000000n), Number(nanos)];
+  };
+  hrtime.bigint = (...args) => BigInt(env.clock('process.hrtime.bigint', args)) * 1000000n;
+  const fakeProcess = new Proxy(env.module('process'), { get(t, p) { return p === 'hrtime' ? hrtime : Reflect.get(t, p); } });
+  const performanceNow = (...args) => env.clock('performance.now', args) / 1000;
+  const fakePerformance = new Proxy(env.module('performance'), { get(t, p) { return p === 'now' ? performanceNow : Reflect.get(t, p); } });
   const g = {
-    console: env.module('console'), process: env.module('process'), fetch: env.fake('global:fetch'), Date: FakeDate,
+    console: env.module('console'), process: fakeProcess, fetch: env.fake('global:fetch'), Date: FakeDate,
     setTimeout: (fn, ms, ...a) => { env.pending.push({ op: 'setTimeout', ms: Number(ms) || 0 }); return env.pending.length; },
     setInterval: (fn, ms) => { env.pending.push({ op: 'setInterval', ms: Number(ms) || 0 }); return env.pending.length; },
     setImmediate: (fn) => { env.pending.push({ op: 'setImmediate' }); return env.pending.length; },
     clearTimeout: (id) => { env.record('call', 'global:clearTimeout', [render(id)]); }, clearInterval: (id) => { env.record('call', 'global:clearInterval', [render(id)]); }, queueMicrotask: (fn) => Promise.resolve().then(fn),
     Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
     Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect, Proxy, structuredClone,
-    globalThis: null, crypto: env.module('crypto'), performance: env.module('performance'), React: react,
+    globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
   };
   g.globalThis = g; g.global = g; g.window = undefined;
   const ctx = vm.createContext(g);
@@ -277,7 +293,7 @@ export async function runPair(opts) {
       if (diffs.length >= 3) break;
     }
   }
-  const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, frozen clock', inputs: 'from parameter types with boundary values first' };
+  const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first' };
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
   return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };

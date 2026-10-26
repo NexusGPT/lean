@@ -1,0 +1,24 @@
+{
+  "scope": [
+    "integral",
+    "alias_integral",
+    "tuple_integral",
+    "same",
+    "fixed"
+  ],
+  "equal": {
+    "integral": false,
+    "alias_integral": false,
+    "tuple_integral": false,
+    "same": true,
+    "fixed": true
+  },
+  "why": "high-resolution clock values in integer files keep their observer opaque by text, including aliased reads; the fractional performance result is not equal to its floor.",
+  "b": {
+    "integral": "WITNESS",
+    "aliasIntegral": "WITNESS",
+    "tupleIntegral": "PASS-bounded",
+    "same": "PASS-bounded",
+    "fixed": "PASS-bounded"
+  }
+}

@@ -38,6 +38,13 @@ export class Environment {
     this.cbDepth = 0;       // nesting of callbacks the environment is running
     this.shapes = null;     // the unit's spec (defs, literals, strings, regexes, receiver, imports): typed answers draw from it
   }
+  // clock answers advance with the seeded history and are recorded beside port requests
+  clock(path, args = [], op = 'call') {
+    this.clockRng ??= makeRng(this.seed ^ 0x636c6f63);
+    this.clockMillis = (this.clockMillis ?? (this.seed >>> 0) % 1000000) + 1 + Math.floor(this.clockRng() * 17);
+    this.record(op, path, args.map((x) => render(x)));
+    return this.clockMillis;
+  }
   // A typed answer: the value at `path` generated from its declared shape, seeded by (seed, path) so the same question
   // has the same answer on both sides and in any order. A method member is a callable fake that answers its return
   // type; a service is a fake with typed members.
