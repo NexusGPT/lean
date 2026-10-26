@@ -33,7 +33,8 @@ const SET_METHODS = new Set(['has', 'add', 'delete', 'size', 'values', 'keys', '
 const MAP_METHODS = new Set(['has', 'get', 'set', 'delete', 'size', 'values', 'keys', 'entries', 'forEach', 'clear']);
 
 export function lintFile(file, ranges = null, opts = {}) {
-  const { sf, checker, diagnostics } = loadProgram(file, { project: opts.project ?? true });
+  // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
+  const { sf, checker, diagnostics } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
   const out = [];
   const units = topLevelFunctions(sf);
   let current = null; // current unit's declaration statement, for locality tests

@@ -80,6 +80,70 @@ export function loadProgram(file, opts = {}) {
   return { program, sf, checker, diagnostics, abs, projectFile: configFile };
 }
 
+/**
+ * loadMany(files) — one program per tsconfig for a whole set of files (a census). Returns a Map abs -> {program, sf,
+ * checker, diagnostics, abs, projectFile}; a file whose project cannot read it maps to {error}.
+ */
+export function loadMany(files, opts = {}) {
+  const groups = new Map(); // configFile|'' -> [abs]
+  for (const f of files) {
+    const abs = path.resolve(f);
+    const cfg = opts.project === false ? null : (ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? null);
+    const k = cfg ?? ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(abs);
+  }
+  const out = new Map();
+  const CHUNK = opts.chunk ?? 1200; // a program over thousands of roots exhausts the heap; chunks share nothing but cost little
+  const chunks = [];
+  for (const [cfg, absList] of groups) for (let i = 0; i < absList.length; i += CHUNK) chunks.push([cfg, absList.slice(i, i + CHUNK)]);
+  for (const [cfg, absList] of chunks) {
+    // options exactly as loadProgram computes them, with the whole group as roots
+    const first = loadProgramOptions(absList[0], cfg || null);
+    let program;
+    try { program = ts.createProgram(absList, first.options); } catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); continue; }
+    const checker = program.getTypeChecker();
+    for (const abs of absList) {
+      const sf = program.getSourceFile(abs);
+      if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
+      let diagnostics;
+      try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; } catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}` }); continue; }
+      out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: cfg || null });
+    }
+    opts.log?.(`project ${cfg || '(none)'}: ${absList.length} files`);
+  }
+  return out;
+}
+
+// the compiler options loadProgram uses for a file under a config (shared by loadProgram and loadMany)
+function loadProgramOptions(abs, configFile) {
+  let options = { ...COMPILER_OPTIONS };
+  if (configFile && fs.existsSync(configFile)) {
+    const raw = ts.readConfigFile(configFile, ts.sys.readFile);
+    if (!raw.error) {
+      const parsed = ts.parseJsonConfigFileContent(raw.config, ts.sys, path.dirname(configFile));
+      options = { ...parsed.options, strict: true, noEmit: true, skipLibCheck: true, noImplicitReturns: true, allowJs: true, checkJs: true };
+      if (Array.isArray(options.lib)) {
+        const libDir = path.join(here, 'vendor', 'typescript', 'lib');
+        options.lib = options.lib.filter((l) => fs.existsSync(path.join(libDir, l)));
+        if (!options.lib.length) options.lib = ['lib.es2022.d.ts'];
+      }
+      delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
+      options.configFilePath = configFile;
+      const ws = workspacePaths(path.dirname(configFile));
+      if (ws) {
+        options.baseUrl = options.baseUrl ?? ws.root;
+        const rel = (p) => path.relative(options.baseUrl, p) || '.';
+        options.paths = { ...(options.paths ?? {}) };
+        for (const [name, dir] of ws.packages) {
+          const src = fs.existsSync(path.join(dir, 'src', 'index.ts')) ? path.join(dir, 'src', 'index.ts') : fs.existsSync(path.join(dir, 'index.ts')) ? path.join(dir, 'index.ts') : null;
+          if (src && !options.paths[name]) options.paths[name] = [rel(src)];
+          if (!options.paths[name + '/*']) options.paths[name + '/*'] = [rel(path.join(dir, 'src')) + '/*', rel(dir) + '/*'];
+        }
+      }
+    }
+  }
+  return { options };
+}
+
 // The pnpm/npm workspace above a directory: {root, packages: [[name, dir]]} or null.
 export function workspacePaths(fromDir) {
   let dir = fromDir;
