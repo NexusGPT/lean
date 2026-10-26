@@ -1017,7 +1017,7 @@ export function translate(file, fnName, opts = {}) {
   const isLiteralish = (node) => { while (ts.isParenthesizedExpression(node)) node = node.expression; return ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node) || ts.isNumericLiteral(node) || ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node) || node.kind === K.TrueKeyword || node.kind === K.FalseKeyword; };
   function coerce(code, node, expected) {
     if (!expected) return code;
-    const nt = typeOf(node);
+    const sourceT = typeOf(node), nt = isPromiseT(sourceT) ? promiseResultType(node) : sourceT;
     const members = sums.get(dtype(expected, node));
     if (members && dtype(nt, node) !== dtype(expected, node)) {
       const matches = members.filter((m) => checker.isTypeAssignableTo(nt, m.t));
@@ -1442,15 +1442,15 @@ export function translate(file, fnName, opts = {}) {
   const promiseGuard = (code, R) => `if ${faultPreds().faulted}(${WORLD}) then ${promisePair(promiseFailure(R))} else ${wrapLet(code)}`;
   function promiseAbsent(rt, n) {
     const R = dtype(rt, n);
-    if (R.startsWith('Option<')) { usesOption = true; return 'None'; }
-    return convertD('Unit', 'Unit', R);
+    if (R === 'Unit') return 'Unit';
+    const missing = checker.getUndefinedType();
+    return convert(absentValue(missing), missing, rt, n);
   }
   function promiseValueCode(n, rt) {
     if (!isPromiseT(typeOf(n)) && !exactPromiseForm(n)) {
-      const code = expr(n, rt);
-      return isNullish(typeOf(n)) ? promiseAbsent(rt, n) : code;
+      return expr(n, rt);
     }
-    return convertD(settledPromise(n), dtype(promiseResultType(n), n), dtype(rt, n));
+    return convert(settledPromise(n), promiseResultType(n), rt, n);
   }
   function settledPromise(n) {
     n = unparen(n);
@@ -1519,12 +1519,13 @@ export function translate(file, fnName, opts = {}) {
       return `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${value});\n${promisePair(promiseFailure(R))}`;
     });
   }
-  function promiseHandlerBody(cb, argument, argumentD, outputT) {
+  function promiseHandlerBody(cb, argument, argumentD, outputT, argumentT = null) {
     const R = dtype(outputT, cb);
+    const argumentAs = (D) => argumentT ? convertToD(argument, argumentT, D, cb) : convertD(argument, argumentD, D);
     if (ts.isIdentifier(cb)) {
       const sg = checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call)[0];
       const params = sg.getParameters();
-      const args = params.map((p) => convertD(argument, argumentD, dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb)));
+      const args = params.map((p) => argumentAs(dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb)));
       const u = fns.get(cb.text), origin = originOf(checker, cb, sf, currentUnit?.node ?? null);
       const ownR = dtype(checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType(), cb);
       return capture(() => {
@@ -1535,10 +1536,10 @@ export function translate(file, fnName, opts = {}) {
           const callCode = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...args].join(', ')})`;
           value = eff ? hoist(callCode, ownR) : callCode;
         } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${cb.text}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
-        return promiseGuard(promisePair(convertD(value, ownR, R)), R);
+        return promiseGuard(promisePair(convert(value, checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType(), outputT, cb)), R);
       });
     }
-    const bindings = cb.parameters.map((p) => `var ${dn(p.name.text)}: ${dtype(typeOf(p.name), p)} := ${convertD(argument, argumentD, dtype(typeOf(p.name), p))};`).join('\n');
+    const bindings = cb.parameters.map((p) => `var ${dn(p.name.text)}: ${dtype(typeOf(p.name), p)} := ${argumentAs(dtype(typeOf(p.name), p))};`).join('\n');
     const done = () => promisePair(promiseAbsent(outputT, cb));
     const body = ts.isBlock(cb.body) ? promiseStatements([...cb.body.statements], outputT, done) : capture(() => {
       const value = promiseValueCode(cb.body, outputT);
@@ -1578,7 +1579,7 @@ export function translate(file, fnName, opts = {}) {
       if (!faultMode && completionMode) pending.push(FAULT_CHECK);
       return value;
     }
-    if (form.kind === 'resolve') return n.arguments[0] ? promiseValueCode(n.arguments[0], rt) : 'Unit';
+    if (form.kind === 'resolve') return n.arguments[0] ? promiseValueCode(n.arguments[0], rt) : promiseAbsent(rt, n);
     if (form.kind === 'reject') return hoist(`(${rejectedPromise(n.arguments[0], R)})`, R);
     if (form.kind === 'executor') {
       const shape = executorShape(n, checker, sf);
@@ -1588,19 +1589,19 @@ export function translate(file, fnName, opts = {}) {
       return hoist(`(${promiseStatements(body, rt, () => fail(n, 'promise-unsettled: an executor path does not settle'), shape.settlement)})`, R);
     }
     if (!form.source) fail(n, 'promise-combinator: completion order is not read');
-    const source = settledPromise(form.source), D = dtype(promiseResultType(form.source), form.source);
+    const sourceT = promiseResultType(form.source), source = settledPromise(form.source), D = dtype(sourceT, form.source);
     const cb = form.handler;
-    if (form.kind === 'then') return hoist(`(${promiseGuard(promiseHandlerBody(cb, source, D, rt), R)})`, R);
+    if (form.kind === 'then') return hoist(`(${promiseGuard(promiseHandlerBody(cb, source, D, rt, sourceT), R)})`, R);
     if (form.kind === 'catch') {
       const caught = `err${tempCount++}_`;
       const body = `var ${caught} := ${P.value}(${WORLD});\nvar ${WORLD} := ${P.clear}(${WORLD});\n${promiseHandlerBody(cb, caught, 'Any', rt)}`;
-      return hoist(`(if ${P.faulted}(${WORLD}) then (${body}) else ${promisePair(convertD(source, D, R))})`, R);
+      return hoist(`(if ${P.faulted}(${WORLD}) then (${body}) else ${promisePair(convert(source, sourceT, rt, n))})`, R);
     }
     const old = `pw${tempCount++}_`, was = `pf${tempCount++}_`, error = `pe${tempCount++}_`;
     const sg = checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call)[0];
     const ownT = checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType();
     const body = promiseHandlerBody(cb, 'Unit', 'Unit', ownT);
-    return hoist(`(var ${old} := ${WORLD}; var ${was} := ${P.faulted}(${old}); var ${error} := ${P.value}(${old});\nvar ${WORLD} := if ${was} then ${P.clear}(${WORLD}) else ${WORLD};\nvar (${WORLD}, ignored${tempCount++}_) := (${body});\nif ${P.faulted}(${WORLD}) then ${promisePair(promiseFailure(R))} else (var ${WORLD} := if ${was} then ${P.raise}(${WORLD}, ${error}) else ${WORLD}; ${promisePair(convertD(source, D, R))}))`, R);
+    return hoist(`(var ${old} := ${WORLD}; var ${was} := ${P.faulted}(${old}); var ${error} := ${P.value}(${old});\nvar ${WORLD} := if ${was} then ${P.clear}(${WORLD}) else ${WORLD};\nvar (${WORLD}, ignored${tempCount++}_) := (${body});\nif ${P.faulted}(${WORLD}) then ${promisePair(promiseFailure(R))} else (var ${WORLD} := if ${was} then ${P.raise}(${WORLD}, ${error}) else ${WORLD}; ${promisePair(convert(source, sourceT, rt, n))}))`, R);
   }
   // an async await exits on a fault before its following statements, just like a promise reaction
   const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; };

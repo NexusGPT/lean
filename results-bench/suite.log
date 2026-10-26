@@ -376,6 +376,39 @@
 | pair         | logic_values                 | lane B kind PASS-bounded                 | PASS |             | PASS-bounded
 | pair         | logic_values                 | lane B Svc.find WITNESS                  | PASS |             | WITNESS
 | pair         | logic_values                 | lane B Svc.maybe PASS-bounded            | PASS |             | PASS-bounded
+| pair         | module_forms                 | theorem generated                        | PASS |             | ok
+| pair         | module_forms                 | Equal_bump not proved                    | PASS |             | not proved
+| pair         | module_forms                 | Equal_twice not proved                   | PASS |             | not proved
+| pair         | module_forms                 | Equal_cached proved                      | PASS |             | proved
+| pair         | module_forms                 | Equal_handler not proved                 | PASS |             | not proved
+| pair         | module_forms                 | Equal_environment not proved             | PASS |             | not proved
+| pair         | module_forms                 | Equal_sync_handler proved                | PASS |             | proved
+| pair         | module_forms                 | Equal_dynamic_require proved             | PASS |             | proved
+| pair         | module_forms                 | Equal_store proved                       | PASS |             | proved
+| pair         | module_forms                 | Equal_untouched proved                   | PASS |             | proved
+| pair         | module_forms                 | Equal_alias_across_write not proved      | PASS |             | not proved
+| pair         | module_forms                 | Equal_global_read not proved             | PASS |             | not proved
+| pair         | module_forms                 | Equal_computed_environment proved        | PASS |             | proved
+| pair         | module_forms                 | Equal_read_initial not proved            | PASS |             | not proved
+| pair         | module_forms                 | Equal_optional_global not proved         | PASS |             | not proved
+| pair         | module_forms                 | Equal_default_counter not proved         | PASS |             | not proved
+| pair         | module_forms                 | Equal_conditional_environment not proved | PASS |             | not proved
+| pair         | module_forms                 | lane B bump WITNESS                      | PASS |             | WITNESS
+| pair         | module_forms                 | lane B twice WITNESS                     | PASS |             | WITNESS
+| pair         | module_forms                 | lane B cached PASS-bounded               | PASS |             | PASS-bounded
+| pair         | module_forms                 | lane B handler WITNESS                   | PASS |             | WITNESS
+| pair         | module_forms                 | lane B environment WITNESS               | PASS |             | WITNESS
+| pair         | module_forms                 | lane B syncHandler PASS-bounded          | PASS |             | PASS-bounded
+| pair         | module_forms                 | lane B dynamicRequire PASS-bounded       | PASS |             | PASS-bounded
+| pair         | module_forms                 | lane B store PASS-bounded                | PASS |             | PASS-bounded
+| pair         | module_forms                 | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | module_forms                 | lane B aliasAcrossWrite WITNESS          | PASS |             | WITNESS
+| pair         | module_forms                 | lane B globalRead WITNESS                | PASS |             | WITNESS
+| pair         | module_forms                 | lane B computedEnvironment PASS-bounded  | PASS |             | PASS-bounded
+| pair         | module_forms                 | lane B readInitial WITNESS               | PASS |             | WITNESS
+| pair         | module_forms                 | lane B optionalGlobal WITNESS            | PASS |             | WITNESS
+| pair         | module_forms                 | lane B defaultCounter PASS-bounded       | PASS |             | PASS-bounded
+| pair         | module_forms                 | lane B conditionalEnvironment WITNESS    | PASS |             | WITNESS
 | pair         | mutation                     | theorem generated                        | PASS |             | ok
 | pair         | mutation                     | Equal_add_tag proved                     | PASS |             | proved
 | pair         | mutation                     | Equal_rename not proved                  | PASS |             | not proved
@@ -387,6 +420,55 @@
 | pair         | mutation                     | lane B visit PASS-bounded                | PASS |             | PASS-bounded
 | pair         | mutation                     | lane B tagTwice PASS-bounded             | PASS |             | PASS-bounded
 | pair         | mutation                     | lane B countOnly PASS-bounded            | PASS |             | PASS-bounded
+| pair         | null_undefined               | theorem generated                        | PASS |             | ok
+| pair         | null_undefined               | Equal_patch_merge not proved             | PASS |             | not proved
+| pair         | null_undefined               | Equal_nullish_refactor proved            | PASS |             | proved
+| pair         | null_undefined               | Equal_nullable_default not proved        | PASS |             | not proved
+| pair         | null_undefined               | Equal_default_on_null not proved         | PASS |             | not proved
+| pair         | null_undefined               | Equal_pass_null proved                   | PASS |             | proved
+| pair         | null_undefined               | Equal_pass_undefined not proved          | PASS |             | not proved
+| pair         | null_undefined               | Equal_untouched proved                   | PASS |             | proved
+| pair         | null_undefined               | Equal_coalesce proved                    | PASS |             | proved
+| pair         | null_undefined               | Equal_optional_field proved              | PASS |             | proved
+| pair         | null_undefined               | Equal_serialize not proved               | PASS |             | not proved
+| pair         | null_undefined               | Equal_null_only proved                   | PASS |             | proved
+| pair         | null_undefined               | Equal_boundary proved                    | PASS |             | proved
+| pair         | null_undefined               | Equal_null_result not proved             | PASS |             | not proved
+| pair         | null_undefined               | Equal_destructured proved                | PASS |             | proved
+| pair         | null_undefined               | Equal_type_tag proved                    | PASS |             | proved
+| pair         | null_undefined               | Equal_dictionary_test not proved         | PASS |             | not proved
+| pair         | null_undefined               | Equal_cross_option not proved            | PASS |             | not proved
+| pair         | null_undefined               | Equal_literal_text not proved            | PASS |             | not proved
+| pair         | null_undefined               | Equal_opaque_refactor proved             | PASS |             | proved
+| pair         | null_undefined               | Equal_nullable_at not proved             | PASS |             | not proved
+| pair         | null_undefined               | Equal_null_echo proved                   | PASS |             | proved
+| pair         | null_undefined               | Equal_boundary_result proved             | PASS |             | proved
+| pair         | null_undefined               | Equal_and_absence proved                 | PASS |             | proved
+| pair         | null_undefined               | Equal_append_absence not proved          | PASS |             | not proved
+| pair         | null_undefined               | lane B patchMerge WITNESS                | PASS |             | WITNESS
+| pair         | null_undefined               | lane B nullishRefactor PASS-bounded      | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B nullableDefault WITNESS           | PASS |             | WITNESS
+| pair         | null_undefined               | lane B defaultOnNull WITNESS             | PASS |             | WITNESS
+| pair         | null_undefined               | lane B passNull PASS-bounded             | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B passUndefined WITNESS             | PASS |             | WITNESS
+| pair         | null_undefined               | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B coalesce PASS-bounded             | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B optionalField PASS-bounded        | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B serialize WITNESS                 | PASS |             | WITNESS
+| pair         | null_undefined               | lane B nullOnly PASS-bounded             | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B boundary PASS-bounded             | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B nullResult WITNESS                | PASS |             | WITNESS
+| pair         | null_undefined               | lane B destructured PASS-bounded         | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B typeTag PASS-bounded              | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B dictionaryTest WITNESS            | PASS |             | WITNESS
+| pair         | null_undefined               | lane B crossOption WITNESS               | PASS |             | WITNESS
+| pair         | null_undefined               | lane B literalText WITNESS               | PASS |             | WITNESS
+| pair         | null_undefined               | lane B opaqueRefactor PASS-bounded       | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B nullableAt WITNESS                | PASS |             | WITNESS
+| pair         | null_undefined               | lane B nullEcho PASS-bounded             | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B boundaryResult PASS-bounded       | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B andAbsence PASS-bounded           | PASS |             | PASS-bounded
+| pair         | null_undefined               | lane B appendAbsence WITNESS             | PASS |             | WITNESS
 | pair         | numbers                      | theorem generated                        | PASS |             | ok
 | pair         | numbers                      | Equal_average proved                     | PASS |             | proved
 | pair         | numbers                      | Equal_vat proved                         | PASS |             | proved
@@ -458,6 +540,23 @@
 | pair         | promise_integration          | lane B outerCatch WITNESS                | PASS |             | WITNESS
 | pair         | promise_integration          | lane B narrowed PASS-bounded             | PASS |             | PASS-bounded
 | pair         | promise_integration          | lane B rejectCaught PASS-bounded         | PASS |             | PASS-bounded
+| pair         | promise_module_nullish       | theorem generated                        | PASS |             | ok
+| pair         | promise_module_nullish       | Equal_resolved not proved                | PASS |             | not proved
+| pair         | promise_module_nullish       | Equal_widened proved                     | PASS |             | proved
+| pair         | promise_module_nullish       | Equal_executor not proved                | PASS |             | not proved
+| pair         | promise_module_nullish       | Equal_module_value not proved            | PASS |             | not proved
+| pair         | promise_module_nullish       | Equal_missing proved                     | PASS |             | proved
+| pair         | promise_module_nullish       | Equal_untouched proved                   | PASS |             | proved
+| pair         | promise_module_nullish       | Equal_module_ordered proved              | PASS |             | proved
+| pair         | promise_module_nullish       | Equal_returned proved                    | PASS |             | proved
+| pair         | promise_module_nullish       | lane B resolved WITNESS                  | PASS |             | WITNESS
+| pair         | promise_module_nullish       | lane B widened PASS-bounded              | PASS |             | PASS-bounded
+| pair         | promise_module_nullish       | lane B executor WITNESS                  | PASS |             | WITNESS
+| pair         | promise_module_nullish       | lane B moduleValue PASS-bounded          | PASS |             | PASS-bounded
+| pair         | promise_module_nullish       | lane B missing PASS-bounded              | PASS |             | PASS-bounded
+| pair         | promise_module_nullish       | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | promise_module_nullish       | lane B moduleOrdered PASS-bounded        | PASS |             | PASS-bounded
+| pair         | promise_module_nullish       | lane B returned PASS-bounded             | PASS |             | PASS-bounded
 | pair         | promise_then                 | theorem generated                        | PASS |             | ok
 | pair         | promise_then                 | Equal_changed not proved                 | PASS |             | not proved
 | pair         | promise_then                 | Equal_bridge not proved                  | PASS |             | not proved
@@ -729,10 +828,16 @@
 | escape       | instanceof_custom            | translate refuses                        | PASS |             | refused
 | escape       | loose_equality               | lint refuses                             | PASS | yes         | refused: loose-equality
 | escape       | loose_equality               | translate refuses                        | PASS |             | refused
+| escape       | module_global_write          | lint refuses                             | PASS | yes         | refused: property-assign
+| escape       | module_global_write          | translate refuses                        | PASS |             | refused
+| escape       | module_initializer           | lint refuses                             | PASS | yes         | refused: toplevel-effect
+| escape       | module_initializer           | translate refuses                        | PASS |             | refused
 | escape       | non_null                     | lint refuses                             | PASS | no          | refused: closure-mutation
 | escape       | non_null                     | translate refuses                        | PASS |             | refused
 | escape       | nondeterminism               | lint refuses                             | PASS | no          | refused: closure-mutation
 | escape       | nondeterminism               | translate refuses                        | PASS |             | refused
+| escape       | null_undefined_coercion      | lint refuses                             | PASS | yes         | refused: loose-equality
+| escape       | null_undefined_coercion      | translate refuses                        | PASS |             | refused
 | escape       | parameter_mutation           | lint refuses                             | PASS | yes         | refused: alias-mutation
 | escape       | parameter_mutation           | translate refuses                        | PASS |             | refused
 | escape       | promise_after_settlement     | lint refuses                             | PASS | no          | refused: promise-unsettled
@@ -775,5 +880,5 @@
 | escape       | try_catch                    | lint refuses                             | PASS | yes         | refused: delete
 | escape       | unbounded_while              | lint refuses                             | PASS | no          | refused: label
 | escape       | unbounded_while              | translate refuses                        | PASS |             | refused
-| repo         | conformance/run.py ts        | runner                                   | PASS |             | conformance: PASS, 54 of 54 checks passed, languages: ts
-| TOTAL | 777 checks | ALL PASS |
+| repo         | conformance/run.py ts        | runner                                   | PASS |             | conformance: PASS, 57 of 57 checks passed, languages: ts
+| TOTAL | 882 checks | ALL PASS |

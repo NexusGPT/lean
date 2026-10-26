@@ -76,3 +76,5 @@ Instances inspected (paths relative to their named census/export root):
   its resolver to setTimeout, outside the executor reading (resolver escape).
 Unresolved/custom promise-like receivers retain their existing call reading.
 Bench scorecards and exact validation output are under results-bench/.
+Typed promise conversions retain Null and Undef tags, including optional widening.
+Module bindings keep the world reading and its existing nested-read opaque fallback.

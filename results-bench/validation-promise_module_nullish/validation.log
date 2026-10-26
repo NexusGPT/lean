@@ -1,0 +1,109 @@
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts: inside the subset
+
+$ node langs/ts/translate/translate.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --core --suffix parent --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/parent.dfy --prelude /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/parent.pre.dfy
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/parent.dfy and /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/parent.pre.dfy
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts: inside the subset
+
+$ node langs/ts/translate/translate.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --core --suffix candidate --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/candidate.dfy --prelude /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/candidate.pre.dfy
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/candidate.dfy and /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/candidate.pre.dfy
+
+$ python3 -I spec/theorem.py --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/parent.dfy --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/candidate.dfy --scope /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/scope.json --edit /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/edit.json --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/theorem.dfy
+theorem: wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/theorem.dfy (8 lemmas)
+
+$ dafny verify --verification-time-limit 30 /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/theorem.dfy
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 307 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 304 (  0.0)
+
+Prover error: Could not parse any models
+
+results-bench/validation-promise_module_nullish/theorem.dfy(187,0): Error: a postcondition could not be proved on this return path
+    |
+187 | { // PROOF Equal_resolved
+    | ^
+
+results-bench/validation-promise_module_nullish/theorem.dfy(186,34): Related location: this is the postcondition that could not be proved
+    |
+186 |   ensures resolved_parent(wld, n) == resolved_candidate(wld, n)
+    |                                   ^^
+
+results-bench/validation-promise_module_nullish/theorem.dfy(199,0): Error: a postcondition could not be proved on this return path
+    |
+199 | { // PROOF Equal_executor
+    | ^
+
+results-bench/validation-promise_module_nullish/theorem.dfy(198,34): Related location: this is the postcondition that could not be proved
+    |
+198 |   ensures executor_parent(wld, n) == executor_candidate(wld, n)
+    |                                   ^^
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 366 (  0.0)
+
+Prover error: Could not parse any models
+
+results-bench/validation-promise_module_nullish/theorem.dfy(205,0): Error: a postcondition could not be proved on this return path
+    |
+205 | { // PROOF Equal_module_value
+    | ^
+
+results-bench/validation-promise_module_nullish/theorem.dfy(204,38): Related location: this is the postcondition that could not be proved
+    |
+204 |   ensures module_value_parent(wld, n) == module_value_candidate(wld, n)
+    |                                       ^^
+
+
+Dafny program verifier finished with 8 verified, 3 errors
+
+Equal_resolved: not proved
+Equal_widened: proved
+Equal_executor: not proved
+Equal_module_value: not proved
+Equal_missing: proved
+Equal_untouched: proved
+Equal_module_ordered: proved
+Equal_returned: proved
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --unit resolved --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-resolved.json
+WITNESS -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-resolved.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --unit widened --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-widened.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-widened.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --unit executor --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-executor.json
+WITNESS -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-executor.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --unit moduleValue --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-moduleValue.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-moduleValue.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --unit missing --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-missing.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-missing.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --unit untouched --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-untouched.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-untouched.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --unit moduleOrdered --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-moduleOrdered.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-moduleOrdered.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_module_nullish/candidate.ts --unit returned --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-returned.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_module_nullish/b-returned.json
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_after_settlement.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_after_settlement.ts:2:73  promise-unsettled  every executor path must end with resolve, reject or throw, with no statements after settlement
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_after_settlement.ts:2:118  unresolved-module  TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.
+2 violation(s)
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_resolver_escape.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_resolver_escape.ts:2:73  promise-executor-escape  resolve and reject cannot be stored or passed away; call them at the end of each executor path
+1 violation(s)
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_type.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_type.ts:2:1  promise  a Promise-returning function must be async
+1 violation(s)
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_unsettled.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_unsettled.ts:2:73  promise-unsettled  every executor path must end with resolve, reject or throw, with no statements after settlement
+1 violation(s)

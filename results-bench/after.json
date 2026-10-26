@@ -4,12 +4,11 @@
    "concept": ".then/.catch chain",
    "n": 10,
    "inside": 6,
-   "translated": 5,
-   "planted": 11,
-   "witnessed": 8,
+   "translated": 6,
+   "planted": 14,
+   "witnessed": 9,
    "blockers": {
     "global-read": 1,
-    "translate: remediate-mark-splitting-overstrip.ts:364: callee ": 1,
     "promise": 2,
     "react-handler-capture": 1
    }
@@ -23,10 +22,10 @@
    "witnessed": 3,
    "blockers": {
     "promise": 4,
-    "global-read": 1,
+    "promise-pending": 2,
     "promise-executor-escape": 1,
-    "exception-callback": 2,
-    "loop-form": 1
+    "loop-form": 1,
+    "exception-callback": 1
    }
   },
   {
@@ -45,16 +44,15 @@
   {
    "concept": "Promise.reject",
    "n": 10,
-   "inside": 0,
-   "translated": 0,
-   "planted": 0,
-   "witnessed": 0,
+   "inside": 1,
+   "translated": 1,
+   "planted": 3,
+   "witnessed": 3,
    "blockers": {
     "promise": 5,
     "closure-mutation": 2,
     "property-assign": 1,
-    "param-mutation": 1,
-    "async": 1
+    "param-mutation": 1
    }
   },
   {
@@ -66,8 +64,8 @@
    "witnessed": 0,
    "blockers": {
     "generator": 2,
-    "async": 2,
-    "promise-pending": 2,
+    "async": 1,
+    "promise-pending": 3,
     "opaque-mutation": 1,
     "promise": 1
    }
@@ -75,13 +73,12 @@
   {
    "concept": "Promise.allSettled",
    "n": 10,
-   "inside": 2,
-   "translated": 2,
+   "inside": 3,
+   "translated": 3,
    "planted": 6,
    "witnessed": 0,
    "blockers": {
     "async-callback": 6,
-    "global-read": 1,
     "opaque-mutation": 1
    }
   },
@@ -155,8 +152,23 @@
     "unit": "main",
     "lines": 35,
     "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-    "status": "translate-fail",
-    "detail": "remediate-mark-splitting-overstrip.ts:364: callee collectBackupVersionIds was not translated"
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 1,
+    "misses": [
+     {
+      "mutation": "string",
+      "was": "\"DATABASE_URL is required\"",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "string",
+      "was": "\"DATABASE_URL is required\"",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     }
+    ]
    },
    {
     "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
@@ -250,8 +262,8 @@
     "lines": 52,
     "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
     "status": "lint-out",
-    "rule": "global-read",
-    "detail": "`globalThis` is outside the subset"
+    "rule": "promise-pending",
+    "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
    },
    {
     "root": "/Users/assem/Documents/GitHub/n8n",
@@ -281,8 +293,8 @@
     "lines": 50,
     "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
     "status": "lint-out",
-    "rule": "exception-callback",
-    "detail": "move the throw to a same-file unit and call it directly"
+    "rule": "promise-pending",
+    "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
    },
    {
     "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
@@ -503,9 +515,10 @@
     "unit": "landingDbFromPglite",
     "lines": 11,
     "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-    "status": "lint-out",
-    "rule": "async",
-    "detail": "awaited callee form is outside the subset"
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
    },
    {
     "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
@@ -646,8 +659,8 @@
     "lines": 17,
     "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
     "status": "lint-out",
-    "rule": "async",
-    "detail": "awaited callee form is outside the subset"
+    "rule": "promise-pending",
+    "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
    },
    {
     "root": "/Users/assem/Documents/GitHub/nexus",
@@ -707,9 +720,10 @@
     "unit": "awaitAllCallbacks",
     "lines": 7,
     "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-    "status": "lint-out",
-    "rule": "global-read",
-    "detail": "`queue` is module state that can change; the subset reads constants only"
+    "status": "translated",
+    "planted": 0,
+    "witnessed": 0,
+    "misses": []
    },
    {
     "root": "/Users/assem/promo-app",
