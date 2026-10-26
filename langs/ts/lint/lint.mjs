@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits } from '../common.mjs';
+import { ADVICE } from './advice.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -44,8 +45,8 @@ export function lintFile(file, ranges = null, opts = {}) {
   const ownedHere = (decl) => { const cb = callbackStack[callbackStack.length - 1]; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
 
   const v = (node, rule, msg) => {
-    const pos = node.getStart(sf);
-    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), rule, msg });
+    const pos = node.getStart(sf), end = node.getEnd();
+    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200) });
   };
   const tOf = (n) => checker.getTypeAtLocation(n);
   const isStr = (t) => !!(t.flags & TF.StringLike);
@@ -255,7 +256,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && !isParam(declOf(r).decl) && ownedHere(declOf(r).decl);
       if (nonNull(rt).some(isAny)) return v(e, 'param-mutation', `.${name}() as a statement on an opaque value may mutate it`);
       if ((name === 'push' || name === 'unshift') && isArrayExpr(r)) {
-        if (!localOwned) v(e, 'param-mutation', `${name} on \`${ts.isIdentifier(r) ? r.text : '…'}\`, which is not a local array`);
+        if (!localOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
         if (e.arguments.length !== 1) v(e, 'unsupported-call', `${name} takes exactly one value (or one spread array)`);
         return e.arguments.forEach((a) => expr(ts.isSpreadElement(a) ? a.expression : a));
       }
@@ -447,7 +448,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         return argsOf(e);
       }
       if (parts.every((t) => isArrayLike(checker, t)) && ARRAY_METHODS.has(name)) {
-        if (name === 'forEach') return v(e, 'unsupported-call', 'forEach is an effect loop; use for-of');
+        if (name === 'forEach') return v(e, 'foreach', 'forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop');
         if (name === 'sort' || name === 'reverse') {
           // in place on a value nobody else holds (a literal, a spread copy, a call result): the result is a new sequence
           if (ts.isIdentifier(recv) || ts.isPropertyAccessExpression(recv) || ts.isElementAccessExpression(recv)) return v(e, 'param-mutation', `${name} mutates in place; sort a copy: [...xs].${name}()`);
@@ -615,13 +616,36 @@ export function lintFile(file, ranges = null, opts = {}) {
     out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule, msg: `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}` });
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
+  // the unit each finding sits in, and the advice for its rule
+  const unitSpans = [...units.values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
+  for (const st of sf.statements) for (const m of classMethodUnits(st)) unitSpans.push([m.name, lineOf(sf, m.node.getStart(sf)), lineOf(sf, m.node.getEnd())]);
+  for (const f of out) { const u = unitSpans.find(([, a, b]) => a <= f.line && f.line <= b); f.unit = u ? u[0] : null; f.advice = ADVICE[f.rule] ?? null; }
   return out;
+}
+
+// A work list for a person or a coding agent: per function, every finding with the rule, the line, the text and what
+// to write instead; then the order to take them in. Markdown.
+export function agentReport(file, findings) {
+  const byUnit = new Map();
+  for (const f of findings) { const k = f.unit ?? '(module level)'; if (!byUnit.has(k)) byUnit.set(k, []); byUnit.get(k).push(f); }
+  const lines = [`# lean: what keeps ${file} from being proved`, '', `${findings.length} finding(s) in ${byUnit.size} place(s). Each item is one construct the proof lane refuses; fix the item, rerun \`node langs/ts/lint/lint.mjs ${file} --agent\`, and the function is provable when its list is empty.`, ''];
+  for (const [unit, fs] of byUnit) {
+    lines.push(`## ${unit}`, '');
+    for (const f of fs) {
+      lines.push(`- [ ] line ${f.line}, \`${f.rule}\`: ${f.msg}`);
+      if (f.text) lines.push(`      code: \`${f.text.replace(/\s+/g, ' ').slice(0, 120)}\``);
+      if (f.advice) lines.push(`      do: ${f.advice}`);
+    }
+    lines.push('');
+  }
+  lines.push('## Order', '', '1. Mutations first (`param-mutation`, `closure-mutation`, `receiver-mutation`, `property-assign`, `index-assign`): they change the shape of the function.', '2. Then equality and arithmetic (`reference-equality`, `division`, `loose-equality`): local rewrites.', '3. Then anything the project cannot resolve (`ts-strict`, `unresolved-module`, `global-read`): types the proof needs.', '4. Rerun `node langs/ts/check.mjs --parent <old> --candidate <new> --unit <name>` and read the verdict, not the lint, as the result.', '');
+  return lines.join('\n');
 }
 
 if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv[1] ?? '') === new URL(import.meta.url).pathname) {
   const args = process.argv.slice(2);
   const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--changed' && args[i - 1] !== '--project');
-  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json] [--project <tsconfig>|--no-project]'); process.exit(2); }
+  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--project <tsconfig>|--no-project]'); process.exit(2); }
   const ci = args.indexOf('--changed');
   let ranges = null;
   if (ci >= 0) {
@@ -632,6 +656,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   const project = args.includes('--no-project') ? false : pi >= 0 ? args[pi + 1] : true;
   const res = lintFile(file, ranges, { project });
   if (args.includes('--json')) console.log(JSON.stringify(res, null, 2));
+  else if (args.includes('--agent')) console.log(agentReport(file, res));
   else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
   if (res.length) { if (!args.includes('--json')) console.log(`${res.length} violation(s)`); process.exit(1); }
   if (!args.includes('--json')) console.log(`${file}: inside the subset`);

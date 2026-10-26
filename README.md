@@ -133,7 +133,22 @@ while (i > 0) { i -= 1; }                      // @decreases i
 
 Everything else is yours: `async`/`await`, imports, service calls, `try`/`catch`, `switch`, destructuring, optional chaining, template strings, `Set`, `Map`, class methods, recursion. A call into the outside world is fine; it is a transition of the world, and both versions make it in the same order or they are not equal.
 
-Run `node langs/ts/lint/lint.mjs file.ts` to see, per function, the one rule in the way; the message names the line and the replacement.
+**In the editor.** lean ships an ESLint plugin (`langs/ts/eslint`) with one rule, `lean/provable`. It runs lean's own lint on the file inside its project, so what the editor underlines is exactly what the proof lane will refuse: the line, the rule, and what to write instead. Where a rewrite keeps your meaning (`n / 2` to `Math.floor(n / 2)`, `==` to `===`) it is offered as a suggestion; where it does not (a mutation that must become a returned value), the message gives the shape and leaves the edit to you.
+
+```js
+// eslint.config.mjs
+import lean from 'lean/langs/ts/eslint/index.mjs';
+import tsparser from '@typescript-eslint/parser';
+export default [{ ...lean.configs.recommended, languageOptions: { parser: tsparser } }];
+```
+
+```
+src/users.ts
+  12:3   warning  lean cannot prove this (param-mutation): push on `user.tags`, which is not a local array — This changes what the caller handed in. Return a new value: `[...xs, v]`, `{ ...r, f: v }`
+  31:10  warning  lean cannot prove this (division): `/` on numbers is real division; write Math.floor(a / b) for integer division
+```
+
+The same lint runs from the command line: `node langs/ts/lint/lint.mjs file.ts`.
 
 **What you can still do.** Write TypeScript the way your team writes it. A function outside the subset is not blocked: it gets lane B, a bounded execution verdict, and the exact reason the proof lane stopped. You decide what to tighten.
 
