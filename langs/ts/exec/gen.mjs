@@ -31,6 +31,17 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'undefined': return undefined;
       case 'literal': return spec.values[Math.floor(rng() * spec.values.length)];
       case 'array': { const n = leaf ? 0 : pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); return Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`, leaf)); }
+      case 'async-iterable': {
+        const values = gen({ kind: 'array', of: spec.of }, depth + 1, env, path, leaf);
+        return { [Symbol.asyncIterator]() {
+          env?.record('call', `${path}.asyncIterator`, []);
+          let i = 0;
+          return {
+            async next() { env?.record('call', `${path}.next`, []); return i < values.length ? { done: false, value: values[i++] } : { done: true, value: undefined }; },
+            async return() { env?.record('call', `${path}.return`, []); i = values.length; return { done: true, value: undefined }; },
+          };
+        } };
+      }
       case 'tuple': return spec.items.map((s, i) => gen(s, depth + 1, env, `${path}[${i}]`));
       case 'set': return new Set(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => gen(spec.of, depth + 1, env, `${path}{${i}}`)));
       case 'map': return new Map(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => [gen(spec.key, depth + 1, env, `${path}<k${i}>`), gen(spec.value, depth + 1, env, `${path}<v${i}>`)]));

@@ -52,6 +52,7 @@ export function specOf(file, unitName, opts = {}) {
       const name = t.symbol?.name;
       if (name === 'Set' || name === 'ReadonlySet') return { kind: 'set', of: spec(checker.getTypeArguments(t)[0], depth + 1) };
       if (name === 'Map' || name === 'ReadonlyMap') { const [k, v] = checker.getTypeArguments(t); return { kind: 'map', key: spec(k, depth + 1), value: spec(v, depth + 1) }; }
+      if (['AsyncIterable', 'AsyncIterableIterator', 'AsyncGenerator'].includes(name)) return { kind: 'async-iterable', of: spec(checker.getTypeArguments(t)[0], depth + 1) };
       if (name === 'Date') return { kind: 'date' };
       if (name === 'Promise') return spec(checker.getTypeArguments(t)[0], depth + 1);
       const sigs = checker.getSignaturesOfType(t, ts.SignatureKind.Call);

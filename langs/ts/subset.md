@@ -45,6 +45,7 @@ rules per package).
 | Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with a finite union of declared data-field string keys (including `keyof`), or a string on a dictionary; `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
 | Record enumeration | `Object.keys/values/entries` on a plain immediate record literal or an enumeration-only const literal; integer-index keys first, then insertion order | `Object.keys({ b: 2, a: 1 })` is `["b", "a"]` |
 | Calls | top-level functions of the same file, recursion included (a fuel bounds the unfolding; the theorem holds for every fuel), default arguments (only undefined runs the initializer; nullable inputs retain Null), a function-typed parameter or local, a local lambda `const f = (x) => ...` | `double(double(x))` |
+| Generators | top-level pure scalar generators with finite counted loops; statement yield appends and yield* concatenates; direct for-of, spread and one-argument Array.from consume the sequence | `function* g(n: number) { yield n; yield n + 1; }` |
 | Functions | `function` declarations, `const f = (...) => ...`, `async` functions (the result type is unwrapped), generic functions, same-file functions named as callback values | `xs.map(double)` |
 | JSX | an element is a value tree: `JsxElem(tag, props, children)`, `JsxText`, `JsxNothing` for `false`/`null`/`undefined`, `JsxList` for an array child; a handler is a pure lambda or symbolic deferred call sequence with captured values; other bodies are opaque by text and captures; `cond && <X/>`, `cond ? <A/> : <B/>`, `{xs.map((x) => <li/>)}`, fragments, spread attributes (merged in order) | `<li key={i.id} onClick={() => pick(i.id)}>{i.label}</li>` |
 | React memo values | `useMemo(() => e, deps)` is a pure scalar `e`, and `useCallback(f, deps)` is `f`, when a literal dependency list covers local captures (or dependencies are omitted); other forms remain transitions | `useMemo(() => props.id + 1, [props.id])` |
@@ -58,6 +59,8 @@ transition the parent did not make, or makes it with another argument or in anot
 
 | Part | Example | Modelled as |
 |---|---|---|
+| Async iteration | `for await (const x of it)` | iterator open and next transitions, with consumer work between next calls; fuel exhaustion has a source-sensitive opaque continuation; abrupt consumers are opaque whole loops |
+| Async generators | scalar inputs or scalar async iterator handles, scalar yields | a source-and-dependency-sensitive suspended program handle in World; its body runs through next transitions, not at creation |
 | React state and effects | `useState(initial)`, `useEffect(body, deps)` | a state read returns current state and a setter value; a setter call is a transition; an effect registers deferred work with an opaque body and its captures |
 | An imported function, a method of an imported object, a value from another file | `isRequiredUuid(id)` | `ext_isRequiredUuid(wld, id)` |
 | Spread to an outside callee, including opaque methods | `f(a, ...xs, b)` | `ext_f_seq(wld, [a] + xs + [b])`; a pure library external keeps the same sequence without the world |
@@ -164,8 +167,9 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `async-predicate`, `async-reduce` | promises are truthy predicates; reduce does not await its accumulator | `xs.filter(async x => svc.ok(x))` |
 | `async-callback`, `promise-all-order` | async map/flatMap without direct awaited Promise.all; multiple suspensions or observable work after suspension | `xs.map(async x => { await f(x); log(x); })` |
 | `callback-control`, `callback-result` | callback try/throw or return from an inner loop; effectful type guards, mixed flatMap results or PromiseLike callbacks | `xs.map(x => { for (;;) return svc.get(x); })` |
-| `async`, `promise` | `await` outside an async function, `for await`, `new Promise`, a Promise-returning function that is not async | `new Promise(r => ...)` |
-| `generator` | generators | `function* g() {}` |
+| `async`, `promise` | `await` outside an async function, `new Promise`, a Promise-returning function that is not async | `new Promise(r => ...)` |
+| `generator`, `generator-effect`, `generator-bound`, `generator-use` | nested generators; effectful sync producers, mutable captures/yields, unbounded sync loops, sent values or escaping pure iterators | `function* g() { while (true) yield 1; }` |
+| `iterator-protocol` | custom Symbol.iterator / Symbol.asyncIterator methods in object literals | `{ [Symbol.iterator]() { ... } }` |
 | `union-type` | a union the translator cannot name (two different arrays) | `number[] \| string[]` |
 | `destructuring`, `param-form`, `uninitialised` | unsupported binding forms, rest parameters in nested declarations, a pattern with no initial value | `let { a };` |
 | `record-rest` | unknown, dictionary, class, accessor or reference-bearing shapes; computed exclusions, defaults or an empty remainder | `const { a, ...rest } = dictionary` |
