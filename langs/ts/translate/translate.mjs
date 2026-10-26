@@ -291,7 +291,7 @@ export function translate(file, fnName, opts = {}) {
     const rt = dtype(t, id);
     return `${external(id.text, [], rt)}()`;
   }
-  function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null) {
+  function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null, cond = null) {
     const isEff = eff ?? isEffectCall(n);
     if (isEff && !unitEffectful()) fail(n, `internal: an effect in a unit not marked effectful (${calleeName})`);
     const sig = checker.getResolvedSignature(n);
@@ -309,17 +309,21 @@ export function translate(file, fnName, opts = {}) {
     let rt = sig ? sig.getReturnType() : typeOf(n);
     if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
     else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
-    const rd = dtype(rt, n);
+    let rd = dtype(rt, n);
+    if (cond && rd.startsWith('Option<')) rd = innerOf(rd); // the signature's own result; the chain adds the Option once
     const codes = args.map((a, i) => (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
     if (!isEff) {
-      if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); return `${id}(${[recvCode, ...codes].join(', ')})`; }
-      const id = external(calleeName, pts, rd);
-      return `${id}(${codes.join(', ')})`;
+      let code;
+      if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
+      else { const id = external(calleeName, pts, rd); code = `${id}(${codes.join(', ')})`; }
+      if (cond) { usesOption = true; return `(if ${cond} then Some(${code}) else None)`; } // an optional call: the value when the receiver is present
+      return code;
     }
     addPrelude('World', 'type World');
     const ptsW = recvCode !== null ? ['World', recvType, ...pts] : ['World', ...pts];
     const argsW = recvCode !== null ? [WORLD, recvCode, ...codes] : [WORLD, ...codes];
     const id = external(calleeName, ptsW, `(World, ${rd})`);
+    if (cond) { usesOption = true; const w = `w${tempCount}_`, x = `x${tempCount}_`; return hoist(`(if ${cond} then (var (${w}, ${x}) := ${id}(${argsW.join(', ')}); (${w}, Some(${x}))) else (${WORLD}, None))`, `Option<${rd}>`); } // an optional call: the transition happens only when the receiver is present
     return hoist(`${id}(${argsW.join(', ')})`, rd);
   }
 
@@ -999,6 +1003,14 @@ export function translate(file, fnName, opts = {}) {
     }
     if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
     const recv = f.expression, name = f.name.text;
+    if ((f.questionDotToken || n.questionDotToken) && isOptional(typeOf(recv)) && recv.kind !== K.ThisKeyword) {
+      // `a?.m(args)`: the call, and its transition, only when a is present; the result is an Option
+      const base = baseOf(typeOf(recv));
+      const v = `oc${tempCount++}_`;
+      pending.push(`var ${v} := ${rawOperand(recv)};`);
+      const Td = isAny(base) ? anyType() : dtype(base, n);
+      return externalCall(`${awaited ? 'await_' : ''}${isAny(base) ? 'Any' : Td}_${name}`, n, [...n.arguments], `${v}.value`, Td, null, `${v}.Some?`);
+    }
     if (recv.kind === K.ThisKeyword && classOf(currentUnit)) {
       const callee = fns.get(`${currentUnit.className}.${name}`);
       if (callee) {

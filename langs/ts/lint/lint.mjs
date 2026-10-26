@@ -333,7 +333,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isPropertyAccessExpression(inner.expression) && !ts.isIdentifier(inner.expression.expression)) { expr(inner.expression.expression); return; }
     const f = inner.expression;
     if (ts.isIdentifier(f)) return checkIdent(f, true);
-    if (ts.isPropertyAccessExpression(f)) { if (f.questionDotToken) v(f, 'optional-chain', 'optional call'); return expr(f.expression); }
+    if (ts.isPropertyAccessExpression(f)) return expr(f.expression); // `await a?.m()`: the awaited call happens when a is present
     return v(e, 'async', 'awaited callee form is outside the subset');
   }
 
@@ -451,7 +451,7 @@ export function lintFile(file, ranges = null, opts = {}) {
 
   function call(e) {
     const f = e.expression;
-    if (e.questionDotToken) v(e, 'optional-chain', 'optional calls are outside the subset');
+    if (e.questionDotToken) v(e, 'optional-chain', 'calling an optional function value is outside the subset');
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
       const o = declOf(f);
@@ -465,7 +465,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       return argsOf(e);
     }
     if (ts.isPropertyAccessExpression(f)) {
-      if (f.questionDotToken) return v(e, 'optional-chain', 'optional calls are outside the subset');
+      // `a?.m()`: the call happens when a is present; the result is an Option (the receiver's type says whether it may be absent)
       const recv = f.expression, name = f.name.text;
       const rt = tOf(recv);
       if (recv.kind === K.ThisKeyword) { if (!currentClass) return v(e, 'this', '`this` outside a class method'); return argsOf(e); } // a method of this class, or a function-typed field
