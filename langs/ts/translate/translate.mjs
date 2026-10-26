@@ -151,6 +151,7 @@ export function translate(file, fnName, opts = {}) {
       if (recv.kind === K.SuperKeyword) return true; // the parent's method: a transition on the receiver
       if (recv.kind === K.ThisKeyword && currentUnit?.cls) { const callee = fns.get(`${currentUnit.className}.${f.name.text}`); if (callee) return effectfulUnits.has(callee.name); return true; }
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
+      if (ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(f.name.text) && n.arguments.length === 1 && enumerationRecord(n.arguments[0])) return !recordEnumerationLiteral(n.arguments[0]);
       if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
       { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag; an inherited method is a transition
       const t = baseOf(typeOf(recv));
@@ -1259,22 +1260,30 @@ export function translate(file, fnName, opts = {}) {
     const d = dictRead(n);
     if (d) { const V = dtype(stringIndex(base).type, n); return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`; }
     if (isRecordish(base)) {
-      // a key from a finite set of literals: a chain of field reads, each lifted to the expression's type
-      const keys = (at.flags & TF.Union ? at.types : [at]).filter((x) => x.flags & TF.StringLiteral).map((x) => x.value);
-      if (!keys.length) { const rd = dtype(typeOf(n), n), bd = dtype(base, n); return `${external(`index_${mangle(bd)}`, [bd, 'string'], rd)}(${expr(n.expression)}, ${expr(n.argumentExpression)})`; } // a computed key: uninterpreted lookup
-      const R = expr(n.expression), Kc = expr(n.argumentExpression);
+      // a finite key selects a declared field; receiver and key are evaluated once, in that order
+      const keyParts = at.flags & TF.Union ? at.types : [at];
+      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) fail(n, 'use a finite union of declared string keys');
+      const keys = keyParts.map((x) => x.value);
+      const R = `rr${tempCount++}_`, Kc = `rk${tempCount++}_`;
+      const receiver = expr(n.expression);
+      const key = expr(n.argumentExpression);
       const td = dtype(typeOf(n), n);
       const read = (k) => {
         const p = checker.getPropertyOfType(base, k);
-        const pt = p ? checker.getTypeOfSymbolAtLocation(p, n) : null;
-        let code = fieldOf(R, base, k, n);
-        if (p && pt) { const fd = dtype(pt, n); const opt = !!(p.flags & ts.SymbolFlags.Optional) && !fd.startsWith('Option<'); const fdd = opt ? `Option<${fd}>` : fd; if (opt) usesOption = true; if (fdd !== td) code = convertD(code, fdd, td); } // every branch of the key chain is lifted to the expression's type
-        return code;
+        if (!p) fail(n, `key ${k} is not a declared data field`);
+        const pt = checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n);
+        let fd = dtype(pt, n);
+        if ((p.flags & ts.SymbolFlags.Optional) && !fd.startsWith('Option<')) { usesOption = true; fd = `Option<${fd}>`; }
+        n.__keepOption = true;
+        let code;
+        try { code = fieldOf(R, base, k, n); } finally { n.__keepOption = false; }
+        // a guard may narrow the selected optional value; selection still starts with its declared type
+        if (fd.startsWith('Option<') && !td.startsWith('Option<') && td !== 'Any') return convertD(`${code}.value`, innerOf(fd), td);
+        return convertD(code, fd, td);
       };
-      if (keys.length === 1) return read(keys[0]);
       let out = read(keys[keys.length - 1]);
       for (let i = keys.length - 2; i >= 0; i--) out = `(if ${Kc} == ${strEsc(keys[i])} then ${read(keys[i])} else ${out})`;
-      return out;
+      return `(var ${R} := ${receiver}; var ${Kc} := ${key}; ${out})`;
     }
     if (recvT.flags & TF.StringLike) return `[${expr(n.expression)}[${index(n.argumentExpression)}]]`; // s[i] is a one-char string
     return `${expr(n.expression)}[${index(n.argumentExpression)}]`;
@@ -1358,6 +1367,71 @@ export function translate(file, fnName, opts = {}) {
       out.push(expr(a, pt));
     });
     return out;
+  }
+  // enumeration of a fresh plain literal has its own keys, independent of the datatype's sorted fields
+  const enumerationRecord = (arg) => { const t = typeOf(arg); return isRecordish(t) && !(stringIndex(t) && !checker.getPropertiesOfType(t).length); };
+  function recordEnumerationLiteral(arg) {
+    let literal = arg, local = false;
+    while (ts.isParenthesizedExpression(literal)) literal = literal.expression;
+    if (ts.isIdentifier(literal)) {
+      const sym = checker.getSymbolAtLocation(literal), d = sym?.valueDeclaration;
+      if (d && currentUnit && d.pos >= currentUnit.body.pos && d.end <= currentUnit.body.end && ts.isVariableDeclaration(d) && !d.type && d.initializer && (d.parent.flags & ts.NodeFlags.Const) && ts.isObjectLiteralExpression(d.initializer)) {
+        let safe = true;
+        const walk = (x) => {
+          if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym) {
+            const c = x.parent;
+            if (!(ts.isCallExpression(c) && c.arguments.length === 1 && c.arguments[0] === x && ts.isPropertyAccessExpression(c.expression) && ts.isIdentifier(c.expression.expression) && c.expression.expression.text === 'Object' && originOf(checker, c.expression.expression, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(c.expression.name.text))) safe = false;
+          }
+          ts.forEachChild(x, walk);
+        };
+        walk(currentUnit.body);
+        if (safe && !containsEffect(d.initializer)) { literal = d.initializer; local = true; }
+      }
+    }
+    const plain = ts.isObjectLiteralExpression(literal) && literal.properties.every((p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && !ts.isComputedPropertyName(p.name) && p.name.text !== '__proto__');
+    const opaqueLocal = local && checker.getPropertiesOfType(typeOf(arg)).some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? arg)));
+    return plain && !opaqueLocal ? { literal, local } : null;
+  }
+  function recordEnumeration(n, name) {
+    const arg = n.arguments[0];
+    if (!arg || n.arguments.length !== 1 || !enumerationRecord(arg)) return null;
+    const t = typeOf(arg), shape = recordEnumerationLiteral(arg);
+    if (!shape) {
+      // forgotten own keys and order live in the world; separate reads cannot identify distinct objects
+      if (!unitEffectful()) fail(n, 'unknown record enumeration needs the world; use --core');
+      const D = dtype(t, n), rd = dtype(typeOf(n), n);
+      const value = expr(arg);
+      return hoist(`${external(`Object_${name}_source_${hash(sf.text)}`, ['World', D], `(World, ${rd})`)}(${WORLD}, ${value})`, rd);
+    }
+    const { literal, local } = shape;
+    const et = checker.getTypeArguments(typeOf(n))[0];
+    const vt = name === 'entries' ? checker.getTypeArguments(et)[1] : et;
+    const fields = new Map(), binds = [];
+    const effectLiteral = !local && containsEffect(literal);
+    const R = local ? expr(arg) : null;
+    for (const p of literal.properties) {
+      const key = p.name.text;
+      const value = ts.isShorthandPropertyAssignment(p) ? p.name : p.initializer;
+      let code;
+      if (local) {
+        const pt = checker.getTypeOfPropertyOfType(t, key);
+        code = name === 'keys' ? null : convertD(`${R}.${dn(key)}`, dtype(pt, p), dtype(vt, n));
+      } else {
+        const v = `ev${tempCount++}_`;
+        const target = name === 'keys' ? typeOf(value) : vt;
+        const D = dtype(target, n);
+        const valueCode = isNullish(typeOf(value)) && (name === 'keys' || D === 'Unit') ? 'Unit' : expr(value, target);
+        const binding = `var ${v}: ${D} := ${valueCode};`;
+        if (effectLiteral) pending.push(binding); else binds.push(binding);
+        code = name === 'keys' ? null : v;
+      }
+      fields.set(key, code);
+    }
+    const isIndex = (k) => /^(0|[1-9][0-9]*)$/.test(k) && Number(k) < 4294967295;
+    const keys = [...fields.keys()].sort((a, b) => isIndex(a) ? (isIndex(b) ? Number(a) - Number(b) : -1) : (isIndex(b) ? 1 : 0));
+    const values = keys.map((k) => name === 'keys' ? strEsc(k) : name === 'values' ? fields.get(k) : `(${strEsc(k)}, ${fields.get(k)})`);
+    const seq = `[${values.join(', ')}]`;
+    return binds.length ? `(${binds.join(' ')} ${seq})` : seq;
   }
   function call(n, awaited = false) {
     const f = n.expression;
@@ -1470,6 +1544,10 @@ export function translate(file, fnName, opts = {}) {
       if (name === 'min' || name === 'max') return `${helper(name === 'min' ? 'Min' : 'Max', [NUM])}(${expr(a)}, ${expr(b)})`;
       if (name === 'abs') return `${helper('Abs', [NUM])}(${expr(a)})`;
       return externalCall(`Math_${name}`, n, [...n.arguments]);
+    }
+    if (!awaited && ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(name)) {
+      const enumeration = recordEnumeration(n, name);
+      if (enumeration !== null) return enumeration;
     }
     if (ts.isIdentifier(recv)) {
       const o = originOf(checker, recv, sf, currentUnit?.node ?? null);

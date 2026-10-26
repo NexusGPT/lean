@@ -277,7 +277,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
         }
-        else if (ts.isElementAccessExpression(l)) v(l, 'index-assign', 'arrays change by push on a local only');
+        else if (ts.isElementAccessExpression(l)) v(l, 'index-assign', 'write a record field by name, or use a local Record<string, T> dictionary');
         else v(l, 'unsupported-syntax', 'assignment target');
         return expr(e.right);
       }
@@ -659,19 +659,26 @@ export function lintFile(file, ranges = null, opts = {}) {
     const parts = nonNull(rt);
     if (parts.every(isStr) && isNum(at)) return; // s[i] is a char
     if (parts.every((t) => isArrayLike(checker, t)) && isNum(at)) return;
-    if (parts.some(isAny) || isAny(at)) return; // opaque: uninterpreted
-    if (parts.every(isRecordish) && ts.isStringLiteral(e.argumentExpression)) return; // r["field"]
-    const litKeys = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => x.flags & TF.StringLiteral);
-    if (parts.every(isRecordish) && litKeys(at)) {
-      // r[k] with k from a finite set of literal keys: a chain of field reads
-      const keys = (at.flags & TF.Union ? at.types : [at]).map((x) => x.value);
-      const missing = keys.filter((k) => parts.some((t) => !checker.getPropertyOfType(t, k) && !hasStringIndex(t)));
+    const keyParts = at.flags & TF.Union ? at.types : [at];
+    const keys = keyParts.every((x) => x.flags & TF.StringLiteral) ? keyParts.map((x) => x.value) : null;
+    if (keys?.some((k) => ['constructor', 'prototype', '__proto__'].includes(k))) return v(e, 'prototype', 'this bracket key reaches the prototype chain; read a declared data field');
+    if (parts.some(isAny)) return; // opaque: uninterpreted
+    const dict = parts.every((t) => hasStringIndex(t) && !checker.getPropertiesOfType(t).length);
+    if (dict && (isStr(at) || isAny(at))) return;
+    if (parts.every(isRecordish)) {
+      if (parts.length !== 1 || parts.length !== (rt.flags & TF.Union ? rt.types.length : 1)) return v(e, 'dynamic-key', 'narrow the record receiver before indexing it');
+      if (!keys) return v(e, 'dynamic-key', 'use a finite union of declared string keys, or a Record<string, T> dictionary');
+      let keyCall = false;
+      const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); };
+      visitKey(e.argumentExpression);
+      if (keyCall) return v(e, 'dynamic-key', 'bind the computed key before reading the record; a key call may mutate its receiver');
+      const missing = keys.filter((k) => !checker.getPropertyOfType(parts[0], k));
       if (missing.length) return v(e, 'dynamic-key', `key ${missing.map((k) => JSON.stringify(k)).join(', ')} is not declared on ${checker.typeToString(rt)}`);
+      if (keys.some((k) => nonNull(checker.getTypeOfSymbolAtLocation(checker.getPropertyOfType(parts[0], k), e)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length))) return v(e, 'dynamic-key', 'call a method by its declared name; computed record reads select data fields');
       return;
     }
-    if (parts.every(hasStringIndex) && isStr(at)) return; // a dictionary read
-    if (parts.every(isRecordish) && isStr(at)) return; // a record read by a computed string key: an uninterpreted lookup of (record, key)
-    return v(e, 'dynamic-key', 'only arrays indexed by a number and strings indexed by a number are allowed; other keys are dynamic');
+    if (isAny(at)) return; // opaque key on a non-record
+    return v(e, 'dynamic-key', 'index an array or string by a number, or a record by declared string keys');
   }
 
   // ---------- top level ----------
