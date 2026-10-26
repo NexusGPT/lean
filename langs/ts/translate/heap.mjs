@@ -74,6 +74,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   const MUTATORS = new Set(['push', 'unshift', 'pop']);
   const BINOPS = new Set([K.PlusToken, K.MinusToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken]);
   const unparen = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
+  const isBoolT = (t) => !!(t.flags & ts.TypeFlags.BooleanLike); // `&&` and `||` in the core are the boolean connectives; a value on either side is the ordinary translation's mixed logic
   const sameFileCall = (e) => ts.isCallExpression(e) && ts.isIdentifier(e.expression) && fns.has(e.expression.text) && !e.typeArguments;
   const block = (s) => (ts.isBlock(s) ? [...s.statements] : [s]);
   const endsWithReturn = (list) => {
@@ -110,7 +111,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         if (s.kind === 'arr' ? e.name.text !== 'length' : !fieldOf(s, e.name.text)) return no(`property ${e.name.text}`);
         return checkExpr(e.expression);
       }
-      if (ts.isBinaryExpression(e)) { if (!BINOPS.has(e.operatorToken.kind)) return no(`operator ${e.operatorToken.getText(sf)}`); checkExpr(e.left); checkExpr(e.right); return; }
+      if (ts.isBinaryExpression(e)) { if (!BINOPS.has(e.operatorToken.kind)) return no(`operator ${e.operatorToken.getText(sf)}`); if ((e.operatorToken.kind === K.AmpersandAmpersandToken || e.operatorToken.kind === K.BarBarToken) && !(isBoolT(typeOf(e.left)) && isBoolT(typeOf(e.right)))) return no('logic on values'); checkExpr(e.left); checkExpr(e.right); return; }
       if (ts.isPrefixUnaryExpression(e)) { if (e.operator !== K.ExclamationToken) return no('prefix operator (a negation can make a negative zero the int reading does not see)'); return checkExpr(e.operand); }
       if (ts.isArrayLiteralExpression(e)) { if (!shapeOf(typeOf(e))) return no(`array literal type: ${shapeWhy(typeOf(e))}`); for (const x of e.elements) checkExpr(ts.isSpreadElement(x) ? x.expression : x); return; }
       if (ts.isObjectLiteralExpression(e)) {
@@ -445,7 +446,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     const term = (e) => { // the skeleton of a reference-typed expression; a non-reference expression is a leaf
       e = unparen(e);
       if (!isRefType(typeOf(e))) return '.';
-      const pth = path(e); if (pth !== null) return typeof pth === 'string' ? `@${pth}` : pth;
+      const pth = path(e); if (pth !== null) return typeof pth === 'string' ? (/^[#@(]/.test(pth) ? pth : `@${pth}`) : pth; // a bound local carries its own term; an input path gets the @ mark
       if (ts.isObjectLiteralExpression(e)) {
         const parts = [];
         for (const p of e.properties) {
@@ -479,6 +480,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         return `#${freshId++}<${tag}>{${parts.join(',')}}`;
       }
       if (ts.isTemplateExpression(e)) return '.';
+      if (ts.isNewExpression(e)) { const parts = []; for (const a of e.arguments ?? []) { const tm = term(a); if (tm === null) return null; parts.push(tm); } return `#${freshId++}new<${e.expression.getText(sf)}>(${parts.join(',')})`; } // a construction is a fresh node whose parts are its arguments: a constructor may keep what it is handed
       return null; // a call, a method result, an element read: the identity is not visible here
     };
     const spreadFreshOrPath = (src, s) => { // spreading copies members: fine when they are primitive, or when the source is an input path (its members are that path's members)
