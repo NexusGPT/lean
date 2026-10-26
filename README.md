@@ -85,7 +85,7 @@ Everything else that lean cannot read (generators, callbacks to a library, an un
 
 The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.**
 
-**1. Change what you were handed through its own name, or build a new value.** In the value reading an argument is a value. A function that assigns a field, a slot or the contents of a parameter (`user.tags.push(t)`, `user.id = name`, `counts[k] = n`) is read as a function that also returns the parameter's new value: `addTag(user, t)` becomes `(result, user')`, written as a datatype update (`user.(tags := user.tags + [t])`), and a caller that passed a name takes the new value back into that name. Two rules keep this sound. Two parameters are two objects (the stated axiom; lane B tests it by passing one object twice). A local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`) may not be changed: the model has one value per name, so a change through the alias would not reach the parameter. The lint says `alias-mutation` with the line; change the parameter itself, or copy first.
+**1. Change what you were handed through its own name, or build a new value.** In the value reading an argument is a value. A function that assigns a field, a slot or the contents of a parameter (`user.tags.push(t)`, `user.id = name`, `counts[k] = n`) is read as a function that also returns the parameter's new value: `addTag(user, t)` becomes `(result, user')`, written as a datatype update (`user.(tags := user.tags + [t])`), and a caller that passed a name takes the new value back into that name. Two rules keep this sound. Two parameters are two objects (the stated axiom; lane B generates each parameter object separately today and does not yet pass one object twice, a gap the heap design in `langs/ts/design/heap-layer.md` names). A local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`) may not be changed: the model has one value per name, so a change through the alias would not reach the parameter. The lint says `alias-mutation` with the line; change the parameter itself, or copy first.
 
 ```ts
 // refused: alias-mutation            // proved
@@ -284,7 +284,7 @@ whose body reaches a store.
 case: when a function changes what it points to. Layer 1, built: a parameter the function changes (`user.tags.push(t)`,
 `user.id = name`, `counts[k] = n`) is an *output* of the function, `(world', result, user')`, written as a datatype
 update, and a caller that passed a name takes the new value back into that name. Two parameters are two objects (the
-stated axiom; lane B tests it by passing one object twice), and a local alias of a parameter may not be changed
+stated axiom; lane B does not yet pass one object twice, see the heap design note), and a local alias of a parameter may not be changed
 (`alias-mutation`), because the value reading has one value per name. Layer 2, planned: objects that come from the
 world (a row from a repository, a node in a tree, a shared cache) are references into a heap carried by the world;
 reads and writes go through it; two versions are equal when results and final heaps agree up to a renaming of fresh
