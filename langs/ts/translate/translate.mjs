@@ -483,7 +483,7 @@ export function translate(file, fnName, opts = {}) {
   const lenOf = (s) => (real ? `(|${s}| as real)` : `|${s}|`);
   function stringOf(e) {
     const t = typeOf(e);
-    if (t.flags & TF.StringLike) return expr(e);
+    if ((t.flags & TF.StringLike) || ((t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike))) return expr(e);
     if (t.flags & TF.BooleanLike) return `(if ${expr(e)} then "true" else "false")`;
     const id = external('to_string', [dtype(t, e)], 'string');
     return `${id}(${expr(e)})`;
@@ -625,7 +625,8 @@ export function translate(file, fnName, opts = {}) {
       const A = anyType();
       return `${external(`op_${names[o] ?? mangle(o)}_Any`, [A, A], rd)}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
     }
-    if (o === '+' && !(isAny(lt0) || isAny(rt0)) && ((lt0.flags & TF.StringLike) || (rt0.flags & TF.StringLike)) && !((lt0.flags & TF.StringLike) && (rt0.flags & TF.StringLike))) {
+    const strT = (t) => !!(t.flags & TF.StringLike) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike));
+    if (o === '+' && !(isAny(lt0) || isAny(rt0)) && (strT(lt0) || strT(rt0)) && !(strT(lt0) && strT(rt0))) {
       return `(${stringOf(n.left)} + ${stringOf(n.right)})`;
     }
     if (map[op]) {

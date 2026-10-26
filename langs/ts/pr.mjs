@@ -47,7 +47,7 @@ function changedUnits(file, ranges, project) {
 }
 
 export async function prReport(opts) {
-  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true } = opts;
+  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set() } = opts;
   const files = changedRanges(repo, base, head);
   const rows = []; const temps = [];
   try {
@@ -63,6 +63,12 @@ export async function prReport(opts) {
       const baseFile = path.join(path.dirname(abs), `.lean_base_${path.basename(abs)}`);
       fs.writeFileSync(baseFile, baseTxt); temps.push(baseFile);
       for (const u of units) {
+        if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
+          // declared in scope: this function was meant to change; its difference is information, not a refusal
+          let b = null; try { b = (await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds: 1 })).certificate?.lanes?.B ?? null; } catch { /* keep */ }
+          rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'IN-SCOPE', laneB: b?.verdict ?? null, laneA: null, witness: b?.witnesses?.[0] ?? null, reason: b?.verdict === 'WITNESS' ? 'changed as asked: the two versions differ' : b?.verdict === 'PASS-bounded' ? 'declared in scope but no difference found within the bound' : (b?.reason ?? null), advice: [] });
+          continue;
+        }
         let res;
         try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds }); }
         catch (e) { res = { verdict: 'ASK', certificate: { lanes: { A: { verdict: 'ASK', detail: String(e.message).slice(0, 300) } } } }; }
@@ -80,10 +86,11 @@ export async function prReport(opts) {
 
 export function markdown(rows, base, head) {
   const count = (v) => rows.filter((r) => r.verdict === v).length;
-  const lines = [`# lean report: ${base} → ${head}`, '', `${rows.length} changed function(s): **${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK**`, '',
+  const lines = [`# lean report: ${base} → ${head}`, '', `${rows.length} changed function(s): **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK**`, '',
     '| file | function | verdict | lane B | lane A | note |', '|---|---|---|---|---|---|'];
   for (const r of rows) {
     const note = r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
+    if (r.verdict === 'WITNESS' && r.witness?.args) r.note = note;
     lines.push(`| ${r.file} | \`${r.unit}\` (${r.lines[0]}-${r.lines[1]}) | **${r.verdict}** | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);
   }
   const asks = rows.filter((r) => r.advice && r.advice.length);
@@ -99,8 +106,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
-  if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--out report.md] [--json report.json]'); process.exit(2); }
-  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true) });
+  if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--out report.md] [--json report.json]'); process.exit(2); }
+  const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
+  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope });
   const md = markdown(rows, base, head);
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(rows, null, 1));
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);

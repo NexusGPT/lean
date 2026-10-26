@@ -56,7 +56,7 @@ node langs/ts/check.mjs \
 }
 ```
 
-Class methods work too: `--unit PricingService.applyDiscount`. The whole file is read inside its project (its `tsconfig.json`, its imports, its types); nothing has to be rewritten to be checked.
+A whole change at once: `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m]` reports every changed function of a pull request in one table, with the lint's advice for each ask. Class methods work too: `--unit PricingService.applyDiscount`. The whole file is read inside its project (its `tsconfig.json`, its imports, its types); nothing has to be rewritten to be checked.
 
 ## What it changes in your code
 
@@ -153,6 +153,25 @@ The same lint runs from the command line: `node langs/ts/lint/lint.mjs file.ts`.
 **What you can still do.** Write TypeScript the way your team writes it. A function outside the subset is not blocked: it gets lane B, a bounded execution verdict, and the exact reason the proof lane stopped. You decide what to tighten.
 
 **What changes in your workflow.** A pull request carries, per changed function, one of four words and its certificate. `WITNESS` comes with the input that shows the difference. `PASS-proved` comes with a theorem anyone can re-check. Reviewers read the scope you declared and the asks, not the diff.
+
+## A change, end to end
+
+`examples/booking/` is a pricing core and a quote service written in lean style, at the shape of a real price-comparison app: shops in zones, per-shop prices with validity days, two kinds of promotion, carts, delivery fees, the cheapest complete quote, a service with injected ports (catalogue, clock, audit) and results as values. Every function in it passes the gate as written.
+
+Commit `85136f1` changed it the way a real pull request does: one asked rule (percent promotions capped at half the unit price), one slip while there (`>=` became `>` in the free-delivery test), two refactors that keep behaviour. With the asked function declared in scope:
+
+```bash
+node langs/ts/pr.mjs --repo . --base HEAD~1 --head HEAD --scope unitDiscount
+```
+
+| file | function | verdict | lane B | lane A | note |
+|---|---|---|---|---|---|
+| pricing.ts | `unitDiscount` | **IN-SCOPE** | PASS-bounded | | declared in scope |
+| pricing.ts | `deliveryFee` | **WITNESS** | WITNESS | | input 6: `{ freeDeliveryFromCents: 0, … }, goods 0`: parent 0, candidate the fee |
+| pricing.ts | `formatCents` | **PASS-proved** | PASS-bounded | PASS-proved | the refactor is a theorem |
+| service.ts | `cleanCart` | **PASS-bounded** | PASS-bounded | ASK:unproved | the loop was reshaped; no difference on 80 inputs; the proof needs an induction lean does not yet write |
+
+The slip is caught with the exact input that shows it; the refactor is proved for every input; the reshaped loop is answered with a bound and the reason, not a guess.
 
 ## What you get
 
