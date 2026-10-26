@@ -92,7 +92,7 @@ reading no value model can give; the lint says what to write instead).
 | recursion, mutual recursion | | exact with a fuel | same | done |
 | generics on the unit | 902 | exact (type parameters with equality) | same | done |
 | function-typed parameters and locals, called | | exact (applied as a function value) | same | done |
-| a function value returned, stored in a record field, or compared | 262 units (`function-value`) | refused as a bare expression; allowed as a local const or a record field | an opaque function value keyed by its text everywhere | gap (small) |
+| a function value returned, stored in a record field, or compared | 262 units (`function-value`) | anywhere (dev): a pure lambda when its body has no effect, else an opaque value keyed by its text; lane B compares a returned function by its source | same | done (dev) |
 | `this` binding of a free function, `.call`/`.apply`/`.bind` | | refused / uninterpreted | by design | by design |
 | tagged templates | 173 | uninterpreted function of the strings and the values | same | done |
 | `void f()` | 686 | exact (the call) | same | done |
@@ -208,7 +208,7 @@ Of 316 lint-admitted units in 120 sampled nexus files, 272 translate (86.1 perce
 2. `super` calls (115 units); the clock read of `new Date()` is done on dev.
 3. Done on dev: `&&`/`||` as mixed-type values, `??` lifting, effects in conditional branches and on the right of a logic operator.
 4. `.then` chains and `new Promise` as readings instead of transitions with opaque handlers: 1,086 + 368; `Promise.all` is done on dev.
-5. Done on dev: division and floats per file (`/` 1,399 units, float literals 1,205); `**`, bitwise and `NaN` remain.
+5. Done on dev: division and floats per file (`/` 1,399 units, float literals 1,205) and `**` as an uninterpreted power; bitwise and `NaN` remain.
 6. Done on dev: `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `**`. Left: `for..in`, labels, fall-through, bitwise on `bv32`.
 7. Exceptions across same-file calls (`Result` channel) and `try`/`finally`.
 8. Generators, async iterators, iterator protocol: 488 units.

@@ -422,7 +422,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ThisKeyword: if (currentClass) return; return v(e, 'this', '`this` outside a class method');
       case K.SuperKeyword: return v(e, 'class', '`super` is outside the subset');
       case K.ClassExpression: return v(e, 'class', 'classes are outside the subset');
-      case K.FunctionExpression: case K.ArrowFunction: return v(e, 'function-value', 'a function value lives in a local const, a record field or a callback position; here it is a bare expression');
+      case K.FunctionExpression: case K.ArrowFunction: return callback(e, null); // a function value anywhere: checked as a callback value (its body in the subset; it may hold effects, then it is an opaque value by its text);
       case K.NewExpression: {
         const n = e.expression.getText(sf);
         if (n === 'Set' || n === 'Map' || n === 'RegExp') return e.arguments?.forEach(expr);

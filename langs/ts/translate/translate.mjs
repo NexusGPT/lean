@@ -719,7 +719,11 @@ export function translate(file, fnName, opts = {}) {
         return convert(expr(n.expression), typeOf(n.expression), typeOf(n), n);
       }
       case K.AwaitExpression: return awaitExpr(n);
-      case K.ArrowFunction: return lambda(n, n.parameters.length);
+      case K.ArrowFunction: case K.FunctionExpression: {
+        // a pure lambda when the body is in the subset without effects; otherwise an opaque value keyed by its text (a
+        // handler, a thunk with calls inside): the same text on both sides is the same value, a changed one differs
+        try { return lambda(n, n.parameters.length); } catch (e) { if (!(e instanceof Unsupported)) throw e; return opaqueFn(n); }
+      }
       case K.TaggedTemplateExpression: {
         // tag`a${x}b`: an uninterpreted function of the literal parts and the holes, keyed by the tag
         const tpl = n.template;
