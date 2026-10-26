@@ -3,12 +3,15 @@
  "resolve": false,
  "layer1": {
   "outsideCore": 53865,
-  "exposed": 34544,
-  "notExposed": 19321,
+  "exposed": 34655,
+  "notExposed": 19210,
   "byClass": {
    "result may carry an input or shared reference": 31992,
-   "nested write through an input": 3066
-  }
+   "nested write through an input": 3066,
+   "input field assigned a reference": 290
+  },
+  "determinate": 14559,
+  "exposedDeterminate": 3579
  },
  "policy": "heap core as planned by translate/heap.mjs (stage 2): structural membership per unit, modules unresolved; a count of units the core reads, not of proofs",
  "files": 23359,
