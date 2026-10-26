@@ -201,15 +201,15 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
     }
     continue;
   }
-  const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...(exp.heap ? ['--heap'] : []), ...extra]);
+  const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...(exp.heap !== false ? ['--heap'] : []), ...extra]);
   const headerOf = (which, key) => fs.readFileSync(path.join(tmpd, `${which}.dfy`), 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm'))?.[1] ?? '';
   const p1 = tr('parent', []);
   const eff = p1.status === 0 ? headerOf('parent', 'EFFECTFUL') : '';
-  const hp = p1.status === 0 && exp.heap ? headerOf('parent', 'HEAP') : '';
-  const heapArgs = (units) => (exp.heap ? ['--heap-units', units || '-'] : []); // the heap core agreed on both sides: a unit in the core on one side only would change its signature
+  const hp = p1.status === 0 && exp.heap !== false ? headerOf('parent', 'HEAP') : '';
+  const heapArgs = (units) => (exp.heap !== false ? ['--heap-units', units || '-'] : []); // the heap core agreed on both sides: a unit in the core on one side only would change its signature
   const c1 = tr('candidate', [...(eff ? ['--effectful', eff] : []), ...heapArgs(hp)]);
   const eff2 = c1.status === 0 ? headerOf('candidate', 'EFFECTFUL') : '';
-  const hc = c1.status === 0 && exp.heap ? headerOf('candidate', 'HEAP') : '';
+  const hc = c1.status === 0 && exp.heap !== false ? headerOf('candidate', 'HEAP') : '';
   if (eff2 !== eff || hc !== hp) tr('parent', [...(eff2 ? ['--effectful', eff2] : []), ...heapArgs(hc)]);
   fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])) }));
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
@@ -226,7 +226,10 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
   for (const [f, want] of Object.entries(exp.equal)) {
     const sp = spans[`Equal_${f}`];
     const proved = finished && !!sp && !errs.some((L) => sp[0] <= L && L <= sp[1]);
-    add('pair', name, `Equal_${f} ${want ? 'proved' : 'not proved'}`, proved === want, sp ? (proved ? 'proved' : 'not proved') : 'lemma missing');
+    const withheld = lines.find((ln) => ln.startsWith(`// UNGUARDED Equal_${f}: `));
+    const got = sp ? (proved ? 'proved' : 'not proved') : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
+    const ok = want === 'withheld' ? !!withheld : proved === want && !(want && withheld); // "withheld": the identity guard must have withheld the lemma
+    add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want ? 'proved' : 'not proved'}`, ok, got);
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {

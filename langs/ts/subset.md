@@ -177,7 +177,9 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `exception-return` | a returned object alias directly referenced by its finally | `try { return xs; } finally { xs.push(1); }` |
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
 | `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |
-| `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |
+| `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy`, `Object.getPrototypeOf`, `Object.setPrototypeOf`, `Object.create`, `Object.defineProperty`, `Object.defineProperties`, `Object.getOwnPropertyDescriptor(s)` | `Object.getPrototypeOf(x)` |
+| `assign-target` | `Object.assign` whose first argument is not an object literal: it writes into that argument | `Object.assign(user, patch)` |
+| `date-mutation` | a `Date` setter (`setFullYear`, `setMonth`, `setDate`, `setHours`, `setMinutes`, `setSeconds`, `setMilliseconds`, `setTime`, `setYear`, their `UTC` forms): it changes the Date in place | `d.setFullYear(2020)` |
 | `class`, `inheritance` | `super` as a value (`const f = super.m`, `super.x`); `super.m(...)` as a call is read as a transition on the receiver | `const f = super.m` |
 | `receiver-mutation` | a nested receiver path through a class instance, optional value or opaque handle | `this.client.state.n += 1` when `client` is a class instance |
 | `object-method-capture` | a method or getter captures a changing local binding | `let n = 0; const o = { read() { return n; } }; n++` |

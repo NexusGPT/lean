@@ -24,6 +24,9 @@ const TF = ts.TypeFlags;
 // globals that are effects or nondeterminism: never externals
 // version 3: an effect is a world transition, so I/O, the clock, randomness and the console are admitted as effects;
 // what stays out is dynamic code and the prototype chain, which no transition models
+const OBJECT_PROTOTYPE_FUNCTIONS = new Set(['getPrototypeOf', 'setPrototypeOf', 'create', 'defineProperty', 'defineProperties', 'getOwnPropertyDescriptor', 'getOwnPropertyDescriptors']);
+const DATE_SETTERS = /^set(UTC)?(FullYear|Month|Date|Hours|Minutes|Seconds|Milliseconds|Time|Year)$/;
+const unparenX = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
 const EFFECT_GLOBALS = {
   eval: 'dynamic-eval', Function: 'dynamic-eval', Reflect: 'prototype', Proxy: 'prototype',
 };
@@ -149,6 +152,14 @@ export function lintFile(file, ranges = null, opts = {}) {
     return false;
   };
 
+  // the Object functions that reach the prototype chain or the property descriptors have no reading (research element 17: a prototype read reached PASS-bounded);
+  // Object.assign writes into its first argument while the value reading returns a fresh record and leaves the target unchanged (research element 16); a fresh literal target is a copy and keeps its reading
+  const objectCallRefusal = (e, r, name) => {
+    if (!(ts.isIdentifier(r) && r.text === 'Object')) return null;
+    if (OBJECT_PROTOTYPE_FUNCTIONS.has(name)) return v(e, 'prototype', `\`Object.${name}\` reaches the prototype chain or the property descriptors; no transition models it`);
+    if (name === 'assign' && !(e.arguments[0] && ts.isObjectLiteralExpression(unparenX(e.arguments[0])))) return v(e, 'assign-target', '`Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources into a new object');
+    return null;
+  };
   const v = (node, rule, msg) => {
     const pos = node.getStart(sf), end = node.getEnd();
     out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200) });
@@ -427,6 +438,9 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
       const name = e.expression.name.text, r = e.expression.expression;
       const rt = tOf(r);
+      { const refused = objectCallRefusal(e, r, name); if (refused) return refused; }
+      // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
+      if (DATE_SETTERS.test(name) && nonNull(rt).some((x) => x.symbol?.name === 'Date')) return v(e, 'date-mutation', `\`${name}\` changes the Date in place; no transition models it: build a new Date from the computed time value instead`);
       if (moduleState(checker, r, sf) && MUT_NAMES.has(name)) { checkIdent(r); return argsOf(e); }
       const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasLocals.has(declOf(r).decl);
       if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasLocals.has(declOf(r).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', `\`${r.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
@@ -912,7 +926,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         }
         return argsOf(e);
       }
-      if (ts.isIdentifier(recv) && PURE_GLOBALS.has(recv.text) && declOf(recv).kind === 'global') return argsOf(e);
+      if (ts.isIdentifier(recv) && PURE_GLOBALS.has(recv.text) && declOf(recv).kind === 'global') { const refused = objectCallRefusal(e, recv, f.name.text); if (refused) return refused; return argsOf(e); }
       const parts = nonNull(rt);
       if (parts.some(isAny)) {
         // an opaque receiver: the call is an uninterpreted external of (receiver, arguments); no callbacks, no mutation names

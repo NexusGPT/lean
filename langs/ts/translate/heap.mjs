@@ -72,7 +72,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
 
   // ----- the core, by syntax -----
   const MUTATORS = new Set(['push', 'unshift', 'pop']);
-  const BINOPS = new Set([K.PlusToken, K.MinusToken, K.AsteriskToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken]);
+  const BINOPS = new Set([K.PlusToken, K.MinusToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken]);
   const unparen = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
   const sameFileCall = (e) => ts.isCallExpression(e) && ts.isIdentifier(e.expression) && fns.has(e.expression.text) && !e.typeArguments;
   const block = (s) => (ts.isBlock(s) ? [...s.statements] : [s]);
@@ -99,10 +99,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     const rt = checker.getSignatureFromDeclaration(u.fn)?.getReturnType();
     if (!rt || !shapeOf(rt)) no(`return type: ${shapeWhy(rt)}`);
     if (!ok) return false;
+    const declaredInside = (id) => { const s = checker.getSymbolAtLocation(id); const d = s?.valueDeclaration ?? s?.declarations?.[0]; return !!d && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end; };
     const checkExpr = (e0) => {
       if (!ok) return;
       const e = unparen(e0);
-      if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
+      if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!declaredInside(e)) no(`outside name ${e.text}`); else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
       if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return;
       if (ts.isPropertyAccessExpression(e)) {
         const s = shapeOf(typeOf(e.expression)); if (!s) return no(`receiver type: ${shapeWhy(typeOf(e.expression))}`);
@@ -110,7 +111,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         return checkExpr(e.expression);
       }
       if (ts.isBinaryExpression(e)) { if (!BINOPS.has(e.operatorToken.kind)) return no(`operator ${e.operatorToken.getText(sf)}`); checkExpr(e.left); checkExpr(e.right); return; }
-      if (ts.isPrefixUnaryExpression(e)) { if (e.operator !== K.ExclamationToken && e.operator !== K.MinusToken) return no('prefix operator'); return checkExpr(e.operand); }
+      if (ts.isPrefixUnaryExpression(e)) { if (e.operator !== K.ExclamationToken) return no('prefix operator (a negation can make a negative zero the int reading does not see)'); return checkExpr(e.operand); }
       if (ts.isArrayLiteralExpression(e)) { if (!shapeOf(typeOf(e))) return no(`array literal type: ${shapeWhy(typeOf(e))}`); for (const x of e.elements) checkExpr(ts.isSpreadElement(x) ? x.expression : x); return; }
       if (ts.isObjectLiteralExpression(e)) {
         const s = shapeOf(typeOf(e)); if (!s || s.kind !== 'rec') return no(`object literal type: ${shapeWhy(typeOf(e))}`);
@@ -292,7 +293,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
       }
       if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!(${expr(e.operand)})` : `(-(${expr(e.operand)}))`;
       if (ts.isBinaryExpression(e)) {
-        const op = { [K.PlusToken]: '+', [K.MinusToken]: '-', [K.AsteriskToken]: '*', [K.LessThanToken]: '<', [K.LessThanEqualsToken]: '<=', [K.GreaterThanToken]: '>', [K.GreaterThanEqualsToken]: '>=', [K.EqualsEqualsEqualsToken]: '==', [K.ExclamationEqualsEqualsToken]: '!=', [K.AmpersandAmpersandToken]: '&&', [K.BarBarToken]: '||' }[e.operatorToken.kind];
+        const op = { [K.PlusToken]: '+', [K.MinusToken]: '-', [K.LessThanToken]: '<', [K.LessThanEqualsToken]: '<=', [K.GreaterThanToken]: '>', [K.GreaterThanEqualsToken]: '>=', [K.EqualsEqualsEqualsToken]: '==', [K.ExclamationEqualsEqualsToken]: '!=', [K.AmpersandAmpersandToken]: '&&', [K.BarBarToken]: '||' }[e.operatorToken.kind];
         const l = expr(e.left), r = expr(e.right); // source order: the left operand's allocations come first
         return `(${l} ${op} ${r})`;
       }
@@ -383,8 +384,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   function layer1Risk(u) {
     const risks = new Set();
     const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) ? p.name.text : null)).filter(Boolean));
-    const aliases = new Set(); // locals bound to a reference-typed path of an input
+    const aliases = new Map(); // local -> the depth of the input path it was bound to (`c = p` is 0, `c = p.inner` is 1)
     const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
+    const effDepth = (x) => { const r = rootOf(x); return depth(x) + (ts.isIdentifier(r) && aliases.has(r.text) ? aliases.get(r.text) : 0); }; // the depth of a write below its input root, aliases unfolded
     const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
       e = unparen(e);
       if (!isRefType(typeOf(e))) return true;
@@ -401,13 +403,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
       return s.fields.every((f) => f.shape.kind === 'prim');
     };
     const walk = (n) => {
-      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || depth(n.initializer) >= 1)) aliases.add(n.name.text);
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || ts.isPropertyAccessExpression(unparen(n.initializer)) || unparen(n.initializer).kind === K.ThisKeyword)) aliases.set(n.name.text, effDepth(n.initializer));
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
         const L = unparen(n.left);
-        if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) { const r = rootOf(L); if (depth(L) >= 2 || aliases.has(r.text) || r.kind === K.ThisKeyword) risks.add('nested write through an input'); else if (n.operatorToken.kind === K.EqualsToken && isRefType(typeOf(n.right)) && !fresh(n.right)) risks.add('input field assigned a reference'); }
+        if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) { if (effDepth(L) >= 2) risks.add('nested write through an input'); else if (n.operatorToken.kind === K.EqualsToken && isRefType(typeOf(n.right)) && !fresh(n.right)) risks.add('input field assigned a reference'); }
       }
-      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) && inputRooted(n.expression.expression)) { const recv = unparen(n.expression.expression); const r = rootOf(recv); if (depth(recv) >= 1 || aliases.has(r.text) || r.kind === K.ThisKeyword) risks.add('nested write through an input'); }
-      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L) && depth(L) >= 2) risks.add('nested write through an input'); }
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) && inputRooted(n.expression.expression)) { const recv = unparen(n.expression.expression); if (effDepth(recv) >= 1) risks.add('nested write through an input'); }
+      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L) && effDepth(L) >= 2) risks.add('nested write through an input'); }
       if (ts.isReturnStatement(n) && n.expression && !fresh(n.expression)) risks.add('result may carry an input or shared reference');
       if (ts.isArrowFunction(n) && !ts.isBlock(n.body) && n.parent && ts.isCallExpression(n.parent) === false && n === u.fn.body) { /* unreachable: units with expression bodies are handled below */ }
       ts.forEachChild(n, walk);
@@ -430,6 +432,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     let freshId = 0;
     const path = (e) => { // an input path as a string, or null
       e = unparen(e);
+      if (e.kind === K.ThisKeyword) return 'this';
       if (ts.isIdentifier(e)) return params.has(e.text) ? e.text : bound.has(e.text) ? bound.get(e.text) : null;
       if (ts.isPropertyAccessExpression(e)) { const b = path(e.expression); return typeof b === 'string' ? `${b}.${e.name.text}` : null; }
       if (ts.isNonNullExpression(e)) return path(e.expression);
@@ -455,6 +458,23 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         return `#${freshId++}[${parts.join(',')}]`;
       }
       if (ts.isConditionalExpression(e)) { const a = term(e.whenTrue), b = term(e.whenFalse); return a === null || b === null ? null : `(?${a}:${b})`; }
+      if (ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e) || ts.isJsxFragment(e)) { // an element is a fresh node: its attributes and children are its parts
+        const open = ts.isJsxElement(e) ? e.openingElement : ts.isJsxFragment(e) ? null : e;
+        const parts = [];
+        if (open) for (const a of open.attributes.properties) {
+          if (ts.isJsxSpreadAttribute(a)) { const tm = term(a.expression); if (tm === null) return null; parts.push(`...${tm}`); }
+          else if (ts.isJsxAttribute(a)) { const init = a.initializer; if (!init) { parts.push(`${a.name.getText(sf)}:.`); continue; } if (ts.isJsxExpression(init)) { if (!init.expression) continue; const tm = term(init.expression); if (tm === null) return null; parts.push(`${a.name.getText(sf)}:${tm}`); } else parts.push(`${a.name.getText(sf)}:.`); }
+        }
+        const kids = ts.isJsxSelfClosingElement(e) ? [] : e.children;
+        for (const c of kids) {
+          if (ts.isJsxText(c)) { if (c.text.trim()) parts.push('.'); continue; }
+          if (ts.isJsxExpression(c)) { if (!c.expression) continue; const tm = term(c.expression); if (tm === null) return null; parts.push(tm); continue; }
+          const tm = term(c); if (tm === null) return null; parts.push(tm);
+        }
+        const tag = open ? open.tagName.getText(sf) : '';
+        return `#${freshId++}<${tag}>{${parts.join(',')}}`;
+      }
+      if (ts.isTemplateExpression(e)) return '.';
       return null; // a call, a method result, an element read: the identity is not visible here
     };
     const spreadFreshOrPath = (src, s) => { // spreading copies members: fine when they are primitive, or when the source is an input path (its members are that path's members)
@@ -466,8 +486,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
       return path(src) !== null;
     };
     const canon = (s) => { if (s === null) return null; const ids = new Map(); return s.replace(/#(\d+)/g, (m, d) => { if (!ids.has(d)) ids.set(d, ids.size); return `#${ids.get(d)}`; }); };
-    const sites = [], writes = []; let nestedWrite = false;
-    const risks = new Set(layer1Risk(u)); if (risks.has('nested write through an input')) nestedWrite = true;
+    const sites = [], writes = []; let nestedWrite = false; // nestedWrite: a write through an input whose target path could not be read
+    const paramsOrThis = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && params.has(r.text)) || r.kind === K.ThisKeyword || (ts.isIdentifier(r) && bound.has(r.text)); };
     // a local written after its binding (a mutator, an assignment through it, a let rebound) has no fixed skeleton
     const written = new Set();
     const scan = (n) => {
@@ -479,13 +499,27 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     scan(u.body);
     const walk = (n) => {
       if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && (n.parent.flags & ts.NodeFlags.Const) && !written.has(n.name.text)) { const tm = term(n.initializer); if (tm !== null) bound.set(n.name.text, tm); }
-      if (ts.isBinaryExpression(n) && n.operatorToken.kind === K.EqualsToken) { const L = unparen(n.left); if (ts.isPropertyAccessExpression(L) && params.has(rootOf(L).text ?? '') && depth(L) === 1 && isRefType(typeOf(n.right))) writes.push(`${path(L) ?? L.getText(sf)}:=${term(n.right)}`); }
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
+        const L = unparen(n.left);
+        if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && paramsOrThis(L)) {
+          const pth = ts.isPropertyAccessExpression(L) ? path(L) : null;
+          if (pth === null || typeof pth !== 'string') nestedWrite = true; // an element write or an unreadable path
+          else if (isRefType(typeOf(n.right))) { const tm = n.operatorToken.kind === K.EqualsToken ? term(n.right) : null; if (tm === null) nestedWrite = true; else writes.push(`@${pth}:=${tm}`); }
+          else writes.push(`@${pth}:=.`);
+        }
+      }
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) && paramsOrThis(n.expression.expression)) {
+        const pth = path(n.expression.expression);
+        if (typeof pth !== 'string') nestedWrite = true;
+        else { const args = n.arguments.map((a) => (isRefType(typeOf(a)) ? term(a) : '.')); if (args.some((a) => a === null)) nestedWrite = true; else writes.push(`@${pth}.${n.expression.name.text}(${args.join(',')})`); }
+      }
+      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && paramsOrThis(L)) { const pth = ts.isPropertyAccessExpression(L) ? path(L) : null; if (typeof pth !== 'string') nestedWrite = true; else writes.push(`@${pth}:=.`); } }
       if (ts.isReturnStatement(n) && n.expression) sites.push(term(n.expression));
       if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return; // a nested function's returns are its own
       ts.forEachChild(n, walk);
     };
     if (ts.isBlock(u.body)) walk(u.body); else sites.push(term(u.body));
-    const cs = sites.map(canon), cw = writes.map((w) => (w.endsWith(':=null') ? null : canon(w)));
+    const cs = sites.map(canon), cw = writes.map(canon);
     // one identity for the result whatever path runs: every site the same skeleton, every conditional both branches the same
     const oneSite = cs.length > 0 && cs.every((s) => s !== null && s === cs[0] && !/\(\?/.test(s) || (s !== null && s === cs[0] && condAgrees(s)));
     const determinate = !nestedWrite && oneSite && cw.every((w) => w !== null);
@@ -493,5 +527,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   }
   // a conditional skeleton `(?a:b)` fixes the identity only when a and b are the same skeleton
   function condAgrees(s) { let ok = true; s.replace(/\(\?([^()]*):([^()]*)\)/g, (m, a, b) => { if (a !== b) ok = false; return m; }); return ok && !/\(\?[^()]*\(/.test(s); }
-  return { plan, isCore, emit, prelude, shapes, shapeLegend, core: () => core, whyNot: whyNotOf, layer1Risk, identitySkeleton };
+  // the identity guard's input for a layer-1 unit: is the value reading exposed, and what identity shape does the unit have
+  function guard(u) {
+    let exposed = [], sk = { determinate: false, sites: [], writes: [] };
+    try { exposed = layer1Risk(u); } catch (e) { exposed = [`unreadable: ${String(e.message).slice(0, 80)}`]; }
+    if (exposed.length) { try { sk = identitySkeleton(u); } catch (e) { sk = { determinate: false, sites: [], writes: [], error: String(e.message).slice(0, 80) }; } }
+    return { exposed, determinate: !!sk.determinate, sites: sk.sites ?? [], writes: sk.writes ?? [] };
+  }
+  return { plan, isCore, emit, prelude, shapes, shapeLegend, core: () => core, whyNot: whyNotOf, layer1Risk, identitySkeleton, guard };
 }

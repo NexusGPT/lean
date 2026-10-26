@@ -1,228 +1,181 @@
 # Integrating the five research results into lean
 
-Design note, 2026-10-26. Sources: the five deep-research results on briefs 13 to 17 (shared references, state over
-time, escaping functions, identity-bearing built-ins, dynamic features), read in full. lean holds no model anywhere:
-no LLM, no small decision model. Every mechanism below is a program, a proof or a measurement.
+Design note, 2026-10-26, second version. Sources: the five deep-research results on briefs 13 to 17 (shared
+references, state over time, escaping functions, identity-bearing built-ins, dynamic features), read in full, and
+the five element dossiers under `research-elements/` (one per result, every named system opened at its primary
+artifact where reachable, with a verdict DEPENDENCY / PORT / REFERENCE / IRRELEVANT and the file-level HOW).
+lean holds no model anywhere: no LLM, no small decision model. Every mechanism is a program, a proof or a
+measurement. The owner's standing rule: no overfitting to a bug; every mechanism is general.
 
-## What the five results agree on
+## 0. Findings to fix now (soundness, found by the element readers while probing lean)
 
-* The thing compared must be an open system over a complete, explicit state: every cell a unit can read or write is
-  in the state, with its real meaning, or the verdict is ASK. A cell left out, reset between calls, or read as an
-  uninterpreted function is where a false proof lives (result 14's "crucial correction": a one-step proof over the
-  COMPLETE state composes to every call sequence by induction; the hole is omission, never the lack of a second-call
-  prover).
-* A bounded search that finds nothing is ASK, never PASS. A proof is PASS only over a stated observation contract.
-  A WITNESS is a replayed separating run, never an abstract counterexample.
-* Identity is part of the observation: the same value tree can be two graphs (result 13), the same contents can be
-  the receiver or a fresh object (result 16), the same function text can be two closures (result 15).
-* A refusal names a missing semantic obligation, never a forbidden spelling (result 17).
+1. **`Object.assign` on a parameter passes the lint and lane A reads it as pure** (dossier 16, "Lean finding").
+   `translate.mjs:171` lists `Object` among `PURE_RECEIVERS`; `Object.assign(p, {a: n})` becomes an uninterpreted
+   call returning a fresh record while `p` is never updated in the model. Lane B catches the probe pair (WITNESS),
+   so no false PASS was reached, but lane A's reading is a false-proof route. Fix: the lint refuses `Object.assign`
+   whose first argument is not an object literal (rule `assign-target`), until the library table (section 2)
+   models it as a transition on the target.
+2. **Date setters on a parameter pass the lint and lane A leaves the Date unchanged** (dossier 16). `d.setFullYear(2020)`
+   is an effectful external returning a number; `d.getTime()` afterwards reads the old value in the model. Lane B
+   catches the probe pair. Fix: the lint refuses every `Date.prototype` setter (rule `date-mutation`) until the
+   library table models the Date cell.
+3. **`Object.getPrototypeOf`, `Object.create`, `Object.defineProperty`, `Object.setPrototypeOf` pass the lint**
+   (dossier 17, probes). A probe pair `getPrototypeOf(x) === null` versus `return false` reached PASS-bounded: lane
+   B never builds a null-prototype object. Fix: the lint refuses these by name with the existing `prototype` rule,
+   and lane B's generator gains a null-prototype input, until the ledger has a `proto` field.
+4. **A cleared timer still shows as pending** (dossier 15, special depth b): `run.mjs:120` records `clearTimeout`
+   in the trace and leaves the pending entry. A candidate that arms and clears a timer differs from the parent only
+   through the trace. Fix with the virtual clock (section 4).
+5. **Corrections to the research results themselves** (dossier 16): `setFullYear` on an invalid Date sets the time
+   value to +0, it does not return NaN; JEST's 27 are specification bugs, not engine bugs; Map and Set keys use
+   SameValue after canonicalising -0, which equals SameValueZero.
 
-## 0. One design: a ledger, two lanes, obligations
+## 1. One design: a ledger, two lanes, obligations
 
 **The ledger** is lean's state object, the one thing both lanes read and write:
 
 | Component | Holds | Today |
 |---|---|---|
 | heap | records, arrays, dictionaries, Map/Set/Date cells, class instances with a `proto` edge | records and arrays of primitives in the heap core (stage 2); the rest is a value tree or uninterpreted |
-| cells | module variables, captured variables of closures | World fields (module forms, the counter reading) |
-| callables | a function value = code identity + captured cells | a text-keyed uninterpreted value |
-| pending | timers, intervals, promise reactions, events, with enabling rules | `pending` in lane B's observation; promise forms in lane A |
-| clock | the instant a read returns | a transition (the clock-read lane) |
-| library | every built-in call as a transition on the ledger | a transition for effects, uninterpreted for the rest |
+| cells | module variables, captured variables of closures | module cells are uninterpreted externals `Module_file_get_/set_` keyed by the declaration text (sound, weak); captured-variable writes are refused |
+| callables | a function value = code identity + captured cells | a text-keyed opaque value (`opaqueFn`, `translate.mjs:2112`); lane B keys a function by its source hash (`fake.mjs:186`) |
+| pending | timers, intervals, promise reactions, events, with enabling rules | a flat bag in lane B (`run.mjs:117-120`); promise forms in lane A |
+| clock | the instant a read returns | a transition (the clock-read lane, merged 2026-10-26) |
+| library | every built-in call as a transition on the ledger | a transition for effects, uninterpreted for the rest; `push`/`pop`/`unshift`/`splice` on sequences |
 
-**Obligations.** The translator emits, per unit, the ledger components the unit needs (`// OBLIGATIONS <unit>:
-heap(R_x, A_string), library(push, Map.set), cells(counter), callable(returned), pending(timer), clock, receiver,
-arguments, proto, keys, coercion`). A unit is PROVABLE when every obligation has a transition model in the ledger;
-an obligation without one makes the unit ASK with the obligation named, and lane B still runs. A REFUSE stays for
-the obligations no model can carry yet (interception, text-to-code, prototype mutation after escape), each named.
-This replaces "outside the subset" by "this unit needs X, and lean does not model X".
+**Obligations.** The translator emits, per unit, the ledger components the unit needs; a unit is PROVABLE when every
+obligation has a transition model; an unmet obligation makes the unit ASK with the obligation named, lane B still
+runs. REFUSE stays for what no model can carry yet (interception, text-to-code, prototype mutation after escape).
 
-**Lane A** proves transition equality of one step on the ledger (one lemma per unit, as now); one step composes.
-**Lane B** runs environment programs on the ledger (result 15's witness shape), with retained state between
-commands, aliased and cyclic inputs, and a seeded schedule; it reports WITNESS on a replayed divergence,
-PASS-bounded with the program depth stated, and PASS-decided when the state space is finite and fully explored
-(section 3).
+**Lane A** proves one step on the ledger (one lemma per unit); one step composes (result 14's correction).
+**Lane B** runs environment programs on the ledger with retained state, aliased and cyclic inputs and a seeded
+schedule; WITNESS on a replayed divergence, PASS-bounded with the program depth stated, PASS-decided when the state
+space is finite and fully explored.
 
-## 1. Shared objects (brief 13)
+## 2. What lean takes, element by element
+
+The five dossiers judged 189 named systems and methods. Verdict counts: DEPENDENCY 5 (Dafny and Z3 already in use;
+fast-check; Test262 as a corpus), PORT 16, REFERENCE 131, IRRELEVANT 37. The table lists every PORT and DEPENDENCY
+with my ruling where it differs from the dossier.
+
+| Element | Dossier | Verdict | Where in lean | How, in one line | Cost (CLAIM) |
+|---|---|---|---|---|---|
+| Korat heap enumeration | 13 §28 | PORT | `exec/gen.mjs` `enumerateHeaps(spec, k)` | enumerate non-isomorphic small heaps per shape (null, existing or fresh per reference field, cycles), deduplicated by `graph.mjs` naming | 3 d |
+| CMC heap canonicalisation | 13 §32 | PORT (stage 3) | `translate/heap.mjs` `Canon(hw, roots)`, `spec/theorem.py` | the lemma proves `Canon(parent) == Canon(candidate)`; garbage and allocation order stop mattering | 5 d |
+| `Object.assign` transition | 13 §37, 16 table | PORT | `translate/library.json` → `heap.mjs` `Assign_<shape>` | copy own enumerable keys of each source into the target in order through `Set_`; getters, setters, proxies and target-is-source refused | 4 d |
+| Steensgaard may-alias, HotSpot escape | 13 §25, §26 | REFERENCE (dossier said PORT) | `heap.mjs` `identitySkeleton` | the skeleton already treats every input path as a may-alias and every fresh node used twice as shared; a separate unification pass adds nothing the guard needs | 0 |
+| Hobbit closure search | 14 §4 | REFERENCE, later (dossier said PORT) | none now | a bisimulation search over paired worlds is the escalation for closures with state; the one-step proof over the complete ledger comes first | later |
+| W-method suite | 14 §22 | folded into the finite-state lane | `exec/finite.mjs` | the declared finite domain is the fault domain, so the product exploration is complete without a separate W | 0 |
+| Retained-state command runner | 14 design (a) | PORT | `exec/run.mjs`: one Environment per side per program, `commandSequence(spec, seed, i, len)` in `gen.mjs`, greedy delete shrinking | the counter pair gives a two-command WITNESS; clean runs stay PASS-bounded with the command count in the certificate | 6 d |
+| Finite-state product | 14 design (b) | PORT | new `exec/finite.mjs` | breadth-first over (parent state, candidate state) pairs when every cell and argument is a literal union, boolean or enum read from the types; PASS-decided with the pair count and visited-set hash | 6 d |
+| State-completeness audit | 14 design (c) | PORT | `translate/translate.mjs` before `emitUnit` | list every persistent cell a unit touches (`moduleState`, `isWorldField`, captured declarations, `outsideRoot`); a cell without a transition model is an obligation written to the certificate | 5 d |
+| fast-check model-based commands | 15 §26 | DEPENDENCY | vendored under `langs/ts/vendor/fast-check` (MIT, 4.10.2), new `exec/program.mjs` | one command class per legal operation (`call`, `retain`, `invoke`, `tick`, `settle`, `fire`, `next`, `throw`, `return`); `fc.commands` shrinks and `replayPath` replays | 8 to 12 d |
+| Virtual clock (Jest, Node MockTimers semantics) | 15 §27, §28 | PORT | `exec/fake.mjs` `clock` beside `pending`; `run.mjs:117-120` | `tick(ms)` fires due timers in arm order, intervals re-arm, `clearTimeout` removes the entry, `setTime` moves without firing, `runAll` has a count limit (ASK when hit) | 3 to 5 d |
+| Callable records `Fn(code, env)` | 15 §34 | PORT | `translate.mjs:2112` (`opaqueFn`), the prelude | a function value is its code identity plus captured cells; equal when both agree; a body outside the file's list is ASK (defunctionalisation, 15 §35) | 10 to 15 d |
+| HOBBIT's opponent-known callables | 15 §5 | PORT, inside the program runner | `fake.mjs` `knownCallables` beside `pending` | an escaped function becomes a retained handle a program may invoke again; bound exhaustion is ASK | counted above |
+| Library transition table | 16 table, `library-ops.dfy` | PORT | `translate/library.json`, `heap.mjs` prelude generation | one row per operation (push, splice, sort with a pure comparator, reverse, slice, concat, map, Map.set, Set.add, Object.assign, Object.freeze, structuredClone of acyclic records, Date cells); the Dafny forms are verified in `design/library-ops.dfy` (23 verified, 0 errors) | 6 d |
+| Built-in call recording (Jalangi idea) | 16 §18, special depth (d) | PORT | `exec/run.mjs` around `unit.call` (line 221), new `exec/transitions.mjs` | wrappers on the host prototypes record receiver identity before and after, argument and result identities and the heap delta; a checker compares every record with the table; a mismatch refuses that operation's proofs | 2 to 3 d |
+| Test262 as a corpus of call patterns | 16 §17 | DEPENDENCY (clone, BSD) | new `exec/test262.mjs` | run the directories of the table's operations under node and record the transitions seen; a finite corpus validates the table, it proves nothing | 2 d |
+| Unevalizer's constant-string case | 17 §7 | PORT, after a count | `lint.mjs:28`, a pass in `translate/` | `eval(<string literal>)` parsed in place, everything else refused; count the corpus first, the case may be near zero | 2 to 3 d |
+| ESLint `eqeqeq` precondition | 17 §26 | PORT | `lint.mjs:806-809`, `lint/advice.mjs` | the rewrite to `===` is `proved` only when one operand is `typeof` or both are literals of one type; otherwise `migration` | 1 d |
+| ESLint `prefer-rest-params` precondition | 17 §27 | PORT | `lint.mjs:236`, `advice.mjs` | rest-parameter rewrite only when every use is `arguments.length` or a literal index, in a strict module; `param-form` must admit rest parameters first | 1 to 2 d |
+| ESLint `no-useless-call` precondition | 17 §28 | PORT | new lint rule | a direct call replaces `.call`/`.apply` only when the `thisArg` token equals the receiver; the lint and translator disagree on `h.call(o, 1)` today (lint admits, translator refuses) | 2 d |
+| Refusal economics per rule | 17 measurement | PORT | new `harness/refusals.py` beside `score_lean.py` | per rule over the 144 corpus entries: changed functions refused by that rule alone, also refused by another, share of changed functions | 1 d |
+
+Everything judged REFERENCE settles a design choice and takes no code (the dossiers say which choice). Everything
+judged IRRELEVANT is a wrong input language, a missing or restrictive licence, a learned model, or a different
+property (concurrency, probability, hardware). Licences the dossiers could not read (Hypothesis, mCRL2, SymDiff,
+Koka's page, SES, Alloy 6, JPF) block any dependency until a LICENSE file is read.
+
+## 3. Shared objects (brief 13)
 
 **Settled.** Identity is fixed on every object that exists before the call; a bijection may relate fresh objects
 only; writes through retained references are observations. A value reading is sound only under a proof that
-identity cannot interfere: no live alias observes a mutation, no identity test, callback, closure or escape exposes
-the location (result 13, section 3).
+identity cannot interfere.
 
-**Built this stage.** The heap core (`translate/heap.mjs`): plain records and arrays through one heap, total
-transitions, whole-heap equality as the identity certificate (allocation paired in execution order, result 13's
-first strategy, "appropriately conservative, not complete"). Lane B observes the reachable graph and shares objects
-between input positions (stage 1). Measured over the 39 census roots: 34 of 53,899 units in the core; 34,544 of the
-53,865 units outside it are exposed to a layer-1 identity false proof (31,992 by a result that may carry an input or
-shared reference, 3,066 by a nested write through an input).
+**Built.** The heap core (stage 2) and whole-heap equality as the identity certificate; lane B's graph observation
+and shared inputs (stage 1); the identity guard (on since 2026-10-26, the owner's call): layer 1 keeps a value proof
+only where no nested write goes through an input and both sides have one readable identity skeleton that agrees;
+otherwise `ASK:identity`. Measured over the 39 census roots: 34 of 53,899 units in the core; 34,655 of 53,865 units
+outside it exposed; 14,559 with a readable skeleton, 3,579 of them exposed.
 
-**Mechanism, new: the identity guard on layer 1.** Layer 1 (a mutated parameter is an output, objects are value
-trees) keeps its proofs only where tree equality implies graph equality: no nested write through an input, and ONE
-identity skeleton for the result, the same on both sides (`identitySkeleton` in `heap.mjs`: each reference node of
-the returned value is an input path, a numbered fresh node, or unknown; a conditional or a second return site must
-agree; a reference written into an input field joins the skeleton). The theorem compares the two sides' skeletons;
-exposed units with unequal or unknown skeletons are `ASK:identity`, with the two skeletons in the certificate. This
-is a syntactic sufficient condition for result 13's non-interference, cheap, and it blocks the measured false-proof
-classes (push versus replacement, the input versus a copy, a shared versus a copied sub-object).
+**Next.** Korat-style heap enumeration in lane B; the canonical-heap certificate (stage 3) so allocation order and
+garbage stop mattering; the witness record carries both hashes, the serialized initial environment, the heap node
+table with roots and sharing edges, the seed, the observed outcome and the replay result.
 
-**Mechanism, later: the canonical-heap certificate.** Two versions allocating on different schedules are unproved
-today. Stage 3 replaces whole-heap equality by equality of the canonical rooted heap: a Dafny function `Canon(hw,
-roots)` renumbers cells in first-reach order from the roots (inputs, result) and drops unreachable cells; the lemma
-proves `Canon(parent) == Canon(candidate)`. No existential bijection for the solver to find, no garbage counted,
-exactly result 13's "canonicalize each rooted graph" strategy as a proof object. Cost: a recursive traversal the
-solver must unfold; measured on the pairs before it ships.
+**Boundary.** `===` on objects, identity hashes, WeakMap/WeakRef and finalizers: obligation `identity observation`.
 
-**Lane B.** Inputs gain cycles and back-edges between positions (Korat's lazy initialization: null, fresh, or an
-existing object, per reference field). The witness record carries what result 13 lists: both hashes, the serialized
-initial environment, the heap node table with roots and sharing edges, the seed, the observed outcome and final
-rooted graph, and the replay result.
+## 4. Identity-bearing built-ins (brief 16)
 
-**Boundary.** `===` on objects, identity hashes, WeakMap/WeakRef and finalizers observe addresses: obligation
-`identity observation`, unmet, ASK.
+**Settled.** Each built-in has a transition contract (fresh result or not, receiver mutated or not, result identity,
+order, callbacks, exceptions); `sort`'s comparator schedule is implementation-defined; Map and Set keys compare by
+SameValueZero in insertion order; `structuredClone` builds a fresh graph preserving sharing and cycles.
 
-**Measurement.** Determinate units in the census (how many exposed units the guard keeps provable), the corpus
-re-measure with the guard on (PASS-proved before and after, with every lost proof read), and the bench on the alias
-and mutation domains.
+**Mechanism.** A versioned table `translate/library.json`, one row per operation with the spec section, generated
+into the prelude per shape; the Dafny forms exist and verify (`design/library-ops.dfy`). A callback inside `map`,
+`filter`, `sort` is read only when the lint proves it pure. The engine validates the table on every run through the
+call recording and the checker (`exec/transitions.mjs`): a mismatch is a model defect that refuses the operation
+until the row is fixed. Test262's directories for these operations (push 24, splice 81, sort 54, reverse 18, slice
+71, concat 69, map 216, Map.set 14, Set.add 21, Object.assign 38, Object.freeze 53, setFullYear 20 entries) run as
+a corpus of call patterns.
 
-## 2. Identity-bearing built-ins (brief 16)
+**Boundary.** Getters, setters, proxies, species constructors, effectful comparators, Date string parsing and time
+zones: obligations unmet; `structuredClone` of unsupported values: refused by name. `Object.freeze` needs a
+`frozen` set in the heap world, a schema change, so it comes after the table.
 
-**Settled.** Each built-in has a transition contract: fresh result or not, receiver mutated or not, result identity
-(receiver, fresh, primitive), iteration order, callback effects, exceptions (result 16's table). `push` mutates and
-returns a length; `slice` and `map` allocate; `sort` and `reverse` return the receiver; `Map.set`, `Set.add`,
-`Object.assign` return the receiver; `structuredClone` builds a fresh graph with sharing and cycles preserved;
-`sort`'s comparator schedule is implementation-defined, so a comparator with effects has no portable meaning.
+## 5. State over time (brief 14)
 
-**Mechanism: a versioned library table, generated into the prelude.** `translate/library.json` lists every
-operation lean reads, one row per result-16 column; `heap.mjs` generates the Dafny transition from the row
-(`Push_`, `Splice_`, `Reverse_`, `SortPure_`, `MapSet_`, `SetAdd_`, `Assign_`, `Freeze_`, `Clone_`), each total
-and over the ledger's heap. Map and Set are cells with ordered entries keyed by reference or by primitive
-(SameValueZero); Date is a cell with an instant, its setters transitions, its reads of the clock already
-transitions. A callback inside an operation (`map`, `filter`, `sort`) is read only when the lint proves it pure
-over its arguments; otherwise obligation `callback effect`, ASK.
+**Settled.** A one-step proof over the complete state composes by induction; the hole is a cell omitted, reset or
+read without its meaning. Retained-state command sequences find real sequence bugs and prove nothing when clean.
 
-**Mechanism, new: the engine validates the table on every run.** Lane B already calls the real built-ins. It
-records, per built-in call, the receiver's identity and contents before and after, the argument identities, the
-result identity and the heap delta. A checker replays each recorded transition against the table's prediction. A
-mismatch is a model defect: it is filed with the recorded case, and the proof lane refuses that operation until
-the row is fixed. The engine is the oracle, continuously, on the code that matters, with no conformance suite to
-maintain. This is the measurement result 16 asks for (section 6) turned into a standing check.
+**Mechanism.** The state-completeness audit lists every persistent cell per component and writes the obligation to
+the certificate; the retained-state runner keeps the ledger between commands and shrinks a failing program; the
+finite-state lane decides equality when every cell and argument is a finite declared domain (PASS-decided, with
+the reachable pair count as the certificate). Couplings between two representations (an eager and a lazy cache)
+stay ASK; one is written by hand when a case justifies it.
 
-**Boundary.** Getters, setters, proxies, species constructors, `sort` with an effectful comparator, `Date` parsing
-of strings and time zones: obligations unmet, ASK; `structuredClone` of unsupported values and transfer lists:
-refused by name.
+**Boundary.** Unbounded hidden state, a coupling, a closure escaping the component.
 
-**Measurement.** Our census: 5,082 units call a mutating method on a local or result and 523 on a parameter,
-`Object.assign` 390, `structuredClone` 32, `Object.freeze` 6, `Map`/`Set` identity in 75 and 50 parameter types.
-The bench domains `mutating method on a parameter/local` give the before and after.
+## 6. Exported control (brief 15)
 
-## 3. State over time (brief 14)
+**Settled.** A function value is a code identity plus a captured environment plus an invocation transition; the
+environment may retain and invoke it later, repeatedly; the witness is an environment program; bounds exhausted
+are ASK.
 
-**Settled.** A proof of equal outputs and equal complete successor states for every operation extends to every
-finite call sequence by induction. What a fresh sandbox per call misses (`call(); call()` separating a counter) is
-a cell omitted, reset or renamed, never a missing temporal engine. Representation independence (an array-backed
-and a list-backed cache) needs a coupling, not literal equality; that is a later stage. Retained-state command
-sequences with shrinking find real sequence bugs (QuickCheck finds 6 of 9 planted in the AUTOSAR study) and prove
-nothing when clean.
-
-**Mechanism: the state-completeness audit.** For a unit that reads or writes a module or captured cell, the
-translator lists the component: every exported operation sharing that region, plus the initializer. Every cell any
-of them touches must be a ledger cell with its real transition; a cell read as uninterpreted or absent is
-obligation `state(<cell>)`, unmet, ASK for the whole component. The theorem for the component is the conjunction of
-the per-operation lemmas over the complete ledger, so the induction of result 14 holds by construction.
-
-**Mechanism: retained-state programs in lane B.** Lane B keeps the ledger between commands: an environment program
-is a sequence of calls to the component's operations with generated arguments; parent and candidate run the same
-program on isolated ledgers; the first divergence (outcome, heap, cells, pending, trace) is the WITNESS, shrunk by
-deleting commands and simplifying arguments; a clean run is PASS-bounded with the program count and depth in the
-certificate.
-
-**Mechanism, new: the finite-state decision lane.** When a component's persistent state and the inputs of its
-operations range over finite declared domains (enums, booleans, literal unions, bounded integers the type states),
-lane B explores the whole product of reachable (parent state, candidate state) pairs, one step per operation and
-argument. Equality is then DECIDED, not bounded: `PASS-decided`, with the reachable pair count and the explored
-alphabet as the certificate (result 14's deterministic input/output machine baseline; the W-method's completeness
-holds because the fault domain is the declared finite state, not a guess). Status machines, flag sets and mode
-switches in the corpus are this shape.
-
-**Boundary.** Unbounded hidden state (a counter, an unbounded cache), a coupling needed between two
-representations, a closure that escapes the component (section 4): ASK with the obligation named. Couplings are
-written by hand when a case justifies one; no proposer.
-
-**Measurement.** Our census: 65 captured-variable assignments and 1,831 captured-object mutations over 39
-repositories; the units whose state is a finite domain (a count to make); corpus bugs whose repair touched module
-or captured state, checked before and after.
-
-## 4. Exported control (brief 15)
-
-**Settled.** A function value is a code identity plus a captured environment plus an invocation transition, never
-a text token: `make(k) { return () => k }` returns one text and many closures. The environment may retain an
-exported function and invoke it later, repeatedly, re-entrantly; a witness is an environment program (call, retain
-a handle, advance time, invoke the handle twice, observe). Bounds exhausted are ASK (Hobbit's discipline).
-
-**Mechanism: callable records in the ledger.** A closure value is `Fn(code: id, env: seq<Ref>)`: the code identity
-is the function's text after suffix stripping (the theorem's identical-text rule), the environment is the captured
-cells as ledger references. Two returned closures are equal in lane A when their code identities agree and their
-captured cells are equal in the ledger; different bodies are ASK (sound; a bisimulation up-to engine is the
-escalation, not this stage). An invocation of a handle is a transition reading the handle's cells.
-
-**Mechanism: environment programs in lane B.** Commands: `call op(args)`, `retain h`, `invoke h(args)`, `tick t`
-(advance virtual time: due timers fire in order), `settle p` (resolve or reject a pending promise in a chosen
-order), `fire e` (an event on a registered handler), `next g` / `throw g` / `return g` for generators. A seeded
-generator produces programs; the schedule choice is a command, so a witness names its schedule and replays. Shrink
-by deleting commands, lowering invocation counts, shortening ticks. The host protocol (what may fire when) is the
-ledger's `pending` with explicit enabling rules; a schedule outside the rules is never explored and never claimed.
+**Mechanism.** `Fn(code, env)` in the prelude replaces the text-keyed opaque value; the program runner (fast-check
+commands, vendored) with the command set and a seeded schedule; the virtual clock; promise settlement and event
+firing as commands with enabling rules; the certificate records the program, its hash, the seed, both observations,
+the first difference and the replay path. Pilot: the 262 return/store/compare cases of our census.
 
 **Boundary.** Function identity (`f === g`), `Function.prototype.toString`, `bind` observed through construction,
-transform-stream orderings and any host behaviour without an enabling rule: obligation unmet, ASK.
+transform-stream orderings: obligation unmet.
 
-**Measurement.** Our census: 262 return/store/compare function cases (the pilot), 450 timer-arming and 84
-interval-arming units, 368 promise executors, 1,560 React handler attributes, 488 generators. A bench domain
-"returned function invoked twice" with planted mutants that differ only on the second invocation.
+## 7. Dynamic features (brief 17)
 
-## 5. Dynamic features (brief 17)
+**Settled.** No feature has an impossibility theorem; what fails is the closed-record, named-call abstraction; an
+explicit operand admits more; a rewrite needs its own precondition and label.
 
-**Settled.** No feature in the list has an impossibility theorem; S5 gives semantics to accessors and `eval`, TAJS
-and WALA to prototypes, receivers and argument objects, DJS to computed keys. What fails is the closed-record,
-named-call abstraction. The smallest useful step is an explicit operand: receiver, argument vector, prototype edge,
-key set. Rewrites need their own contract: ESLint autofixes `==` only for `typeof` and same-type literals and keeps
-`call`/`apply` where the receiver differs.
+**Mechanism.** Explicit operands as ledger components (receiver, argument vector, `proto` field, dictionary cells,
+the coercion table); refusals by name for `Proxy`, `Reflect` traps, `eval`, `new Function`, `setPrototypeOf` after
+escape, and (finding 3) the `Object` prototype functions; rewrites labelled `proved` / `conditional` / `migration`
+with the ESLint preconditions where ESLint has one and a stricter one where it has none; the refusal-economics
+script over the corpus's changed functions.
 
-**Mechanism: explicit operands as ledger components.** `receiver`: `call`, `apply`, `bind` and `this` in free
-functions become a receiver operand on the transition (class methods already have one). `arguments`: the actual
-argument vector as a sequence operand; TypeScript modules are strict, so no sloppy aliasing. `proto`: a heap field
-on every record cell; `Object.create(p)` allocates with it, `getPrototypeOf` reads it, lookup walks it; mutation
-of it after the object escapes stays refused. `keys`: a dictionary cell is a map with a stated missing-key result;
-computed access on it is a map read. `coercion`: `==` with the exact primitive coercion table; an object operand is
-an obligation.
+## 8. Order of work
 
-**Mechanism: rewrites with a checked precondition and a label.** Every suggested fix lean emits carries one of:
-`proved` (the precondition is decided by the translator: `===` where both operands are primitives of one type),
-`conditional` (the precondition is stated and checked, as `no-useless-call` checks the receiver), `migration` (a
-behaviour change the owner accepts knowingly). Only the first two ride an equivalence-preserving path.
+1. The four findings of section 0 (lint refusals; the cleared-timer gap with the clock). Days: 1 plus the clock.
+2. The library table with engine validation and the Test262 corpus (sections 2 and 4). Days: 10 to 11.
+3. The retained-state runner, the audit, the finite-state lane (section 5). Days: 17.
+4. The program runner on fast-check, the virtual clock, callable records (section 6). Days: 21 to 32.
+5. Explicit operands and labelled rewrites, the refusal-economics script (section 7). Days: 7 to 9.
+6. Korat enumeration and the canonical-heap certificate (section 3). Days: 8.
 
-**Boundary.** `Proxy`, `Reflect` traps, `eval`, `new Function`, `setPrototypeOf` after escape, descriptor accessors
-without a summary: refused by obligation name, with the conditional rewrite where one exists.
+Each step carries its validating measurement: the named pairs, the bench domains, the corpus re-measure. Days are
+CLAIM from the dossiers.
 
-**Measurement.** Refusal economics at the changed-function level (result 17, section 8): over the corpus's changed
-functions, per rule, refusals caused by the rule alone, those each explicit operand would admit, and the catch rate
-after. Our census: computed member access 5,278 (finite keys already read), `arguments` 133, loose equality 398,
-prototype access 134, `Proxy`/`Reflect` 41, `eval`/`new Function` 2.
+## 9. What stays out
 
-## 6. Order of work, each with its validating measurement
-
-1. Identity guard on layer 1 (section 1): built as a measure; turning it on is one decision plus the theorem's
-   skeleton comparison. Measurement: determinate units in the census; the corpus re-measure.
-2. Library table with engine validation (section 2). Measurement: mismatches found on the bench domains; reach.
-3. State-completeness audit and retained-state programs (section 3). Measurement: corpus bugs on module state.
-4. Finite-state decision lane (section 3). Measurement: units with finite declared state; decided verdicts.
-5. Callable records and environment programs (section 4). Measurement: the 262-case pilot; the two-invocation bench.
-6. Explicit operands and labelled rewrites (section 5). Measurement: refusal economics per rule.
-7. Canonical-heap certificate (section 1, later). Measurement: ASK:allocation turned PASS on the corpus.
-
-## 7. What stays out
-
-No model anywhere in lean (owner, 2026-10-26, Jev retracted). No learned or model-proposed invariants or couplings;
-a coupling is hand-written or the unit stays ASK. No bisimulation up-to engine in this cycle; it is the named
-escalation for closures with state. No conformance suite imported; the engine validates the library table on the
-code lean checks.
+No model anywhere in lean (owner, 2026-10-26, Jev retracted): no learned invariants, no model-proposed couplings,
+no learned perceptual metric. No JVM, OCaml, Coq, Haskell or .NET dependency (ESMeta, Hobbit, JSCert, TorXakis,
+Coyote are references). No bisimulation up-to engine in this cycle. No conformance suite as a proof: Test262 is a
+corpus for validation only.
