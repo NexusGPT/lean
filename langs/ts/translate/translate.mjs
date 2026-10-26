@@ -363,6 +363,9 @@ export function translate(file, fnName, opts = {}) {
       if (ix && !checker.getPropertiesOfType(t).length) return `map<string, ${dtype(ix.type, n, depth + 1)}>`;
       return recordType(t, n, depth);
     }
+    // a type with no value reading of its own: an indexed access on a type parameter, a conditional or mapped form, a
+    // symbol, `object`, `never`: opaque, every operation on it an uninterpreted function
+    if (f & (TF.IndexedAccess | TF.Conditional | TF.Substitution | TF.TemplateLiteral | TF.StringMapping | TF.Index | TF.ESSymbol | TF.UniqueESSymbol | TF.NonPrimitive | TF.Never)) return anyType();
     return fail(n, `type ${checker.typeToString(t)} is not translatable`);
   }
   function unionType(parts, n, depth) {
@@ -372,7 +375,7 @@ export function translate(file, fnName, opts = {}) {
     if (parts.some(isAny)) return anyType();
     // a union of records (a discriminated union), or of a primitive with a record: opaque. Every read on it is an
     // uninterpreted accessor, every construction an uninterpreted injection; the proof asks the same calls on both sides
-    if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined)))) return anyType();
+    if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || isPromiseT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined | TF.Void | TF.TypeParameter | TF.IndexedAccess | TF.Conditional | TF.Index | TF.NonPrimitive | TF.Never)))) return anyType();
     return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
   }
   const typeNameOf = (t) => t.aliasSymbol?.name ?? (t.symbol && t.symbol.name !== '__type' && t.symbol.name !== '__object' ? t.symbol.name : null);

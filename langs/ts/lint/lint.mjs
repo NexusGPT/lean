@@ -83,6 +83,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       return; // any other union is opaque (version 3): reads and operations on it are uninterpreted
     }
     if (f & TF.TypeParameter) return; // a type parameter: a value compared only by equality; reads on it go through its constraint
+    if (f & (TF.IndexedAccess | TF.Conditional | TF.Substitution | TF.TemplateLiteral | TF.StringMapping | TF.Index | TF.ESSymbol | TF.UniqueESSymbol | TF.NonPrimitive)) return; // no value reading of its own: opaque
     if (f & TF.Intersection) { for (const p of checker.getPropertiesOfType(t)) checkType(checker.getTypeOfSymbolAtLocation(p, n), n, depth + 1); return; }
     if (f & TF.Object) {
       if (checker.isTupleType(t)) { checker.getTypeArguments(t).forEach((a) => checkType(a, n, depth + 1)); return; }
