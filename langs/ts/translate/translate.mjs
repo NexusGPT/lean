@@ -29,7 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals } from '../common.mjs';
-import { lintFile } from '../lint/lint.mjs';
+import { lintFile, exceptionUnitsOf, mayFaultPure } from '../lint/lint.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 
 const K = ts.SyntaxKind;
@@ -57,6 +57,7 @@ export function translate(file, fnName, opts = {}) {
   const { sf, checker } = loadProgram(file, { project });
   const real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs)
   const fns = topLevelFunctions(sf);
+  const exceptionUnits = exceptionUnitsOf(sf, checker, fns);
   const target = fnName ? fns.get(fnName) : null;
   if (fnName && !target) throw new Unsupported(`no top-level function named ${fnName} in ${file}`);
   if (!fnName && !core) throw new Unsupported('--fn is required unless --core is given');
@@ -131,11 +132,14 @@ export function translate(file, fnName, opts = {}) {
   const WORLD = 'wld';
   let pending = []; // hoisted `var (wld, tN) := ...;` lines of the statement being translated, in source order
   let tempCount = 0;
+  let faultMode = false;
+  const FAULT_CHECK = '// fault checkpoint';
   const effectfulUnits = new Set(); // same-file units that take and return the world
   const PURE_RECEIVERS = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Buffer', 'Array', 'BigInt', 'Symbol', 'Object']); // Object.keys/values/entries/assign/fromEntries: pure functions of their arguments (the lint refuses the prototype ones)
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
   const localEffectScan = new Set();
   function isEffectCall(n) {
+    if (mayFaultPure(n, checker, sf)) return true;
     if (ts.isAwaitExpression(n)) return true;
     if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
     if (!ts.isCallExpression(n)) return false;
@@ -220,7 +224,18 @@ export function translate(file, fnName, opts = {}) {
   }
   // the innermost exact try whose BODY holds the statement, within the same function
   const tryOf = (st) => { let n = st; let child = null; while (n && !ts.isFunctionLike(n)) { if (ts.isTryStatement(n) && exactTry(n) && child === n.tryBlock) return n; child = n; n = n.parent; } return null; };
-  const faultPreds = () => { addPrelude('World', 'type World'); return { faulted: external('faulted', ['World'], 'bool'), value: external('fault_value', ['World'], anyType()), clear: external('clear_fault', ['World'], 'World'), raise: external('raise', ['World', anyType()], 'World') }; };
+  const faultPreds = () => {
+    addPrelude('World', 'type World');
+    const defs = [
+      ['faulted', ['World'], 'bool', 'a0.fault.Some?'],
+      ['fault_value', ['World'], anyType(), 'if a0.fault.Some? then a0.fault.value else ext_no_fault_value()'],
+      ['clear_fault', ['World'], 'World', 'World(a0.history, None)'],
+      ['raise', ['World', anyType()], 'World', 'World(a0.history, Some(a1))'],
+    ];
+    external('no_fault_value', [], anyType());
+    const ids = defs.map(([name, ps, ret, body]) => { const id = external(name, ps, ret); if (!prelude.get(id).includes('{')) prelude.set(id, `${prelude.get(id)} { ${body} }`); return id; });
+    return { faulted: ids[0], value: ids[1], clear: ids[2], raise: ids[3] };
+  };
   const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
@@ -300,6 +315,7 @@ export function translate(file, fnName, opts = {}) {
     // the call text already takes the world first; bind the next world and the result, return the result name
     const t = `t${tempCount++}_`;
     pending.push(`var (${WORLD}, ${t}) := ${code};`);
+    if (faultMode) pending.push(FAULT_CHECK);
     return t;
   }
   // run `f` and return its text with the effects it hoisted placed before it
@@ -327,7 +343,15 @@ export function translate(file, fnName, opts = {}) {
   const prelude = new Map(); // name -> text
   const recordByShape = new Map(); // 'a: int, b: string' -> datatype name
   const recordAlias = new Map(); // a name folded into another datatype with the same fields
-  const addPrelude = (name, text) => { if (!prelude.has(name)) prelude.set(name, text); return name; };
+  const addPrelude = (name, text) => {
+    if (name === 'World') {
+      usesOption = true;
+      if (!prelude.has('WorldHistory')) prelude.set('WorldHistory', 'type WorldHistory');
+      if (!prelude.has('Any')) prelude.set('Any', 'type Any(==)');
+      text = 'datatype World = World(history: WorldHistory, fault: Option<Any>)';
+    }
+    if (!prelude.has(name)) prelude.set(name, text); return name;
+  };
   let usesOption = false;
   const NUM = real ? 'real' : 'int';
   const curUnitName = () => (currentUnit ? dn(snake(currentUnit.name)) : 'g');
@@ -497,6 +521,13 @@ export function translate(file, fnName, opts = {}) {
     };
     const spread = args.some(ts.isSpreadElement);
     if (spread && recvCode !== null) { const v = `sr${tempCount++}_`; pending.push(`var ${v}: ${recvType} := ${recvCode};`); recvCode = v; }
+    // an outside method is looked up before its arguments; a throwing argument still observes that lookup
+    if (faultMode && isEff && ts.isPropertyAccessExpression(n.expression)) {
+      const ps = ['World', ...(recvCode !== null ? [recvType] : [])];
+      const args = [WORLD, ...(recvCode !== null ? [recvCode] : [])];
+      const lookup = `${external(`lookup_${calleeName}`, ps, '(World, Unit)')}(${args.join(', ')})`;
+      hoist(cond ? `(if ${cond} then ${lookup} else (${WORLD}, Unit))` : lookup, 'Unit');
+    }
     const sequence = spread ? callSequence(args) : null;
     const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a) : dtype(typeOf(a), a); });
     let rt = sig ? sig.getReturnType() : typeOf(n);
@@ -1672,6 +1703,7 @@ export function translate(file, fnName, opts = {}) {
           const temps = names.map((nm, k) => (nm === '_' || nm === null ? `_` : `${t}m${k}`));
           pending.push(`var (${[...(eff ? [WORLD] : []), t, ...temps].join(', ')}) := ${fname(f.text)}(${[...(eff ? [WORLD] : []), ...fuelArg(callee), ...args].join(', ')});`);
           names.forEach((nm, k) => { if (nm && nm !== '_') pending.push(`var ${nm} := ${t}m${k};`); });
+          if (faultMode && eff) pending.push(FAULT_CHECK);
           return t;
         }
         if (effectfulUnits.has(f.text)) {
@@ -1959,7 +1991,7 @@ export function translate(file, fnName, opts = {}) {
       chain.push({ cond: pendingConds.join(' || '), stmts: body });
       pendingConds = [];
     }
-    if (dflt === null && chain.length && !(retType(currentUnit).flags & (TF.Void | TF.Undefined))) {
+    if (!faultMode && dflt === null && chain.length && !(retType(currentUnit).flags & (TF.Void | TF.Undefined))) {
       // no default and a value must come out: TypeScript accepted the switch as exhaustive, so the last case is the fall-back
       dflt = chain.pop().stmts;
     }
@@ -2069,6 +2101,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` is the call f()
     if (ts.isAwaitExpression(e) || (ts.isCallExpression(e) && isEffectCall(e)) || (ts.isNewExpression(e) && isEffectCall(e))) { expr(e); return null; } // the transition is hoisted
     if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && fns.has(e.expression.text) && mutatedOf(fns.get(e.expression.text)).length) { expr(e); return null; } // a call that changes what was passed: the new values are bound by the call
+    if (ts.isCallExpression(e) && ts.isIdentifier(e.expression)) { expr(e); return null; }
     if (ts.isBinaryExpression(e) && ts.isElementAccessExpression(e.left) && ts.isIdentifier(e.left.expression)) {
       const arr = e.left.expression; const t = baseOf(typeOf(arr));
       const ix = !isArrayLike(checker, t) ? stringIndex(t) : null;
@@ -2311,6 +2344,95 @@ export function translate(file, fnName, opts = {}) {
     const after = [...cc.block.statements, ...(t.finallyBlock ? t.finallyBlock.statements : []), ...cont.rest];
     return `${lines.join('\n')}\n${tr(after, cont.fin, u)}`;
   }
+  // a transition completes before its result is used; a fault resumes the enclosing handler
+  function faultEval(read, next, ctx) {
+    const { lines, text } = captureParts(read);
+    let out = next(text);
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i] === FAULT_CHECK) out = `if ${faultPreds().faulted}(${WORLD}) then\n${indentBlock(wrapLet(ctx.fault()))}\nelse\n${indentBlock(wrapLet(out))}`;
+      else out = `${lines[i]}\n${out}`;
+    }
+    return out;
+  }
+  function faultResult(u) {
+    const R = dtype(retType(u), u.node);
+    return wrapRet(`${external(`fault_result_${mangle(R)}`, [], R)}()`);
+  }
+  // normal, return and throw are separate continuations; finally runs before the saved completion
+  function faultTry(s, next, u, ctx) {
+    const P = faultPreds();
+    const cleanup = (resume) => s.finallyBlock ? faultTr([...s.finallyBlock.statements], resume, u, ctx) : resume();
+    const ret = (code) => {
+      const saved = `return${tempCount++}_`;
+      return `var ${saved} := ${code};\n${cleanup(() => ctx.ret(saved))}`;
+    };
+    const fault = () => {
+      const saved = `fault${tempCount++}_`;
+      return `var ${saved} := ${P.value}(${WORLD});\nvar ${WORLD} := ${P.clear}(${WORLD});\n${cleanup(() => `var ${WORLD} := ${P.raise}(${WORLD}, ${saved});\n${ctx.fault()}`)}`;
+    };
+    const done = () => cleanup(next);
+    const caught = () => {
+      const cc = s.catchClause;
+      if (!cc) return fault();
+      const binding = cc.variableDeclaration ? `var ${dn(cc.variableDeclaration.name.text)}: Any := ${P.value}(${WORLD});\n` : '';
+      return `${binding}var ${WORLD} := ${P.clear}(${WORLD});\n${faultTr([...cc.block.statements], done, u, { ret, fault })}`;
+    };
+    return faultTr([...s.tryBlock.statements], done, u, { ret, fault: caught });
+  }
+  function faultTr(list, fin, u, ctx) {
+    if (!list.length) return fin();
+    const [s, ...rest] = list;
+    const next = () => faultTr(rest, fin, u, ctx);
+    switch (s.kind) {
+      case K.Block: return faultTr([...s.statements, ...rest], fin, u, ctx);
+      case K.EmptyStatement: return next();
+      case K.TryStatement: return faultTry(s, next, u, ctx);
+      case K.ReturnStatement: return faultEval(() => s.expression ? expr(s.expression, retType(u)) : 'Unit', ctx.ret, ctx);
+      case K.ThrowStatement: return faultEval(() => expr(s.expression, anyTarget()), (value) => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${value});\n${ctx.fault()}`, ctx);
+      case K.IfStatement: return faultEval(() => truthy(s.expression), (cond) => {
+        const yes = faultTr(flatten(s.thenStatement), next, u, ctx);
+        const no = s.elseStatement ? faultTr(flatten(s.elseStatement), next, u, ctx) : next();
+        return `if ${outerParens(cond)} then\n${indentBlock(wrapLet(yes))}\nelse\n${indentBlock(wrapLet(no))}`;
+      }, ctx);
+      case K.SwitchStatement: {
+        const { chain, dflt } = switchChain(s);
+        let out = faultTr(dflt, next, u, ctx);
+        for (let i = chain.length - 1; i >= 0; i--) out = `if ${outerParens(chain[i].cond)} then\n${indentBlock(wrapLet(faultTr(chain[i].stmts, next, u, ctx)))}\nelse\n${indentBlock(wrapLet(out))}`;
+        return out;
+      }
+      case K.VariableStatement: {
+        const bind = (ds) => {
+          if (!ds.length) return next();
+          const [d, ...tail] = ds;
+          const more = () => bind(tail);
+          if (!ts.isIdentifier(d.name)) return faultEval(() => expr(d.initializer), (code) => `${destructure(d.name, outerParens(code), typeOf(d.initializer)).join('\n')}\n${more()}`, ctx);
+          const t = typeOf(d.name);
+          if (!d.initializer) {
+            if (!d.type) {
+              const at = firstAssignedType(d.name); const sym = checker.getSymbolAtLocation(d.name);
+              if (at && !isAny(at)) { usesOption = true; const inner = dtype(at, d); const D = inner.startsWith('Option<') ? inner : `Option<${inner}>`; letTypes.set(sym, D); return `var ${dn(d.name.text)}: ${D} := None;\n${more()}`; }
+              letTypes.set(sym, anyType());
+            }
+            const D = dtype(t, d);
+            return `var ${dn(d.name.text)}: ${D} := ${external(`uninit_${mangle(D)}`, [], D)}();\n${more()}`;
+          }
+          return faultEval(() => expr(d.initializer, t), (code) => `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(code)};\n${more()}`, ctx);
+        };
+        return bind([...s.declarationList.declarations]);
+      }
+      case K.ExpressionStatement: return faultEval(() => newValue(s.expression), (nv) => {
+        if (!nv) return next();
+        const [n, value, root] = nv;
+        const e = ts.isParenthesizedExpression(s.expression) ? s.expression.expression : s.expression;
+        const target = root ?? e.left ?? e.operand ?? e.expression.expression;
+        const sym = checker.getSymbolAtLocation(target); const LT = letTypeOf(sym);
+        const td = LT ?? dtype(symType(sym, s), s);
+        const fd = LT && e.right ? dtype(typeOf(e.right), e) : td;
+        return `var ${dn(n)}: ${td} := ${convertD(value, fd, td)};\n${next()}`;
+      }, ctx);
+      default: return fail(s, 'exception completion is not read for this statement; use straight-line units');
+    }
+  }
   function tr(list, fin, u) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
@@ -2328,7 +2450,7 @@ export function translate(file, fnName, opts = {}) {
         if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
         return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
       }
-      case K.ThrowStatement: { const t = tryOf(s); if (t) return capture(() => catchPath(t, u, expr(s.expression, anyTarget()))); return capture(() => { const R = dtype(retType(u), s); const code = `${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`; return retIn(wrapRet(code)); }); }
+      case K.ThrowStatement: return fail(s, 'throw needs the exception completion reading');
       case K.VariableStatement: {
         const d0 = s.declarationList.declarations[0];
         const pam = s.declarationList.declarations.length === 1 && ts.isIdentifier(d0.name) && d0.initializer ? (promiseAllMapShape(d0.initializer) || arrayCallbackShape(d0.initializer)) : null;
@@ -2596,10 +2718,16 @@ export function translate(file, fnName, opts = {}) {
 
   // ----- which units are effectful: callees come first in `order`, so a caller sees its callee's flag -----
   for (const name of effectful) effectfulUnits.add(name); // forced by the other side of a pair: both sides thread the world
-  for (const u of order) { // callees come first in `order`
-    currentUnit = u;
-    if (core && (u.isCtor || containsEffect(u.body))) effectfulUnits.add(u.name); // a constructor writes its fields: a transition
-    currentUnit = null;
+  if (core) for (const name of exceptionUnits) effectfulUnits.add(name);
+  let effectsChanged = true;
+  while (effectsChanged) {
+    const before = effectfulUnits.size;
+    for (const u of order) {
+      currentUnit = u;
+      if (core && (u.isCtor || containsEffect(u.body))) effectfulUnits.add(u.name);
+      currentUnit = null;
+    }
+    effectsChanged = effectfulUnits.size !== before;
   }
   if (core) computeMutations();
   // ----- emit functions -----
@@ -2635,6 +2763,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function emitUnit(u) {
     currentUnit = u;
+    faultMode = core && exceptionUnits.has(u.name);
     loopCount = 0;
     const rt = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
     const name = fname(u.name);
@@ -2651,10 +2780,12 @@ export function translate(file, fnName, opts = {}) {
       const eff = effectfulUnits.has(u.name);
       if (eff) addPrelude('World', 'type World');
       const endVal = () => (u.isCtor || (retType(u).flags & (TF.Void | TF.Undefined)) ? wrapRet('Unit') : fail(u.node, 'a path ends without a return'));
-      const body0 = bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))));
-      const body = u.isCtor ? `${ctorPrefix(u)}${body0}` : body0;
+      const ctx = { ret: wrapRet, fault: () => faultResult(u) };
+      const body0 = faultMode ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
+      const body = faultMode ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
+      const withCtor = u.isCtor ? `${ctorPrefix(u)}${body}` : body;
       const mutLets = mutatedOf(u).map((m) => `var ${dn(m)} := ${dn(m)};`); // a mutated parameter starts as the argument and is rebound by the body
-      const full = [...sp.lets, ...mutLets].length ? `${[...sp.lets, ...mutLets].join('\n')}\n${body}` : body;
+      const full = [...sp.lets, ...mutLets].length ? `${[...sp.lets, ...mutLets].join('\n')}\n${withCtor}` : withCtor;
       const selfParam = classOf(u) && !u.isStatic ? `${SELF}: ${selfType(u)}` : '';
       const plain = [selfParam, sp.text].filter(Boolean).join(', ');
       const rec = recursiveUnits.has(u.name);
@@ -2678,6 +2809,7 @@ export function translate(file, fnName, opts = {}) {
       chunks.push([`method ${name}(${sp.text}) returns (result: ${rt})`, ...specs, '{', ...lines, '}'].join('\n'));
     }
     currentUnit = null;
+    faultMode = false;
   }
   if (tolerant && reportOut) fs.writeFileSync(reportOut, JSON.stringify(report, null, 1));
 

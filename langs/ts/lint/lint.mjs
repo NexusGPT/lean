@@ -28,18 +28,51 @@ const EFFECT_WORLD = new Set(['Date', 'console', 'process', 'window', 'document'
 // modules whose exports are effects by nature; everything else imported is an uninterpreted external
 const EFFECT_MODULES = /^(node:.*|fs|fs\/promises|path|os|http|https|http2|net|dns|tls|child_process|cluster|worker_threads|process|stream|crypto|readline|zlib|util|events|timers|timers\/promises|axios|node-fetch|undici|got|ioredis|redis|pg|mysql2?|mongodb|mongoose|@prisma\/client|knex|typeorm|sequelize|nodemailer|ws|socket\.io|express|fastify|@nestjs\/.*|@aws-sdk\/.*|aws-sdk|@google-cloud\/.*|openai|@anthropic-ai\/.*|stripe|twilio)$/;
 // pure library globals the translator models as externals (uninterpreted functions)
-const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'Set', 'Map', 'BigInt', ...EFFECT_WORLD]);
+const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI', 'encodeURIComponent', 'decodeURIComponent', 'Set', 'Map', 'BigInt', ...EFFECT_WORLD]);
 const ARRAY_METHODS = new Set(['map', 'filter', 'reduce', 'some', 'every', 'find', 'findIndex', 'includes', 'indexOf', 'slice', 'concat', 'join', 'flatMap', 'flat', 'at', 'push', 'sort', 'reverse', 'entries', 'keys', 'values', 'forEach']);
 const NUMBER_METHODS = new Set(['toFixed', 'toString', 'toPrecision', 'toExponential']);
 const STRING_METHODS = new Set(['includes', 'startsWith', 'endsWith', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase', 'slice', 'substring', 'indexOf', 'lastIndexOf', 'split', 'replace', 'replaceAll', 'padStart', 'padEnd', 'charAt', 'charCodeAt', 'codePointAt', 'at', 'localeCompare', 'normalize', 'repeat', 'match', 'test', 'concat']);
 const SET_METHODS = new Set(['has', 'add', 'delete', 'size', 'values', 'keys', 'entries', 'forEach', 'clear']);
 const MAP_METHODS = new Set(['has', 'get', 'set', 'delete', 'size', 'values', 'keys', 'entries', 'forEach', 'clear']);
 
+// these argument-only library operations can fail even on correctly typed inputs
+export function mayFaultPure(n, checker, sf) {
+  const f = (ts.isCallExpression(n) || ts.isNewExpression(n)) ? n.expression : null;
+  if (!f) return false;
+  if (ts.isNewExpression(n)) return ts.isIdentifier(f) && ['URL', 'RegExp'].includes(f.text) && originOf(checker, f, sf, null).kind === 'global';
+  if (ts.isIdentifier(f)) return ['BigInt', 'encodeURI', 'encodeURIComponent', 'decodeURI', 'decodeURIComponent'].includes(f.text) && originOf(checker, f, sf, null).kind === 'global';
+  return ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && f.expression.text === 'JSON' && ['parse', 'stringify'].includes(f.name.text) && originOf(checker, f.expression, sf, null).kind === 'global';
+}
+
+// the same-file call component of an explicit exception unit shares a fault channel
+export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
+  const out = new Set();
+  const byDecl = new Map([...units.values()].map((u) => [u.fn, u.name]));
+  const edges = new Map([...units.keys()].map((name) => [name, new Set()]));
+  for (const u of units.values()) {
+    if (!u.body) continue;
+    const walk = (n) => {
+      if (ts.isFunctionLike(n)) return;
+      if (ts.isThrowStatement(n) || ts.isTryStatement(n) || mayFaultPure(n, checker, sf)) out.add(u.name);
+      if (ts.isCallExpression(n)) {
+        const callee = byDecl.get(checker.getResolvedSignature(n)?.declaration);
+        if (callee) { edges.get(u.name).add(callee); edges.get(callee).add(u.name); }
+      }
+      ts.forEachChild(n, walk);
+    };
+    walk(u.body);
+  }
+  for (const name of out) for (const adjacent of edges.get(name)) out.add(adjacent);
+  return out;
+}
+
 export function lintFile(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
   const { sf, checker, diagnostics } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
   const out = [];
   const units = topLevelFunctions(sf);
+  const exceptionUnits = exceptionUnitsOf(sf, checker, units);
+  const exceptionFns = new Set([...units.values()].filter((u) => exceptionUnits.has(u.name)).map((u) => u.fn));
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
@@ -119,6 +152,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const name = id.text;
     if (name === 'undefined') return;
     const o = originOf(checker, id, sf, current);
+    if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name)) return v(id, 'exception-callback', 'call this throwing unit directly; a function value has no fault channel');
     if (o.kind === 'local' || o.kind === 'unit') return;
     if (o.kind === 'module' || o.kind === 'import' || o.kind === 'other' || o.kind === 'type') return; // externals
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
@@ -134,6 +168,7 @@ export function lintFile(file, ranges = null, opts = {}) {
 
   function stmts(list) { for (const s of list) stmt(s); }
   function stmt(s) {
+    if (exceptionFns.has(currentFn) && (ts.isIterationStatement(s, false))) return v(s, 'exception-loop', 'move the loop into a separate non-throwing unit; loop completions need a fault channel');
     switch (s.kind) {
       case K.Block: return stmts(s.statements);
       case K.EmptyStatement: return;
@@ -171,7 +206,9 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
       case K.ContinueStatement: if (loopDepth > 0) return; return v(s, 'break-continue', 'continue outside a loop');
-      case K.ThrowStatement: return expr(s.expression); // modelled as an uninterpreted result of the function
+      case K.ThrowStatement:
+        if (callbackStack.length) return v(s, 'exception-callback', 'move the throw to a same-file unit and call it directly');
+        return expr(s.expression);
       case K.TryStatement: {
         // an opaque block (version 3): its text names it; what it reads and writes are its inputs and outputs
         stmt(s.tryBlock);
@@ -522,11 +559,15 @@ export function lintFile(file, ranges = null, opts = {}) {
     conditionalSpreadArgs(e);
     if (['useMemo', 'useCallback', 'useEffect'].includes(reactHook(checker, e))) reactCapture(e.arguments[0]);
     const f = e.expression;
+    if (ts.isPropertyAccessExpression(f) && f.expression.kind !== K.ThisKeyword && exceptionFns.has(checker.getResolvedSignature(e)?.declaration)) return v(e, 'exception-callback', 'use a top-level unit or this.method for a same-file exception call');
     if (e.questionDotToken) v(e, 'optional-chain', 'calling an optional function value is outside the subset');
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
       const o = declOf(f);
-      if (o.kind === 'local') return argsOf(e); // a function-typed parameter or local
+      if (o.kind === 'local') {
+        if (exceptionFns.has(currentFn)) return v(e, 'exception-callback', 'call a named same-file unit directly; a function-valued call has no fault channel');
+        return argsOf(e);
+      }
       if (o.kind === 'unit') {
         const u = units.get(f.text);
         if (u && !e.arguments.some(ts.isSpreadElement) && !u.params.some((p) => p.dotDotDotToken)) { const req = u.params.filter((p) => !p.initializer && !p.questionToken && !p.dotDotDotToken).length; if (e.arguments.length < req || e.arguments.length > u.params.length) v(e, 'unsupported-call', `${f.text} takes ${req === u.params.length ? req : `${req} to ${u.params.length}`} arguments`); }
@@ -716,6 +757,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     w(cb.body);
   }
   function callback(a, arity) {
+    if (exceptionFns.has(currentFn) || (ts.isIdentifier(a) && exceptionUnits.has(a.text))) return v(a, 'exception-callback', 'move this callback into a separate non-throwing unit; callbacks have no completion channel');
     if (ts.isIdentifier(a)) {
       // a named callback: a same-file function (not async, not a method) or a local function value
       const o = declOf(a); checkIdent(a, true);
@@ -821,6 +863,8 @@ export function lintFile(file, ranges = null, opts = {}) {
   const argsOf = (e) => (e.arguments ?? []).forEach((a) => ts.isSpreadElement(a) ? (outsideSpread(e) ? spreadArray(a) : v(a, 'spread', 'spread arguments need an outside callee or a supported sequence operation')) : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
     const name = e.name.text;
+    const decl = checker.getSignaturesOfType(tOf(e), ts.SignatureKind.Call)[0]?.declaration;
+    if (exceptionFns.has(decl)) return v(e, 'exception-callback', 'call this method directly; a function value has no fault channel');
     if (e.expression.kind === K.ThisKeyword) return; // a field or method of the receiver: read through an accessor
     if (name === 'prototype' || name === '__proto__' || name === 'constructor') return v(e, 'prototype', `\`.${name}\` reaches the prototype chain`);
     const rt = tOf(e.expression);
@@ -937,6 +981,32 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     else if (ts.isExpressionStatement(st) && (ts.isStringLiteral(st.expression) || ts.isNoSubstitutionTemplateLiteral(st.expression))) continue; // a directive ("use client", "use strict") is not code
     else v(st, 'toplevel-effect', 'code at module level runs on import; it is outside the subset');
+  }
+  // exception continuations need unambiguous bindings and explicit sequencing
+  for (const u of units.values()) {
+    if (!exceptionUnits.has(u.name) || !overlaps(sf, u.node, ranges)) continue;
+    const names = new Set();
+    const hasCall = (n) => { let yes = false; const walk = (x) => { if (ts.isCallExpression(x) || ts.isNewExpression(x) || ts.isAwaitExpression(x) || (ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword)) yes = true; ts.forEachChild(x, walk); }; walk(n); return yes; };
+    const walk = (n) => {
+      if (ts.isFunctionLike(n) && n !== u.fn) { v(n, 'exception-callback', 'move the nested function into a separate non-throwing unit'); return; }
+      if ((ts.isParameter(n) || ts.isVariableDeclaration(n) || ts.isBindingElement(n)) && ts.isIdentifier(n.name)) {
+        if (names.has(n.name.text)) v(n.name, 'exception-binding', 'use distinct local names across try, catch and finally');
+        names.add(n.name.text);
+      }
+      if (ts.isReturnStatement(n) && n.expression && !nonNull(tOf(n.expression)).every((t) => isPrim(t))) {
+        let child = n;
+        for (let p = n.parent; p && p !== u.fn; child = p, p = p.parent) {
+          if (ts.isTryStatement(p) && p.finallyBlock && child !== p.finallyBlock) { v(n, 'exception-return', 'return a primitive through finally; a returned object may be changed by cleanup through an alias'); break; }
+        }
+      }
+      if (((ts.isParameter(n) || ts.isBindingElement(n)) && n.initializer && hasCall(n.initializer)) ||
+          (ts.isConditionalExpression(n) && hasCall(n)) ||
+          (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.questionDotToken && n.arguments.some(hasCall)) ||
+          (ts.isBinaryExpression(n) && [K.AmpersandAmpersandToken, K.BarBarToken, K.QuestionQuestionToken, K.QuestionQuestionEqualsToken, K.BarBarEqualsToken, K.AmpersandAmpersandEqualsToken].includes(n.operatorToken.kind) && hasCall(n)) ||
+          ((ts.isSwitchStatement(n) || ts.isCaseClause(n)) && hasCall(n.expression))) v(n, 'exception-expression', 'split the calls into statements and use if so each fault has an explicit continuation');
+      ts.forEachChild(n, walk);
+    };
+    walk(u.fn);
   }
   // compiler diagnostics (strict mode) that fall inside a checked region; unresolved-module codes get their own rule
   for (const d of diagnostics) {

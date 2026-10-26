@@ -62,7 +62,7 @@ transition the parent did not make, or makes it with another argument or in anot
 | A method of a record, a class instance, an `any` | `date.getTime()` | `ext_Ext_Date_getTime(wld, date)` |
 | A method of a field of `this`, a method-call statement on any receiver | `this.items.push(x)` | a transition on the field's value |
 | A clock, randomness, the environment, a console, a fetch | `Date.now()`, `new Date()`, `Math.random()`, `console.log(x)` | `ext_Date_now(wld)`, `ext_new_Date(wld)`, `ext_Math_random(wld)`, a transition of the console |
-| `new X(...)` for any `X` but `Set`, `Map`, `RegExp`, `Error`, `Date`, `URL`, `Array`, typed arrays | `new Client(cfg)` | `ext_new_Client(wld, cfg)` |
+| `new X(...)` for any `X` but `Set`, `Map`, `Error`, `Date`, `Array`, typed arrays | `new Client(cfg)` | `ext_new_Client(wld, cfg)` |
 | `.then`, `.catch`, `.finally` on a promise | `p.catch(() => null)` | a transition with the handler as an opaque function value |
 | Unknown record enumeration | `Object.keys/values/entries(r)` for a parameter, escaped or mutated record | source-sensitive transition; own keys/order cannot be recovered from the structural datatype |
 
@@ -75,31 +75,37 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Other Object operations and dictionaries | `Object.assign/freeze/fromEntries`, dictionary `Object.keys/values/entries` | existing pure uninterpreted calls; no new exact mutation or freezing claim |
 | Module constants, enum members | `LIMITS.max` | `ext_LIMITS_max()` |
 | `any`, `unknown`, a union of records, `string \| SomeObject` | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
-| Library calls with no exact rule: non-ASCII case conversion, split with limit or dynamic separator, regex/callback replacement, `localeCompare`, `normalize`, `JSON`, general numeric `String`, `Buffer`, non-string-array `join` | `s.normalize()` | a pure function of all arguments |
+| Library calls with no exact rule: non-ASCII case conversion, split with limit or dynamic separator, regex/callback replacement, `localeCompare`, `normalize`, general numeric `String`, `Buffer`, non-string-array `join` | `s.normalize()` | a pure function of all arguments |
 | Regular expressions, `new RegExp`, `.test`, `.replace(re, …)` | `/a+/.test(s)` | an opaque constant per literal, externals for the operations |
 | A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its exact text and captured values; same-file callees are checked dependencies |
 | A callback with an effect inside | `xs.map(async (x) => await f(x))` | a symbolic deferred sequence for supported zero-argument arrows, otherwise an opaque value with its captures |
 | Effectful callbacks handed to an outside library | `register(x => svc.log(x))` | an opaque function value by its text |
 | `as T`, `<T>x` | `x as number[]` | identity when the Dafny types agree, else `ext_cast_A_B(x)` |
 | `typeof x`, `x instanceof C`, `k in o` | `typeof x === "string"` | `ext_typeof_Any(x)`, `ext_instanceof_C(x)`, `ext_in(k, o)` |
-| `throw e` | `throw new Error("bad")` | the function's result is `ext_throw_R(e)` |
 | Tagged templates | ``sql`select ${id}` `` | `ext_tag_sql_1(["select ", ""], id)` |
 | `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first); an untyped `let x;` is `None` of the Option of its first assigned type, every narrowed read takes `.value` |
 
 ## What is a fault
 
-A `try`/`catch` is exact. Every transition of the world inside the body may fault: after each statement of the body
-that makes a transition, or throws, the translation tests `ext_faulted(world)`; on a fault the catch path binds
-`ext_fault_value(world)` to the catch variable, clears the flag, and runs the handler, the `finally` block and what
-follows the try. A `throw` inside the body raises the fault with the thrown value. A pure computation never faults
-in the model (`JSON.parse`, `Number` and array indexing are pure functions of their arguments), so a catch that only
-guards a pure call is a branch never taken. The execution lane lets a typed answer fault on a seeded draw, so catch
-paths run there too.
+A straight-line exception unit has a second outcome channel in its returned world: an optional thrown
+value, beside the opaque outside history. `throw e` raises that fault; the ordinary result slot is unused.
+A same-file call tests its returned fault before using its result or running the next expression.
+Conditions and return expressions also test faults. The same-file call component of a unit with `throw`
+or `try`, or a known failing pure call, uses this reading, so an otherwise pure throwing function takes and returns the world.
+Every world transition in these units can fault. An outside method lookup is a transition before its
+arguments, so a throwing argument does not erase the lookup. Catch binds the fault value and clears it.
+
+`finally` runs on normal, return and throw paths. A return value is saved before cleanup. A pending
+throw is saved and cleared while cleanup runs, then restored. A return or throw from cleanup overrides
+the saved outcome. Nested catches and finalizers use the same completion rules. `JSON.parse/stringify`,
+`new URL/RegExp`, `BigInt` and URI codecs are may-fault transitions. Other implicit library exceptions
+remain a coverage gap; repeated pure calls may not prove equivalent to a single call.
+Lane B executes the JavaScript and observes throws and the ordered fake requests.
 
 ## What is an opaque block
 
-A `try` without a catch, a `try` whose body loops over a transition, and a `while` loop without `// @decreases`
-become one uninterpreted transition named by the block's own text, taking the variables the block reads and
+A `while` loop without `// @decreases` outside an exception unit
+becomes one uninterpreted transition named by the block's own text, taking the variables the block reads and
 returning the ones it assigns. The same block on both sides is the same transition; a changed block is a different
 one, never proved equal and never proved different (the execution lane decides it).
 
@@ -109,6 +115,11 @@ one, never proved equal and never proved different (the execution lane decides i
 |---|---|---|
 | `dynamic-key` | record keys that are unrestricted strings, numbers, missing fields, method values or calls inside the key; optional/union receivers must first be narrowed | `r[k]` with `k: string` and `r: { a: number }` |
 | `index-assign` | dynamic writes to records | `r[k] = v` with `k: "a" \| "b"` |
+| `exception-loop` | loops in the same-file call component of an exception unit | `for (const x of xs) { if (x < 0) throw "bad"; }` |
+| `exception-callback` | nested function values and function-valued calls in exception units; throwing units passed as values | `xs.map(throwingUnit)` |
+| `exception-expression` | lazy expressions, optional-call arguments, switch tests or defaults with calls or receiver-field effects | `x && throwingUnit(x)` |
+| `exception-binding` | repeated local binding names across exception continuations | `try { ... } catch (x) { ... }` when `x` is also a parameter |
+| `exception-return` | a nonprimitive return whose enclosing finally may reach its aliases | `try { return xs; } finally { xs.push(1); }` |
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
 | `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |
 | `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |

@@ -1,0 +1,366 @@
+{
+ "rows": [
+  {
+   "concept": "throw",
+   "n": 10,
+   "inside": 3,
+   "translated": 3,
+   "planted": 8,
+   "witnessed": 8,
+   "blockers": {
+    "exception-expression": 3,
+    "exception-loop": 1,
+    "exception-callback": 1,
+    "foreach": 1,
+    "prototype": 1
+   }
+  },
+  {
+   "concept": "try/catch",
+   "n": 10,
+   "inside": 2,
+   "translated": 2,
+   "planted": 5,
+   "witnessed": 5,
+   "blockers": {
+    "exception-loop": 2,
+    "this": 1,
+    "exception-callback": 2,
+    "generator": 1,
+    "prototype": 1,
+    "property-assign": 1
+   }
+  },
+  {
+   "concept": "try/finally only",
+   "n": 10,
+   "inside": 1,
+   "translated": 1,
+   "planted": 3,
+   "witnessed": 3,
+   "blockers": {
+    "exception-return": 2,
+    "exception-loop": 2,
+    "exception-expression": 1,
+    "exception-callback": 1,
+    "generator": 1,
+    "dynamic-key": 1,
+    "exception-binding": 1
+   }
+  }
+ ],
+ "instances": {
+  "throw": [
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/workflow/workflow-engine/workflow-node-executor/nodes/humanInput/application/use-cases/send-slack-human-input.use-case.ts",
+    "unit": "SendSlackHumanInputUseCase.execute",
+    "lines": 50,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/cli/src/UserManagement/email/UserManagementMailer.ts",
+    "unit": "UserManagementMailer.verifyConnection",
+    "lines": 5,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "translated",
+    "planted": 2,
+    "witnessed": 2,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/providers/langchain-cohere/src/client.ts",
+    "unit": "getCohereClient",
+    "lines": 12,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "exception-expression",
+    "detail": "split the calls into statements and use if so each fault has an explicit continuation"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/voice-relay/application/use-cases/assert-web-voice-origin.ts",
+    "unit": "assertWebVoiceOriginAllowed",
+    "lines": 12,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "exception-expression",
+    "detail": "split the calls into statements and use if so each fault has an explicit continuation"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/providers/anthropic/internal/message-converter.ts",
+    "unit": "convertMessageContentToBlockParams",
+    "lines": 56,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "exception-loop",
+    "detail": "move the loop into a separate non-throwing unit; loop completions need a fault channel"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "examples/src/langchain-classic/use_cases/human_in_the_loop/accept-feedback.ts",
+    "unit": "humanApproval",
+    "lines": 15,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "exception-callback",
+    "detail": "move this callback into a separate non-throwing unit; callbacks have no completion channel"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/workflow/src/Expression.ts",
+    "unit": "Expression.renderExpression",
+    "lines": 30,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "foreach",
+    "detail": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks",
+    "file": "apps/api/src/application/queries/GetPermissions.ts",
+    "unit": "GetPermissionsQuery.execute",
+    "lines": 15,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/core/src/ExtractValue.ts",
+    "unit": "extractValueOther",
+    "lines": 33,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "prototype",
+    "detail": "`.constructor` reaches the prototype chain"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/skills-corpus/platform.ts",
+    "unit": "fetchCorpus",
+    "lines": 24,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "exception-expression",
+    "detail": "split the calls into statements and use if so each fault has an explicit continuation"
+   }
+  ],
+  "try/catch": [
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/echo/infrastructure/services/echo-export-cleanup.service.ts",
+    "unit": "EchoExportCleanupService.cleanupHandler",
+    "lines": 92,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "exception-loop",
+    "detail": "move the loop into a separate non-throwing unit; loop completions need a fault channel"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "apps/cli/src/node-io.ts",
+    "unit": "readText",
+    "lines": 7,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 2,
+    "witnessed": 2,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/nodes-base/nodes/DeepL/GenericFunctions.ts",
+    "unit": "deepLApiRequest",
+    "lines": 39,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "this",
+    "detail": "`this` outside a class method"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/sdk/src/http-client.ts",
+    "unit": "HttpClient.send",
+    "lines": 91,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "exception-loop",
+    "detail": "move the loop into a separate non-throwing unit; loop completions need a fault channel"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/skill-notifications/infrastructure/listeners/slack-skill-notification.listener.ts",
+    "unit": "SlackSkillNotificationListener.onSkillProgress",
+    "lines": 40,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "exception-callback",
+    "detail": "move this callback into a separate non-throwing unit; callbacks have no completion channel"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/workflow/workflow-engine/workflow-node-executor/nodes/JsonParseNode.ts",
+    "unit": "JsonParseNode.preCompute",
+    "lines": 27,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-core/src/runnables/base.ts",
+    "unit": "RunnableWithFallbacks._streamIterator",
+    "lines": 58,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "generator",
+    "detail": "generators are outside the subset"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/cli/src/InternalHooks.ts",
+    "unit": "InternalHooks.onWorkflowCrashed",
+    "lines": 28,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "exception-callback",
+    "detail": "move this callback into a separate non-throwing unit; callbacks have no completion channel"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-core/src/callbacks/manager.ts",
+    "unit": "CallbackManagerForChainRun.handleChainEnd",
+    "lines": 35,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "prototype",
+    "detail": "`.constructor` reaches the prototype chain"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/commands/auth/switch.command.ts",
+    "unit": "registerAuthSwitchCommand",
+    "lines": 64,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "property-assign",
+    "detail": "assignment into `process`, which this function does not own; records it owns are updated in place"
+   }
+  ],
+  "try/finally only": [
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "tools/proof-host/src/shell-sweep-fixes-scenarios.ts",
+    "unit": "tabWithMode",
+    "lines": 11,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "exception-return",
+    "detail": "return a primitive through finally; a returned object may be changed by cleanup through an alias"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/conversations/src/keepers/burst-drain.ts",
+    "unit": "BurstDrain.run",
+    "lines": 7,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "exception-loop",
+    "detail": "move the loop into a separate non-throwing unit; loop completions need a fault channel"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "tools/proof-host/src/nexus-folder-scenarios.ts",
+    "unit": "anUninstallThatCannotRemoveTheToolSaysSo",
+    "lines": 25,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "exception-expression",
+    "detail": "split the calls into statements and use if so each fault has an explicit continuation"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/deployments/core/application/services/voice-reply.service.ts",
+    "unit": "VoiceReplyService.buildVoiceContent",
+    "lines": 32,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "exception-callback",
+    "detail": "move this callback into a separate non-throwing unit; callbacks have no completion channel"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/frontend/src/modules/DocumentTemplates/AddWordTemplateContent.tsx",
+    "unit": "AddWordTemplateContent",
+    "lines": 108,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "file": "packages/storage/scripts/check-schema.ts",
+    "unit": "readTarget",
+    "lines": 9,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "status": "lint-out",
+    "rule": "exception-return",
+    "detail": "return a primitive through finally; a returned object may be changed by cleanup through an alias"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/util/tenant-http.stream-body.ts",
+    "unit": "readTextChunks",
+    "lines": 20,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "generator",
+    "detail": "generators are outside the subset"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/driftbench",
+    "file": "packages/sandbox/src/folder.ts",
+    "unit": "FolderSandbox.readFile",
+    "lines": 29,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/driftbench/tree",
+    "status": "lint-out",
+    "rule": "exception-loop",
+    "detail": "move the loop into a separate non-throwing unit; loop completions need a fault channel"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/commands/workspace-mount/install/win32/install-winfsp-msi.ts",
+    "unit": "installWinFspMsi",
+    "lines": 44,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "dynamic-key",
+    "detail": "a computed property name builds a dictionary; give the literal a Record<string, T> type"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/tools/scripts/heal-prompt-mark-splitting.ts",
+    "unit": "main",
+    "lines": 49,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "exception-binding",
+    "detail": "use distinct local names across try, catch and finally"
+   }
+  ]
+ }
+}
