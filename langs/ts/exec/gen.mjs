@@ -46,8 +46,8 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'opaque': default: return env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {};
     }
   }
-  // an optional field that is present: its union without the absent option (absence was drawn already)
-  function present(u) { const opts = u.options.filter((o) => o.kind !== 'undefined'); return opts.length && opts.length < u.options.length ? (opts.length === 1 ? opts[0] : { kind: 'union', options: opts }) : u; }
+  // nullable optional fields draw both absent tags as well as omission
+  function present(u) { if (u.options.some((o) => o.kind === 'null')) return u; const opts = u.options.filter((o) => o.kind !== 'undefined'); return opts.length && opts.length < u.options.length ? (opts.length === 1 ? opts[0] : { kind: 'union', options: opts }) : u; }
   function pick(edges, random) {
     if (rng() < 0.6) return edges[(edge + leafIx++) % edges.length];
     return random();
