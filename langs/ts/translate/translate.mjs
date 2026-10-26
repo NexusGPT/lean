@@ -334,7 +334,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function hoist(code, rd) {
     // the call text already takes the world first; bind the next world and the result, return the result name
-    const t = `t${tempCount++}_`;
+    const t = valueOperands ? valueName() : `t${tempCount++}_`;
     pending.push(`var (${WORLD}, ${t}) := ${code};`);
     if (faultMode) pending.push(FAULT_CHECK);
     return t;
@@ -983,6 +983,7 @@ export function translate(file, fnName, opts = {}) {
   // JavaScript truthiness of a value used as a condition, by its static type
   function truthy(n) {
     while (ts.isParenthesizedExpression(n)) n = n.expression;
+    if (containsValueStep(n)) return valueTruth(expr(n), dtype(typeOf(n), n));
     if (ts.isBinaryExpression(n) && (n.operatorToken.kind === K.AmpersandAmpersandToken || n.operatorToken.kind === K.BarBarToken)) {
       return `(${truthy(n.left)} ${n.operatorToken.kind === K.AmpersandAmpersandToken ? '&&' : '||'} ${truthy(n.right)})`;
     }
@@ -1014,7 +1015,114 @@ export function translate(file, fnName, opts = {}) {
   }
 
   // ----- expressions -----
+  // a value step fixes the evaluation point of every operand in its enclosing expression
+  let valueOperands = null;
+  let valueNames = null;
+  function valueName() {
+    if (!valueNames) {
+      valueNames = new Set();
+      const walk = (n) => { if (ts.isIdentifier(n)) { const name = dn(n.text); valueNames.add(name.match(/^ov[0-9]+_/)?.[0] ?? name); } ts.forEachChild(n, walk); };
+      walk(sf);
+    }
+    let name;
+    do { name = `ov${tempCount++}_`; } while (valueNames.has(name));
+    return name;
+  }
+  function containsValueStep(n) {
+    if (!n || ts.isFunctionLike(n)) return false;
+    if (isAssign(n) || isUpdate(n) || ts.isCommaListExpression(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind === K.CommaToken)) return true;
+    let found = false; ts.forEachChild(n, (c) => { if (containsValueStep(c)) found = true; }); return found;
+  }
+  // truthiness uses the captured value, including the union reading's member tags
+  function valueTruth(value, d) {
+    if (optionalD(d)) return `(${value}.Some? && ${valueTruth(`${value}.value`, innerOf(d))})`;
+    const members = sums.get(d);
+    if (members) return sumTruth(value, members);
+    if (d === 'bool') return value;
+    if (d === 'string') return `(|${value}| > 0)`;
+    if (d === 'int' || d === 'real') return `(${value} != ${d === 'real' ? '0.0' : '0'})`;
+    if (d === 'Unit' || d === 'Absent') return 'false';
+    if (d === 'Any' || unitTParams().includes(d)) return `${external(`truthy_${mangle(d)}`, [d], 'bool')}(${value})`;
+    return 'true';
+  }
+  function valueBranch(read) {
+    const saved = valueOperands;
+    valueOperands = saved ? new Map(saved) : null;
+    try { return wrapLet(capture(read)); } finally { valueOperands = saved; }
+  }
+  function valueBind(code) {
+    const name = valueName();
+    pending.push(`var ${name} := ${outerParens(code)};`);
+    return name;
+  }
+  function operatorValue(n) {
+    if (!core) fail(n, 'value updates need --core');
+    const update = isUpdate(n), target = update ? n.operand : n.left;
+    const op = update ? n.operator : n.operatorToken.kind;
+    const world = isWorldField(target) || isInstanceWorldField(target);
+    let key = null, receiver = null;
+    if (ts.isElementAccessExpression(target)) {
+      if (!ts.isIdentifier(target.expression)) fail(target, 'assignment value needs a named array or dictionary');
+      receiver = valueBind(expr(target.expression));
+      key = valueBind(isArrayLike(checker, baseOf(typeOf(target.expression))) ? index(target.argumentExpression) : expr(target.argumentExpression));
+    } else if (world) receiver = target.expression.kind === K.ThisKeyword ? SELF : valueBind(expr(target.expression));
+    const old = update || op !== K.EqualsToken ? valueBind(expr(target)) : null;
+    const rhs = update ? (typeOf(target).flags & TF.BigIntLike ? '1' : one()) : expr(n.right);
+    const symbol = update ? (op === K.PlusPlusToken ? '+' : '-') : op === K.PlusEqualsToken ? '+' : op === K.MinusEqualsToken ? '-' : op === K.AsteriskEqualsToken ? '*' : null;
+    if (!update && op !== K.EqualsToken && !symbol) fail(n, 'assignment-expression: write this assignment as a statement');
+    const value = valueBind(symbol ? `${old} ${symbol} ${rhs}` : rhs);
+    const storedAs = (d) => convertToD(value, typeOf(n), d, n);
+    const moduleDecl = moduleState(checker, target, sf);
+    if (moduleDecl) {
+      const d = dtype(typeOf(moduleDecl.name), target);
+      hoist(`${moduleAccessor(target, 'set', d)}(${WORLD}, ${storedAs(d)})`, 'Unit');
+    } else if (world) {
+      const onThis = isWorldField(target), cls = onThis ? currentUnit.cls : sameFileClassOf(typeOf(target.expression));
+      const p = checker.getPropertyOfType(checker.getTypeAtLocation(cls.name), target.name.text);
+      const dt = p ? checker.getTypeOfSymbolAtLocation(p, target) : typeOf(target), d = dtype(dt, target);
+      const stored = storedAs(d);
+      hoist(`${onThis ? worldFieldAccessor(target, 'set', [{ d }]) : fieldAccessor(classTypeD(cls), target.name.text, 'set', d)}(${WORLD}, ${receiver}, ${stored})`, 'Unit');
+    } else {
+      let binding;
+      if (ts.isElementAccessExpression(target)) {
+        const root = target.expression;
+        binding = [root.text, `${receiver}[${key} := ${storedAs(dtype(typeOf(target), target))}]`, root];
+      } else binding = pathUpdate(target, (cur, p, ft) => storedAs(dtype(ft, target)));
+      const [name, code, root] = binding, sym = checker.getSymbolAtLocation(root);
+      const d = letTypeOf(sym) ?? dtype(symType(sym, root), root);
+      const from = ts.isIdentifier(target) ? dtype(typeOf(n), n) : d;
+      pending.push(`var ${dn(name)}: ${d} := ${ts.isIdentifier(target) ? storedAs(d) : convertD(code, from, d)};`);
+    }
+    return update && ts.isPostfixUnaryExpression(n) ? old : value;
+  }
   function expr(n, expected) {
+    const start = !valueOperands && containsValueStep(n);
+    if (start) valueOperands = new Map();
+    try {
+      if (!valueOperands) return expressionValue(n, expected);
+      if (ts.isParenthesizedExpression(n)) return expr(n.expression, expected);
+      const cached = valueOperands.get(n);
+      const d = dtype(expected ?? typeOf(n), n);
+      if (cached) return convertToD(cached.code, cached.t, d, n);
+      // eager binary operands are captured in source order, even when a specialised rule reuses them
+      if (ts.isBinaryExpression(n) && !isAssign(n) && ![K.AmpersandAmpersandToken, K.BarBarToken, K.QuestionQuestionToken, K.InstanceOfKeyword].includes(n.operatorToken.kind)) {
+        expr(n.left); expr(n.right);
+      }
+      if (ts.isObjectLiteralExpression(n) && n.properties.some(ts.isSpreadAssignment)) {
+        for (const p of n.properties) {
+          if (ts.isSpreadAssignment(p)) expr(p.expression);
+          else if (ts.isShorthandPropertyAssignment(p)) expr(p.name);
+          else if (ts.isPropertyAssignment(p)) { if (ts.isComputedPropertyName(p.name)) expr(p.name.expression); expr(p.initializer); }
+        }
+      }
+      let code = isAssign(n) || isUpdate(n) ? coerce(operatorValue(n), n, expected) : expressionValue(n, expected);
+      // null literals carry their enclosing target type; None alone has no inferable type
+      if (n.kind !== K.NullKeyword && !(ts.isIdentifier(n) && n.text === 'undefined')) code = valueBind(code);
+      valueOperands.set(n, { code, d, t: expected ?? typeOf(n) });
+      return code;
+    } finally { if (start) valueOperands = null; }
+  }
+  function expressionValue(n, expected) {
     switch (n.kind) {
       case K.ParenthesizedExpression: return expr(n.expression, expected);
       case K.ConditionalExpression:
@@ -1024,9 +1132,13 @@ export function translate(file, fnName, opts = {}) {
           const tt = expected ?? typeOf(n); const d = isAny(tt) ? anyType() : dtype(tt, n);
           const cond = outerParens(truthy(n.condition));
           const a = branchWithWorld(() => expr(n.whenTrue, tt), d), b = branchWithWorld(() => expr(n.whenFalse, tt), d);
-          const tv = `t${tempCount++}_`;
+          const tv = valueOperands ? valueName() : `t${tempCount++}_`;
           pending.push(`var (${WORLD}, ${tv}) := if ${cond} then ${a} else ${b};`);
           return tv;
+        }
+        if (valueOperands) {
+          const cond = truthy(n.condition);
+          return `(if ${cond} then ${valueBranch(() => expr(n.whenTrue, expected ?? typeOf(n)))} else ${valueBranch(() => expr(n.whenFalse, expected ?? typeOf(n)))})`;
         }
         return `(if ${outerParens(truthy(n.condition))} then ${outerParens(expr(n.whenTrue, expected ?? typeOf(n)))} else ${outerParens(expr(n.whenFalse, expected ?? typeOf(n)))})`;
       default: return coerce(rawExpr(n, expected), n, expected);
@@ -1135,6 +1247,7 @@ export function translate(file, fnName, opts = {}) {
       case K.PrefixUnaryExpression:
         if (n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
         return `(-${expr(n.operand)})`;
+      case K.CommaListExpression: { let value; for (const e of n.elements) value = expr(e); return value; }
       case K.BinaryExpression: return binary(n);
       case K.JsxElement: case K.JsxSelfClosingElement: case K.JsxFragment: { const code = jsxNode(n); return isAny(typeOf(n)) ? convertD(code, 'JsxNode', 'Any') : code; }
       case K.PropertyAccessExpression: return propAccess(n);
@@ -1196,6 +1309,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function binary(n) {
     const op = n.operatorToken.kind;
+    if (op === K.CommaToken) { expr(n.left); return expr(n.right); }
     if (op === K.AsteriskAsteriskToken) return `${external('pow', [NUM, NUM], NUM)}(${expr(n.left)}, ${expr(n.right)})`; // a power: uninterpreted, the same on both sides
     const isNul = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e.kind === K.NullKeyword || (ts.isIdentifier(e) && e.text === 'undefined'); };
     const eqOps = new Set([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken]);
@@ -1231,6 +1345,7 @@ export function translate(file, fnName, opts = {}) {
       if (!isOptional(lt)) return expr(n.left);
       const l = rawOperand(n.left);
       const t = typeOf(n); const td = isAny(t) ? anyType() : dtype(t, n); const inner = isAny(baseOf(lt)) ? anyType() : dtype(baseOf(lt), n); const rtp = typeOf(n.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, n);
+      if (valueOperands) return `(if ${l}.Some? then ${convertD(`${l}.value`, inner, td)} else ${valueBranch(() => expr(n.right, t))})`;
       if (td !== inner || td !== rd) return `(if ${l}.Some? then ${convertD(`${l}.value`, inner, td)} else ${convert(outerParens(expr(n.right)), typeOf(n.right), t, n)})`; // `x ?? "none"` with x: number | undefined: both sides lifted to the result type
       return `(if ${l}.Some? then ${l}.value else ${outerParens(expr(n.right, baseOf(lt)))})`;
     }
@@ -1238,6 +1353,13 @@ export function translate(file, fnName, opts = {}) {
       const lt = typeOf(n.left), t = typeOf(n);
       if (isNullish(lt)) { expr(n.left); return expr(n.right, t); }
       if (!isOptional(lt)) return expr(n.left, t);
+      if (valueOperands) {
+        const left = expr(n.left), chosen = dtype(lt, n) === dtype(t, n) ? left : convert(`${left}.value`, baseOf(lt), t, n);
+        if (!containsEffect(n.right)) return `(if ${left}.Some? then ${chosen} else ${valueBranch(() => expr(n.right, t))})`;
+        const right = branchWithWorld(() => expr(n.right, t), dtype(t, n)), value = valueName();
+        pending.push(`var (${WORLD}, ${value}) := if ${left}.Some? then (${WORLD}, ${chosen}) else ${right};`);
+        return value;
+      }
       const l = `nc${tempCount++}_`, left = expr(n.left);
       const chosen = convert(`${l}.value`, baseOf(lt), t, n);
       if (containsEffect(n.right)) {
@@ -1248,6 +1370,16 @@ export function translate(file, fnName, opts = {}) {
     }
     if (op === K.AmpersandAmpersandToken || op === K.BarBarToken) {
       const t = typeOf(n);
+      if (valueOperands) {
+        const lt = typeOf(n.left), rt = typeOf(n.right), ld = dtype(lt, n), rd = dtype(rt, n), td = dtype(t, n);
+        const leftValue = expr(n.left), cond = valueTruth(leftValue, ld), left = convert(leftValue, lt, t, n);
+        const read = () => expr(n.right, t);
+        const and = op === K.AmpersandAmpersandToken;
+        if (!containsEffect(n.right)) return and ? `(if ${cond} then ${valueBranch(read)} else ${left})` : `(if ${cond} then ${left} else ${valueBranch(read)})`;
+        const right = branchWithWorld(read, td), value = valueName();
+        pending.push(and ? `var (${WORLD}, ${value}) := if ${cond} then ${right} else (${WORLD}, ${left});` : `var (${WORLD}, ${value}) := if ${cond} then (${WORLD}, ${left}) else ${right};`);
+        return value;
+      }
       if (containsEffect(n.right)) {
         // `a && await b()`: the right side's transitions happen only when a is truthy (for &&) or falsy (for ||)
         if (!unitEffectful()) fail(n, 'internal: an effect on the right of a logic operator in a pure unit');
@@ -1334,6 +1466,7 @@ export function translate(file, fnName, opts = {}) {
   // an operand kept in its declared (Option) form
   function rawOperand(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (valueOperands && !ts.isIdentifier(e)) return expr(e);
     if (ts.isIdentifier(e)) {
       const o = originOf(checker, e, sf, currentUnit?.node ?? null);
       if (o.kind === 'local' || o.kind === 'unit') return dn(e.text);
@@ -1602,7 +1735,7 @@ export function translate(file, fnName, opts = {}) {
       const saved = loopCtx.splice(0, loopCtx.length);
       try { body = tr([...cb.body.statements], () => fail(cb, 'callback path ends without a return'), { fn: cb, node: cb, name: 'callback', params: cb.parameters, body: cb.body }); }
       finally { loopCtx.push(...saved); }
-    } else body = outerParens(expr(cb.body));
+    } else body = outerParens(capture(() => expr(cb.body)));
     return `((${names.join(', ')}) => ${lets.length ? `(${lets.join(' ')} ${body})` : body})`;
   }
   // `const {a, b: c} = e` → let-lines binding each name
@@ -1978,6 +2111,20 @@ export function translate(file, fnName, opts = {}) {
     return tag + (fields.length ? `{${fields.sort().join(',')}}` : '');
   }
   function call(n, awaited = false) {
+    // the receiver precedes the arguments, including when await calls this reader directly
+    if (valueOperands) {
+      const callee = n.expression;
+      if (ts.isIdentifier(callee) && originOf(checker, callee, sf, currentUnit?.node ?? null).kind === 'local') expr(callee);
+      if (ts.isPropertyAccessExpression(callee)) {
+        const recv = callee.expression;
+        if (recv.kind !== K.SuperKeyword && !(ts.isIdentifier(recv) && ((PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') || classRef(recv)))) expr(recv);
+      }
+      const floor = ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && callee.expression.text === 'Math' && ['floor', 'trunc'].includes(callee.name.text);
+      if (!floor) for (const arg of n.arguments) {
+        if (ts.isArrowFunction(arg) || ts.isFunctionExpression(arg)) continue;
+        expr(ts.isSpreadElement(arg) ? arg.expression : arg);
+      }
+    }
     const hook = exactReactHook(checker, n);
     if (hook) return convert(expr(hook.value), typeOf(hook.value), typeOf(n), n);
     const f = n.expression;
@@ -2004,7 +2151,7 @@ export function translate(file, fnName, opts = {}) {
           const eff = effectfulUnits.has(f.text);
           if (eff && !unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
-          const t = `t${tempCount++}_`;
+          const t = valueOperands ? valueName() : `t${tempCount++}_`;
           const temps = names.map((nm, k) => (nm === '_' || nm === null ? `_` : `${t}m${k}`));
           pending.push(`var (${[...(eff ? [WORLD] : []), t, ...temps].join(', ')}) := ${fname(f.text)}(${[...(eff ? [WORLD] : []), ...fuelArg(callee), ...args].join(', ')});`);
           names.forEach((nm, k) => { if (nm && nm !== '_') pending.push(`var ${nm} := ${t}m${k};`); });
@@ -2021,11 +2168,11 @@ export function translate(file, fnName, opts = {}) {
         return `${fname(f.text)}(${[...fuelArg(callee), ...args].join(', ')})`;
       }
       if (o.kind === 'local') {
-        if (isEffectCall(n)) return externalCall('invoke', n, [...n.arguments], ident(f), dtype(typeOf(f), f), true);
+        if (isEffectCall(n)) return externalCall('invoke', n, [...n.arguments], valueOperands ? expr(f) : ident(f), dtype(typeOf(f), f), true);
         // a function-typed parameter or local: applied as a Dafny function value
         const sig = checker.getResolvedSignature(n);
         const args = n.arguments.map((a, i) => expr(a, sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined));
-        return `${ident(f)}(${args.join(', ')})`;
+        return `${valueOperands ? expr(f) : ident(f)}(${args.join(', ')})`;
       }
       if (o.kind === 'global' && f.text === 'String' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike)) return stringOf(n.arguments[0]);
       return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
@@ -2302,10 +2449,11 @@ export function translate(file, fnName, opts = {}) {
   // switch → [{cond, stmts}], default stmts; each clause ends in return or break (lint rule); break is dropped
   function switchChain(s) {
     const scrut = s.expression;
+    const scrutValue = containsValueStep(scrut) ? expr(scrut) : null;
     const chain = []; let dflt = null; let pendingConds = [];
     for (const c of s.caseBlock.clauses) {
       if (ts.isCaseClause(c)) {
-        pendingConds.push(`(${expr(scrut)} == ${expr(c.expression, typeOf(scrut))})`);
+        pendingConds.push(`(${scrutValue ?? expr(scrut)} == ${expr(c.expression, typeOf(scrut))})`);
         if (!c.statements.length) continue;
       }
       const body = c.statements.filter((x) => !ts.isBreakStatement(x)).flatMap((x) => (ts.isBlock(x) ? [...x.statements].filter((y) => !ts.isBreakStatement(y)) : [x]));
@@ -2418,6 +2566,24 @@ export function translate(file, fnName, opts = {}) {
     out.push(`${pad}{`);
   }
   // text of `x = e`, `x += e`, `x++`, `xs.push(e)`, `s.add(e)`, `m.set(k, v)`, `s.delete(e)` as `name := new value`
+    function pathUpdate(target, leaf) {
+      const chain = []; let root = target;
+      while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
+      if (!ts.isIdentifier(root)) fail(target, 'assignment target is not a path on a local record');
+      if (!chain.length) return [root.text, leaf(dn(root.text), null, typeOf(root)), root];
+      const build = (i, recvCode, recvT) => {
+        const pa = chain[i]; const fname_ = pa.name.text;
+        if (!isRecordish(recvT) || !checker.getPropertyOfType(recvT, fname_)) fail(pa, `field ${fname_} is not a declared field of a record`);
+        const p = checker.getPropertyOfType(recvT, fname_);
+        const ft = checker.getTypeOfSymbolAtLocation(p, pa);
+        const cur = `${recvCode}.${dn(fname_)}`;
+        let inner;
+        if (i === chain.length - 1) inner = leaf(cur, p, ft);
+        else { if (isOptional(ft)) fail(pa, 'assignment through an optional field is not translated'); inner = build(i + 1, cur, ft); }
+        return `${recvCode}.(${dn(fname_)} := ${inner})`;
+      };
+      return [root.text, build(0, dn(root.text), typeOf(root)), root];
+    }
   function newValue(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` is the call f()
@@ -2435,6 +2601,7 @@ export function translate(file, fnName, opts = {}) {
         return null;
       }
     }
+    if ((isAssign(e) && containsValueStep(e.right)) || (ts.isBinaryExpression(e) && e.operatorToken.kind === K.CommaToken)) { expr(e); return null; }
     if (ts.isAwaitExpression(e) || (ts.isCallExpression(e) && isEffectCall(e)) || (ts.isNewExpression(e) && isEffectCall(e))) { expr(e); return null; } // the transition is hoisted
     if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && fns.has(e.expression.text) && mutatedOf(fns.get(e.expression.text)).length) { expr(e); return null; } // a call that changes what was passed: the new values are bound by the call
     if (ts.isCallExpression(e) && ts.isIdentifier(e.expression)) { expr(e); return null; }
@@ -2475,24 +2642,7 @@ export function translate(file, fnName, opts = {}) {
       return null;
     }
     // a path x.a.b rooted at a local or a parameter, rebuilt with a new leaf: x := x.(a := x.a.(b := leaf(x.a.b)))
-    function pathUpdate(target, leaf) {
-      const chain = []; let root = target;
-      while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
-      if (!ts.isIdentifier(root)) fail(target, 'assignment target is not a path on a local record');
-      if (!chain.length) return [root.text, leaf(dn(root.text), null, typeOf(root)), root];
-      const build = (i, recvCode, recvT) => {
-        const pa = chain[i]; const fname_ = pa.name.text;
-        if (!isRecordish(recvT) || !checker.getPropertyOfType(recvT, fname_)) fail(pa, `field ${fname_} is not a declared field of a record`);
-        const p = checker.getPropertyOfType(recvT, fname_);
-        const ft = checker.getTypeOfSymbolAtLocation(p, pa);
-        const cur = `${recvCode}.${dn(fname_)}`;
-        let inner;
-        if (i === chain.length - 1) inner = leaf(cur, p, ft);
-        else { if (isOptional(ft)) fail(pa, 'assignment through an optional field is not translated'); inner = build(i + 1, cur, ft); }
-        return `${recvCode}.(${dn(fname_)} := ${inner})`;
-      };
-      return [root.text, build(0, dn(root.text), typeOf(root)), root];
-    }
+
     if (ts.isBinaryExpression(e) && ts.isPropertyAccessExpression(e.left)) {
       const op = e.operatorToken.kind;
       return pathUpdate(e.left, (cur, p, ft) => {
@@ -3005,7 +3155,6 @@ export function translate(file, fnName, opts = {}) {
     const returns = !s.__forEach && containsReturn(s); // a return inside a forEach callback ends one step, never the function
     const M = assignedOutside(s).map((m) => (m.synthetic ? m : { ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) }));
     if (!M.length && !returns) return tr(rest, fin, u);
-    if (ts.isWhileStatement(s) && containsEffect(s.expression)) fail(s, 'an effect in a while condition');
     if (ts.isForStatement(s) && (containsEffect(s.condition) || containsEffect(s.incrementor))) fail(s, 'an effect in a for header');
     const RD = u.isCtor ? 'Unit' : dtype(retType(u), s);
     if (returns) usesOption = true;
@@ -3034,6 +3183,7 @@ export function translate(file, fnName, opts = {}) {
     const constArgs = [...(loopUsesSelf && classOf(u) ? [SELF] : []), ...free.map((v) => dn(v.name))];
     const requiresL = [];
     let lead = [], leadArgsNext = [], leadArgsFirst = [], exit, bind = '', decreases, factsIn = new Set();
+    let conditionLines = [];
     let lp = null;
     if (isOf) {
       const x = s.initializer.declarations[0].name;
@@ -3071,7 +3221,9 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isNumericLiteral(s.initializer.declarations[0].initializer)) { factsIn = new Set([lp.i]); if (!lp.down && !real) requiresL.push(`${dn(lp.i)} >= ${lp.start}`); }
     } else {
       const h = hintsOf(sf, s);
-      exit = `!(${outerParens(truthy(s.expression))})`;
+      const condition = captureParts(() => truthy(s.expression));
+      conditionLines = condition.lines;
+      exit = `!(${outerParens(condition.text)})`;
       decreases = h.decreases ?? fail(s, 'while needs `// @decreases <expr>`');
     }
     const next = () => `${hn}(${[...leadArgsNext, ...constArgs, ...mNames].join(', ')})`;
@@ -3088,13 +3240,13 @@ export function translate(file, fnName, opts = {}) {
     for (const m of M) {
       if ((m.d === 'int' || m.d === 'real') && keepsNonneg(m.name, s.statement, factsIn)) hints.push(`${dn(m.name)} >= ${m.d === 'real' ? '0.0' : '0'}`);
     }
-    const exitFact = !isOf && !isFor && !returns ? [`  ensures (var ${tupleOf(outNames)} := ${callS}; ${exit})`] : [];
+    const exitFact = !isOf && !isFor && !returns && !conditionLines.length ? [`  ensures (var ${tupleOf(outNames)} := ${callS}; ${exit})`] : [];
     const specs = [...requiresL.map((r) => `  requires ${r}`),
       ...hints.map((h) => `  ensures (${h}) ==> (var ${tupleOf(outNames)} := ${callS}; ${h})`),
       ...exitFact,
       `  decreases ${decreases}`];
     coreHelpers.push([`function ${hn}${tclause([...params, resT])}(${params.join(', ')}): ${resT}`, ...specs, '{',
-      indentBlock(`if ${exit} then ${exitVal()}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
+      indentBlock(`${conditionLines.length ? conditionLines.join('\n') + '\n' : ''}if ${exit} then ${exitVal()}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
     if (isFor && real) intVars.delete(lp.i);
     const first = `${hn}(${[...leadArgsFirst, ...constArgs, ...mNames].join(', ')})`;
     if (!returns) return `var ${tupleOf(mNames)} := ${first};\n${tr(rest, fin, u)}`;
