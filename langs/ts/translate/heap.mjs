@@ -378,12 +378,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   // reference or share a reference twice (the same tree, another graph). A unit with neither is one layer 1 reads
   // soundly under item 2. This reports the two classes; it changes no verdict.
   const isRefType = (t) => nonNull(t).some((x) => (x.flags & TF.Object) && !x.getCallSignatures().length) || nonNull(t).some((x) => x.flags & (TF.Any | TF.Unknown));
+  const rootOf = (x) => { x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const depth = (x) => { let d = 0; x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { if (!ts.isParenthesizedExpression(x) && !ts.isNonNullExpression(x)) d++; x = x.expression; } return d; };
   function layer1Risk(u) {
     const risks = new Set();
     const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) ? p.name.text : null)).filter(Boolean));
     const aliases = new Set(); // locals bound to a reference-typed path of an input
-    const rootOf = (x) => { x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
-    const depth = (x) => { let d = 0; x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { if (!ts.isParenthesizedExpression(x) && !ts.isNonNullExpression(x)) d++; x = x.expression; } return d; };
     const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
     const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
       e = unparen(e);
@@ -404,7 +404,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
       if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || depth(n.initializer) >= 1)) aliases.add(n.name.text);
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
         const L = unparen(n.left);
-        if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) { const r = rootOf(L); if (depth(L) >= 2 || aliases.has(r.text) || r.kind === K.ThisKeyword) risks.add('nested write through an input'); }
+        if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) { const r = rootOf(L); if (depth(L) >= 2 || aliases.has(r.text) || r.kind === K.ThisKeyword) risks.add('nested write through an input'); else if (n.operatorToken.kind === K.EqualsToken && isRefType(typeOf(n.right)) && !fresh(n.right)) risks.add('input field assigned a reference'); }
       }
       if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) && inputRooted(n.expression.expression)) { const recv = unparen(n.expression.expression); const r = rootOf(recv); if (depth(recv) >= 1 || aliases.has(r.text) || r.kind === K.ThisKeyword) risks.add('nested write through an input'); }
       if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L) && depth(L) >= 2) risks.add('nested write through an input'); }
@@ -416,5 +416,82 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     return [...risks];
   }
   const MUTATORS_ALL = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin', 'set', 'add', 'delete', 'clear']);
-  return { plan, isCore, emit, prelude, shapes, shapeLegend, core: () => core, whyNot: whyNotOf, layer1Risk };
+
+  // ----- identity skeletons: where tree equality would imply graph equality -----
+  // For a unit with no nested write through an input, the graph of its result is fixed by the identity of every
+  // reference node of the result: an input path (`p`, `p.tags`), a fresh literal (numbered per binding, so a local used
+  // twice is one shared node), or unknown (a call's result, a method's result, an element of an input array). When
+  // every return site has a skeleton with no unknown node, and the two versions' skeletons agree site by site, a
+  // value-tree equality proved by layer 1 is a graph equality under SEMANTICS item 2. This measures determinacy; the
+  // cross-side comparison is the theorem's, not yet written.
+  function identitySkeleton(u) {
+    const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) ? p.name.text : null)).filter(Boolean));
+    const bound = new Map(); // local -> its skeleton term, when its initializer has one
+    let freshId = 0;
+    const path = (e) => { // an input path as a string, or null
+      e = unparen(e);
+      if (ts.isIdentifier(e)) return params.has(e.text) ? e.text : bound.has(e.text) ? bound.get(e.text) : null;
+      if (ts.isPropertyAccessExpression(e)) { const b = path(e.expression); return typeof b === 'string' ? `${b}.${e.name.text}` : null; }
+      if (ts.isNonNullExpression(e)) return path(e.expression);
+      return null;
+    };
+    const term = (e) => { // the skeleton of a reference-typed expression; a non-reference expression is a leaf
+      e = unparen(e);
+      if (!isRefType(typeOf(e))) return '.';
+      const pth = path(e); if (pth !== null) return typeof pth === 'string' ? `@${pth}` : pth;
+      if (ts.isObjectLiteralExpression(e)) {
+        const parts = [];
+        for (const p of e.properties) {
+          if (ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name)) parts.push(`${p.name.getText(sf)}:${term(p.initializer)}`);
+          else if (ts.isShorthandPropertyAssignment(p)) parts.push(`${p.name.text}:${term(p.name)}`);
+          else if (ts.isSpreadAssignment(p)) { const src = path(p.expression); const s = shapeOf(typeOf(p.expression)); if (!spreadFreshOrPath(p.expression, s)) return null; parts.push(src === null ? '...fresh' : `...${typeof src === 'string' ? '@' + src : src}`); }
+          else return null;
+        }
+        return `#${freshId++}{${parts.join(',')}}`;
+      }
+      if (ts.isArrayLiteralExpression(e)) {
+        const parts = [];
+        for (const x of e.elements) { if (ts.isSpreadElement(x)) { if (!spreadFreshOrPath(x.expression, null)) return null; const src = path(x.expression); parts.push(src === null ? '...fresh' : `...${typeof src === 'string' ? '@' + src : src}`); } else { const tm = term(x); if (tm === null) return null; parts.push(tm); } }
+        return `#${freshId++}[${parts.join(',')}]`;
+      }
+      if (ts.isConditionalExpression(e)) { const a = term(e.whenTrue), b = term(e.whenFalse); return a === null || b === null ? null : `(?${a}:${b})`; }
+      return null; // a call, a method result, an element read: the identity is not visible here
+    };
+    const spreadFreshOrPath = (src, s) => { // spreading copies members: fine when they are primitive, or when the source is an input path (its members are that path's members)
+      const t = typeOf(src);
+      const arrT = nonNull(t)[0] ?? t;
+      if (checker.isArrayType(arrT)) { const el = checker.getTypeArguments(arrT)[0]; if (el && !isRefType(el)) return true; return path(src) !== null; }
+      const sh = s ?? shapeOf(t);
+      if (sh && sh.kind === 'rec' && sh.fields.every((f) => f.shape.kind === 'prim')) return true;
+      return path(src) !== null;
+    };
+    const canon = (s) => { if (s === null) return null; const ids = new Map(); return s.replace(/#(\d+)/g, (m, d) => { if (!ids.has(d)) ids.set(d, ids.size); return `#${ids.get(d)}`; }); };
+    const sites = [], writes = []; let nestedWrite = false;
+    const risks = new Set(layer1Risk(u)); if (risks.has('nested write through an input')) nestedWrite = true;
+    // a local written after its binding (a mutator, an assignment through it, a let rebound) has no fixed skeleton
+    const written = new Set();
+    const scan = (n) => {
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text)) { const r = rootOf(n.expression.expression); if (ts.isIdentifier(r)) written.add(r.text); }
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) { const r = rootOf(n.left); if (ts.isIdentifier(r)) written.add(r.text); }
+      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const r = rootOf(n.operand); if (ts.isIdentifier(r)) written.add(r.text); }
+      ts.forEachChild(n, scan);
+    };
+    scan(u.body);
+    const walk = (n) => {
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && (n.parent.flags & ts.NodeFlags.Const) && !written.has(n.name.text)) { const tm = term(n.initializer); if (tm !== null) bound.set(n.name.text, tm); }
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind === K.EqualsToken) { const L = unparen(n.left); if (ts.isPropertyAccessExpression(L) && params.has(rootOf(L).text ?? '') && depth(L) === 1 && isRefType(typeOf(n.right))) writes.push(`${path(L) ?? L.getText(sf)}:=${term(n.right)}`); }
+      if (ts.isReturnStatement(n) && n.expression) sites.push(term(n.expression));
+      if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return; // a nested function's returns are its own
+      ts.forEachChild(n, walk);
+    };
+    if (ts.isBlock(u.body)) walk(u.body); else sites.push(term(u.body));
+    const cs = sites.map(canon), cw = writes.map((w) => (w.endsWith(':=null') ? null : canon(w)));
+    // one identity for the result whatever path runs: every site the same skeleton, every conditional both branches the same
+    const oneSite = cs.length > 0 && cs.every((s) => s !== null && s === cs[0] && !/\(\?/.test(s) || (s !== null && s === cs[0] && condAgrees(s)));
+    const determinate = !nestedWrite && oneSite && cw.every((w) => w !== null);
+    return { determinate, nestedWrite, sites: cs, writes: cw };
+  }
+  // a conditional skeleton `(?a:b)` fixes the identity only when a and b are the same skeleton
+  function condAgrees(s) { let ok = true; s.replace(/\(\?([^()]*):([^()]*)\)/g, (m, a, b) => { if (a !== b) ok = false; return m; }); return ok && !/\(\?[^()]*\(/.test(s); }
+  return { plan, isCore, emit, prelude, shapes, shapeLegend, core: () => core, whyNot: whyNotOf, layer1Risk, identitySkeleton };
 }

@@ -32,7 +32,7 @@ const coarse = (r) => r.replace(/^(calls|called by) .*, outside the core$/, '$1 
 const leaf = (r) => { const m = r.match(/: (.*)$/); if (!m) return null; const parts = m[1].split(': '); return parts[parts.length - 1].replace(/^array of /, ''); };
 const perRepo = {}, reasons = Object.create(null), leaves = Object.create(null), methodCalls = Object.create(null), sample = []; // null prototypes: a method named toString must not meet Object.prototype
 let files = 0, units = 0, core = 0, own = 0;
-const risk = Object.create(null); let risky = 0, sound = 0; // layer-1 exposure outside the core
+const risk = Object.create(null); let risky = 0, sound = 0, determinate = 0, exposedDeterminate = 0; // layer-1 exposure outside the core; determinate: every return site's identity skeleton is known and no nested write
 for (const repo of repos) {
   const list = []; for (const root of repo.roots) if (fs.existsSync(root)) list.push(...walk(root));
   const row = { files: list.length, units: 0, core: 0, own: 0 };
@@ -60,6 +60,8 @@ for (const repo of repos) {
         units++; row.units++;
         if (heapT.isCore(u)) { core++; row.core++; if (sample.length < 200) sample.push(`${path.relative(path.dirname(census), file)}:${u.name}`); continue; }
         const rk = heapT.layer1Risk(u); if (rk.length) { risky++; for (const r of rk) risk[r] = (risk[r] ?? 0) + 1; } else sound++;
+        let sk = null; try { sk = heapT.identitySkeleton(u); } catch (e) { sk = { determinate: false }; }
+        if (sk.determinate) { determinate++; if (rk.length) exposedDeterminate++; }
         const why = heapT.whyNot(u.name);
         if (why.every((r) => /outside the core$/.test(r) && /^(calls|called by) /.test(r))) { own++; row.own++; } // its own syntax fits; the call graph keeps it out
         const first = why[0] ?? 'unknown';
@@ -74,6 +76,6 @@ for (const repo of repos) {
   perRepo[repo.name] = row;
 }
 const sortDesc = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1]));
-const result = { census, resolve, layer1: { outsideCore: units - core, exposed: risky, notExposed: sound, byClass: sortDesc(risk) }, policy: `heap core as planned by translate/heap.mjs (stage 2): structural membership per unit, modules ${resolve ? 'resolved with each repository tsconfig' : 'unresolved'}; a count of units the core reads, not of proofs`, files, units, core, ownSyntaxFitsCallGraphExcludes: own, perRepo, firstReasonCoarse: sortDesc(reasons), typeLeaves: sortDesc(leaves), methodCalls: sortDesc(methodCalls), coreSample: sample, manifestSha256: createHash('sha256').update(JSON.stringify({ perRepo, reasons, leaves })).digest('hex') };
+const result = { census, resolve, layer1: { outsideCore: units - core, exposed: risky, notExposed: sound, byClass: sortDesc(risk), determinate, exposedDeterminate }, policy: `heap core as planned by translate/heap.mjs (stage 2): structural membership per unit, modules ${resolve ? 'resolved with each repository tsconfig' : 'unresolved'}; a count of units the core reads, not of proofs`, files, units, core, ownSyntaxFitsCallGraphExcludes: own, perRepo, firstReasonCoarse: sortDesc(reasons), typeLeaves: sortDesc(leaves), methodCalls: sortDesc(methodCalls), coreSample: sample, manifestSha256: createHash('sha256').update(JSON.stringify({ perRepo, reasons, leaves })).digest('hex') };
 fs.writeFileSync(output, JSON.stringify(result, null, 1) + '\n');
 console.log(JSON.stringify({ files, units, core, ownSyntaxFitsCallGraphExcludes: own, layer1: result.layer1, firstReasonCoarse: sortDesc(reasons) }, null, 1));
