@@ -38,13 +38,13 @@ reading no value model can give; the lint says what to write instead).
 | `==` loose equality | 398 | refused except against `null`/`undefined` | by design: the lint says `===` | by design |
 | `===` on primitives | 19,845 | exact | same | done |
 | `===` on objects and arrays | | refused (`reference-equality`) | exact Ref identity for represented objects; fresh refs compared under one observation-wide correspondence ([design](design/heap-layer.md)) | gap (layer 2; design and toy only) |
-| `typeof` | 3,351 | exact static tags, represented sum alternatives and single-absence Options; null reports `"object"`; assertion-derived values, unknown and ambiguous absences stay uninterpreted | same | partial (lane) |
+| `typeof` | 3,351 | exact static tags, represented sum alternatives, Options and Nullish; null reports `"object"`; assertion-derived values, unknown stay uninterpreted | same | partial (lane) |
 | regular expressions | 1,950 | an opaque constant per literal, externals for `test`, `match`, `replace` | the same; an exact reading of regular expressions is a project of its own | by design |
 | `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` and `new Date()` with no argument are transitions (dev 364eb1e); `new Date(x)` a pure value; methods uninterpreted | same | done (dev) |
 | `Math.*` | | `min`/`max` exact on nonempty argument sequences (lane); possibly empty spreads refused (`math-empty`); `abs`, `floor`, `trunc` exact; the rest uninterpreted; `Math.random` a transition | `ceil`, `round`, `sign`, `pow` on integers exact | gap (small) |
-| `JSON.stringify`, `JSON.parse` | 1,714, 699 | may-fault transitions; checkpoints inside exact try regions | an argument-only Result reading | partial (lane) |
+| `JSON.stringify`, `JSON.parse` | 1,714, 699 | may-fault transitions; checkpoints inside exact try regions; stringify preserves Null/Undef tags and the static absence schema | exact serialization, order, replacers and toJSON remain outside this refinement | partial (lane) |
 | `Symbol`, `Symbol.iterator` | 37 | refused (`unsupported-syntax` on use) | a symbol is an opaque constant per declaration; iterator protocol is section 6 | gap (small) |
-| `null` and `undefined` as one value | | `None` | JavaScript distinguishes them (`== null` conflates); a two-constructor `Absent` datatype would keep the distinction | partial |
+| `null` and `undefined` | | `Nullish<T>` preserves both tags when the static type allows both; single-absence types retain `Option<T>`; strict tests select one tag, loose nullish tests select both | same; opaque values keep distinct uninterpreted tests | done (lane) |
 
 ## 2. Objects, records and references
 
@@ -70,8 +70,8 @@ reading no value model can give; the lint says what to write instead).
 | `instanceof` | 2,204 | exact nominal class ancestry and disjoint tagged class members; assertion-derived values, public structural classes and unknown catch values stay uninterpreted | exact only when static types establish runtime membership; subclasses included | partial (lane) |
 | `in` | 1,071 | dictionary membership and required record fields exact, including sum alternatives; assertion-derived operands and missing or optional fields uninterpreted | open records may carry undeclared or inherited keys; absence needs runtime information | partial (lane) |
 | `x!` non-null | 501 | `.value` when optional | same | done |
-| optional chaining `a?.b`, `a?.m()` | 6,061, 493 | exact (Option propagation; a conditional transition for calls) | same | done |
-| `??`, `??=`, `\|\|=`, `&&=` | 7,882, 107 | exact (dev): `x ??= v` keeps x when present, `\|\|=` keeps a truthy x, `&&=` takes v when x is truthy | same | done (dev) |
+| optional chaining `a?.b`, `a?.m()` | 6,061, 493 | Option or Nullish propagation; either absent receiver yields Undef; nullable field values retain Null; calls remain conditional transitions | same | done (lane) |
+| `??`, `??=`, `\|\|=`, `&&=` | 7,882, 107 | exact for Option and Nullish: `??` falls back on either absent tag; `x ??= v` keeps x when present, `\|\|=` keeps a truthy x, `&&=` takes v when x is truthy | same | done (dev) |
 | `as` casts, `satisfies` | 6,995, 105 | identity when the shapes agree, else uninterpreted cast | same | done |
 | `arguments` object | 133 | refused | by design (use rest parameters, section 3) | by design |
 
@@ -80,7 +80,7 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | top-level function, arrow const, call | | exact | same | done |
-| default parameters | 108 | exact (`Option` with the default filled) | same | done |
+| default parameters | 108 | nullable defaults take `Nullish<T>`; only Undef runs the initializer; explicit null passes through; nonnullable defaults retain Option inputs | same | done (lane) |
 | rest parameters `...xs` | 37 | a sequence parameter; the remaining arguments of a call form the sequence; a single spread passes it as it is (dev) | same | done (dev) |
 | spread in a call `f(...xs)` | 3,060 (with arrays) | same-file rest parameters (dev); outside callees receive one concatenated argument sequence as a transition or pure external; push/unshift concatenate all arguments; min/max fold nonempty sequences (`math-empty` otherwise) | same, plus custom iterators and local function values | partial (lane) |
 | destructuring, defaults in object patterns | 7,988, 241 | exact | same | done |

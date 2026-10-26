@@ -259,7 +259,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
       case K.ContinueStatement: if (loopDepth > 0) return; return v(s, 'break-continue', 'continue outside a loop');
       case K.ThrowStatement:
-        if (callbackStack.length && !enclosingOpaqueTry(s)) return v(s, 'exception-callback', 'move the throw to a same-file unit and call it directly');
+        if (callbackStack.length && !callbackStack.at(-1).modifiers?.some((m) => m.kind === K.AsyncKeyword) && !enclosingOpaqueTry(s)) return v(s, 'exception-callback', 'move the throw to a same-file unit and call it directly');
         return expr(s.expression);
       case K.TryStatement: {
         // an opaque block (version 3): its text names it; what it reads and writes are its inputs and outputs
@@ -584,8 +584,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     if (op === K.AsteriskAsteriskToken) { expr(e.left); expr(e.right); return; } // a power: an uninterpreted function of both sides
     if (op === K.EqualsEqualsToken || op === K.ExclamationEqualsToken) {
-      const nul = (x) => x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined');
-      if (nul(e.left) || nul(e.right)) { expr(e.left); return expr(e.right); } // `x == null` is the absence test
+      const nul = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined'); };
+      if (nul(e.left) || nul(e.right)) { expr(e.left); return expr(e.right); } // loose nullish equality tests both tags; strict equality tests only its own tag
       return v(e, 'loose-equality', 'use === and !==');
     }
     if (op === K.InstanceOfKeyword) {
@@ -615,7 +615,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     if (CMP.has(op) && (isStr(lt) || isStr(rt)) && !(isStr(lt) && isStr(rt)) && !(isAny(lt) || isAny(rt))) v(e, 'string-order', 'compare two strings, or convert both operands explicitly');
     if (EQ.has(op)) {
-      const nul = (x) => x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined');
+      const nul = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined'); };
       const prim = (t) => nonNull(t).every((x) => isPrim(x) || isAny(x) || !!(x.flags & TF.TypeParameter)); // a type parameter is compared by value
       const litSide = (x) => ts.isStringLiteral(x) || ts.isNumericLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword;
       // a comparison with a primitive on either side is a value comparison; only record against record (or array against array) compares references
