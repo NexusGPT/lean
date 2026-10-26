@@ -138,7 +138,7 @@ export function specOf(file, unitName, opts = {}) {
   const used = new Set(); const mark = (x) => { if (!x || typeof x !== 'object') return; if (Array.isArray(x)) return x.forEach(mark); if (x.kind === 'ref' && !used.has(x.key)) { used.add(x.key); mark(defs[x.key]); } for (const v of Object.values(x)) mark(v); };
   mark(params); mark(returns); mark(receiver); mark(imports);
   const usedDefs = {}; for (const k of used) usedDefs[k] = defs[k];
-  return { unit: unitName, isMethod: !!u.cls, className: u.className ?? null, isStatic: !!u.isStatic, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports };
+  return { unit: unitName, isMethod: !!u.cls, className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports };
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {

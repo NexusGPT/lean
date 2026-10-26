@@ -265,7 +265,7 @@ export function topLevelFunctions(sf) {
 /**
  * The methods of a top-level class as units named `Class.method`. A method is a function of an explicit receiver
  * (`self`), its parameters and, when effectful, the world. A constructor with a body is the unit `Class.constructor`
- * (its receiver is the fresh handle `new` allocates). Getters, setters and abstract or bodiless methods are not units.
+ * (its receiver is the fresh handle `new` allocates). Getters and setters are units named get_<field> and set_<field>; bodiless members are not units.
  */
 export function classMethodUnits(st) {
   if (!ts.isClassDeclaration(st) || !st.name) return [];
@@ -275,11 +275,13 @@ export function classMethodUnits(st) {
       out.push({ name: `${st.name.text}.constructor`, node: m, fn: m, params: m.parameters, body: m.body, typeNode: undefined, isAsync: false, isArrow: false, generics: undefined, cls: st, className: st.name.text, method: 'constructor', isStatic: false, isCtor: true });
       continue;
     }
-    if (!ts.isMethodDeclaration(m) || !m.body || !m.name || !ts.isIdentifier(m.name)) continue;
+    if (!(ts.isMethodDeclaration(m) || ts.isGetAccessorDeclaration(m) || ts.isSetAccessorDeclaration(m)) || !m.body || !m.name || !ts.isIdentifier(m.name)) continue;
+    const accessor = ts.isGetAccessorDeclaration(m) ? 'get' : ts.isSetAccessorDeclaration(m) ? 'set' : null;
+    const unitMethod = accessor ? `${accessor}_${m.name.text}` : m.name.text;
     const isStatic = !!m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword);
-    out.push({ name: `${st.name.text}.${m.name.text}`, node: m, fn: m, params: m.parameters, body: m.body, typeNode: m.type,
+    out.push({ name: `${st.name.text}.${unitMethod}`, node: m, fn: m, params: m.parameters, body: m.body, typeNode: m.type,
       isAsync: !!m.modifiers?.some((x) => x.kind === ts.SyntaxKind.AsyncKeyword), isArrow: false, generics: m.typeParameters,
-      cls: st, className: st.name.text, method: m.name.text, isStatic });
+      cls: st, className: st.name.text, method: m.name.text, isStatic, accessor });
   }
   return out;
 }
@@ -346,4 +348,30 @@ export function fileUsesReals(sf) {
   };
   w(sf);
   return real;
+}
+
+// a literal method's originating object, including the inferred type through a local alias
+export function methodLiteralOf(checker, type) {
+  const declarations = [ ...(type.symbol?.declarations ?? []), ...checker.getPropertiesOfType(type).flatMap((p) => p.declarations ?? []) ];
+  for (const d of declarations) {
+    const obj = ts.isObjectLiteralExpression(d) ? d : d.parent;
+    if (obj && ts.isObjectLiteralExpression(obj) && obj.properties.some((p) => ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p))) { for (let owner = obj.parent; owner; owner = owner.parent) if (ts.isFunctionLike(owner)) return obj; }
+  }
+  return null;
+}
+
+// every container on a receiver path is a nonoptional data record, never a class or opaque handle
+export function receiverRecordPath(checker, target) {
+  const chain = []; let root = target;
+  while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
+  if (root.kind !== ts.SyntaxKind.ThisKeyword || chain.length < 2) return null;
+  for (let i = 0; i < chain.length - 1; i++) {
+    if (checker.getSymbolAtLocation(chain[i].name)?.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d))) return null;
+    const t = checker.getTypeAtLocation(chain[i]);
+    if (!(t.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection)) || (t.objectFlags & ts.ObjectFlags.Class) || t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) || ts.isClassExpression(d)) || isArrayLike(checker, t) || checker.getIndexInfosOfType(t).length) return null;
+    const ps = checker.getPropertiesOfType(t);
+    if (!ps.length || ps.some((p) => checker.getSignaturesOfType(checker.getTypeOfSymbolAtLocation(p, chain[i]), ts.SignatureKind.Call).length || p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)))) return null;
+    if (!checker.getPropertyOfType(t, chain[i + 1].name.text)) return null;
+  }
+  return chain;
 }

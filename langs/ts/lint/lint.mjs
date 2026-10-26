@@ -10,7 +10,7 @@
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits } from '../common.mjs';
+import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { fileUsesReals } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
@@ -60,6 +60,17 @@ export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
       if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
         const callee = byDecl.get(checker.getResolvedSignature(n)?.declaration);
         if (callee) edges.get(callee).add(u.name);
+      }
+      if (ts.isPropertyAccessExpression(n)) {
+        const parent = n.parent;
+        const assign = ts.isBinaryExpression(parent) && parent.left === n && parent.operatorToken.kind >= K.FirstAssignment && parent.operatorToken.kind <= K.LastAssignment;
+        const update = (ts.isPrefixUnaryExpression(parent) || ts.isPostfixUnaryExpression(parent)) && [K.PlusPlusToken, K.MinusMinusToken].includes(parent.operator);
+        for (const decl of checker.getSymbolAtLocation(n.name)?.declarations ?? []) {
+          const reads = ts.isGetAccessorDeclaration(decl) && !(assign && parent.operatorToken.kind === K.EqualsToken);
+          const writes = ts.isSetAccessorDeclaration(decl) && (assign || update);
+          const callee = (reads || writes) && byDecl.get(decl);
+          if (callee) edges.get(callee).add(u.name);
+        }
       }
       ts.forEachChild(n, walk);
     };
@@ -123,6 +134,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
+  let objectMethod = null;
   let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
   let switchDepth = 0;
   let loopDepth = 0;
@@ -142,6 +154,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200) });
   };
   const tOf = (n) => checker.getTypeAtLocation(n);
+  const localMethodLiteral = (t) => { const obj = methodLiteralOf(checker, t); return obj?.getSourceFile() === sf ? obj : null; };
+  const methodLiteralPath = (n) => { for (;;) { if (localMethodLiteral(tOf(n))) return true; if (!(ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isParenthesizedExpression(n))) return false; n = n.expression; } };
   const fileReal = fileUsesReals(sf); // a real file: `/` is real division, the translator's numbers are reals
   // a union of literals ("" | "-") is as much a string as `string` is
   const isStr = (t) => !!(t.flags & TF.StringLike) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike));
@@ -208,6 +222,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const o = originOf(checker, id, sf, current);
     if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id)) return v(id, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
     if (o.kind === 'unit' && units.get(name)?.fn.asteriskToken && !asyncGenerator(units.get(name)) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.expression === id)) return v(id, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
+    if (o.kind === 'local' && localMethodLiteral(tOf(id)) && id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id)) return v(id, 'object-method-mutation', 'pass a fresh literal handler or keep calls on the local object; sharing a named method object needs a heap');
     if (o.kind === 'local' || o.kind === 'unit') return;
     if (o.kind === 'module' || o.kind === 'import' || o.kind === 'other' || o.kind === 'type') return; // externals
     if (moduleState(checker, id, sf)) {
@@ -322,6 +337,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
   function bindingNames(name, outNames) {
     if (ts.isIdentifier(name)) { outNames.push(name); return; }
+    if (ts.isObjectBindingPattern(name) && localMethodLiteral(tOf(name))) v(name, 'object-method-mutation', 'read named fields on the literal object; copying accessors or detached methods needs a receiver');
     for (const el of name.elements) {
       if (ts.isOmittedExpression(el)) continue;
       if (el.dotDotDotToken) { if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el)) { v(el, 'record-rest', 'record rest needs a fixed nonempty scalar record without defaults; copy named fields explicitly'); continue; } bindingNames(el.name, outNames); continue; } // `[a, ...rest]`: the tail of the sequence
@@ -356,6 +372,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` as a statement is the call f()
     if (ts.isAwaitExpression(e)) return awaitExpr(e, true);
+    const assigned = ts.isBinaryExpression(e) && e.operatorToken.kind >= K.FirstAssignment && e.operatorToken.kind <= K.LastAssignment ? e.left : ts.isDeleteExpression(e) ? e.expression : null;
+    if (assigned && !ts.isIdentifier(assigned)) { let root = assigned; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root)) root = root.expression; if (methodLiteralPath(assigned)) return v(assigned, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); }
     if (ts.isDeleteExpression(e)) return expr(e); // `delete r.f` as a statement
     if (ts.isBinaryExpression(e)) {
       const op = e.operatorToken.kind;
@@ -379,8 +397,9 @@ export function lintFile(file, ranges = null, opts = {}) {
           expr(l.argumentExpression);
         } else if (ts.isPropertyAccessExpression(l)) {
           let root = l; while (ts.isPropertyAccessExpression(root)) root = root.expression;
-          if (root.kind === K.ThisKeyword) { if (l.expression.kind !== K.ThisKeyword) return v(l, 'receiver-mutation', 'assignment through a field of `this` changes a value the receiver holds; assign the field itself'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return expr(e.right); } // a field of the receiver: its right side is checked before the world write
+          if (root.kind === K.ThisKeyword) { if (objectMethod) return v(l, 'object-method-mutation', 'literal methods keep immutable data fields; use a class for mutable receiver state'); if (l.expression.kind !== K.ThisKeyword && !receiverRecordPath(checker, l)) return v(l, 'receiver-mutation', 'a receiver path needs nonoptional data records; assign a field itself for class or opaque handles'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return expr(e.right); } // a receiver write checks its right side, including exact promise forms
           const o = ts.isIdentifier(root) ? declOf(root) : { kind: null };
+          if (localMethodLiteral(tOf(root))) return v(l, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
           if (!ts.isIdentifier(root) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', `\`${root.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
@@ -394,6 +413,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (op >= K.FirstAssignment && op <= K.LastAssignment) return v(e, 'unsupported-operator', 'assignment operator is outside the subset');
     }
     if ((ts.isPostfixUnaryExpression(e) || ts.isPrefixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken)) {
+      if (ts.isPropertyAccessExpression(e.operand)) { let root = e.operand; while (ts.isPropertyAccessExpression(root)) root = root.expression; if ((root.kind === K.ThisKeyword && objectMethod) || methodLiteralPath(e.operand)) return v(e, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); if (root.kind === K.ThisKeyword && e.operand.expression.kind !== K.ThisKeyword) return receiverRecordPath(checker, e.operand) ? undefined : v(e, 'receiver-mutation', 'a receiver path needs nonoptional data records'); }
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasLocals.has(o.decl) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
@@ -692,7 +712,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.YieldExpression:
         if (currentFn?.asteriskToken && !callbackStack.length && ts.isExpressionStatement(e.parent)) return e.expression ? expr(e.expression) : undefined;
         return v(e, 'generator-use', 'yield is a statement; sent values need a step reading');
-      case K.ThisKeyword: if (currentClass) return; return v(e, 'this', '`this` outside a class method');
+      case K.ThisKeyword: if (currentClass || objectMethod) return; return v(e, 'this', '`this` outside a class method');
       case K.SuperKeyword: { if (currentClass && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.parent && ts.isCallExpression(e.parent.parent) && e.parent.parent.expression === e.parent) return; if (currentClass && currentFn && ts.isConstructorDeclaration(currentFn) && e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e) return; return v(e, 'class', '`super` is read only as `super.m(...)` or `super(...)` in a constructor, a call of the parent\'s method'); }
       case K.ClassExpression: return v(e, 'class', 'classes are outside the subset');
       case K.FunctionExpression: case K.ArrowFunction: return callback(e, null); // a function value anywhere: checked as a callback value (its body in the subset; it may hold effects, then it is an opaque value by its text);
@@ -720,8 +740,9 @@ export function lintFile(file, ranges = null, opts = {}) {
         }
         return;
       case K.ObjectLiteralExpression:
+        if (e.properties.some(ts.isGetAccessorDeclaration) && !e.properties.every((p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p) || ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p)) && p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)))) return v(e, 'unsupported-syntax', 'literal getters need fixed named fields; use a class for spread or computed accessors');
         e.properties.forEach((p) => {
-          if (ts.isSpreadAssignment(p)) return expr(p.expression);
+          if (ts.isSpreadAssignment(p)) { if (localMethodLiteral(tOf(p.expression))) return v(p, 'object-method-mutation', 'spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly'); return expr(p.expression); }
           if (ts.isShorthandPropertyAssignment(p)) return checkIdent(p.name);
           if (ts.isPropertyAssignment(p)) {
             if (ts.isComputedPropertyName(p.name)) { const lt = checker.getContextualType(e) ?? tOf(e); const dict = nonNull(lt).every((t) => !!(t.flags & TF.Object) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getPropertiesOfType(t).length); if (!dict) v(p, 'dynamic-key', 'a computed property name builds a dictionary; give the literal a Record<string, T> type'); else if (!nonNull(tOf(p.name.expression)).every(isStr)) v(p, 'dynamic-key', 'a dictionary key is a string'); else expr(p.name.expression); }
@@ -729,7 +750,36 @@ export function lintFile(file, ranges = null, opts = {}) {
             return expr(p.initializer);
           }
           if (p.name && ts.isComputedPropertyName(p.name) && /^Symbol\.(asyncIterator|iterator)$/.test(p.name.expression.getText(sf))) return v(p, 'iterator-protocol', 'custom iterator protocol methods need a step reading; use a generator or an array');
-          return v(p, 'unsupported-syntax', 'methods and accessors are outside the subset');
+          if ((ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p)) && p.body && p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))) {
+            // a method is deferred; its body may be opaque, but receiver mutation needs a heap
+            const saved = objectMethod; objectMethod = p;
+            const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+            const scan = (x) => {
+              const target = ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment ? x.left : (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [K.PlusPlusToken, K.MinusMinusToken].includes(x.operator) ? x.operand : ts.isDeleteExpression(x) ? x.expression : null;
+              if (target && ts.isIdentifier(rootOf(target))) { const id = rootOf(target), d = checker.getSymbolAtLocation(id)?.valueDeclaration; if (d && !(d.pos >= p.pos && d.end <= p.end)) v(target, 'closure-mutation', 'a literal method cannot change a captured binding; use a class for shared state'); }
+              if (ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword && !nonNull(tOf(x)).every(isPrim) && !e.properties.some((q) => ts.isMethodDeclaration(q) && q.name?.text === x.name.text)) v(x, 'object-method-mutation', 'literal this reads scalar fields; reference-valued receiver state needs a class');
+              if (x.kind === K.ThisKeyword && !(x.parent && ts.isPropertyAccessExpression(x.parent) && x.parent.expression === x)) v(x, 'object-method-mutation', 'keep literal this as a direct data-field read; use a class for aliases or rebinding');
+              if (target && rootOf(target).kind === K.ThisKeyword) v(target, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
+              if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text) && rootOf(x.expression.expression).kind === K.ThisKeyword) v(x, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
+              ts.forEachChild(x, scan);
+            };
+            scan(p.body);
+            for (const id of closureReads(checker, p)) {
+              const sym = checker.getSymbolAtLocation(id), d = sym?.valueDeclaration;
+              if (d && ts.isVariableDeclaration(d) && !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) v(id, 'object-method-capture', 'a literal method needs stable captured bindings; use a class for shared changing state');
+              let owner = p.parent; while (owner && !ts.isFunctionLike(owner)) owner = owner.parent;
+              let changed = false;
+              const writesCapture = (x) => {
+                const target = ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment ? x.left : (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [K.PlusPlusToken, K.MinusMinusToken].includes(x.operator) ? x.operand : ts.isDeleteExpression(x) ? x.expression : ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text) ? x.expression.expression : null;
+                if (target && ts.isIdentifier(rootOf(target)) && checker.getSymbolAtLocation(rootOf(target)) === sym) changed = true;
+                ts.forEachChild(x, writesCapture);
+              };
+              if (owner) writesCapture(owner.body);
+              if (changed) v(id, 'object-method-capture', 'a literal method captures an unchanging value; copy mutable data before capturing it');
+            }
+            objectMethod = saved; return;
+          }
+          return v(p, 'unsupported-syntax', 'literal setters and computed methods need a class accessor or a named method');
         });
         return;
       case K.SpreadElement: return v(e, 'spread', 'spread is allowed in array and record literals only');
@@ -823,7 +873,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       // `a?.m()`: the call happens when a is present; the result is an Option (the receiver's type says whether it may be absent)
       const recv = f.expression, name = f.name.text;
       const rt = tOf(recv);
-      if (recv.kind === K.ThisKeyword) { if (!currentClass) return v(e, 'this', '`this` outside a class method'); return argsOf(e); } // a method of this class, or a function-typed field
+      if (recv.kind === K.ThisKeyword) { if (!currentClass && !objectMethod) return v(e, 'this', '`this` outside a class method'); return argsOf(e); } // a method of this class, or a function-typed field
       if (ts.isIdentifier(recv) && recv.text === 'Math' && declOf(recv).kind === 'global') {
         void 0; // Math.random is a world transition (version 3)
         if (name === 'floor' || name === 'trunc') { floorDepth++; e.arguments.forEach(expr); floorDepth--; return; }
@@ -1107,6 +1157,9 @@ export function lintFile(file, ranges = null, opts = {}) {
   const argsOf = (e) => (e.arguments ?? []).forEach((a) => ts.isSpreadElement(a) ? (outsideSpread(e) ? spreadArray(a) : v(a, 'spread', 'spread arguments need an outside callee or a supported sequence operation')) : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
     const name = e.name.text;
+    const obj = localMethodLiteral(tOf(e.expression));
+    const method = obj?.properties.find((p) => ts.isMethodDeclaration(p) && p.name?.text === name);
+    if (method && !(e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e)) return v(e, 'object-method-mutation', 'call a literal method on its object; detached methods need an explicit receiver');
     if (e.expression.kind === K.ThisKeyword) return; // a field or method of the receiver: read through an accessor
     if (name === 'prototype' || name === '__proto__' || name === 'constructor') return v(e, 'prototype', `\`.${name}\` reaches the prototype chain`);
     const rt = tOf(e.expression);
@@ -1144,6 +1197,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); };
       visitKey(e.argumentExpression);
       if (keyCall) return v(e, 'dynamic-key', 'bind the computed key before reading the record; a key call may mutate its receiver');
+      if (localMethodLiteral(parts[0]) && keys.some((k) => checker.getPropertyOfType(parts[0], k)?.declarations?.some(ts.isGetAccessorDeclaration))) return v(e, 'dynamic-key', 'read a literal getter by its declared property name');
       const missing = keys.filter((k) => !checker.getPropertyOfType(parts[0], k));
       if (missing.length) return v(e, 'dynamic-key', `key ${missing.map((k) => JSON.stringify(k)).join(', ')} is not declared on ${checker.typeToString(rt)}`);
       if (keys.some((k) => nonNull(checker.getTypeOfSymbolAtLocation(checker.getPropertyOfType(parts[0], k), e)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length))) return v(e, 'dynamic-key', 'call a method by its declared name; computed record reads select data fields');
@@ -1204,6 +1258,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a class that extends another: inherited members are read through opaque accessors; `super` stays refused
       for (const u of classMethodUnits(st)) {
         if (!overlaps(sf, u.node, ranges)) continue;
+        if (u.accessor && !opts.accessorBodies) continue; // unreadable accessor bodies retain their opaque unit reading
         checkedDiagSpans.push(u.node);
         current = u.node; currentFn = u.fn; currentClass = st;
         if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(u.node, shape.rule, shape.message); }
