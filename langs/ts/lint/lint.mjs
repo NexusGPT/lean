@@ -160,7 +160,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         // with a bound it is translated; without one it becomes an opaque block (version 3), so its inside is still checked
         expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return;
       }
-      case K.DoStatement: return v(s, 'do-while', 'do-while is outside the subset');
+      case K.DoStatement: { expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return; } // `do B while (c)` is B then a while; without a bound it is an opaque block
       case K.ForInStatement: return v(s, 'for-in', 'for-in reads dynamic property names');
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
       case K.ContinueStatement: if (loopDepth > 0) return; return v(s, 'break-continue', 'continue outside a loop');
@@ -174,7 +174,15 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       case K.SwitchStatement: return switchStmt(s);
       case K.LabeledStatement: return v(s, 'label', 'labels are outside the subset');
-      case K.FunctionDeclaration: return v(s, 'nested-function', 'nested functions are outside the subset');
+      case K.FunctionDeclaration: { // a nested function declaration: a local function value, checked as a callback value
+        if (s.asteriskToken) return v(s, 'generator', 'generators are outside the subset');
+        if (!s.body) return;
+        for (const p of s.parameters) { if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset'); checkType(tOf(p.name), p); }
+        callbackStack.push(s);
+        const savedLoop = loopDepth, savedSwitch = switchDepth; loopDepth = 0; switchDepth = 0;
+        try { const prev = current; stmts(s.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; }
+        return;
+      }
       case K.ClassDeclaration: return v(s, 'class', 'classes are outside the subset');
       default: return v(s, 'unsupported-syntax', `statement ${ts.SyntaxKind[s.kind]} is outside the subset`);
     }
@@ -213,7 +221,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     bindingNames(d.name, names);
     if (!d.initializer) {
       // `let x: T;` with a written type: TypeScript proves every read follows an assignment; the value before it is unobservable
-      if (!d.type || !ts.isIdentifier(d.name)) return v(d, 'uninitialised', 'a variable without an initial value needs a written type');
+      if (!ts.isIdentifier(d.name)) return v(d, 'uninitialised', 'a pattern needs an initial value');
+      if (!d.type) return; // `let x;`: the type of its first assignment (an evolving let); TypeScript checks every read follows an assignment
       checkType(tOf(d.name), d.name); return;
     }
     for (const n of names) {
@@ -233,6 +242,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` as a statement is the call f()
     if (ts.isAwaitExpression(e)) return awaitExpr(e, true);
+    if (ts.isDeleteExpression(e)) return expr(e); // `delete r.f` as a statement
     if (ts.isBinaryExpression(e)) {
       const op = e.operatorToken.kind;
       if (op === K.EqualsToken || op === K.PlusEqualsToken || op === K.MinusEqualsToken || op === K.AsteriskEqualsToken) {
@@ -392,7 +402,14 @@ export function lintFile(file, ranges = null, opts = {}) {
         return v(e, 'unary-coercion', 'unary + coerces; it is outside the subset');
       case K.PostfixUnaryExpression: return v(e, 'update-expression', '++/-- is a statement only');
       case K.TypeOfExpression: return expr(e.expression); // an uninterpreted read of the run-time type
-      case K.DeleteExpression: return v(e, 'delete', '`delete` is outside the subset');
+      case K.DeleteExpression: {
+        // `delete r.f` on an optional field, `delete m[k]` on a dictionary, on a local, a parameter or a field of this
+        let t = e.expression; while (ts.isParenthesizedExpression(t)) t = t.expression;
+        if (!(e.parent && ts.isExpressionStatement(e.parent))) return v(e, 'delete', '`delete` is a statement, not a value');
+        if (ts.isElementAccessExpression(t)) { const r = t.expression; if (r.kind === K.ThisKeyword || (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass)) { expr(t.argumentExpression); return; } let root = r; while (ts.isPropertyAccessExpression(root)) root = root.expression; const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', `\`${root.text}\` is another name for a value this function was handed`); if (!nonNull(tOf(t.argumentExpression)).every(isStr)) return v(e, 'dynamic-key', 'a dictionary key is a string'); expr(t.argumentExpression); return; }
+        if (ts.isPropertyAccessExpression(t)) { let root = t; while (ts.isPropertyAccessExpression(root)) root = root.expression; if (root.kind === K.ThisKeyword) return v(e, 'delete', 'delete of a field of this is outside the subset; assign undefined'); const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', `\`${root.text}\` is another name for a value this function was handed`); return; }
+        return v(e, 'delete', 'delete of this target is outside the subset');
+      }
       case K.VoidExpression: return v(e, 'void', '`void` is outside the subset');
       case K.AwaitExpression: return awaitExpr(e);
       case K.YieldExpression: return v(e, 'generator', 'generators are outside the subset');
@@ -427,7 +444,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (ts.isSpreadAssignment(p)) return expr(p.expression);
           if (ts.isShorthandPropertyAssignment(p)) return checkIdent(p.name);
           if (ts.isPropertyAssignment(p)) {
-            if (ts.isComputedPropertyName(p.name)) v(p, 'dynamic-key', 'computed property names are outside the subset');
+            if (ts.isComputedPropertyName(p.name)) { const lt = checker.getContextualType(e) ?? tOf(e); const dict = nonNull(lt).every((t) => !!(t.flags & TF.Object) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getPropertiesOfType(t).length); if (!dict) v(p, 'dynamic-key', 'a computed property name builds a dictionary; give the literal a Record<string, T> type'); else if (!nonNull(tOf(p.name.expression)).every(isStr)) v(p, 'dynamic-key', 'a dictionary key is a string'); else expr(p.name.expression); }
             if (ts.isArrowFunction(p.initializer)) return callback(p.initializer, null); // a handler in a record: a callback value
             return expr(p.initializer);
           }

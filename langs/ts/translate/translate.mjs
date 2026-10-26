@@ -246,6 +246,7 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) { const f = thisField(n.left); if (f) out.add(f); }
       if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const f = thisField(n.operand); if (f) out.add(f); }
       if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isVoidExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) { const f = thisField(e.expression.expression); if (f) out.add(f); } } // this.items.push(x): the field's contents change; a service call on a field is a transition of the world, not of the field
+      if (ts.isDeleteExpression(n)) { let t = n.expression; while (ts.isParenthesizedExpression(t)) t = t.expression; if (ts.isElementAccessExpression(t)) { const f = thisField(t.expression); if (f) out.add(f); } }
       ts.forEachChild(n, walk);
     };
     for (const m of cls.members) if (!ts.isConstructorDeclaration(m)) walk(m);
@@ -657,6 +658,8 @@ export function translate(file, fnName, opts = {}) {
     if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return externalValue(n);
     if (o.kind === 'global') return externalValue(n);
     let code = dn(n.text);
+    const LT = letTypeOf(o.sym);
+    if (LT) { if (LT.startsWith('Option<') && !isOptional(typeOf(n)) && !isNullish(typeOf(n))) code += '.value'; return code; }
     if (o.sym && o.sym.valueDeclaration && o.kind === 'local') {
       const dt = symType(o.sym, n);
       if (isOptional(dt) && !isOptional(typeOf(n)) && !isNullish(typeOf(n))) code += '.value';
@@ -888,13 +891,16 @@ export function translate(file, fnName, opts = {}) {
     if (rname.startsWith('map<')) {
       const ix = stringIndex(recT);
       const vt = ix ? ix.type : undefined;
-      const entries = [];
+      const entries = []; const pieces = [];
       for (const p of n.properties) {
-        if (ts.isSpreadAssignment(p)) fail(p, 'spread into a dictionary literal is not translated');
-        const key = ts.isShorthandPropertyAssignment(p) ? p.name.text : ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf).replace(/^["']|["']$/g, '');
+        if (ts.isSpreadAssignment(p)) { // `{ ...m, k: v }` on a dictionary: a map merge, later keys winning
+          pieces.push(entries.length ? `map[${entries.join(', ')}]` : null); entries.length = 0; pieces.push(outerParens(expr(p.expression))); continue;
+        }
+        const keyCode = ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name) ? outerParens(expr(p.name.expression)) : strEsc(ts.isShorthandPropertyAssignment(p) ? p.name.text : ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf).replace(/^["']|["']$/g, ''));
         const val = ts.isShorthandPropertyAssignment(p) ? expr(p.name, vt) : expr(p.initializer, vt);
-        entries.push(`${strEsc(key)} := ${outerParens(val)}`);
+        entries.push(`${keyCode} := ${outerParens(val)}`);
       }
+      if (pieces.length) { if (entries.length) pieces.push(`map[${entries.join(', ')}]`); const ps = pieces.filter(Boolean); return ps.length === 1 ? ps[0] : ps.map((x) => `(${x})`).join(' + '); }
       return entries.length ? `map[${entries.join(', ')}]` : `map[]`;
     }
     const propT = (name) => { const p = checker.getPropertyOfType(recT, name); return p ? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n) : undefined; };
@@ -991,6 +997,16 @@ export function translate(file, fnName, opts = {}) {
       else items.push(jsxNode(c));
     }
     return `JsxElem(${tagCode}, ${props}, [${items.join(', ')}])`;
+  }
+  // `let x;` with no type: the type the checker gives the value of its first assignment in the unit (an evolving let)
+  const letTypes = new Map(); // symbol of an untyped `let x;` -> its Dafny type (Option<T> of the first assigned type)
+  const letTypeOf = (sym) => (sym && letTypes.has(sym) ? letTypes.get(sym) : null);
+  function firstAssignedType(nameNode) {
+    const sym = checker.getSymbolAtLocation(nameNode); if (!sym) return null;
+    let found = null;
+    const w = (x) => { if (found) return; if (ts.isBinaryExpression(x) && x.operatorToken.kind === K.EqualsToken && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === sym) { found = typeOf(x.right); return; } ts.forEachChild(x, w); };
+    if (currentUnit) w(currentUnit.body);
+    return found;
   }
   function opaqueFn(cb) {
     const text = cb.getText(sf).replace(/\s+/g, ' ');
@@ -1633,10 +1649,24 @@ export function translate(file, fnName, opts = {}) {
       });
     }
     if (isUpdate(e) && ts.isPropertyAccessExpression(e.operand)) return pathUpdate(e.operand, (cur) => `${cur} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${one()}`);
+    if (ts.isDeleteExpression(e)) {
+      // `delete r.f`: the optional field is absent; `delete m[k]`: the key leaves the dictionary; on a field of this: a world write
+      let tgt = e.expression; while (ts.isParenthesizedExpression(tgt)) tgt = tgt.expression;
+      if (ts.isElementAccessExpression(tgt)) {
+        const recv = tgt.expression; const key = outerParens(expr(tgt.argumentExpression));
+        if (isWorldField(recv)) { if (!unitEffectful()) fail(e, 'internal: a world field written in a pure method'); const d = isAny(typeOf(recv)) ? anyType() : dtype(typeOf(recv), recv); hoist(`${worldFieldAccessor(recv, 'set', [{ d }])}(${WORLD}, ${SELF}, ${expr(recv)} - {${key}})`, 'Unit'); return null; }
+        return pathUpdate(recv, (cur) => `${cur} - {${key}}`);
+      }
+      if (ts.isPropertyAccessExpression(tgt)) {
+        if (tgt.expression.kind === K.ThisKeyword) fail(e, 'delete of a field of this is not translated; assign undefined');
+        return pathUpdate(tgt, (cur, p, ft) => { if (!p || !((p.flags & ts.SymbolFlags.Optional) || isOptional(ft))) fail(e, `delete of \`${tgt.name.text}\`, a field that is not optional`); usesOption = true; return 'None'; });
+      }
+      fail(e, 'delete target is not translated');
+    }
     if (ts.isBinaryExpression(e)) {
       const name = dn(e.left.text);
       const op = e.operatorToken.kind;
-      if (op === K.EqualsToken) return [e.left.text, outerParens(expr(e.right, typeOf(e.left)))];
+      if (op === K.EqualsToken) { const LT = letTypeOf(checker.getSymbolAtLocation(e.left)); return [e.left.text, outerParens(LT ? expr(e.right) : expr(e.right, typeOf(e.left)))]; } // an untyped let takes the value as it is; the var line lifts it
       const sym = op === K.PlusEqualsToken ? '+' : op === K.MinusEqualsToken ? '-' : '*';
       return [e.left.text, `${name} ${sym} ${expr(e.right)}`];
     }
@@ -1822,7 +1852,14 @@ export function translate(file, fnName, opts = {}) {
           out.push(capture(() => {
             if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer)).join('\n');
             const t = typeOf(d.name);
-            if (!d.initializer) { const D = dtype(t, d); return `var ${dn(d.name.text)}: ${D} := ${external(`uninit_${mangle(D)}`, [], D)}();`; } // assigned before any read (TypeScript checks it); the value here is never observed
+            if (!d.initializer) {
+              if (!d.type) { // `let x;`: absent until its first assignment; Option of the first assigned type, or opaque
+                const at = firstAssignedType(d.name); const sym = checker.getSymbolAtLocation(d.name);
+                if (at && !isAny(at)) { usesOption = true; const inner = dtype(at, d); const D = inner.startsWith('Option<') ? inner : `Option<${inner}>`; letTypes.set(sym, D); return `var ${dn(d.name.text)}: ${D} := None;`; }
+                letTypes.set(sym, anyType()); return `var ${dn(d.name.text)}: Any := ${external('uninit_Any', [], 'Any')}();`;
+              }
+              const D = dtype(t, d); return `var ${dn(d.name.text)}: ${D} := ${external(`uninit_${mangle(D)}`, [], D)}();`; // assigned before any read (TypeScript checks it); the value here is never observed
+            }
             return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};`;
           }));
         }
@@ -1838,6 +1875,8 @@ export function translate(file, fnName, opts = {}) {
           const e = ts.isParenthesizedExpression(s.expression) ? s.expression.expression : s.expression;
           const target = rootNode ?? e.left ?? e.operand ?? e.expression.expression;
           const sym = checker.getSymbolAtLocation(target);
+          const LT = letTypeOf(sym);
+          if (LT) { const rt0 = e.right ? typeOf(e.right) : null; const vd = rt0 ? (isAny(rt0) ? anyType() : dtype(rt0, s)) : LT; return `var ${dn(n)}: ${LT} := ${convertD(v, vd, LT)};`; }
           return `var ${dn(n)}: ${dtype(symType(sym, s), s)} := ${v};`;
         });
         if (tryOf(s) && containsEffect(s)) return guard(line.trim() ? line : '');
@@ -1845,6 +1884,17 @@ export function translate(file, fnName, opts = {}) {
       }
       case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: flatten(s.thenStatement) }], s.elseStatement ? flatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
       case K.SwitchStatement: { let parts; const h = capture(() => { parts = switchChain(s); return ''; }); const body = ifChain(parts.chain, parts.dflt, s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
+      case K.FunctionDeclaration: {
+        // a nested `function f(...) {...}`: a local function value, like `const f = (...) => {...}`
+        if (!s.name) fail(s, 'a nested function needs a name');
+        const code = capture(() => lambda(s, s.parameters.length, [], true));
+        return `var ${dn(s.name.text)} := ${outerParens(code)};\n${tr(rest, fin, u)}`;
+      }
+      case K.DoStatement: {
+        // `do B while (c)` is `B; while (c) B`: the body once, then the loop (the `// @decreases` hint before the do binds the loop)
+        const w = { kind: K.WhileStatement, expression: s.expression, statement: s.statement, parent: s.parent, pos: s.pos, end: s.end, getStart: () => s.getStart(sf), getEnd: () => s.getEnd(), getText: () => s.getText(sf), getFullStart: () => s.getFullStart() };
+        return tr([...flatten(s.statement), w, ...rest], fin, u);
+      }
       case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: {
         if (isOpaqueStmt(s)) return opaqueBlock(s, rest, fin, u);
         let body; const h = capture(() => { body = coreLoop(s, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body;
@@ -1883,9 +1933,9 @@ export function translate(file, fnName, opts = {}) {
   function opaqueBlock(s, rest, fin, u) {
     if (!unitEffectful()) fail(s, 'internal: an opaque block in a unit not marked effectful');
     const returns = containsReturn(s);
-    const M = assignedOutside(s).filter((m) => !m.synthetic).map((m) => ({ ...m, d: dtype(symType(m.sym, m.node), m.node) }));
+    const M = assignedOutside(s).filter((m) => !m.synthetic).map((m) => ({ ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) }));
     // inputs: every local the block reads, and every local it assigns (it may read it first)
-    const free = [...M, ...freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: dtype(symType(v.sym, v.node), v.node) }))];
+    const free = [...M, ...freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }))];
     let usesSelf = false; const calls = new Set();
     const w = (x) => {
       if (x.kind === K.ThisKeyword) usesSelf = true;
@@ -1915,7 +1965,7 @@ export function translate(file, fnName, opts = {}) {
   function coreLoop(s, rest, fin, u) {
     const id = loopCount++;
     const returns = !s.__forEach && containsReturn(s); // a return inside a forEach callback ends one step, never the function
-    const M = assignedOutside(s).map((m) => (m.synthetic ? m : { ...m, d: dtype(symType(m.sym, m.node), m.node) }));
+    const M = assignedOutside(s).map((m) => (m.synthetic ? m : { ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) }));
     if (!M.length && !returns) return tr(rest, fin, u);
     if (ts.isWhileStatement(s) && containsEffect(s.expression)) fail(s, 'an effect in a while condition');
     if (ts.isForStatement(s) && (containsEffect(s.condition) || containsEffect(s.incrementor))) fail(s, 'an effect in a for header');
@@ -1934,7 +1984,7 @@ export function translate(file, fnName, opts = {}) {
     scan(u.fn);
     const free = freeVars(s, isOf ? s.expression : null);
     for (const v of inScopeVars) if (hintWords.has(v.name) && !free.some((f) => f.name === v.name)) free.push(v);
-    const freeTyped = free.filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: dtype(symType(v.sym, v.node), v.node) }));
+    const freeTyped = free.filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }));
     free.length = 0; free.push(...freeTyped);
     const hn = `${curUnitName()}_loop${id}${sfx}`;
     const mNames = M.map((m) => dn(m.name));

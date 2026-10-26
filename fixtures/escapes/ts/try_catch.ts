@@ -1,6 +1,8 @@
-// expect: uninitialised
-export function later(x: number): number {
-  let y;
-  y = x + 1;
-  return y;
+// expect: delete
+export class Reg {
+  private cache: { a?: number } = {};
+  forget(): number {
+    delete this.cache.a;
+    return 0;
+  }
 }

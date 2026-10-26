@@ -57,10 +57,10 @@ reading no value model can give; the lint says what to write instead).
 | mutation of a field of `this` | 739 assign, 779 mutating method | exact: a field any method assigns lives in the world | same | done |
 | mutation of a field of a field of `this` | | refused (`receiver-mutation`) | a path update like a parameter path | gap (small) |
 | mutation of an object reached from the world (a query result, a module object) | 80 computed targets | refused (`property-assign`) | the heap layer | gap (layer 2) |
-| `delete obj.f` | 498 | refused | a record with optional fields: `r.(f := None)`; a dictionary: `m - {k}` | gap (small) |
+| `delete obj.f` | 498 | exact on dev: an optional field of a local or parameter record becomes `None`; a dictionary key leaves the map; `delete this.m[k]` is a world-field write; a field of `this` itself stays refused | same | done (dev) |
 | dictionary `Record<string, V>`: read, write by key, `in`, `Object.keys/entries/values` | 1,105 keys, 740 entries | exact map; `in` uninterpreted; `Object.keys` a transition (over-approximate) | `in` exact (`k in m`); `Object.keys` exact as the key set in insertion order (Dafny: a sequence of the keys, uninterpreted order) | partial |
 | computed member access `obj[k]` on a record | 5,278 | exact on arrays and dictionaries; refused on a record with a non-literal key (`dynamic-key`) | a record read by a dynamic key is a dictionary read: translate the record as a map when it is read dynamically | gap |
-| computed property name `{[k]: v}` | 487 | refused | a dictionary literal | gap (small) |
+| computed property name `{[k]: v}` | 487 | exact on dev when the literal's contextual type is a dictionary (`Record<string, T>`); `{...m, k: v}` on a dictionary is a map merge | the same with a record contextual type when the key is a literal union | done (dev) |
 | getters and setters | 7 | a getter read is a pure accessor of the receiver; a setter write is a world field write; neither is a unit of its own | the getter's body as the accessor when it is in the subset | partial |
 | object literal with methods | 157 | refused (`unsupported-syntax`) | an opaque value keyed by its text, like a handler | gap (small) |
 | prototype access, `Object.create`, `Object.defineProperty`, `Object.setPrototypeOf` | 134 + 7 + 20 + 1 | refused (`prototype`) | by design: no value reading | by design |
@@ -88,7 +88,7 @@ reading no value model can give; the lint says what to write instead).
 | callback with an effect inside (`xs.map(async (x) => await f(x))`, `forEach` with a call) | 2,209 async callbacks | `forEach` with a sync arrow is a loop over the sequence (dev 364eb1e; a `return` ends one step); an async `forEach` callback is refused with the bug named (`forEach` does not wait); other callbacks with effects stay opaque values by text | `map`/`filter` with effects under `Promise.all` as a loop producing a sequence | partial |
 | closure that assigns an outer variable | 65 | refused (`closure-mutation`) | the loop reading above when the callback is a loop body; by design otherwise | partial |
 | closure that mutates an outer object | 1,831 | refused | the loop reading; the heap layer for the rest | gap |
-| nested function declaration | 215 | refused | a local lambda | gap (small) |
+| nested function declaration | 215 | a local function value, checked and translated like `const f = (...) => ...` (dev) | same | done (dev) |
 | recursion, mutual recursion | | exact with a fuel | same | done |
 | generics on the unit | 902 | exact (type parameters with equality) | same | done |
 | function-typed parameters and locals, called | | exact (applied as a function value) | same | done |
@@ -121,7 +121,8 @@ reading no value model can give; the lint says what to write instead).
 | `if`, `switch` with `return`/`break` per case, `?:`, early return | 21,957, 1,076, 13,560 | exact | same | done |
 | `switch` with fall-through | | refused | exact: the clause list with the fall-through as a chain | gap (small) |
 | `for..of`, counted `for`, `while` with a bound | 4,595, 1,397, 477 | exact (a recursive helper) | same | done |
-| `while` without a bound, `do..while`, labelled statements, `for..in` | 477 (some), 196, 10, 76 | opaque block / refused | `do..while` is a `while` with the body first; `for..in` over a dictionary is `for..of` over its keys; a label is a named exit of the helper | gap (small) |
+| `while` without a bound, labelled statements, `for..in` | 477 (some), 10, 76 | opaque block / refused | `for..in` over a dictionary is `for..of` over its keys; a label is a named exit of the helper | gap (small) |
+| `do..while` | 196 | the body once, then the `while` (dev); with `// @decreases` proved, else an opaque block | same | done (dev) |
 | `break`, `continue` | 578, 1,837 | exact | same | done |
 | `&&`, `\|\|` as values of one type | 6,855 | exact | same | done |
 | `&&`, `\|\|` as values of mixed types (`a && b.c`, `x \|\| "default"` with `x: number \| undefined`) | | exact: a conditional on truthiness with both sides lifted to the result type (dev); `??` lifted the same way | same | done (dev) |
@@ -180,9 +181,8 @@ reading no value model can give; the lint says what to write instead).
 Generics, unions, intersections, mapped and conditional types, `keyof`, `typeof` types, enums, namespaces,
 `declare`, overloads, abstract classes, `unique symbol`, template literal types, `asserts` and `is` predicates: the
 translator reads the checker's view of a value's type, so these shape the reading of values (a union of records is
-`Any`, a literal union is a string) and need no reading of their own. Two gaps: a `never`-typed value (4 of 44
-translate-pass failures) and `object` (3 of 44) have no Dafny type; `never` is an unreachable branch and `object` is
-`Any`.
+`Any`, a literal union is a string) and need no reading of their own. An indexed access on a type parameter (`T["resource"]`), a conditional or mapped type, `never`, `object` and `symbol`
+are opaque values in the lint and the translator (dev c749031).
 
 ## 10. The translate pass (what lints but does not translate)
 

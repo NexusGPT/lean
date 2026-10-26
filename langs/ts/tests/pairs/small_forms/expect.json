@@ -1,0 +1,6 @@
+{
+ "scope": ["clear_note", "drop", "build", "first_positive", "count_down", "twice", "reg_forget"],
+ "equal": { "clear_note": false, "drop": true, "build": true, "first_positive": true, "count_down": false, "twice": true, "reg_forget": true },
+ "why": "clearNote also empties the tags in the candidate (the parameter is an output); countDown counts two per step; the others are untouched: a dictionary delete, a computed key, an untyped let, a nested function, a Map delete on a field of this",
+ "b": { "clearNote": "WITNESS", "drop": "PASS-bounded", "build": "PASS-bounded", "firstPositive": "PASS-bounded", "countDown": "WITNESS", "twice": "PASS-bounded", "Reg.forget": "PASS-bounded" }
+}

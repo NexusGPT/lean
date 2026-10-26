@@ -1,6 +1,10 @@
-// expect: do-while
-export function countDown(n: number): number {
-  let i = n;
-  do { i = i - 1; } while (i > 0);
-  return i;
+// expect: label
+export function firstPair(xs: readonly number[]): number {
+  let found = -1;
+  outer: for (const x of xs) {
+    for (const y of xs) {
+      if (x + y === 10) { found = x; break outer; }
+    }
+  }
+  return found;
 }
