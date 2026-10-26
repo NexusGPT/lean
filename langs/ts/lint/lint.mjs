@@ -49,8 +49,9 @@ export function lintFile(file, ranges = null, opts = {}) {
     out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200) });
   };
   const tOf = (n) => checker.getTypeAtLocation(n);
-  const isStr = (t) => !!(t.flags & TF.StringLike);
-  const isNum = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike));
+  // a union of literals ("" | "-") is as much a string as `string` is
+  const isStr = (t) => !!(t.flags & TF.StringLike) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike));
+  const isNum = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike)) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & (TF.NumberLike | TF.BigIntLike)));
   const isSetT = (t) => t.symbol?.name === 'Set' || t.symbol?.name === 'ReadonlySet';
   const isMapT = (t) => t.symbol?.name === 'Map' || t.symbol?.name === 'ReadonlyMap';
   const isPromiseT = (t) => t.symbol?.name === 'Promise';
