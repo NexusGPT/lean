@@ -30,6 +30,7 @@ export async function check(opts) {
   // ---- lane B ----
   const b = await runPair({ parent, candidate, unit, n, seed, project });
   cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where })) : null };
+  cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
   if (b.verdict === 'NEW' || b.verdict === 'REFUSE' || b.candidateOnly) { cert.lanes.B = b; return finish(b.verdict, cert, b); }
   if (b.verdict === 'WITNESS') return finish('WITNESS', cert, { witness: b.witnesses[0] });
   // ---- lane A ----

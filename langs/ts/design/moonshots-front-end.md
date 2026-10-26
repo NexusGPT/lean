@@ -30,6 +30,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `useState`; 265 (26%) have every slot finite; 98 (9%) are finite in slots and props strictly, 100 (10%)
   with function and node props as opaque inputs; 2,190 prop types are unknown with imports unresolved, so the
   true share is between 10% and 26%. Not killed (the kill bar is 5%); the population is 100 to 265 components.
+- Measured (part b, 2026-10-26, `langs/ts/design/moonshots/01-finite/explore.mjs` over run.mjs's sandbox with
+  retained slots): the Toggle (two boolean slots, two buttons) against candidate A (two setter calls swapped in
+  one handler) is PASS-decided over every click order, 4 state pairs, 0.3 s, for both props; against candidate B
+  (`setPinned(true)` for `setPinned(!pinned)`) a WITNESS of 2 clicks (`open`, then `pin`) in 0.3 s. The pass bar
+  holds. What the prototype leaves out: effects, the clock, finiteness read from the types (the census says who
+  qualifies), the certificate line; that is the finite-state row.
 - Kill: under 5% of components fully finite.
 
 ## 2. The induction proof: re-render equivalence with no renderer
@@ -61,6 +67,18 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   --candidate t.tsx --unit App --no-project` per scenario, trace read by hand.
 - Pass: 5 of 5 agree, or every disagreement names a rule our runtime lacks (setter during render, cleanup
   order, effect after commit).
+- Measured (2026-10-26, clone at `~/nexus/nexus-organisation/work/lean-deps/react-trace`, MIT, head da92a1b):
+  `test-react-side/src/` holds 37 plain JSX components and 38 Jest tests over 18 scenario families; the oracle
+  is a mocked `print` whose call count and order are asserted (render and effect counts, re-render cycles,
+  reconciliation, user events). The port is direct: `./print` becomes a recorded fake in lane B's sandbox and the
+  trace is compared with the test's expected calls; most families need the re-render loop (a setter in an
+  effect re-renders up to 25 or 100 times), which is the hook-slot runtime row. Not killed.
+- Measured (part b, 2026-10-27 00:xx, `langs/ts/exec/react-trace.mjs`, 8 scenarios ported under
+  `tests/fixtures/react-trace` with a recorded `print` probe): 8 of 8 agree, seven scenario families (no effect;
+  retries from a setter during render, including the 8-print exact sequence of set_state_before_bind; infinite
+  retries as ASK:render-loop at 25; guarded setter; effect steps to 25; the 100-step effect with a module counter;
+  two user clicks). The runtime renders until stable and settles effects until stable, as React does. The pass
+  bar holds. Not ported: child, sibling and recursive views (lean renders one component), reconciliation.
 - Kill: no scenario portable in a day.
 
 ## 4. Purity by double render, Strict Mode without React
@@ -72,6 +90,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   compared; run over every component of one app repository of the census (20 to 40 components); every
   REFUSE read by hand. Command: `node langs/ts/exec/run.mjs --double …` over the repo's `.tsx` units.
 - Pass: 0 false alarms in the hand read; a true impurity found, or none exists and the check stays.
+- Measured (2026-10-26, `run.mjs` double render, the 30 benchmark components each against itself): first run
+  13 of 30 refused, all false alarms (useRef and friends fell to the generic fake and the environment's call
+  counters advanced, so `cn()` answered differently); after two fixes (useRef, useId, useContext, useReducer and
+  useLayoutEffect as retained slots; the second render replays the environment's call counters while the clock
+  and the random stream stay live) 30 of 30 pass and the pair's two clock-reading components are refused. 0
+  false alarms; no true impurity among the 30. The kill signal fired and was fixed in the same day.
 - Kill: the demand-driven fakes return a fresh value per read, so every render differs; then the fake
   policy must become replay-stable by path first, a day of its own.
 
@@ -85,6 +109,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `[]`; commands `set(id, 2)`, `settle`. Lane A must prove the tree equal.
 - Pass: WITNESS at depth 2 with the sequence printed (the parent re-subscribes, the candidate does not); the
   tree layer PASS.
+- Measured (2026-10-27, `run.mjs` re-render sequences, pair `tests/pairs/effects_deps`): a dropped effect
+  dependency is already visible at one render (the pending record carries the deps), so the pair plants a stale
+  value instead (`setId(start + 1)` for `setId(id + 1)`): one render and one click are equal; the second click
+  diverges, WITNESS with the sequence [click, click], the parent's trace showing the cleanup, the unsubscribe and
+  the new subscribe. Every 2-click sequence over at most 4 handlers from a fresh mount, on 2 inputs, runs on
+  every rendered unit of the suite: the 28 React pair expectations hold in 9 s. The bar holds.
 - Kill: none foreseen.
 
 ## 6. Symbolic handlers: descriptors interpreted as slot transitions
@@ -96,6 +126,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   against `fn_` (opaque); (b) a 50-line interpreter in lane B that applies the `set` steps to the slots and
   compares with the real invocation on the 17 units of `tests/pairs/jsx_handlers`.
 - Pass: at least 40% of handlers descriptor-readable; interpreter and invocation agree on every readable one.
+- Measured (part a, 2026-10-26, 200 census files with handler attributes, 1,718 attributes, translate.mjs
+  --tolerant): 812 units, 469 translated, 332 linted out, 11 failed; in the translated units 245 function-valued
+  props are boxed, of which 62 are descriptors (25%), 155 opaque by text (63%), the rest inline lambdas or named
+  functions. Below the 40% bar, above the 20% kill: the lever is the descriptor reader (event parameters,
+  `preventDefault`, a local declaration, a branch keep a handler opaque today). Part b (the interpreter) waits
+  on the hook-slot runtime.
 - Kill: under 20% readable.
 
 ## 7. Deep render: a page as one unit

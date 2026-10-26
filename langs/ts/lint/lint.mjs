@@ -146,6 +146,16 @@ export function lintFile(file, ranges = null, opts = {}) {
   const aliasLocals = new Set(); // declarations of locals bound to another name's object (an alias): never mutated here
   const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   const ownedHere = (decl) => { const cb = callbackStack[callbackStack.length - 1]; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
+  // the Rules of React, as refusals: a unit that calls a hook is a render function (a component or a custom hook)
+  const unitUsesHooks = () => { if (!currentFn?.body) return false; let found = false; const w = (n) => { if (found) return; if (ts.isCallExpression(n) && reactHook(checker, n)) { found = true; return; } ts.forEachChild(n, w); }; w(currentFn.body); return found; };
+  const hasReturn = (n) => { let found = false; const w = (x) => { if (found) return; if (ts.isReturnStatement(x)) { found = true; return; } if (ts.isFunctionLike(x)) return; ts.forEachChild(x, w); }; w(n); return found; };
+  // a hook call under a branch, a loop, a logical operator, a nested function, or after an earlier return of the render
+  const hookOutOfOrder = (e) => {
+    if (!currentFn?.body || !ts.isBlock(currentFn.body)) return false;
+    let top = e; while (top.parent && top.parent !== currentFn.body) { const p = top.parent; if (ts.isIfStatement(p) || ts.isConditionalExpression(p) || ts.isForStatement(p) || ts.isForOfStatement(p) || ts.isForInStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isSwitchStatement(p) || ts.isCatchClause(p) || ts.isArrowFunction(p) || ts.isFunctionExpression(p) || ts.isFunctionDeclaration(p) || (ts.isBinaryExpression(p) && [K.AmpersandAmpersandToken, K.BarBarToken, K.QuestionQuestionToken].includes(p.operatorToken.kind)) || (ts.isCallExpression(p) && p.questionDotToken)) return true; top = p; }
+    for (const st of currentFn.body.statements) { if (st === top) break; if (ts.isReturnStatement(st) || ts.isThrowStatement(st) || (ts.isIfStatement(st) && hasReturn(st))) return true; }
+    return false;
+  };
 
   const enclosingOpaqueTry = (n) => {
     for (let p = n.parent; p; p = p.parent) if (ts.isTryStatement(p) && opaqueExceptionTry(p, checker)) return true;
@@ -394,6 +404,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           const o = declOf(l);
           if (moduleState(checker, l, sf)) checkIdent(l);
           if (o.kind !== 'local' && !moduleState(checker, l, sf)) v(l, 'global-mutation', `assignment to \`${l.text}\`, which this function does not own`);
+          else if (o.kind !== 'local' && ownedHere(o.decl) && unitUsesHooks()) v(l, 'render-impure', `a render function writes \`${l.text}\`, a variable outside it; move the write into an event handler or an effect`);
           else if (isParam(o.decl)) v(l, 'param-assign', `parameter \`${l.text}\` is assigned; copy it to a local first`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `\`${l.text}\` is declared outside this callback; a callback cannot change it`);
         } else if (ts.isElementAccessExpression(l) && ts.isIdentifier(l.expression) && (isArrayExpr(l.expression) || nonNull(tOf(l.expression)).every(hasStringIndex))) {
@@ -431,6 +442,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const o = declOf(e.operand);
       if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
       if (o.kind !== 'local' && !moduleState(checker, e.operand, sf)) v(e, 'global-mutation', `update of \`${e.operand.text}\`, which this function does not own`);
+      else if (o.kind !== 'local' && ownedHere(o.decl) && unitUsesHooks()) v(e, 'render-impure', `a render function updates \`${e.operand.text}\`, a variable outside it; move the write into an event handler or an effect`);
       else if (isParam(o.decl)) v(e, 'param-assign', 'parameter is assigned; copy it to a local first');
       else if (!ownedHere(o.decl)) v(e, 'closure-mutation', 'a callback cannot change an outer variable');
       return;
@@ -892,6 +904,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const producer = [...units.values()].find((u) => u.fn === generatorDecl && u.fn.asteriskToken);
     if (producer) { const shape = generators.shape(producer); if (shape.rule) v(e, shape.rule, shape.message); }
     conditionalSpreadArgs(e);
+    if (reactHook(checker, e) && hookOutOfOrder(e)) v(e, 'hook-order', 'a hook is called under a branch, a loop, a nested function or after an early return; hooks run at the top of the render in a fixed order');
     if (['useMemo', 'useCallback', 'useEffect'].includes(reactHook(checker, e))) reactCapture(e.arguments[0]);
     const form = promiseForm(e, checker, sf);
     if (form && !opaquePromiseDepth) { if (readPromise(e, form)) return; return opaquePromise(() => call(e)); }
