@@ -142,6 +142,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   // a union of literals ("" | "-") is as much a string as `string` is
   const isStr = (t) => !!(t.flags & TF.StringLike) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike));
   const isNum = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike)) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & (TF.NumberLike | TF.BigIntLike)));
+  const numberOnly = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & TF.NumberLike));
   const isSetT = (t) => t.symbol?.name === 'Set' || t.symbol?.name === 'ReadonlySet';
   const isMapT = (t) => t.symbol?.name === 'Map' || t.symbol?.name === 'ReadonlyMap';
   const isPromiseT = (t) => t.symbol?.name === 'Promise';
@@ -209,6 +210,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       return;
     }
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
+    if (o.kind === 'global' && ['NaN', 'Infinity'].includes(name)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
     if ((Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined)) return v(id, (Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined), `\`${name}\` is outside the subset`);
     if (PURE_GLOBALS.has(name)) return;
     if (o.kind === 'global') return v(id, 'global-read', `global \`${name}\` is outside the subset`);
@@ -581,7 +583,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.PrefixUnaryExpression:
         if (e.operator === K.ExclamationToken || e.operator === K.MinusToken) return expr(e.operand);
         if (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) return operatorValue(e);
-        if (e.operator === K.TildeToken) return v(e, 'bitwise', 'bitwise operators are outside the subset');
+        if (e.operator === K.TildeToken) { if (!numberOnly(tOf(e.operand))) return v(e, 'bitwise', 'bitwise operands must be numbers; BigInt and opaque coercions need lane B'); return expr(e.operand); }
+        if (e.operator === K.PlusToken && (tOf(e.operand).flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike))) return expr(e.operand);
         return v(e, 'unary-coercion', 'unary + coerces; it is outside the subset');
       case K.PostfixUnaryExpression: return operatorValue(e);
       case K.TypeOfExpression: return expr(e.expression); // an uninterpreted read of the run-time type
@@ -651,6 +654,10 @@ export function lintFile(file, ranges = null, opts = {}) {
       expr(e.left); return expr(e.right);
     }
     if (op === K.AsteriskAsteriskToken) { expr(e.left); expr(e.right); return; } // a power: an uninterpreted function of both sides
+    if ([K.AmpersandToken, K.BarToken, K.CaretToken, K.LessThanLessThanToken, K.GreaterThanGreaterThanToken, K.GreaterThanGreaterThanGreaterThanToken].includes(op)) {
+      if (![e.left, e.right].every((x) => numberOnly(tOf(x)))) return v(e, 'bitwise', 'bitwise operands must be numbers; BigInt and opaque coercions need lane B');
+      expr(e.left); return expr(e.right);
+    }
     if (op === K.EqualsEqualsToken || op === K.ExclamationEqualsToken) {
       const nul = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined'); };
       if (nul(e.left) || nul(e.right)) { expr(e.left); return expr(e.right); } // loose nullish equality tests both tags; strict equality tests only its own tag

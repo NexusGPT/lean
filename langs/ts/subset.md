@@ -38,6 +38,7 @@ rules per package).
 | Effectful array callbacks | sync inline arrows with element/index names in `map`, `filter`, `find`, `findIndex`, `some`, `every`, `flatMap`; `reduce` with accumulator/element names and an initial value; each body threads the world, and find/some/every stop before visiting later elements | `xs.filter(x => svc.ok(x))` |
 | Strings | literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
 | Strings (BMP model envelope) | `trim`, `trimStart`, `trimEnd`, ASCII-guarded case conversion, literal `split` without limit, `padStart`/`padEnd`, literal-pattern `replace`/`replaceAll` with string replacement, `lastIndexOf`, lexicographic `< <= > >=`; literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
+| Finite numeric operations | number bitwise `& \| ^ ~ << >> >>>`, with ToInt32/ToUint32 and masked shifts; `Math.ceil/round/sign`, corrected real `Math.trunc`; real remainder with a nonzero literal divisor; `Number.MAX_SAFE_INTEGER`; numeric and boolean `Number` and unary `+` | `x >>> 0`, `~~x` |
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number; `a ** b` as an uninterpreted power of both sides | `n.toFixed(2)` |
 | Record rest | `{ a, ...rest } = r` builds a datatype of remaining fields; fixed scalar records, static keys, no defaults, nonempty remainder | `const { a: ignored, ...rest } = r` |
 | Numeric spread | `Math.min`/`Math.max` fold every argument; nonemptiness follows from a scalar argument, literal element, or a sole array identifier spread in a direct `?:` length guard | `xs.length > 0 ? Math.max(...xs) : 0` |
@@ -75,6 +76,8 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Part | Example | Modelled as |
 |---|---|---|
 | Other Object operations and dictionaries | `Object.assign/freeze/fromEntries`, dictionary `Object.keys/values/entries` | existing pure uninterpreted calls; no new exact mutation or freezing claim |
+| Numeric special boundary | variable or zero divisors, parsing, string numeric coercions, Number special constants and explicit -0 | complete unit opaque by source and reachable same-file dependencies; callers also opaque; previously admitted forms remain admitted |
+| Numeric predicates | `Number.isNaN`, `Number.isFinite`, global `isNaN/isFinite` | pure uninterpreted predicates; no blanket finite answer |
 | Module constants, enum members | `LIMITS.max` | `ext_LIMITS_max()` |
 | `any`, `unknown`, overlapping or unclassified unions, `never`, `object`, symbols | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
 | Library calls with no exact rule: non-ASCII case conversion, split with limit or dynamic separator, regex/callback replacement, `localeCompare`, `normalize`, `JSON`, general numeric `String`, `Buffer`, non-string-array `join` | `s.normalize()` | a pure function of all arguments |
@@ -167,7 +170,8 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `destructuring`, `param-form`, `uninitialised` | unsupported binding forms, rest parameters in nested declarations, a pattern with no initial value | `let { a };` |
 | `record-rest` | unknown, dictionary, class, accessor or reference-bearing shapes; computed exclusions, defaults or an empty remainder | `const { a, ...rest } = dictionary` |
 | `math-empty` | possibly empty min/max argument lists outside the supported direct conditional guard | `Math.max(...xs)` without a guard |
-| `bitwise`, `unary-coercion` | `& \| ^ ~ << >>`, unary `+` | `+x` |
+| `number-special` | bare global NaN and Infinity (previously global-read refusals) | `return NaN` |
+| `bitwise`, `unary-coercion` | bitwise on BigInt/opaque values; unary + on object/opaque/BigInt values | `x & 1n`, `+object` |
 | `update-expression`, `assignment-expression` | non-numeric updates, logical assignment values, unsupported compound values and targets | `return (x ??= f())` |
 | `operator-value-context` | updates/sequences in conditional arms, short-circuit right sides, optional chains, constructor/tag callees, binding defaults, case labels, for headers, JSX or expressions constructing callbacks; a target root changed during reference/RHS evaluation; discarded container mutators in a comma | `flag && x++` |
 | `callback-form` | a callback that is not an arrow function, a same-file function or a local function value | `xs.map(function (x) { return x; })` |
@@ -211,7 +215,10 @@ translator derives it.
 
 - `number` is an exact integer (`int`) in a file with no float literal and no bare `/`; a file with either is a real
   file: `number` is a Dafny `real`, exact decimal arithmetic, not IEEE 754 (`--real` forces it). Neither choice models
-  overflow, `NaN` or rounding: an algebraic rewrite is proved equal on exact reals and can differ on doubles; the
+  overflow, underflow, general signed-zero arithmetic or rounding. Known special-producing forms use whole-unit
+  opacity and bare special globals are refused; this keeps all previously admitted fallbacks. See the
+  [numeric boundary](design/numbers-bitwise-nan.md). Within the finite envelope, an algebraic rewrite is proved
+  equal on exact reals and can differ on doubles; the
   execution lane runs on doubles and its WITNESS stands. A PASS-proved on a real unit is a fact about exact arithmetic.
 - Single-absence unions use `Option<T>`: None means the absent kind allowed by that type. Unions allowing both use `Nullish<T>` with distinct Null/Undef tags, including optional nullable fields and nullable default inputs. Same-file boundary conversions preserve the statically known tag. JSON.stringify stays uninterpreted over the tagged input and its absence schema. See [null/undefined design](design/null-undefined.md).
 - Array access outside the bounds is a proof obligation, not `undefined`. A dictionary read of an absent key is

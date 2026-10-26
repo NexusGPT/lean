@@ -28,6 +28,7 @@
 // Exit 0: file written. Exit 1: outside the subset, or not covered by the translator.
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
@@ -934,11 +935,38 @@ export function translate(file, fnName, opts = {}) {
       case 'IndexOfStr': text = `function ${name}(s: string, t: string): int
 { if exists i :: 0 <= i <= |s| - |t| && s[i..i + |t|] == t then (var i :| 0 <= i <= |s| - |t| && s[i..i + |t|] == t && forall j :: 0 <= j < i ==> s[j..j + |t|] != t; i) else -1 }`; break;
       case 'FloorDiv': text = `function ${name}(a: int, b: int): int
-{ if b == 0 then 0 else if (a >= 0) == (b > 0) || a % b == 0 then (if b > 0 then a / b else -(a / -b)) else (if b > 0 then a / b else -(a / -b)) - (if b > 0 then 1 else 1) + (if (a % b == 0) then 1 else 0) }`; break;
+  requires b != 0
+{ var q := ${helper('TruncDiv', ['int'])}(a, b); if a - b * q != 0 && (a < 0) != (b < 0) then q - 1 else q }`; break;
       case 'TruncDiv': text = `function ${name}(a: int, b: int): int
-{ if b == 0 then 0 else (var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q) }`; break;
+  requires b != 0
+{ var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q }`; break;
       case 'JsRem': text = `function ${name}(a: int, b: int): int
-{ if b == 0 then 0 else a - b * ${helper('TruncDiv', ['int'])}(a, b) }`; break;
+  requires b != 0
+{ a - b * ${helper('TruncDiv', ['int'])}(a, b) }`; break;
+      case 'JsTrunc': text = `function ${name}(a: real): int
+{ if a < 0.0 then -(-a).Floor else a.Floor }`; break;
+      case 'JsRealRem': text = `function ${name}(a: real, b: real): real
+  requires b != 0.0
+{ a - b * (${helper('JsTrunc', ['real'])}(a / b) as real) }`; break;
+      case 'JsUint32': text = `function ${name}(a: ${A}): bv32
+{ ((${A === 'real' ? `${helper('JsTrunc', ['real'])}(a)` : 'a'}) % 4294967296) as bv32 }`; break;
+      case 'JsSigned': text = `function ${name}(a: bv32): int
+{ var u := a as int; if u < 2147483648 then u else u - 4294967296 }`; break;
+      case 'JsInt32': text = `function ${name}(a: ${A}): ${A}
+{ ${helper('JsSigned', ['bv32'])}(${helper('JsUint32', [A])}(a))${A === 'real' ? ' as real' : ''} }`; break;
+      case 'JsBitAnd': case 'JsBitOr': case 'JsBitXor': case 'JsBitNot': case 'JsShl': case 'JsShr': case 'JsUshr': {
+        const uint = helper('JsUint32', [A]), signed = helper('JsSigned', ['bv32']);
+        const op = { JsBitAnd: '&', JsBitOr: '|', JsBitXor: '^' }[kind];
+        const value = op ? `(u ${op} v)` : kind === 'JsBitNot' ? '(!u)' : kind === 'JsShl' ? '(u << k)' : kind === 'JsUshr' ? '(u >> k)' : '(if u < (2147483648 as bv32) then u >> k else !((!u) >> k))';
+        const result = kind === 'JsUshr' ? `(${value} as int)` : `${signed}(${value})`;
+        text = `function ${name}(a: ${A}${kind === 'JsBitNot' ? '' : `, b: ${A}`}): ${A}
+{ var u := ${uint}(a); ${kind === 'JsBitNot' ? '' : op ? `var v := ${uint}(b); ` : `var k := (${uint}(b) as int) % 32; `}${result}${A === 'real' ? ' as real' : ''} }`; break;
+      }
+      case 'JsCeil': case 'JsRound': case 'JsSign': {
+        const zero = A === 'real' ? '0.0' : '0', one = A === 'real' ? '1.0' : '1';
+        const value = kind === 'JsSign' ? `if a < ${zero} then -${one} else if a > ${zero} then ${one} else ${zero}` : A === 'int' ? 'a' : kind === 'JsCeil' ? '(-(-a).Floor) as real' : '((a + 0.5).Floor as real)';
+        text = `function ${name}(a: ${A}): ${A} { ${value} }`; break;
+      }
       case 'MinSeq': case 'MaxSeq': text = `function ${name}(s: seq<${A}>): ${A}
   requires |s| > 0
   decreases |s|
@@ -957,9 +985,20 @@ export function translate(file, fnName, opts = {}) {
 
   // ----- literals / coercion -----
   function numLit(text, n) {
-    if (!real) { if (!/^\d+$/.test(text)) fail(n, `number literal ${text} is not an integer; use --real`); return text; }
     const v = Number(text);
-    return Number.isInteger(v) ? `${v}.0` : String(v);
+    if (!Number.isFinite(v)) fail(n, 'number-special: a non-finite literal needs the opaque numeric reading');
+    if (Number.isInteger(v)) return BigInt(v).toString() + (real ? '.0' : '');
+    if (!real) fail(n, `number literal ${text} is not an integer; use --real`);
+    const [mantissa, exponent] = String(v).split('e');
+    if (exponent === undefined) return mantissa;
+    const digits = mantissa.replace('.', ''), point = (mantissa.indexOf('.') < 0 ? mantissa.length : mantissa.indexOf('.')) + Number(exponent);
+    return point <= 0 ? '0.' + '0'.repeat(-point) + digits : point >= digits.length ? digits + '0'.repeat(point - digits.length) + '.0' : digits.slice(0, point) + '.' + digits.slice(point);
+  }
+  function numberOf(n) {
+    const t = typeOf(n), code = expr(n);
+    if (t.flags & TF.NumberLike) return code;
+    if (t.flags & TF.BooleanLike) return `(if ${code} then ${real ? '1.0' : '1'} else ${real ? '0.0' : '0'})`;
+    return `${external('number_of', [dtype(t, n)], NUM)}(${code})`;
   }
   const outerParens = (s) => {
     if (!s.startsWith('(') || !s.endsWith(')')) return s;
@@ -1316,6 +1355,12 @@ export function translate(file, fnName, opts = {}) {
       }
       case K.PrefixUnaryExpression:
         if (n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
+        if (n.operator === K.PlusToken) return numberOf(n.operand);
+        if (n.operator === K.TildeToken) {
+          let inner = n.operand; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
+          if (ts.isPrefixUnaryExpression(inner) && inner.operator === K.TildeToken) return `${helper('JsInt32', [NUM])}(${expr(inner.operand)})`;
+          return `${helper('JsBitNot', [NUM])}(${expr(n.operand)})`;
+        }
         return `(-${expr(n.operand)})`;
       case K.CommaListExpression: { let value; for (const e of n.elements) value = expr(e); return value; }
       case K.BinaryExpression: return binary(n);
@@ -1380,6 +1425,13 @@ export function translate(file, fnName, opts = {}) {
   function binary(n) {
     const op = n.operatorToken.kind;
     if (op === K.CommaToken) { expr(n.left); return expr(n.right); }
+    const bit = { [K.AmpersandToken]: 'JsBitAnd', [K.BarToken]: 'JsBitOr', [K.CaretToken]: 'JsBitXor', [K.LessThanLessThanToken]: 'JsShl', [K.GreaterThanGreaterThanToken]: 'JsShr', [K.GreaterThanGreaterThanGreaterThanToken]: 'JsUshr' }[op];
+    if (bit) {
+      if (op === K.BarToken && ts.isNumericLiteral(n.right) && Number(n.right.text) === 0) return `${helper('JsInt32', [NUM])}(${expr(n.left)})`;
+      const left = expr(n.left), count = finiteLiteral(n.right);
+      const right = ['JsShl', 'JsShr', 'JsUshr'].includes(bit) && count !== null && Number.isFinite(count) ? numLit(String((count >>> 0) & 31), n.right) : expr(n.right);
+      return `${helper(bit, [NUM])}(${left}, ${right})`;
+    }
     if (op === K.AsteriskAsteriskToken) return `${external('pow', [NUM, NUM], NUM)}(${expr(n.left)}, ${expr(n.right)})`; // a power: uninterpreted, the same on both sides
     const isNul = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e.kind === K.NullKeyword || (ts.isIdentifier(e) && e.text === 'undefined'); };
     const eqOps = new Set([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken]);
@@ -1491,13 +1543,13 @@ export function translate(file, fnName, opts = {}) {
       return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
     }
     if (op === K.PercentToken) {
-      if (real) return `${external('mod_real', ['real', 'real'], 'real')}(${expr(n.left)}, ${expr(n.right)})`; // JavaScript's truncated remainder on reals: an uninterpreted function of both sides
+      if (real && !(typeOf(n.left).flags & TF.BigIntLike)) return `${helper('JsRealRem', ['real'])}(${expr(n.left)}, ${expr(n.right)})`;
       return `${helper('JsRem', ['int'])}(${expr(n.left)}, ${expr(n.right)})`;
     }
     if (op === K.SlashToken) {
       const lt = typeOf(n.left);
       if (lt.flags & TF.BigIntLike) return `${helper('TruncDiv', ['int'])}(${expr(n.left)}, ${expr(n.right)})`;
-      if (real) return `(if ${expr(n.right)} == 0.0 then 0.0 else ${expr(n.left)} / ${expr(n.right)})`;
+      if (real) return `(${expr(n.left)} / ${expr(n.right)})`;
       // reached only under Math.floor / Math.trunc (the lint refuses bare `/` on numbers)
       return `__DIV__(${expr(n.left)}, ${expr(n.right)})`;
     }
@@ -1865,6 +1917,7 @@ export function translate(file, fnName, opts = {}) {
     const name = n.name.text;
     if (ts.isIdentifier(n.expression)) {
       const o = originOf(checker, n.expression, sf, currentUnit?.node ?? null);
+      if (o.kind === 'global' && n.expression.text === 'Number' && name === 'MAX_SAFE_INTEGER') return numLit('9007199254740991', n);
       if (!moduleState(checker, n.expression, sf) && (o.kind === 'import' || o.kind === 'other' || o.kind === 'module' || o.kind === 'global')) {
         // a member of an external object: ext_<obj>_<member>()
         const t = typeOf(n);
@@ -2245,6 +2298,7 @@ export function translate(file, fnName, opts = {}) {
         return `${valueOperands ? expr(f) : ident(f)}(${args.join(', ')})`;
       }
       if (o.kind === 'global' && f.text === 'String' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike)) return stringOf(n.arguments[0]);
+      if (o.kind === 'global' && f.text === 'Number' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.NumberLike | TF.BooleanLike)) return numberOf(n.arguments[0]);
       return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
     }
     if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); return externalCall(`super_init_${mangle(Tn)}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition
@@ -2322,13 +2376,15 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isIdentifier(recv) && recv.text === 'Math' && name !== 'random' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') {
       const [a, b] = n.arguments;
       if (name === 'floor' || name === 'trunc') {
-        if (real) return `((${expr(a)}).Floor as real)`;
+        if (n.arguments.length !== 1 || !(typeOf(a).flags & TF.NumberLike)) return externalCall(`Math_${name}`, n, [...n.arguments]);
+        if (real) return name === 'floor' ? `((${expr(a)}).Floor as real)` : `(${helper('JsTrunc', ['real'])}(${expr(a)}) as real)`;
         const inner = ts.isParenthesizedExpression(a) ? a.expression : a;
         if (ts.isBinaryExpression(inner) && inner.operatorToken.kind === K.SlashToken) {
           return `${helper(name === 'floor' ? 'FloorDiv' : 'TruncDiv', ['int'])}(${expr(inner.left)}, ${expr(inner.right)})`;
         }
         return expr(a);
       }
+      if (['ceil', 'round', 'sign'].includes(name) && n.arguments.length === 1 && (typeOf(a).flags & TF.NumberLike)) return `${helper({ ceil: 'JsCeil', round: 'JsRound', sign: 'JsSign' }[name], [NUM])}(${expr(a)})`;
       if (name === 'min' || name === 'max') {
         if (!n.arguments.length) fail(n, 'math-empty: provide a nonempty argument list');
         if (n.arguments.length === 2 && !n.arguments.some(ts.isSpreadElement)) return `${helper(name === 'min' ? 'Min' : 'Max', [NUM])}(${expr(a)}, ${expr(b)})`;
@@ -3402,6 +3458,78 @@ export function translate(file, fnName, opts = {}) {
     return `var ${tupleOf(outNames)} := ${first};\n${after}`;
   }
 
+  // special-producing arithmetic keeps its entire observer opaque, including same-file callers
+  const numericOpaque = new Set(), numericDeps = new Map(), numericSources = new Map();
+  const unitByDecl = new Map([...fns.values()].flatMap((u) => [[u.fn, u], [u.node, u]]));
+  const finiteLiteral = (n) => {
+    while (ts.isParenthesizedExpression(n)) n = n.expression;
+    if (ts.isNumericLiteral(n)) return Number(n.text);
+    if (ts.isPrefixUnaryExpression(n) && [K.MinusToken, K.PlusToken].includes(n.operator)) { const v = finiteLiteral(n.operand); return v === null ? null : n.operator === K.MinusToken ? -v : v; }
+    return null;
+  };
+  for (const u of order) {
+    const deps = new Set(); numericDeps.set(u.name, deps);
+    const sources = new Set(), seen = new Set(); numericSources.set(u.name, sources);
+    const scan = (n) => {
+      if (ts.isTypeNode(n) || seen.has(n)) return;
+      // a numeric literal in a template is rendered directly as its JavaScript string
+      if (ts.isTemplateSpan(n) && finiteLiteral(n.expression) !== null) return;
+      seen.add(n);
+      if (ts.isIdentifier(n)) {
+        const d = checker.getSymbolAtLocation(n)?.valueDeclaration;
+        const other = unitByDecl.get(d) ?? (d && ts.isVariableDeclaration(d) ? unitByDecl.get(d.initializer) : null);
+        if (other && other !== u) deps.add(other.name);
+        if (d && ts.isVariableDeclaration(d) && d.parent?.parent?.parent === sf && d.initializer && !other) { sources.add(d.getText(sf)); scan(d.initializer); }
+        if (['NaN', 'Infinity'].includes(n.text) && originOf(checker, n, sf, u.node).kind === 'global') numericOpaque.add(u.name);
+      }
+      if (ts.isBinaryExpression(n) && [K.SlashToken, K.PercentToken].includes(n.operatorToken.kind)) {
+        const divisor = finiteLiteral(n.right);
+        if (divisor === null || !Number.isFinite(divisor) || divisor === 0) numericOpaque.add(u.name);
+      }
+      if (ts.isNumericLiteral(n) && !Number.isFinite(Number(n.text))) numericOpaque.add(u.name);
+      if (ts.isPrefixUnaryExpression(n) && n.operator === K.MinusToken && Object.is(finiteLiteral(n), -0)) numericOpaque.add(u.name);
+      if (ts.isPrefixUnaryExpression(n) && n.operator === K.PlusToken && !(typeOf(n.operand).flags & (TF.NumberLike | TF.BooleanLike))) numericOpaque.add(u.name);
+      if (ts.isPropertyAccessExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'Number' && originOf(checker, n.expression, sf, u.node).kind === 'global' && ['NaN', 'POSITIVE_INFINITY', 'NEGATIVE_INFINITY'].includes(n.name.text)) numericOpaque.add(u.name);
+      if (ts.isCallExpression(n)) {
+        const f = n.expression;
+        if (ts.isIdentifier(f) && originOf(checker, f, sf, u.node).kind === 'global' && (['parseInt', 'parseFloat'].includes(f.text) || (f.text === 'Number' && n.arguments.some((a) => !(typeOf(a).flags & (TF.NumberLike | TF.BooleanLike)))))) numericOpaque.add(u.name);
+        if (ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && f.expression.text === 'Number' && originOf(checker, f.expression, sf, u.node).kind === 'global' && ['parseInt', 'parseFloat'].includes(f.name.text)) numericOpaque.add(u.name);
+      }
+      ts.forEachChild(n, scan);
+    };
+    scan(u.fn);
+  }
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const [name, deps] of numericDeps) if (!numericOpaque.has(name) && [...deps].some((d) => numericOpaque.has(d))) { numericOpaque.add(name); changed = true; }
+  }
+  function numericKey(u) {
+    const seen = new Set();
+    const visit = (name) => { if (seen.has(name)) return; seen.add(name); for (const dep of numericDeps.get(name) ?? []) visit(dep); };
+    visit(u.name);
+    if (moduleUnitShape(u).reads) return createHash('sha256').update(sf.text + '\n' + u.name).digest('hex');
+    return createHash('sha256').update([...seen].sort().map((name) => `${name}:${fns.get(name).fn.getText(sf)}\n${[...(numericSources.get(name) ?? [])].sort().join('\n')}`).join('\n')).digest('hex');
+  }
+  function opaqueNumericUnit(u, rt, specs) {
+    const params = [], args = [];
+    const add = (name, d) => { params.push(`${name}: ${d}`); args.push({ name, d }); };
+    const eff = core && effectfulUnits.has(u.name);
+    if (eff) { addPrelude('World', 'type World'); add(WORLD, 'World'); }
+    if (core && recursiveUnits.has(u.name)) add(FUEL, 'nat');
+    if (classOf(u) && !u.isStatic) add(SELF, selfType(u));
+    u.params.forEach((p, i) => {
+      let d = dtype(typeOf(p.name), p), name = ts.isIdentifier(p.name) ? dn(p.name.text) : `arg${i}_`;
+      if (p.initializer && ts.isIdentifier(p.name)) { usesOption = true; d = hasAbsence(typeOf(p.name), TF.Null) ? dtype(inputType(p), p) : `Option<${d}>`; name += '_opt'; }
+      else if (p.questionToken && !optionalD(d)) { usesOption = true; d = `Option<${d}>`; }
+      add(name, d);
+    });
+    const outs = [...(eff ? ['World'] : []), rt, ...(core ? mutatedOf(u).map((m) => dtype(typeOf(u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m).name), u.node)) : [])];
+    const out = outs.length === 1 ? rt : `(${outs.join(', ')})`;
+    const ext = external(`number_special_${numericKey(u)}`, args.map((a) => a.d), out);
+    const tp = unitTParams().length ? `<${unitTParams().map((p) => `${p}(==)`).join(', ')}>` : '';
+    return [`function ${fname(u.name)}${tp}(${params.join(', ')}): ${core ? out : `(result: ${out})`}`, ...specs, `{ ${ext}(${args.map((a) => a.name).join(', ')}) }`].join('\n');
+  }
+
   // ----- which units are effectful: callees come first in `order`, so a caller sees its callee's flag -----
   for (const name of effectful) effectfulUnits.add(name); // forced by the other side of a pair: both sides thread the world
   if (core) for (const name of exceptionUnits) effectfulUnits.add(name);
@@ -3517,6 +3645,7 @@ export function translate(file, fnName, opts = {}) {
       for (const r of requires) specs.push(`  requires ${sub(r)}`);
       for (const e of ensures) specs.push(`  ensures ${sub(e)}`);
     }
+    if (numericOpaque.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
     const sp = sigParams(u);
     const bodyList = ts.isBlock(u.body) ? [...u.body.statements] : null;
     if (core) {

@@ -146,6 +146,13 @@ for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(c
   add('construct', 'string_helpers', 'concrete Dafny assertions', r.status === 0, text.trim().split('\n').pop());
 }
 
+// concrete numeric helpers, including sign bits, shift masking and real truncation
+{
+  const r = run('node', [path.join(here, 'numbers_bits/run.mjs'), path.join(tmp, 'number_helpers.dfy')]);
+  const text = (r.stdout ?? '') + (r.stderr ?? '');
+  add('construct', 'number_helpers', 'concrete Dafny execution', r.status === 0, text.trim().split('\n').pop());
+}
+
 // ----- negative controls: a false theorem must NOT verify, in both shapes -----
 {
   const ts = path.join(root, 'fixtures/shared/sum_positive/ts.ts');
