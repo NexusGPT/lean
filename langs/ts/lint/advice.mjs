@@ -9,7 +9,7 @@ export const ADVICE = {
   'opaque-mutation': 'A mutating method on a value the gate cannot see into. Keep it, and the gate reads the call as a transition; or rebuild the value.',
   'in-place-mutation': 'This reorders a local in place. Assign the sorted copy back: `xs = [...xs].sort(cmp)`.',
   'param-assign': 'Copy the parameter to a local first (`let n = x`), then change the local.',
-  'receiver-mutation': 'A method that assigns a field of `this` is not provable yet. Return the new state and let the caller keep it.',
+  'receiver-mutation': 'A field of `this` may be assigned directly (this.x = v, +=, -=, *=, ++); a field of a field may not. Rebuild the inner record and assign the field.',
   'property-assign': 'Records that are not yours are immutable here. Build a new one with a spread.',
   'index-assign': 'Only a local array changes by index. Return a new array otherwise.',
   'global-mutation': 'Module state cannot be assigned from a proved function. Pass it in and return it.',

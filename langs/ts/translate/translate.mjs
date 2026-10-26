@@ -128,6 +128,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isPropertyAccessExpression(f)) {
       const recv = f.expression;
       if (recv.kind === K.ThisKeyword && currentUnit?.cls) { const callee = fns.get(`${currentUnit.className}.${f.name.text}`); if (callee) return effectfulUnits.has(callee.name); return true; }
+      if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
       if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
       const t = baseOf(typeOf(recv));
       if (isArrayLike(checker, t) || (t.flags & TF.StringLike) || isSetT(t) || isMapT(t) || (t.flags & (TF.NumberLike | TF.BooleanLike))) return false;
@@ -136,8 +137,27 @@ export function translate(file, fnName, opts = {}) {
     return true;
   }
   const isOpaqueStmt = (x) => ts.isTryStatement(x) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if (isEffectCall(x) || isOpaqueStmt(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
+  // ----- world fields: a field of `this` that a method of the class assigns, updates, or mutates through a method-call
+  // statement lives in the world. Every read is a transition (ext_<C>_get_<f>(wld, self)), every write a transition
+  // (ext_<C>_set_<f>(wld, self, v)); the method becomes effectful. A field no method changes stays a pure accessor of self.
+  const mutatedByClass = new Map(); // class declaration -> Set of field names
+  function mutatedFields(cls) {
+    if (mutatedByClass.has(cls)) return mutatedByClass.get(cls);
+    const out = new Set(); mutatedByClass.set(cls, out);
+    const thisField = (x) => (ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword ? x.name.text : null);
+    const walk = (n) => {
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) { const f = thisField(n.left); if (f) out.add(f); }
+      if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const f = thisField(n.operand); if (f) out.add(f); }
+      if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isVoidExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) { const f = thisField(e.expression.expression); if (f) out.add(f); } }
+      ts.forEachChild(n, walk);
+    };
+    for (const m of cls.members) if (!ts.isConstructorDeclaration(m)) walk(m);
+    return out;
+  }
+  const isWorldField = (n) => !!(ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && currentUnit?.cls && !fns.has(`${currentUnit.className}.${n.name.text}`) && mutatedFields(currentUnit.cls).has(n.name.text));
+  const worldFieldAccessor = (n, kind, extra = []) => { const T = selfType(currentUnit); addPrelude('World', 'type World'); return external(`${T}_${kind}_${n.name.text}`, kind === 'get' ? ['World', T] : ['World', T, ...extra.map((e) => e.d)], kind === 'get' ? `(World, ${extra[0].d})` : '(World, Unit)'); };
   function hoist(code, rd) {
     // the call text already takes the world first; bind the next world and the result, return the result name
     const t = `t${tempCount++}_`;
@@ -841,6 +861,11 @@ export function translate(file, fnName, opts = {}) {
         return `${external(`${n.expression.text}_${name}`, [], dtype(t, n))}()`;
       }
     }
+    if (isWorldField(n)) {
+      if (!unitEffectful()) fail(n, 'internal: a world field read in a pure method');
+      const ft = typeOf(n); const d = isAny(ft) ? anyType() : dtype(ft, n);
+      return hoist(`${worldFieldAccessor(n, 'get', [{ d }])}(${WORLD}, ${SELF})`, d);
+    }
     const recvT = n.expression.kind === K.ThisKeyword && classOf(currentUnit) ? checker.getTypeAtLocation(currentUnit.cls.name) : typeOf(n.expression);
     const declaredOpaque = (() => { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e)) return false; const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (!o.sym || o.kind !== 'local') return false; const dt = symType(o.sym, e); try { return dtype(isOptional(dt) ? baseOf(dt) : dt, n) === 'Any'; } catch { return false; } })();
     const recvD = (() => { try { return dtype(isOptional(recvT) ? baseOf(recvT) : recvT, n); } catch { return null; } })();
@@ -1029,6 +1054,11 @@ export function translate(file, fnName, opts = {}) {
       // an inherited method or a function-typed field: an uninterpreted external of the receiver and the arguments
       const T = selfType(currentUnit);
       return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
+    }
+    if (isWorldField(recv)) {
+      // a method on a field that lives in the world: the field's value is read (a transition), the call is a transition on it
+      const ft = typeOf(recv); const Td = isAny(ft) ? anyType() : dtype(ft, n);
+      return externalCall(`${awaited ? 'await_' : ''}${mangle(selfType(currentUnit))}_${recv.name.text}_${name}`, n, [...n.arguments], expr(recv), Td);
     }
     const recvT = typeOf(recv);
     const base = baseOf(recvT);
@@ -1310,6 +1340,20 @@ export function translate(file, fnName, opts = {}) {
       if (ix) return [arr.text, `${dn(arr.text)}[${outerParens(expr(e.left.argumentExpression))} := ${outerParens(expr(e.right, ix.type))}]`, arr]; // a local dictionary: the map gains or replaces a key
       if (!isArrayLike(checker, t)) fail(e, 'index assignment on a non-array');
       return [arr.text, `${dn(arr.text)}[${index(e.left.argumentExpression)} := ${outerParens(expr(e.right, checker.getTypeArguments(t)[0]))}]`, arr];
+    }
+    if ((ts.isBinaryExpression(e) && isWorldField(e.left)) || (isUpdate(e) && isWorldField(e.operand))) {
+      // a write to a world field: one transition, its result unused
+      const target = ts.isBinaryExpression(e) ? e.left : e.operand;
+      if (!unitEffectful()) fail(e, 'internal: a world field written in a pure method');
+      const p = checker.getPropertyOfType(checker.getTypeAtLocation(currentUnit.cls.name), target.name.text);
+      const dt = p ? checker.getTypeOfSymbolAtLocation(p, target) : typeOf(target);
+      const d = isAny(dt) ? anyType() : dtype(dt, target);
+      let value;
+      if (isUpdate(e)) value = `${expr(target)} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${one()}`;
+      else if (e.operatorToken.kind === K.EqualsToken) value = outerParens(expr(e.right, dt));
+      else { const sym = e.operatorToken.kind === K.PlusEqualsToken ? '+' : e.operatorToken.kind === K.MinusEqualsToken ? '-' : '*'; value = `${expr(target)} ${sym} ${expr(e.right)}`; }
+      hoist(`${worldFieldAccessor(target, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit');
+      return null;
     }
     if (ts.isBinaryExpression(e) && ts.isPropertyAccessExpression(e.left)) {
       // x.a.b = v on a local record: x := x.(a := x.a.(b := v))

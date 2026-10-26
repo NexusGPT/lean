@@ -70,7 +70,7 @@ A whole change at once: `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--
 
 | you write | lean says | what to write instead |
 |---|---|---|
-| `this.count = this.count + 1` inside a method | `ASK: receiver-mutation` | return the new state, or keep the counter in a local |
+| `this.stats.n = 1` inside a method | `ASK: receiver-mutation` | assign the field itself: `this.stats = { ...this.stats, n: 1 }` |
 | `xs.forEach(x => { total += x })` | `ASK: closure-mutation` | `for (const x of xs) total += x`, or `reduce` |
 | `items.push(x)` where `items` is a parameter | `ASK: param-mutation` | return `[...items, x]` |
 | `a === b` on two objects or arrays | `ASK: reference-equality` | compare the fields you mean |
@@ -116,11 +116,11 @@ if (a === b) ...                               if (a.id === b.id) ...
 const half = n / 2;                            const half = Math.floor(n / 2);   // or n * 0.5 when a real is meant
 ```
 
-**5. Keep an object's state in its result, not in `this`.** A method may read its fields; a method that assigns one is not provable yet. Return the new state.
+**5. Assign a field of `this`, never a field of a field.** A field that any method of the class assigns lives in the world: each read and each write is a transition, so two versions that write different values differ. A field of a field is a value the receiver holds; rebuild it and assign the field.
 
 ```ts
 // refused: receiver-mutation        // proved
-bump() { this.n = this.n + 1; }                bump(): number { return this.n + 1; }     // the caller keeps the count
+bump() { this.stats.n += 1; }                  bump() { this.stats = { ...this.stats, n: this.stats.n + 1 }; }
 ```
 
 **6. Give a `while` loop its bound.** `for` and `for...of` need nothing. A `while` is proved when you say what shrinks; without it, it becomes an opaque block (same on both sides, never proved different).

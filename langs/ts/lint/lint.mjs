@@ -242,7 +242,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           expr(l.argumentExpression);
         } else if (ts.isPropertyAccessExpression(l)) {
           let root = l; while (ts.isPropertyAccessExpression(root)) root = root.expression;
-          if (root.kind === K.ThisKeyword) return v(l, 'receiver-mutation', 'a method that assigns a field of `this` is outside the subset in this version');
+          if (root.kind === K.ThisKeyword) { if (l.expression.kind !== K.ThisKeyword) return v(l, 'receiver-mutation', 'assignment through a field of `this` changes a value the receiver holds; assign the field itself'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return; } // a field of the receiver: a world transition (the right side is checked below)
           const o = ts.isIdentifier(root) ? declOf(root) : { kind: null };
           if (!ts.isIdentifier(root) || o.kind !== 'local' || isParam(o.decl)) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
@@ -256,6 +256,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (op >= K.FirstAssignment && op <= K.LastAssignment) return v(e, 'unsupported-operator', 'assignment operator is outside the subset');
     }
     if ((ts.isPostfixUnaryExpression(e) || ts.isPrefixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken)) {
+      if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
       if (o.kind !== 'local') v(e, 'global-mutation', `update of \`${e.operand.text}\`, which this function does not own`);
@@ -267,6 +268,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const name = e.expression.name.text, r = e.expression.expression;
       const rt = tOf(r);
       const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && !isParam(declOf(r).decl) && ownedHere(declOf(r).decl);
+      if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
       if (nonNull(rt).some(isAny)) {
         // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
         // plain field read would not (reads are pure), so that is the one shape refused

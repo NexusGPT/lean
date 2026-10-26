@@ -1,0 +1,6 @@
+{
+ "scope": ["counter_bump", "counter_flush", "counter_label"],
+ "equal": { "counter_bump": false, "counter_flush": true, "counter_label": true },
+ "why": "bump adds 2 instead of 1 to the count field, a world transition with a different value; flush and label are untouched",
+ "b": { "Counter.bump": "WITNESS", "Counter.flush": "PASS-bounded", "Counter.label": "PASS-bounded" }
+}
