@@ -37,7 +37,7 @@ export function unitDiscount(promos: readonly Promo[], shopId: string, sku: stri
   for (const p of promos) {
     if (p.shopId !== shopId || !isPromoActive(p, day)) continue;
     let d = 0;
-    if (p.kind === "percent" && p.category === category) d = Math.floor((unitCents * p.percent) / 100);
+    if (p.kind === "percent" && p.category === category) { d = Math.floor((unitCents * p.percent) / 100); const cap = Math.floor(unitCents / 2); if (d > cap) d = cap; }
     if (p.kind === "fixed" && p.sku === sku) d = p.offCents;
     if (d > unitCents) d = unitCents;
     if (d > best) best = d;
@@ -55,7 +55,7 @@ export function lineTotal(articles: readonly Article[], prices: readonly Price[]
 }
 
 export function deliveryFee(shop: Shop, goodsCents: number): number {
-  if (goodsCents >= shop.freeDeliveryFromCents) return 0;
+  if (goodsCents > shop.freeDeliveryFromCents) return 0;
   return shop.deliveryFeeCents;
 }
 
@@ -99,8 +99,9 @@ export function savingsAgainst(quotes: readonly ShopQuote[], chosen: ShopQuote):
 }
 
 export function formatCents(cents: number): string {
-  const sign = cents < 0 ? "-" : "";
-  const abs = cents < 0 ? -cents : cents;
+  const negative = cents < 0;
+  const sign = negative ? "-" : "";
+  const abs = negative ? -cents : cents;
   const euros = Math.floor(abs / 100);
   const rest = abs - euros * 100;
   const restText = rest < 10 ? "0" + rest : "" + rest;

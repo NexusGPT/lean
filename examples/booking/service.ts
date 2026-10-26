@@ -28,8 +28,9 @@ export function cleanCart(cart: readonly CartLine[]): readonly CartLine[] {
   for (const line of cart) {
     if (line.qty <= 0 || line.sku === "") continue;
     const i = out.findIndex((x) => x.sku === line.sku);
-    if (i >= 0) out = [...out.slice(0, i), { sku: line.sku, qty: out[i].qty + line.qty }, ...out.slice(i + 1)];
-    else out = [...out, line];
+    if (i < 0) { out = [...out, line]; continue; }
+    const merged: CartLine = { sku: line.sku, qty: out[i].qty + line.qty };
+    out = [...out.slice(0, i), merged, ...out.slice(i + 1)];
   }
   return out;
 }
