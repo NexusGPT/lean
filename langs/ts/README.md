@@ -42,6 +42,14 @@ The run takes about a minute, because every row calls Dafny.
 
 Functions, class methods and React components over `number`, `bigint`, `boolean`, `string`, arrays, records, tuples, sets, maps, optionals and JSX trees, with `let`/`const`, `if`, `switch`, early return, `for...of`, counted `for`, bounded `while`, the array and string methods, recursion, generics, `async`/`await`, and calls into the outside world modelled as transitions of an explicit world. A `try`/`catch` is exact (a fault flag on the world); a `try` without a catch and an unbounded `while` are opaque blocks. [subset.md](subset.md) lists every exact, transition, uninterpreted, opaque and refused construct with one example each.
 
+## Candidate-only units
+
+`node langs/ts/check.mjs --candidate file.ts --unit f` loads and runs a new unit alone.
+`lint/lint.mjs` accepts the same form for execution admission. The sixth verdict, `NEW`,
+records bounded observations and faults and never claims equality. Only a repository-owned
+local link failure is `REFUSE` with kind `load`; evaluation failures are ASK with their
+environment class, and test modules are ASK before loading. The full verdict contract is in [subset.md](subset.md).
+
 ## Known gaps
 
 - **`number` is not a float.** It is `int` by default and `real` with `--real`. Neither models IEEE 754, overflow or `NaN`. A float literal is refused in `int` mode.

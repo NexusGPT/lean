@@ -12,6 +12,8 @@
 // the call (reachable mutation), the trace of environment requests, and the pending work. The verdict:
 //   WITNESS      an input on which the observations differ (the input index, both observations)
 //   PASS-bounded no difference on n inputs; the bound is stated (n, seed, the fake policy, the per-input time limit)
+//   NEW          a candidate-only unit loaded and ran; no equality claim
+//   REFUSE       a repository-owned local source link failed (kind: load)
 //   ASK          a side could not be loaded or run (the reason), or the unit is not found
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,6 +23,7 @@ import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { Environment, render, stable, BudgetError } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
+import { runNew } from './new-unit.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -157,7 +160,7 @@ export function sandbox(env, root) {
     wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs));
     return mod.exports;
   }
-  return { load, ctx };
+  return { load, ctx, react, jsxRuntime };
 }
 
 export function pickUnit(exportsObj, spec, env) {
@@ -240,6 +243,10 @@ export async function observe(side, spec, args, ms) {
 
 export async function runPair(opts) {
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true } = opts;
+  // a missing parent unit has no equality question
+  if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
+    return runNew(opts);
+  }
   let spec;
   try { spec = specOf(candidate, unit, { project }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };

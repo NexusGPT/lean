@@ -6,7 +6,7 @@
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 
 export function specOf(file, unitName, opts = {}) {
-  const { sf, checker } = loadProgram(file, { project: opts.project ?? true });
+  const { sf, checker } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
   const fns = topLevelFunctions(sf);
   const u = fns.get(unitName);
   if (!u) throw new Error(`no unit ${unitName}`);

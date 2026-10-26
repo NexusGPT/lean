@@ -155,6 +155,7 @@ reading no value model can give; the lint says what to write instead).
 
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
+| candidate-only unit | measured in results-new-unit/census-report.md | isolated load and drawn execution; `NEW`, local-link `REFUSE(load)`, environment/test `ASK`; no equality claim | same under the stated fake boundary | done (lane) |
 | imported function, imported value, module constant | | transition / uninterpreted | same | done |
 | module-level `let` state | | module-keyed get/set world transitions; const collections too; literal primitive consts stay values; aliases crossing effects use an opaque unit | a world field, like a field of `this` | partial (lane) |
 | code at module level that runs on import | | refused (`toplevel-effect`) | by design for a unit; lane B runs it | by design |

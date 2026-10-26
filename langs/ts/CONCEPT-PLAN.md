@@ -44,6 +44,7 @@ One row per reading group. A group is DONE when its reading is in the translator
 | 17 | Null versus undefined | `=== null` against `=== undefined` on one value | type-directed Nullish tags, single-absence Option retained, undefined-only defaults and tag-preserving same-file boundaries; JSON stays uninterpreted with absence schema | `null_undefined` | done (lane) |
 | 18 | Clock read | `new Date()` without arguments | a transition of the world | `clock` (escape) | done (dev) |
 | 19 | Heap layer | aliases, objects from the world, `===` on objects | world heap refs; anchored observations up to fresh-ref bijection; canonical allocation order supplies an identity certificate; safe value specialisation ([design](design/heap-layer.md)) | [standalone toy](design/heap-layer-toy.dfy), execution/graph probes | design + verified toy (lane/heap-layer); translator and lane B migration pending; screened core: 4 alias units, 0 closure units |
+| 20 | Candidate-only units | a new file or a function absent from its parent file | link and load under recording fakes, then run alone; `NEW` records bounds and faults, `REFUSE(load)` names local link failures; evaluation and test modules are ASK; no theorem | `new_unit` | done (lane) |
 
 ## Order and gates
 
