@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/header.svg" alt="lean: write TypeScript like mathematics. Prove a change did only what you asked." width="100%">
+  <img src="docs/header.svg" alt="lean: code like mathematics. Prove a change did only what you asked." width="100%">
 </p>
 
 <p align="center">
@@ -14,7 +14,9 @@
 
 ---
 
-**lean is a differential equivalence checker for TypeScript.** Give it the old version and the new version of a function, and a declared scope of what was meant to change, and it decides whether the two behave the same everywhere else: by proof when it can, by execution when it cannot, and it says which.
+**lean is a differential equivalence checker.** Give it the old version and the new version of a function, and a declared scope of what was meant to change, and it decides whether the two behave the same everywhere else: by proof when it can, by execution when it cannot, and it says which.
+
+TypeScript is the first language. The core (the theorem, the checker, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`. Python is next.
 
 Every change to a program is a claim: *I changed this, and nothing else.* Tests sample that claim. Review guesses at it. lean checks it, and answers with one of four words, each backed by something you can re-run:
 
@@ -58,7 +60,7 @@ Class methods work too: `--unit PricingService.applyDiscount`. The whole file is
 
 ## What you get
 
-**Code that behaves like math.** Inside lean's subset, a TypeScript function *is* a mathematical function: the translator turns it into Dafny, and a prover reasons about every input at once. The subset is large: records, arrays, strings, sets, maps, optionals, literal unions, loops, early returns, switch, destructuring, async functions, class methods, recursion. [`langs/ts/subset.md`](langs/ts/subset.md) lists all of it.
+**Code like mathematics.** Inside lean's subset, a TypeScript function *is* a mathematical function: the translator turns it into Dafny, and a prover reasons about every input at once. The subset is large: records, arrays, strings, sets, maps, optionals, literal unions, loops, early returns, switch, destructuring, async functions, class methods, recursion. [`langs/ts/subset.md`](langs/ts/subset.md) lists all of it.
 
 **Effects that stay honest.** A call into the outside world (a database, a clock, an HTTP client, an imported function) is not pretended away. It becomes a *transition of an explicit world*: the same request in the same world gives the same answer, two reads of a clock are two values, and a candidate that asks the world something the parent never asked cannot be proved equal. The hole that most equivalence tools fall into (`readClock() === readClock()` proved equal to `true`) is closed by construction.
 
@@ -116,7 +118,7 @@ Measured on a private corpus of 110 escaped defects from production TypeScript (
 | the two-clock pair (`readClock() === readClock()` vs `true`) | **not provable**, as it must be |
 | test suite | 126 checks, conformance 21 of 21 |
 
-The full corpus run (every changed function through both lanes) is in progress; its table replaces this one when it lands.
+The full corpus run (every changed function through both lanes) is in progress; its table replaces this one when it lands. Numbers for the next languages will sit beside it.
 
 ## Limits
 
