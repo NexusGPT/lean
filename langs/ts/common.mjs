@@ -27,7 +27,7 @@ export const COMPILER_OPTIONS = {
 
 // Diagnostics that only say "this file's neighbours are not here". With a project they do not occur; alone
 // they would hide the real verdict behind missing modules, so they are reported under their own rule.
-export const RESOLUTION_CODES = new Set([2307, 2305, 2306, 2792, 7016, 2688, 6053, 6059, 5083, 2300]);
+export const RESOLUTION_CODES = new Set([2307, 2305, 2306, 2792, 7016, 2688, 6053, 6059, 5083, 2300, 2724, 2875, 2705, 2580, 2583, 2584, 2304, 2503, 1700, 2591]); // what the checkout failed to resolve or provide (a module, a lib, a global type, the JSX runtime), never a defect of the function
 
 /**
  * loadProgram(file, {project}) — project: a tsconfig path, true (search upward from the file), or false

@@ -4,9 +4,10 @@ import { makeRng } from './fake.mjs';
 const STR_EDGE = ['', 'a', 'abc', ' ', 'x y', '0', '-1', 'ÄÖü', '日本', 'a'.repeat(64)];
 const NUM_EDGE = [0, 1, -1, 2, 10, 100, -100, 0.5, 1e9, Number.MAX_SAFE_INTEGER];
 
-export function generator(seed, defs = {}, literals = []) {
+export function generator(seed, defs = {}, literals = [], startEdge = 0) {
   const rng = makeRng(seed);
-  let edge = 0; // the i-th generated input leans on the i-th boundary value
+  let edge = startEdge; // the i-th generated input leans on the i-th boundary value: the caller passes i, so the first
+  // inputs of a run walk the boundary list instead of every run starting at its first value
   const pool = [...NUM_EDGE, ...literals]; // numbers already seen join the pool, so fields coincide
   function number() {
     const u = rng();
@@ -47,6 +48,6 @@ export function generator(seed, defs = {}, literals = []) {
 
 // the i-th input set for a unit: a list of argument values; each call gets a fresh generator seeded by (seed, i)
 export function inputsFor(spec, seed, i, env) {
-  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? []);
+  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i);
   return spec.params.map((p, k) => (p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`)));
 }

@@ -174,7 +174,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
   }
   function returnsVoid() {
-    const sig = currentFn && checker.getSignatureFromDeclaration(currentFn);
+    const fn = callbackStack.length ? callbackStack[callbackStack.length - 1] : currentFn; // a bare return inside a callback is the callback's
+    const sig = fn && checker.getSignatureFromDeclaration(fn);
     const rt = sig && sig.getReturnType();
     const inner = rt && isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;
     return !!inner && !!(inner.flags & (TF.Void | TF.Undefined));
@@ -204,7 +205,11 @@ export function lintFile(file, ranges = null, opts = {}) {
   function varDecl(d) {
     const names = [];
     bindingNames(d.name, names);
-    if (!d.initializer) return v(d, 'uninitialised', 'a variable needs an initial value');
+    if (!d.initializer) {
+      // `let x: T;` with a written type: TypeScript proves every read follows an assignment; the value before it is unobservable
+      if (!d.type || !ts.isIdentifier(d.name)) return v(d, 'uninitialised', 'a variable without an initial value needs a written type');
+      checkType(tOf(d.name), d.name); return;
+    }
     for (const n of names) {
       const t = tOf(n);
       checkType(t, n);
@@ -213,6 +218,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
   function exprStmt(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` as a statement is the call f()
     if (ts.isAwaitExpression(e)) return awaitExpr(e, true);
     if (ts.isBinaryExpression(e)) {
       const op = e.operatorToken.kind;

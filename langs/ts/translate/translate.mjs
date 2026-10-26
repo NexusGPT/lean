@@ -1190,6 +1190,7 @@ export function translate(file, fnName, opts = {}) {
   // text of `x = e`, `x += e`, `x++`, `xs.push(e)`, `s.add(e)`, `m.set(k, v)`, `s.delete(e)` as `name := new value`
   function newValue(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` is the call f()
     if (ts.isAwaitExpression(e) || (ts.isCallExpression(e) && isEffectCall(e)) || (ts.isNewExpression(e) && isEffectCall(e))) { expr(e); return null; } // the transition is hoisted
     if (ts.isBinaryExpression(e) && ts.isElementAccessExpression(e.left) && ts.isIdentifier(e.left.expression)) {
       const arr = e.left.expression; const t = baseOf(typeOf(arr));
@@ -1374,6 +1375,7 @@ export function translate(file, fnName, opts = {}) {
           out.push(capture(() => {
             if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer))).join('\n');
             const t = typeOf(d.name);
+            if (!d.initializer) { const D = dtype(t, d); return `var ${dn(d.name.text)}: ${D} := ${external(`uninit_${mangle(D)}`, [], D)}();`; } // assigned before any read (TypeScript checks it); the value here is never observed
             return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};`;
           }));
         }
