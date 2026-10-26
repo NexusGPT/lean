@@ -8,7 +8,7 @@ The old representation erases record and mixed unions to Any, including narrowed
 branch reads. This reading adds a sum datatype for records with distinct literal
 tags and for disjoint primitive/array alternatives. Each constructor carries its
 member's value. Narrowed identifiers project that payload; common field reads
-branch on the constructor. Literal tag reads use the member's declared literal.
+branch on the constructor. Tag reads without assertion provenance use declared literals.
 Overlapping, generic and untagged class unions retain Any.
 
 `instanceof` is exact for nominal instances of ordinary same-file classes: a private,
@@ -41,8 +41,9 @@ facts; a missing-key record alone supplies no such fact.
 The lint retains opaque types (`never`, `object`, symbols), admits the sum shapes,
 and refuses dynamic/custom constructors and constructor values as `instanceof-constructor`.
 A strict absence comparison on a mixed primitive/array union is admitted.
-`type-test-cast` refuses assertions that invent nominal, array, sum or literal-tag facts;
-otherwise a cast from unknown could incorrectly make a runtime test constant.
+Assertions keep their opaque conversions; dependent tests and tag reads do not
+invent runtime facts. Provenance follows aliases, writes, containers and same-file calls.
+Non-null assertions alone are not assertion provenance; these forms need no cast refusal.
 Lane B executes real JavaScript and generates all record/array alternatives.
 Its class parameter generator supplies plain records without prototypes, a known
 gap: the class branch-swap witness tests false branches; local `new` probes test
@@ -75,6 +76,5 @@ Census instances read (all paths start at the read-only census root
   unknown typeof and record key presence stay uninterpreted.
 - `apps-ui/src/hooks/useFlipScan.ts:89`, normSkip:
   string/array/undefined sum, truthiness and array membership enter the exact reading.
-See `results-bench/type-tests-validation.md` and the stable benchmark artifacts.
-A direct sandbox probe supplies new A/new B/new Derived and a record with an extra
-key; their observations confirm the negative controls beyond generated inputs.
+See `results-bench/type-tests-revision-validation.md` and the revision benchmark.
+A direct sandbox probe supplies real instances and an extra-key record, confirming negative controls.

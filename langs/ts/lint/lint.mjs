@@ -395,16 +395,6 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.RegularExpressionLiteral: return; // an opaque constant: the same literal on both sides is the same value
       case K.ParenthesizedExpression: return expr(e.expression);
       case K.AsExpression: case K.TypeAssertionExpression: case K.SatisfiesExpression: {
-        const tn = e.type;
-        const sensitive = (t) => {
-          if (t.flags & TF.Union) return t.types.some(sensitive) || t.types.every((x) => isPrim(x));
-          if (isArrayLike(checker, t)) return true;
-          if (!isRecordish(t)) return false;
-          return checker.getPropertiesOfType(t).some((p) => p.declarations?.some((d) => (d.name && ts.isPrivateIdentifier(d.name)) || d.modifiers?.some((m) => m.kind === K.PrivateKeyword || m.kind === K.ProtectedKeyword)) || !!(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? e).flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral)));
-        };
-        const from = tOf(e.expression), to = tOf(e);
-        const constant = ts.isTypeReferenceNode(tn) && tn.typeName.getText(sf) === 'const';
-        if (!constant && sensitive(to) && (isAny(from) || !checker.isTypeAssignableTo(from, to))) v(e, 'type-test-cast', 'an assertion cannot establish a runtime type tag or class identity; narrow the value with a checked test');
         // `as T` is identity at run time: the translator keeps the value when the types agree and otherwise
         // passes it through an uninterpreted conversion, the same on both sides
         return expr(e.expression);

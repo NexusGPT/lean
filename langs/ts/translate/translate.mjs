@@ -427,8 +427,43 @@ export function translate(file, fnName, opts = {}) {
       return 'true';
     });
   }
+  // assertions change a static type without establishing a runtime tag
+  const assertionWrites = new Map();
+  const assertionRoot = (n) => { while (ts.isParenthesizedExpression(n) || ts.isNonNullExpression(n) || ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) n = n.expression; return ts.isIdentifier(n) ? checker.getSymbolAtLocation(n) : null; };
+  const assertionWrite = (n, value) => { if (ts.isObjectBindingPattern(n) || ts.isArrayBindingPattern(n)) { for (const e of n.elements) if (ts.isBindingElement(e)) assertionWrite(e.name, value); return; } const sym = assertionRoot(n); if (sym) { if (!assertionWrites.has(sym)) assertionWrites.set(sym, []); assertionWrites.get(sym).push(value); } };
+  function collectAssertionWrites(n) {
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) assertionWrite(n.left, n.right);
+    if (ts.isVariableDeclaration(n) && n.initializer && ts.isIdentifier(n.name) && ts.isIdentifier(n.initializer)) assertionWrite(n.initializer, n.name);
+    if (ts.isCallExpression(n)) {
+      if (ts.isPropertyAccessExpression(n.expression) && ['push', 'unshift', 'splice', 'set', 'add', 'fill'].includes(n.expression.name.text)) for (const arg of n.arguments) assertionWrite(n.expression.expression, arg);
+      const callee = checker.getResolvedSignature(n)?.declaration;
+      if (callee?.getSourceFile() === sf) for (let i = 0; i < callee.parameters.length; i++) { const p = callee.parameters[i]; for (const arg of p.dotDotDotToken ? n.arguments.slice(i) : n.arguments.slice(i, i + 1)) assertionWrite(p.name, arg); }
+    }
+    ts.forEachChild(n, collectAssertionWrites);
+  }
+  collectAssertionWrites(sf);
+  function assertionDerived(n, seen = new Set()) {
+    if (!n || seen.has(n)) return false;
+    seen.add(n);
+    if (ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)) return true;
+    if (ts.isIdentifier(n)) {
+      let sym = checker.getSymbolAtLocation(n);
+      if (sym && sym.flags & ts.SymbolFlags.Alias) sym = checker.getAliasedSymbol(sym);
+      if ((assertionWrites.get(sym) ?? []).some((v) => assertionDerived(v, seen))) return true;
+      for (let d of sym?.declarations ?? []) {
+        if (ts.isBindingElement(d)) { while (d.parent && !ts.isVariableDeclaration(d) && !ts.isParameter(d)) d = d.parent; }
+        if (d.initializer && assertionDerived(d.initializer, seen)) return true;
+        if (ts.isFunctionLike(d) && d.body) {
+          const returnsAssertion = (b) => ts.isReturnStatement(b) ? assertionDerived(b.expression, seen) : ts.isFunctionLike(b) ? false : !!ts.forEachChild(b, returnsAssertion);
+          if (ts.isBlock(d.body) ? returnsAssertion(d.body) : assertionDerived(d.body, seen)) return true;
+        }
+      }
+    }
+    return !!ts.forEachChild(n, (c) => !ts.isTypeNode(c) && assertionDerived(c, seen));
+  }
   function staticTest(node, decide, fallback) {
     const t = typeOf(node), d = dtype(t, node), members = sums.get(d);
+    if (assertionDerived(node)) return fallback(expr(node), d);
     if (members) return sumCases(expr(node), members, (m, v) => decide(m.t) ?? fallback(`${v}.${m.field}`, m.d));
     if (isOptional(t) && d.startsWith('Option<')) {
       const absent = t.types.filter(isNullish).map(decide);
@@ -831,7 +866,7 @@ export function translate(file, fnName, opts = {}) {
       case K.TypeOfExpression: {
         // exact when the static type decides the tag; an Option decides between its base tag and "undefined"; else uninterpreted
         const t = typeOf(n.expression);
-        if (isOptional(t)) {
+        if (!assertionDerived(n.expression) && isOptional(t)) {
           const absent = t.types.filter(isNullish); const tags = new Set(absent.map(runtimeTag));
           const base = baseOf(t); const tag = runtimeTag(base);
           if (tags.size === 1 && tag) { const v = rawOperand(n.expression); return `(if ${v}.Some? then ${strEsc(tag)} else ${strEsc([...tags][0])})`; }
@@ -960,6 +995,7 @@ export function translate(file, fnName, opts = {}) {
     }
     if (op === K.InKeyword) {
       const rt0 = typeOf(n.right); const rd = (() => { try { return isAny(rt0) ? 'Any' : dtype(rt0, n); } catch { return 'Any'; } })();
+      if (assertionDerived(n.left) || assertionDerived(n.right)) return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
       if (rd.startsWith('map<string') && (typeOf(n.left).flags & TF.StringLike)) return `(${expr(n.left)} in ${expr(n.right)})`; // a key test on a dictionary is exact
       if (ts.isStringLiteral(n.left)) {
         const key = n.left.text;
@@ -1289,7 +1325,7 @@ export function translate(file, fnName, opts = {}) {
     const members = sums.get(dtype(recvT, n));
     if (members) return sumCases(recvCode, members, (m, v) => { const ft = checker.getTypeOfPropertyOfType(m.t, name); return convertD(fieldOf(`${v}.${m.field}`, m.t, name, n), dtype(ft, n), dtype(typeOf(n), n)); });
     const prop = checker.getPropertyOfType(recvT, name);
-    if (prop && !(prop.flags & ts.SymbolFlags.Optional)) {
+    if (prop && !(prop.flags & ts.SymbolFlags.Optional) && !assertionDerived(n.expression)) {
       const literal = literalValue(checker.getTypeOfSymbolAtLocation(prop, prop.valueDeclaration ?? n));
       if (literal !== null) return literal;
     }

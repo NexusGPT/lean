@@ -71,8 +71,8 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Regular expressions, `new RegExp`, `.test`, `.replace(re, …)` | `/a+/.test(s)` | an opaque constant per literal, externals for the operations |
 | A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its text; the same text proves equal, a different one does not |
 | A callback with an effect inside | `xs.map(async (x) => await f(x))` | the same: an opaque function value by its text |
-| `as T`, `<T>x` | a compatible assertion or opaque conversion | identity when Dafny types agree, else `ext_cast_A_B(x)`; assertions inventing runtime type facts are refused (`type-test-cast`) |
-| Undecided type tests | unknown catch values, public structural class instances, optional or undeclared record keys | uninterpreted membership/tag functions of their values; an undeclared key is not known absent |
+| `as T`, `<T>x` | a compatible assertion or opaque conversion | identity when Dafny types agree, else `ext_cast_A_B(x)`; tests of assertion-derived values remain uninterpreted |
+| Undecided type tests | assertion-derived values, unknown catch values, public structural class instances, optional or undeclared record keys | uninterpreted membership/tag functions of their values; an undeclared key is not known absent |
 | `throw e` | `throw new Error("bad")` | the function's result is `ext_throw_R(e)` |
 | Tagged templates | ``sql`select ${id}` `` | `ext_tag_sql_1(["select ", ""], id)` |
 | `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first); an untyped `let x;` is `None` of the Option of its first assigned type, every narrowed read takes `.value` |
@@ -98,7 +98,6 @@ one, never proved equal and never proved different (the execution lane decides i
 
 | Rule | Refused | Example that is refused |
 |---|---|---|
-| `type-test-cast` | assertions that invent nominal identity, array membership or discriminant facts | `(x as Nominal) instanceof Nominal` |
 | `instanceof-constructor` | dynamic constructor expressions, constructor values and custom `Symbol.hasInstance` hooks | `x instanceof chooseConstructor()` |
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
 | `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |

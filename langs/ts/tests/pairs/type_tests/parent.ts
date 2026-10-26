@@ -57,3 +57,16 @@ export function optionalTag(r: Choice | undefined): number {
 export function requiredKey(r: Choice): boolean { return "kind" in r; }
 
 export function ambiguousArray(x: number[] | { length: number } | undefined): boolean { return Array.isArray(x); }
+
+export function assertedInstance(x: object): boolean { const value = x as A; const alias = value; return alias instanceof A; }
+export function assertedArray(x: unknown): boolean { const value = x as number[]; return Array.isArray(value); }
+export function assertedType(x: unknown): string { return typeof (<number>x); }
+export function assertedIn(x: object): boolean { const value = x as { key: number }; return "key" in value; }
+export function assertedDictionary(x: { key: number }): boolean { const value = x as Record<string, number>; return "key" in value; }
+export function assertedOptional(x: unknown): string { const value = x as number | undefined; return typeof value; }
+export function assertedAssignment(x: unknown): boolean { let value: number[] = []; value = x as number[]; const alias = value; return Array.isArray(alias); }
+export function assertedTag(x: { kind: string }): boolean { const value = x as { kind: "a" }; return value.kind === "a"; }
+export function assertedContainer(x: unknown): boolean { const box = { values: x as number[] }; return Array.isArray(box.values); }
+export function assertedDestructure(x: unknown): boolean { const box = { values: x as number[] }; const { values } = box; return Array.isArray(values); }
+export function nonNullExact(x: number[] | undefined): boolean { if (x === undefined) return false; return Array.isArray(x!); }
+export function assertedRefactor(x: unknown): boolean { const value = x as number[]; return Array.isArray(value); }
