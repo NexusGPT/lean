@@ -35,7 +35,8 @@ rules per package).
 | Arrays at work | `xs[i]`, `.length`, `[a, ...xs]`, `push`/`unshift` on a local, `includes`, `indexOf`, `slice`, `concat`, `join`, `flat`, `at`, `some`, `every`, `find`, `findIndex`, `map`, `filter`, `flatMap`, `reduce`, with index callbacks | `xs.map((x, i) => x * i)` |
 | Strings | literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number; `a ** b` as an uninterpreted power of both sides | `n.toFixed(2)` |
-| Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with `k` a literal union or a string on a dictionary; `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
+| Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with a finite union of declared data-field string keys (including `keyof`), or a string on a dictionary; `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
+| Record enumeration | `Object.keys/values/entries` on a plain immediate record literal or an enumeration-only const literal; integer-index keys first, then insertion order | `Object.keys({ b: 2, a: 1 })` is `["b", "a"]` |
 | Calls | top-level functions of the same file, recursion included (a fuel bounds the unfolding; the theorem holds for every fuel), default arguments, a function-typed parameter or local, a local lambda `const f = (x) => ...` | `double(double(x))` |
 | Functions | `function` declarations, `const f = (...) => ...`, `async` functions (the result type is unwrapped), generic functions, same-file functions named as callback values | `xs.map(double)` |
 | JSX | an element is a value tree: `JsxElem(tag, props, children)`, `JsxText`, `JsxNothing` for `false`/`null`/`undefined`, `JsxList` for an array child; a handler attribute is an opaque function value keyed by its text; `cond && <X/>`, `cond ? <A/> : <B/>`, `{xs.map((x) => <li/>)}`, fragments, spread attributes (merged in order) | `<li key={i.id} onClick={() => pick(i.id)}>{i.label}</li>` |
@@ -56,7 +57,7 @@ transition the parent did not make, or makes it with another argument or in anot
 | A clock, randomness, the environment, a console, a fetch | `Date.now()`, `new Date()`, `Math.random()`, `console.log(x)` | `ext_Date_now(wld)`, `ext_new_Date(wld)`, `ext_Math_random(wld)`, a transition of the console |
 | `new X(...)` for any `X` but `Set`, `Map`, `RegExp`, `Error`, `Date`, `URL`, `Array`, typed arrays | `new Client(cfg)` | `ext_new_Client(wld, cfg)` |
 | `.then`, `.catch`, `.finally` on a promise | `p.catch(() => null)` | a transition with the handler as an opaque function value |
-| `Object.keys`, `Object.entries`, `Object.values` on a record | `Object.keys(r)` | `ext_Object_keys(wld, r)` |
+| Unknown record enumeration | `Object.keys/values/entries(r)` for a parameter, escaped or mutated record | source-sensitive transition; own keys/order cannot be recovered from the structural datatype |
 
 ## What is uninterpreted
 
@@ -64,6 +65,7 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 
 | Part | Example | Modelled as |
 |---|---|---|
+| Other Object operations and dictionaries | `Object.assign/freeze/fromEntries`, dictionary `Object.keys/values/entries` | existing pure uninterpreted calls; no new exact mutation or freezing claim |
 | Module constants, enum members | `LIMITS.max` | `ext_LIMITS_max()` |
 | `any`, `unknown`, a union of records, `string \| SomeObject` | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
 | Library calls with no exact rule: `trim`, `toLowerCase`, `split`, `replace`, `JSON`, `String`, `Buffer` | `s.trim()` | `ext_str_trim(s)` |
@@ -97,6 +99,8 @@ one, never proved equal and never proved different (the execution lane decides i
 
 | Rule | Refused | Example that is refused |
 |---|---|---|
+| `dynamic-key` | record keys that are unrestricted strings, numbers, missing fields, method values or calls inside the key; optional/union receivers must first be narrowed | `r[k]` with `k: string` and `r: { a: number }` |
+| `index-assign` | dynamic writes to records | `r[k] = v` with `k: "a" \| "b"` |
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
 | `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |
 | `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |

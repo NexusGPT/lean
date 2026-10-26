@@ -1,0 +1,434 @@
+Dynamic record reads: validation evidence
+Worktree: /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads
+Baseline: master at c9847d8, selected by the lead; harness unchanged after commits 9682b58 and 3ba4ea6.
+Both final runs use --concepts "computed member access|Object.keys|Object.values|Object.entries|Object.assign|Object.freeze|Object.fromEntries" --k 10 --jobs 3.
+Command: python3 -I /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/harness/concept_bench.py --lean <baseline or worktree> --concepts <above> --k 10 --jobs 3 --out <worktree>/results-bench/<before-final or after-final>
+Baseline --lean /Users/assem/nexus/nexus-organisation/work/lean
+After --lean /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads
+All sample identities match. Object.freeze has only four eligible sample units.
+Witnessed units counts units with at least one planted mutant witnessed; this is separate from mutant counts.
+concept | n | before lint/translate/witnessed units | after lint/translate/witnessed units | before -> after witnessed/planted mutants
+computed member access | 10 | 6/6/5 | 5/5/4 | 13/16 -> 10/13
+Object.keys | 10 | 3/3/3 | 3/3/3 | 6/8 -> 6/8
+Object.values | 10 | 5/3/3 | 5/3/3 | 6/6 -> 6/6
+Object.entries | 10 | 7/5/4 | 7/5/4 | 10/12 -> 10/12
+Object.assign | 10 | 3/1/1 | 3/1/1 | 3/3 -> 3/3
+Object.freeze | 4 | 3/3/1 | 3/3/1 | 3/3 -> 3/3
+Object.fromEntries | 10 | 5/4/2 | 5/4/2 | 5/8 -> 5/8
+
+Raw baseline scorecard:
+# Concept bench
+
+7 concepts, K=10 real instances each (at most 3 per repo, units of at most 120 lines), lean at /Users/assem/nexus/nexus-organisation/work/lean
+
+| concept | n | inside | translated | mutants witnessed | top blockers |
+|---|---|---|---|---|---|
+| computed member access | 10 | 6 | 6 | 13/16 | mixed-types (2), unsupported-syntax (1), async (1) |
+| Object.keys | 10 | 3 | 3 | 6/8 | async (1), mixed-types (1), this (1) |
+| Object.values | 10 | 5 | 3 | 6/6 | translate: html.ts:326: type nesting too deep (1), foreach (1), property-assign (1) |
+| Object.entries | 10 | 7 | 5 | 10/12 | translate: Filters.tsx:71: an effect inside a callback; the o (1), translate: then.ts:69: callee generatedMeta was not translate (1), dynamic-key (1) |
+| Object.assign | 10 | 3 | 1 | 3/3 | this (3), ts-strict (2), translate: build-tool-input-schema.ts:95: callee extractDefs  (1) |
+| Object.freeze | 4 | 3 | 3 | 3/3 | index-assign (1) |
+| Object.fromEntries | 10 | 5 | 4 | 5/8 | promise (2), param-mutation (2), global-read (1) |
+
+Raw after scorecard:
+# Concept bench
+
+7 concepts, K=10 real instances each (at most 3 per repo, units of at most 120 lines), lean at /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads
+
+| concept | n | inside | translated | mutants witnessed | top blockers |
+|---|---|---|---|---|---|
+| computed member access | 10 | 5 | 5 | 10/13 | mixed-types (2), unsupported-syntax (1), dynamic-key (1) |
+| Object.keys | 10 | 3 | 3 | 6/8 | async (1), mixed-types (1), this (1) |
+| Object.values | 10 | 5 | 3 | 6/6 | translate: html.ts:326: type nesting too deep (1), foreach (1), property-assign (1) |
+| Object.entries | 10 | 7 | 5 | 10/12 | translate: Filters.tsx:71: an effect inside a callback; the o (1), translate: then.ts:69: callee generatedMeta was not translate (1), dynamic-key (1) |
+| Object.assign | 10 | 3 | 1 | 3/3 | this (3), ts-strict (2), translate: build-tool-input-schema.ts:95: callee extractDefs  (1) |
+| Object.freeze | 4 | 3 | 3 | 3/3 | index-assign (1) |
+| Object.fromEntries | 10 | 5 | 4 | 5/8 | promise (2), param-mutation (2), global-read (1) |
+
+Targeted validation command output:
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts: inside the subset
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/translate/translate.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --core --suffix parent --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/parent.dfy --prelude /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/parent.pre.dfy
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/parent.dfy and /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/parent.pre.dfy
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts: inside the subset
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/translate/translate.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --core --suffix candidate --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/candidate.dfy --prelude /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/candidate.pre.dfy --effectful distinctOrders,effectOrder,effectRead,hiddenOrder,keyOrder,unknown
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/candidate.dfy and /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/candidate.pre.dfy
+
+$ python3 -I /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/spec/theorem.py --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/parent.dfy --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/candidate.dfy --scope /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/scope.json --edit /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/edit.json --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/theorem.dfy
+theorem: wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/theorem.dfy (18 lemmas)
+
+$ dafny verify --verification-time-limit 30 /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/theorem.dfy
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 249 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 207 (  0.0)
+
+Prover error: Could not parse any models
+
+results-bench/pair/theorem.dfy(269,0): Error: a postcondition could not be proved on this return path
+    |
+269 | { // PROOF Equal_remapped
+    | ^
+
+results-bench/pair/theorem.dfy(268,32): Related location: this is the postcondition that could not be proved
+    |
+268 |   ensures remapped_parent(r, k) == remapped_candidate(r, k)
+    |                                 ^^
+
+results-bench/pair/theorem.dfy(299,0): Error: a postcondition could not be proved on this return path
+    |
+299 | { // PROOF Equal_order
+    | ^
+
+results-bench/pair/theorem.dfy(298,29): Related location: this is the postcondition that could not be proved
+    |
+298 |   ensures order_parent(a, b) == order_candidate(a, b)
+    |                              ^^
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 309 (  0.0)
+
+Prover error: Could not parse any models
+
+results-bench/pair/theorem.dfy(323,0): Error: a postcondition could not be proved on this return path
+    |
+323 | { // PROOF Equal_unknown
+    | ^
+
+results-bench/pair/theorem.dfy(322,33): Related location: this is the postcondition that could not be proved
+    |
+322 |   ensures unknown_parent(wld, r) == unknown_candidate(wld, r)
+    |                                  ^^
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 401 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 359 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 295 (  0.0)
+
+Prover error: Could not parse any models
+
+results-bench/pair/theorem.dfy(359,0): Error: a postcondition could not be proved on this return path
+    |
+359 | { // PROOF Equal_hidden_order
+    | ^
+
+results-bench/pair/theorem.dfy(358,44): Related location: this is the postcondition that could not be proved
+    |
+358 |   ensures hidden_order_parent(wld, r, flag) == hidden_order_candidate(wld, r, flag)
+    |                                             ^^
+
+results-bench/pair/theorem.dfy(365,0): Error: a postcondition could not be proved on this return path
+    |
+365 | { // PROOF Equal_key_order
+    | ^
+
+results-bench/pair/theorem.dfy(364,35): Related location: this is the postcondition that could not be proved
+    |
+364 |   ensures key_order_parent(wld, r) == key_order_candidate(wld, r)
+    |                                    ^^
+
+results-bench/pair/theorem.dfy(371,0): Error: a postcondition could not be proved on this return path
+    |
+371 | { // PROOF Equal_distinct_orders
+    | ^
+
+results-bench/pair/theorem.dfy(370,41): Related location: this is the postcondition that could not be proved
+    |
+370 |   ensures distinct_orders_parent(wld, r) == distinct_orders_candidate(wld, r)
+    |                                          ^^
+
+
+Dafny program verifier finished with 13 verified, 6 errors
+
+Equal_remapped: not proved; expected False
+Equal_switch_read: proved; expected True
+Equal_key_count: proved; expected True
+Equal_values: proved; expected True
+Equal_entries: proved; expected True
+Equal_order: not proved; expected False
+Equal_numeric_order: proved; expected True
+Equal_optional: proved; expected True
+Equal_mixed: proved; expected True
+Equal_unknown: not proved; expected False
+Equal_untouched: proved; expected True
+Equal_effect_order: proved; expected True
+Equal_effect_read: proved; expected True
+Equal_present_undefined: proved; expected True
+Equal_undefined_values: proved; expected True
+Equal_hidden_order: not proved; expected False
+Equal_key_order: not proved; expected False
+Equal_distinct_orders: not proved; expected False
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit remapped --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_remapped.json
+WITNESS -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_remapped.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit switchRead --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_switchRead.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_switchRead.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit keyCount --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_keyCount.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_keyCount.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit values --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_values.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_values.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit entries --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_entries.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_entries.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit order --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_order.json
+WITNESS -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_order.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit numericOrder --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_numericOrder.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_numericOrder.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit optional --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_optional.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_optional.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit mixed --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_mixed.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_mixed.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit unknown --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_unknown.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_unknown.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit untouched --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_untouched.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_untouched.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit effectOrder --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_effectOrder.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_effectOrder.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit effectRead --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_effectRead.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_effectRead.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit presentUndefined --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_presentUndefined.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_presentUndefined.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit undefinedValues --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_undefinedValues.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_undefinedValues.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit hiddenOrder --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_hiddenOrder.json
+WITNESS -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_hiddenOrder.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit keyOrder --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_keyOrder.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_keyOrder.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/pairs/dynamic_reads/candidate.ts --unit distinctOrders --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_distinctOrders.json
+WITNESS -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/results-bench/pair/b_distinctOrders.json
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_effect_key.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_effect_key.ts:3:68  dynamic-key  bind the computed key before reading the record; a key call may mutate its receiver
+1 violation(s)
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_method.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_method.ts:2:92  dynamic-key  call a method by its declared name; computed record reads select data fields
+1 violation(s)
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_prototype.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_prototype.ts:2:102  prototype  this bracket key reaches the prototype chain; read a declared data field
+1 violation(s)
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_string.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_string.ts:4:10  dynamic-key  use a finite union of declared string keys, or a Record<string, T> dictionary
+1 violation(s)
+
+$ node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_write.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/fixtures/escapes/ts/dynamic_record_write.ts:2:76  index-assign  write a record field by name, or use a local Record<string, T> dictionary
+1 violation(s)
+
+ALL TARGETED CHECKS PASS
+
+Callable-field local probe: node langs/ts/translate/translate.mjs <local probe> --core --no-project --out <local output>; dafny verify <local output>
+Dafny program verifier finished with 0 verified, 0 errors
+Whole suite command: node /Users/assem/nexus/nexus-organisation/work/lean-lanes/dynamic-record-reads/langs/ts/tests/run.mjs
+| TOTAL | 351 checks | ALL PASS |
+Whole suite rows for this concept:
+| pair         | dynamic_reads             | theorem generated                        | PASS |             | ok
+| pair         | dynamic_reads             | Equal_remapped not proved                | PASS |             | not proved
+| pair         | dynamic_reads             | Equal_switch_read proved                 | PASS |             | proved
+| pair         | dynamic_reads             | Equal_key_count proved                   | PASS |             | proved
+| pair         | dynamic_reads             | Equal_values proved                      | PASS |             | proved
+| pair         | dynamic_reads             | Equal_entries proved                     | PASS |             | proved
+| pair         | dynamic_reads             | Equal_order not proved                   | PASS |             | not proved
+| pair         | dynamic_reads             | Equal_numeric_order proved               | PASS |             | proved
+| pair         | dynamic_reads             | Equal_optional proved                    | PASS |             | proved
+| pair         | dynamic_reads             | Equal_mixed proved                       | PASS |             | proved
+| pair         | dynamic_reads             | Equal_unknown not proved                 | PASS |             | not proved
+| pair         | dynamic_reads             | Equal_untouched proved                   | PASS |             | proved
+| pair         | dynamic_reads             | Equal_effect_order proved                | PASS |             | proved
+| pair         | dynamic_reads             | Equal_effect_read proved                 | PASS |             | proved
+| pair         | dynamic_reads             | Equal_present_undefined proved           | PASS |             | proved
+| pair         | dynamic_reads             | Equal_undefined_values proved            | PASS |             | proved
+| pair         | dynamic_reads             | Equal_hidden_order not proved            | PASS |             | not proved
+| pair         | dynamic_reads             | Equal_key_order not proved               | PASS |             | not proved
+| pair         | dynamic_reads             | Equal_distinct_orders not proved         | PASS |             | not proved
+| pair         | dynamic_reads             | lane B remapped WITNESS                  | PASS |             | WITNESS
+| pair         | dynamic_reads             | lane B switchRead PASS-bounded           | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B keyCount PASS-bounded             | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B values PASS-bounded               | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B entries PASS-bounded              | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B order WITNESS                     | PASS |             | WITNESS
+| pair         | dynamic_reads             | lane B numericOrder PASS-bounded         | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B optional PASS-bounded             | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B mixed PASS-bounded                | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B unknown PASS-bounded              | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B effectOrder PASS-bounded          | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B effectRead PASS-bounded           | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B presentUndefined PASS-bounded     | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B undefinedValues PASS-bounded      | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B hiddenOrder WITNESS               | PASS |             | WITNESS
+| pair         | dynamic_reads             | lane B keyOrder PASS-bounded             | PASS |             | PASS-bounded
+| pair         | dynamic_reads             | lane B distinctOrders WITNESS            | PASS |             | WITNESS
+| escape       | dynamic_record_effect_key | lint refuses                             | PASS | yes         | refused: dynamic-key
+| escape       | dynamic_record_effect_key | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_method     | lint refuses                             | PASS | yes         | refused: dynamic-key
+| escape       | dynamic_record_method     | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_prototype  | lint refuses                             | PASS | yes         | refused: prototype
+| escape       | dynamic_record_prototype  | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_string     | lint refuses                             | PASS | yes         | refused: dynamic-key
+| escape       | dynamic_record_string     | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_write      | lint refuses                             | PASS | no          | refused: index-assign
+| escape       | dynamic_record_write      | translate refuses                        | PASS |             | refused
+
+Stable sample identities and statuses (before -> after):
+computed member access | /Users/assem/Documents/GitHub/n8n/packages/nodes-base/nodes/Discord/v2/helpers/utils.ts | prepareEmbeds | lint-out -> lint-out
+computed member access | /Users/assem/Documents/GitHub/nexus-landing/components/customer-support/lab/variations/V2bRule.tsx | V2bRule | lint-out -> lint-out
+computed member access | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard/components/health/AlertsCard.tsx | AlertsCard | translated -> lint-out
+computed member access | /Users/assem/Documents/GitHub/driftbench/packages/stats/src/basics.ts | quantileSorted | translated -> translated
+computed member access | /Users/assem/promo-app/src/search/store.ts | storeSearch | lint-out -> lint-out
+computed member access | /Users/assem/Documents/GitHub/nexus/tools/nexus-studio/server/src/lib/jwt-cache.ts | set | translated -> translated
+computed member access | /Users/assem/Documents/GitHub/driftbench/packages/users/src/redteam.ts | shapeProblems | lint-out -> lint-out
+computed member access | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-classic/src/experimental/autogpt/agent.ts | AutoGPT.run | translated -> translated
+computed member access | /Users/assem/Documents/GitHub/nexus/packages/types/src/shared/domain/role-coverage/coverage-evaluator.ts | foldProduct | translated -> translated
+computed member access | /Users/assem/Documents/GitHub/nexus/apps/frontend/src/modules/Emulator/renderers/TelegramRenderer.tsx | TelegramRendererInner | translated -> translated
+Object.keys | /Users/assem/Documents/GitHub/n8n/packages/core/src/BinaryData/BinaryData.service.ts | BinaryDataService.duplicateBinaryDataInExecData | lint-out -> lint-out
+Object.keys | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-classic/src/agents/executor.ts | AgentExecutor._takeNextStep | lint-out -> lint-out
+Object.keys | /Users/assem/Documents/GitHub/n8n/packages/nodes-base/nodes/Formstack/GenericFunctions.ts | apiRequest | lint-out -> lint-out
+Object.keys | /Users/assem/Documents/GitHub/n8n/packages/nodes-base/nodes/Airtable/v2/methods/resourceMapping.ts | mapForeignType | translated -> translated
+Object.keys | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-core/src/utils/fast-json-patch/src/core.ts | _areEquals | lint-out -> lint-out
+Object.keys | /Users/assem/Documents/GitHub/nexus/apps/backend/src/deployments/infrastructure/controllers/deployment-teams.controller.ts | DeploymentTeamsController.publishTeamsPackage | lint-out -> lint-out
+Object.keys | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-core/src/stores.ts | InMemoryStore.yieldKeys | lint-out -> lint-out
+Object.keys | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-agent-api/src/allowlist/projector.ts | projectEntity | translated -> translated
+Object.keys | /Users/assem/Documents/GitHub/nexus/apps/frontend/src/modules/Workflow/Nodes/Main/Plugin/PipedreamConfigure/usePipedreamComponent.ts | usePipedreamComponent | lint-out -> lint-out
+Object.keys | /Users/assem/Documents/GitHub/nexus/apps/backend/src/assets/infrastructure/security/sanitize-svg.ts | sanitizeSvg | translated -> translated
+Object.values | /Users/assem/Documents/GitHub/driftbench/packages/report/src/html.ts | successionSection | translate-fail -> translate-fail
+Object.values | /Users/assem/Documents/GitHub/nexus/apps/frontend/src/modules/Deployments/components/DeploymentsMappings.tsx | getDeploymentTypeName | translated -> translated
+Object.values | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-core/src/runnables/graph.ts | Graph.toJSON | lint-out -> lint-out
+Object.values | /Users/assem/Documents/GitHub/nexus/apps/backend/src/public/v1/domain/shared/variable-translator.ts | extractVariableReferences | lint-out -> lint-out
+Object.values | /Users/assem/Documents/GitHub/nexus/apps/frontend/src/modules/Deployments/views/phone-call/tabs/VoiceTab/helpers.ts | isOpenAIRealtimeVoice | translated -> translated
+Object.values | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui/demo/src/sections/record-core.tsx | TableDemo | lint-out -> lint-out
+Object.values | /Users/assem/Documents/GitHub/claude-chat-clean/hooks/feed.ts | reportCard | lint-out -> lint-out
+Object.values | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-core/src/runnables/graph.ts | _lastNode | translated -> translated
+Object.values | /Users/assem/Documents/GitHub/n8n/packages/cli/src/InternalHooks.ts | InternalHooks.onWorkflowSaved | translate-fail -> translate-fail
+Object.values | /Users/assem/promo-app/src/graph/bind-jev.ts | askJev | lint-out -> lint-out
+Object.entries | /Users/assem/Documents/GitHub/nexus/apps/backend/src/chats/services/chat-assistant/constants/agent-runner.source.ts | buildResultUsagePayload | translated -> translated
+Object.entries | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard/components/performance/Filters.tsx | Filters | translate-fail -> translate-fail
+Object.entries | /Users/assem/Documents/GitHub/driftbench/packages/generate/src/gate/then.ts | blockCell | translate-fail -> translate-fail
+Object.entries | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-core/src/load/serializable.ts | Serializable.toJSON | lint-out -> lint-out
+Object.entries | /Users/assem/Documents/GitHub/nexus/apps/backend/src/pipedream/utils.ts | formatArraysForPipedream | translated -> translated
+Object.entries | /Users/assem/Documents/GitHub/n8n/packages/workflow/src/Extensions/ArrayExtensions.ts | mergeObjects | translated -> translated
+Object.entries | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/domain/src/structural-equality.ts | structurallyEqual | translated -> translated
+Object.entries | /Users/assem/Documents/GitHub/nexus/apps/backend/src/tools/tools-internal/action-utils.ts | createRequestDataFromAction | lint-out -> lint-out
+Object.entries | /Users/assem/Documents/GitHub/driftbench/packages/core/src/runner/assertion.ts | matchAssertion | lint-out -> lint-out
+Object.entries | /Users/assem/Documents/GitHub/n8n/packages/cli/src/ExternalSecrets/providers/vault.ts | VaultProvider.getSecretNames | translated -> translated
+Object.assign | /Users/assem/Documents/GitHub/n8n/packages/nodes-base/nodes/PhilipsHue/GenericFunctions.ts | philipsHueApiRequest | lint-out -> lint-out
+Object.assign | /Users/assem/Documents/GitHub/n8n/packages/nodes-base/nodes/OpenThesaurus/GenericFunctions.ts | openThesaurusApiRequest | lint-out -> lint-out
+Object.assign | /Users/assem/Documents/GitHub/n8n/packages/nodes-base/nodes/Nasa/GenericFunctions.ts | nasaApiRequest | lint-out -> lint-out
+Object.assign | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream/components/expensify/common/utils.ts | parseJson | lint-out -> lint-out
+Object.assign | /Users/assem/Documents/GitHub/nexus/apps/frontend/src/modules/Workflow/store/reducers/workflow.ts | updateNodeData | translated -> translated
+Object.assign | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-classic/src/output_parsers/combining.ts | CombiningOutputParser.parse | lint-out -> lint-out
+Object.assign | /Users/assem/Documents/GitHub/nexus/apps/backend/src/public/v1/mcp/infrastructure/catalog/build-tool-input-schema.ts | buildToolInputSchema | translate-fail -> translate-fail
+Object.assign | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-automations/worker/index.ts | startJob | lint-out -> lint-out
+Object.assign | /Users/assem/Documents/GitHub/nexus/apps/backend/src/tools/tools-internal/tool-agent-config-executor.ts | AgentToolConfigExecutor.processParameters | translate-fail -> translate-fail
+Object.assign | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui/src/blocks/fx/SelectionMerge.tsx | GlideBlockView | lint-out -> lint-out
+Object.freeze | /Users/assem/Documents/GitHub/nexus/apps/backend/src/chats/domain/value-objects/user-permissions.vo.ts | UserPermissions.member | translated -> translated
+Object.freeze | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-google/src/utils/gcp-auth.ts | normalizeGCPCredentials | translated -> translated
+Object.freeze | /Users/assem/Documents/GitHub/driftbench/packages/validators/src/ladder.ts | defineLadder | translated -> translated
+Object.freeze | /Users/assem/Documents/GitHub/n8n/packages/cli/src/WorkflowHelpers.ts | getVariables | lint-out -> lint-out
+Object.fromEntries | /Users/assem/Documents/GitHub/driftbench/packages/validators/src/floors.ts | sorted | translated -> translated
+Object.fromEntries | /Users/assem/promo-app/src/graph/bind-jev.ts | askJev | lint-out -> lint-out
+Object.fromEntries | /Users/assem/Documents/GitHub/nexus/apps/backend/src/admin-panel/application/admin-audit.service.ts | AdminAuditService.getStats | translated -> translated
+Object.fromEntries | /Users/assem/Documents/GitHub/driftbench/packages/core/src/runner/run.ts | endStateValue | translated -> translated
+Object.fromEntries | /Users/assem/Documents/GitHub/driftbench/packages/adapters/src/shared/bridge.ts | spawnExec | lint-out -> lint-out
+Object.fromEntries | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/schema/src/json-schema.ts | sortKeys | lint-out -> lint-out
+Object.fromEntries | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/tools/check-architecture/src/manifest.ts | stringRecord | translated -> translated
+Object.fromEntries | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/modules/chat/src/controls/model-picker-content.tsx | pickerModelsOf | translate-fail -> translate-fail
+Object.fromEntries | /Users/assem/Documents/GitHub/apps-starter/src/app/pdfExport.ts | exportViewPdf | lint-out -> lint-out
+Object.fromEntries | /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard/lib/read-models/booking.ts | parts | lint-out -> lint-out
+
+Scope decisions:
+Finite key chains preserve the datatype and optional fields. Unrestricted record strings remain refused until extra properties and prototypes have a representation.
+Unknown record enumeration uses a source-sensitive world transition: a pure oracle on structural values can falsely equate different insertion orders, including through one helper.
+Object.assign/freeze/fromEntries remain uninterpreted. No admission-growth claim is made.
+The stricter record-key check excludes AlertsCard, previously admitted with an opaque key on a declared record.
+An existing anonymous-record datatype-name collision (names hash only field names) appeared while probing different anonymous shapes with identical field names; this lane uses named OptionalRow and MixedRow and does not change the shared datatype naming scheme.
+
+Moving dev comparison:
+The lane started at 5ebf1d8065a7f8455c95bac180a4149861e61617. dev advanced to 7ae2b0f071cd9cb3eda15bb8fa71c72dc183c5b1 during this run.
+The following requested git diff --stat dev is a snapshot against that moving reference. Apparent removals of other lane files are not edits made by this commit. The lane commit itself changes 16 files.
+ README.md                                        |  55 +---
+ fixtures/escapes/ts/dynamic_record_effect_key.ts |   3 +
+ fixtures/escapes/ts/dynamic_record_method.ts     |   2 +
+ fixtures/escapes/ts/dynamic_record_prototype.ts  |   2 +
+ fixtures/escapes/ts/dynamic_record_string.ts     |   5 +
+ fixtures/escapes/ts/dynamic_record_write.ts      |   2 +
+ fixtures/escapes/ts/super_field.ts               |   8 -
+ langs/ts/CONCEPT-PLAN.md                         |   6 +-
+ langs/ts/COVERAGE.md                             |  20 +-
+ langs/ts/common.mjs                              |   8 +-
+ langs/ts/design/dynamic-record-reads.md          |  70 +++++
+ langs/ts/design/heap-layer-census.json           | 271 -----------------
+ langs/ts/design/heap-layer-census.mjs            | 161 ----------
+ langs/ts/design/heap-layer-toy.dfy               |  87 ------
+ langs/ts/design/heap-layer-toy.mjs               |  62 ----
+ langs/ts/design/heap-layer.md                    | 200 ------------
+ langs/ts/exec/run.mjs                            |   5 -
+ langs/ts/lint/lint.mjs                           |  32 +-
+ langs/ts/subset.md                               |  14 +-
+ langs/ts/tests/pairs/class_new/candidate.ts      |  59 ----
+ langs/ts/tests/pairs/class_new/expect.json       |  33 --
+ langs/ts/tests/pairs/class_new/parent.ts         |  58 ----
+ langs/ts/tests/pairs/class_super/base.ts         |   6 -
+ langs/ts/tests/pairs/class_super/candidate.ts    |  22 --
+ langs/ts/tests/pairs/class_super/expect.json     |  20 --
+ langs/ts/tests/pairs/class_super/parent.ts       |  22 --
+ langs/ts/tests/pairs/counter/expect.json         |  22 +-
+ langs/ts/tests/pairs/dynamic_reads/base.ts       |   2 +
+ langs/ts/tests/pairs/dynamic_reads/candidate.ts  |  22 ++
+ langs/ts/tests/pairs/dynamic_reads/expect.json   |  63 ++++
+ langs/ts/tests/pairs/dynamic_reads/parent.ts     |  28 ++
+ langs/ts/tests/pairs/for_each/expect.json        |   6 +-
+ langs/ts/tests/pairs/function_values/expect.json |   6 +-
+ langs/ts/tests/pairs/logic_values/expect.json    |  28 +-
+ langs/ts/tests/pairs/promise_forms/expect.json   |  25 +-
+ langs/ts/tests/pairs/service/expect.json         |   6 +-
+ langs/ts/tests/pairs/try_catch/expect.json       |   6 +-
+ langs/ts/translate/translate.mjs                 | 207 ++++++-------
+ results-bench/dynamic-record-reads.txt           | 371 +++++++++++++++++++++++
+ 39 files changed, 736 insertions(+), 1289 deletions(-)
+
+Lane changes against its starting commit (before this evidence appendix):
+ fixtures/escapes/ts/dynamic_record_effect_key.ts |   3 +
+ fixtures/escapes/ts/dynamic_record_method.ts     |   2 +
+ fixtures/escapes/ts/dynamic_record_prototype.ts  |   2 +
+ fixtures/escapes/ts/dynamic_record_string.ts     |   5 +
+ fixtures/escapes/ts/dynamic_record_write.ts      |   2 +
+ langs/ts/CONCEPT-PLAN.md                         |   2 +-
+ langs/ts/COVERAGE.md                             |   6 +-
+ langs/ts/design/dynamic-record-reads.md          |  70 +++++
+ langs/ts/lint/lint.mjs                           |  29 +-
+ langs/ts/subset.md                               |   8 +-
+ langs/ts/tests/pairs/dynamic_reads/base.ts       |   2 +
+ langs/ts/tests/pairs/dynamic_reads/candidate.ts  |  22 ++
+ langs/ts/tests/pairs/dynamic_reads/expect.json   |  63 ++++
+ langs/ts/tests/pairs/dynamic_reads/parent.ts     |  28 ++
+ langs/ts/translate/translate.mjs                 |  98 +++++-
+ results-bench/dynamic-record-reads.txt           | 371 +++++++++++++++++++++++
+ 16 files changed, 686 insertions(+), 27 deletions(-)
