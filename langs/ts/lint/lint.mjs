@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits } from '../common.mjs';
 import { fileUsesReals } from '../common.mjs';
+import { moduleState, moduleLoader, inertModuleInit } from '../module-forms.mjs';
 import { ADVICE } from './advice.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
 
@@ -22,9 +23,9 @@ const TF = ts.TypeFlags;
 // version 3: an effect is a world transition, so I/O, the clock, randomness and the console are admitted as effects;
 // what stays out is dynamic code and the prototype chain, which no transition models
 const EFFECT_GLOBALS = {
-  eval: 'dynamic-eval', Function: 'dynamic-eval', Reflect: 'prototype', Proxy: 'prototype', globalThis: 'global-read', require: 'dynamic-eval', import: 'dynamic-eval',
+  eval: 'dynamic-eval', Function: 'dynamic-eval', Reflect: 'prototype', Proxy: 'prototype',
 };
-const EFFECT_WORLD = new Set(['Date', 'console', 'process', 'window', 'document', 'fetch', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'localStorage', 'sessionStorage', 'crypto', 'queueMicrotask', 'structuredClone', 'Object', 'Promise', 'Intl', 'TextEncoder', 'TextDecoder', 'URL', 'URLSearchParams', 'AbortController', 'Error', 'TypeError', 'RangeError', 'Symbol']);
+const EFFECT_WORLD = new Set(['globalThis', 'global', 'Date', 'console', 'process', 'window', 'document', 'fetch', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'localStorage', 'sessionStorage', 'crypto', 'queueMicrotask', 'structuredClone', 'Object', 'Promise', 'Intl', 'TextEncoder', 'TextDecoder', 'URL', 'URLSearchParams', 'AbortController', 'Error', 'TypeError', 'RangeError', 'Symbol']);
 // modules whose exports are effects by nature; everything else imported is an uninterpreted external
 const EFFECT_MODULES = /^(node:.*|fs|fs\/promises|path|os|http|https|http2|net|dns|tls|child_process|cluster|worker_threads|process|stream|crypto|readline|zlib|util|events|timers|timers\/promises|axios|node-fetch|undici|got|ioredis|redis|pg|mysql2?|mongodb|mongoose|@prisma\/client|knex|typeorm|sequelize|nodemailer|ws|socket\.io|express|fastify|@nestjs\/.*|@aws-sdk\/.*|aws-sdk|@google-cloud\/.*|openai|@anthropic-ai\/.*|stripe|twilio)$/;
 // pure library globals the translator models as externals (uninterpreted functions)
@@ -203,6 +204,10 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id)) return v(id, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
     if (o.kind === 'local' || o.kind === 'unit') return;
     if (o.kind === 'module' || o.kind === 'import' || o.kind === 'other' || o.kind === 'type') return; // externals
+    if (moduleState(checker, id, sf)) {
+      if (!(ts.getCombinedNodeFlags(o.decl) & ts.NodeFlags.Const) && !inertModuleInit(o.decl.initializer)) v(id, 'toplevel-effect', 'move the effectful module initializer into a function');
+      return;
+    }
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
     if ((Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined)) return v(id, (Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined), `\`${name}\` is outside the subset`);
     if (PURE_GLOBALS.has(name)) return;
@@ -350,7 +355,8 @@ export function lintFile(file, ranges = null, opts = {}) {
         const l = e.left;
         if (ts.isIdentifier(l)) {
           const o = declOf(l);
-          if (o.kind !== 'local') v(l, 'global-mutation', `assignment to \`${l.text}\`, which this function does not own`);
+          if (moduleState(checker, l, sf)) checkIdent(l);
+          if (o.kind !== 'local' && !moduleState(checker, l, sf)) v(l, 'global-mutation', `assignment to \`${l.text}\`, which this function does not own`);
           else if (isParam(o.decl)) v(l, 'param-assign', `parameter \`${l.text}\` is assigned; copy it to a local first`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `\`${l.text}\` is declared outside this callback; a callback cannot change it`);
         } else if (ts.isElementAccessExpression(l) && ts.isIdentifier(l.expression) && (isArrayExpr(l.expression) || nonNull(tOf(l.expression)).every(hasStringIndex))) {
@@ -384,7 +390,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasLocals.has(o.decl) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
-      if (o.kind !== 'local') v(e, 'global-mutation', `update of \`${e.operand.text}\`, which this function does not own`);
+      if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
+      if (o.kind !== 'local' && !moduleState(checker, e.operand, sf)) v(e, 'global-mutation', `update of \`${e.operand.text}\`, which this function does not own`);
       else if (isParam(o.decl)) v(e, 'param-assign', 'parameter is assigned; copy it to a local first');
       else if (!ownedHere(o.decl)) v(e, 'closure-mutation', 'a callback cannot change an outer variable');
       return;
@@ -392,6 +399,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
       const name = e.expression.name.text, r = e.expression.expression;
       const rt = tOf(r);
+      if (moduleState(checker, r, sf) && MUT_NAMES.has(name)) { checkIdent(r); return argsOf(e); }
       const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasLocals.has(declOf(r).decl);
       if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasLocals.has(declOf(r).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', `\`${r.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
       if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
@@ -471,6 +479,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     inner.arguments.forEach((a) => ts.isArrowFunction(a) ? callback(a, null) : expr(a));
     if (ts.isPropertyAccessExpression(inner.expression) && !ts.isIdentifier(inner.expression.expression)) { expr(inner.expression.expression); return; }
     const f = inner.expression;
+    if (moduleLoader(checker, inner, sf, current)) return;
     if (ts.isIdentifier(f)) return checkIdent(f, true);
     if (ts.isPropertyAccessExpression(f)) return expr(f.expression); // `await a?.m()`: the awaited call happens when a is present
     return v(e, 'async', 'awaited callee form is outside the subset');
@@ -620,6 +629,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     conditionalSpreadArgs(e);
     if (['useMemo', 'useCallback', 'useEffect'].includes(reactHook(checker, e))) reactCapture(e.arguments[0]);
     const f = e.expression;
+    if (moduleLoader(checker, e, sf, current)) return argsOf(e);
     if (e.questionDotToken) v(e, 'optional-chain', 'calling an optional function value is outside the subset');
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
@@ -1005,7 +1015,10 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isExportDeclaration(st) || ts.isExportAssignment(st)) continue;
     if (ts.isVariableStatement(st)) {
       if (st.declarationList.flags & ts.NodeFlags.Const) { if (inScope) { checkedDiagSpans.push(st); /* module constants are externals; their initialisers are not checked */ } continue; }
-      if (inScope) v(st, 'toplevel-state', 'module-level `let`/`var` is outside the subset');
+      if (inScope) for (const d of st.declarationList.declarations) {
+        if (!ts.isIdentifier(d.name)) v(d, 'toplevel-state', 'bind module state to a plain name');
+        else if (!inertModuleInit(d.initializer)) v(d, 'toplevel-effect', 'move the effectful module initializer into a function');
+      }
       continue;
     }
     if (!inScope) continue;
