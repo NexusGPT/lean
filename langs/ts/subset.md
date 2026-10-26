@@ -21,7 +21,7 @@ rules per package).
 
 | Part | Allowed | Example |
 |---|---|---|
-| Types | `number` (an exact `int`; `--real` for `real`), `bigint`, `boolean`, `string`, literal unions, enums, type parameters of the function | `function id<T>(x: T): T` |
+| Types | `number` (an exact `int`, or an exact `real` in a file with a float literal or a bare `/`), `bigint`, `boolean`, `string`, literal unions, enums, type parameters of the function | `function id<T>(x: T): T` |
 | Arrays | `T[]`, `readonly T[]`, `as const` lists, tuples, array-like interfaces (a match result) | `xs: readonly number[]` |
 | Records | any object type the compiler can list, from any file; an intersection; two types with the same fields are one datatype | `type Account = { readonly id: number; readonly balance: number }` |
 | Dictionaries | `{ [k: string]: V }`, `Record<string, V>`; read by a computed string key; assigned by key on a local | `counts[key] = 1` |
@@ -108,7 +108,7 @@ one, never proved equal and never proved different (the execution lane decides i
 | `closure-mutation`, `foreach` | a callback (not a loop body) changing a variable declared outside it; `forEach` with an async callback, which the function does not wait for | `xs.forEach(async (x) => { await f(x); })` |
 | `opaque-mutation` | a mutating method on an opaque value used as a value, or as a statement when a field of the same receiver is read later | `const n = list.push(x)` |
 | `function-value` | a function value as a bare expression (not a local const, a record field or a call argument) | `return (x) => x + 1` |
-| `division` | bare `/` on numbers (write `Math.floor(a / b)`), `/=`, `%=`, `**` | `x / 2` |
+| `division` | `/=`, `%=`, `**`; a bare `/` in an integer file (a file with no float literal and no `/` outside `Math.floor`) | `x /= 2` |
 | `loose-equality` | `==` and `!=` except against `null`/`undefined` | `a == b` |
 | `reference-equality` | `===` on arrays and records | `xs === ys` |
 | `string-order` | ordering strings | `a < b` on strings |
@@ -150,8 +150,10 @@ translator derives it.
 
 ## Modelling axioms
 
-- `number` is an exact integer (`int`) by default. A float literal is refused. With `--real`, `number` is a Dafny
-  `real`, exact decimal arithmetic, not IEEE 754. Neither choice models overflow, `NaN` or rounding.
+- `number` is an exact integer (`int`) in a file with no float literal and no bare `/`; a file with either is a real
+  file: `number` is a Dafny `real`, exact decimal arithmetic, not IEEE 754 (`--real` forces it). Neither choice models
+  overflow, `NaN` or rounding: an algebraic rewrite is proved equal on exact reals and can differ on doubles; the
+  execution lane runs on doubles and its WITNESS stands. A PASS-proved on a real unit is a fact about exact arithmetic.
 - `undefined` and `null` are one value (`None`).
 - Array access outside the bounds is a proof obligation, not `undefined`. A dictionary read of an absent key is
   `ext_absent_V()`.

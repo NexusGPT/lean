@@ -326,3 +326,20 @@ export function originOf(checker, id, sf, current) {
   if (ts.isTypeAliasDeclaration(decl) || ts.isInterfaceDeclaration(decl) || ts.isEnumDeclaration(decl)) return { kind: 'type', sym: s, decl };
   return { kind: 'module-mutable', sym: s, decl };
 }
+
+/** a file is REAL when a unit of it has a float literal or a bare `/` (not under Math.floor/Math.trunc): its numbers are
+ * Dafny reals (exact decimals, not IEEE 754); every other file is an integer file. The lint and the translator both
+ * decide by this, so the editor's rule and the proof lane agree. */
+export function fileUsesReals(sf) {
+  let real = false;
+  const underFloor = (n) => { for (let p = n.parent; p; p = p.parent) { if (ts.isCallExpression(p) && ts.isPropertyAccessExpression(p.expression) && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Math' && (p.expression.name.text === 'floor' || p.expression.name.text === 'trunc') && p.arguments[0] && (p.arguments[0] === n || p.arguments[0].pos <= n.pos && n.end <= p.arguments[0].end)) return true; if (ts.isStatement(p) || ts.isFunctionLike(p)) return false; } return false; };
+  const w = (n) => {
+    if (real) return;
+    if (ts.isTypeNode(n) || ts.isDecorator(n)) return;
+    if (ts.isNumericLiteral(n) && /[.eE]/.test(n.text) && !/^0[xXoObB]/.test(n.text)) { real = true; return; }
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.SlashToken && !underFloor(n)) { real = true; return; }
+    ts.forEachChild(n, w);
+  };
+  w(sf);
+  return real;
+}

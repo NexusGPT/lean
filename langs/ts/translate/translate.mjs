@@ -28,7 +28,7 @@
 // Exit 0: file written. Exit 1: outside the subset, or not covered by the translator.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals } from '../common.mjs';
 import { lintFile } from '../lint/lint.mjs';
 
 const K = ts.SyntaxKind;
@@ -51,9 +51,10 @@ const wrapLet = (s) => (/^\s*var /.test(s) ? `(\n${indentBlock(s)}\n)` : s);
 const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0; return h.toString(36); };
 
 export function translate(file, fnName, opts = {}) {
-  const { real = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null } = opts;
+  const { real: realFlag = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
   const { sf, checker } = loadProgram(file, { project });
+  const real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs)
   const fns = topLevelFunctions(sf);
   const target = fnName ? fns.get(fnName) : null;
   if (fnName && !target) throw new Unsupported(`no top-level function named ${fnName} in ${file}`);
@@ -798,6 +799,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function binary(n) {
     const op = n.operatorToken.kind;
+    if (op === K.AsteriskAsteriskToken) return `${external('pow', [NUM, NUM], NUM)}(${expr(n.left)}, ${expr(n.right)})`; // a power: uninterpreted, the same on both sides
     const isNul = (e) => e.kind === K.NullKeyword || (ts.isIdentifier(e) && e.text === 'undefined');
     const eqOps = new Set([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken]);
     if (eqOps.has(op) && (isNul(n.left) || isNul(n.right))) {
@@ -847,7 +849,7 @@ export function translate(file, fnName, opts = {}) {
     if (op === K.InstanceOfKeyword) return `${external(`instanceof_${mangle(n.right.getText(sf))}`, [anyType()], 'bool')}(${expr(n.left, anyTarget())})`;
     if (op === K.InKeyword) return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
     if (op === K.PercentToken) {
-      if (real) fail(n, '`%` in real mode is not translated');
+      if (real) return `${external('mod_real', ['real', 'real'], 'real')}(${expr(n.left)}, ${expr(n.right)})`; // JavaScript's truncated remainder on reals: an uninterpreted function of both sides
       return `${helper('JsRem', ['int'])}(${expr(n.left)}, ${expr(n.right)})`;
     }
     if (op === K.SlashToken) {
@@ -1102,10 +1104,11 @@ export function translate(file, fnName, opts = {}) {
       const tuple = srcType && checker.isTupleType(baseOf(srcType)) && !dtype(baseOf(srcType), pattern).startsWith('seq<');
       pattern.elements.forEach((el, i) => {
         if (ts.isOmittedExpression(el)) return;
-        if (el.dotDotDotToken) fail(el, 'a rest element is not translated');
         const opaque = srcType && isAny(srcType);
         const elT = ts.isIdentifier(el.name) ? typeOf(el.name) : null;
-        const code = opaque ? `${external(`Any_at_${i}`, ['Any'], elT && !isAny(elT) ? dtype(elT, el) : anyType())}(${sourceCode})` : tuple ? `${sourceCode}.${i}` : `${sourceCode}[${i}]`; // an opaque source: element i is an uninterpreted accessor
+        if (el.dotDotDotToken) { if (tuple || opaque) fail(el, 'a rest element of a tuple or an opaque value is not translated'); if (ts.isIdentifier(el.name)) out.push(`var ${dn(el.name.text)} := if ${i} <= |${sourceCode}| then ${sourceCode}[${i}..] else [];`); else out.push(...destructure(el.name, `${sourceCode}[${i}..]`)); return; }
+        let code = opaque ? `${external(`Any_at_${i}`, ['Any'], elT && !isAny(elT) ? dtype(elT, el) : anyType())}(${sourceCode})` : tuple ? `${sourceCode}.${i}` : `${sourceCode}[${i}]`; // an opaque source: element i is an uninterpreted accessor
+        if (el.initializer && !tuple && !opaque) { const dT = elT ?? typeOf(el.initializer); code = `(if ${i} < |${sourceCode}| then ${sourceCode}[${i}] else ${outerParens(expr(el.initializer, dT))})`; } // `[a = d]`: the default past the end
         if (ts.isIdentifier(el.name)) out.push(`var ${dn(el.name.text)} := ${code};`);
         else out.push(...destructure(el.name, code));
       });
@@ -1270,6 +1273,13 @@ export function translate(file, fnName, opts = {}) {
     const sig = checker.getResolvedSignature(n);
     const out = [];
     callee.params.forEach((p, i) => {
+      if (p.dotDotDotToken) { // a rest parameter: the remaining arguments as one sequence (a single spread passes it as it is)
+        const restArgs = n.arguments.slice(i);
+        const rt = typeOf(p.name); const et = isArrayLike(checker, rt) ? (checker.getTypeArguments(rt)[0] ?? checker.getIndexTypeOfType(rt, ts.IndexKind.Number)) : null;
+        if (restArgs.length === 1 && ts.isSpreadElement(restArgs[0])) { out.push(seqOf(restArgs[0].expression)); return; }
+        if (restArgs.some((x) => ts.isSpreadElement(x))) fail(n, 'a spread among other arguments is not translated');
+        out.push(`[${restArgs.map((x) => outerParens(expr(x, et ?? undefined))).join(', ')}]`); return;
+      }
       const a = n.arguments[i];
       const pt = sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a ?? n) : typeOf(p.name);
       if (p.initializer && ts.isIdentifier(p.name)) { usesOption = true; out.push(a ? `Some(${outerParens(expr(a, pt))})` : 'None'); return; }
@@ -1693,6 +1703,14 @@ export function translate(file, fnName, opts = {}) {
       const name = dn(e.left.text);
       const op = e.operatorToken.kind;
       if (op === K.EqualsToken) { const LT = letTypeOf(checker.getSymbolAtLocation(e.left)); return [e.left.text, outerParens(LT ? expr(e.right) : expr(e.right, typeOf(e.left)))]; } // an untyped let takes the value as it is; the var line lifts it
+      if (op === K.QuestionQuestionEqualsToken || op === K.BarBarEqualsToken || op === K.AmpersandAmpersandEqualsToken) {
+        // `x ??= v` keeps x when present; `x ||= v` keeps x when truthy; `x &&= v` takes v when x is truthy
+        const lt = typeOf(e.left); const td = isAny(lt) ? anyType() : dtype(lt, e); const rtp = typeOf(e.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, e);
+        const cur = ident(e.left); const val = convertD(outerParens(expr(e.right)), rd, td);
+        if (op === K.QuestionQuestionEqualsToken) { if (!isOptional(lt)) return [e.left.text, cur]; return [e.left.text, `(if ${name}.Some? then ${name} else ${val})`]; }
+        const t = truthy(e.left);
+        return [e.left.text, op === K.BarBarEqualsToken ? `(if ${outerParens(t)} then ${name} else ${val})` : `(if ${outerParens(t)} then ${val} else ${name})`];
+      }
       const sym = op === K.PlusEqualsToken ? '+' : op === K.MinusEqualsToken ? '-' : '*';
       return [e.left.text, `${name} ${sym} ${expr(e.right)}`];
     }

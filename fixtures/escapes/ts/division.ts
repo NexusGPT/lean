@@ -1,4 +1,6 @@
 // expect: division
-export function half(x: number): number {
-  return x / 2;
+export function halve(x: number): number {
+  let y = x;
+  y /= 2;
+  return y;
 }

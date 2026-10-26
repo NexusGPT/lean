@@ -21,9 +21,9 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | integer arithmetic `+ - * %` | 30,195 binary expressions | exact (`int`) | same | done |
-| `/` division | 1,399 | refused (`division`) unless under `Math.floor`/`Math.trunc` | real division on `real`, or integer division when the result is floored: pick by the enclosing operation | gap |
-| float literal, IEEE double | 1,205 | refused in `int` mode; exact `real` with `--real` | a per-unit choice: a unit with a float literal or a `/` is a real unit; neither models rounding, overflow, `NaN`, `-0` | partial |
-| `**` | 46 | refused (`unsupported-operator`) | `Pow(int, nat)` helper, uninterpreted on reals | gap |
+| `/` division | 1,399 | exact in a real file (dev); in an integer file only under `Math.floor`/`Math.trunc` | same | done (dev) |
+| float literal, IEEE double | 1,205 | a FILE with a float literal or a bare `/` is a real file: its numbers are exact reals (dev); no flag needed | the same, stated with its caveat: an algebraic rewrite is proved equal on exact reals and can differ on doubles; lane B runs on doubles and its WITNESS stands, so a PASS-proved on a real unit is a fact about exact arithmetic, never about rounding | done (dev), caveat stated |
+| `**` | 46 | an uninterpreted power of both sides (dev) | exact `Pow` on integers | partial (dev) |
 | bitwise `& \| ^ ~ << >> >>>` | 128 | refused (`bitwise`) | exact on `bv32` with the JavaScript int32 coercion | gap |
 | `++ --` as statements | 1,223 postfix | exact | same | done |
 | `++`, assignment as a value | 116, 119 | refused | the value of the expression after the update | gap |
@@ -70,7 +70,7 @@ reading no value model can give; the lint says what to write instead).
 | `in` | 1,071 | uninterpreted | exact on a dictionary; by static type on a record | partial |
 | `x!` non-null | 501 | `.value` when optional | same | done |
 | optional chaining `a?.b`, `a?.m()` | 6,061, 493 | exact (Option propagation; a conditional transition for calls) | same | done |
-| `??`, `??=` | 7,882, 107 | `??` exact; `??=` refused | `??=` is `x = x ?? v` | gap (small) |
+| `??`, `??=`, `\|\|=`, `&&=` | 7,882, 107 | exact (dev): `x ??= v` keeps x when present, `\|\|=` keeps a truthy x, `&&=` takes v when x is truthy | same | done (dev) |
 | `as` casts, `satisfies` | 6,995, 105 | identity when the shapes agree, else uninterpreted cast | same | done |
 | `arguments` object | 133 | refused | by design (use rest parameters, section 3) | by design |
 
@@ -80,10 +80,10 @@ reading no value model can give; the lint says what to write instead).
 |---|---|---|---|---|
 | top-level function, arrow const, call | | exact | same | done |
 | default parameters | 108 | exact (`Option` with the default filled) | same | done |
-| rest parameters `...xs` | 37 | refused (`param-form`) | a sequence parameter; a call with spread passes it | gap (small) |
-| spread in a call `f(...xs)` | 3,060 (with arrays) | refused in calls | exact when the callee has a rest parameter; uninterpreted call otherwise | gap (small) |
+| rest parameters `...xs` | 37 | a sequence parameter; the remaining arguments of a call form the sequence; a single spread passes it as it is (dev) | same | done (dev) |
+| spread in a call `f(...xs)` | 3,060 (with arrays) | exact to a same-file rest parameter (dev); refused elsewhere | an uninterpreted call for an external callee | partial (dev) |
 | destructuring, defaults in object patterns | 7,988, 241 | exact | same | done |
-| defaults in array patterns, rest patterns | 346 rest | refused | exact (`xs[i]` with a bound, `xs[i..]`) | gap (small) |
+| defaults in array patterns, rest patterns | 346 rest | exact on arrays (dev): a default past the end, a rest element as the tail; a rest pattern on a record stays refused | a record rest as the record without those fields | done (dev) for arrays |
 | nested function value (arrow) as a callback to an array method | 14,867 nested values | exact lambda when pure | same | done |
 | callback with an effect inside (`xs.map(async (x) => await f(x))`, `forEach` with a call) | 2,209 async callbacks | `forEach` with a sync arrow is a loop over the sequence (dev 364eb1e; a `return` ends one step); an async `forEach` callback is refused with the bug named (`forEach` does not wait); other callbacks with effects stay opaque values by text | `map`/`filter` with effects under `Promise.all` as a loop producing a sequence | partial |
 | closure that assigns an outer variable | 65 | refused (`closure-mutation`) | the loop reading above when the callback is a loop body; by design otherwise | partial |
@@ -207,8 +207,8 @@ Of 316 lint-admitted units in 120 sampled nexus files, 272 translate (86.1 perce
 2. `super` calls (115 units); the clock read of `new Date()` is done on dev.
 3. Done on dev: `&&`/`||` as mixed-type values, `??` lifting, effects in conditional branches and on the right of a logic operator.
 4. `.then` chains and `new Promise` as readings instead of transitions with opaque handlers: 1,086 + 368; `Promise.all` is done on dev.
-5. Division and floats per unit (`/` 1,399 units, float literals 1,205): a real unit when it uses either.
-6. `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `for..in`, fall-through, `**`, bitwise on `bv32`: small each, about 2,000 units together.
+5. Done on dev: division and floats per file (`/` 1,399 units, float literals 1,205); `**`, bitwise and `NaN` remain.
+6. Done on dev: `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `**`. Left: `for..in`, labels, fall-through, bitwise on `bv32`.
 7. Exceptions across same-file calls (`Result` channel) and `try`/`finally`.
 8. Generators, async iterators, iterator protocol: 488 units.
 9. The heap layer: aliases (4,620 locals bound to another name), objects from the world, `===` on objects.

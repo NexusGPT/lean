@@ -103,11 +103,12 @@ for (const c of cases) {
   }
 }
 
-// ----- the number-as-int gap: a float literal is refused unless --real -----
+// ----- numbers per file: a float literal makes the file real; --real forces it -----
 {
   const f = path.join(casesDir, 'float_literal.ts');
   const t = run('node', [translate, f, '--fn', 'drift', '--out', path.join(tmp, 'drift.dfy')]);
-  add('construct', 'float_literal', 'int mode refuses 0.1', t.status === 1 && /not an integer/.test(t.stderr), t.status === 1 ? 'refused' : 'TRANSLATED');
+  const driftDfy = t.status === 0 && fs.existsSync(path.join(tmp, 'drift.dfy')) ? fs.readFileSync(path.join(tmp, 'drift.dfy'), 'utf8') : '';
+  add('construct', 'float_literal', 'a float literal makes the file real', t.status === 0 && /:\s*real\b/.test(driftDfy), t.status === 0 ? (/:\s*real\b/.test(driftDfy) ? 'real' : 'int') : 'refused');
   const r = run('node', [translate, f, '--fn', 'drift', '--out', path.join(tmp, 'drift_real.dfy'), '--real']);
   add('construct', 'float_literal', '--real accepts 0.1', r.status === 0, r.status === 0 ? 'translated' : r.stderr.trim());
 }

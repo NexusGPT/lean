@@ -1,0 +1,21 @@
+{
+ "scope": [
+  "average",
+  "vat",
+  "discounted",
+  "pages"
+ ],
+ "equal": {
+  "average": true,
+  "vat": true,
+  "discounted": true,
+  "pages": false
+ },
+ "why": "a real file (bare / and a float literal): vat and discounted are algebraic rewrites, proved equal on exact reals by lane A and witnessed on IEEE doubles by lane B (rounding differs); pages changes the rounding; average is untouched. The execution lane's verdict stands: PASS-proved on a real unit is a fact about exact arithmetic",
+ "b": {
+  "average": "PASS-bounded",
+  "vat": "WITNESS",
+  "discounted": "WITNESS",
+  "pages": "WITNESS"
+ }
+}

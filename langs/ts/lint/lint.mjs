@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits } from '../common.mjs';
+import { fileUsesReals } from '../common.mjs';
 import { ADVICE } from './advice.mjs';
 
 const K = ts.SyntaxKind;
@@ -54,6 +55,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200) });
   };
   const tOf = (n) => checker.getTypeAtLocation(n);
+  const fileReal = fileUsesReals(sf); // a real file: `/` is real division, the translator's numbers are reals
   // a union of literals ("" | "-") is as much a string as `string` is
   const isStr = (t) => !!(t.flags & TF.StringLike) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike));
   const isNum = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike)) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & (TF.NumberLike | TF.BigIntLike)));
@@ -211,8 +213,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isIdentifier(name)) { outNames.push(name); return; }
     for (const el of name.elements) {
       if (ts.isOmittedExpression(el)) continue;
-      if (el.dotDotDotToken) { v(el, 'destructuring', 'rest patterns are outside the subset'); continue; }
-      if (el.initializer) { if (ts.isArrayBindingPattern(name)) { v(el, 'destructuring', 'default values in array patterns are outside the subset'); continue; } expr(el.initializer); } // `{ a = d }`: the default applies when the field is absent
+      if (el.dotDotDotToken) { if (!ts.isArrayBindingPattern(name)) { v(el, 'destructuring', 'a rest pattern on a record is outside the subset'); continue; } bindingNames(el.name, outNames); continue; } // `[a, ...rest]`: the tail of the sequence
+      if (el.initializer) { expr(el.initializer); } // `{ a = d }` / `[a = d]`: the default applies when the field is absent
       bindingNames(el.name, outNames);
     }
   }
@@ -245,7 +247,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isDeleteExpression(e)) return expr(e); // `delete r.f` as a statement
     if (ts.isBinaryExpression(e)) {
       const op = e.operatorToken.kind;
-      if (op === K.EqualsToken || op === K.PlusEqualsToken || op === K.MinusEqualsToken || op === K.AsteriskEqualsToken) {
+      if (op === K.EqualsToken || op === K.PlusEqualsToken || op === K.MinusEqualsToken || op === K.AsteriskEqualsToken || op === K.QuestionQuestionEqualsToken || op === K.BarBarEqualsToken || op === K.AmpersandAmpersandEqualsToken) {
         const l = e.left;
         if (ts.isIdentifier(l)) {
           const o = declOf(l);
@@ -464,10 +466,10 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (op === K.EqualsToken || (op >= K.FirstAssignment && op <= K.LastAssignment)) return v(e, 'assignment-expression', 'assignment is a statement only');
     if (op === K.SlashToken) {
       const lt = tOf(e.left), rt = tOf(e.right);
-      if (floorDepth === 0 && !(lt.flags & TF.BigIntLike)) return v(e, 'division', '`/` on numbers is real division; write Math.floor(a / b) for integer division');
+      if (floorDepth === 0 && !(lt.flags & TF.BigIntLike) && !fileReal) return v(e, 'division', '`/` on numbers is real division; write Math.floor(a / b) for integer division');
       expr(e.left); return expr(e.right);
     }
-    if (op === K.AsteriskAsteriskToken) return v(e, 'unsupported-operator', '`**` is outside the subset');
+    if (op === K.AsteriskAsteriskToken) { expr(e.left); expr(e.right); return; } // a power: an uninterpreted function of both sides
     if (op === K.EqualsEqualsToken || op === K.ExclamationEqualsToken) {
       const nul = (x) => x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined');
       if (nul(e.left) || nul(e.right)) { expr(e.left); return expr(e.right); } // `x == null` is the absence test
@@ -504,10 +506,10 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (o.kind === 'local') return argsOf(e); // a function-typed parameter or local
       if (o.kind === 'unit') {
         const u = units.get(f.text);
-        if (u && !e.arguments.some(ts.isSpreadElement)) { const req = u.params.filter((p) => !p.initializer && !p.questionToken && !p.dotDotDotToken).length; if (e.arguments.length < req || e.arguments.length > u.params.length) v(e, 'unsupported-call', `${f.text} takes ${req === u.params.length ? req : `${req} to ${u.params.length}`} arguments`); }
+        if (u && !e.arguments.some(ts.isSpreadElement) && !u.params.some((p) => p.dotDotDotToken)) { const req = u.params.filter((p) => !p.initializer && !p.questionToken && !p.dotDotDotToken).length; if (e.arguments.length < req || e.arguments.length > u.params.length) v(e, 'unsupported-call', `${f.text} takes ${req === u.params.length ? req : `${req} to ${u.params.length}`} arguments`); }
         if (u && u.isAsync && !(e.parent && ts.isAwaitExpression(e.parent))) v(e, 'async', 'an async unit is called without await');
       }
-      if (o.kind === 'unit') { e.arguments.forEach((a) => { if (ts.isSpreadElement(a)) v(a, 'spread', 'spread arguments are outside the subset'); else if (!ts.isArrowFunction(a)) expr(a); else v(a, 'function-value', 'a same-file function takes values, not callbacks'); }); return; }
+      if (o.kind === 'unit') { const uRest = units.get(e.expression.text); const restOk = !!(uRest && uRest.params.some((p) => p.dotDotDotToken)); e.arguments.forEach((a, i) => { if (ts.isSpreadElement(a)) { if (restOk && i === uRest.params.length - 1 && isArrayExpr(a.expression)) expr(a.expression); else v(a, 'spread', 'a spread argument goes to a rest parameter, as the last argument'); } else if (!ts.isArrowFunction(a)) expr(a); else v(a, 'function-value', 'a same-file function takes values, not callbacks'); }); return; }
       return argsOf(e);
     }
     if (ts.isPropertyAccessExpression(f)) {
@@ -692,7 +694,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (!u.isAsync && isPromiseT(rt)) v(st, 'promise', 'a Promise-returning function must be async');
       checkType(inner, u.typeNode ?? st);
       for (const p of u.params) {
-        if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset');
+        if (p.dotDotDotToken && !isArrayExpr(p.name)) v(p, 'param-form', 'a rest parameter is an array');
         if (p.initializer) expr(p.initializer);
         const names = []; bindingNames(p.name, names);
         checkType(tOf(p.name), p);
@@ -723,7 +725,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (!u.isAsync && isPromiseT(rt)) v(u.node, 'promise', 'a Promise-returning method must be async');
         checkType(inner, u.typeNode ?? u.node);
         for (const p of u.params) {
-          if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset');
+          if (p.dotDotDotToken && !isArrayExpr(p.name)) v(p, 'param-form', 'a rest parameter is an array');
           if (p.initializer) expr(p.initializer);
           const names = []; bindingNames(p.name, names);
           checkType(tOf(p.name), p);
