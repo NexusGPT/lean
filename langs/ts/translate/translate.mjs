@@ -538,6 +538,69 @@ export function translate(file, fnName, opts = {}) {
       case 'Flat': text = `function ${name}(s: seq<seq<${A}>>): seq<${A}>
   decreases |s|
 { if |s| == 0 then [] else s[0] + ${name}(s[1..]) }`; break;
+      case 'StrSpace': text = `function ${name}(c: char): bool
+{ var n := c as int; 9 <= n <= 13 || n in {32, 160, 5760, 8232, 8233, 8239, 8287, 12288, 65279} || 8192 <= n <= 8202 }`; break;
+      case 'TrimStart': text = `function ${name}(s: string): string decreases |s|
+{ if |s| > 0 && ${helper('StrSpace', ['char'])}(s[0]) then ${name}(s[1..]) else s }`; break;
+      case 'TrimEnd': text = `function ${name}(s: string): string decreases |s|
+{ if |s| > 0 && ${helper('StrSpace', ['char'])}(s[|s| - 1]) then ${name}(s[..|s| - 1]) else s }`; break;
+      case 'Trim': text = `function ${name}(s: string): string
+{ ${helper('TrimEnd', ['string'])}(${helper('TrimStart', ['string'])}(s)) }`; break;
+      case 'IsAscii': text = `function ${name}(s: string): bool
+{ forall c :: c in s ==> (c as int) < 128 }`; break;
+      case 'AsciiLower': case 'AsciiUpper': {
+        const lower = kind === 'AsciiLower';
+        text = `function ${name}(s: string): string decreases |s|
+{ if |s| == 0 then "" else [if '${lower ? 'A' : 'a'}' <= s[0] <= '${lower ? 'Z' : 'z'}' then ((s[0] as int) ${lower ? '+' : '-'} 32) as char else s[0]] + ${name}(s[1..]) }`; break;
+      }
+      case 'Lower': case 'Upper': text = `function ${name}(s: string): string
+{ if ${helper('IsAscii', ['string'])}(s) then ${helper(kind === 'Lower' ? 'AsciiLower' : 'AsciiUpper', ['string'])}(s) else ${external(kind === 'Lower' ? 'str_toLowerCase' : 'str_toUpperCase', ['string'], 'string')}(s) }`; break;
+      case 'StrLt': text = `function ${name}(s: string, t: string): bool decreases |s| + |t|
+{ if |t| == 0 then false else if |s| == 0 then true else if s[0] == t[0] then ${name}(s[1..], t[1..]) else (s[0] as int) < (t[0] as int) }`; break;
+      case 'StrClamp': text = `function ${name}(p: int, n: nat): (r: nat)
+  ensures r <= n
+{ if p < 0 then 0 else if p > n then n else p }`; break;
+      case 'StrFind': text = `function ${name}(s: string, t: string, p: nat): (r: int)
+  ensures r == -1 || p <= r <= |s| - |t|
+  decreases |s| - p
+{ if p + |t| > |s| then -1 else if s[p..p + |t|] == t then p else ${name}(s, t, p + 1) }`; break;
+      case 'StrLast': text = `function ${name}(s: string, t: string, p: int): (r: int)
+  requires p <= |s|
+  ensures r == -1 || (0 <= r <= p && r + |t| <= |s|)
+  decreases p
+{ if p < 0 then -1 else if p + |t| <= |s| && s[p..p + |t|] == t then p else ${name}(s, t, p - 1) }`; break;
+      case 'StrEnds': text = `function ${name}(s: string, t: string, p: int): bool
+{ var e := ${helper('StrClamp', ['int'])}(p, |s|); |t| <= e && s[e - |t|..e] == t }`; break;
+      case 'StrSplit': text = `function ${name}(s: string, sep: string): seq<string> decreases |s|
+{ if |sep| == 0 then seq(|s|, (i: int) requires 0 <= i < |s| => [s[i]])
+  else var p := ${helper('StrFind', ['string'])}(s, sep, 0);
+    if p < 0 then [s] else [s[..p]] + ${name}(s[p + |sep|..], sep) }`; break;
+      case 'PadFill': text = `function ${name}(pad: string, n: nat): (r: string)
+  requires |pad| > 0
+  ensures |r| == n
+{ seq(n, (i: int) requires 0 <= i < n => pad[i % |pad|]) }`; break;
+      case 'PadStart': case 'PadEnd': {
+        const fill = `${helper('PadFill', ['string'])}(pad, target - |s|)`;
+        text = `function ${name}(s: string, n: int, pad: string): string
+{ var target := if n > 9007199254740991 then 9007199254740991 else n; if target <= |s| || |pad| == 0 then s else ${kind === 'PadStart' ? `${fill} + s` : `s + ${fill}`} }`; break;
+      }
+      case 'StrSubstitution': text = `function ${name}(s: string, p: nat, width: nat, r: string): string
+  requires p + width <= |s|
+  decreases |r|
+{ if |r| == 0 then "" else if |r| >= 2 && r[0] == '$' && (r[1] as int) in {36, 38, 96, 39} then
+    (if r[1] == '$' then "$" else if r[1] == '&' then s[p..p + width] else if (r[1] as int) == 96 then s[..p] else s[p + width..]) + ${name}(s, p, width, r[2..])
+  else [r[0]] + ${name}(s, p, width, r[1..]) }`; break;
+      case 'StrReplace': text = `function ${name}(s: string, pat: string, r: string, start: nat, all: bool): string
+  requires start <= |s|
+  decreases |s| - start
+{ var p := ${helper('StrFind', ['string'])}(s, pat, start); if p < 0 then s[start..] else s[start..p] + ${helper('StrSubstitution', ['string'])}(s, p, |pat|, r) + (if !all then s[p + |pat|..] else if |pat| > 0 then ${name}(s, pat, r, p + |pat|, all) else if p == |s| then "" else [s[p]] + ${name}(s, pat, r, p + 1, all)) }`; break;
+      case 'StrSubstring': text = `function ${name}(s: string, a: int, b: int): string
+{ var lo := ${helper('StrClamp', ['int'])}(a, |s|); var hi := ${helper('StrClamp', ['int'])}(b, |s|);
+  if lo <= hi then s[lo..hi] else s[hi..lo] }`; break;
+      case 'StrCharAt': text = `function ${name}(s: string, p: int): string
+{ if 0 <= p < |s| then [s[p]] else "" }`; break;
+      case 'StrAt': usesOption = true; text = `function ${name}(s: string, p: int): Option<string>
+{ var i := if p < 0 then |s| + p else p; if 0 <= i < |s| then Some([s[i]]) else None }`; break;
       case 'Includes': text = `function ${name}(s: string, t: string): bool
 { exists i :: 0 <= i <= |s| - |t| && s[i..i + |t|] == t }`; break;
       case 'IndexOfStr': text = `function ${name}(s: string, t: string): int
@@ -618,7 +681,10 @@ export function translate(file, fnName, opts = {}) {
     if (td.startsWith('Option<') && fd.startsWith('Option<')) { usesOption = true; const v = `o_${hash(code).slice(0, 4)}`; return `(var ${v} := ${code}; if ${v}.Some? then Some(${convertD(`${v}.value`, innerOf(fd), innerOf(td))}) else None)`; }
     return `${external(`cast_${mangle(fd)}_${mangle(td)}`, [fd], td)}(${code})`;
   }
-  const strEsc = (s) => JSON.stringify(s);
+  const strEsc = (s) => {
+    if (/[\uD800-\uDFFF]/.test(s)) fail(sf, 'string-code-unit: use BMP scalar literals within the string model');
+    return '"' + Array.from(s, (c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) > 126 ? `\\U{${c.charCodeAt(0).toString(16)}}` : JSON.stringify(c).slice(1, -1)).join('') + '"';
+  };
 
   // JavaScript truthiness of a value used as a condition, by its static type
   function truthy(n) {
@@ -692,6 +758,9 @@ export function translate(file, fnName, opts = {}) {
     const t = typeOf(e);
     if ((t.flags & TF.StringLike) || ((t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike))) return expr(e);
     if (t.flags & TF.BooleanLike) return `(if ${expr(e)} then "true" else "false")`;
+    let lit = e; while (ts.isParenthesizedExpression(lit)) lit = lit.expression;
+    if (ts.isNumericLiteral(lit)) return strEsc(String(Number(lit.text)));
+    if (ts.isPrefixUnaryExpression(lit) && lit.operator === K.MinusToken && ts.isNumericLiteral(lit.operand)) return strEsc(String(-Number(lit.operand.text)));
     const id = external('to_string', [dtype(t, e)], 'string');
     return `${id}(${expr(e)})`;
   }
@@ -885,6 +954,10 @@ export function translate(file, fnName, opts = {}) {
       return `${external(`op_${names[o] ?? mangle(o)}_Any`, [A, A], rd)}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
     }
     const strT = (t) => !!(t.flags & TF.StringLike) || (!!(t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike));
+    if (['<', '>', '<=', '>='].includes(o) && strT(lt0) && strT(rt0)) {
+      const L = expr(n.left), R = expr(n.right), H = helper('StrLt', ['string']);
+      return o === '<' ? `${H}(${L}, ${R})` : o === '>' ? `${H}(${R}, ${L})` : o === '<=' ? `!${H}(${R}, ${L})` : `!${H}(${L}, ${R})`;
+    }
     if (o === '+' && !(isAny(lt0) || isAny(rt0)) && (strT(lt0) || strT(rt0)) && !(strT(lt0) && strT(rt0))) {
       return `(${stringOf(n.left)} + ${stringOf(n.right)})`;
     }
@@ -1338,6 +1411,7 @@ export function translate(file, fnName, opts = {}) {
         const args = n.arguments.map((a, i) => expr(a, sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined));
         return `${ident(f)}(${args.join(', ')})`;
       }
+      if (o.kind === 'global' && f.text === 'String' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike)) return stringOf(n.arguments[0]);
       return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
     }
     if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
@@ -1428,7 +1502,10 @@ export function translate(file, fnName, opts = {}) {
         case 'indexOf': return `${helper('IndexOf', [A()])}(${R}, ${expr(n.arguments[0], elemType(recv))})`;
         case 'slice': return `${helper('Slice', [A()])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '0'}, ${n.arguments[1] ? expr(n.arguments[1]) : `|${R}|`})`;
         case 'concat': return `(${[R, ...n.arguments.map(seqOf)].join(' + ')})`;
-        case 'join': return `${helper('Join', ['string'])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '","'})`;
+        case 'join':
+          return A() === 'string' && n.arguments.length <= 1 && (!n.arguments[0] || typeOf(n.arguments[0]).flags & TF.StringLike)
+            ? `${helper('Join', ['string'])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '","'})`
+            : externalCall('array_join', n, [...n.arguments], R, dtype(base, recv));
         case 'flat': return `${helper('Flat', [A().replace(/^seq<(.*)>$/, '$1')])}(${R})`;
         case 'at': return `${helper('At', [A()])}(${R}, ${expr(n.arguments[0])})`;
         case 'sort': return cb ? `${external(`sort_${mangle(A())}`, [`seq<${A()}>`, `(${A()}, ${A()}) -> ${NUM}`], `seq<${A()}>`)}(${R}, ${lambda(cb, 2)})` : `${external(`sort_default_${mangle(A())}`, [`seq<${A()}>`], `seq<${A()}>`)}(${R})`;
@@ -1436,20 +1513,48 @@ export function translate(file, fnName, opts = {}) {
         default: return fail(n, `array method .${name}() is not translated`);
       }
     }
-    if (base.flags & TF.StringLike) {
+    if ((base.flags & TF.StringLike) || (base.flags & TF.Union && base.types.every((t) => t.flags & TF.StringLike))) {
       const S = expr(recv);
-      const a0 = () => expr(n.arguments[0]);
+      let args;
+      // an exact call evaluates all arguments once, in source order
+      const arg = (i) => { if (!args) args = n.arguments.map((a) => expr(a)); return args[i]; };
+      const a0 = () => arg(0);
+      const str = (a) => a && !!(typeOf(a).flags & TF.StringLike);
+      const literal = (a) => a && (ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a));
+      const absent = (a) => !a || (ts.isIdentifier(a) && a.text === 'undefined');
+      const integer = (i) => real ? `(var p_ := ${arg(i)}; if p_ < 0.0 then -(-p_).Floor else p_.Floor)` : arg(i);
+      const pos = (i, fallback) => absent(n.arguments[i]) ? fallback : integer(i);
+      const numeric = (i) => absent(n.arguments[i]) || !!(typeOf(n.arguments[i]).flags & TF.NumberLike);
+      const fallback = () => externalCall(`str_${name}`, n, [...n.arguments], S, 'string');
       switch (name) {
-        case 'includes': return `${helper('Includes', ['string'])}(${S}, ${a0()})`;
-        case 'startsWith': return `(var tt_ := ${a0()}; |tt_| <= |${S}| && ${S}[..|tt_|] == tt_)`;
-        case 'endsWith': return `(var tt_ := ${a0()}; |tt_| <= |${S}| && ${S}[|${S}| - |tt_|..] == tt_)`;
-        case 'indexOf': return `${helper('IndexOfStr', ['string'])}(${S}, ${a0()})`;
-        case 'slice': case 'substring': return `${helper('Slice', ['char'])}(${S}, ${n.arguments[0] ? expr(n.arguments[0]) : '0'}, ${n.arguments[1] ? expr(n.arguments[1]) : `|${S}|`})`;
-        case 'charAt': return `${helper('Slice', ['char'])}(${S}, ${a0()}, ${a0()} + 1)`;
-        case 'at': return `${helper('At', ['char'])}(${S}, ${a0()})`;
-        case 'concat': return `(${[S, ...n.arguments.map((a) => expr(a))].join(' + ')})`;
+        case 'trim': case 'trimStart': case 'trimEnd':
+          return n.arguments.length ? fallback() : `${helper(name[0].toUpperCase() + name.slice(1), ['string'])}(${S})`;
+        case 'toLowerCase': case 'toUpperCase':
+          return n.arguments.length ? fallback() : `${helper(name === 'toLowerCase' ? 'Lower' : 'Upper', ['string'])}(${S})`;
+        case 'split':
+          return literal(n.arguments[0]) && n.arguments.length === 1 ? `${helper('StrSplit', ['string'])}(${S}, ${a0()})` : fallback();
+        case 'padStart': case 'padEnd':
+          if (!n.arguments[0] || !numeric(0) || !(absent(n.arguments[1]) || str(n.arguments[1])) || n.arguments.length > 2) return fallback();
+          return `${helper(name === 'padStart' ? 'PadStart' : 'PadEnd', ['string'])}(${S}, ${pos(0, '0')}, ${absent(n.arguments[1]) ? '" "' : arg(1)})`;
+        case 'replace': case 'replaceAll':
+          return n.arguments.length === 2 && literal(n.arguments[0]) && str(n.arguments[1]) ? `${helper('StrReplace', ['string'])}(${S}, ${a0()}, ${arg(1)}, 0, ${name === 'replaceAll'})` : fallback();
+        case 'includes': case 'indexOf': case 'lastIndexOf': case 'startsWith': case 'endsWith': {
+          if (!str(n.arguments[0]) || !numeric(1) || n.arguments.length > 2) return fallback();
+          const P = `${helper('StrClamp', ['int'])}(${pos(1, ['lastIndexOf', 'endsWith'].includes(name) ? `|${S}|` : '0')}, |${S}|)`;
+          if (name === 'endsWith') return `${helper('StrEnds', ['string'])}(${S}, ${a0()}, ${P})`;
+          if (name === 'startsWith') return `(var ss_ := ${S}; var tt_ := ${a0()}; var pp_ := ${P}; pp_ + |tt_| <= |ss_| && ss_[pp_..pp_ + |tt_|] == tt_)`;
+          const search = `${helper(name === 'lastIndexOf' ? 'StrLast' : 'StrFind', ['string'])}(${S}, ${a0()}, ${P})`;
+          return name === 'includes' ? `(${search} >= 0)` : real ? `(${search} as real)` : search;
+        }
+        case 'slice': case 'substring':
+          if (!numeric(0) || !numeric(1) || n.arguments.length > 2) return fallback();
+          return `${helper(name === 'slice' ? 'Slice' : 'StrSubstring', [name === 'slice' ? 'char' : 'string'])}(${S}, ${pos(0, '0')}, ${pos(1, `|${S}|`)})`;
+        case 'charAt': case 'at':
+          if (!numeric(0) || n.arguments.length > 1) return fallback();
+          return `${helper(name === 'at' ? 'StrAt' : 'StrCharAt', ['string'])}(${S}, ${pos(0, '0')})`;
+        case 'concat': return `(${[S, ...n.arguments.map(stringOf)].join(' + ')})`;
         case 'repeat': return `${helper('Repeat', ['string'])}(${S}, ${a0()})`;
-        default: return externalCall(`str_${name}`, n, [...n.arguments], S, 'string');
+        default: return fallback();
       }
     }
     if (isSetT(base)) {

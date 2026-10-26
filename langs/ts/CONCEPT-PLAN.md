@@ -37,7 +37,7 @@ One row per reading group. A group is DONE when its reading is in the translator
 | 10 | Generators and iterators | `function*`, `yield`, `for await`, `Symbol.iterator` | a bounded sequence; a loop of transitions; `next` transitions | `generators` | next |
 | 11 | Class forms | `super`, `new C()` of a same-file class, getter bodies, field of a field of `this`, module-level `let` | the parent's method; the constructor's record; the accessor's body; a path update; a world field | `class_forms` | next |
 | 12 | Exact type tests | `typeof`, `instanceof`, `in` by static type; `never`, `object`, symbols | exact where the checker decides; opaque otherwise (done for the types) | `type_tests` | types done (dev); exact tests next |
-| 13 | Strings | UTF-16 length and indexing, `trim`, case, `split`, `pad*`, ordering | a sequence of code units; exact common methods; ordering by code unit | `strings` | next |
+| 13 | Strings | UTF-16 length and indexing, `trim`, case, `split`, `pad*`, ordering | BMP scalar envelope stated as a model axiom; exact common helpers, guarded ASCII case, lexicographic ordering | `strings` | partial (lane); full UTF-16 remains |
 | 14 | React handler bodies | handler arrows in the subset, `useMemo`, `useCallback`, `useEffect` | the handler as a lambda; `useMemo(() => e)` is `e`; `useCallback(f)` is `f` | `jsx_handlers` | next |
 | 15 | Function values everywhere | returned, stored, compared functions; nested declarations (done); object literals with methods | opaque values keyed by text | `function_values` | nested declarations done (dev); the rest next |
 | 16 | Module forms | dynamic `import()`, `require()`, `globalThis` | transitions whose result is a module handle; the world | `module_forms` | next |

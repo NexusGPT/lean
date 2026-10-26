@@ -30,11 +30,11 @@ reading no value model can give; the lint says what to write instead).
 | `bigint` | 12 | exact (`int`) | same | done |
 | `NaN`, `Infinity`, `Number.isNaN` | 188 (`isNaN`) | `Number.*` uninterpreted | a real unit with the IEEE special values as an extended datatype | gap |
 | unary `+` coercion | 16 | refused (`unary-coercion`) | `ext_number_of(x)` uninterpreted | gap (small) |
-| string concatenation, template strings | 14,140 templates | exact; a non-string side is converted by `String(x)` uninterpreted | same | done |
-| string methods with a rule (`includes`, `slice`, `indexOf`, `startsWith`, `repeat`, `charAt`, `at`, `substring`, `concat`) | | exact | same | done |
-| string methods without a rule (`trim`, `toLowerCase`, `split`, `replace`, `padStart`, `localeCompare`, `normalize`) | | uninterpreted | exact for `trim`, `toLowerCase`/`toUpperCase` (ASCII), `split` on a literal, `padStart`/`padEnd`; the rest stay uninterpreted | gap (small) |
-| string length and indexing | | `\|s\|`, `s[i]` on Dafny `string` (a sequence of Unicode scalars under Dafny 4) | JavaScript counts UTF-16 code units: a string with an astral character has a different length; a faithful reading is a sequence of code units | gap (stated) |
-| string ordering `<` | | refused (`string-order`) | lexicographic by code unit, exact | gap (small) |
+| string concatenation, template strings | 14,140 templates | exact strings and booleans; numeric literals use JavaScript spelling; other conversions uninterpreted | exact within the stated value models | partial (lane) |
+| string methods with a rule (`includes`, `slice`, `indexOf`, `startsWith`, `repeat`, `charAt`, `at`, `substring`, `concat`) | | exact within the BMP envelope; positions retained, substring clamps and swaps | same within the model; full UTF-16 remains future work | done (lane), envelope stated |
+| string methods (`trim*`, case, `split`, `pad*`, `replace`, `replaceAll`, `lastIndexOf`, `endsWith`, string-array `join`) | | exact helpers within the BMP envelope; casing exact behind an ASCII guard, non-ASCII uninterpreted; literal split without limit; literal-pattern/string replacement including dollar substitutions | full Unicode case tables, general split/replace; `localeCompare` and `normalize` remain uninterpreted | partial (lane) |
+| string length and indexing | | Dafny `string`, with the explicit model axiom that all strings contain only BMP scalars (no surrogates); known out-of-envelope literals refused (`string-code-unit`); external strings assumed in-envelope | full UTF-16 code-unit sequences; current PASS-proved is conditional on the BMP axiom | partial (lane) |
+| string ordering `<`, `>`, `<=`, `>=` | | lexicographic `StrLt` by character value, exact by code unit within the BMP model axiom | full UTF-16 ordering | done (lane), envelope stated |
 | `==` loose equality | 398 | refused except against `null`/`undefined` | by design: the lint says `===` | by design |
 | `===` on primitives | 19,845 | exact | same | done |
 | `===` on objects and arrays | | refused (`reference-equality`) | by design in a value model; the heap layer (section 4) would give it an address reading | by design until the heap layer |

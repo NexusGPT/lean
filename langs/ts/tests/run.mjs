@@ -139,6 +139,13 @@ function differential(label, tsFile, entries) {
 for (const f of ['sum_positive', 'filter_then_sum']) differential(f, path.join(sharedDir, f, 'ts.ts'), [{ fn: theorems[f].fn, samples: theorems[f].samples }]);
 for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(casesDir, c.file), [{ fn: c.fn, samples: c.samples }]);
 
+// concrete string helpers, including whitespace, empty separators and replacement tokens
+{
+  const r = run('node', [path.join(here, 'strings/run.mjs'), path.join(tmp, 'string_helpers.dfy')]);
+  const text = (r.stdout ?? '') + (r.stderr ?? '');
+  add('construct', 'string_helpers', 'concrete Dafny assertions', r.status === 0, text.trim().split('\n').pop());
+}
+
 // ----- negative controls: a false theorem must NOT verify, in both shapes -----
 {
   const ts = path.join(root, 'fixtures/shared/sum_positive/ts.ts');

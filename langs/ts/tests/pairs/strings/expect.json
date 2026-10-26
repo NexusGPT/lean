@@ -1,0 +1,42 @@
+{
+ "scope": [
+  "slug",
+  "padded",
+  "maximum",
+  "untouched",
+  "unicode_case",
+  "split_limit",
+  "substitution",
+  "unicode_literal",
+  "search_term",
+  "search_position",
+  "argument_order"
+ ],
+ "equal": {
+  "slug": false,
+  "padded": true,
+  "maximum": false,
+  "untouched": true,
+  "unicode_case": false,
+  "split_limit": false,
+  "substitution": false,
+  "unicode_literal": false,
+  "search_term": true,
+  "search_position": true,
+  "argument_order": true
+ },
+ "why": "Literal split and ordering changes differ; padding by a loop preserves the result. Unicode case conversion, split limits and replacement dollar tokens cannot collapse to identity.",
+ "b": {
+  "slug": "WITNESS",
+  "padded": "PASS-bounded",
+  "maximum": "WITNESS",
+  "untouched": "PASS-bounded",
+  "unicodeCase": "WITNESS",
+  "splitLimit": "WITNESS",
+  "substitution": "WITNESS",
+  "unicodeLiteral": "WITNESS",
+  "searchTerm": "PASS-bounded",
+  "searchPosition": "PASS-bounded",
+  "argumentOrder": "PASS-bounded"
+ }
+}

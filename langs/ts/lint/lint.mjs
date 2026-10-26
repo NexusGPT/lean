@@ -379,6 +379,10 @@ export function lintFile(file, ranges = null, opts = {}) {
     return v(e, 'async', 'awaited callee form is outside the subset');
   }
 
+  function checkStringLiterals(n) {
+    if ((ts.isStringLiteral(n) || ts.isTemplateLiteralToken(n) || ts.isJsxText(n)) && /[\uD800-\uDFFF]/.test(n.text)) v(n, 'string-code-unit', 'use BMP scalar literals within the string model; astral and surrogate strings need lane B');
+    ts.forEachChild(n, checkStringLiterals);
+  }
   function expr(e) {
     switch (e.kind) {
       case K.Identifier: return checkIdent(e);
@@ -489,7 +493,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const ok = (isNum(lt) && isNum(rt)) || isStr(lt) || isStr(rt) || isAny(lt) || isAny(rt);
       if (!ok) v(e, 'mixed-types', '+ adds two numbers or joins to a string');
     }
-    if (CMP.has(op) && (isStr(lt) || isStr(rt)) && !(isAny(lt) || isAny(rt))) v(e, 'string-order', 'string ordering is outside the subset');
+    if (CMP.has(op) && (isStr(lt) || isStr(rt)) && !(isStr(lt) && isStr(rt)) && !(isAny(lt) || isAny(rt))) v(e, 'string-order', 'compare two strings, or convert both operands explicitly');
     if (EQ.has(op)) {
       const nul = (x) => x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined');
       const prim = (t) => nonNull(t).every((x) => isPrim(x) || isAny(x) || !!(x.flags & TF.TypeParameter)); // a type parameter is compared by value
@@ -703,6 +707,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         const names = []; bindingNames(p.name, names);
         checkType(tOf(p.name), p);
       }
+      checkStringLiterals(u.node);
       if (u.body) { if (ts.isBlock(u.body)) stmts(u.body.statements); else expr(u.body); }
       current = null; currentFn = null;
       continue;
@@ -734,6 +739,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           const names = []; bindingNames(p.name, names);
           checkType(tOf(p.name), p);
         }
+        checkStringLiterals(u.node);
         stmts(u.body.statements);
         current = null; currentFn = null; currentClass = null;
       }
