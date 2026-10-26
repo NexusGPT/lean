@@ -58,14 +58,14 @@ reading no value model can give; the lint says what to write instead).
 | mutation of a field of a field of `this` | | refused (`receiver-mutation`) | a path update like a parameter path | gap (small) |
 | mutation of an object reached from the world (a query result, a module object) | 80 computed targets | refused (`property-assign`) | the heap layer | gap (layer 2) |
 | `delete obj.f` | 498 | exact on dev: an optional field of a local or parameter record becomes `None`; a dictionary key leaves the map; `delete this.m[k]` is a world-field write; a field of `this` itself stays refused | same | done (dev) |
-| dictionary `Record<string, V>`: read, write by key, `in`, `Object.keys/entries/values` | 1,105 keys, 740 entries | exact map; `in` uninterpreted; `Object.keys` a transition (over-approximate) | `in` exact (`k in m`); `Object.keys` exact as the key set in insertion order (Dafny: a sequence of the keys, uninterpreted order) | partial |
+| dictionary `Record<string, V>`: read, write by key, `in`, `Object.keys/entries/values` | 1,105 keys, 740 entries | exact map; `in` uninterpreted; `Object.keys/values/entries/assign/fromEntries` pure uninterpreted functions of their argument (dev) | `in` exact on a dictionary; `Object.keys` as a sequence whose order is a fact of the value (uninterpreted, stated) | partial (dev) |
 | computed member access `obj[k]` on a record | 5,278 | exact on arrays and dictionaries; refused on a record with a non-literal key (`dynamic-key`) | a record read by a dynamic key is a dictionary read: translate the record as a map when it is read dynamically | gap |
 | computed property name `{[k]: v}` | 487 | exact on dev when the literal's contextual type is a dictionary (`Record<string, T>`); `{...m, k: v}` on a dictionary is a map merge | the same with a record contextual type when the key is a literal union | done (dev) |
 | getters and setters | 7 | a getter read is a pure accessor of the receiver; a setter write is a world field write; neither is a unit of its own | the getter's body as the accessor when it is in the subset | partial |
 | object literal with methods | 157 | refused (`unsupported-syntax`) | an opaque value keyed by its text, like a handler | gap (small) |
 | prototype access, `Object.create`, `Object.defineProperty`, `Object.setPrototypeOf` | 134 + 7 + 20 + 1 | refused (`prototype`) | by design: no value reading | by design |
 | `Proxy`, `Reflect` | 41 | refused | by design | by design |
-| `Object.assign`, `Object.freeze`, `Object.fromEntries`, `structuredClone` | 390, 6, 196, 32 | `Object.*` a transition (over-approximate) | exact: `assign` is a record update, `freeze` identity, `fromEntries` a map literal, `structuredClone` identity in a value model | gap (small) |
+| `Object.assign`, `Object.freeze`, `Object.fromEntries`, `structuredClone` | 390, 6, 196, 32 | pure uninterpreted functions of their arguments (dev) | exact: `assign` a record update, `freeze` identity, `fromEntries` a map literal, `structuredClone` identity | partial (dev) |
 | `instanceof` | 2,204 | uninterpreted `ext_instanceof_C(x)` | exact when the static type decides it; uninterpreted otherwise | partial |
 | `in` | 1,071 | uninterpreted | exact on a dictionary; by static type on a record | partial |
 | `x!` non-null | 501 | `.value` when optional | same | done |
@@ -121,7 +121,8 @@ reading no value model can give; the lint says what to write instead).
 | `if`, `switch` with `return`/`break` per case, `?:`, early return | 21,957, 1,076, 13,560 | exact | same | done |
 | `switch` with fall-through | | refused | exact: the clause list with the fall-through as a chain | gap (small) |
 | `for..of`, counted `for`, `while` with a bound | 4,595, 1,397, 477 | exact (a recursive helper) | same | done |
-| `while` without a bound, labelled statements, `for..in` | 477 (some), 10, 76 | opaque block / refused | `for..in` over a dictionary is `for..of` over its keys; a label is a named exit of the helper | gap (small) |
+| `while` without a bound, labelled statements | 477 (some), 10 | opaque block / refused | a label is a named exit of the helper | gap (small) |
+| `for..in` | 76 | a loop over `Object.keys(o)`, a string each (dev) | same | done (dev) |
 | `do..while` | 196 | the body once, then the `while` (dev); with `// @decreases` proved, else an opaque block | same | done (dev) |
 | `break`, `continue` | 578, 1,837 | exact | same | done |
 | `&&`, `\|\|` as values of one type | 6,855 | exact | same | done |

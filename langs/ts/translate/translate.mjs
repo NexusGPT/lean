@@ -124,7 +124,7 @@ export function translate(file, fnName, opts = {}) {
   let pending = []; // hoisted `var (wld, tN) := ...;` lines of the statement being translated, in source order
   let tempCount = 0;
   const effectfulUnits = new Set(); // same-file units that take and return the world
-  const PURE_RECEIVERS = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Buffer', 'Array', 'BigInt', 'Symbol']);
+  const PURE_RECEIVERS = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Buffer', 'Array', 'BigInt', 'Symbol', 'Object']); // Object.keys/values/entries/assign/fromEntries: pure functions of their arguments (the lint refuses the prototype ones)
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
   function isEffectCall(n) {
     if (ts.isAwaitExpression(n)) return true;
@@ -1954,7 +1954,7 @@ export function translate(file, fnName, opts = {}) {
         const w = { kind: K.WhileStatement, expression: s.expression, statement: s.statement, parent: s.parent, pos: s.pos, end: s.end, getStart: () => s.getStart(sf), getEnd: () => s.getEnd(), getText: () => s.getText(sf), getFullStart: () => s.getFullStart() };
         return tr([...flatten(s.statement), w, ...rest], fin, u);
       }
-      case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: {
+      case K.ForInStatement: case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: {
         if (isOpaqueStmt(s)) return opaqueBlock(s, rest, fin, u);
         let body; const h = capture(() => { body = coreLoop(s, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body;
       }
@@ -2030,7 +2030,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isForStatement(s) && (containsEffect(s.condition) || containsEffect(s.incrementor))) fail(s, 'an effect in a for header');
     const RD = dtype(retType(u), s);
     if (returns) usesOption = true;
-    const isOf = ts.isForOfStatement(s), isFor = ts.isForStatement(s);
+    const isIn = ts.isForInStatement(s); const isOf = ts.isForOfStatement(s) || isIn, isFor = ts.isForStatement(s); // `for (k in o)` is a for-of over the keys of o
     const userHints = [...hintsOf(sf, s).invariants, ...invariants.filter((x) => x.loop === null || x.loop === id).map((x) => x.expr)];
     const hintWords = new Set(userHints.flatMap((h) => h.match(/[A-Za-z_]\w*/g) ?? []));
     const inScopeVars = [];
@@ -2060,7 +2060,8 @@ export function translate(file, fnName, opts = {}) {
       const x = s.initializer.declarations[0].name;
       const itT = baseOf(typeOf(s.expression));
       let T, src;
-      if (isAny(itT)) { T = anyType(); src = seqOf(s.expression); }
+      if (isIn) { const D = isAny(itT) ? anyType() : dtype(itT, s); T = 'string'; src = `${external('Object_keys', [D], 'seq<string>')}(${expr(s.expression)})`; } // the keys of the object, an uninterpreted sequence of the value (JavaScript's insertion order is a fact of the value)
+      else if (isAny(itT)) { T = anyType(); src = seqOf(s.expression); }
       else if (isRecordish(itT)) { T = dtype(typeOf(x), x); const IT = dtype(itT, s); src = `${external(`${mangle(IT)}_to_seq`, [IT], `seq<${T}>`)}(${expr(s.expression)})`; }
       else if (itT.flags & TF.StringLike) { T = 'string'; src = `${helper('Map', ['char', 'string'])}(${expr(s.expression)}, ((c: char) => [c]))`; }
       else if (isSetT(itT)) { T = dtype(checker.getTypeArguments(itT)[0], s); src = seqOf(s.expression); }

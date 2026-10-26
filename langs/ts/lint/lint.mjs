@@ -163,7 +163,11 @@ export function lintFile(file, ranges = null, opts = {}) {
         expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return;
       }
       case K.DoStatement: { expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return; } // `do B while (c)` is B then a while; without a bound it is an opaque block
-      case K.ForInStatement: return v(s, 'for-in', 'for-in reads dynamic property names');
+      case K.ForInStatement: { // `for (const k in o)`: a loop over the keys of o, each a string
+        const init = s.initializer;
+        if (!(ts.isVariableDeclarationList(init) && init.declarations.length === 1 && ts.isIdentifier(init.declarations[0].name))) return v(s, 'for-in', 'for-in takes `const k`');
+        expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return;
+      }
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
       case K.ContinueStatement: if (loopDepth > 0) return; return v(s, 'break-continue', 'continue outside a loop');
       case K.ThrowStatement: return expr(s.expression); // modelled as an uninterpreted result of the function
