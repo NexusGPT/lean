@@ -290,7 +290,14 @@ export function translate(file, fnName, opts = {}) {
     const sig = checker.getResolvedSignature(n);
     const params = sig ? sig.getParameters() : [];
     const loose = !sig || (recvType === 'Any');
-    const ptype = (a, i) => { const p = params[Math.min(i, params.length - 1)]; if (loose || !p) return undefined; const t = checker.getTypeOfSymbolAtLocation(p, a); return isAny(t) && !isAny(typeOf(a)) ? typeOf(a) : t; };
+    const ptype = (a, i) => {
+      const p = params[Math.min(i, params.length - 1)]; if (loose || !p) return undefined;
+      if (ts.isObjectLiteralExpression(a)) return typeOf(a); // a literal argument is typed by its own fields, not by a generic parameter's instantiation
+      let t = checker.getTypeOfSymbolAtLocation(p, a);
+      const decl = p.valueDeclaration;
+      if (decl && ts.isParameter(decl) && decl.dotDotDotToken && (checker.isArrayType(t) || checker.isTupleType(t))) t = checker.getTypeArguments(t)[0] ?? t; // a rest parameter: each extra argument has the element type
+      return isAny(t) && !isAny(typeOf(a)) ? typeOf(a) : t;
+    };
     const pts = args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a) : dtype(typeOf(a), a); });
     let rt = sig ? sig.getReturnType() : typeOf(n);
     if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
@@ -382,12 +389,14 @@ export function translate(file, fnName, opts = {}) {
     if (!s.startsWith('(') || !s.endsWith(')')) return s;
     let d = 0;
     for (let i = 0; i < s.length; i++) { if (s[i] === '(') d++; else if (s[i] === ')') d--; if (d === 0 && i < s.length - 1) return s; }
+    if (/^\(map\[\] : /.test(s) || /^\(var \w+: set</.test(s)) return s; // a typed empty literal keeps its parentheses
     return s.slice(1, -1);
   };
   const isLiteralish = (node) => { while (ts.isParenthesizedExpression(node)) node = node.expression; return ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node) || ts.isNumericLiteral(node) || ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node) || node.kind === K.TrueKeyword || node.kind === K.FalseKeyword; };
   function coerce(code, node, expected) {
     if (!expected) return code;
     const nt = typeOf(node);
+    if ((expected.flags & (TF.Void | TF.Undefined)) && !(expected.flags & TF.Union)) return 'Unit'; // a void slot takes Unit, whatever was written
     if (isLiteralish(node)) {
       // a literal is already built in the expected shape; only absence needs lifting
       if (isOptional(expected) && !isOptional(nt) && !isNullish(nt)) { usesOption = true; return `Some(${convertD(code, dtype(nt, node), innerOf(dtype(expected, node)))})`; }
