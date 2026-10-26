@@ -24,9 +24,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   two boolean slots and two handlers; candidate A swaps two setter calls in one handler (same final state);
   candidate B flips one setter; a 60-line product explorer over the commands `set`, `fire` on run.mjs's
   sandbox. Command: `node langs/ts/design/finite-components-census.mjs` then `node scratchpad/moonshots/01-finite/explore.mjs`.
-- Pass: at least 15% of hook-using components fully finite (today 27% of slots are boolean or a literal
-  union; the per-component share is the unknown); candidate A PASS-decided with the pair count, candidate B a
-  WITNESS of at most 3 commands, both under one second.
+- Pass: at least 15% of hook-using components fully finite; candidate A PASS-decided with the pair count,
+  candidate B a WITNESS of at most 3 commands, both under one second.
+- Measured (part a, 2026-10-26, `langs/ts/design/finite-components-census.mjs`): 1,037 components use
+  `useState`; 265 (26%) have every slot finite; 98 (9%) are finite in slots and props strictly, 100 (10%)
+  with function and node props as opaque inputs; 2,190 prop types are unknown with imports unresolved, so the
+  true share is between 10% and 26%. Not killed (the kill bar is 5%); the population is 100 to 265 components.
 - Kill: under 5% of components fully finite.
 
 ## 2. The induction proof: re-render equivalence with no renderer

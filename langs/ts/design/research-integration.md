@@ -208,8 +208,12 @@ and say: keep it, label it "tree, one render". The census holds 2,041 `.tsx` fil
   WITNESS with the command sequence; a clean run is PASS-bounded with the sequence count and depth.
 - **Lane B, finite**: when every slot type and every prop is finite by the types (boolean, literal union, enum,
   null or undefined), the product of the two machines is explored fully (the finite-state lane of section 5):
-  PASS-decided with the pair count; the shortest separating sequence as WITNESS. A census of `useState<T>`
-  types says how many corpus components qualify before the lane is built.
+  PASS-decided with the pair count; the shortest separating sequence as WITNESS. Census (2026-10-26,
+  `design/finite-components-census.mjs`, imports unresolved): 5,138 JSX-returning units in 4,630 `.tsx` files;
+  1,037 use `useState`; 265 of those (26%) have every slot finite (boolean, literal union, enum, nullish);
+  98 (9%) are finite in slots and props strictly, 100 (10%) with function and node props as opaque inputs;
+  2,190 prop types are unknown without the imports, so the true share lies between 10% and 26%. Slots:
+  boolean 770, string 805, number 258, array 240, literal union 119, unknown 360.
 - **Lane A** proves the step: equal props and slots give an equal tree and equal handler descriptors; the
   descriptors' deferred `set` steps are the slot transition, so equal descriptors give equal next slots;
   induction over the sequence is the bisimulation certificate (dossier 19, items 02 and 03). The slots are
