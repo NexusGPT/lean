@@ -84,8 +84,9 @@ export function sandbox(env, root) {
       }
       return env.module(spec); // packages, builtins, path aliases: the environment
     };
-    // a script may declare its own __filename from import.meta.url; the wrapper's names must not clash
-    const wrapper = vm.compileFunction(js, ['exports', 'require', 'module', '__lean_filename', '__lean_dirname'], { parsingContext: ctx, filename: abs });
+    // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
+    const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
+    const wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname'], { parsingContext: ctx, filename: abs });
     wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs));
     return mod.exports;
   }
