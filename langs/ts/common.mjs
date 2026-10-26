@@ -47,6 +47,12 @@ export function loadProgram(file, opts = {}) {
       const parsed = ts.parseJsonConfigFileContent(raw.config, ts.sys, path.dirname(configFile));
       // the project's own options decide resolution; ours decide strictness and emit
       options = { ...parsed.options, strict: true, noEmit: true, skipLibCheck: true, noImplicitReturns: true, allowJs: true, checkJs: true };
+      // a lib file the vendored compiler does not carry would make TypeScript load no lib at all
+      if (Array.isArray(options.lib)) {
+        const libDir = path.join(here, 'vendor', 'typescript', 'lib');
+        options.lib = options.lib.filter((l) => fs.existsSync(path.join(libDir, l)));
+        if (!options.lib.length) options.lib = ['lib.es2022.d.ts'];
+      }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
       options.configFilePath = configFile; // automatic @types inclusion starts from the config's directory
       // a workspace package resolves to ITS SOURCE in this tree, never to a built dist or a node_modules link
@@ -238,9 +244,10 @@ export function originOf(checker, id, sf, current) {
   if (isImportDecl(sym.declarations?.[0])) return { kind: 'import', sym: s, decl };
   if (!decl) return { kind: 'global', sym: s, decl: null };
   if (decl.getSourceFile() !== sf) return { kind: decl.getSourceFile().isDeclarationFile ? 'global' : 'other', sym: s, decl };
-  for (let p = decl; p; p = p.parent) if (p === current) return { kind: 'local', sym: s, decl };
+  // a unit is a unit even from inside its own body (recursion), so units are recognised before locality
   if (ts.isMethodDeclaration(decl) && decl.parent && ts.isClassDeclaration(decl.parent) && decl.parent.parent === sf) return { kind: 'unit', sym: s, decl };
-  if (ts.isFunctionDeclaration(decl) || (ts.isVariableDeclaration(decl) && decl.initializer && (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer)) && decl.parent?.parent && ts.isVariableStatement(decl.parent.parent) && decl.parent.parent.parent === sf)) return { kind: 'unit', sym: s, decl };
+  if ((ts.isFunctionDeclaration(decl) && decl.parent === sf) || (ts.isVariableDeclaration(decl) && decl.initializer && (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer)) && decl.parent?.parent && ts.isVariableStatement(decl.parent.parent) && decl.parent.parent.parent === sf)) return { kind: 'unit', sym: s, decl };
+  for (let p = decl; p; p = p.parent) if (p === current) return { kind: 'local', sym: s, decl };
   if (ts.isVariableDeclaration(decl) && (ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const)) return { kind: 'module', sym: s, decl };
   if (ts.isTypeAliasDeclaration(decl) || ts.isInterfaceDeclaration(decl) || ts.isEnumDeclaration(decl)) return { kind: 'type', sym: s, decl };
   return { kind: 'module-mutable', sym: s, decl };

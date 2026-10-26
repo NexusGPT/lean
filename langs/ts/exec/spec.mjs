@@ -12,6 +12,7 @@ export function specOf(file, unitName, opts = {}) {
   if (!u) throw new Error(`no unit ${unitName}`);
   const TF = ts.TypeFlags;
   const seen = new Map();
+  const defs = {};
   function spec(t, depth = 0) {
     if (depth > 5) return { kind: 'opaque' };
     const f = t.flags;
@@ -50,21 +51,21 @@ export function specOf(file, unitName, opts = {}) {
   }
   function recordSpec(t, depth) {
     const key = checker.typeToString(t);
-    if (seen.has(key)) return seen.get(key);
+    if (seen.has(key)) return { kind: 'ref', key }; // a recursive shape: the generator unfolds it to a bounded depth
     const props = checker.getPropertiesOfType(t);
     const hasMethods = props.some((p) => checker.getSignaturesOfType(checker.getTypeOfSymbolAtLocation(p, u.node), ts.SignatureKind.Call).length);
     const ix = checker.getIndexInfoOfType(t, ts.IndexKind.String);
     if (!props.length && ix) return { kind: 'dict', value: spec(ix.type, depth + 1) };
     if (!props.length || hasMethods) { const o = { kind: 'opaque', name: key.slice(0, 40) }; seen.set(key, o); return o; }
     const out = { kind: 'record', fields: {} };
-    seen.set(key, out);
+    seen.set(key, out); defs[key] = out;
     for (const p of props) out.fields[p.name] = { spec: spec(checker.getTypeOfSymbolAtLocation(p, u.node), depth + 1), optional: !!(p.flags & ts.SymbolFlags.Optional) };
     return out;
   }
   const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, spec: spec(checker.getTypeAtLocation(p.name)) }));
   let rt = checker.getSignatureFromDeclaration(u.fn).getReturnType();
   if (rt.symbol?.name === 'Promise') rt = checker.getTypeArguments(rt)[0];
-  return { unit: unitName, isMethod: !!u.cls, className: u.className ?? null, isStatic: !!u.isStatic, isAsync: !!u.isAsync, params, returns: spec(rt) };
+  return { unit: unitName, isMethod: !!u.cls, className: u.className ?? null, isStatic: !!u.isStatic, isAsync: !!u.isAsync, params, returns: spec(rt), defs };
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {

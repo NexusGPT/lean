@@ -4,11 +4,11 @@ import { makeRng } from './fake.mjs';
 const STR_EDGE = ['', 'a', 'abc', ' ', 'x y', '0', '-1', 'ÄÖü', '日本', 'a'.repeat(64)];
 const NUM_EDGE = [0, 1, -1, 2, 10, 100, -100, 0.5, 1e9, Number.MAX_SAFE_INTEGER];
 
-export function generator(seed) {
+export function generator(seed, defs = {}) {
   const rng = makeRng(seed);
   let edge = 0; // the i-th generated input leans on the i-th boundary value
-  function gen(spec, depth = 0, env = null, path = 'in') {
-    if (!spec || depth > 6) return env ? env.fake(path) : null;
+  function gen(spec, depth = 0, env = null, path = 'in', leaf = false) {
+    if (!spec || depth > 8) return env ? env.fake(path) : null;
     switch (spec.kind) {
       case 'number': return pick(NUM_EDGE, () => Math.floor(rng() * 2000) - 1000);
       case 'string': return pick(STR_EDGE, () => `v${Math.floor(rng() * 1e6).toString(36)}`);
@@ -17,13 +17,14 @@ export function generator(seed) {
       case 'null': return null;
       case 'undefined': return undefined;
       case 'literal': return spec.values[Math.floor(rng() * spec.values.length)];
-      case 'array': { const n = pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); return Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`)); }
+      case 'array': { const n = leaf ? 0 : pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); return Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`, leaf)); }
       case 'tuple': return spec.items.map((s, i) => gen(s, depth + 1, env, `${path}[${i}]`));
       case 'set': return new Set(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => gen(spec.of, depth + 1, env, `${path}{${i}}`)));
       case 'map': return new Map(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => [gen(spec.key, depth + 1, env, `${path}<k${i}>`), gen(spec.value, depth + 1, env, `${path}<v${i}>`)]));
       case 'dict': { const o = {}; for (let i = 0, n = Math.floor(rng() * 4); i < n; i++) o[`k${i}`] = gen(spec.value, depth + 1, env, `${path}.k${i}`); return o; }
-      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3) continue; o[k] = gen(f.spec, depth + 1, env, `${path}.${k}`); } return o; }
+      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3) continue; o[k] = gen(f.spec, depth + 1, env, `${path}.${k}`, leaf); } return o; }
       case 'union': return gen(spec.options[Math.floor(rng() * spec.options.length)], depth + 1, env, path);
+      case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
       case 'function': return env ? env.fake(`${path}#fn`) : () => undefined;
       case 'opaque': default: return env ? env.fake(path) : {};
@@ -38,6 +39,6 @@ export function generator(seed) {
 
 // the i-th input set for a unit: a list of argument values; each call gets a fresh generator seeded by (seed, i)
 export function inputsFor(spec, seed, i, env) {
-  const g = generator(seed * 1000003 + i);
+  const g = generator(seed * 1000003 + i, spec.defs ?? {});
   return spec.params.map((p, k) => (p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`)));
 }

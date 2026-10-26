@@ -64,11 +64,14 @@ export function translate(file, fnName, opts = {}) {
   // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
   const order = [];
   const visiting = new Set();
+  const visitStack = [];
+  const recursiveUnits = new Set();
+  const FUEL = 'fuel';
   let currentUnit = null;
   function collect(u) {
     if (order.includes(u)) return;
-    if (visiting.has(u)) fail(u.node, `recursion through ${u.name} is outside the translator`);
-    visiting.add(u);
+    if (visiting.has(u)) { for (let i = visitStack.lastIndexOf(u); i < visitStack.length; i++) recursiveUnits.add(visitStack[i].name); return; } // a cycle: every unit on it takes fuel
+    visiting.add(u); visitStack.push(u);
     const walk = (n) => {
       if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) {
         const callee = fns.get(n.expression.text);
@@ -81,7 +84,7 @@ export function translate(file, fnName, opts = {}) {
       ts.forEachChild(n, walk);
     };
     walk(u.body);
-    visiting.delete(u);
+    visiting.delete(u); visitStack.pop();
     order.push(u);
   }
   if (target) collect(target);
@@ -200,7 +203,8 @@ export function translate(file, fnName, opts = {}) {
         const ds = checker.getTypeArguments(t).map((a) => dtype(a, n, depth + 1));
         const lit = checker.getTypeArguments(t).every((a) => a.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral));
         const rest = !!t.target?.hasRestElement;
-        if (ds.length && (lit || rest) && ds.every((d) => d === ds[0])) return `seq<${ds[0]}>`; // a literal list (`as const`) or an open tuple [T, ...T[]]: a sequence
+        const ro = !!t.target?.readonly;
+        if (ds.length && (lit || rest || (ro && ds.length >= 2 && !/^(int|real|bool|string|char)$/.test(ds[0]))) && ds.every((d) => d === ds[0])) return `seq<${ds[0]}>`; // a literal list (`as const`), a readonly table or an open tuple [T, ...T[]]: a sequence
         return `(${ds.join(', ')})`;
       }
       if (checker.isArrayType(t)) return `seq<${dtype(checker.getTypeArguments(t)[0], n, depth + 1)}>`;
@@ -237,7 +241,8 @@ export function translate(file, fnName, opts = {}) {
     if (name && /^(Pick|Omit|Partial|Required|Readonly|Record|__type|__object|type|default)$/.test(name)) name = null;
     if (hasMethods || !props.length) {
       // opaque: values pass through untouched; reads become accessor externals
-      name = `Ext_${mangle(name ?? checker.typeToString(t))}`;
+      const base = mangle(name ?? checker.typeToString(t));
+      name = `Ext_${base || 'T' + hash(checker.typeToString(t))}`;
       addPrelude(name, `type ${name}`);
       return name;
     }
@@ -289,6 +294,7 @@ export function translate(file, fnName, opts = {}) {
     const pts = args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a) : dtype(typeOf(a), a); });
     let rt = sig ? sig.getReturnType() : typeOf(n);
     if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+    else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
     const rd = dtype(rt, n);
     const codes = args.map((a, i) => expr(a, ptype(a, i)));
     if (!isEff) {
@@ -384,7 +390,7 @@ export function translate(file, fnName, opts = {}) {
     const nt = typeOf(node);
     if (isLiteralish(node)) {
       // a literal is already built in the expected shape; only absence needs lifting
-      if (isOptional(expected) && !isOptional(nt) && !isNullish(nt)) { usesOption = true; return `Some(${code})`; }
+      if (isOptional(expected) && !isOptional(nt) && !isNullish(nt)) { usesOption = true; return `Some(${convertD(code, dtype(nt, node), innerOf(dtype(expected, node)))})`; }
       if (dtype(expected, node) === 'Any' && dtype(nt, node) !== 'Any') return convert(code, nt, expected, node);
       return code;
     }
@@ -448,7 +454,7 @@ export function translate(file, fnName, opts = {}) {
     }
   }
   function ident(n) {
-    if (n.text === 'undefined') return 'None';
+    if (n.text === 'undefined') { usesOption = true; return 'None'; }
     const o = originOf(checker, n, sf, currentUnit?.node ?? null);
     if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return externalValue(n);
     if (o.kind === 'global') return externalValue(n);
@@ -486,7 +492,7 @@ export function translate(file, fnName, opts = {}) {
       }
       case K.TrueKeyword: return 'true';
       case K.FalseKeyword: return 'false';
-      case K.NullKeyword: return 'None';
+      case K.NullKeyword: usesOption = true; return 'None';
       case K.ThisKeyword: if (!classOf(currentUnit)) fail(n, '`this` outside a class method'); return SELF;
       case K.SatisfiesExpression: return expr(n.expression, expected);
       case K.AsExpression: case K.TypeAssertionExpression: {
@@ -642,6 +648,18 @@ export function translate(file, fnName, opts = {}) {
     if (first && ts.isSpreadAssignment(first)) recT = typeOf(first.expression);
     if (!recT || !isRecordish(recT)) recT = typeOf(n);
     const rname = dtype(recT, n);
+    if (rname.startsWith('map<')) {
+      const ix = stringIndex(recT);
+      const vt = ix ? ix.type : undefined;
+      const entries = [];
+      for (const p of n.properties) {
+        if (ts.isSpreadAssignment(p)) fail(p, 'spread into a dictionary literal is not translated');
+        const key = ts.isShorthandPropertyAssignment(p) ? p.name.text : ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf).replace(/^["']|["']$/g, '');
+        const val = ts.isShorthandPropertyAssignment(p) ? expr(p.name, vt) : expr(p.initializer, vt);
+        entries.push(`${strEsc(key)} := ${outerParens(val)}`);
+      }
+      return entries.length ? `map[${entries.join(', ')}]` : `(map[] : ${rname})`;
+    }
     const propT = (name) => { const p = checker.getPropertyOfType(recT, name); return p ? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n) : undefined; };
     const propOpt = (name) => { const p = checker.getPropertyOfType(recT, name); return !!p && !!(p.flags & ts.SymbolFlags.Optional); };
     const keyOf = (p) => (ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf).replace(/^["']|["']$/g, ''));
@@ -746,6 +764,9 @@ export function translate(file, fnName, opts = {}) {
     return base;
   }
   function fieldOf(recvCode, recvT, name, n) {
+    // a local narrowed by a type guard is still the value of its declared type in Dafny
+    { let e = n.expression; while (e && ts.isParenthesizedExpression(e)) e = e.expression;
+      if (e && ts.isIdentifier(e)) { const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (o.kind === 'local' && o.sym) { const dt = symType(o.sym, e); const bd = isOptional(dt) ? baseOf(dt) : dt; if (isRecordish(bd) && dtype(bd, n) !== dtype(recvT, n)) recvT = bd; } } }
     if (isRecordish(recvT)) {
       const props = checker.getPropertiesOfType(recvT);
       const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
@@ -830,6 +851,12 @@ export function translate(file, fnName, opts = {}) {
     return externalCall(`new_${mangle(name)}`, n, [...(n.arguments ?? [])]);
   }
   const cbArity = { map: 2, filter: 2, some: 2, every: 2, find: 2, findIndex: 2, flatMap: 2, reduce: 3 };
+  // the fuel a call passes: one less inside the cycle, an uninterpreted start value from outside it
+  function fuelArg(callee) {
+    if (!recursiveUnits.has(callee.name)) return [];
+    if (currentUnit && recursiveUnits.has(currentUnit.name)) return [`${FUEL} - 1`];
+    return [`${external('fuel_start', [], 'nat')}()`];
+  }
   function call(n, awaited = false) {
     const f = n.expression;
     if (ts.isIdentifier(f)) {
@@ -842,9 +869,9 @@ export function translate(file, fnName, opts = {}) {
         if (effectfulUnits.has(f.text)) {
           if (!unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
-          return hoist(`${fname(f.text)}(${[WORLD, ...args].join(', ')})`, dtype(rt, n));
+          return hoist(`${fname(f.text)}(${[WORLD, ...fuelArg(callee), ...args].join(', ')})`, dtype(rt, n));
         }
-        return `${fname(f.text)}(${args.join(', ')})`;
+        return `${fname(f.text)}(${[...fuelArg(callee), ...args].join(', ')})`;
       }
       if (o.kind === 'local') {
         // a function-typed parameter or local: applied as a Dafny function value
@@ -865,9 +892,9 @@ export function translate(file, fnName, opts = {}) {
         if (effectfulUnits.has(callee.name)) {
           if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure method');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
-          return hoist(`${fname(callee.name)}(${[WORLD, ...selfArg, ...args].join(', ')})`, dtype(rt, n));
+          return hoist(`${fname(callee.name)}(${[WORLD, ...fuelArg(callee), ...selfArg, ...args].join(', ')})`, dtype(rt, n));
         }
-        return `${fname(callee.name)}(${[...selfArg, ...args].join(', ')})`;
+        return `${fname(callee.name)}(${[...fuelArg(callee), ...selfArg, ...args].join(', ')})`;
       }
       // an inherited method or a function-typed field: an uninterpreted external of the receiver and the arguments
       const T = selfType(currentUnit);
@@ -961,7 +988,7 @@ export function translate(file, fnName, opts = {}) {
   }
 
   // ----- shared statement analysis -----
-  const retType = (u) => { let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; return t; };
+  const retType = (u) => { let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;
   const isUpdate = (x) => (ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken);
   const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set']);
@@ -1549,9 +1576,14 @@ export function translate(file, fnName, opts = {}) {
       const full = sp.lets.length ? `${sp.lets.join('\n')}\n${body}` : body;
       const selfParam = classOf(u) && !u.isStatic ? `${SELF}: ${selfType(u)}` : '';
       const plain = [selfParam, sp.text].filter(Boolean).join(', ');
-      const sig = eff ? `${WORLD}: World${plain ? ', ' + plain : ''}` : plain;
+      const rec = recursiveUnits.has(u.name);
+      const plain2 = rec ? [`${FUEL}: nat`, plain].filter(Boolean).join(', ') : plain;
+      const sig = eff ? `${WORLD}: World${plain2 ? ', ' + plain2 : ''}` : plain2;
       const rtype = eff ? `(World, ${rt})` : rt;
-      chunks.push(...coreHelpers.splice(0), [`function ${name}(${sig}): ${rtype}`, ...specs, '{', indentBlock(full), '}'].join('\n'));
+      const outOfFuel = rec ? (eff ? `(${WORLD}, ${external(`fuel_out_${mangle(rt)}`, [], rt)}())` : `${external(`fuel_out_${mangle(rt)}`, [], rt)}()`) : null;
+      const full2 = rec ? `if ${FUEL} == 0 then ${outOfFuel} else\n${indentBlock(wrapLet(full))}` : full;
+      const specs2 = rec ? [...specs, `  decreases ${FUEL}`] : specs;
+      chunks.push(...coreHelpers.splice(0), [`function ${name}(${sig}): ${rtype}`, ...specs2, '{', indentBlock(full2), '}'].join('\n'));
     } else if (kindOf.get(u) === 'function') {
       const body = bodyList ? bodyExpr(bodyList, u) : expr(u.body, retType(u));
       const full = sp.lets.length ? `${sp.lets.join('\n')}\n${body}` : body;
