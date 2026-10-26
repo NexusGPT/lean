@@ -114,7 +114,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (o.kind === 'local' || o.kind === 'unit') return;
     if (o.kind === 'module' || o.kind === 'import' || o.kind === 'other' || o.kind === 'type') return; // externals
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
-    if (EFFECT_GLOBALS[name]) return v(id, EFFECT_GLOBALS[name], `\`${name}\` is outside the subset`);
+    if ((Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined)) return v(id, (Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined), `\`${name}\` is outside the subset`);
     if (PURE_GLOBALS.has(name)) return;
     if (o.kind === 'global') return v(id, 'global-read', `global \`${name}\` is outside the subset`);
     return v(id, 'global-read', `\`${name}\` cannot be resolved`);
@@ -198,7 +198,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     for (const el of name.elements) {
       if (ts.isOmittedExpression(el)) continue;
       if (el.dotDotDotToken) { v(el, 'destructuring', 'rest patterns are outside the subset'); continue; }
-      if (el.initializer) { v(el, 'destructuring', 'default values in patterns are outside the subset'); continue; }
+      if (el.initializer) { if (ts.isArrayBindingPattern(name)) { v(el, 'destructuring', 'default values in array patterns are outside the subset'); continue; } expr(el.initializer); } // `{ a = d }`: the default applies when the field is absent
       bindingNames(el.name, outNames);
     }
   }
@@ -230,11 +230,14 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (o.kind !== 'local') v(l, 'global-mutation', `assignment to \`${l.text}\`, which this function does not own`);
           else if (isParam(o.decl)) v(l, 'param-assign', `parameter \`${l.text}\` is assigned; copy it to a local first`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `\`${l.text}\` is declared outside this callback; a callback cannot change it`);
-        } else if (ts.isElementAccessExpression(l) && ts.isIdentifier(l.expression) && isArrayExpr(l.expression)) {
+        } else if (ts.isElementAccessExpression(l) && ts.isIdentifier(l.expression) && (isArrayExpr(l.expression) || nonNull(tOf(l.expression)).every(hasStringIndex))) {
+          // an element of a local array, or a key of a local dictionary (a record with a string index): the local is rebuilt
+          const dict = !isArrayExpr(l.expression);
           const o = declOf(l.expression);
           if (o.kind !== 'local' || isParam(o.decl)) v(l, 'index-assign', `index assignment into \`${l.expression.text}\`, which this function does not own`);
-          else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer array');
+          else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `a callback cannot change an outer ${dict ? 'dictionary' : 'array'}`);
           else if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
+          else if (dict && !nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
           expr(l.argumentExpression);
         } else if (ts.isPropertyAccessExpression(l)) {
           let root = l; while (ts.isPropertyAccessExpression(root)) root = root.expression;
@@ -282,11 +285,17 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (i && ts.isVariableDeclarationList(i) && (i.flags & ts.NodeFlags.Let) && i.declarations.length === 1 && ts.isIdentifier(i.declarations[0].name) && i.declarations[0].initializer) {
       name = i.declarations[0].name.text; expr(i.declarations[0].initializer);
     } else v(s, 'loop-form', 'for needs `let i = <expr>; i < <expr>; i++`');
-    if (c && ts.isBinaryExpression(c) && ts.isIdentifier(c.left) && c.left.text === name && (c.operatorToken.kind === K.LessThanToken || c.operatorToken.kind === K.LessThanEqualsToken)) expr(c.right);
-    else v(s, 'loop-form', 'for needs the condition `i < <expr>` or `i <= <expr>`');
-    const okInc = u && ((ts.isPostfixUnaryExpression(u) || ts.isPrefixUnaryExpression(u)) && u.operator === K.PlusPlusToken && ts.isIdentifier(u.operand) && u.operand.text === name
-      || ts.isBinaryExpression(u) && u.operatorToken.kind === K.PlusEqualsToken && ts.isIdentifier(u.left) && u.left.text === name && ts.isNumericLiteral(u.right) && u.right.text === '1');
-    if (!okInc) v(s, 'loop-form', 'for needs the step `i++` or `i += 1`');
+    // the counter moves by a positive literal step, up (`<`, `<=`) or down (`>`, `>=`); the direction must match the step
+    const up = u && (((ts.isPostfixUnaryExpression(u) || ts.isPrefixUnaryExpression(u)) && u.operator === K.PlusPlusToken && ts.isIdentifier(u.operand) && u.operand.text === name)
+      || (ts.isBinaryExpression(u) && u.operatorToken.kind === K.PlusEqualsToken && ts.isIdentifier(u.left) && u.left.text === name && ts.isNumericLiteral(u.right) && Number(u.right.text) > 0));
+    const down = u && (((ts.isPostfixUnaryExpression(u) || ts.isPrefixUnaryExpression(u)) && u.operator === K.MinusMinusToken && ts.isIdentifier(u.operand) && u.operand.text === name)
+      || (ts.isBinaryExpression(u) && u.operatorToken.kind === K.MinusEqualsToken && ts.isIdentifier(u.left) && u.left.text === name && ts.isNumericLiteral(u.right) && Number(u.right.text) > 0));
+    const ck = c && ts.isBinaryExpression(c) && ts.isIdentifier(c.left) && c.left.text === name ? c.operatorToken.kind : null;
+    const condUp = ck === K.LessThanToken || ck === K.LessThanEqualsToken, condDown = ck === K.GreaterThanToken || ck === K.GreaterThanEqualsToken;
+    if (condUp || condDown) expr(c.right);
+    else v(s, 'loop-form', 'for needs the condition `i < <expr>`, `i <= <expr>`, `i > <expr>` or `i >= <expr>`');
+    const okInc = (up && condUp) || (down && condDown);
+    if (!okInc) v(s, 'loop-form', 'for needs the step `i++`, `i += k`, `i--` or `i -= k` (k a positive literal), in the direction of the condition');
     const scan = (n) => {
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(n.left) && n.left.text === name) v(n, 'loop-var-assign', 'the loop variable is assigned in the body');
       if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && ts.isIdentifier(n.operand) && n.operand.text === name) v(n, 'loop-var-assign', 'the loop variable is assigned in the body');
@@ -304,11 +313,12 @@ export function lintFile(file, ranges = null, opts = {}) {
   const isPrim = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.Undefined | TF.Null | TF.EnumLike));
 
   function awaitExpr(e, asStatement = false) {
-    if (!currentFn || !currentFn.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return v(e, 'async', '`await` outside an async function');
+    const fnHere = callbackStack.length ? callbackStack[callbackStack.length - 1] : currentFn;
+    if (!fnHere || !fnHere.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return v(e, 'async', '`await` outside an async function');
     const inner = ts.isParenthesizedExpression(e.expression) ? e.expression.expression : e.expression;
     if (!ts.isCallExpression(inner)) return v(e, 'async', 'await applies to a call only');
     // the awaited call is an external (or a local async unit): its arguments are checked, the call itself is uninterpreted
-    inner.arguments.forEach((a) => ts.isArrowFunction(a) || ts.isSpreadElement(a) ? v(a, 'unsupported-call', 'awaited call arguments are plain values') : expr(a));
+    inner.arguments.forEach((a) => ts.isSpreadElement(a) ? v(a, 'spread', 'spread arguments are outside the subset') : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
     if (ts.isPropertyAccessExpression(inner.expression) && !ts.isIdentifier(inner.expression.expression)) { expr(inner.expression.expression); return; }
     const f = inner.expression;
     if (ts.isIdentifier(f)) return checkIdent(f, true);
@@ -358,7 +368,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (n === 'Promise') return v(e, 'async', '`new Promise` is outside the subset');
         // any other constructor: an uninterpreted value built from its arguments (Error, a class, a library object)
         if (ts.isPropertyAccessExpression(e.expression)) expr(e.expression.expression);
-        else if (ts.isIdentifier(e.expression) && EFFECT_GLOBALS[n] && EFFECT_GLOBALS[n] !== 'global-read') return v(e, EFFECT_GLOBALS[n], `\`new ${n}\` is outside the subset`);
+        else if (ts.isIdentifier(e.expression) && (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined) && (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined) !== 'global-read') return v(e, (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined), `\`new ${n}\` is outside the subset`);
         return argsOf(e);
       }
       case K.ConditionalExpression: expr(e.condition); expr(e.whenTrue); return expr(e.whenFalse);
@@ -467,7 +477,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (name === 'push') return v(e, 'param-mutation', 'push is a statement on a local only');
         expr(recv);
         const cbNames = { map: 1, filter: 1, some: 1, every: 1, find: 1, findIndex: 1, flatMap: 1, reduce: 2 };
-        if (cbNames[name] !== undefined) {
+        if (Object.hasOwn(cbNames, name)) {
           if (!e.arguments.length) return v(e, 'unsupported-call', `${name} needs a callback`);
           callback(e.arguments[0], cbNames[name]);
           if (name === 'reduce') { if (e.arguments.length !== 2) return v(e, 'unsupported-call', 'reduce needs a callback and an initial value'); expr(e.arguments[1]); }
@@ -495,7 +505,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       return v(a, 'callback-form', 'a callback is an arrow function, a same-file function or a local function value');
     }
     if (!ts.isArrowFunction(a)) return v(a, 'callback-form', 'the callback must be an arrow function');
-    if (a.modifiers?.some((m) => m.kind === K.AsyncKeyword)) v(a, 'async', 'async callbacks are outside the subset');
+    // arity null: a callback handed to an outside call or stored in a record, an opaque value keyed by its text; it may be async
+    if (arity !== null && a.modifiers?.some((m) => m.kind === K.AsyncKeyword)) v(a, 'async', 'async callbacks are outside the subset');
     if (arity !== null && (a.parameters.length > arity || a.parameters.some((p) => p.initializer || p.dotDotDotToken || p.questionToken))) v(a, 'callback-form', `the callback takes at most ${arity} plain parameter(s)`);
     for (const p of a.parameters) { const names = []; bindingNames(p.name, names); checkType(tOf(p.name), p); }
     callbackStack.push(a);

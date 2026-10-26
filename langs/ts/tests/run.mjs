@@ -87,10 +87,12 @@ for (const c of cases) {
   const l = run('node', [lint, file]);
   add('construct', c.name, 'lint', l.status === 0, l.status === 0 ? 'inside the subset' : l.stdout.trim().split('\n')[0], lscAccepts(file));
   const out = path.join(tmp, `case_${c.name}.dfy`);
-  const t = run('node', [translate, file, '--fn', c.fn, '--out', out, ...tflags(c, true)]);
-  if (t.status !== 0) { add('construct', c.name, 'translate', false, (t.stderr || t.stdout).trim().split('\n')[0]); continue; }
-  const dv = dafny(out);
-  add('construct', c.name, 'verify (proof shape)', dv.ok, dv.summary);
+  if (!c.coreOnly) { // the proof-shape mode (methods for loops) cannot call a unit that assigns from an expression; the gate runs --core
+    const t = run('node', [translate, file, '--fn', c.fn, '--out', out, ...tflags(c, true)]);
+    if (t.status !== 0) { add('construct', c.name, 'translate', false, (t.stderr || t.stdout).trim().split('\n')[0]); continue; }
+    const dv = dafny(out);
+    add('construct', c.name, 'verify (proof shape)', dv.ok, dv.summary);
+  }
   if (c.core) {
     const oc = path.join(tmp, `case_${c.name}_core.dfy`);
     const tc = run('node', [translate, file, '--core', '--fn', c.fn, '--out', oc, ...tflags(c, false)]);
@@ -111,7 +113,7 @@ for (const c of cases) {
 
 // ----- differential run: the translation and the TypeScript give the same answers on sample inputs -----
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
-const dfyLit = (v) => (Array.isArray(v) ? `[${v.map(dfyLit).join(', ')}]` : String(v));
+const dfyLit = (v) => (Array.isArray(v) ? `[${v.map(dfyLit).join(', ')}]` : typeof v === 'string' ? JSON.stringify(v) : String(v));
 const show = (v) => (Array.isArray(v) ? `[${v.map(show).join(', ')}]` : String(v));
 function differential(label, tsFile, entries) {
   const src = fs.readFileSync(tsFile, 'utf8');

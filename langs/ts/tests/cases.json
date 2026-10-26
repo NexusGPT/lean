@@ -308,5 +308,82 @@
     3
    ]
   ]
+ },
+ {
+  "name": "loop_steps",
+  "file": "loop_steps.ts",
+  "fn": "sumEvenIndices",
+  "core": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     7
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "loop_down",
+  "file": "loop_steps.ts",
+  "fn": "countDown",
+  "core": true,
+  "samples": [
+   [
+    4
+   ],
+   [
+    0
+   ],
+   [
+    -2
+   ]
+  ]
+ },
+ {
+  "name": "dict_assign",
+  "file": "dict_assign.ts",
+  "fn": "hasAuth",
+  "core": true,
+  "samples": [
+   [
+    "abc"
+   ],
+   [
+    ""
+   ]
+  ],
+  "coreOnly": true
+ },
+ {
+  "name": "pattern_defaults",
+  "file": "pattern_defaults.ts",
+  "fn": "limitOf",
+  "core": true,
+  "samples": [
+   [
+    3,
+    true
+   ],
+   [
+    0,
+    false
+   ],
+   [
+    -4,
+    true
+   ]
+  ]
  }
 ]
