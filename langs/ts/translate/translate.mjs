@@ -33,6 +33,7 @@ import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitO
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
+import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -60,6 +61,8 @@ export function translate(file, fnName, opts = {}) {
   const real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs)
   const fns = topLevelFunctions(sf);
   const exceptionUnits = exceptionUnitsOf(sf, checker, fns);
+  const generators = generatorReading(checker, sf, fns);
+  let yieldState = null;
   const target = fnName ? fns.get(fnName) : null;
   if (fnName && !target) throw new Unsupported(`no top-level function named ${fnName} in ${file}`);
   if (!fnName && !core) throw new Unsupported('--fn is required unless --core is given');
@@ -100,7 +103,7 @@ export function translate(file, fnName, opts = {}) {
       }
       ts.forEachChild(n, walk);
     };
-    walk(u.body);
+    if (!asyncGenerator(u)) walk(u.body);
     visiting.delete(u); visitStack.pop();
     order.push(u);
   }
@@ -143,7 +146,7 @@ export function translate(file, fnName, opts = {}) {
   const localEffectScan = new Set();
   function isEffectCall(n) {
     if (mayFaultPure(n, checker, sf)) return true;
-    if (ts.isAwaitExpression(n)) return true;
+    if (ts.isAwaitExpression(n) || (ts.isForOfStatement(n) && n.awaitModifier)) return true;
     if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
     if (!ts.isCallExpression(n)) return false;
     if (exactReactHook(checker, n)) return false;
@@ -238,7 +241,7 @@ export function translate(file, fnName, opts = {}) {
     boundCache.set(s, result); return result;
   }
   const opaqueSwitch = (s) => { const t = checker.getTypeAtLocation(s.expression); return (t.flags & TF.Union ? t.types : [t]).some((p) => !(p.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.Null | TF.Undefined | TF.Never))); };
-  const isOpaqueStmt = (x) => (ts.isSwitchStatement(x) && opaqueSwitch(x)) || (ts.isTryStatement(x) && !exactTry(x)) || ((ts.isWhileStatement(x) || ts.isDoStatement(x) || emptyFor(x)) && (!hintsOf(sf, x).decreases && !derivedBound(x)));
+  const isOpaqueStmt = (x) => (ts.isForOfStatement(x) && x.awaitModifier && !steppedAsyncLoop(x, checker)) || (ts.isSwitchStatement(x) && opaqueSwitch(x)) || (ts.isTryStatement(x) && !exactTry(x)) || ((ts.isWhileStatement(x) || ts.isDoStatement(x) || emptyFor(x)) && (!hintsOf(sf, x).decreases && !derivedBound(x)));
   // `xs.forEach((x) => body)` as a statement: a loop over xs whose body is the callback's body, each iteration's transitions
   // in order. The callback takes one plain parameter and returns nothing (a `return` inside it would end one step).
   const forEachShape = (st) => {
@@ -308,6 +311,7 @@ export function translate(file, fnName, opts = {}) {
   const mutatedByUnit = new Map(); // unit name -> [param names] in parameter order
   const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   function syntacticMutations(u) {
+    if (asyncGenerator(u)) return new Set(); // the suspended body has not run at construction
     const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
     const out = new Set();
     const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
@@ -330,6 +334,7 @@ export function translate(file, fnName, opts = {}) {
     while (changed) {
       changed = false;
       for (const u of all) {
+        if (asyncGenerator(u)) continue;
         const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
         const walk = (n) => {
           if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return;
@@ -714,7 +719,7 @@ export function translate(file, fnName, opts = {}) {
     }
     return name;
   }
-  const typeOf = (n) => checker.getTypeAtLocation(n);
+  const typeOf = (n) => { const u = generators.pureCall(n); return u ? checker.createArrayType(generators.shape(u).element) : checker.getTypeAtLocation(n); };
   const anyTarget = () => checker.getAnyType();
   const symType = (sym, n) => (checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n));
 
@@ -2248,6 +2253,7 @@ export function translate(file, fnName, opts = {}) {
         expr(ts.isSpreadElement(arg) ? arg.expression : arg);
       }
     }
+    if (ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Array' && n.expression.name.text === 'from' && n.arguments.length === 1 && generators.pureCall(n.arguments[0]) && originOf(checker, n.expression.expression, sf, currentUnit?.node ?? null).kind === 'global') return seqOf(n.arguments[0]);
     const hook = exactReactHook(checker, n);
     if (hook) return convert(expr(hook.value), typeOf(hook.value), typeOf(n), n);
     const f = n.expression;
@@ -2523,7 +2529,7 @@ export function translate(file, fnName, opts = {}) {
   }
 
   // ----- shared statement analysis -----
-  const retType = (u) => { let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
+  const retType = (u) => { if (u.fn.asteriskToken && !u.isAsync) return checker.createArrayType(generators.shape(u).element); let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;
   const isUpdate = (x) => (ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken);
   const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set']);
@@ -2551,6 +2557,7 @@ export function translate(file, fnName, opts = {}) {
   const insideNode = (decl, node) => decl.pos >= node.pos && decl.end <= node.end;
   function assignedOutside(node) {
     const names = [];
+    if (yieldState) { let yields = false; const w = (x) => { if (ts.isYieldExpression(x)) yields = true; if (!ts.isFunctionLike(x)) ts.forEachChild(x, w); }; w(node); if (yields) names.push(yieldState); }
     if (unitEffectful() && containsEffect(node)) names.push({ name: WORLD, sym: null, node, synthetic: true, d: 'World' });
     if (node.__collect) names.push(node.__collect); // the callback's result state
     const note = (id) => {
@@ -3136,6 +3143,7 @@ export function translate(file, fnName, opts = {}) {
       case K.Block: return tr([...s.statements, ...rest], fin, u);
       case K.EmptyStatement: return more();
       case K.ReturnStatement: {
+        if (yieldState) return retIn(wrapRet(yieldState.name));
         const top = loopCtx[loopCtx.length - 1];
         if (top && top.forEach && top.collect) return callbackStep(s.expression, top); // a callback return supplies the next result state
         if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
@@ -3165,6 +3173,7 @@ export function translate(file, fnName, opts = {}) {
         return tryOf(s) && containsEffect(s) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
       }
       case K.ExpressionStatement: {
+        if (yieldState && ts.isYieldExpression(s.expression)) { const y = s.expression; const code = y.asteriskToken ? seqOf(y.expression) : `[${expr(y.expression, yieldState.element)}]`; return `var ${yieldState.name}: ${yieldState.d} := ${yieldState.name} + ${code};\n${more0()}`; }
         const pam0 = promiseAllMapShape(s.expression) || arrayCallbackShape(s.expression);
         if (pam0 && (pam0.all || containsEffect(pam0.cb.body))) return capture(() => { callbackValue(s.expression, pam0); return more0(); });
         const fe = forEachShape(s);
@@ -3340,7 +3349,69 @@ export function translate(file, fnName, opts = {}) {
     if (jumps.length) after = `if ${jumpName} != 0 then\n${indentBlock(wrapLet(dispatchJump(jumpName, jumps)))}\nelse\n${indentBlock(wrapLet(after))}`;
     return `${line}\nif ${faultPreds().faulted}(${WORLD}) then\n${indentBlock(wrapLet(ctx.fault()))}\nelse\n${indentBlock(wrapLet(after))}`;
   }
+  // suspended programs and opaque tails include their same-file dependencies in their identity
+  function iteratorProgram(node) {
+    const seen = new Set([node]), texts = [node.getText(sf)];
+    const walk = (n) => {
+      if (ts.isIdentifier(n)) {
+        const o = originOf(checker, n, sf, currentUnit?.node ?? null);
+        let decl = ['unit', 'module', 'module-mutable'].includes(o.kind) ? o.decl : null;
+        if (o.kind === 'import') { decl = checker.getSymbolAtLocation(n)?.declarations?.[0]; while (decl?.parent && !ts.isImportDeclaration(decl) && !ts.isImportEqualsDeclaration(decl)) decl = decl.parent; }
+        if (decl && decl.getSourceFile() === sf && !seen.has(decl)) { seen.add(decl); texts.push(decl.getText(sf)); ts.forEachChild(decl, walk); }
+        // a dynamic module initializer can refer to any declaration through source text
+        if (['eval', 'Function', 'Reflect', 'Proxy'].includes(n.text) && o.kind === 'global') texts.push(sf.text);
+      }
+      ts.forEachChild(n, walk);
+    };
+    walk(node);
+    return createHash('sha256').update(texts.join('\n')).digest('hex');
+  }
+  function emitAsyncGenerator(u) {
+    addPrelude('World', 'type World');
+    const sp = sigParams(u), D = dtype(retType(u), u.node);
+    const self = u.cls && !u.isStatic ? [`${SELF}: ${selfType(u)}`] : [];
+    const params = [...self, ...(sp.text ? [sp.text] : [])];
+    const names = [...(self.length ? [SELF] : []), ...u.params.map((p, i) => ts.isIdentifier(p.name) ? dn(p.name.text) : `arg${i}_`)];
+    const types = [...(self.length ? [selfType(u)] : []), ...u.params.map((p) => dtype(typeOf(p.name), p))];
+    const create = external(`async_generator_${iteratorProgram(u.node)}`, ['World', ...types], `(World, ${D})`);
+    const tp = unitTParams().length ? `<${unitTParams().map((p) => `${p}(==)`).join(', ')}>` : '';
+    chunks.push(`function ${fname(u.name)}${tp}(${[`${WORLD}: World`, ...params].join(', ')}): (World, ${D})\n{\n${indentBlock([...sp.lets, `${create}(${[WORLD, ...names].join(', ')})`].join('\n'))}\n}`);
+  }
+  // one next transition precedes each consumer step; fuel exhaustion abstracts the remaining loop
+  function asyncIteratorLoop(s, rest, fin, u) {
+    const id = loopCount++, hn = `${curUnitName()}_loop${id}${sfx}`;
+    const fresh = (base) => { let name = base; while (new RegExp(`\\b${name}\\b`).test(sf.text)) name += '_'; return name; };
+    const iter = fresh(`iter${id}_`), remaining = fresh(`remaining${id}_`), answer = fresh(`next${id}_`);
+    const M = assignedOutside(s).map((m) => m.synthetic ? m : { ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) });
+    const free = freeVars(s, s.expression).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }));
+    if (u.cls && !u.isStatic) free.unshift({ name: SELF, d: selfType(u) });
+    const vars = [...free, ...M], names = vars.map((v) => dn(v.name));
+    const state = () => tupleOf(M.map((v) => dn(v.name)));
+    const result = M.length === 1 ? M[0].d : `(${M.map((v) => v.d).join(', ')})`;
+    const x = s.initializer.declarations[0].name, T = dtype(typeOf(x), x);
+    const IT = addPrelude('AsyncIteratorState', 'type AsyncIteratorState');
+    const source = expr(s.expression), SD = dtype(typeOf(s.expression), s.expression);
+    const opened = hoist(`${external('async_iterator_open', ['World', SD], `(World, ${IT})`)}(${WORLD}, ${source})`, IT);
+    usesOption = true;
+    const nextOp = external(`async_iterator_next_${mangle(T)}`, ['World', IT], `(World, Option<${T}>)`);
+    const tail = external(`async_iterator_tail_${iteratorProgram(s)}`, [IT, ...vars.map((v) => v.d)], result);
+    const next = () => `${hn}(${iter}, ${remaining} - 1, ${names.join(', ')})`;
+    loopCtx.push({ cont: next, brk: state, ret: () => fail(s, 'async iterator abrupt completion needs an opaque loop') });
+    let step;
+    try { step = tr(flatten(s.statement), next, u); } finally { loopCtx.pop(); }
+    coreHelpers.push(`function ${hn}${tclause([...vars.map((v) => v.d), T])}(${iter}: ${IT}, ${remaining}: nat, ${vars.map((v) => `${dn(v.name)}: ${v.d}`).join(', ')}): ${result}
+  decreases ${remaining}
+{
+${indentBlock(`if ${remaining} == 0 then ${tail}(${iter}, ${names.join(', ')}) else
+  (var (${WORLD}, ${answer}) := ${nextOp}(${WORLD}, ${iter});
+   if ${answer}.None? then ${state()} else
+${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2)})`)}
+}`);
+    const fuel = `${external('async_iterator_fuel', [], 'nat')}()`;
+    return `var ${state()} := ${hn}(${opened}, ${fuel}, ${names.join(', ')});\n${tr(rest, fin, u)}`;
+  }
   function coreLoop(s, rest, fin, u) {
+    if (s.awaitModifier) return asyncIteratorLoop(s, rest, fin, u);
     const id = loopCount++;
     const jumps = escapingLabels(s);
     const returns = !s.__forEach && containsReturn(s); // a return inside a forEach callback ends one step, never the function
@@ -3538,7 +3609,7 @@ export function translate(file, fnName, opts = {}) {
     const before = effectfulUnits.size;
     for (const u of order) {
       currentUnit = u;
-      if (core && (u.isCtor || containsEffect(u.body) || moduleUnitShape(u).reads)) effectfulUnits.add(u.name);
+      if (core && (u.isCtor || asyncGenerator(u) || containsEffect(u.body) || moduleUnitShape(u).reads)) effectfulUnits.add(u.name);
       currentUnit = null;
     }
     effectsChanged = effectfulUnits.size !== before;
@@ -3578,7 +3649,7 @@ export function translate(file, fnName, opts = {}) {
     if (tolerant) {
       const before = chunks.length; const savedPending = pending;
       try { emitUnit(u); report.translated.push(u.name); }
-      catch (e) { if (!(e instanceof Unsupported)) throw e; chunks.length = before; pending = savedPending; failedUnits.add(u.name); report.failed.push({ unit: u.name, message: String(e.message).split('\n')[0].slice(0, 160) }); currentUnit = null; }
+      catch (e) { if (!(e instanceof Unsupported)) throw e; chunks.length = before; pending = savedPending; failedUnits.add(u.name); report.failed.push({ unit: u.name, message: String(e.message).split('\n')[0].slice(0, 160) }); currentUnit = null; yieldState = null; }
       continue;
     }
     emitUnit(u);
@@ -3636,6 +3707,8 @@ export function translate(file, fnName, opts = {}) {
     currentUnit = u;
     faultMode = false;
     loopCount = 0; labelIds.clear();
+    if (asyncGenerator(u)) { if (!core) fail(u.node, 'async generators need --core'); emitAsyncGenerator(u); currentUnit = null; return; }
+    if (u.fn.asteriskToken) { if (!core) fail(u.node, 'generators need --core'); let name = 'yielded_'; while (new RegExp(`\\b${name}\\b`).test(sf.text)) name += '_'; yieldState = { name, sym: null, node: u.node, synthetic: true, element: generators.shape(u).element, d: dtype(retType(u), u.node) }; }
     const rt = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
     const name = fname(u.name);
     const specs = [];
@@ -3651,7 +3724,7 @@ export function translate(file, fnName, opts = {}) {
     if (core) {
       const eff = effectfulUnits.has(u.name);
       if (eff) addPrelude('World', 'type World');
-      const endVal = () => (u.isCtor || (retType(u).flags & TF.Void) ? wrapRet('Unit') : retType(u).flags & TF.Undefined ? wrapRet(absentValue(retType(u))) : fail(u.node, 'a path ends without a return'));
+      const endVal = () => yieldState ? wrapRet(yieldState.name) : (u.isCtor || (retType(u).flags & TF.Void) ? wrapRet('Unit') : retType(u).flags & TF.Undefined ? wrapRet(absentValue(retType(u))) : fail(u.node, 'a path ends without a return'));
       const ctx = { ret: wrapRet, fault: () => faultResult(u) };
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
@@ -3659,7 +3732,7 @@ export function translate(file, fnName, opts = {}) {
       try { body0 = moduleShape.opaque ? opaqueModuleBody(u) : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
       catch (e) { if (!(e instanceof Unsupported) || !moduleShape.reads || !eff || u.isCtor) throw e; pending = savedPending; coreHelpers.length = savedHelpers; usedModuleOpaque = true; body0 = opaqueModuleBody(u); }
       const cleared = exceptionUnits.has(u.name) ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
-      const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : cleared;
+      const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : yieldState ? `var ${yieldState.name}: ${yieldState.d} := [];\n${cleared}` : cleared;
       const mutLets = mutatedOf(u).map((m) => `var ${dn(m)} := ${dn(m)};`); // a mutated parameter starts as the argument and is rebound by the body
       const full = usedModuleOpaque ? body : [...sp.lets, ...mutLets].length ? `${[...sp.lets, ...mutLets].join('\n')}\n${body}` : body;
       const selfParam = classOf(u) && !u.isStatic ? `${SELF}: ${selfType(u)}` : '';
@@ -3684,6 +3757,7 @@ export function translate(file, fnName, opts = {}) {
       stmts(bodyList, 1, u, lines);
       chunks.push([`method ${name}(${sp.text}) returns (result: ${rt})`, ...specs, '{', ...lines, '}'].join('\n'));
     }
+    yieldState = null;
     currentUnit = null;
     faultMode = false;
   }

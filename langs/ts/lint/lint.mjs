@@ -15,6 +15,7 @@ import { fileUsesReals } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit } from '../module-forms.mjs';
 import { ADVICE } from './advice.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
+import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -117,6 +118,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   const out = [];
   const units = topLevelFunctions(sf);
   const exceptionUnits = exceptionUnitsOf(sf, checker, units);
+  const generators = generatorReading(checker, sf, units);
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
@@ -203,6 +205,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (name === 'undefined') return;
     const o = originOf(checker, id, sf, current);
     if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id)) return v(id, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
+    if (o.kind === 'unit' && units.get(name)?.fn.asteriskToken && !asyncGenerator(units.get(name)) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.expression === id)) return v(id, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
     if (o.kind === 'local' || o.kind === 'unit') return;
     if (o.kind === 'module' || o.kind === 'import' || o.kind === 'other' || o.kind === 'type') return; // externals
     if (moduleState(checker, id, sf)) {
@@ -240,7 +243,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (!s.expression) { if (!returnsVoid()) v(s, 'bare-return', 'return needs a value'); return; }
         return expr(s.expression);
       case K.ForOfStatement: {
-        if (s.awaitModifier) v(s, 'async', '`for await` is outside the subset');
+        // for-await obtains each next value through the world, then runs one consumer step
         const init = s.initializer;
         if (!ts.isVariableDeclarationList(init) || init.declarations.length !== 1) v(s, 'destructuring', 'for-of binds one name or one pattern');
         const it = nonNull(tOf(s.expression));
@@ -293,7 +296,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const sig = fn && checker.getSignatureFromDeclaration(fn);
     const rt = sig && sig.getReturnType();
     const inner = rt && isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;
-    return !!inner && !!(inner.flags & (TF.Void | TF.Undefined));
+    return !!fn?.asteriskToken || (!!inner && !!(inner.flags & (TF.Void | TF.Undefined)));
   }
   function switchStmt(s) {
     expr(s.expression);
@@ -347,6 +350,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     expr(d.initializer);
   }
   function exprStmt(e) {
+    if (ts.isYieldExpression(e)) return expr(e);
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` as a statement is the call f()
     if (ts.isAwaitExpression(e)) return awaitExpr(e, true);
@@ -598,7 +602,9 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       case K.VoidExpression: return v(e, 'void', '`void` is outside the subset');
       case K.AwaitExpression: return awaitExpr(e);
-      case K.YieldExpression: return v(e, 'generator', 'generators are outside the subset');
+      case K.YieldExpression:
+        if (currentFn?.asteriskToken && !callbackStack.length && ts.isExpressionStatement(e.parent)) return e.expression ? expr(e.expression) : undefined;
+        return v(e, 'generator-use', 'yield is a statement; sent values need a step reading');
       case K.ThisKeyword: if (currentClass) return; return v(e, 'this', '`this` outside a class method');
       case K.SuperKeyword: { if (currentClass && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.parent && ts.isCallExpression(e.parent.parent) && e.parent.parent.expression === e.parent) return; if (currentClass && currentFn && ts.isConstructorDeclaration(currentFn) && e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e) return; return v(e, 'class', '`super` is read only as `super.m(...)` or `super(...)` in a constructor, a call of the parent\'s method'); }
       case K.ClassExpression: return v(e, 'class', 'classes are outside the subset');
@@ -620,7 +626,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ElementAccessExpression: return elemAccess(e);
       case K.ArrayLiteralExpression:
         for (const el of e.elements) {
-          if (ts.isSpreadElement(el)) { if (!isArrayExpr(el.expression) && !nonNull(tOf(el.expression)).every(isSetT)) v(el, 'spread', 'spread works on arrays and sets only'); expr(el.expression); }
+          if (ts.isSpreadElement(el)) { if (!isArrayExpr(el.expression) && !generators.pureCall(el.expression) && !nonNull(tOf(el.expression)).every(isSetT)) v(el, 'spread', 'spread works on arrays and sets only'); expr(el.expression); }
           else if (ts.isOmittedExpression(el)) v(el, 'unsupported-syntax', 'array holes are outside the subset');
           else expr(el);
         }
@@ -634,6 +640,7 @@ export function lintFile(file, ranges = null, opts = {}) {
             if (ts.isArrowFunction(p.initializer)) return callback(p.initializer, null); // a handler in a record: a callback value
             return expr(p.initializer);
           }
+          if (p.name && ts.isComputedPropertyName(p.name) && /^Symbol\.(asyncIterator|iterator)$/.test(p.name.expression.getText(sf))) return v(p, 'iterator-protocol', 'custom iterator protocol methods need a step reading; use a generator or an array');
           return v(p, 'unsupported-syntax', 'methods and accessors are outside the subset');
         });
         return;
@@ -701,6 +708,9 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
 
   function call(e) {
+    const generatorDecl = checker.getResolvedSignature(e)?.declaration;
+    const producer = [...units.values()].find((u) => u.fn === generatorDecl && u.fn.asteriskToken);
+    if (producer) { const shape = generators.shape(producer); if (shape.rule) v(e, shape.rule, shape.message); }
     conditionalSpreadArgs(e);
     if (['useMemo', 'useCallback', 'useEffect'].includes(reactHook(checker, e))) reactCapture(e.arguments[0]);
     const f = e.expression;
@@ -713,7 +723,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (o.kind === 'unit') {
         const u = units.get(f.text);
         if (u && !e.arguments.some(ts.isSpreadElement) && !u.params.some((p) => p.dotDotDotToken)) { const req = u.params.filter((p) => !p.initializer && !p.questionToken && !p.dotDotDotToken).length; if (e.arguments.length < req || e.arguments.length > u.params.length) v(e, 'unsupported-call', `${f.text} takes ${req === u.params.length ? req : `${req} to ${u.params.length}`} arguments`); }
-        if (u && u.isAsync && !(e.parent && ts.isAwaitExpression(e.parent))) v(e, 'async', 'an async unit is called without await');
+        if (u?.fn.asteriskToken && !u.isAsync && !immediateGeneratorConsumer(e, checker, sf)) v(e, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
+        if (u && u.isAsync && !u.fn.asteriskToken && !(e.parent && ts.isAwaitExpression(e.parent))) v(e, 'async', 'an async unit is called without await');
       }
       if (o.kind === 'unit') { const uRest = units.get(e.expression.text); const restOk = !!(uRest && uRest.params.some((p) => p.dotDotDotToken)); e.arguments.forEach((a, i) => { if (ts.isSpreadElement(a)) { if (restOk && i === uRest.params.length - 1 && isArrayExpr(a.expression)) expr(a.expression); else v(a, 'spread', 'a spread argument goes to a rest parameter, as the last argument'); } else if (!ts.isArrowFunction(a)) expr(a); else v(a, 'function-value', 'a same-file function takes values, not callbacks'); }); return; }
       return argsOf(e);
@@ -1069,7 +1080,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (!inScope) continue;
       checkedDiagSpans.push(st);
       current = st; currentFn = u.fn;
-      if (u.fn.asteriskToken) v(st, 'generator', 'generators are outside the subset');
+      if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(st, shape.rule, shape.message); }
       if (!u.body) v(st, 'unsupported-syntax', 'function without a body');
       const sig = checker.getSignatureFromDeclaration(u.fn);
       const rt = sig.getReturnType();
@@ -1105,7 +1116,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (!overlaps(sf, u.node, ranges)) continue;
         checkedDiagSpans.push(u.node);
         current = u.node; currentFn = u.fn; currentClass = st;
-        if (u.fn.asteriskToken) v(u.node, 'generator', 'generators are outside the subset');
+        if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(u.node, shape.rule, shape.message); }
         const sig = checker.getSignatureFromDeclaration(u.fn);
         const rt = sig.getReturnType();
         const inner = isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;

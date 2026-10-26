@@ -146,8 +146,8 @@ reading no value model can give; the lint says what to write instead).
 | `Promise.all` over a map, `Promise.all` of a literal | 607 | awaited inline map and async flatMap collect values in input order; callbacks with observable work after suspension are refused (`promise-all-order`); async predicates are refused (`async-predicate`, promises are truthy); the existing literal reading is unchanged | `allSettled` (57) and `race` (38) stay transitions; general continuation scheduling is not read | partial (lane) |
 | fire-and-forget `void p`, unawaited calls | | the call is a transition | same | done |
 | timers `setTimeout`, `setInterval` | 450, 84 | transitions; lane B records them as pending work | same | done |
-| `for await`, async iterators, generators, `yield` | 225, 62, 201 | refused (`async`, `generator`) | a generator is a function returning a sequence (bounded by a fuel); `for await` over an async iterable is a loop of transitions | gap |
-| iterator protocol `Symbol.iterator`, spread of an iterable | | refused | a user iterable is a sequence via its `next` transitions, bounded | gap (small) |
+| `for await`, async iterators, generators, `yield` | 225, 62, 201 | pure scalar generators collect yields and yield* into sequences; for-await steps through world-backed iterators with an opaque fuel remainder; scalar async producers are opaque suspended programs; abrupt consumers stay opaque | exact producer state machines and heap-aware captures remain; infinite sync generators refused by name | partial (lane) |
+| iterator protocol `Symbol.iterator`, spread of an iterable | | immediate pure-generator spread and Array.from are sequences; custom protocol literals refused (`iterator-protocol`); previous outside fallbacks retained | a user iterable is a sequence via its `next` transitions, bounded | gap (small) |
 | microtask and macrotask ordering | | one order (lane B: one microtask queue) | by design: the recording gate's reproducibility check covers scheduling | by design |
 
 ## 7. Modules, globals and the world
