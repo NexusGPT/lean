@@ -54,7 +54,7 @@ export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
     const walk = (n) => {
       if (ts.isFunctionLike(n)) return;
       if (ts.isThrowStatement(n) || ts.isTryStatement(n) || mayFaultPure(n, checker, sf)) out.add(u.name);
-      if (ts.isCallExpression(n)) {
+      if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
         const callee = byDecl.get(checker.getResolvedSignature(n)?.declaration);
         if (callee) edges.get(callee).add(u.name);
       }
@@ -89,7 +89,6 @@ export function opaqueExceptionTry(n, checker) {
       if (ts.isPropertyAccessExpression(f) && ['map', 'flatMap', 'filter', 'reduce', 'forEach', 'some', 'every', 'find', 'findIndex', 'sort'].includes(f.name.text) && x.arguments.length) opaque = true;
       const d = checker.getResolvedSignature(x)?.declaration;
       if (d && (ts.isFunctionTypeNode(d) || ts.isCallSignatureDeclaration(d))) opaque = true;
-      if (d && ts.isMethodDeclaration(d) && d.getSourceFile() === n.getSourceFile() && ts.isPropertyAccessExpression(f) && f.expression.kind !== K.ThisKeyword) opaque = true;
     }
     if ((ts.isVariableDeclaration(x) || ts.isBindingElement(x)) && ts.isIdentifier(x.name)) {
       if (names.has(x.name.text)) opaque = true;
@@ -792,6 +791,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     w(cb.body); return !bad;
   }
   function checkCallbackControl(cb) {
+    if (enclosingOpaqueTry(cb)) return; // the enclosing try owns this completion as one opaque transition
     const w = (n, depth = 0) => {
       if (ts.isFunctionLike(n)) return;
       if (ts.isTryStatement(n) || ts.isThrowStatement(n) || (ts.isReturnStatement(n) && depth > 0)) v(n, 'callback-control', 'try, throw or a return from an inner loop in a callback needs an explicit for-of loop');

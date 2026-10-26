@@ -16,7 +16,8 @@
     "changed_output",
     "observe_output",
     "parse_text",
-    "parse_caller"
+    "parse_caller",
+    "finalizer_constructor"
   ],
   "equal": {
     "leaf": false,
@@ -35,7 +36,8 @@
     "changed_output": true,
     "observe_output": true,
     "parse_text": false,
-    "parse_caller": false
+    "parse_caller": false,
+    "finalizer_constructor": true
   },
   "why": "same-file faults reach catch even in return and condition expressions; finally runs on all completions and can override them; ignored throws and dropped cleanup remain observable; outside method lookup precedes argument evaluation",
   "b": {

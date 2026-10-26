@@ -1561,7 +1561,7 @@ export function translate(file, fnName, opts = {}) {
       const Tn = classTypeD(cls);
       const h = hoist(`${external(`alloc_${mangle(Tn)}`, ['World'], `(World, ${Tn})`)}(${WORLD})`, Tn);
       const ctor = fns.get(`${cls.name.text}.constructor`);
-      if (ctor) { if (failedUnits.has(ctor.name)) fail(n, `the constructor of ${cls.name.text} was not translated`); const args = unitArgs(ctor, n); hoist(`${fname(ctor.name)}(${[WORLD, ...fuelArg(ctor), h, ...args].join(', ')})`, 'Unit'); }
+      if (ctor) { if (failedUnits.has(ctor.name)) fail(n, `the constructor of ${cls.name.text} was not translated`); const args = unitArgs(ctor, n); hoist(`${fname(ctor.name)}(${[WORLD, ...fuelArg(ctor), h, ...args].join(', ')})`, 'Unit'); if (!faultMode && completionMode && exceptionUnits.has(ctor.name)) pending.push(FAULT_CHECK); }
       else initFields(cls, h);
       return h;
     }
@@ -1771,7 +1771,9 @@ export function translate(file, fnName, opts = {}) {
         if (effectfulUnits.has(callee.name)) {
           if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure unit');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
-          return hoist(`${fname(callee.name)}(${[WORLD, ...fuelArg(callee), ...selfArg, ...args].join(', ')})`, dtype(rt, n));
+          const value = hoist(`${fname(callee.name)}(${[WORLD, ...fuelArg(callee), ...selfArg, ...args].join(', ')})`, dtype(rt, n));
+          if (!faultMode && completionMode && exceptionUnits.has(callee.name)) pending.push(FAULT_CHECK);
+          return value;
         }
         return `${fname(callee.name)}(${[...fuelArg(callee), ...selfArg, ...args].join(', ')})`;
       }
@@ -2368,7 +2370,7 @@ export function translate(file, fnName, opts = {}) {
     return out;
   }
   function faultResult(u) {
-    const R = dtype(retType(u), u.node);
+    const R = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
     return wrapRet(`${external(`fault_result_${mangle(R)}`, [], R)}()`);
   }
   // normal, return and throw are separate continuations; finally runs before the saved completion
@@ -2400,7 +2402,7 @@ export function translate(file, fnName, opts = {}) {
       let propagates = false;
       const scan = (n) => {
         if (ts.isFunctionLike(n)) return;
-        if (ts.isThrowStatement(n) || ts.isTryStatement(n) || (ts.isCallExpression(n) && exceptionUnits.has(unitNameOfCall(n)))) propagates = true;
+        if (ts.isThrowStatement(n) || ts.isTryStatement(n) || ((ts.isCallExpression(n) || ts.isNewExpression(n)) && exceptionUnits.has(unitNameOfCall(n)))) propagates = true;
         ts.forEachChild(n, scan);
       };
       scan(s);
@@ -2581,7 +2583,7 @@ export function translate(file, fnName, opts = {}) {
     let usesSelf = false; const calls = new Set();
     const w = (x) => {
       if (x.kind === K.ThisKeyword) usesSelf = true;
-      if (ts.isCallExpression(x)) { const name = unitNameOfCall(x); if (name) calls.add(name); }
+      if (ts.isCallExpression(x) || ts.isNewExpression(x)) { const name = unitNameOfCall(x); if (name) calls.add(name); }
       if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && fns.has(x.expression.text) && originOf(checker, x.expression, sf, currentUnit?.node ?? null).kind === 'unit') calls.add(x.expression.text);
       if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
       ts.forEachChild(x, w);
@@ -2589,7 +2591,7 @@ export function translate(file, fnName, opts = {}) {
     w(s);
     if (containsJump(s) && loopCtx.length) fail(s, 'a break or continue of an enclosing loop inside an opaque block');
     const text = s.getText(sf).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' ').trim();
-    const RD = dtype(retType(u), s);
+    const RD = u.isCtor ? 'Unit' : dtype(retType(u), s);
     const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
     const id = `block_${hash(text)}${calleeTag ? '_calls_' + calleeTag : ''}`;
     const inTypes = ['World', ...(usesSelf ? [selfType(u)] : []), ...free.map((v) => v.d)];
@@ -2663,7 +2665,7 @@ export function translate(file, fnName, opts = {}) {
     if (!M.length && !returns) return tr(rest, fin, u);
     if (ts.isWhileStatement(s) && containsEffect(s.expression)) fail(s, 'an effect in a while condition');
     if (ts.isForStatement(s) && (containsEffect(s.condition) || containsEffect(s.incrementor))) fail(s, 'an effect in a for header');
-    const RD = dtype(retType(u), s);
+    const RD = u.isCtor ? 'Unit' : dtype(retType(u), s);
     if (returns) usesOption = true;
     const isIn = ts.isForInStatement(s); const isOf = ts.isForOfStatement(s) || isIn, isFor = ts.isForStatement(s); // `for (k in o)` is a for-of over the keys of o
     const userHints = [...hintsOf(sf, s).invariants, ...invariants.filter((x) => x.loop === null || x.loop === id).map((x) => x.expr)];

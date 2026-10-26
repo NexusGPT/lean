@@ -12,6 +12,7 @@ A terminal uncaught `throw` raises the fault and returns an unused result placeh
 This replaces `ext_throw_R(e)`: discarding the result can no longer discard a throw.
 An otherwise pure throwing function needs the world. Its callers inherit the
 outcome channel; its ordinary callees keep their existing reading.
+Same-file constructors carry this outcome with their Unit result and class initialization.
 
 General transition checkpoints are local to an exact try, including its return
 and condition expressions, and the cleanup of an exact finally. A unit's unrelated

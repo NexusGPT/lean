@@ -1,5 +1,7 @@
 # Exceptions across calls: scoped revision validation
 
+Pre-rebase validation. The integration with `dev` at `80728f8` is recorded in [exceptions-across-calls-rebase-validation.md](exceptions-across-calls-rebase-validation.md).
+
 | Concept | Before lint / translate / witnessed units | After lint / translate / witnessed units |
 |---|---|---|
 | throw | 7 / 6 / 6 | 7 / 6 / 6 |
