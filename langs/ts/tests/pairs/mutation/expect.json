@@ -1,6 +1,24 @@
 {
- "scope": ["add_tag", "rename", "visit", "tag_twice", "count_only"],
- "equal": { "add_tag": true, "rename": false, "visit": true, "tag_twice": true, "count_only": true },
- "why": "addTag appends by push in the parent and by a spread assignment in the candidate: the same new value of `user`; rename writes a different id; visit, tagTwice and countOnly are untouched",
- "b": { "addTag": "PASS-bounded", "rename": "WITNESS", "visit": "PASS-bounded", "tagTwice": "PASS-bounded", "countOnly": "PASS-bounded" }
+ "scope": [
+  "add_tag",
+  "rename",
+  "visit",
+  "tag_twice",
+  "count_only"
+ ],
+ "equal": {
+  "add_tag": false,
+  "rename": false,
+  "visit": true,
+  "tag_twice": false,
+  "count_only": true
+ },
+ "why": "addTag appends by push in the parent and by a spread assignment in the candidate: the same new value of `user`, but the array the caller held before the call differs afterwards (SEMANTICS item 2: every pre-call object, field by field), so the two are different; tagTwice inherits the difference; rename writes a different id; visit and countOnly are untouched. The proof lane still proves add_tag and tag_twice under references layer 1 (a false proof the heap translation, stage 2, removes); until then these two expectations are red by design.",
+ "b": {
+  "addTag": "WITNESS",
+  "rename": "WITNESS",
+  "visit": "PASS-bounded",
+  "tagTwice": "WITNESS",
+  "countOnly": "PASS-bounded"
+ }
 }
