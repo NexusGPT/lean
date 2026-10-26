@@ -61,6 +61,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   --candidate t.tsx --unit App --no-project` per scenario, trace read by hand.
 - Pass: 5 of 5 agree, or every disagreement names a rule our runtime lacks (setter during render, cleanup
   order, effect after commit).
+- Measured (2026-10-26, clone at `~/nexus/nexus-organisation/work/lean-deps/react-trace`, MIT, head da92a1b):
+  `test-react-side/src/` holds 37 plain JSX components and 38 Jest tests over 18 scenario families; the oracle
+  is a mocked `print` whose call count and order are asserted (render and effect counts, re-render cycles,
+  reconciliation, user events). The port is direct: `./print` becomes a recorded fake in lane B's sandbox and the
+  trace is compared with the test's expected calls; most families need the re-render loop (a setter in an
+  effect re-renders up to 25 or 100 times), which is the hook-slot runtime row. Not killed.
 - Kill: no scenario portable in a day.
 
 ## 4. Purity by double render, Strict Mode without React
