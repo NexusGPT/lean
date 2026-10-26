@@ -44,7 +44,10 @@ export class Environment {
   typed(path, tspec, optional = false) {
     if (this.cache.has(path)) return this.cache.get(path);
     if (!tspec) return this.answer(path);
-    if (tspec.kind === 'method' || tspec.kind === 'service') return this.fake(path, tspec);
+    if (tspec.kind === 'service' && tspec.awaits) return this.typed(path, tspec.awaits); // a thenable answers what awaiting it yields
+    if (tspec.kind === 'service' && !Object.keys(tspec.members ?? {}).length) return this.answer(path); // a handle with no typed member: the varied answer
+    if (tspec.kind === 'method' || tspec.kind === 'service' || tspec.kind === 'class') return this.fake(path, tspec);
+    if (tspec.kind === 'opaque') return this.answer(path); // a shape the spec could not read: the varied answer (a handle, null, an empty list, ...), so null checks and empty cases still run
     if (tspec.kind === 'field') return this.typed(path, tspec.spec, tspec.optional);
     if (tspec.kind === 'function') return this.fake(`${path}#fn`, tspec.returns ? { kind: 'method', returns: tspec.returns } : null);
     const sh = this.shapes ?? {};
@@ -54,6 +57,8 @@ export class Environment {
     this.cache.set(path, v);
     return v;
   }
+  // whether a call faults: about one call in twelve, decided by the seed and the call's path
+  faultDraw(path) { const h = createHash('sha256').update(`${this.seed}:fault:${path}`).digest(); return h.readUInt32BE(0) / 4294967296 < 1 / 12; }
   // a member of a handle: typed when the handle's shape names it, a plain answer otherwise
   member(path, prop, tspec) {
     const m = tspec && tspec.kind === 'service' && tspec.members && Object.hasOwn(tspec.members, prop) ? tspec.members[prop] : null;
@@ -133,6 +138,9 @@ export class Environment {
           // own __decorate never lets a decorator's result replace the class
         }
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
+        // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
+        // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
+        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); throw new Error(`fault: ${path}`); }
         // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
         if (!env.loading) {
           const cbs = [];
@@ -152,7 +160,7 @@ export class Environment {
         if (tspec && tspec.kind === 'method') return env.typed(`${path}()#${k}`, tspec.returns); // the declared return type answers
         return env.answer(`${path}()#${k}`);
       },
-      construct(t, args) { env.record('new', path, args.map((x) => render(x))); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); return env.fake(`new ${path}#${k}`); },
+      construct(t, args) { env.record('new', path, args.map((x) => render(x))); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); if (tspec && tspec.kind === 'class') return env.typed(`new ${path}#${k}`, tspec.instance); return env.fake(`new ${path}#${k}`); },
       getPrototypeOf() { return Function.prototype; },
       ownKeys(t) { env.record('keys', path); return Reflect.ownKeys(t); },
       getOwnPropertyDescriptor(t, prop) { return Reflect.getOwnPropertyDescriptor(t, prop); },

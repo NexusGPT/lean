@@ -75,7 +75,7 @@ export function sandbox(env, root) {
     setTimeout: (fn, ms, ...a) => { env.pending.push({ op: 'setTimeout', ms: Number(ms) || 0 }); return env.pending.length; },
     setInterval: (fn, ms) => { env.pending.push({ op: 'setInterval', ms: Number(ms) || 0 }); return env.pending.length; },
     setImmediate: (fn) => { env.pending.push({ op: 'setImmediate' }); return env.pending.length; },
-    clearTimeout: () => {}, clearInterval: () => {}, queueMicrotask: (fn) => Promise.resolve().then(fn),
+    clearTimeout: (id) => { env.record('call', 'global:clearTimeout', [render(id)]); }, clearInterval: (id) => { env.record('call', 'global:clearInterval', [render(id)]); }, queueMicrotask: (fn) => Promise.resolve().then(fn),
     Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
     Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect, Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: env.module('performance'), React: env.module('react'),
@@ -121,7 +121,7 @@ export function sandbox(env, root) {
   return { load, ctx };
 }
 
-function pickUnit(exportsObj, spec, env) {
+export function pickUnit(exportsObj, spec, env) {
   const units = exportsObj.__lean_units ?? {};
   if (!spec.isMethod) {
     const f = units[spec.unit] ?? exportsObj[spec.unit];
@@ -138,6 +138,7 @@ function pickUnit(exportsObj, spec, env) {
   const self = new Proxy(base, {
     get(t, p) {
       if (p === '__isFake') return false;
+      if (p === '__own') return () => ({ ...t }); // the fields this run assigned
       if (typeof p === 'symbol') return t[p];
       if (p in Cls.prototype) { const v = Cls.prototype[p]; return typeof v === 'function' ? v.bind(self) : v; }
       if (Object.prototype.hasOwnProperty.call(t, p)) return t[p]; // a field this run assigned: its value
@@ -179,7 +180,11 @@ export async function observe(side, spec, args, ms) {
   const mutated = args.map((a, i) => (before[i] === after[i] ? null : JSON.parse(after[i])));
   await new Promise((r) => setImmediate(r)); // let a fire-and-forget continuation fail now rather than during the next side
   for (const m of lateErrors.splice(0)) env.record('late-error', 'process', [m.slice(0, 200)]);
-  return { outcome, mutated, trace: env.trace, pending: env.pending };
+  // the receiver's own state after the call: every field of `this` the run touched, rendered (a typed field such as a
+  // Map or a counter is a real value, so a change to it is seen here, not on the trace)
+  const receiver = {};
+  if (side.unit && side.unit.receiver) { for (const [k, v] of env.cache) if (k.startsWith('this.') && !k.includes('(') && !k.includes('#') && !k.includes('.', 5)) receiver[k] = render(v); const own = side.unit.receiver.__own ? side.unit.receiver.__own() : {}; for (const k of Object.keys(own)) receiver[`this.${k}`] = render(own[k]); }
+  return { outcome, mutated, receiver, trace: env.trace, pending: env.pending };
 }
 
 export async function runPair(opts) {
@@ -200,7 +205,9 @@ export async function runPair(opts) {
       if (!u) { harnessAsk = `${name}: unit ${unit} not exported`; break; }
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
-      sides[name] = { env, unit: u, inputs: inputsFor(spec, seed, i, env) };
+      const inputs = inputsFor(spec, seed, i, env);
+      env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
+      sides[name] = { env, unit: u, inputs };
     }
     if (harnessAsk) break;
     const oP = await observe(sides.parent, spec, sides.parent.inputs, ms);
@@ -219,7 +226,7 @@ export async function runPair(opts) {
 }
 
 function firstDifference(a, b) {
-  for (const k of ['outcome', 'mutated', 'trace', 'pending']) {
+  for (const k of ['outcome', 'mutated', 'receiver', 'trace', 'pending']) {
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
       if (k === 'trace') { const i = a.trace.findIndex((e, j) => JSON.stringify(e) !== JSON.stringify(b.trace[j])); return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }

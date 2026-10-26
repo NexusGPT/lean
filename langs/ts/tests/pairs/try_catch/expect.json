@@ -1,0 +1,18 @@
+{
+ "scope": [
+  "fetcher_load",
+  "fetcher_load_or_throw",
+  "parse"
+ ],
+ "equal": {
+  "fetcher_load": false,
+  "fetcher_load_or_throw": true,
+  "parse": true
+ },
+ "why": "the candidate changes what load returns on the catch path: lane A does not prove it, lane B reaches the catch through a faulting call; loadOrThrow and parse are untouched",
+ "b": {
+  "Fetcher.load": "WITNESS",
+  "Fetcher.loadOrThrow": "PASS-bounded",
+  "parse": "PASS-bounded"
+ }
+}

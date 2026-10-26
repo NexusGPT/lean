@@ -15,11 +15,13 @@ export function specOf(file, unitName, opts = {}) {
   const defs = {};
   // the names the file mentions: a member a file never names is never asked, so only named members of a service are typed
   const named = new Set(); { const w = (n) => { if (ts.isIdentifier(n) || ts.isPrivateIdentifier(n)) named.add(n.text); ts.forEachChild(n, w); }; w(sf); }
-  let budget = 6000; // shape nodes; a type with a very large closure (a database client) ends in opaque leaves
+  let budget = 20000; // shape nodes; a type with a very large closure (a database client) ends in opaque leaves
   function spec(t, depth = 0) {
-    if (depth > 5 || budget-- <= 0) return { kind: 'opaque' };
     const f = t.flags;
     if (f & (TF.Any | TF.Unknown)) return { kind: 'opaque' };
+    if (f & TF.Null) return { kind: 'null' };
+    if (f & (TF.Undefined | TF.Void)) return { kind: 'undefined' };
+    if (depth > 5 || budget-- <= 0) return { kind: 'opaque' };
     if (f & TF.StringLiteral) return { kind: 'literal', values: [t.value] };
     if (f & TF.NumberLiteral) return { kind: 'literal', values: [t.value] };
     if (f & TF.BooleanLiteral) return { kind: 'literal', values: [t.intrinsicName === 'true'] };
@@ -35,6 +37,13 @@ export function specOf(file, unitName, opts = {}) {
       const lits = parts.filter((x) => x.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral));
       if (lits.length === parts.length) return { kind: 'literal', values: lits.map((x) => (x.flags & TF.BooleanLiteral ? x.intrinsicName === 'true' : x.value)) };
       return { kind: 'union', options: parts.map((x) => spec(x, depth + 1)) };
+    }
+    if (f & (TF.Intersection | TF.Object)) {
+      // a callable (also an intersection of callables, as decorators are typed) answers its return type; a class answers an instance
+      const csigs = checker.getSignaturesOfType(t, ts.SignatureKind.Call);
+      if (csigs.length) return { kind: 'function', arity: csigs[0].getParameters().length, returns: spec(csigs[0].getReturnType(), depth + 1) };
+      const nsigs = checker.getSignaturesOfType(t, ts.SignatureKind.Construct);
+      if (nsigs.length) return { kind: 'class', instance: spec(nsigs[0].getReturnType(), depth + 1) };
     }
     if (f & TF.Intersection) return recordSpec(t, depth);
     if (f & TF.Object) {
@@ -65,6 +74,9 @@ export function specOf(file, unitName, opts = {}) {
       // return type (an empty list, a record, null) and not a bare handle; the handle itself stays a fake
       const o = { kind: 'service', name: key.slice(0, 40), members: {} };
       seen.set(key, o); defs[key] = o;
+      // a thenable (a query builder that is awaited): what `await` yields is the argument of its `then` callback
+      const thenP = props.find((x) => x.name === 'then');
+      if (thenP) { try { const ts0 = checker.getSignaturesOfType(checker.getTypeOfSymbolAtLocation(thenP, u.node), ts.SignatureKind.Call)[0]; const onf = ts0 && ts0.getParameters()[0]; const onfT = onf && checker.getTypeOfSymbolAtLocation(onf, u.node); const cbT = onfT && (onfT.flags & TF.Union ? onfT.types : [onfT]).find((x) => checker.getSignaturesOfType(x, ts.SignatureKind.Call).length); const cb = cbT && checker.getSignaturesOfType(cbT, ts.SignatureKind.Call)[0]; const v = cb && cb.getParameters()[0]; if (v) o.awaits = spec(checker.getTypeOfSymbolAtLocation(v, u.node), depth + 1); } catch {} }
       for (const p of props.filter((x) => named.has(x.name)).slice(0, 80)) {
         const pt = checker.getTypeOfSymbolAtLocation(p, u.node);
         const sigs = checker.getSignaturesOfType(pt, ts.SignatureKind.Call);

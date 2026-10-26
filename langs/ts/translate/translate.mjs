@@ -136,8 +136,16 @@ export function translate(file, fnName, opts = {}) {
     }
     return true;
   }
-  const isOpaqueStmt = (x) => ts.isTryStatement(x) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  // try/catch, exact: an effect inside the body may fault; the fault is a flag on the world, checked after each statement
+  // of the body that makes a transition (or throws); the catch path binds the fault value and runs with the flag cleared.
+  // A try without a catch, or whose body loops over an effect, stays an opaque block.
+  const loopsOverEffect = (node) => { let f = false; const w = (x) => { if (f || ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if ((ts.isForOfStatement(x) || ts.isForStatement(x) || ts.isWhileStatement(x) || ts.isForInStatement(x)) && containsEffect(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const exactTry = (x) => core && ts.isTryStatement(x) && !!x.catchClause && !loopsOverEffect(x.tryBlock) && !(x.catchClause && loopsOverEffect(x.catchClause.block));
+  const isOpaqueStmt = (x) => (ts.isTryStatement(x) && !exactTry(x)) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
+  // the innermost exact try whose BODY holds the statement, within the same function
+  const tryOf = (st) => { let n = st; let child = null; while (n && !ts.isFunctionLike(n)) { if (ts.isTryStatement(n) && exactTry(n) && child === n.tryBlock) return n; child = n; n = n.parent; } return null; };
+  const faultPreds = () => { addPrelude('World', 'type World'); return { faulted: external('faulted', ['World'], 'bool'), value: external('fault_value', ['World'], anyType()), clear: external('clear_fault', ['World'], 'World'), raise: external('raise', ['World', anyType()], 'World') }; };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -201,7 +209,7 @@ export function translate(file, fnName, opts = {}) {
     const walk = (n) => {
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) { const f = thisField(n.left); if (f) out.add(f); }
       if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const f = thisField(n.operand); if (f) out.add(f); }
-      if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isVoidExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) { const f = thisField(e.expression.expression); if (f) out.add(f); } }
+      if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isVoidExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) { const f = thisField(e.expression.expression); if (f) out.add(f); } } // this.items.push(x): the field's contents change; a service call on a field is a transition of the world, not of the field
       ts.forEachChild(n, walk);
     };
     for (const m of cls.members) if (!ts.isConstructorDeclaration(m)) walk(m);
@@ -1701,15 +1709,32 @@ export function translate(file, fnName, opts = {}) {
   const tupleOf = (names) => (names.length === 1 ? names[0] : `(${names.join(', ')})`);
 
   // translate a statement list to ONE Dafny expression; `fin()` gives the value when the list ends
+  // the catch path of an exact try, from a statement inside its body: bind the fault value, clear the flag, run the
+  // handler, the finally block, and what follows the try
+  function catchPath(t, u, thrown = null) {
+    const P = faultPreds();
+    const cc = t.catchClause;
+    const lines = [];
+    if (thrown) lines.push(`var ${WORLD} := ${P.raise}(${WORLD}, ${thrown});`);
+    if (cc.variableDeclaration && ts.isIdentifier(cc.variableDeclaration.name)) lines.push(`var ${dn(cc.variableDeclaration.name.text)}: Any := ${P.value}(${WORLD});`);
+    lines.push(`var ${WORLD} := ${P.clear}(${WORLD});`);
+    const cont = t.__cont;
+    const after = [...cc.block.statements, ...(t.finallyBlock ? t.finallyBlock.statements : []), ...cont.rest];
+    return `${lines.join('\n')}\n${tr(after, cont.fin, u)}`;
+  }
   function tr(list, fin, u) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
-    const more = (r = rest) => tr(r, fin, u);
+    const more0 = (r = rest) => tr(r, fin, u);
+    // after a statement of an exact try body that may fault: the catch path, else what follows
+    const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) return `${code}${code ? '\n' : ''}${tr(r, fin, u)}`; const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
+    const more = (r = rest) => (tryOf(s) && containsEffect(s) ? guard('', r) : more0(r));
     switch (s.kind) {
+      case K.TryStatement: if (exactTry(s)) { s.__cont = { rest, fin }; return tr([...s.tryBlock.statements, ...(s.finallyBlock ? s.finallyBlock.statements : []), ...rest], fin, u); } return opaqueBlock(s, rest, fin, u);
       case K.Block: return tr([...s.statements, ...rest], fin, u);
       case K.EmptyStatement: return more();
       case K.ReturnStatement: return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
-      case K.ThrowStatement: return capture(() => { const R = dtype(retType(u), s); const code = `${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`; return retIn(wrapRet(code)); });
+      case K.ThrowStatement: { const t = tryOf(s); if (t) return capture(() => catchPath(t, u, expr(s.expression, anyTarget()))); return capture(() => { const R = dtype(retType(u), s); const code = `${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`; return retIn(wrapRet(code)); }); }
       case K.VariableStatement: {
         const out = [];
         for (const d of s.declarationList.declarations) {
@@ -1720,7 +1745,7 @@ export function translate(file, fnName, opts = {}) {
             return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};`;
           }));
         }
-        return `${out.join('\n')}\n${more()}`;
+        return tryOf(s) && containsEffect(s) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
       }
       case K.ExpressionStatement: {
         const line = capture(() => {
@@ -1732,11 +1757,11 @@ export function translate(file, fnName, opts = {}) {
           const sym = checker.getSymbolAtLocation(target);
           return `var ${dn(n)}: ${dtype(symType(sym, s), s)} := ${v};`;
         });
-        return line.trim() ? `${line}\n${more()}` : more();
+        if (tryOf(s) && containsEffect(s)) return guard(line.trim() ? line : '');
+        return line.trim() ? `${line}\n${more0()}` : more0();
       }
       case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: flatten(s.thenStatement) }], s.elseStatement ? flatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
       case K.SwitchStatement: { let parts; const h = capture(() => { parts = switchChain(s); return ''; }); const body = ifChain(parts.chain, parts.dflt, s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
-      case K.TryStatement: return opaqueBlock(s, rest, fin, u);
       case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: {
         if (isOpaqueStmt(s)) return opaqueBlock(s, rest, fin, u);
         let body; const h = capture(() => { body = coreLoop(s, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body;

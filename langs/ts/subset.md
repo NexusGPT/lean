@@ -76,12 +76,22 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Tagged templates | ``sql`select ${id}` `` | `ext_tag_sql_1(["select ", ""], id)` |
 | `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first) |
 
+## What is a fault
+
+A `try`/`catch` is exact. Every transition of the world inside the body may fault: after each statement of the body
+that makes a transition, or throws, the translation tests `ext_faulted(world)`; on a fault the catch path binds
+`ext_fault_value(world)` to the catch variable, clears the flag, and runs the handler, the `finally` block and what
+follows the try. A `throw` inside the body raises the fault with the thrown value. A pure computation never faults
+in the model (`JSON.parse`, `Number` and array indexing are pure functions of their arguments), so a catch that only
+guards a pure call is a branch never taken. The execution lane lets a typed answer fault on a seeded draw, so catch
+paths run there too.
+
 ## What is an opaque block
 
-A `try`/`catch`/`finally` statement and a `while` loop without `// @decreases` become one uninterpreted transition
-named by the block's own text, taking the variables the block reads and returning the ones it assigns. The same block
-on both sides is the same transition; a changed block is a different one, never proved equal and never proved
-different (the execution lane decides it). A `try` whose body returns a value is not translated yet.
+A `try` without a catch, a `try` whose body loops over a transition, and a `while` loop without `// @decreases`
+become one uninterpreted transition named by the block's own text, taking the variables the block reads and
+returning the ones it assigns. The same block on both sides is the same transition; a changed block is a different
+one, never proved equal and never proved different (the execution lane decides it).
 
 ## What is refused
 
