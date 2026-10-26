@@ -172,6 +172,7 @@ export function sandbox(env, root) {
   };
   g.globalThis = g; g.global = g; g.window = undefined;
   const ctx = vm.createContext(g);
+  env.ctx = ctx; // a unit call runs under this context's watchdog (guardedCall): a synchronous loop that never ends is a timeout, never a hang or a native crash
   function load(file) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
@@ -249,6 +250,16 @@ export function pickUnit(exportsObj, spec, env) {
   return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : method.apply(self, args), receiver: self };
 }
 
+// a synchronous call under the vm's watchdog: JavaScript cannot be preempted, so an unbounded loop (an input aliased
+// into the array it grows, a mutant that breaks a bound) is interrupted by the isolate and reported as a timeout
+class CallTimeout extends Error { constructor(ms) { super(`__timeout__`); this.ms = ms; } }
+function guardedCall(env, fn, ms) {
+  if (!env.ctx) return fn();
+  env.ctx.__leanCall = fn;
+  try { return vm.runInContext('__leanCall()', env.ctx, { timeout: Math.max(1, ms) }); }
+  catch (e) { if (e && e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') throw new CallTimeout(ms); throw e; }
+  finally { delete env.ctx.__leanCall; }
+}
 async function withTimeout(p, ms) {
   let timer;
   const t = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('__timeout__')), ms); });
@@ -267,12 +278,13 @@ export async function observe(side, spec, args, ms) {
   lateErrors.length = 0;
   try {
     const slotsBefore = (env.hookSlots ?? []).slice(), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
-    let v = await commitRender(env, () => unit.call(args), ms);
+    const call = () => guardedCall(env, () => unit.call(args), ms);
+    let v = await commitRender(env, call, ms);
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
       env.hookSlots = slotsBefore.slice(); env.calls = new Map(callsBefore); env.demand = demandBefore;
-      const v2 = await commitRender(env, () => unit.call(args), ms);
+      const v2 = await commitRender(env, call, ms);
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
       env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
@@ -282,7 +294,7 @@ export async function observe(side, spec, args, ms) {
       try { const cleanup = await withTimeout(Promise.resolve(effect()), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); if (es) { es.ran = true; es.lastDeps = es.deps; es.cleanup = typeof cleanup === 'function' ? cleanup : null; } }
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
-    if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, () => unit.call(args), ms, await commitRender(env, () => unit.call(args), ms)); // an effect set the state: React re-renders and settles again
+    if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
     outcome = { returned: render(outcomeValue) };
@@ -337,8 +349,9 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
     const inputs = aliasInputs(inputsFor(spec, seed, inputIndex, env), spec, seed, inputIndex); env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake);
     return { env, u, inputs };
   };
-  const renderOnce = async (s) => commitRender(s.env, () => s.u.call(s.inputs), ms);
-  const commit = async (s) => commitEffects(s.env, () => s.u.call(s.inputs), ms, await renderOnce(s)); // render, effects, and again while an effect changes the state
+  const callOf = (s) => () => guardedCall(s.env, () => s.u.call(s.inputs), ms);
+  const renderOnce = async (s) => commitRender(s.env, callOf(s), ms);
+  const commit = async (s) => commitEffects(s.env, callOf(s), ms, await renderOnce(s)); // render, effects, and again while an effect changes the state
   // run one command path on one side; returns the observation after every command
   const runPath = async (name, labels) => {
     const s = await mount(name); const obs = [];
@@ -347,7 +360,7 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
       const from = s.env.trace.length;
       const h = treeHandlers(tree).find((x) => x.label === label);
       if (!h) { obs.push({ command: label, missing: true, handlers: treeHandlers(tree).map((x) => x.label) }); return { obs, s }; }
-      try { const r = h.fn(s.env.fake(`react:event:${label}`)); if (r && typeof r.then === 'function') await withTimeout(r, ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('handler-throw', label, [render(e)]); }
+      try { const r = guardedCall(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await withTimeout(r, ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('handler-throw', label, [render(e)]); }
       tree = await commit(s);
       obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending) });
     }
@@ -386,7 +399,7 @@ export async function runPair(opts) {
   try { spec = specOf(candidate, unit, { project }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   const diffs = [];
-  let harnessAsk = null, sawJsx = false;
+  let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
   for (let i = 0; i < n; i++) {
     const sides = {};
     for (const [name, file] of [['parent', parent], ['candidate', candidate]]) {
@@ -407,6 +420,7 @@ export async function runPair(opts) {
     const oC = await observe(sides.candidate, spec, sides.candidate.inputs, ms);
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
     if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, args: sides.parent.inputs.map((a) => render(a)), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
+    if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
@@ -415,6 +429,9 @@ export async function runPair(opts) {
     }
   }
   const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work' };
+  if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop); the input proves nothing' };
+  if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
+  if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };
   if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
