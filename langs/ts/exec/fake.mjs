@@ -30,6 +30,7 @@ export class Environment {
     this.cache = new Map(); // path -> fake, so the same handle is one handle
     this.calls = new Map(); // path -> number of calls so far
     this.loading = false;   // true while modules load: every answer is a handle
+    this.cbDepth = 0;       // nesting of callbacks the environment is running
   }
   record(op, path, args) {
     this.trace.push({ op, path, args: args ?? [] });
@@ -108,7 +109,14 @@ export class Environment {
             if (typeof a === 'function' && !a.__isFake) cbs.push([a, '']);
             else if (a && typeof a === 'object' && !a.__isFake && !Array.isArray(a)) for (const k of Object.keys(a)) if (typeof a[k] === 'function' && !a[k].__isFake) cbs.push([a[k], '.' + k]);
           }
-          for (const [a, tag] of cbs) if (a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) { try { const r = a(env.fake(`${path}#cb${tag}.arg0`), env.fake(`${path}#cb${tag}.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path + tag, [String(e && e.message)]); } }
+          for (const [a, tag] of cbs) if (a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) {
+            // a callback that recurses through the environment (a visitor over fakes) is bounded: past the depth it is a budget, not a behaviour
+            if (env.cbDepth >= 40) throw new BudgetError('callback recursion deeper than 40 through the environment');
+            env.cbDepth++;
+            try { const r = a(env.fake(`${path}#cb${tag}.arg0`), env.fake(`${path}#cb${tag}.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); }
+            catch (e) { if (e instanceof BudgetError) throw e; if (e instanceof RangeError) throw new BudgetError('stack overflow inside a callback'); env.record('callback-throw', path + tag, [String(e && e.message)]); }
+            finally { env.cbDepth--; }
+          }
         }
         return env.answer(`${path}()#${k}`);
       },
