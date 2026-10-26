@@ -126,10 +126,14 @@ async function withTimeout(p, ms) {
   try { return await Promise.race([p, t]); } finally { clearTimeout(timer); }
 }
 
+// an error raised after the unit returned (a fire-and-forget promise, a timer): recorded as an observation, never a crash
+const lateErrors = [];
+if (!globalThis.__leanLateHooks) { globalThis.__leanLateHooks = true; process.on('unhandledRejection', (e) => lateErrors.push(String(e && e.message || e))); process.on('uncaughtException', (e) => lateErrors.push(String(e && e.message || e))); }
 export async function observe(side, spec, args, ms) {
   const { env, unit } = side;
   const before = args.map((a) => stable(a));
   let outcome;
+  lateErrors.length = 0;
   try {
     const r = unit.call(args);
     const v = (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r;
@@ -144,6 +148,8 @@ export async function observe(side, spec, args, ms) {
   await new Promise((r) => setImmediate(r));
   const after = args.map((a) => stable(a));
   const mutated = args.map((a, i) => (before[i] === after[i] ? null : JSON.parse(after[i])));
+  await new Promise((r) => setImmediate(r)); // let a fire-and-forget continuation fail now rather than during the next side
+  for (const m of lateErrors.splice(0)) env.record('late-error', 'process', [m.slice(0, 200)]);
   return { outcome, mutated, trace: env.trace, pending: env.pending };
 }
 

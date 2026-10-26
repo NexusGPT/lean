@@ -75,10 +75,11 @@ export class Environment {
     const target = function fakeTarget() {};
     target.__fakePath = path;
     const handler = {
-      get(t, prop) {
+      get(t, prop, receiver) {
         if (prop === '__isFake') return true;
         if (prop === '__fakePath') return path;
         if (prop === 'then') return undefined; // never thenable
+        if (prop === 'catch' || prop === 'finally') { return (h) => { env.record('call', `${path}.${prop}`, [typeof h === 'function' ? `fn:${fnHash(h)}` : String(h)]); return receiver; }; } // a promise-shaped chain on a fake: the handler is recorded, the fake flows on
         if (prop === Symbol.toPrimitive) return (h) => (h === 'number' ? env.primitive('number', path) : h === 'string' ? env.primitive('string', path) : env.primitive('number', path));
         if (prop === 'valueOf') return () => env.primitive('number', path);
         if (prop === 'toString') return () => env.primitive('string', path);
