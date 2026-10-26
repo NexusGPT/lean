@@ -241,6 +241,10 @@ for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) 
   }
 }
 
+// seeded clock values retain their native shapes and ordered observations
+const clocks = run('node', [path.join(here, 'clock-read.mjs')]);
+add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clocks.stdout + clocks.stderr).trim());
+
 // ----- the repository's own conformance run, when present -----
 if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.join(root, 'langs/ts/conformance.json'))) {
   const c = run('python3', ['-I', 'conformance/run.py', 'ts']);

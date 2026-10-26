@@ -191,6 +191,8 @@ export function translate(file, fnName, opts = {}) {
     }
     if (ts.isPropertyAccessExpression(f)) {
       const recv = f.expression;
+      // clock methods read the world even when their result is a primitive
+      if (ts.isIdentifier(recv) && ((recv.text === 'Date' || recv.text === 'performance') && f.name.text === 'now' || recv.text === 'process' && f.name.text === 'hrtime') && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return true;
       const om = literalMethod(f);
       if (om) return !exactObjectMethod(om);
       if (recv.kind === K.SuperKeyword) return true; // the parent's method: a transition on the receiver
@@ -3911,6 +3913,9 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       // a numeric literal in a template is rendered directly as its JavaScript string
       if (ts.isTemplateSpan(n) && finiteLiteral(n.expression) !== null) return;
       seen.add(n);
+      // high-resolution clock observers need reals or a source-sensitive opaque unit
+      if (!real && ts.isIdentifier(n) && n.text === 'performance' && originOf(checker, n, sf, u.node).kind === 'global') numericOpaque.add(u.name);
+      if (!real && ts.isPropertyAccessExpression(n) && n.name.text === 'hrtime' && ts.isIdentifier(n.expression) && n.expression.text === 'process' && outsideRoot(checker, n.expression, sf, u.node)) numericOpaque.add(u.name);
       if (ts.isPropertyAccessExpression(n)) {
         const get = accessorOf(n, 'get', u), set = propertyWrite(n) && accessorOf(n, 'set', u);
         for (const dep of [get, set]) if (dep && dep !== u) deps.add(dep.name);
