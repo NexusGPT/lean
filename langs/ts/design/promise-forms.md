@@ -60,6 +60,8 @@ The original pair checks exact chains and executors; promise_fallback checks pen
 stored, loop, combinator, receiver and mixed opaque/exact chains.
 The integration pair checks imported async handlers against call_args externals
 and spread combinators through call_seq and the shared callSequence reading.
+Promise bodies keep their local fault handling; enclosing exact catches observe the
+completed chain. Complex tries retain opaqueCompletion; tagged values retain narrowing.
 
 Instances inspected (paths relative to their named census/export root):
 - n8n, packages/editor-ui/src/models/history.ts:256 RenameNodeCommand.revert:

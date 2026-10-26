@@ -1,831 +1,816 @@
 {
-  "rows": [
-    {
-      "concept": ".then/.catch chain",
-      "n": 10,
-      "inside": 6,
-      "translated": 6,
-      "planted": 14,
-      "witnessed": 9,
-      "blockers": {
-        "global-read": 1,
-        "promise": 2,
-        "react-handler-capture": 1
-      }
-    },
-    {
-      "concept": "new Promise",
-      "n": 10,
-      "inside": 1,
-      "translated": 1,
-      "planted": 3,
-      "witnessed": 3,
-      "blockers": {
-        "promise": 4,
-        "global-read": 1,
-        "promise-executor-escape": 1,
-        "promise-pending": 1,
-        "loop-form": 1,
-        "this": 1
-      }
-    },
-    {
-      "concept": "Promise.resolve",
-      "n": 10,
-      "inside": 1,
-      "translated": 0,
-      "planted": 0,
-      "witnessed": 0,
-      "blockers": {
-        "promise": 8,
-        "translate: agent-access-wiring.ts:144: canonicalPathSync is a": 1,
-        "ts-strict": 1
-      }
-    },
-    {
-      "concept": "Promise.reject",
-      "n": 10,
-      "inside": 0,
-      "translated": 0,
-      "planted": 0,
-      "witnessed": 0,
-      "blockers": {
-        "promise": 5,
-        "closure-mutation": 2,
-        "property-assign": 1,
-        "param-mutation": 1,
-        "async": 1
-      }
-    },
-    {
-      "concept": "Promise.race",
-      "n": 10,
-      "inside": 2,
-      "translated": 2,
-      "planted": 6,
-      "witnessed": 0,
-      "blockers": {
-        "generator": 2,
-        "async": 2,
-        "promise-pending": 2,
-        "opaque-mutation": 1,
-        "promise": 1
-      }
-    },
-    {
-      "concept": "Promise.allSettled",
-      "n": 10,
-      "inside": 2,
-      "translated": 2,
-      "planted": 6,
-      "witnessed": 0,
-      "blockers": {
-        "async-callback": 6,
-        "global-read": 1,
-        "opaque-mutation": 1
-      }
-    },
-    {
-      "concept": "Promise.any",
-      "n": 0,
-      "inside": 0,
-      "translated": 0,
-      "planted": 0,
-      "witnessed": 0,
-      "blockers": {}
-    }
-  ],
-  "instances": {
-    ".then/.catch chain": [
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "apps/desktop/main/src/opening.ts",
-        "unit": "openingWhenHostIsThere",
-        "lines": 8,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "translated",
-        "planted": 2,
-        "witnessed": 0,
-        "misses": [
-          {
-            "mutation": "swapped-args",
-            "was": "hostWaitMilliseconds, giveUp.signal",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "dropped-effect",
-            "was": "giveUp.abort();",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          }
-        ]
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/_common/guards/check-balance-positive.ts",
-        "unit": "CheckBalancePositive.canActivate",
-        "lines": 52,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "translated",
-        "planted": 3,
-        "witnessed": 2,
-        "misses": [
-          {
-            "mutation": "dropped-else",
-            "was": "else ...",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          }
-        ]
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/public/v1/infrastructure/mappers/tracing.mapper.ts",
-        "unit": "TracingMapper.toGenerationSummaryDto",
-        "lines": 52,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "global-read",
-        "detail": "`TracingMapper` is module state that can change; the subset reads constants only"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/tools/scripts/remediate-mark-splitting-overstrip.ts",
-        "unit": "main",
-        "lines": 35,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "translated",
-        "planted": 3,
-        "witnessed": 1,
-        "misses": [
-          {
-            "mutation": "string",
-            "was": "\"DATABASE_URL is required\"",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "string",
-            "was": "\"DATABASE_URL is required\"",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          }
-        ]
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
-        "file": "src/hooks/use-users.ts",
-        "unit": "useStarredSkills",
-        "lines": 9,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
-        "status": "translated",
-        "planted": 1,
-        "witnessed": 1,
-        "misses": []
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "core/conversations/src/keepers/burst-drain.ts",
-        "unit": "BurstDrain.schedule",
-        "lines": 4,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "translated",
-        "planted": 2,
-        "witnessed": 2,
-        "misses": []
-      },
-      {
-        "root": "/Users/assem/promo-app",
-        "file": "src/server/memo.ts",
-        "unit": "refill",
-        "lines": 11,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning function must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-chat-embed",
-        "file": "src/chat/use-attachments.ts",
-        "unit": "useAttachments",
-        "lines": 66,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-chat-embed",
-        "status": "lint-out",
-        "rule": "react-handler-capture",
-        "detail": "a React closure captures a changing local; capture a const value or use a state setter"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "adapters/local-files/src/hidden-usage-limit.ts",
-        "unit": "keepHiddenUsageLimit",
-        "lines": 17,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "translated",
-        "planted": 3,
-        "witnessed": 3,
-        "misses": []
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
-        "file": "src/blocks/wizard/SourcesInput.tsx",
-        "unit": "defaultReadFile",
-        "lines": 1,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning function must be async"
-      }
-    ],
-    "new Promise": [
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "core/settings/src/applied-settings.ts",
-        "unit": "AppliedSettings.until",
-        "lines": 25,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/external/azure/azure-bot-provisioning.service.ts",
-        "unit": "AzureBotProvisioningService.sleep",
-        "lines": 3,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/frontend/src/modules/Analytics/export/chart-to-png.ts",
-        "unit": "chartToPngBlob",
-        "lines": 52,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "global-read",
-        "detail": "`globalThis` is outside the subset"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/n8n",
-        "file": "packages/nodes-base/nodes/Aws/Textract/GenericFunctions.ts",
-        "unit": "validateCredentials",
-        "lines": 46,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
-        "status": "lint-out",
-        "rule": "promise-executor-escape",
-        "detail": "a deferred resolver needs a single outside callback bridge; stored resolvers are not read"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/n8n",
-        "file": "packages/editor-ui/src/models/history.ts",
-        "unit": "RenameNodeCommand.revert",
-        "lines": 9,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
-        "status": "translated",
-        "planted": 3,
-        "witnessed": 3,
-        "misses": []
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
-        "file": "packages/cli/src/commands/apps/_shared/run-deployment-watch.ts",
-        "unit": "runDeploymentWatch",
-        "lines": 50,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
-        "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
-        "file": "packages/sdk/src/resources/prompt-assistant.ts",
-        "unit": "PromptAssistantResource.pollThread",
-        "lines": 14,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
-        "status": "lint-out",
-        "rule": "loop-form",
-        "detail": "for needs `let i = <expr>; i < <expr>; i++`"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-        "file": "lib/linkedin/client/client.ts",
-        "unit": "sleep",
-        "lines": 3,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning function must be async"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/n8n",
-        "file": "packages/nodes-base/nodes/S3/GenericFunctions.ts",
-        "unit": "s3ApiRequestSOAP",
-        "lines": 35,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
-        "status": "lint-out",
-        "rule": "this",
-        "detail": "`this` outside a class method"
-      },
-      {
-        "root": "/Users/assem/promo-app",
-        "file": "src/ui/map/gmaps.ts",
-        "unit": "loadMaps",
-        "lines": 26,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning function must be async"
-      }
-    ],
-    "Promise.resolve": [
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/documents/processors/implementations/google-sheet.processor.ts",
-        "unit": "GoogleSheetProcessor.delete",
-        "lines": 6,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/deployments/adapters/slack/slack-message-receiver.adapter.ts",
-        "unit": "SlackMessageReceiverAdapter.extractThreadIdFromWebhook",
-        "lines": 27,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/deployments/adapters/teams/teams-message-receiver.adapter.ts",
-        "unit": "TeamsMessageReceiverAdapter.markAsRead",
-        "lines": 4,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "adapters/claude-cli/src/sessions/claude-sessions.ts",
-        "unit": "ClaudeSessions.report",
-        "lines": 22,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "apps/desktop/core-host/src/agent-access-wiring.ts",
-        "unit": "agentAccessOn",
-        "lines": 63,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "translate-fail",
-        "detail": "agent-access-wiring.ts:144: canonicalPathSync is a function value; call it"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "apps/desktop/core-host/src/extensions-handlers.ts",
-        "unit": "createExtensionsHandlers",
-        "lines": 34,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "ts-strict",
-        "detail": "TS2322: Type '({ id }: { id: any; }) => Promise<Result<{ outcome: ExtensionActOutcome; }, never>>' is not assignable to type '(args: unknown"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
-        "file": "apps/web/app/api/v1/[[...rest]]/route.ts",
-        "unit": "notFound",
-        "lines": 10,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning function must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "file": "libs/langchain-classic/src/evaluation/comparison/pairwise.ts",
-        "unit": "PairwiseStringResultOutputParser.parseResult",
-        "lines": 42,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "file": "libs/providers/langchain-google-common/src/experimental/utils/media_core.ts",
-        "unit": "BlobStore.hasValidPath",
-        "lines": 8,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
-        "file": "apps/web/app/api/files/[...key]/route.ts",
-        "unit": "OPTIONS",
-        "lines": 2,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning function must be async"
-      }
-    ],
-    "Promise.reject": [
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/documents/application/use-cases/get-provider-token/get-provider-token.use-case.ts",
-        "unit": "GetProviderTokenUseCase.execute",
-        "lines": 6,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "adapters/mac-dictation/src/helper-link.ts",
-        "unit": "HelperLink.keep",
-        "lines": 8,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/emails/emails.service.ts",
-        "unit": "EmailsService.getCredentials",
-        "lines": 4,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
-        "file": "packages/cli/src/commands/auth/login.prompter.ts",
-        "unit": "createPrompter",
-        "lines": 53,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
-        "status": "lint-out",
-        "rule": "closure-mutation",
-        "detail": "`rl` is declared outside this callback; a callback cannot change it"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-        "file": "lib/net/shim.ts",
-        "unit": "installOutboundShim",
-        "lines": 78,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-        "status": "lint-out",
-        "rule": "property-assign",
-        "detail": "assignment into `(globalThis as { fetch: unknown })`, which this function does not own; records it owns are updated in place"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/driftbench",
-        "file": "packages/core/src/runner/run.ts",
-        "unit": "liveChannel",
-        "lines": 86,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/driftbench/tree",
-        "status": "lint-out",
-        "rule": "param-mutation",
-        "detail": "push on `notes`, which is not a local array"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/frontend/src/modules/Profiles/Skills/AddSkillModal/useToolFolderBrowse.ts",
-        "unit": "readOnly",
-        "lines": 1,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning function must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-        "file": "lib/landing/postgres.ts",
-        "unit": "landingDbFromPglite",
-        "lines": 11,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-        "status": "lint-out",
-        "rule": "async",
-        "detail": "awaited callee form is outside the subset"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "adapters/mac-dictation/src/mac-dictation.ts",
-        "unit": "createMacDictation",
-        "lines": 48,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "closure-mutation",
-        "detail": "`chosenLanguage` is declared outside this callback; a callback cannot change it"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
-        "file": "packages/storage/src/files/memory-files.ts",
-        "unit": "promised",
-        "lines": 7,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning function must be async"
-      }
-    ],
-    "Promise.race": [
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "file": "libs/providers/langchain-aws/src/utils/stream_timeout.ts",
-        "unit": "withStreamIdleTimeout",
-        "lines": 48,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "status": "lint-out",
-        "rule": "generator",
-        "detail": "generators are outside the subset"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "core/projects/src/wait-for-first-offers.ts",
-        "unit": "WaitForFirstOffers.wait",
-        "lines": 5,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "translated",
-        "planted": 3,
-        "witnessed": 0,
-        "misses": [
-          {
-            "mutation": "dropped-effect",
-            "was": "await Promise.race([this.arrival, clock.",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "swapped-args",
-            "was": "atMostMilliseconds, stopSleeping.signal",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "dropped-effect",
-            "was": "stopSleeping.abort();",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          }
-        ]
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-        "file": "lib/read-models/deployment.ts",
-        "unit": "withDeadline",
-        "lines": 13,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
-        "status": "lint-out",
-        "rule": "async",
-        "detail": "`new Promise` inside an opaque promise call has no reading"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/_common/streaming/execution-slot/infrastructure/internal/await-release-with-timeout.ts",
-        "unit": "awaitReleaseWithTimeout",
-        "lines": 39,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "core/window/src/large-frame-keeper.ts",
-        "unit": "LargeFrameKeeper.flush",
-        "lines": 14,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "translated",
-        "planted": 3,
-        "witnessed": 0,
-        "misses": [
-          {
-            "mutation": "swapped-args",
-            "was": "flushBoundMilliseconds, bound.signal",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "swapped-args",
-            "was": "flushBoundMilliseconds, bound.signal",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "swapped-args",
-            "was": "flushBoundMilliseconds, bound.signal",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          }
-        ]
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "adapters/local-shell/src/run-command.ts",
-        "unit": "runCommandInLocalShell",
-        "lines": 85,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "opaque-mutation",
-        "detail": ".kill() on `child` may change it, and `child` is read later; read it before the call or through a method"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/n8n",
-        "file": "packages/cli/src/InternalHooks.ts",
-        "unit": "InternalHooks.onN8nStop",
-        "lines": 9,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
-        "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
-        "file": "packages/cli/src/util/ask.ts",
-        "unit": "askLine",
-        "lines": 17,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
-        "status": "lint-out",
-        "rule": "async",
-        "detail": "awaited callee form is outside the subset"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/admin/metrics/infrastructure/adapters/bull-queue-stats.adapter.ts",
-        "unit": "BullQueueStatsAdapter.withTimeout",
-        "lines": 13,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise",
-        "detail": "a Promise-returning method must be async"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "file": "libs/langchain-core/src/runnables/base.ts",
-        "unit": "RunnableMap._transform",
-        "lines": 40,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "status": "lint-out",
-        "rule": "generator",
-        "detail": "generators are outside the subset"
-      }
-    ],
-    "Promise.allSettled": [
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/knowledge/domain/services/chat-attachment-upload.service.ts",
-        "unit": "ChatAttachmentUploadService.uploadMultiple",
-        "lines": 36,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "async-callback",
-        "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/n8n",
-        "file": "packages/cli/src/ActiveExecutions.ts",
-        "unit": "ActiveExecutions.shutdown",
-        "lines": 25,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
-        "status": "lint-out",
-        "rule": "async-callback",
-        "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/agent-tool-configs/agent-tool-configs.service.ts",
-        "unit": "AgentToolConfigsService.bustWorkflowCaches",
-        "lines": 17,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "async-callback",
-        "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "file": "libs/langchain-core/src/singletons/callbacks.ts",
-        "unit": "awaitAllCallbacks",
-        "lines": 7,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "status": "lint-out",
-        "rule": "global-read",
-        "detail": "`queue` is module state that can change; the subset reads constants only"
-      },
-      {
-        "root": "/Users/assem/promo-app",
-        "file": "src/server/pages.ts",
-        "unit": "settled",
-        "lines": 7,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
-        "status": "translated",
-        "planted": 3,
-        "witnessed": 0,
-        "misses": [
-          {
-            "mutation": "dropped-effect",
-            "was": "console.error(\"[pyka] page read failed:\"",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "dropped-effect",
-            "was": "console.error(\"[pyka] page read failed:\"",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "dropped-effect",
-            "was": "console.error(\"[pyka] page read failed:\"",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          }
-        ]
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/nexus",
-        "file": "apps/backend/src/deployments/infrastructure/adapters/deployment-cache.adapter.ts",
-        "unit": "DeploymentCacheAdapter.preLoadDeployments",
-        "lines": 19,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "async-callback",
-        "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
-      },
-      {
-        "root": "/Users/assem/promo-app",
-        "file": "src/server/home.ts",
-        "unit": "settled",
-        "lines": 7,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
-        "status": "translated",
-        "planted": 3,
-        "witnessed": 0,
-        "misses": [
-          {
-            "mutation": "dropped-effect",
-            "was": "console.error(\"[pyka] home feed failed:\"",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "dropped-effect",
-            "was": "console.error(\"[pyka] home feed failed:\"",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          },
-          {
-            "mutation": "dropped-effect",
-            "was": "console.error(\"[pyka] home feed failed:\"",
-            "verdict": "PASS-bounded",
-            "reason": ""
-          }
-        ]
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "file": "libs/langchain-classic/src/smith/runner_utils.ts",
-        "unit": "applyEvaluators",
-        "lines": 72,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
-        "status": "lint-out",
-        "rule": "async-callback",
-        "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
-      },
-      {
-        "root": "/Users/assem/Documents/GitHub/n8n",
-        "file": "packages/cli/src/shutdown/Shutdown.service.ts",
-        "unit": "ShutdownService.startShutdown",
-        "lines": 8,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
-        "status": "lint-out",
-        "rule": "async-callback",
-        "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
-      },
-      {
-        "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "file": "tools/fake-claude/src/run.ts",
-        "unit": "runSession",
-        "lines": 104,
-        "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "opaque-mutation",
-        "detail": ".on() on `process` may change it, and `process` is read later; read it before the call or through a method"
-      }
-    ]
+ "rows": [
+  {
+   "concept": ".then/.catch chain",
+   "n": 10,
+   "inside": 6,
+   "translated": 5,
+   "planted": 11,
+   "witnessed": 8,
+   "blockers": {
+    "global-read": 1,
+    "translate: remediate-mark-splitting-overstrip.ts:364: callee ": 1,
+    "promise": 2,
+    "react-handler-capture": 1
+   }
+  },
+  {
+   "concept": "new Promise",
+   "n": 10,
+   "inside": 1,
+   "translated": 1,
+   "planted": 3,
+   "witnessed": 3,
+   "blockers": {
+    "promise": 4,
+    "global-read": 1,
+    "promise-executor-escape": 1,
+    "exception-callback": 2,
+    "loop-form": 1
+   }
+  },
+  {
+   "concept": "Promise.resolve",
+   "n": 10,
+   "inside": 1,
+   "translated": 0,
+   "planted": 0,
+   "witnessed": 0,
+   "blockers": {
+    "promise": 8,
+    "translate: agent-access-wiring.ts:144: canonicalPathSync is a": 1,
+    "ts-strict": 1
+   }
+  },
+  {
+   "concept": "Promise.reject",
+   "n": 10,
+   "inside": 0,
+   "translated": 0,
+   "planted": 0,
+   "witnessed": 0,
+   "blockers": {
+    "promise": 5,
+    "closure-mutation": 2,
+    "property-assign": 1,
+    "param-mutation": 1,
+    "async": 1
+   }
+  },
+  {
+   "concept": "Promise.race",
+   "n": 10,
+   "inside": 2,
+   "translated": 2,
+   "planted": 6,
+   "witnessed": 0,
+   "blockers": {
+    "generator": 2,
+    "async": 2,
+    "promise-pending": 2,
+    "opaque-mutation": 1,
+    "promise": 1
+   }
+  },
+  {
+   "concept": "Promise.allSettled",
+   "n": 10,
+   "inside": 2,
+   "translated": 2,
+   "planted": 6,
+   "witnessed": 0,
+   "blockers": {
+    "async-callback": 6,
+    "global-read": 1,
+    "opaque-mutation": 1
+   }
+  },
+  {
+   "concept": "Promise.any",
+   "n": 0,
+   "inside": 0,
+   "translated": 0,
+   "planted": 0,
+   "witnessed": 0,
+   "blockers": {}
   }
+ ],
+ "instances": {
+  ".then/.catch chain": [
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "apps/desktop/main/src/opening.ts",
+    "unit": "openingWhenHostIsThere",
+    "lines": 8,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 2,
+    "witnessed": 0,
+    "misses": [
+     {
+      "mutation": "swapped-args",
+      "was": "hostWaitMilliseconds, giveUp.signal",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "dropped-effect",
+      "was": "giveUp.abort();",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     }
+    ]
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/_common/guards/check-balance-positive.ts",
+    "unit": "CheckBalancePositive.canActivate",
+    "lines": 52,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 2,
+    "misses": [
+     {
+      "mutation": "dropped-else",
+      "was": "else ...",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     }
+    ]
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/public/v1/infrastructure/mappers/tracing.mapper.ts",
+    "unit": "TracingMapper.toGenerationSummaryDto",
+    "lines": 52,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "global-read",
+    "detail": "`TracingMapper` is module state that can change; the subset reads constants only"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/tools/scripts/remediate-mark-splitting-overstrip.ts",
+    "unit": "main",
+    "lines": 35,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translate-fail",
+    "detail": "remediate-mark-splitting-overstrip.ts:364: callee collectBackupVersionIds was not translated"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
+    "file": "src/hooks/use-users.ts",
+    "unit": "useStarredSkills",
+    "lines": 9,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
+    "status": "translated",
+    "planted": 1,
+    "witnessed": 1,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/conversations/src/keepers/burst-drain.ts",
+    "unit": "BurstDrain.schedule",
+    "lines": 4,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 2,
+    "witnessed": 2,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/promo-app",
+    "file": "src/server/memo.ts",
+    "unit": "refill",
+    "lines": 11,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning function must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-chat-embed",
+    "file": "src/chat/use-attachments.ts",
+    "unit": "useAttachments",
+    "lines": 66,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-chat-embed",
+    "status": "lint-out",
+    "rule": "react-handler-capture",
+    "detail": "a React closure captures a changing local; capture a const value or use a state setter"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "adapters/local-files/src/hidden-usage-limit.ts",
+    "unit": "keepHiddenUsageLimit",
+    "lines": 17,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+    "file": "src/blocks/wizard/SourcesInput.tsx",
+    "unit": "defaultReadFile",
+    "lines": 1,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning function must be async"
+   }
+  ],
+  "new Promise": [
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/settings/src/applied-settings.ts",
+    "unit": "AppliedSettings.until",
+    "lines": 25,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/external/azure/azure-bot-provisioning.service.ts",
+    "unit": "AzureBotProvisioningService.sleep",
+    "lines": 3,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/frontend/src/modules/Analytics/export/chart-to-png.ts",
+    "unit": "chartToPngBlob",
+    "lines": 52,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "global-read",
+    "detail": "`globalThis` is outside the subset"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/nodes-base/nodes/Aws/Textract/GenericFunctions.ts",
+    "unit": "validateCredentials",
+    "lines": 46,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "promise-executor-escape",
+    "detail": "a deferred resolver needs a single outside callback bridge; stored resolvers are not read"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/editor-ui/src/models/history.ts",
+    "unit": "RenameNodeCommand.revert",
+    "lines": 9,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/commands/apps/_shared/run-deployment-watch.ts",
+    "unit": "runDeploymentWatch",
+    "lines": 50,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "exception-callback",
+    "detail": "move the throw to a same-file unit and call it directly"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/sdk/src/resources/prompt-assistant.ts",
+    "unit": "PromptAssistantResource.pollThread",
+    "lines": 14,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "loop-form",
+    "detail": "for needs `let i = <expr>; i < <expr>; i++`"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "file": "lib/linkedin/client/client.ts",
+    "unit": "sleep",
+    "lines": 3,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning function must be async"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/nodes-base/nodes/S3/GenericFunctions.ts",
+    "unit": "s3ApiRequestSOAP",
+    "lines": 35,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "exception-callback",
+    "detail": "call the throwing unit directly; a function value has no fault channel"
+   },
+   {
+    "root": "/Users/assem/promo-app",
+    "file": "src/ui/map/gmaps.ts",
+    "unit": "loadMaps",
+    "lines": 26,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning function must be async"
+   }
+  ],
+  "Promise.resolve": [
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/documents/processors/implementations/google-sheet.processor.ts",
+    "unit": "GoogleSheetProcessor.delete",
+    "lines": 6,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/deployments/adapters/slack/slack-message-receiver.adapter.ts",
+    "unit": "SlackMessageReceiverAdapter.extractThreadIdFromWebhook",
+    "lines": 27,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/deployments/adapters/teams/teams-message-receiver.adapter.ts",
+    "unit": "TeamsMessageReceiverAdapter.markAsRead",
+    "lines": 4,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "adapters/claude-cli/src/sessions/claude-sessions.ts",
+    "unit": "ClaudeSessions.report",
+    "lines": 22,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "apps/desktop/core-host/src/agent-access-wiring.ts",
+    "unit": "agentAccessOn",
+    "lines": 63,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translate-fail",
+    "detail": "agent-access-wiring.ts:144: canonicalPathSync is a function value; call it"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "apps/desktop/core-host/src/extensions-handlers.ts",
+    "unit": "createExtensionsHandlers",
+    "lines": 34,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "ts-strict",
+    "detail": "TS2322: Type '({ id }: { id: any; }) => Promise<Result<{ outcome: ExtensionActOutcome; }, never>>' is not assignable to type '(args: unknown"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "file": "apps/web/app/api/v1/[[...rest]]/route.ts",
+    "unit": "notFound",
+    "lines": 10,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning function must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-classic/src/evaluation/comparison/pairwise.ts",
+    "unit": "PairwiseStringResultOutputParser.parseResult",
+    "lines": 42,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/providers/langchain-google-common/src/experimental/utils/media_core.ts",
+    "unit": "BlobStore.hasValidPath",
+    "lines": 8,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "file": "apps/web/app/api/files/[...key]/route.ts",
+    "unit": "OPTIONS",
+    "lines": 2,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning function must be async"
+   }
+  ],
+  "Promise.reject": [
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/documents/application/use-cases/get-provider-token/get-provider-token.use-case.ts",
+    "unit": "GetProviderTokenUseCase.execute",
+    "lines": 6,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "adapters/mac-dictation/src/helper-link.ts",
+    "unit": "HelperLink.keep",
+    "lines": 8,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/emails/emails.service.ts",
+    "unit": "EmailsService.getCredentials",
+    "lines": 4,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/commands/auth/login.prompter.ts",
+    "unit": "createPrompter",
+    "lines": 53,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "closure-mutation",
+    "detail": "`rl` is declared outside this callback; a callback cannot change it"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "file": "lib/net/shim.ts",
+    "unit": "installOutboundShim",
+    "lines": 78,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "status": "lint-out",
+    "rule": "property-assign",
+    "detail": "assignment into `(globalThis as { fetch: unknown })`, which this function does not own; records it owns are updated in place"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/driftbench",
+    "file": "packages/core/src/runner/run.ts",
+    "unit": "liveChannel",
+    "lines": 86,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/driftbench/tree",
+    "status": "lint-out",
+    "rule": "param-mutation",
+    "detail": "push on `notes`, which is not a local array"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/frontend/src/modules/Profiles/Skills/AddSkillModal/useToolFolderBrowse.ts",
+    "unit": "readOnly",
+    "lines": 1,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning function must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "file": "lib/landing/postgres.ts",
+    "unit": "landingDbFromPglite",
+    "lines": 11,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "status": "lint-out",
+    "rule": "async",
+    "detail": "awaited callee form is outside the subset"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "adapters/mac-dictation/src/mac-dictation.ts",
+    "unit": "createMacDictation",
+    "lines": 48,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "closure-mutation",
+    "detail": "`chosenLanguage` is declared outside this callback; a callback cannot change it"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "file": "packages/storage/src/files/memory-files.ts",
+    "unit": "promised",
+    "lines": 7,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning function must be async"
+   }
+  ],
+  "Promise.race": [
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/providers/langchain-aws/src/utils/stream_timeout.ts",
+    "unit": "withStreamIdleTimeout",
+    "lines": 48,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "generator",
+    "detail": "generators are outside the subset"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/projects/src/wait-for-first-offers.ts",
+    "unit": "WaitForFirstOffers.wait",
+    "lines": 5,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 0,
+    "misses": [
+     {
+      "mutation": "dropped-effect",
+      "was": "await Promise.race([this.arrival, clock.",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "swapped-args",
+      "was": "atMostMilliseconds, stopSleeping.signal",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "dropped-effect",
+      "was": "stopSleeping.abort();",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     }
+    ]
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "file": "lib/read-models/deployment.ts",
+    "unit": "withDeadline",
+    "lines": 13,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "status": "lint-out",
+    "rule": "async",
+    "detail": "`new Promise` inside an opaque promise call has no reading"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/_common/streaming/execution-slot/infrastructure/internal/await-release-with-timeout.ts",
+    "unit": "awaitReleaseWithTimeout",
+    "lines": 39,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise-pending",
+    "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/window/src/large-frame-keeper.ts",
+    "unit": "LargeFrameKeeper.flush",
+    "lines": 14,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 0,
+    "misses": [
+     {
+      "mutation": "swapped-args",
+      "was": "flushBoundMilliseconds, bound.signal",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "swapped-args",
+      "was": "flushBoundMilliseconds, bound.signal",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "swapped-args",
+      "was": "flushBoundMilliseconds, bound.signal",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     }
+    ]
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "adapters/local-shell/src/run-command.ts",
+    "unit": "runCommandInLocalShell",
+    "lines": 85,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "opaque-mutation",
+    "detail": ".kill() on `child` may change it, and `child` is read later; read it before the call or through a method"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/cli/src/InternalHooks.ts",
+    "unit": "InternalHooks.onN8nStop",
+    "lines": 9,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "promise-pending",
+    "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/util/ask.ts",
+    "unit": "askLine",
+    "lines": 17,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "async",
+    "detail": "awaited callee form is outside the subset"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/admin/metrics/infrastructure/adapters/bull-queue-stats.adapter.ts",
+    "unit": "BullQueueStatsAdapter.withTimeout",
+    "lines": 13,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "promise",
+    "detail": "a Promise-returning method must be async"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-core/src/runnables/base.ts",
+    "unit": "RunnableMap._transform",
+    "lines": 40,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "generator",
+    "detail": "generators are outside the subset"
+   }
+  ],
+  "Promise.allSettled": [
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/knowledge/domain/services/chat-attachment-upload.service.ts",
+    "unit": "ChatAttachmentUploadService.uploadMultiple",
+    "lines": 36,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "async-callback",
+    "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/cli/src/ActiveExecutions.ts",
+    "unit": "ActiveExecutions.shutdown",
+    "lines": 25,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "async-callback",
+    "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/agent-tool-configs/agent-tool-configs.service.ts",
+    "unit": "AgentToolConfigsService.bustWorkflowCaches",
+    "lines": 17,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "async-callback",
+    "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-core/src/singletons/callbacks.ts",
+    "unit": "awaitAllCallbacks",
+    "lines": 7,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "global-read",
+    "detail": "`queue` is module state that can change; the subset reads constants only"
+   },
+   {
+    "root": "/Users/assem/promo-app",
+    "file": "src/server/pages.ts",
+    "unit": "settled",
+    "lines": 7,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 0,
+    "misses": [
+     {
+      "mutation": "dropped-effect",
+      "was": "console.error(\"[pyka] page read failed:\"",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "dropped-effect",
+      "was": "console.error(\"[pyka] page read failed:\"",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "dropped-effect",
+      "was": "console.error(\"[pyka] page read failed:\"",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     }
+    ]
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/deployments/infrastructure/adapters/deployment-cache.adapter.ts",
+    "unit": "DeploymentCacheAdapter.preLoadDeployments",
+    "lines": 19,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "async-callback",
+    "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
+   },
+   {
+    "root": "/Users/assem/promo-app",
+    "file": "src/server/home.ts",
+    "unit": "settled",
+    "lines": 7,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 0,
+    "misses": [
+     {
+      "mutation": "dropped-effect",
+      "was": "console.error(\"[pyka] home feed failed:\"",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "dropped-effect",
+      "was": "console.error(\"[pyka] home feed failed:\"",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     },
+     {
+      "mutation": "dropped-effect",
+      "was": "console.error(\"[pyka] home feed failed:\"",
+      "verdict": "PASS-bounded",
+      "reason": ""
+     }
+    ]
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-classic/src/smith/runner_utils.ts",
+    "unit": "applyEvaluators",
+    "lines": 72,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "async-callback",
+    "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/cli/src/shutdown/Shutdown.service.ts",
+    "unit": "ShutdownService.startShutdown",
+    "lines": 8,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "async-callback",
+    "detail": "map does not await its callbacks; use await Promise.all(xs.map(...))"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "tools/fake-claude/src/run.ts",
+    "unit": "runSession",
+    "lines": 104,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "opaque-mutation",
+    "detail": ".on() on `process` may change it, and `process` is read later; read it before the call or through a method"
+   }
+  ]
+ }
 }

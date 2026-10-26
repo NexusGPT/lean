@@ -126,6 +126,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
   let switchDepth = 0;
   let loopDepth = 0;
+  const promiseCallbacks = new Set(); // inline promise bodies have their own fault channel
   const callbackStack = []; // the arrow functions being checked, innermost last
   const aliasLocals = new Set(); // declarations of locals bound to another name's object (an alias): never mutated here
   const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
@@ -265,7 +266,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
       case K.ContinueStatement: if (loopDepth > 0) return; return v(s, 'break-continue', 'continue outside a loop');
       case K.ThrowStatement:
-        if (callbackStack.length && !callbackStack.at(-1).modifiers?.some((m) => m.kind === K.AsyncKeyword) && !enclosingOpaqueTry(s)) return v(s, 'exception-callback', 'move the throw to a same-file unit and call it directly');
+        if (callbackStack.length && !promiseCallbacks.has(callbackStack[callbackStack.length - 1]) && !callbackStack.at(-1).modifiers?.some((m) => m.kind === K.AsyncKeyword) && !enclosingOpaqueTry(s)) return v(s, 'exception-callback', 'move the throw to a same-file unit and call it directly');
         return expr(s.expression);
       case K.TryStatement: {
         // an opaque block (version 3): its text names it; what it reads and writes are its inputs and outputs
@@ -500,6 +501,10 @@ export function lintFile(file, ranges = null, opts = {}) {
     };
     w(u.body); return unsafe;
   }
+  function promiseCallback(cb) {
+    promiseCallbacks.add(cb);
+    try { return callback(cb, null); } finally { promiseCallbacks.delete(cb); }
+  }
   function promiseHandler(a, arity) {
     if (ts.isIdentifier(a)) {
       const o = declOf(a), u = units.get(a.text);
@@ -516,7 +521,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     promiseBody(a.body);
     const values = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) promiseValueType(x.expression); ts.forEachChild(x, values); };
     if (ts.isBlock(a.body)) values(a.body); else promiseValueType(a.body);
-    callback(a, null);
+    promiseCallback(a);
   }
   function promiseBody(body) {
     const w = (x) => {
@@ -544,7 +549,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       const scan = (x) => { if (ts.isCallExpression(x)) { const st = shape.settlement(x); if (st?.kind === 'resolve' && x.arguments[0]) promiseValue(x.arguments[0]); } ts.forEachChild(x, scan); };
       scan(shape.cb.body);
-      return callback(shape.cb, null);
+      return promiseCallback(shape.cb);
     }
     if (form.kind === 'resolve' || form.kind === 'reject') {
       if (e.arguments.length > 1) return v(e, 'promise-handler', 'Promise.resolve and Promise.reject take at most one value');

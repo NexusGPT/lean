@@ -1567,6 +1567,17 @@ export function translate(file, fnName, opts = {}) {
     if (!promiseConsumed(n, checker, sf)) fail(n, 'promise-pending: await or return the promise directly');
     if (!core || !unitEffectful()) fail(n, 'promise forms require an effectful core unit');
     const rt = promiseResultType(n), R = dtype(rt, n), P = faultPreds();
+    // a chain handles its own faults before the enclosing try observes its final outcome
+    if (faultMode || completionMode) {
+      const savedFault = faultMode, savedCompletion = completionMode;
+      faultMode = false; completionMode = false;
+      let body;
+      try { body = capture(() => promisePair(promiseExpression(n, form))); }
+      finally { faultMode = savedFault; completionMode = savedCompletion; }
+      const value = hoist(`(${body})`, R);
+      if (!faultMode && completionMode) pending.push(FAULT_CHECK);
+      return value;
+    }
     if (form.kind === 'resolve') return n.arguments[0] ? promiseValueCode(n.arguments[0], rt) : 'Unit';
     if (form.kind === 'reject') return hoist(`(${rejectedPromise(n.arguments[0], R)})`, R);
     if (form.kind === 'executor') {

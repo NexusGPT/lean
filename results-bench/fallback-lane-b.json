@@ -1,58 +1,4 @@
 {
-  "settled": {
-    "verdict": "PASS-bounded",
-    "unit": "settled",
-    "bound": {
-      "n": 30,
-      "seed": 1,
-      "ms": 2000,
-      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
-      "inputs": "from parameter types with boundary values first"
-    },
-    "spec": {
-      "params": [
-        {
-          "name": "n",
-          "optional": false,
-          "spec": {
-            "kind": "number"
-          }
-        }
-      ],
-      "returns": {
-        "kind": "number"
-      },
-      "literals": [],
-      "strings": []
-    }
-  },
-  "any": {
-    "verdict": "PASS-bounded",
-    "unit": "any",
-    "bound": {
-      "n": 30,
-      "seed": 1,
-      "ms": 2000,
-      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
-      "inputs": "from parameter types with boundary values first"
-    },
-    "spec": {
-      "params": [
-        {
-          "name": "n",
-          "optional": false,
-          "spec": {
-            "kind": "number"
-          }
-        }
-      ],
-      "returns": {
-        "kind": "number"
-      },
-      "literals": [],
-      "strings": []
-    }
-  },
   "dangling": {
     "verdict": "WITNESS",
     "unit": "dangling",
@@ -336,68 +282,6 @@
       "strings": []
     }
   },
-  "race": {
-    "verdict": "PASS-bounded",
-    "unit": "race",
-    "bound": {
-      "n": 30,
-      "seed": 1,
-      "ms": 2000,
-      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
-      "inputs": "from parameter types with boundary values first"
-    },
-    "spec": {
-      "params": [
-        {
-          "name": "n",
-          "optional": false,
-          "spec": {
-            "kind": "number"
-          }
-        }
-      ],
-      "returns": {
-        "kind": "number"
-      },
-      "literals": [
-        1,
-        2,
-        0
-      ],
-      "strings": []
-    }
-  },
-  "Pending.schedule": {
-    "verdict": "PASS-bounded",
-    "unit": "Pending.schedule",
-    "bound": {
-      "n": 30,
-      "seed": 1,
-      "ms": 2000,
-      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
-      "inputs": "from parameter types with boundary values first"
-    },
-    "spec": {
-      "params": [
-        {
-          "name": "n",
-          "optional": false,
-          "spec": {
-            "kind": "number"
-          }
-        }
-      ],
-      "returns": {
-        "kind": "undefined"
-      },
-      "literals": [
-        1,
-        2,
-        0
-      ],
-      "strings": []
-    }
-  },
   "stored": {
     "verdict": "WITNESS",
     "unit": "stored",
@@ -521,101 +405,6 @@
         3,
         1
       ],
-      "strings": []
-    }
-  },
-  "wideHandler": {
-    "verdict": "PASS-bounded",
-    "unit": "wideHandler",
-    "bound": {
-      "n": 30,
-      "seed": 1,
-      "ms": 2000,
-      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
-      "inputs": "from parameter types with boundary values first"
-    },
-    "spec": {
-      "params": [
-        {
-          "name": "n",
-          "optional": false,
-          "spec": {
-            "kind": "number"
-          }
-        }
-      ],
-      "returns": {
-        "kind": "number"
-      },
-      "literals": [
-        0,
-        1,
-        -1,
-        2,
-        3,
-        1
-      ],
-      "strings": []
-    }
-  },
-  "mixed": {
-    "verdict": "PASS-bounded",
-    "unit": "mixed",
-    "bound": {
-      "n": 30,
-      "seed": 1,
-      "ms": 2000,
-      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
-      "inputs": "from parameter types with boundary values first"
-    },
-    "spec": {
-      "params": [
-        {
-          "name": "n",
-          "optional": false,
-          "spec": {
-            "kind": "number"
-          }
-        }
-      ],
-      "returns": {
-        "kind": "number"
-      },
-      "literals": [
-        0,
-        1,
-        -1,
-        2,
-        3,
-        1
-      ],
-      "strings": []
-    }
-  },
-  "resolveLater": {
-    "verdict": "PASS-bounded",
-    "unit": "resolveLater",
-    "bound": {
-      "n": 30,
-      "seed": 1,
-      "ms": 2000,
-      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
-      "inputs": "from parameter types with boundary values first"
-    },
-    "spec": {
-      "params": [
-        {
-          "name": "n",
-          "optional": false,
-          "spec": {
-            "kind": "number"
-          }
-        }
-      ],
-      "returns": {
-        "kind": "number"
-      },
-      "literals": [],
       "strings": []
     }
   },
@@ -756,6 +545,217 @@
         2,
         3,
         1
+      ],
+      "strings": []
+    }
+  },
+  "race": {
+    "verdict": "PASS-bounded",
+    "unit": "race",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        1,
+        2,
+        0
+      ],
+      "strings": []
+    }
+  },
+  "settled": {
+    "verdict": "PASS-bounded",
+    "unit": "settled",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [],
+      "strings": []
+    }
+  },
+  "any": {
+    "verdict": "PASS-bounded",
+    "unit": "any",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [],
+      "strings": []
+    }
+  },
+  "resolveLater": {
+    "verdict": "PASS-bounded",
+    "unit": "resolveLater",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [],
+      "strings": []
+    }
+  },
+  "wideHandler": {
+    "verdict": "PASS-bounded",
+    "unit": "wideHandler",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        0,
+        1,
+        -1,
+        2,
+        3,
+        1
+      ],
+      "strings": []
+    }
+  },
+  "mixed": {
+    "verdict": "PASS-bounded",
+    "unit": "mixed",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        0,
+        1,
+        -1,
+        2,
+        3,
+        1
+      ],
+      "strings": []
+    }
+  },
+  "Pending.schedule": {
+    "verdict": "PASS-bounded",
+    "unit": "Pending.schedule",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "undefined"
+      },
+      "literals": [
+        1,
+        2,
+        0
       ],
       "strings": []
     }
