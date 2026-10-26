@@ -42,9 +42,24 @@ conformance/  one command runs every language against every fixture
 
 A language merges only when it passes `conformance/run.py`: every shared fixture translates to the same form, every escape is refused, and no clean change is refused.
 
+## lean-ts version 3: two lanes, one verdict
+
+`node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit <name|Class.method>` answers with one of:
+
+| verdict | meaning |
+|---|---|
+| `WITNESS` | an input on which the two versions differ outside the scope, with both observations |
+| `PASS-proved` | equal on every input outside the scope under the stated axioms (Dafny, with the certificate) |
+| `PASS-bounded` | no difference on n generated inputs with the fakes and the time limit stated; never a proof |
+| `ASK` | undecided, with the reason (a construct outside the subset, a changed interface, a timeout) |
+
+- **Lane A, proof** (`lint/`, `translate/`, `spec/theorem.py`): every effectful call is a transition of an explicit world token; class methods are functions of an explicit receiver; try/catch and unbounded loops are opaque blocks named by their text; recursion takes a fuel. What is equal by identity is aliased, not proved. `langs/ts/SEMANTICS.md` states what equal means.
+- **Lane B, bounded execution** (`exec/`): both versions compiled with the vendored compiler and run in their own sandbox against the same fakes; the observation is the outcome, the arguments after the call, the trace of environment requests and the pending work.
+- **Planted changes** (`exec/mutate.mjs`): seven mutation kinds by site index, for the soundness battery.
+
 ## Status
 
-Theorem generator, checker and conformance runner work end to end on Dafny fixtures (`python3 -I conformance/run.py`). The language packages are being built. The first measurement (how many real changed functions enter the TypeScript subset) is running on a private corpus; its numbers will be published here.
+Theorem generator, checker and conformance runner work end to end (`python3 -I conformance/run.py`, `node langs/ts/tests/run.mjs`: 126 checks). lean-ts version 3 is measured on a private corpus of 110 escaped defects (2,334 changed functions, 2,350 untouched functions, planted changes); the numbers are published in this file when the run completes.
 
 ## License
 
