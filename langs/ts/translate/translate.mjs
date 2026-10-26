@@ -1408,9 +1408,14 @@ export function translate(file, fnName, opts = {}) {
   // an opaque promise call evaluates its receiver and arguments, then records one outside transition
   function promiseOutsideCall(n, form, awaited) {
     if (!unitEffectful()) fail(n, 'an opaque promise call requires an effectful unit');
-    const R = dtype(promiseResultType(n), n), types = [], values = [];
-    if (form.source) { types.push(dtype(typeOf(form.source), form.source)); values.push(expr(form.source)); }
-    for (const a of n.arguments) {
+    const R = dtype(promiseResultType(n), n), types = [], values = [], spread = n.arguments.some(ts.isSpreadElement);
+    if (form.source) {
+      const D = dtype(typeOf(form.source), form.source); let value = expr(form.source);
+      if (spread) { const saved = `pr${tempCount++}_`; pending.push(`var ${saved}: ${D} := ${value};`); value = saved; }
+      types.push(D); values.push(value);
+    }
+    if (spread) { const sequence = callSequence([...n.arguments]); types.push(sequence.type); values.push(sequence.code); }
+    else for (const a of n.arguments) {
       types.push(dtype(typeOf(a), a));
       values.push(ts.isArrowFunction(a) || ts.isFunctionExpression(a) ? opaqueFn(a) : expr(a));
     }
@@ -1426,7 +1431,7 @@ export function translate(file, fnName, opts = {}) {
     if (usesSelf) { types.push(selfType(currentUnit)); values.push(SELF); }
     for (const v of free) { types.push(dtype(symType(v.sym, v.node), v.node)); values.push(dn(v.name)); }
     const callees = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), ''));
-    const name = external(`${awaited ? 'await_' : ''}promise_${form.kind}_${mangle(R)}${callees.length ? '_calls_' + callees.join('_') : ''}`, ['World', ...types], `(World, ${R})`);
+    const name = external(`${spread ? 'call_seq' : 'call_args'}_${awaited ? 'await_' : ''}promise_${form.kind}_${mangle(R)}${callees.length ? '_calls_' + callees.join('_') : ''}`, ['World', ...types], `(World, ${R})`);
     if (calls.size) prelude.set(name, `${prelude.get(name)}\n// CALLS: ${callees.join(',')}`);
     return hoist(`${name}(${[WORLD, ...values].join(', ')})`, R);
   }
@@ -1529,7 +1534,7 @@ export function translate(file, fnName, opts = {}) {
           const eff = effectfulUnits.has(u.name);
           const callCode = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...args].join(', ')})`;
           value = eff ? hoist(callCode, ownR) : callCode;
-        } else value = hoist(`${external(isPromiseT(sg.getReturnType()) ? `await_${cb.text}` : cb.text, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
+        } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${cb.text}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
         return promiseGuard(promisePair(convertD(value, ownR, R)), R);
       });
     }

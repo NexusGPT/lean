@@ -16,17 +16,17 @@ theorem: wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-the
 $ dafny verify --verification-time-limit 30 /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation/theorem.dfy
 Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 260 (  0.0)
 
-Prover error: Could not parse any models
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 271 (  0.0)
 
 Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 219 (  0.0)
+
+Prover error: Could not parse any models
 
 Prover error: Could not parse any models
 
 Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 247 (  0.0)
 
 Prover error: Could not parse any models
-
-Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 271 (  0.0)
 
 Prover error: Could not parse any models
 
@@ -84,15 +84,11 @@ results-bench/validation/theorem.dfy(425,41): Related location: this is the post
 425 |   ensures finalised_parent(wld, svc, id) == finalised_candidate(wld, svc, id)
     |                                          ^^
 
-Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 302 (  0.0)
-
-Prover error: Could not parse any models
-
-Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 291 (  0.0)
-
-Prover error: Could not parse any models
-
 Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 277 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 302 (  0.0)
 
 Prover error: Could not parse any models
 
@@ -115,6 +111,10 @@ results-bench/validation/theorem.dfy(485,32): Related location: this is the post
     |
 485 |   ensures thrown_parent(wld, n) == thrown_candidate(wld, n)
     |                                 ^^
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 291 (  0.0)
+
+Prover error: Could not parse any models
 
 results-bench/validation/theorem.dfy(492,0): Error: a postcondition could not be proved on this return path
     |

@@ -1,0 +1,186 @@
+{
+  "spreadRace": {
+    "verdict": "WITNESS",
+    "unit": "spreadRace",
+    "witnesses": [
+      {
+        "input": 0,
+        "args": [
+          420
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 420
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 421
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      },
+      {
+        "input": 1,
+        "args": [
+          1
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 1
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 2
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      },
+      {
+        "input": 2,
+        "args": [
+          0
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 0
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 1
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      }
+    ],
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        1,
+        2,
+        0
+      ],
+      "strings": []
+    }
+  },
+  "untouched": {
+    "verdict": "PASS-bounded",
+    "unit": "untouched",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        1,
+        2,
+        0
+      ],
+      "strings": []
+    }
+  },
+  "namedAsync": {
+    "verdict": "PASS-bounded",
+    "unit": "namedAsync",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [],
+      "strings": []
+    }
+  }
+}

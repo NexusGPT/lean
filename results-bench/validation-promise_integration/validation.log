@@ -1,0 +1,61 @@
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/parent.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/parent.ts: inside the subset
+
+$ node langs/ts/translate/translate.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/parent.ts --core --suffix parent --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/parent.dfy --prelude /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/parent.pre.dfy
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/parent.dfy and /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/parent.pre.dfy
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/candidate.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/candidate.ts: inside the subset
+
+$ node langs/ts/translate/translate.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/candidate.ts --core --suffix candidate --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/candidate.dfy --prelude /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/candidate.pre.dfy
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/candidate.dfy and /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/candidate.pre.dfy
+
+$ python3 -I spec/theorem.py --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/parent.dfy --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/candidate.dfy --scope /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/scope.json --edit /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/edit.json --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/theorem.dfy
+theorem: wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/theorem.dfy (3 lemmas)
+
+$ dafny verify --verification-time-limit 30 /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/theorem.dfy
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 283 (  0.0)
+
+Prover error: Could not parse any models
+
+results-bench/validation-promise_integration/theorem.dfy(95,0): Error: a postcondition could not be proved on this return path
+   |
+95 | { // PROOF Equal_spread_race
+   | ^
+
+results-bench/validation-promise_integration/theorem.dfy(94,37): Related location: this is the postcondition that could not be proved
+   |
+94 |   ensures spread_race_parent(wld, n) == spread_race_candidate(wld, n)
+   |                                      ^^
+
+
+Dafny program verifier finished with 2 verified, 1 error
+
+Equal_named_async: proved
+Equal_spread_race: not proved
+Equal_untouched: proved
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/candidate.ts --unit namedAsync --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/b-namedAsync.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/b-namedAsync.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/candidate.ts --unit spreadRace --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/b-spreadRace.json
+WITNESS -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/b-spreadRace.json
+
+$ node langs/ts/exec/run.mjs --parent /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/parent.ts --candidate /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/langs/ts/tests/pairs/promise_integration/candidate.ts --unit untouched --n 30 --no-project --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/b-untouched.json
+PASS-bounded -> /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation-promise_integration/b-untouched.json
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_after_settlement.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_after_settlement.ts:2:73  promise-unsettled  every executor path must end with resolve, reject or throw, with no statements after settlement
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_after_settlement.ts:2:118  unresolved-module  TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.
+2 violation(s)
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_resolver_escape.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_resolver_escape.ts:2:73  promise-executor-escape  resolve and reject cannot be stored or passed away; call them at the end of each executor path
+1 violation(s)
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_type.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_type.ts:2:1  promise  a Promise-returning function must be async
+1 violation(s)
+
+$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_unsettled.ts --no-project
+/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_unsettled.ts:2:73  promise-unsettled  every executor path must end with resolve, reject or throw, with no statements after settlement
+1 violation(s)

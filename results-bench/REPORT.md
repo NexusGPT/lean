@@ -7,18 +7,18 @@
 | Promise.resolve | 10 | 1/0/0 | 1/0/0 | 0/0 | 0/0 |
 | Promise.reject | 10 | 0/0/0 | 0/0/0 | 0/0 | 0/0 |
 | Promise.race | 10 | 2/2/0 | 2/2/0 | 0/6 | 0/6 |
-| Promise.allSettled | 10 | 4/2/0 | 4/2/0 | 0/6 | 0/6 |
+| Promise.allSettled | 10 | 2/2/0 | 2/2/0 | 0/6 | 0/6 |
 | Promise.any | 0 | 0/0/0 | 0/0/0 | 0/0 | 0/0 |
 
-L/T/W = lint / translate / units with a witnessed mutant. All 60 instances match the stable baseline. Every domain meets or exceeds baseline on all three counts. Full scorecards and commands: comparison.md, before.json, after.json, bench.log.
+L/T/W = lint / translate / units with a witnessed mutant. All 60 instances match the stable baseline. Every domain meets or exceeds baseline on all three counts. The current dev baseline is dev-before.json; the original baseline remains before.json. Dev independently lowered allSettled lint admission from 4 to 2 with async-callback. Full scorecards and commands: comparison.md, before.json, dev-before.json, after.json, bench.log.
 
-Branch: lane/promise-then-new-promise. This revision retains the exact reading and restores the existing opaque fallback. No push.
+Branch: lane/promise-then-new-promise. This revision rebases onto dev 80728f8 and integrates imported handler call_args names and spread callSequence arguments. No push.
 
 ## Whole suite
 
 Command: `node langs/ts/tests/run.mjs`
 
-Actual final line: `| TOTAL | 364 checks | ALL PASS |`
+Actual final line: `| TOTAL | 620 checks | ALL PASS |`
 
 Run alone after all fixes and the completed concept bench, using the newly authorized second full run. The callbacks, for_each and promise_forms failures from the first run are all green in this full run. Full output: suite.log.
 
@@ -44,4 +44,6 @@ No open decision blocks merging. Race/any completion order and allSettled outcom
 
 ## Files
 
-This revision changes 16 source/design/fixture files, +227/-86; evidence is separate. Full per-file deltas, including the requested git diff --stat dev snapshot, are in file-deltas.md. Dev advanced while the lane ran, so that comparison also shows other lanes' differences; those are not deletions made by this revision.
+Against dev 80728f8 this lane changes 24 source/design/fixture files, +809/-17; evidence is separate. Full per-file deltas, including the requested git diff --stat dev snapshot, are in file-deltas.md. Dev advanced while the lane ran, so that comparison also shows other lanes' differences; those are not deletions made by this revision.
+
+The promise_integration pair adds three verdicts: imported async handler refactor PASS-bounded, spread race argument mutation WITNESS, and untouched PASS-bounded. Both files lint inside; theorem verification: 2 verified, 1 expected error. Output: validation-promise_integration/validation.log and integration-lane-b.json.

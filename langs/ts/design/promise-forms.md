@@ -58,6 +58,8 @@ Lane B uses native Promise shapes and seeded rejection draws, so handlers execut
 The outside callback fake invokes once; its source is also recorded as an argument.
 The original pair checks exact chains and executors; promise_fallback checks pending,
 stored, loop, combinator, receiver and mixed opaque/exact chains.
+The integration pair checks imported async handlers against call_args externals
+and spread combinators through call_seq and the shared callSequence reading.
 
 Instances inspected (paths relative to their named census/export root):
 - n8n, packages/editor-ui/src/models/history.ts:256 RenameNodeCommand.revert:

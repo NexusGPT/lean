@@ -1,0 +1,622 @@
+| kind         | name                        | check                                    | res  | lsc accepts | detail
+| shared       | filter_then_sum             | lint                                     | PASS | yes         | inside the subset
+| shared       | filter_then_sum             | translate                                | PASS |             | sumOfPositives -> Dafny
+| shared       | filter_then_sum             | verify translation                       | PASS |             | 2 verified, 0 errors
+| shared       | filter_then_sum             | verify core.dfy                          | PASS |             | 2 verified, 0 errors
+| shared       | filter_then_sum             | same signature                           | PASS |             | sumOfPositives(xs: seq<int>) -> int
+| shared       | record_update               | lint                                     | PASS | yes         | inside the subset
+| shared       | record_update               | translate                                | PASS |             | deposit -> Dafny
+| shared       | record_update               | verify translation                       | PASS |             | 1 verified, 0 errors
+| shared       | record_update               | verify core.dfy                          | PASS |             | 1 verified, 0 errors
+| shared       | record_update               | same signature                           | PASS |             | deposit(a: Account, amount: int) -> Account
+| shared       | sum_positive                | lint                                     | PASS | yes         | inside the subset
+| shared       | sum_positive                | translate                                | PASS |             | sumPositive -> Dafny
+| shared       | sum_positive                | verify translation                       | PASS |             | 1 verified, 0 errors
+| shared       | sum_positive                | verify core.dfy                          | PASS |             | 1 verified, 0 errors
+| shared       | sum_positive                | same signature                           | PASS |             | sumPositive(xs: seq<int>) -> int
+| construct    | clamp                       | lint                                     | PASS | yes         | inside the subset
+| construct    | clamp                       | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | clamp                       | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | clamp_min_max               | lint                                     | PASS | yes         | inside the subset
+| construct    | clamp_min_max               | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | clamp_min_max               | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | squares                     | lint                                     | PASS | yes         | inside the subset
+| construct    | squares                     | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | optional_bump               | lint                                     | PASS | yes         | inside the subset
+| construct    | optional_bump               | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | optional_bump               | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | optional_or_default         | lint                                     | PASS | yes         | inside the subset
+| construct    | optional_or_default         | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | optional_or_default         | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | optional_lift               | lint                                     | PASS | yes         | inside the subset
+| construct    | optional_lift               | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | optional_lift               | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | midpoint_real               | lint                                     | PASS | yes         | inside the subset
+| construct    | midpoint_real               | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | midpoint_real               | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | count_down                  | lint                                     | PASS | yes         | inside the subset
+| construct    | count_down                  | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | count_down                  | verify (--core)                          | PASS |             | 2 verified, 0 errors
+| construct    | swap_tuple                  | lint                                     | PASS | yes         | inside the subset
+| construct    | swap_tuple                  | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | swap_tuple                  | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | map_reduce                  | lint                                     | PASS | yes         | inside the subset
+| construct    | map_reduce                  | verify (proof shape)                     | PASS |             | 3 verified, 0 errors
+| construct    | map_reduce                  | verify (--core)                          | PASS |             | 3 verified, 0 errors
+| construct    | string_concat               | lint                                     | PASS | yes         | inside the subset
+| construct    | string_concat               | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | string_concat               | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | call_chain                  | lint                                     | PASS | yes         | inside the subset
+| construct    | call_chain                  | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | call_chain                  | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | bigint_add                  | lint                                     | PASS | yes         | inside the subset
+| construct    | bigint_add                  | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | bigint_add                  | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | directive                   | lint                                     | PASS | yes         | inside the subset
+| construct    | directive                   | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | directive                   | verify (--core)                          | PASS |             | 2 verified, 0 errors
+| construct    | function_values             | lint                                     | PASS | yes         | inside the subset
+| construct    | function_values             | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | function_values             | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | function_values_named       | lint                                     | PASS | yes         | inside the subset
+| construct    | function_values_named       | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | function_values_named       | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | function_values_call        | lint                                     | PASS | yes         | inside the subset
+| construct    | function_values_call        | verify (proof shape)                     | PASS |             | 0 verified, 0 errors
+| construct    | function_values_call        | verify (--core)                          | PASS |             | 0 verified, 0 errors
+| construct    | loop_steps                  | lint                                     | PASS | yes         | inside the subset
+| construct    | loop_steps                  | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | loop_steps                  | verify (--core)                          | PASS |             | 2 verified, 0 errors
+| construct    | loop_down                   | lint                                     | PASS | yes         | inside the subset
+| construct    | loop_down                   | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | loop_down                   | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | dict_assign                 | lint                                     | PASS | no          | inside the subset
+| construct    | dict_assign                 | verify (--core)                          | PASS |             | 0 verified, 0 errors
+| construct    | pattern_defaults            | lint                                     | PASS | yes         | inside the subset
+| construct    | pattern_defaults            | verify (proof shape)                     | PASS |             | 1 verified, 0 errors
+| construct    | pattern_defaults            | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | default_args                | lint                                     | PASS | yes         | inside the subset
+| construct    | default_args                | verify (--core)                          | PASS |             | 4 verified, 0 errors
+| construct    | index_callbacks             | lint                                     | PASS | yes         | inside the subset
+| construct    | index_callbacks             | verify (--core)                          | PASS |             | 3 verified, 0 errors
+| construct    | index_callbacks_find        | lint                                     | PASS | yes         | inside the subset
+| construct    | index_callbacks_find        | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | float_literal               | a float literal makes the file real      | PASS |             | real
+| construct    | float_literal               | --real accepts 0.1                       | PASS |             | translated
+| differential | sum_positive                | 4 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | filter_then_sum             | 4 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | clamp                       | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | clamp_min_max               | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | squares                     | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | count_down                  | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | map_reduce                  | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | call_chain                  | 2 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | directive                   | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | function_values             | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | function_values_named       | 2 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | function_values_call        | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | loop_steps                  | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | loop_down                   | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | dict_assign                 | 2 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | pattern_defaults            | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | default_args                | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | index_callbacks             | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | index_callbacks_find        | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| construct    | string_helpers              | concrete Dafny assertions                | PASS |             | Dafny program verifier finished with 7 verified, 0 errors
+| control      | false theorem               | proof shape refuted                      | PASS |             | 0 verified, 1 errors
+| control      | false theorem               | --core refuted                           | PASS |             | 1 verified, 1 errors
+| control      | missing invariant           | proof shape refuted                      | PASS |             | 0 verified, 1 errors
+| changed      | mixed.ts                    | bad function untouched: accepted         | PASS |             | exit 0
+| changed      | mixed.ts                    | bad function changed: refused            | PASS |             | exit 1, dynamic-eval
+| changed      | mixed.ts                    | no ranges: refused                       | PASS |             | exit 1
+| pair         | callbacks                   | theorem generated                        | PASS |             | ok
+| pair         | callbacks                   | Equal_subscribe not proved               | PASS |             | not proved
+| pair         | callbacks                   | Equal_relay proved                       | PASS |             | proved
+| pair         | callbacks                   | lane B subscribe WITNESS                 | PASS |             | WITNESS
+| pair         | callbacks                   | lane B relay PASS-bounded                | PASS |             | PASS-bounded
+| pair         | class_new                   | theorem generated                        | PASS |             | ok
+| pair         | class_new                   | Equal_account_constructor proved         | PASS |             | proved
+| pair         | class_new                   | Equal_account_deposit proved             | PASS |             | proved
+| pair         | class_new                   | Equal_account_label proved               | PASS |             | proved
+| pair         | class_new                   | Equal_open proved                        | PASS |             | proved
+| pair         | class_new                   | Equal_opening not proved                 | PASS |             | not proved
+| pair         | class_new                   | Equal_twice proved                       | PASS |             | proved
+| pair         | class_new                   | Equal_ledger_constructor not proved      | PASS |             | not proved
+| pair         | class_new                   | Equal_ledger_take proved                 | PASS |             | proved
+| pair         | class_new                   | lane B Account.constructor PASS-bounded  | PASS |             | PASS-bounded
+| pair         | class_new                   | lane B Account.deposit PASS-bounded      | PASS |             | PASS-bounded
+| pair         | class_new                   | lane B Account.label PASS-bounded        | PASS |             | PASS-bounded
+| pair         | class_new                   | lane B open PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | class_new                   | lane B opening WITNESS                   | PASS |             | WITNESS
+| pair         | class_new                   | lane B twice PASS-bounded                | PASS |             | PASS-bounded
+| pair         | class_new                   | lane B Ledger.constructor WITNESS        | PASS |             | WITNESS
+| pair         | class_new                   | lane B Ledger.take PASS-bounded          | PASS |             | PASS-bounded
+| pair         | class_super                 | theorem generated                        | PASS |             | ok
+| pair         | class_super                 | Equal_counter_record not proved          | PASS |             | not proved
+| pair         | class_super                 | Equal_counter_describe proved            | PASS |             | proved
+| pair         | class_super                 | Equal_counter_name proved                | PASS |             | proved
+| pair         | class_super                 | Equal_counter_constructor proved         | PASS |             | proved
+| pair         | class_super                 | lane B Counter.record WITNESS            | PASS |             | WITNESS
+| pair         | class_super                 | lane B Counter.describe PASS-bounded     | PASS |             | PASS-bounded
+| pair         | class_super                 | lane B Counter.name PASS-bounded         | PASS |             | PASS-bounded
+| pair         | clock                       | theorem generated                        | PASS |             | ok
+| pair         | clock                       | Equal_same not proved                    | PASS |             | not proved
+| pair         | clock                       | Equal_always proved                      | PASS |             | proved
+| pair         | clock                       | Equal_store proved                       | PASS |             | proved
+| pair         | clock                       | Equal_pure_only proved                   | PASS |             | proved
+| pair         | clock                       | lane B same PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | clock                       | lane B always PASS-bounded               | PASS |             | PASS-bounded
+| pair         | clock                       | lane B store PASS-bounded                | PASS |             | PASS-bounded
+| pair         | clock                       | lane B pureOnly PASS-bounded             | PASS |             | PASS-bounded
+| pair         | component                   | theorem generated                        | PASS |             | ok
+| pair         | component                   | Equal_item_list not proved               | PASS |             | not proved
+| pair         | component                   | Equal_counter proved                     | PASS |             | proved
+| pair         | component                   | lane B ItemList WITNESS                  | PASS |             | WITNESS
+| pair         | component                   | lane B Counter PASS-bounded              | PASS |             | PASS-bounded
+| pair         | counter                     | theorem generated                        | PASS |             | ok
+| pair         | counter                     | Equal_counter_bump not proved            | PASS |             | not proved
+| pair         | counter                     | Equal_counter_flush proved               | PASS |             | proved
+| pair         | counter                     | Equal_counter_label proved               | PASS |             | proved
+| pair         | counter                     | Equal_counter_constructor proved         | PASS |             | proved
+| pair         | counter                     | lane B Counter.bump WITNESS              | PASS |             | WITNESS
+| pair         | counter                     | lane B Counter.flush PASS-bounded        | PASS |             | PASS-bounded
+| pair         | counter                     | lane B Counter.label PASS-bounded        | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | theorem generated                        | PASS |             | ok
+| pair         | dynamic_reads               | Equal_remapped not proved                | PASS |             | not proved
+| pair         | dynamic_reads               | Equal_switch_read proved                 | PASS |             | proved
+| pair         | dynamic_reads               | Equal_key_count proved                   | PASS |             | proved
+| pair         | dynamic_reads               | Equal_values proved                      | PASS |             | proved
+| pair         | dynamic_reads               | Equal_entries proved                     | PASS |             | proved
+| pair         | dynamic_reads               | Equal_order not proved                   | PASS |             | not proved
+| pair         | dynamic_reads               | Equal_numeric_order proved               | PASS |             | proved
+| pair         | dynamic_reads               | Equal_optional proved                    | PASS |             | proved
+| pair         | dynamic_reads               | Equal_mixed proved                       | PASS |             | proved
+| pair         | dynamic_reads               | Equal_unknown not proved                 | PASS |             | not proved
+| pair         | dynamic_reads               | Equal_untouched proved                   | PASS |             | proved
+| pair         | dynamic_reads               | Equal_effect_order proved                | PASS |             | proved
+| pair         | dynamic_reads               | Equal_effect_read proved                 | PASS |             | proved
+| pair         | dynamic_reads               | Equal_present_undefined proved           | PASS |             | proved
+| pair         | dynamic_reads               | Equal_undefined_values proved            | PASS |             | proved
+| pair         | dynamic_reads               | Equal_hidden_order not proved            | PASS |             | not proved
+| pair         | dynamic_reads               | Equal_key_order not proved               | PASS |             | not proved
+| pair         | dynamic_reads               | Equal_distinct_orders not proved         | PASS |             | not proved
+| pair         | dynamic_reads               | lane B remapped WITNESS                  | PASS |             | WITNESS
+| pair         | dynamic_reads               | lane B switchRead PASS-bounded           | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B keyCount PASS-bounded             | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B values PASS-bounded               | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B entries PASS-bounded              | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B order WITNESS                     | PASS |             | WITNESS
+| pair         | dynamic_reads               | lane B numericOrder PASS-bounded         | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B optional PASS-bounded             | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B mixed PASS-bounded                | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B unknown PASS-bounded              | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B effectOrder PASS-bounded          | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B effectRead PASS-bounded           | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B presentUndefined PASS-bounded     | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B undefinedValues PASS-bounded      | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B hiddenOrder WITNESS               | PASS |             | WITNESS
+| pair         | dynamic_reads               | lane B keyOrder PASS-bounded             | PASS |             | PASS-bounded
+| pair         | dynamic_reads               | lane B distinctOrders WITNESS            | PASS |             | WITNESS
+| pair         | effectful_callbacks         | theorem generated                        | PASS |             | ok
+| pair         | effectful_callbacks         | Equal_keep not proved                    | PASS |             | not proved
+| pair         | effectful_callbacks         | Equal_first not proved                   | PASS |             | not proved
+| pair         | effectful_callbacks         | Equal_mapped proved                      | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_steady proved                      | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_index proved                       | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_all proved                         | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_flattened proved                   | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_folded proved                      | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_nested proved                      | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_entries proved                     | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_collected not proved               | PASS |             | not proved
+| pair         | effectful_callbacks         | Equal_async_flat proved                  | PASS |             | proved
+| pair         | effectful_callbacks         | Equal_nested_change not proved           | PASS |             | not proved
+| pair         | effectful_callbacks         | Equal_nested_each not proved             | PASS |             | not proved
+| pair         | effectful_callbacks         | lane B keep WITNESS                      | PASS |             | WITNESS
+| pair         | effectful_callbacks         | lane B first WITNESS                     | PASS |             | WITNESS
+| pair         | effectful_callbacks         | lane B mapped PASS-bounded               | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B steady PASS-bounded               | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B index PASS-bounded                | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B all PASS-bounded                  | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B flattened PASS-bounded            | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B folded PASS-bounded               | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B nested PASS-bounded               | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B entries PASS-bounded              | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B collected WITNESS                 | PASS |             | WITNESS
+| pair         | effectful_callbacks         | lane B asyncFlat PASS-bounded            | PASS |             | PASS-bounded
+| pair         | effectful_callbacks         | lane B nestedChange WITNESS              | PASS |             | WITNESS
+| pair         | effectful_callbacks         | lane B nestedEach WITNESS                | PASS |             | WITNESS
+| pair         | for_each                    | theorem generated                        | PASS |             | ok
+| pair         | for_each                    | Equal_notifier_notify_all proved         | PASS |             | proved
+| pair         | for_each                    | Equal_total not proved                   | PASS |             | not proved
+| pair         | for_each                    | Equal_labels proved                      | PASS |             | proved
+| pair         | for_each                    | Equal_notifier_constructor proved        | PASS |             | proved
+| pair         | for_each                    | lane B Notifier.notifyAll PASS-bounded   | PASS |             | PASS-bounded
+| pair         | for_each                    | lane B total WITNESS                     | PASS |             | WITNESS
+| pair         | for_each                    | lane B labels PASS-bounded               | PASS |             | PASS-bounded
+| pair         | function_values             | theorem generated                        | PASS |             | ok
+| pair         | function_values             | Equal_adder not proved                   | PASS |             | not proved
+| pair         | function_values             | Equal_pick proved                        | PASS |             | proved
+| pair         | function_values             | Equal_svc_handler not proved             | PASS |             | not proved
+| pair         | function_values             | Equal_apply not proved                   | PASS |             | not proved
+| pair         | function_values             | Equal_svc_constructor proved             | PASS |             | proved
+| pair         | function_values             | lane B adder WITNESS                     | PASS |             | WITNESS
+| pair         | function_values             | lane B pick PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | function_values             | lane B Svc.handler WITNESS               | PASS |             | WITNESS
+| pair         | function_values             | lane B apply WITNESS                     | PASS |             | WITNESS
+| pair         | generics                    | theorem generated                        | PASS |             | ok
+| pair         | generics                    | Equal_first_or proved                    | PASS |             | proved
+| pair         | generics                    | Equal_count_of not proved                | PASS |             | not proved
+| pair         | generics                    | Equal_labels not proved                  | PASS |             | not proved
+| pair         | generics                    | lane B firstOr PASS-bounded              | PASS |             | PASS-bounded
+| pair         | generics                    | lane B countOf WITNESS                   | PASS |             | WITNESS
+| pair         | generics                    | lane B labels WITNESS                    | PASS |             | WITNESS
+| pair         | jsx_conditional             | theorem generated                        | PASS |             | ok
+| pair         | jsx_conditional             | Equal_badge proved                       | PASS |             | proved
+| pair         | jsx_conditional             | lane B Badge PASS-bounded                | PASS |             | PASS-bounded
+| pair         | jsx_handlers                | theorem generated                        | PASS |             | ok
+| pair         | jsx_handlers                | Equal_rewired not proved                 | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_callback_refactor proved           | PASS |             | proved
+| pair         | jsx_handlers                | Equal_memo_changed not proved            | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_captured not proved                | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_ordered not proved                 | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_counter proved                     | PASS |             | proved
+| pair         | jsx_handlers                | Equal_effect proved                      | PASS |             | proved
+| pair         | jsx_handlers                | Equal_untouched proved                   | PASS |             | proved
+| pair         | jsx_handlers                | Equal_setter_changed not proved          | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_state_read not proved              | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_memo_refactor proved               | PASS |             | proved
+| pair         | jsx_handlers                | Equal_effect_capture not proved          | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_opaque_handler not proved          | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_stale_memo not proved              | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_effectful_memo not proved          | PASS |             | not proved
+| pair         | jsx_handlers                | Equal_hook_aliases proved                | PASS |             | proved
+| pair         | jsx_handlers                | Equal_pure_handler not proved            | PASS |             | not proved
+| pair         | jsx_handlers                | lane B Rewired WITNESS                   | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B CallbackRefactor PASS-bounded     | PASS |             | PASS-bounded
+| pair         | jsx_handlers                | lane B MemoChanged WITNESS               | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B Captured WITNESS                  | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B Ordered WITNESS                   | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B Counter PASS-bounded              | PASS |             | PASS-bounded
+| pair         | jsx_handlers                | lane B Effect PASS-bounded               | PASS |             | PASS-bounded
+| pair         | jsx_handlers                | lane B Untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | jsx_handlers                | lane B SetterChanged WITNESS             | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B StateRead WITNESS                 | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B MemoRefactor PASS-bounded         | PASS |             | PASS-bounded
+| pair         | jsx_handlers                | lane B EffectCapture WITNESS             | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B OpaqueHandler WITNESS             | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B StaleMemo PASS-bounded            | PASS |             | PASS-bounded
+| pair         | jsx_handlers                | lane B EffectfulMemo WITNESS             | PASS |             | WITNESS
+| pair         | jsx_handlers                | lane B HookAliases PASS-bounded          | PASS |             | PASS-bounded
+| pair         | jsx_handlers                | lane B PureHandler WITNESS               | PASS |             | WITNESS
+| pair         | logic_values                | theorem generated                        | PASS |             | ok
+| pair         | logic_values                | Equal_label_ not proved                  | PASS |             | not proved
+| pair         | logic_values                | Equal_pick proved                        | PASS |             | proved
+| pair         | logic_values                | Equal_kind proved                        | PASS |             | proved
+| pair         | logic_values                | Equal_svc_find not proved                | PASS |             | not proved
+| pair         | logic_values                | Equal_svc_maybe proved                   | PASS |             | proved
+| pair         | logic_values                | Equal_svc_constructor proved             | PASS |             | proved
+| pair         | logic_values                | lane B label WITNESS                     | PASS |             | WITNESS
+| pair         | logic_values                | lane B pick PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | logic_values                | lane B kind PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | logic_values                | lane B Svc.find WITNESS                  | PASS |             | WITNESS
+| pair         | logic_values                | lane B Svc.maybe PASS-bounded            | PASS |             | PASS-bounded
+| pair         | mutation                    | theorem generated                        | PASS |             | ok
+| pair         | mutation                    | Equal_add_tag proved                     | PASS |             | proved
+| pair         | mutation                    | Equal_rename not proved                  | PASS |             | not proved
+| pair         | mutation                    | Equal_visit proved                       | PASS |             | proved
+| pair         | mutation                    | Equal_tag_twice proved                   | PASS |             | proved
+| pair         | mutation                    | Equal_count_only proved                  | PASS |             | proved
+| pair         | mutation                    | lane B addTag PASS-bounded               | PASS |             | PASS-bounded
+| pair         | mutation                    | lane B rename WITNESS                    | PASS |             | WITNESS
+| pair         | mutation                    | lane B visit PASS-bounded                | PASS |             | PASS-bounded
+| pair         | mutation                    | lane B tagTwice PASS-bounded             | PASS |             | PASS-bounded
+| pair         | mutation                    | lane B countOnly PASS-bounded            | PASS |             | PASS-bounded
+| pair         | numbers                     | theorem generated                        | PASS |             | ok
+| pair         | numbers                     | Equal_average proved                     | PASS |             | proved
+| pair         | numbers                     | Equal_vat proved                         | PASS |             | proved
+| pair         | numbers                     | Equal_discounted proved                  | PASS |             | proved
+| pair         | numbers                     | Equal_pages not proved                   | PASS |             | not proved
+| pair         | numbers                     | lane B average PASS-bounded              | PASS |             | PASS-bounded
+| pair         | numbers                     | lane B vat WITNESS                       | PASS |             | WITNESS
+| pair         | numbers                     | lane B discounted WITNESS                | PASS |             | WITNESS
+| pair         | numbers                     | lane B pages WITNESS                     | PASS |             | WITNESS
+| pair         | operators                   | theorem generated                        | PASS |             | ok
+| pair         | operators                   | Equal_sum proved                         | PASS |             | proved
+| pair         | operators                   | Equal_total proved                       | PASS |             | proved
+| pair         | operators                   | Equal_head_tail not proved               | PASS |             | not proved
+| pair         | operators                   | Equal_with_default not proved            | PASS |             | not proved
+| pair         | operators                   | Equal_area proved                        | PASS |             | proved
+| pair         | operators                   | lane B sum PASS-bounded                  | PASS |             | PASS-bounded
+| pair         | operators                   | lane B total PASS-bounded                | PASS |             | PASS-bounded
+| pair         | operators                   | lane B headTail WITNESS                  | PASS |             | WITNESS
+| pair         | operators                   | lane B withDefault WITNESS               | PASS |             | WITNESS
+| pair         | operators                   | lane B area PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | optional_calls              | theorem generated                        | PASS |             | ok
+| pair         | optional_calls              | Equal_notify proved                      | PASS |             | proved
+| pair         | optional_calls              | Equal_label_of not proved                | PASS |             | not proved
+| pair         | optional_calls              | lane B notify PASS-bounded               | PASS |             | PASS-bounded
+| pair         | optional_calls              | lane B labelOf WITNESS                   | PASS |             | WITNESS
+| pair         | promise_fallback            | theorem generated                        | PASS |             | ok
+| pair         | promise_fallback            | Equal_dangling not proved                | PASS |             | not proved
+| pair         | promise_fallback            | Equal_stored not proved                  | PASS |             | not proved
+| pair         | promise_fallback            | Equal_loop not proved                    | PASS |             | not proved
+| pair         | promise_fallback            | Equal_race proved                        | PASS |             | proved
+| pair         | promise_fallback            | Equal_settled proved                     | PASS |             | proved
+| pair         | promise_fallback            | Equal_any proved                         | PASS |             | proved
+| pair         | promise_fallback            | Equal_resolve_later proved               | PASS |             | proved
+| pair         | promise_fallback            | Equal_wide_handler proved                | PASS |             | proved
+| pair         | promise_fallback            | Equal_mixed proved                       | PASS |             | proved
+| pair         | promise_fallback            | Equal_pending_schedule proved            | PASS |             | proved
+| pair         | promise_fallback            | lane B dangling WITNESS                  | PASS |             | WITNESS
+| pair         | promise_fallback            | lane B stored WITNESS                    | PASS |             | WITNESS
+| pair         | promise_fallback            | lane B loop WITNESS                      | PASS |             | WITNESS
+| pair         | promise_fallback            | lane B race PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | promise_fallback            | lane B settled PASS-bounded              | PASS |             | PASS-bounded
+| pair         | promise_fallback            | lane B any PASS-bounded                  | PASS |             | PASS-bounded
+| pair         | promise_fallback            | lane B resolveLater PASS-bounded         | PASS |             | PASS-bounded
+| pair         | promise_fallback            | lane B wideHandler PASS-bounded          | PASS |             | PASS-bounded
+| pair         | promise_fallback            | lane B mixed PASS-bounded                | PASS |             | PASS-bounded
+| pair         | promise_fallback            | lane B Pending.schedule PASS-bounded     | PASS |             | PASS-bounded
+| pair         | promise_forms               | theorem generated                        | PASS |             | ok
+| pair         | promise_forms               | Equal_totals_sum_all not proved          | PASS |             | not proved
+| pair         | promise_forms               | Equal_totals_pair proved                 | PASS |             | proved
+| pair         | promise_forms               | Equal_totals_touch not proved            | PASS |             | not proved
+| pair         | promise_forms               | Equal_totals_labels proved               | PASS |             | proved
+| pair         | promise_forms               | Equal_totals_constructor proved          | PASS |             | proved
+| pair         | promise_forms               | lane B Totals.sumAll WITNESS             | PASS |             | WITNESS
+| pair         | promise_forms               | lane B Totals.pair PASS-bounded          | PASS |             | PASS-bounded
+| pair         | promise_forms               | lane B Totals.touch WITNESS              | PASS |             | WITNESS
+| pair         | promise_forms               | lane B Totals.labels PASS-bounded        | PASS |             | PASS-bounded
+| pair         | promise_integration         | theorem generated                        | PASS |             | ok
+| pair         | promise_integration         | Equal_named_async proved                 | PASS |             | proved
+| pair         | promise_integration         | Equal_spread_race not proved             | PASS |             | not proved
+| pair         | promise_integration         | Equal_untouched proved                   | PASS |             | proved
+| pair         | promise_integration         | lane B namedAsync PASS-bounded           | PASS |             | PASS-bounded
+| pair         | promise_integration         | lane B spreadRace WITNESS                | PASS |             | WITNESS
+| pair         | promise_integration         | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | promise_then                | theorem generated                        | PASS |             | ok
+| pair         | promise_then                | Equal_changed not proved                 | PASS |             | not proved
+| pair         | promise_then                | Equal_bridge not proved                  | PASS |             | not proved
+| pair         | promise_then                | Equal_literal not proved                 | PASS |             | not proved
+| pair         | promise_then                | Equal_caught not proved                  | PASS |             | not proved
+| pair         | promise_then                | Equal_finalised not proved               | PASS |             | not proved
+| pair         | promise_then                | Equal_refactor proved                    | PASS |             | proved
+| pair         | promise_then                | Equal_effects proved                     | PASS |             | proved
+| pair         | promise_then                | Equal_bump proved                        | PASS |             | proved
+| pair         | promise_then                | Equal_named proved                       | PASS |             | proved
+| pair         | promise_then                | Equal_held proved                        | PASS |             | proved
+| pair         | promise_then                | Equal_untouched proved                   | PASS |             | proved
+| pair         | promise_then                | Equal_settle_refactor proved             | PASS |             | proved
+| pair         | promise_then                | Equal_finally_value proved               | PASS |             | proved
+| pair         | promise_then                | Equal_final_reject not proved            | PASS |             | not proved
+| pair         | promise_then                | Equal_thrown not proved                  | PASS |             | not proved
+| pair         | promise_then                | Equal_recovered not proved               | PASS |             | not proved
+| pair         | promise_then                | lane B changed WITNESS                   | PASS |             | WITNESS
+| pair         | promise_then                | lane B bridge WITNESS                    | PASS |             | WITNESS
+| pair         | promise_then                | lane B literal WITNESS                   | PASS |             | WITNESS
+| pair         | promise_then                | lane B caught WITNESS                    | PASS |             | WITNESS
+| pair         | promise_then                | lane B finalised WITNESS                 | PASS |             | WITNESS
+| pair         | promise_then                | lane B refactor PASS-bounded             | PASS |             | PASS-bounded
+| pair         | promise_then                | lane B effects PASS-bounded              | PASS |             | PASS-bounded
+| pair         | promise_then                | lane B bump PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | promise_then                | lane B named PASS-bounded                | PASS |             | PASS-bounded
+| pair         | promise_then                | lane B held PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | promise_then                | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | promise_then                | lane B settleRefactor PASS-bounded       | PASS |             | PASS-bounded
+| pair         | promise_then                | lane B finallyValue PASS-bounded         | PASS |             | PASS-bounded
+| pair         | promise_then                | lane B finalReject WITNESS               | PASS |             | WITNESS
+| pair         | promise_then                | lane B thrown WITNESS                    | PASS |             | WITNESS
+| pair         | promise_then                | lane B recovered WITNESS                 | PASS |             | WITNESS
+| pair         | record_ops                  | theorem generated                        | PASS |             | ok
+| pair         | record_ops                  | Equal_count_keys not proved              | PASS |             | not proved
+| pair         | record_ops                  | Equal_names proved                       | PASS |             | proved
+| pair         | record_ops                  | Equal_merged proved                      | PASS |             | proved
+| pair         | record_ops                  | Equal_from_pairs proved                  | PASS |             | proved
+| pair         | record_ops                  | lane B countKeys WITNESS                 | PASS |             | WITNESS
+| pair         | record_ops                  | lane B names PASS-bounded                | PASS |             | PASS-bounded
+| pair         | record_ops                  | lane B merged PASS-bounded               | PASS |             | PASS-bounded
+| pair         | record_ops                  | lane B fromPairs PASS-bounded            | PASS |             | PASS-bounded
+| pair         | recursion                   | theorem generated                        | PASS |             | ok
+| pair         | recursion                   | Equal_total not proved                   | PASS |             | not proved
+| pair         | recursion                   | Equal_depth not proved                   | PASS |             | not proved
+| pair         | recursion                   | lane B total PASS-bounded                | PASS |             | PASS-bounded
+| pair         | recursion                   | lane B depth WITNESS                     | PASS |             | WITNESS
+| pair         | service                     | theorem generated                        | PASS |             | ok
+| pair         | service                     | Equal_chat_service_label not proved      | PASS |             | not proved
+| pair         | service                     | Equal_chat_service_regenerate not proved | PASS |             | not proved
+| pair         | service                     | Equal_chat_service_dto proved            | PASS |             | proved
+| pair         | service                     | Equal_chat_service_constructor proved    | PASS |             | proved
+| pair         | service                     | lane B ChatService.label WITNESS         | PASS |             | WITNESS
+| pair         | service                     | lane B ChatService.regenerate WITNESS    | PASS |             | WITNESS
+| pair         | service                     | lane B ChatService.dto PASS-bounded      | PASS |             | PASS-bounded
+| pair         | small_forms                 | theorem generated                        | PASS |             | ok
+| pair         | small_forms                 | Equal_clear_note not proved              | PASS |             | not proved
+| pair         | small_forms                 | Equal_drop proved                        | PASS |             | proved
+| pair         | small_forms                 | Equal_build proved                       | PASS |             | proved
+| pair         | small_forms                 | Equal_first_positive proved              | PASS |             | proved
+| pair         | small_forms                 | Equal_count_down not proved              | PASS |             | not proved
+| pair         | small_forms                 | Equal_twice proved                       | PASS |             | proved
+| pair         | small_forms                 | Equal_reg_forget proved                  | PASS |             | proved
+| pair         | small_forms                 | lane B clearNote WITNESS                 | PASS |             | WITNESS
+| pair         | small_forms                 | lane B drop PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | small_forms                 | lane B build PASS-bounded                | PASS |             | PASS-bounded
+| pair         | small_forms                 | lane B firstPositive PASS-bounded        | PASS |             | PASS-bounded
+| pair         | small_forms                 | lane B countDown WITNESS                 | PASS |             | WITNESS
+| pair         | small_forms                 | lane B twice PASS-bounded                | PASS |             | PASS-bounded
+| pair         | small_forms                 | lane B Reg.forget PASS-bounded           | PASS |             | PASS-bounded
+| pair         | spread_outside              | theorem generated                        | PASS |             | ok
+| pair         | spread_outside              | Equal_changed_call not proved            | PASS |             | not proved
+| pair         | spread_outside              | Equal_regroup proved                     | PASS |             | proved
+| pair         | spread_outside              | Equal_spread_copy proved                 | PASS |             | proved
+| pair         | spread_outside              | Equal_mixed_args not proved              | PASS |             | not proved
+| pair         | spread_outside              | Equal_method_call not proved             | PASS |             | not proved
+| pair         | spread_outside              | Equal_max_guard not proved               | PASS |             | not proved
+| pair         | spread_outside              | Equal_min_guard proved                   | PASS |             | proved
+| pair         | spread_outside              | Equal_max_many proved                    | PASS |             | proved
+| pair         | spread_outside              | Equal_append proved                      | PASS |             | proved
+| pair         | spread_outside              | Equal_append_changed not proved          | PASS |             | not proved
+| pair         | spread_outside              | Equal_record_rest proved                 | PASS |             | proved
+| pair         | spread_outside              | Equal_record_changed not proved          | PASS |             | not proved
+| pair         | spread_outside              | Equal_untouched proved                   | PASS |             | proved
+| pair         | spread_outside              | Equal_ordered proved                     | PASS |             | proved
+| pair         | spread_outside              | Equal_awaited proved                     | PASS |             | proved
+| pair         | spread_outside              | Equal_opaque_call not proved             | PASS |             | not proved
+| pair         | spread_outside              | Equal_append_path proved                 | PASS |             | proved
+| pair         | spread_outside              | Equal_optional_rest proved               | PASS |             | proved
+| pair         | spread_outside              | Equal_max_third not proved               | PASS |             | not proved
+| pair         | spread_outside              | Equal_append_one proved                  | PASS |             | proved
+| pair         | spread_outside              | Equal_snapshot_call not proved           | PASS |             | not proved
+| pair         | spread_outside              | Equal_append_absent proved               | PASS |             | proved
+| pair         | spread_outside              | Equal_distinct_callee not proved         | PASS |             | not proved
+| pair         | spread_outside              | lane B changedCall WITNESS               | PASS |             | WITNESS
+| pair         | spread_outside              | lane B regroup PASS-bounded              | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B spreadCopy PASS-bounded           | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B mixedArgs WITNESS                 | PASS |             | WITNESS
+| pair         | spread_outside              | lane B methodCall WITNESS                | PASS |             | WITNESS
+| pair         | spread_outside              | lane B maxGuard WITNESS                  | PASS |             | WITNESS
+| pair         | spread_outside              | lane B minGuard PASS-bounded             | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B maxMany PASS-bounded              | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B append PASS-bounded               | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B appendChanged WITNESS             | PASS |             | WITNESS
+| pair         | spread_outside              | lane B recordRest PASS-bounded           | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B recordChanged WITNESS             | PASS |             | WITNESS
+| pair         | spread_outside              | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B ordered PASS-bounded              | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B awaited PASS-bounded              | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B opaqueCall WITNESS                | PASS |             | WITNESS
+| pair         | spread_outside              | lane B appendPath PASS-bounded           | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B optionalRest PASS-bounded         | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B maxThird WITNESS                  | PASS |             | WITNESS
+| pair         | spread_outside              | lane B appendOne PASS-bounded            | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B snapshotCall WITNESS              | PASS |             | WITNESS
+| pair         | spread_outside              | lane B appendAbsent PASS-bounded         | PASS |             | PASS-bounded
+| pair         | spread_outside              | lane B distinctCallee WITNESS            | PASS |             | WITNESS
+| pair         | statements                  | theorem generated                        | PASS |             | ok
+| pair         | statements                  | Equal_sign not proved                    | PASS |             | not proved
+| pair         | statements                  | Equal_note_and_count proved              | PASS |             | proved
+| pair         | statements                  | Equal_first_big proved                   | PASS |             | proved
+| pair         | statements                  | lane B sign WITNESS                      | PASS |             | WITNESS
+| pair         | statements                  | lane B noteAndCount PASS-bounded         | PASS |             | PASS-bounded
+| pair         | statements                  | lane B firstBig PASS-bounded             | PASS |             | PASS-bounded
+| pair         | strings                     | theorem generated                        | PASS |             | ok
+| pair         | strings                     | Equal_slug not proved                    | PASS |             | not proved
+| pair         | strings                     | Equal_padded proved                      | PASS |             | proved
+| pair         | strings                     | Equal_maximum not proved                 | PASS |             | not proved
+| pair         | strings                     | Equal_untouched proved                   | PASS |             | proved
+| pair         | strings                     | Equal_unicode_case not proved            | PASS |             | not proved
+| pair         | strings                     | Equal_split_limit not proved             | PASS |             | not proved
+| pair         | strings                     | Equal_substitution not proved            | PASS |             | not proved
+| pair         | strings                     | Equal_unicode_literal not proved         | PASS |             | not proved
+| pair         | strings                     | Equal_search_term proved                 | PASS |             | proved
+| pair         | strings                     | Equal_search_position proved             | PASS |             | proved
+| pair         | strings                     | Equal_argument_order proved              | PASS |             | proved
+| pair         | strings                     | lane B slug WITNESS                      | PASS |             | WITNESS
+| pair         | strings                     | lane B padded PASS-bounded               | PASS |             | PASS-bounded
+| pair         | strings                     | lane B maximum WITNESS                   | PASS |             | WITNESS
+| pair         | strings                     | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | strings                     | lane B unicodeCase WITNESS               | PASS |             | WITNESS
+| pair         | strings                     | lane B splitLimit WITNESS                | PASS |             | WITNESS
+| pair         | strings                     | lane B substitution WITNESS              | PASS |             | WITNESS
+| pair         | strings                     | lane B unicodeLiteral WITNESS            | PASS |             | WITNESS
+| pair         | strings                     | lane B searchTerm PASS-bounded           | PASS |             | PASS-bounded
+| pair         | strings                     | lane B searchPosition PASS-bounded       | PASS |             | PASS-bounded
+| pair         | strings                     | lane B argumentOrder PASS-bounded        | PASS |             | PASS-bounded
+| pair         | try_catch                   | theorem generated                        | PASS |             | ok
+| pair         | try_catch                   | Equal_fetcher_load not proved            | PASS |             | not proved
+| pair         | try_catch                   | Equal_fetcher_load_or_throw proved       | PASS |             | proved
+| pair         | try_catch                   | Equal_parse proved                       | PASS |             | proved
+| pair         | try_catch                   | Equal_fetcher_constructor proved         | PASS |             | proved
+| pair         | try_catch                   | lane B Fetcher.load WITNESS              | PASS |             | WITNESS
+| pair         | try_catch                   | lane B Fetcher.loadOrThrow PASS-bounded  | PASS |             | PASS-bounded
+| pair         | try_catch                   | lane B parse PASS-bounded                | PASS |             | PASS-bounded
+| escape       | any_type                    | lint refuses                             | PASS | no          | refused: opaque-mutation
+| escape       | any_type                    | translate refuses                        | PASS |             | refused
+| escape       | async_callback              | lint refuses                             | PASS | yes         | refused: async-callback
+| escape       | async_callback              | translate refuses                        | PASS |             | refused
+| escape       | async_callback_callee_order | lint refuses                             | PASS | no          | refused: promise-all-order
+| escape       | async_callback_callee_order | translate refuses                        | PASS |             | refused
+| escape       | async_callback_order        | lint refuses                             | PASS | no          | refused: promise-all-order
+| escape       | async_callback_order        | translate refuses                        | PASS |             | refused
+| escape       | async_callback_unawaited    | lint refuses                             | PASS | yes         | refused: async-callback
+| escape       | async_callback_unawaited    | translate refuses                        | PASS |             | refused
+| escape       | async_filter                | lint refuses                             | PASS | no          | refused: async-predicate
+| escape       | async_filter                | translate refuses                        | PASS |             | refused
+| escape       | cast                        | lint refuses                             | PASS | yes         | refused: param-assign
+| escape       | cast                        | translate refuses                        | PASS |             | refused
+| escape       | class_this                  | lint refuses                             | PASS | yes         | refused: receiver-mutation
+| escape       | division                    | lint refuses                             | PASS | yes         | refused: division
+| escape       | division                    | translate refuses                        | PASS |             | refused
+| escape       | dynamic_key                 | lint refuses                             | PASS | yes         | refused: dynamic-key
+| escape       | dynamic_key                 | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_effect_key   | lint refuses                             | PASS | yes         | refused: dynamic-key
+| escape       | dynamic_record_effect_key   | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_method       | lint refuses                             | PASS | yes         | refused: dynamic-key
+| escape       | dynamic_record_method       | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_prototype    | lint refuses                             | PASS | yes         | refused: prototype
+| escape       | dynamic_record_prototype    | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_string       | lint refuses                             | PASS | yes         | refused: dynamic-key
+| escape       | dynamic_record_string       | translate refuses                        | PASS |             | refused
+| escape       | dynamic_record_write        | lint refuses                             | PASS | no          | refused: index-assign
+| escape       | dynamic_record_write        | translate refuses                        | PASS |             | refused
+| escape       | eval_call                   | lint refuses                             | PASS | yes         | refused: dynamic-eval
+| escape       | eval_call                   | translate refuses                        | PASS |             | refused
+| escape       | foreach_async               | lint refuses                             | PASS | no          | refused: foreach
+| escape       | foreach_async               | translate refuses                        | PASS |             | refused
+| escape       | function_value              | lint refuses                             | PASS | yes         | refused: function-value
+| escape       | function_value              | translate refuses                        | PASS |             | refused
+| escape       | global_mutation             | lint refuses                             | PASS | yes         | refused: global-mutation
+| escape       | global_mutation             | translate refuses                        | PASS |             | refused
+| escape       | import_effect               | lint refuses                             | PASS | no          | refused: dynamic-eval
+| escape       | import_effect               | translate refuses                        | PASS |             | refused
+| escape       | loose_equality              | lint refuses                             | PASS | yes         | refused: loose-equality
+| escape       | loose_equality              | translate refuses                        | PASS |             | refused
+| escape       | non_null                    | lint refuses                             | PASS | no          | refused: closure-mutation
+| escape       | non_null                    | translate refuses                        | PASS |             | refused
+| escape       | nondeterminism              | lint refuses                             | PASS | no          | refused: closure-mutation
+| escape       | nondeterminism              | translate refuses                        | PASS |             | refused
+| escape       | parameter_mutation          | lint refuses                             | PASS | yes         | refused: alias-mutation
+| escape       | parameter_mutation          | translate refuses                        | PASS |             | refused
+| escape       | promise_after_settlement    | lint refuses                             | PASS | no          | refused: promise-unsettled
+| escape       | promise_after_settlement    | translate refuses                        | PASS |             | refused
+| escape       | promise_resolver_escape     | lint refuses                             | PASS | no          | refused: promise-executor-escape
+| escape       | promise_resolver_escape     | translate refuses                        | PASS |             | refused
+| escape       | promise_type                | lint refuses                             | PASS | no          | refused: promise
+| escape       | promise_type                | translate refuses                        | PASS |             | refused
+| escape       | promise_unsettled           | lint refuses                             | PASS | no          | refused: promise-unsettled
+| escape       | promise_unsettled           | translate refuses                        | PASS |             | refused
+| escape       | prototype_access            | lint refuses                             | PASS | yes         | refused: prototype
+| escape       | prototype_access            | translate refuses                        | PASS |             | refused
+| escape       | react_handler_capture       | lint refuses                             | PASS | no          | refused: react-handler-capture
+| escape       | react_handler_capture       | translate refuses                        | PASS |             | refused
+| escape       | spread_conditional_update   | lint refuses                             | PASS | yes         | refused: spread
+| escape       | spread_conditional_update   | translate refuses                        | PASS |             | refused
+| escape       | spread_empty_record         | lint refuses                             | PASS | yes         | refused: record-rest
+| escape       | spread_empty_record         | translate refuses                        | PASS |             | refused
+| escape       | spread_iterator             | lint refuses                             | PASS | no          | refused: spread
+| escape       | spread_iterator             | translate refuses                        | PASS |             | refused
+| escape       | spread_local                | lint refuses                             | PASS | no          | refused: spread
+| escape       | spread_local                | translate refuses                        | PASS |             | refused
+| escape       | spread_math_empty           | lint refuses                             | PASS | yes         | refused: math-empty
+| escape       | spread_math_empty           | translate refuses                        | PASS |             | refused
+| escape       | spread_math_opaque          | lint refuses                             | PASS | yes         | refused: spread
+| escape       | spread_math_opaque          | translate refuses                        | PASS |             | refused
+| escape       | spread_optional             | lint refuses                             | PASS | no          | refused: spread
+| escape       | spread_optional             | translate refuses                        | PASS |             | refused
+| escape       | spread_record_alias         | lint refuses                             | PASS | no          | refused: record-rest
+| escape       | spread_record_alias         | translate refuses                        | PASS |             | refused
+| escape       | spread_record_rest          | lint refuses                             | PASS | yes         | refused: record-rest
+| escape       | spread_record_rest          | translate refuses                        | PASS |             | refused
+| escape       | spread_tuple                | lint refuses                             | PASS | no          | refused: spread
+| escape       | spread_tuple                | translate refuses                        | PASS |             | refused
+| escape       | string_code_unit            | lint refuses                             | PASS | yes         | refused: string-code-unit
+| escape       | string_code_unit            | translate refuses                        | PASS |             | refused
+| escape       | string_surrogate            | lint refuses                             | PASS | no          | refused: string-code-unit
+| escape       | string_surrogate            | translate refuses                        | PASS |             | refused
+| escape       | super_field                 | lint refuses                             | PASS | yes         | refused: class
+| escape       | try_catch                   | lint refuses                             | PASS | yes         | refused: delete
+| escape       | unbounded_while             | lint refuses                             | PASS | no          | refused: label
+| escape       | unbounded_while             | translate refuses                        | PASS |             | refused
+| repo         | conformance/run.py ts       | runner                                   | PASS |             | conformance: PASS, 48 of 48 checks passed, languages: ts
+| TOTAL | 620 checks | ALL PASS |

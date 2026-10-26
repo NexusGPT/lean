@@ -1,0 +1,18 @@
+{
+  "scope": [
+    "named_async",
+    "spread_race",
+    "untouched"
+  ],
+  "equal": {
+    "named_async": true,
+    "spread_race": false,
+    "untouched": true
+  },
+  "why": "Promise continuations share the spread lane call_args naming for imported async handlers; opaque combinators preserve callSequence for spread arguments.",
+  "b": {
+    "namedAsync": "PASS-bounded",
+    "spreadRace": "WITNESS",
+    "untouched": "PASS-bounded"
+  }
+}
