@@ -174,9 +174,12 @@ export function pickUnit(exportsObj, spec, env) {
     const holder = { inst: null };
     return { call: (args) => { holder.inst = Reflect.construct(Cls, args); return holder.inst; }, receiver: { __own: () => (holder.inst ? { ...holder.inst } : {}) } };
   }
-  const method = Cls.prototype[spec.unit.split('.')[1]];
-  if (typeof method !== 'function' && !spec.isStatic) return null;
-  if (spec.isStatic) { const sm = Cls[spec.unit.split('.')[1]]; return typeof sm === 'function' ? { call: (args) => sm.apply(Cls, args), receiver: null } : null; }
+  const member = spec.member ?? spec.unit.split('.')[1];
+  const descriptor = Object.getOwnPropertyDescriptor(spec.isStatic ? Cls : Cls.prototype, member);
+  const method = descriptor?.value;
+  if (typeof method !== 'function' && !spec.accessor && !spec.isStatic) return null;
+  if (spec.isStatic && spec.accessor) return { call: (args) => spec.accessor === 'get' ? Reflect.get(Cls, member, Cls) : (Reflect.set(Cls, member, args[0], Cls), undefined), receiver: null };
+  if (spec.isStatic) { const sm = Cls[member]; return typeof sm === 'function' ? { call: (args) => sm.apply(Cls, args), receiver: null } : null; }
   // the receiver: real prototype methods, every field a fake
   const base = Object.create(Cls.prototype);
   const self = new Proxy(base, {
@@ -184,14 +187,14 @@ export function pickUnit(exportsObj, spec, env) {
       if (p === '__isFake') return false;
       if (p === '__own') return () => ({ ...t }); // the fields this run assigned
       if (typeof p === 'symbol') return t[p];
-      if (p in Cls.prototype) { const v = Cls.prototype[p]; return typeof v === 'function' ? v.bind(self) : v; }
+      if (p in Cls.prototype) { const v = Reflect.get(Cls.prototype, p, self); return typeof v === 'function' ? v.bind(self) : v; }
       if (Object.prototype.hasOwnProperty.call(t, p)) return t[p]; // a field this run assigned: its value
       env.record('get', `this.${String(p)}`);
       return env.member('this', p, spec.receiver); // a field of the receiver: typed by the class (a service handle, a value of the field's type)
     },
-    set(t, p, v) { env.record('set', `this.${String(p)}`, [render(v)]); t[p] = v; return true; },
+    set(t, p, v) { const d = Object.getOwnPropertyDescriptor(Cls.prototype, p); if (d?.set) { d.set.call(self, v); return true; } env.record('set', `this.${String(p)}`, [render(v)]); t[p] = v; return true; },
   });
-  return { call: (args) => method.apply(self, args), receiver: self };
+  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : method.apply(self, args), receiver: self };
 }
 
 async function withTimeout(p, ms) {

@@ -1,6 +1,7 @@
 // expect: receiver-mutation
+class Stats { n: number = 0; }
 export class Counter {
-  stats = { n: 0 };
+  stats = new Stats();
   bump(): number {
     this.stats.n = this.stats.n + 1;
     return this.stats.n;

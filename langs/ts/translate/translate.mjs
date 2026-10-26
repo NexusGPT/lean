@@ -29,7 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
@@ -58,7 +58,8 @@ const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCod
 export function translate(file, fnName, opts = {}) {
   const { real: realFlag = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
-  const { sf, checker } = loadProgram(file, { project });
+  const loaded = loadProgram(file, { project });
+  const { sf, checker } = loaded;
   const real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs)
   const fns = topLevelFunctions(sf);
   const exceptionUnits = exceptionUnitsOf(sf, checker, fns);
@@ -74,6 +75,19 @@ export function translate(file, fnName, opts = {}) {
   // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
   const classDecls = new Map(); for (const st of sf.statements) if (ts.isClassDeclaration(st) && st.name) classDecls.set(st.name.text, st); // the file's own classes, by name
   const classOfType = (t) => { const sym = t && t.symbol; const d = sym?.declarations?.[0]; return d && ts.isClassDeclaration(d) && d.getSourceFile() === sf && d.name ? (classDecls.get(d.name.text) ?? null) : null; };
+  // accessors retain an opaque unit when their body is outside the subset
+  const accessorOpaque = new Set();
+  if ([...fns.values()].some((u) => u.accessor)) {
+    const findings = lintFile(file, null, { project, loaded, accessorBodies: true }).filter((g) => !g.env);
+    for (const u of fns.values()) if (u.accessor) { let staticThis = false; const walk = (n) => { if (u.isStatic && n.kind === K.ThisKeyword) staticThis = true; ts.forEachChild(n, walk); }; walk(u.body); if (staticThis || findings.some((g) => g.line >= lineOf(sf, u.node.getStart(sf)) && g.line <= lineOf(sf, u.node.getEnd()))) accessorOpaque.add(u.name); }
+  }
+  function accessorOf(n, kind, owner = currentUnit) {
+    if (!ts.isPropertyAccessExpression(n)) return null;
+    const cls = n.expression.kind === K.ThisKeyword ? owner?.cls : classOfType(checker.getTypeAtLocation(n.expression));
+    const u = cls && fns.get(`${cls.name.text}.${kind}_${n.name.text}`);
+    return u?.accessor === kind ? u : null;
+  }
+  const propertyWrite = (n) => n.parent && ((ts.isBinaryExpression(n.parent) && n.parent.left === n && n.parent.operatorToken.kind >= K.FirstAssignment && n.parent.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(n.parent) || ts.isPostfixUnaryExpression(n.parent)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.parent.operator)));
   let order = [];
   const visiting = new Set();
   const visitStack = [];
@@ -102,9 +116,14 @@ export function translate(file, fnName, opts = {}) {
         const sfc = (ts.isIdentifier(n.expression.expression) && classDecls.has(n.expression.expression.text)) ? classDecls.get(n.expression.expression.text) : classOfType(checker.getTypeAtLocation(n.expression.expression));
         if (sfc) { const callee = fns.get(`${sfc.name.text}.${n.expression.name.text}`); if (callee) collect(callee); }
       }
+      if (ts.isPropertyAccessExpression(n)) {
+        const get = accessorOf(n, 'get', u), set = propertyWrite(n) && accessorOf(n, 'set', u);
+        if (get && !(propertyWrite(n) && ts.isBinaryExpression(n.parent) && n.parent.operatorToken.kind === K.EqualsToken)) collect(get);
+        if (set) collect(set);
+      }
       ts.forEachChild(n, walk);
     };
-    if (!asyncGenerator(u)) walk(u.body);
+    if (!asyncGenerator(u) && !accessorOpaque.has(u.name)) walk(u.body);
     visiting.delete(u); visitStack.pop();
     order.push(u);
   }
@@ -148,6 +167,11 @@ export function translate(file, fnName, opts = {}) {
   const localEffectScan = new Set();
   function isEffectCall(n) {
     if (mayFaultPure(n, checker, sf)) return true;
+    if (ts.isPropertyAccessExpression(n)) {
+      const literal = literalGetter(n); if (literal) return !exactObjectMethod(literal);
+      const get = accessorOf(n, 'get'), set = propertyWrite(n) && accessorOf(n, 'set');
+      if (set || (get && (accessorOpaque.has(get.name) || effectfulUnits.has(get.name)))) return true;
+    }
     if (ts.isAwaitExpression(n) || (ts.isForOfStatement(n) && n.awaitModifier)) return true;
     if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
     if (!ts.isCallExpression(n)) return false;
@@ -167,6 +191,8 @@ export function translate(file, fnName, opts = {}) {
     }
     if (ts.isPropertyAccessExpression(f)) {
       const recv = f.expression;
+      const om = literalMethod(f);
+      if (om) return !exactObjectMethod(om);
       if (recv.kind === K.SuperKeyword) return true; // the parent's method: a transition on the receiver
       if (recv.kind === K.ThisKeyword && currentUnit?.cls) { const callee = fns.get(`${currentUnit.className}.${f.name.text}`); if (callee) return effectfulUnits.has(callee.name); return true; }
       if (moduleState(checker, recv, sf) && MUTATORS.has(f.name.text)) return true;
@@ -303,7 +329,7 @@ export function translate(file, fnName, opts = {}) {
     const ids = defs.map(([name, ps, ret, body]) => { const id = external(name, ps, ret); if (!prelude.get(id).includes('{')) prelude.set(id, `${prelude.get(id)} { ${body} }`); return id; });
     return { faulted: ids[0], value: ids[1], clear: ids[2], raise: ids[3] };
   };
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -365,7 +391,7 @@ export function translate(file, fnName, opts = {}) {
   function mutatedFields(cls) {
     if (mutatedByClass.has(cls)) return mutatedByClass.get(cls);
     const out = new Set(); mutatedByClass.set(cls, out);
-    const thisField = (x) => (ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword ? x.name.text : null);
+    const thisField = (x) => { while (ts.isPropertyAccessExpression(x) && ts.isPropertyAccessExpression(x.expression)) x = x.expression; return ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword ? x.name.text : null; };
     const walk = (n) => {
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) { const f = thisField(n.left); if (f) out.add(f); }
       if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const f = thisField(n.operand); if (f) out.add(f); }
@@ -376,9 +402,9 @@ export function translate(file, fnName, opts = {}) {
     for (const m of cls.members) if (!ts.isConstructorDeclaration(m)) walk(m);
     return out;
   }
-  const isWorldField = (n) => !!(ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && currentUnit?.cls && !fns.has(`${currentUnit.className}.${n.name.text}`) && (mutatedFields(currentUnit.cls).has(n.name.text) || currentUnit.isCtor)); // in a constructor every field of this is written through the world: that is what the constructor does
+  const isWorldField = (n) => !!(ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && currentUnit?.cls && !accessorOf(n, 'get') && !accessorOf(n, 'set') && !fns.has(`${currentUnit.className}.${n.name.text}`) && (mutatedFields(currentUnit.cls).has(n.name.text) || currentUnit.isCtor)); // in a constructor every field of this is written through the world: that is what the constructor does
   // `a.f` where a is typed by a same-file class and f is a field one of its methods assigns: the field lives in the world
-  const isInstanceWorldField = (n) => { if (!ts.isPropertyAccessExpression(n) || n.expression.kind === K.ThisKeyword || n.expression.kind === K.SuperKeyword) return false; let t; try { t = typeOf(n.expression); } catch { return false; } if (isOptional(t)) return false; const cls = sameFileClassOf(t); return !!(cls && !fns.has(`${cls.name.text}.${n.name.text}`) && mutatedFields(cls).has(n.name.text)); };
+  const isInstanceWorldField = (n) => { if (!ts.isPropertyAccessExpression(n) || n.expression.kind === K.ThisKeyword || n.expression.kind === K.SuperKeyword) return false; let t; try { t = typeOf(n.expression); } catch { return false; } if (isOptional(t)) return false; const cls = sameFileClassOf(t); return !!(cls && !accessorOf(n, 'get') && !accessorOf(n, 'set') && !fns.has(`${cls.name.text}.${n.name.text}`) && mutatedFields(cls).has(n.name.text)); };
   const worldFieldAccessor = (n, kind, extra = []) => { const T = selfType(currentUnit); addPrelude('World', 'type World'); return external(`${T}_${kind}_${n.name.text}`, kind === 'get' ? ['World', T] : ['World', T, ...extra.map((e) => e.d)], kind === 'get' ? `(World, ${extra[0].d})` : '(World, Unit)'); };
   // one logical file is paired by the theorem; declaration fingerprints preserve initializer changes
   function moduleAccessor(n, kind, d) {
@@ -692,7 +718,7 @@ export function translate(file, fnName, opts = {}) {
     const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
     let name = typeNameOf(t);
     if (name && /^(Pick|Omit|Partial|Required|Readonly|Record|__type|__object|type|default)$/.test(name)) name = null;
-    if (hasMethods || !props.length) {
+    if ((hasMethods && !literalRecord(t)) || !props.length || t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) && d.members.some((m) => ts.isGetAccessorDeclaration(m) || ts.isSetAccessorDeclaration(m)))) {
       // opaque: values pass through untouched; reads become accessor externals
       const base = mangle(name ?? checker.typeToString(t));
       name = `Ext_${base || 'T' + hash(checker.typeToString(t))}`;
@@ -701,6 +727,7 @@ export function translate(file, fnName, opts = {}) {
     }
     const fields = props.map((p) => ({ name: p.name, type: checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional) })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     if (t.symbol?.declarations?.some((d) => ts.isBindingElement(d) && d.dotDotDotToken)) name = `Rest_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
+    if (literalRecord(t)) name = `Literal_${hash(fields.map((f) => f.name + ':' + checker.typeToString(f.type)).join(','))}`;
     if (!name) name = `Rec_${hash(fields.map((f) => f.name).join(','))}`;
     name = dn(mangle(name));
     if (recordAlias.has(name)) return recordAlias.get(name);
@@ -709,6 +736,7 @@ export function translate(file, fnName, opts = {}) {
       prelude.set(key, ''); // reserve for nested use
       const fs_ = fields.map((f) => {
         let d = dtype(f.type, n, depth + 1);
+        if (literalRecord(t)?.properties.some((p) => ts.isGetAccessorDeclaration(p) && p.name.text === f.name)) d = `() -> ${d}`;
         if (f.optional && !optionalD(d)) { usesOption = true; d = `Option<${d}>`; }
         return `${dn(f.name)}: ${d}`;
       });
@@ -1176,6 +1204,13 @@ export function translate(file, fnName, opts = {}) {
     const update = isUpdate(n), target = update ? n.operand : n.left;
     const op = update ? n.operator : n.operatorToken.kind;
     const world = isWorldField(target) || isInstanceWorldField(target);
+    const setter = accessorOf(target, 'set');
+    // a receiver path captures its record before the right side can make transitions
+    if (ts.isPropertyAccessExpression(target) && receiverRecordPath(checker, target)) {
+      let field = target; while (field.expression.kind !== K.ThisKeyword) field = field.expression;
+      expr(field);
+    }
+    if (setter && !setter.isStatic && target.expression.kind !== K.ThisKeyword) expr(target.expression);
     let key = null, receiver = null;
     if (ts.isElementAccessExpression(target)) {
       if (!ts.isIdentifier(target.expression)) fail(target, 'assignment value needs a named array or dictionary');
@@ -1192,6 +1227,8 @@ export function translate(file, fnName, opts = {}) {
     if (moduleDecl) {
       const d = dtype(typeOf(moduleDecl.name), target);
       hoist(`${moduleAccessor(target, 'set', d)}(${WORLD}, ${storedAs(d)})`, 'Unit');
+    } else if (setter) {
+      accessorCall(setter, target, [storedAs(dtype(typeOf(setter.params[0].name), target))]);
     } else if (world) {
       const onThis = isWorldField(target), cls = onThis ? currentUnit.cls : sameFileClassOf(typeOf(target.expression));
       const p = checker.getPropertyOfType(checker.getTypeAtLocation(cls.name), target.name.text);
@@ -1204,6 +1241,7 @@ export function translate(file, fnName, opts = {}) {
         const root = target.expression;
         binding = [root.text, `${receiver}[${key} := ${storedAs(dtype(typeOf(target), target))}]`, root];
       } else binding = pathUpdate(target, (cur, p, ft) => storedAs(dtype(ft, target)));
+      if (!binding) return update && ts.isPostfixUnaryExpression(n) ? old : value;
       const [name, code, root] = binding, sym = checker.getSymbolAtLocation(root);
       const d = letTypeOf(sym) ?? dtype(symType(sym, root), root);
       const from = ts.isIdentifier(target) ? dtype(typeOf(n), n) : d;
@@ -1560,7 +1598,7 @@ export function translate(file, fnName, opts = {}) {
     };
     scan(n);
     const tag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
-    const name = external(`block_promise_${hash(n.getText(sf))}${tag ? '_calls_' + tag : ''}`, ['World', ...(usesSelf ? [selfType(currentUnit)] : []), ...types], `(World, ${R})`);
+    const name = external(`block_promise_${iteratorProgram(n)}${tag ? '_calls_' + tag : ''}`, ['World', ...(usesSelf ? [selfType(currentUnit)] : []), ...types], `(World, ${R})`);
     if (calls.size) prelude.set(name, `${prelude.get(name)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
     return hoist(`${name}(${[WORLD, ...(usesSelf ? [SELF] : []), ...free.map((v) => dn(v.name))].join(', ')})`, R);
   }
@@ -1809,7 +1847,67 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isElementAccessExpression(e) || ts.isCallExpression(e)) return rawExpr(e);
     return expr(e);
   }
+  // fixed literal methods are function fields; their immutable data is captured once
+  let objectData = null;
+  function literalRecord(t) {
+    const obj = methodLiteralOf(checker, t);
+    return obj?.getSourceFile() === sf && obj.properties.every((p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p) || ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p)) && p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))) ? obj : null;
+  }
+  function literalMethod(prop) {
+    const obj = literalRecord(typeOf(prop.expression));
+    return obj?.properties.find((p) => ts.isMethodDeclaration(p) && p.name.text === prop.name.text) ?? null;
+  }
+  function literalGetter(prop) {
+    const obj = literalRecord(typeOf(prop.expression));
+    return obj?.properties.find((p) => ts.isGetAccessorDeclaration(p) && p.name.text === prop.name.text) ?? null;
+  }
+  const literalFunctionType = (m) => ts.isGetAccessorDeclaration(m) ? `() -> ${dtype(checker.getSignatureFromDeclaration(m).getReturnType(), m)}` : dtype(typeOf(m), m);
+  function exactObjectMethod(m) {
+    if (!m.body || m.asteriskToken || m.modifiers?.some((x) => x.kind === K.AsyncKeyword) || m.parameters.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken)) return false;
+    const scalar = (t) => !!(t.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike));
+    if (m.body.statements.length !== 1 || !ts.isReturnStatement(m.body.statements[0]) || !m.body.statements[0].expression) return false;
+    const pure = (e) => {
+      if (ts.isParenthesizedExpression(e)) return pure(e.expression);
+      if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || [K.TrueKeyword, K.FalseKeyword].includes(e.kind)) return true;
+      if (ts.isIdentifier(e)) { const d = checker.getSymbolAtLocation(e)?.valueDeclaration; return !!d && ts.isParameter(d) && d.parent === m && scalar(typeOf(e)); }
+      if (ts.isPropertyAccessExpression(e) && e.expression.kind === K.ThisKeyword) return m.parent.properties.some((p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && p.name.text === e.name.text) && scalar(typeOf(e));
+      if (ts.isPrefixUnaryExpression(e) && [K.MinusToken, K.ExclamationToken].includes(e.operator)) return pure(e.operand);
+      if (ts.isBinaryExpression(e) && [K.PlusToken, K.MinusToken, K.AsteriskToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(e.operatorToken.kind)) return pure(e.left) && pure(e.right);
+      return false;
+    };
+    return pure(m.body.statements[0].expression);
+  }
+  function methodValue(m, fields) {
+    const prev = objectData; objectData = fields;
+    try {
+      if (exactObjectMethod(m)) {
+        const ps = m.parameters.map((p) => `${dn(p.name.text)}: ${dtype(typeOf(p.name), p)}`);
+        return `((${ps.join(', ')}) => ${expr(m.body.statements[0].expression)})`;
+      }
+      const d = literalFunctionType(m);
+      const captured = closureReads(checker, m).map((n) => expr(n, anyTarget()));
+      for (const f of fields.values()) captured.push(convertD(f.code, f.d, anyType()));
+      const text = m.parent.properties.filter((p) => ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p)).map((p) => p.getText(sf)).join('\n') + '\nmember:' + m.name.text;
+      // the existing opaque closure supplies dependency markers and imported bindings
+      const opaque = opaqueFn(m);
+      for (const sibling of m.parent.properties) if (sibling !== m && (ts.isMethodDeclaration(sibling) || ts.isGetAccessorDeclaration(sibling))) captured.push(convertD(opaqueFn(sibling), literalFunctionType(sibling), anyType()));
+      return `${external('method_value', [d, 'string', 'seq<Any>'], d)}(${opaque}, ${strEsc(Buffer.from(text).toString('hex'))}, [${captured.join(', ')}])`;
+    } finally { objectData = prev; }
+  }
   function objectLit(n, expected) {
+    if (literalRecord(typeOf(n))) {
+      const t = typeOf(n), d = dtype(t, n), fields = new Map();
+      for (const p of n.properties) if (!ts.isMethodDeclaration(p) && !ts.isGetAccessorDeclaration(p)) {
+        const e = ts.isShorthandPropertyAssignment(p) ? p.name : p.initializer;
+        const code = expr(e), name = `od${tempCount++}_`, fd = dtype(typeOf(e), e);
+        pending.push(`var ${name}: ${fd} := ${code};`);
+        fields.set(p.name.text, { code: name, d: fd });
+      }
+      const values = n.properties.map((p) => `${dn(p.name.text)} := ${(ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p)) ? methodValue(p, fields) : fields.get(p.name.text).code}`);
+      const value = `${d}(${values.join(', ')})`;
+      const ctx = expected ?? checker.getContextualType(n);
+      return ctx ? convertD(value, d, dtype(isOptional(ctx) ? baseOf(ctx) : ctx, n)) : value;
+    }
     const ctx = expected ?? checker.getContextualType(n) ?? typeOf(n);
     let recT = ctx && !isOptional(ctx) ? ctx : null;
     if (ctx && isOptional(ctx)) recT = baseOf(ctx);
@@ -1823,9 +1921,9 @@ export function translate(file, fnName, opts = {}) {
         if (ts.isSpreadAssignment(p)) vals.push(expr(p.expression));
         else if (ts.isShorthandPropertyAssignment(p)) vals.push(expr(p.name));
         else if (ts.isPropertyAssignment(p)) vals.push(ts.isArrowFunction(p.initializer) ? lambda(p.initializer, p.initializer.parameters.length, [], true) : expr(p.initializer));
-        else if (ts.isMethodDeclaration(p)) fail(p, 'a method in an object literal is not translated');
+        else if (ts.isMethodDeclaration(p)) vals.push(opaqueFn(p));
       }
-      const types = vals.map((v, i) => { const p = n.properties[i]; const t = ts.isPropertyAssignment(p) ? typeOf(p.initializer) : ts.isShorthandPropertyAssignment(p) ? typeOf(p.name) : typeOf(p.expression); try { return dtype(t, p); } catch { return anyType(); } });
+      const types = vals.map((v, i) => { const p = n.properties[i]; const t = ts.isPropertyAssignment(p) ? typeOf(p.initializer) : ts.isShorthandPropertyAssignment(p) ? typeOf(p.name) : ts.isMethodDeclaration(p) ? typeOf(p) : typeOf(p.expression); try { return dtype(t, p); } catch { return anyType(); } });
       const id = external(`lit_${mangle(rname)}_${hash(n.properties.map((p) => p.name ? p.name.getText(sf) : '...').join(','))}`, types, rname);
       return `${id}(${vals.join(', ')})`;
     }
@@ -2009,10 +2107,13 @@ export function translate(file, fnName, opts = {}) {
   function opaqueFn(cb) {
     const text = cb.getText(sf);
     const t = typeOf(cb); let d;
-    try { d = dtype(t, cb); } catch { d = anyType(); }
+    try { d = ts.isGetAccessorDeclaration(cb) && ts.isObjectLiteralExpression(cb.parent) ? literalFunctionType(cb) : dtype(t, cb); } catch { d = anyType(); }
     const reads = closureReads(checker, cb);
-    const calls = new Set(), imports = new Set(); let capturesThis = false;
+    const calls = new Set(), imports = new Set(), accessorKeys = new Set(); let capturesThis = false;
     const walk = (n) => {
+      if (ts.isPropertyAccessExpression(n)) for (const decl of checker.getSymbolAtLocation(n.name)?.declarations ?? []) {
+        if ((ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl)) && decl.getSourceFile() === sf) accessorKeys.add(iteratorProgram(decl));
+      }
       if (n.kind === K.ThisKeyword) capturesThis = true;
       if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.expression.kind === K.ThisKeyword && currentUnit?.className) {
         const name = `${currentUnit.className}.${n.expression.name.text}`;
@@ -2032,8 +2133,9 @@ export function translate(file, fnName, opts = {}) {
     walk(cb.body);
     if (calls.size) addPrelude(`fn_calls_${hash(text)}`, `// CALLS: ${[...calls].sort().join(',')}`);
     const captures = reads.map((r) => expr(r, anyTarget()));
-    if (capturesThis && classOf(currentUnit)) captures.push(convertD(SELF, selfType(currentUnit), anyType()));
-    return `${external(`fn_${mangle(d)}`, ['string', 'seq<Any>'], d)}(${strEsc(Buffer.from(JSON.stringify([text, [...imports].sort()]), 'utf8').toString('hex'))}, [${captures.join(', ')}])`;
+    if (capturesThis && objectData) for (const f of objectData.values()) captures.push(convertD(f.code, f.d, anyType()));
+    else if (capturesThis && classOf(currentUnit)) captures.push(convertD(SELF, selfType(currentUnit), anyType()));
+    return `${external(`fn_${mangle(d)}`, ['string', 'seq<Any>'], d)}(${strEsc(Buffer.from(JSON.stringify([text, [...imports].sort(), [...accessorKeys].sort()]), 'utf8').toString('hex'))}, [${captures.join(', ')}])`;
   }
   function lambda(cb, arity, paramTypes = [], opaqueOk = false) {
     if (opaqueOk && !ts.isIdentifier(cb) && (containsEffect(cb.body) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword))) return reactHandler(cb) ?? opaqueFn(cb);
@@ -2126,6 +2228,11 @@ export function translate(file, fnName, opts = {}) {
   function propAccess(n, keepOption = false) {
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
     const name = n.name.text;
+    if (objectData && n.expression.kind === K.ThisKeyword && objectData.has(name)) return objectData.get(name).code;
+    const literal = literalGetter(n);
+    if (literal) { const value = `${expr(n.expression)}.${dn(name)}`; if (exactObjectMethod(literal)) return `(${value})()`; const rd = dtype(typeOf(n), n); return hoist(`${external('get_literal', ['World', literalFunctionType(literal)], `(World, ${rd})`)}(${WORLD}, ${value})`, rd); }
+    const getter = accessorOf(n, 'get');
+    if (getter) return accessorCall(getter, n, []);
     if (ts.isIdentifier(n.expression)) {
       const o = originOf(checker, n.expression, sf, currentUnit?.node ?? null);
       if (o.kind === 'global' && n.expression.text === 'Number' && name === 'MAX_SAFE_INTEGER') return numLit('9007199254740991', n);
@@ -2195,7 +2302,7 @@ export function translate(file, fnName, opts = {}) {
       const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
       const T = dtype(recvT, n);
       const ft = typeOf(n);
-      if (hasMethods || !props.length || !checker.getPropertyOfType(recvT, name)) {
+      if ((hasMethods && !literalRecord(recvT)) || T.startsWith('Ext_') || !props.length || !checker.getPropertyOfType(recvT, name)) {
         // an opaque type, or a field reached through an index signature: an uninterpreted accessor of the DECLARED field
         // type (one declaration per accessor); a read narrowed by a guard takes `.value`
         if (T.startsWith('map<')) return `(if ${strEsc(name)} in ${recvCode} then Some(${recvCode}[${strEsc(name)}]) else None)`;
@@ -2213,7 +2320,17 @@ export function translate(file, fnName, opts = {}) {
     if (p) {
       const declared = checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n);
       const here = typeOf(n);
-      if (!n.__keepOption) return narrowed(`${recvCode}.${dn(name)}`, declared, here, n);
+      if (!n.__keepOption) {
+        const value = narrowed(`${recvCode}.${dn(name)}`, declared, here, n);
+        if (isNullish(here) || isOptional(here)) return value;
+        const declaredD = dtype(isOptional(declared) ? baseOf(declared) : declared, n), hereD = dtype(here, n);
+        if (declaredD !== hereD) {
+          const members = sums.get(declaredD);
+          if (members) { const matches = members.filter((m) => checker.isTypeAssignableTo(m.t, here)); return matches.length === 1 ? `${value}.${matches[0].field}` : convertD(value, declaredD, hereD); }
+          if (declaredD === 'Any') return convertD(value, declaredD, hereD);
+        }
+        return value;
+      }
     }
     return `${recvCode}.${dn(name)}`;
   }
@@ -2446,6 +2563,16 @@ export function translate(file, fnName, opts = {}) {
     });
     return tag + (fields.length ? `{${fields.sort().join(',')}}` : '');
   }
+  function accessorCall(u, n, args) {
+    if (failedUnits.has(u.name)) fail(n, `callee ${u.name} was not translated`);
+    const recv = u.isStatic ? [] : [n.expression.kind === K.ThisKeyword ? SELF : expr(n.expression)];
+    const eff = effectfulUnits.has(u.name);
+    const code = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...recv, ...args].join(', ')})`;
+    if (!eff) return code;
+    const value = hoist(code, u.accessor === 'set' ? 'Unit' : dtype(retType(u), n));
+    if (!faultMode && completionMode && exceptionUnits.has(u.name)) pending.push(FAULT_CHECK);
+    return value;
+  }
   function call(n, awaited = false) {
     // the receiver precedes the arguments, including when await calls this reader directly
     if (valueOperands) {
@@ -2524,6 +2651,12 @@ export function translate(file, fnName, opts = {}) {
     const recv = f.expression, name = f.name.text;
     if (ts.isIdentifier(recv) && recv.text === 'Array' && name === 'isArray' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 1) {
       return staticTest(n.arguments[0], (t) => arrayBrand(t) ? 'true' : t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined) ? 'false' : null, (v, d) => `${external('Array_isArray', [d], 'bool')}(${v})`);
+    }
+    const om = literalMethod(f);
+    if (om) {
+      const value = fieldOf(expr(recv), typeOf(recv), name, f);
+      if (!exactObjectMethod(om)) return externalCall('invoke_method', n, [...n.arguments], value, dtype(typeOf(om), om), true);
+      return `(${value})(${n.arguments.map((a, i) => expr(a, om.parameters[i] ? typeOf(om.parameters[i].name) : undefined)).join(', ')})`;
     }
     if ((f.questionDotToken || n.questionDotToken) && isOptional(typeOf(recv)) && recv.kind !== K.ThisKeyword) {
       // `a?.m(args)`: the call, and its transition, only when a is present; the result is an Option
@@ -2933,7 +3066,11 @@ export function translate(file, fnName, opts = {}) {
     function pathUpdate(target, leaf) {
       const chain = []; let root = target;
       while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
-      if (!ts.isIdentifier(root)) fail(target, 'assignment target is not a path on a local record');
+      const worldPath = root.kind === K.ThisKeyword && receiverRecordPath(checker, target);
+      const field = worldPath ? chain.shift() : null;
+      if (!ts.isIdentifier(root) && !field) fail(target, 'receiver-mutation: a receiver path needs nonoptional data records');
+      const rootCode = field ? expr(field) : dn(root.text);
+      const rootT = field ? typeOf(field) : typeOf(root);
       if (!chain.length) return [root.text, leaf(dn(root.text), null, typeOf(root)), root];
       const build = (i, recvCode, recvT) => {
         const pa = chain[i]; const fname_ = pa.name.text;
@@ -2946,7 +3083,9 @@ export function translate(file, fnName, opts = {}) {
         else { if (isOptional(ft)) fail(pa, 'assignment through an optional field is not translated'); inner = build(i + 1, cur, ft); }
         return `${recvCode}.(${dn(fname_)} := ${inner})`;
       };
-      return [root.text, build(0, dn(root.text), typeOf(root)), root];
+      const value = build(0, rootCode, rootT);
+      if (field) { const d = dtype(rootT, field); hoist(`${worldFieldAccessor(field, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit'); return null; }
+      return [root.text, value, root];
     }
   function newValue(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
@@ -2988,6 +3127,16 @@ export function translate(file, fnName, opts = {}) {
       if (!isArrayLike(checker, t)) fail(e, 'index assignment on a non-array');
       return [arr.text, `${dn(arr.text)}[${index(e.left.argumentExpression)} := ${outerParens(expr(e.right, checker.getTypeArguments(t)[0]))}]`, arr];
     }
+    const assigned = ts.isBinaryExpression(e) ? e.left : isUpdate(e) ? e.operand : null;
+    const setter = assigned && accessorOf(assigned, 'set');
+    if (setter) {
+      const pt = typeOf(setter.params[0].name);
+      let value;
+      if (isUpdate(e)) value = `${propAccess(assigned)} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${one()}`;
+      else if (e.operatorToken.kind === K.EqualsToken) value = expr(e.right, pt);
+      else { const before = propAccess(assigned); const right = expr(e.right, pt); const op = e.operatorToken.kind === K.PlusEqualsToken ? '+' : e.operatorToken.kind === K.MinusEqualsToken ? '-' : '*'; value = `${before} ${op} ${right}`; }
+      accessorCall(setter, assigned, [value]); return null;
+    }
     if ((ts.isBinaryExpression(e) && (isWorldField(e.left) || isInstanceWorldField(e.left))) || (isUpdate(e) && (isWorldField(e.operand) || isInstanceWorldField(e.operand)))) {
       // a write to a world field (of this, or of an instance of a same-file class): one transition, its result unused
       const target = ts.isBinaryExpression(e) ? e.left : e.operand;
@@ -3006,7 +3155,6 @@ export function translate(file, fnName, opts = {}) {
       return null;
     }
     // a path x.a.b rooted at a local or a parameter, rebuilt with a new leaf: x := x.(a := x.a.(b := leaf(x.a.b)))
-
     if (ts.isBinaryExpression(e) && ts.isPropertyAccessExpression(e.left)) {
       const op = e.operatorToken.kind;
       return pathUpdate(e.left, (cur, p, ft) => {
@@ -3565,6 +3713,11 @@ export function translate(file, fnName, opts = {}) {
   function iteratorProgram(node) {
     const seen = new Set([node]), texts = [node.getText(sf)];
     const walk = (n) => {
+      if (ts.isPropertyAccessExpression(n)) {
+        for (const decl of checker.getSymbolAtLocation(n.name)?.declarations ?? []) {
+          if ((ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl)) && decl.getSourceFile() === sf && !seen.has(decl)) { seen.add(decl); texts.push(decl.getText(sf)); ts.forEachChild(decl, walk); }
+        }
+      }
       if (ts.isIdentifier(n)) {
         const o = originOf(checker, n, sf, currentUnit?.node ?? null);
         let decl = ['unit', 'module', 'module-mutable'].includes(o.kind) ? o.decl : null;
@@ -3758,6 +3911,10 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       // a numeric literal in a template is rendered directly as its JavaScript string
       if (ts.isTemplateSpan(n) && finiteLiteral(n.expression) !== null) return;
       seen.add(n);
+      if (ts.isPropertyAccessExpression(n)) {
+        const get = accessorOf(n, 'get', u), set = propertyWrite(n) && accessorOf(n, 'set', u);
+        for (const dep of [get, set]) if (dep && dep !== u) deps.add(dep.name);
+      }
       if (ts.isIdentifier(n)) {
         const d = checker.getSymbolAtLocation(n)?.valueDeclaration;
         const other = unitByDecl.get(d) ?? (d && ts.isVariableDeclaration(d) ? unitByDecl.get(d.initializer) : null);
@@ -3821,7 +3978,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const before = effectfulUnits.size;
     for (const u of order) {
       currentUnit = u;
-      if (core && (u.isCtor || asyncGenerator(u) || containsEffect(u.body) || moduleUnitShape(u).reads)) effectfulUnits.add(u.name);
+      if (core && (u.isCtor || asyncGenerator(u) || u.accessor === 'set' || accessorOpaque.has(u.name) || containsEffect(u.body) || moduleUnitShape(u).reads)) effectfulUnits.add(u.name);
       currentUnit = null;
     }
     effectsChanged = effectfulUnits.size !== before;
@@ -3938,10 +4095,11 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       if (eff) addPrelude('World', 'type World');
       const endVal = () => yieldState ? wrapRet(yieldState.name) : (u.isCtor || (retType(u).flags & TF.Void) ? wrapRet('Unit') : retType(u).flags & TF.Undefined ? wrapRet(absentValue(retType(u))) : fail(u.node, 'a path ends without a return'));
       const ctx = { ret: wrapRet, fault: () => faultResult(u) };
+      const opaqueBody = () => { const ps = [...(eff ? ['World'] : []), ...(!u.isStatic ? [selfType(u)] : []), ...u.params.map((p) => dtype(typeOf(p.name), p)), 'seq<string>']; const args = [...(eff ? [WORLD] : []), ...(!u.isStatic ? [SELF] : []), ...u.params.map((p) => dn(p.name.text)), `[${(Buffer.from(sf.text).toString('hex').match(/.{1,128}/g) ?? []).map(strEsc).join(', ')}]`]; return `${external(`accessor_${u.name}`, ps, eff ? `(World, ${rt})` : rt)}(${args.join(', ')})`; };
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { body0 = moduleShape.opaque ? opaqueModuleBody(u) : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
+      try { body0 = moduleShape.opaque ? opaqueModuleBody(u) : u.accessor && accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
       catch (e) { if (!(e instanceof Unsupported) || !moduleShape.reads || !eff || u.isCtor) throw e; pending = savedPending; coreHelpers.length = savedHelpers; usedModuleOpaque = true; body0 = opaqueModuleBody(u); }
       const cleared = exceptionUnits.has(u.name) ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
       const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : yieldState ? `var ${yieldState.name}: ${yieldState.d} := [];\n${cleared}` : cleared;

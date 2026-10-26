@@ -66,11 +66,11 @@ A whole change at once: `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--
 
 **What becomes checkable.** A function gets a *proof* when it lives inside the subset: plain data (records, arrays, strings, sets, maps, optionals, literal unions), loops, early returns, `switch`, destructuring, `async` functions, class methods and constructors (`new C()` of a class in the same file runs its constructor on a fresh handle; the instance's methods are the file's own functions), recursion, JSX (an element is a value tree), and calls into the outside world. Those calls are modelled as transitions of an explicit world, so a service method that awaits a repository and logs is inside the subset. A `try`/`catch` is exact: a transition inside its body may fault, and the catch path is a branch the verifier sees. A `try` without a catch and a loop without a bound are opaque blocks named by their text.
 
-**What you can no longer do, if you want proofs.** Six things make a function uncheckable by proof, and lean names the one it hit:
+**What you can no longer do, if you want proofs.** The table names the remaining limits and the receiver paths now read:
 
 | you write | lean says | what to write instead |
 |---|---|---|
-| `this.stats.n = 1` inside a method | `ASK: receiver-mutation` | assign the field itself: `this.stats = { ...this.stats, n: 1 }` |
+| `this.stats.n = 1` inside a method | read now: get `stats`, rebuild its record path, set `stats` | deeper data-record paths work too; class instances and opaque handles remain `ASK: receiver-mutation` |
 | `xs.forEach(x => { total += x })` | `ASK: closure-mutation` | `for (const x of xs) total += x`, or `reduce` |
 | `const t = user.tags; t.push(x)` | `ASK: alias-mutation` | `user.tags.push(x)`: change it through the parameter, which becomes an output |
 | `a === b` on two objects or arrays | `ASK: reference-equality` | compare the fields you mean |
@@ -127,14 +127,15 @@ const half = n / 2;                            const half = Math.floor(n / 2);  
 
 What this buys: an off-by-one in a page count or a threshold (`Math.floor((total + pageSize - 1) / pageSize)` against `Math.floor(total / pageSize)`) is a different function on infinitely many inputs, and a proved refactor of such arithmetic is a theorem about all of them.
 
-**5. Assign a field of `this`, never a field of a field.** A class method is translated as a function of an explicit receiver. A field that no method assigns is a pure accessor of the receiver. A field that any method of the class assigns lives in the world: every read is a transition (`get_count(world, self)`), every write is a transition (`set_count(world, self, v)`), and a method that touches one is effectful, like a method that calls a repository. Two versions that write different values, or write in a different order, make different transitions and are not equal. `this.stats.n += 1` reaches into a record the receiver holds and changes it in place, which the model cannot express; rebuild the record and assign the field.
+**5. Keep receiver paths as data records.** A field any method changes lives in the world: each read and write is a transition. `this.stats.n += 1` reads `stats`, rebuilds its record with the new `n`, and writes it back. Deeper declared record paths work the same way. This value reading assumes no observable alias to the record; a class instance, optional path or opaque handle still gets `receiver-mutation`.
 
 ```ts
-// refused: receiver-mutation        // proved
-bump() { this.stats.n += 1; }                  bump() { this.stats = { ...this.stats, n: this.stats.n + 1 }; }
+bump() { this.stats.n += 1; }
+// the same field read and write, made explicit
+bump() { const stats = this.stats; this.stats = { ...stats, n: stats.n + 1 }; }
 ```
 
-What this buys: a counter, a cache, a registry, a service with injected ports (`constructor(private readonly repo: Repo)`) is inside the subset as written. A candidate that increments twice, resets the field where the parent did not, or reads it before writing where the parent wrote first, is a different sequence of transitions, and lane B shows the input and the two traces.
+A class getter is a unit such as `Counter.get_total`; reading `this.total` calls its body. A setter is `Counter.set_total`, threading the world through its writes. Local immutable strategy objects can hold exact scalar method lambdas; broader methods are opaque function values with their text and captured data. Use a class when those methods must change the object's fields.
 
 **6. Give a `while` loop its bound.** A `for` loop over a range or a list carries its own termination; the translator writes the measure. A `while` loop runs until a condition fails, and the verifier needs to know what shrinks on each pass to accept the recursive helper it becomes. `// @decreases i` is that one fact. Without it the loop becomes an opaque block: one uninterpreted transition named by the loop's own text, the same on both sides when the text is the same, so the function around it can still be proved, but a change inside the loop is never proved equal (it is a different block) and never proved different either (it is left to lane B).
 
