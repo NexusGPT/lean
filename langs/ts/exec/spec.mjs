@@ -83,12 +83,19 @@ export function specOf(file, unitName, opts = {}) {
   const walkRe = (n) => { if (ts.isRegularExpressionLiteral(n)) { const m = n.text.match(/^\/(.*)\/[a-z]*$/s); if (m && !regexes.includes(m[1])) regexes.push(m[1]); } ts.forEachChild(n, walkRe); };
   walkRe(sf);
   // the unit's own literals join the input pools, so a comparison against a constant can go both ways
+  // a name bound to a numeric constant outside the unit (a module const, a static readonly field) is a literal of the unit too
+  const constOf = (id) => { try { const sym = checker.getSymbolAtLocation(id); const d = sym?.valueDeclaration; if (!d) return null; if ((ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d)) && d.initializer) { let e = d.initializer; let neg = false; if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.MinusToken) { neg = true; e = e.operand; } if (ts.isNumericLiteral(e)) return neg ? -Number(e.text) : Number(e.text); } } catch {} return null; };
+  let usesLength = false;
   const walk = (n) => {
     if (ts.isNumericLiteral(n)) { const v = Number(n.text); if (Number.isFinite(v) && !literals.includes(v)) literals.push(v, v + 1, v - 1); }
+    if (ts.isPropertyAccessExpression(n) && n.name.text === 'length') usesLength = true;
+    if (ts.isIdentifier(n)) { const v = constOf(n); if (v !== null && Number.isFinite(v) && !literals.includes(v)) literals.push(v, v + 1, v - 1); }
     if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) && n.text.length <= 80 && !strings.includes(n.text)) strings.push(n.text);
     ts.forEachChild(n, walk);
   };
   walk(u.body);
+  // a unit that compares lengths meets strings at those lengths: the boundary of a cut-off is where a change shows
+  if (usesLength) for (const v of [...literals]) if (Number.isInteger(v) && v >= 0 && v <= 2000) { const str = 'x'.repeat(v); if (!strings.includes(str)) strings.push(str); }
   // the receiver's fields and methods, and every fake module's imported members, typed the same way
   const receiver = u.cls ? spec(checker.getTypeAtLocation(u.cls.name)) : null;
   const imports = {};

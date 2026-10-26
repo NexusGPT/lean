@@ -81,9 +81,11 @@ Everything else that lean cannot read (JSX, generators, callbacks to a library, 
 
 ## How to write code lean can prove
 
-The rule in one line: **a function owns what it creates, and everything else flows through its arguments and its result.** Nothing you write has to look like a proof. These six habits are the whole style, each shown as the shape lean refuses and the shape it proves.
+**What a proof needs.** The proof lane reads a function as mathematics: every value is a mathematical value (a number, a string, a record, a sequence, a set, a map), and the function is a map from its arguments and the state of the world to a result and the next state of the world. Two versions are equal when that map is the same for every argument and every world. The verifier (Dafny over Z3) decides that statement. So the style below is not taste: each habit removes one thing that has no place in that reading, and lean names the habit it needs (`ASK: <rule>`) instead of guessing. Everything else is translated as it is.
 
-**1. Build new values instead of changing old ones.** A function may change what it made (a local array, a local record); it may not change what it was handed.
+The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.**
+
+**1. Build new values instead of changing old ones.** In the value reading an argument is a value, and a value cannot change. `user.tags.push(t)` writes through the argument into the caller's memory, which the function's signature says nothing about. The proved shape returns the new record, and the translator renders it as a datatype update (`user.(tags := user.tags + [t])`), on which the verifier can reason. A local the function made (a local array, a local record) may still be changed in place: lean rebuilds it as a new value at each assignment.
 
 ```ts
 // refused: param-mutation          // proved
@@ -93,7 +95,9 @@ function addTag(user: User, t: string) {       function addTag(user: User, t: st
 }
 ```
 
-**2. Let state come out of loops, not out of callbacks.** A loop may update a local; a callback may only compute.
+What this buys: a candidate that appends twice, appends to the wrong record, or skips the append on an empty list is a different map, and the verifier says so with the argument on which the two differ. A mutation would hide the second append from the signature.
+
+**2. Let state come out of loops, not out of callbacks.** A loop body is translated as a recursive helper over the variables it changes; the verifier sees `total` go in and come out. A callback is translated as a lambda: a value with no access to the variables around it. `prices.forEach(p => { total += p })` asks the lambda to change `total`, which the lambda cannot do in the model. Write the loop, or fold with `reduce`, and the sum is a function of `prices`.
 
 ```ts
 // refused: closure-mutation         // proved
@@ -102,28 +106,36 @@ prices.forEach(p => { total += p; });          for (const p of prices) total += 
                                                // or: const total = prices.reduce((a, p) => a + p, 0);
 ```
 
-**3. Say what you compare.** `===` between two objects compares addresses; lean has no addresses. Compare fields.
+What this buys: `for (const p of prices) total += p` and `prices.reduce((a, p) => a + p, 0)` are proved equal to each other; a candidate that starts the sum at the first price instead of zero, or skips the last element (`i < n - 1`), is caught for every list, including the lists the test suite did not write.
+
+**3. Say what you compare.** `a === b` on two objects compares addresses: two records with the same fields are unequal in JavaScript when they were allocated separately. A value model has no addresses; the translator cannot render address identity without inventing one, and an invented one would prove the wrong thing. Compare the fields you mean, and the comparison becomes a value equality the verifier decides.
 
 ```ts
 // refused: reference-equality       // proved
 if (a === b) ...                               if (a.id === b.id) ...
 ```
 
-**4. Say what kind of number you mean.** `/` is real division in JavaScript. Write the integer one when you mean it.
+Equality of two strings, two numbers, two literals, or a value and `null` is a value comparison already and is translated as it is.
+
+**4. Say what kind of number you mean.** JavaScript has one number type and `/` is real division: `7 / 2` is `3.5`. The translator renders numbers as integers (or as reals with `--real`), so `n / 2` would be read as a value JavaScript never computes. `Math.floor(n / 2)` and `Math.trunc(n / 2)` are integer division in both readings; `n * 0.5` says a real is meant. `%`, `+`, `-`, `*`, comparisons, `Math.min`, `Math.max`, `Math.abs` are exact; any other `Math` call is an uninterpreted function of its arguments, the same on both sides.
 
 ```ts
 // refused: division                  // proved
 const half = n / 2;                            const half = Math.floor(n / 2);   // or n * 0.5 when a real is meant
 ```
 
-**5. Assign a field of `this`, never a field of a field.** A field that any method of the class assigns lives in the world: each read and each write is a transition, so two versions that write different values differ. A field of a field is a value the receiver holds; rebuild it and assign the field.
+What this buys: an off-by-one in a page count or a threshold (`Math.floor((total + pageSize - 1) / pageSize)` against `Math.floor(total / pageSize)`) is a different function on infinitely many inputs, and a proved refactor of such arithmetic is a theorem about all of them.
+
+**5. Assign a field of `this`, never a field of a field.** A class method is translated as a function of an explicit receiver. A field that no method assigns is a pure accessor of the receiver. A field that any method of the class assigns lives in the world: every read is a transition (`get_count(world, self)`), every write is a transition (`set_count(world, self, v)`), and a method that touches one is effectful, like a method that calls a repository. Two versions that write different values, or write in a different order, make different transitions and are not equal. `this.stats.n += 1` reaches into a record the receiver holds and changes it in place, which the model cannot express; rebuild the record and assign the field.
 
 ```ts
 // refused: receiver-mutation        // proved
 bump() { this.stats.n += 1; }                  bump() { this.stats = { ...this.stats, n: this.stats.n + 1 }; }
 ```
 
-**6. Give a `while` loop its bound.** `for` and `for...of` need nothing. A `while` is proved when you say what shrinks; without it, it becomes an opaque block (same on both sides, never proved different).
+What this buys: a counter, a cache, a registry, a service with injected ports (`constructor(private readonly repo: Repo)`) is inside the subset as written. A candidate that increments twice, resets the field where the parent did not, or reads it before writing where the parent wrote first, is a different sequence of transitions, and lane B shows the input and the two traces.
+
+**6. Give a `while` loop its bound.** A `for` loop over a range or a list carries its own termination; the translator writes the measure. A `while` loop runs until a condition fails, and the verifier needs to know what shrinks on each pass to accept the recursive helper it becomes. `// @decreases i` is that one fact. Without it the loop becomes an opaque block: one uninterpreted transition named by the loop's own text, the same on both sides when the text is the same, so the function around it can still be proved, but a change inside the loop is never proved equal (it is a different block) and never proved different either (it is left to lane B).
 
 ```ts
 // opaque block                       // proved
@@ -131,7 +143,13 @@ while (i > 0) { i -= 1; }                      // @decreases i
                                                while (i > 0) { i -= 1; }
 ```
 
-Everything else is yours: `async`/`await`, imports, service calls, `try`/`catch`, `switch`, destructuring, optional chaining, template strings, `Set`, `Map`, class methods, recursion. A call into the outside world is fine; it is a transition of the world, and both versions make it in the same order or they are not equal.
+A loop that keeps something true across passes (a running maximum, a sorted prefix) can state it with `// @invariant` so the verifier can use it; most loops in service code need neither.
+
+**7. Reach the world through calls.** An imported function, a method of an injected service, a clock, `Math.random`, `fetch`, a constructor of a class lean cannot see: each is a transition of the world, named by what was called and with what. The same call in the same world answers the same; two calls are two transitions; a candidate that makes a call the parent did not make (or makes it with another argument, or in another order) is not equal. Nothing is pretended pure. What stays outside the subset is code that changes the world without a call: writing to a module-level variable, `process.env` assignment, `eval`, the prototype chain, `super`. Those have no reading as a value or a transition, and lean names them.
+
+Everything else is yours: `async`/`await`, `try`/`catch` (an opaque block, like an unbounded loop), `switch`, destructuring with defaults, optional chaining, template strings, `Set`, `Map`, generics, recursion, early returns, callbacks to array methods, local lambdas. [`langs/ts/subset.md`](langs/ts/subset.md) lists every construct and whether it is exact, uninterpreted, or refused.
+
+**How much real code is inside.** Measured on 39 repositories (nexus, n8n, langchainjs, driftbench, pipedream, nutshell, pyka and 32 smaller ones; 48,696 functions and methods written before this style existed): 60.0 percent of all units are inside the subset as written, 71.5 percent of the nexus backend. The rest get lane B and the rule that stopped the proof lane. Code written with the lint on is inside from the first line.
 
 **In the editor.** lean ships an ESLint plugin (`langs/ts/eslint`) with one rule, `lean/provable`. It runs lean's own lint on the file inside its project, so what the editor underlines is exactly what the proof lane will refuse: the line, the rule, and what to write instead. Where a rewrite keeps your meaning (`n / 2` to `Math.floor(n / 2)`, `==` to `===`) it is offered as a suggestion; where it does not (a mutation that must become a returned value), the message gives the shape and leaves the edit to you.
 
@@ -223,21 +241,22 @@ The axiom that makes effects tractable: an effect is `effect(world, op, args) = 
 
 ## Numbers
 
-Measured on a private corpus of 110 escaped defects from production TypeScript (2,334 changed functions, 2,350 untouched functions). Numbers, not code, are published.
+Measured on private corpora of production TypeScript. Numbers, not code, are published.
 
 | measurement | result |
 |---|---|
-| planted behaviour changes caught by lane B (160 type-checked mutants, 40 real units) | **122 of 160** |
-| planted changes the proof lane wrongly proved equal | **0** |
-| untouched functions passed (parent vs the defective commit) | **132 of 145** sampled |
+| planted behaviour changes in real nexus units (143 type-checked mutants: flipped operators, shifted boundaries, negated conditions, swapped arguments, dropped calls, changed returns) found by lane B with a concrete input | **120 of 143** |
+| planted changes the proof lane wrongly proved equal | **0 of 143** |
+| pairs of real commits that kept behaviour (145 untouched functions, parent against the defective commit) | **132 PASS** (39 proved, 93 bounded), 12 ASK, 1 wrong WITNESS through a changed callee |
+| real functions inside the subset as written (39 repositories, 48,696 units) | **60.0 percent**; nexus backend 71.5 percent |
 | the two-clock pair (`readClock() === readClock()` vs `true`) | **not provable**, as it must be |
-| test suite | 126 checks, conformance 21 of 21 |
+| test suite | 197 checks, conformance 21 of 21 |
 
-The full corpus run (every changed function through both lanes) is in progress; its table replaces this one when it lands. Numbers for the next languages will sit beside it.
+The run over 43 repaired production defects (every changed function through both lanes, scored only when lean's witness lands on a function the repair touched) is in progress; its table replaces this line when it lands.
 
 ## Limits
 
-lean says `ASK` rather than guess. Today it asks on: assignment to a field of `this`, `super`, generators, callbacks that change an outer variable, mutation of a parameter, `eval` and the prototype chain, JSX, more than one asynchronous schedule, and code the repository does not contain. A changed function that calls a changed recursive sibling needs an induction the theorem does not yet write.
+lean says `ASK` rather than guess. Today it asks on: assignment to a field of a field of `this`, `super`, generators, callbacks that change an outer variable, mutation of a parameter, `eval` and the prototype chain, JSX, more than one asynchronous schedule, and code the repository does not contain. A changed function that calls a changed recursive sibling needs an induction the theorem does not yet write.
 
 Lane B's bound is real: a frozen clock, generated inputs, one microtask order. Its word is `PASS-bounded`, and it stays that word.
 

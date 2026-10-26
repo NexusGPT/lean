@@ -15,8 +15,12 @@ import { generator } from './gen.mjs';
 export class BudgetError extends Error {}
 const depthOf = (path) => (path.match(/[.\[(]/g) || []).length;
 export function makeRng(seed) {
-  let s = (seed >>> 0) || 1;
-  return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+  // the seed is scrambled first: two xorshift states from nearby seeds give nearly the same first outputs, so every
+  // run's first draw (the branch of a union, an optional's presence) would fall the same way for every input
+  let s = (seed >>> 0) ^ 0x9e3779b9; s = Math.imul(s ^ (s >>> 16), 0x85ebca6b) >>> 0; s = Math.imul(s ^ (s >>> 13), 0xc2b2ae35) >>> 0; s ^= s >>> 16; s >>>= 0; s = s || 1;
+  const next = () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+  for (let i = 0; i < 4; i++) next();
+  return next;
 }
 
 const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin', 'assign', 'write', 'save', 'create', 'update', 'remove', 'send', 'emit', 'log', 'warn', 'error', 'info']);
