@@ -73,6 +73,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   reconciliation, user events). The port is direct: `./print` becomes a recorded fake in lane B's sandbox and the
   trace is compared with the test's expected calls; most families need the re-render loop (a setter in an
   effect re-renders up to 25 or 100 times), which is the hook-slot runtime row. Not killed.
+- Measured (part b, 2026-10-27 00:xx, `langs/ts/exec/react-trace.mjs`, 8 scenarios ported under
+  `tests/fixtures/react-trace` with a recorded `print` probe): 8 of 8 agree, seven scenario families (no effect;
+  retries from a setter during render, including the 8-print exact sequence of set_state_before_bind; infinite
+  retries as ASK:render-loop at 25; guarded setter; effect steps to 25; the 100-step effect with a module counter;
+  two user clicks). The runtime renders until stable and settles effects until stable, as React does. The pass
+  bar holds. Not ported: child, sibling and recursive views (lean renders one component), reconciliation.
 - Kill: no scenario portable in a day.
 
 ## 4. Purity by double render, Strict Mode without React
@@ -103,6 +109,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `[]`; commands `set(id, 2)`, `settle`. Lane A must prove the tree equal.
 - Pass: WITNESS at depth 2 with the sequence printed (the parent re-subscribes, the candidate does not); the
   tree layer PASS.
+- Measured (2026-10-27, `run.mjs` re-render sequences, pair `tests/pairs/effects_deps`): a dropped effect
+  dependency is already visible at one render (the pending record carries the deps), so the pair plants a stale
+  value instead (`setId(start + 1)` for `setId(id + 1)`): one render and one click are equal; the second click
+  diverges, WITNESS with the sequence [click, click], the parent's trace showing the cleanup, the unsubscribe and
+  the new subscribe. Every 2-click sequence over at most 4 handlers from a fresh mount, on 2 inputs, runs on
+  every rendered unit of the suite: the 28 React pair expectations hold in 9 s. The bar holds.
 - Kill: none foreseen.
 
 ## 6. Symbolic handlers: descriptors interpreted as slot transitions
