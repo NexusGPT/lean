@@ -26,7 +26,7 @@ reading no value model can give; the lint says what to write instead).
 | `**` | 46 | an uninterpreted power of both sides (dev) | exact `Pow` on integers | partial (dev) |
 | bitwise `& \| ^ ~ << >> >>>` | 128 | refused (`bitwise`) | exact on `bv32` with the JavaScript int32 coercion | gap |
 | `++ --` as statements | 1,223 postfix | exact | same | done |
-| `++`, assignment as a value | 116, 119 | refused | the value of the expression after the update | gap |
+| `++`, assignment as a value | 116, 119 | ordered local/path/world updates; postfix yields old value, prefix and assignments yield stored value; bounded while condition steps run in the helper head | conditional local state and logical assignment values remain | partial (lane) |
 | `bigint` | 12 | exact (`int`) | same | done |
 | `NaN`, `Infinity`, `Number.isNaN` | 188 (`isNaN`) | `Number.*` uninterpreted | a real unit with the IEEE special values as an extended datatype | gap |
 | unary `+` coercion | 16 | refused (`unary-coercion`) | `ext_number_of(x)` uninterpreted | gap (small) |
@@ -97,7 +97,7 @@ reading no value model can give; the lint says what to write instead).
 | `this` binding of a free function, `.call`/`.apply`/`.bind` | | refused / uninterpreted | by design | by design |
 | tagged templates | 173 | uninterpreted function of the strings and the values | same | done |
 | `void f()` | 686 | exact (the call) | same | done |
-| comma operator | 8 | refused | exact (sequence) | gap (small) |
+| comma operator | 8 | ordered evaluation of left values, then the last value; conditional sequences and discarded container mutators refused by name | exact (sequence) in every context | partial (lane) |
 
 ## 4. Classes and `this`
 

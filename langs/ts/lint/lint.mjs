@@ -489,6 +489,73 @@ export function lintFile(file, ranges = null, opts = {}) {
     if ((ts.isStringLiteral(n) || ts.isTemplateLiteralToken(n) || ts.isJsxText(n)) && /[\uD800-\uDFFF]/.test(n.text)) v(n, 'string-code-unit', 'use BMP scalar literals within the string model; astral and surrogate strings need lane B');
     ts.forEachChild(n, checkStringLiterals);
   }
+  // value steps keep the statement ownership checks and reject conditional execution
+  function operatorContext(e) {
+    for (let p = e.parent, child = e; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
+      const logical = ts.isBinaryExpression(p) && [K.AmpersandAmpersandToken, K.BarBarToken, K.QuestionQuestionToken, K.QuestionQuestionEqualsToken, K.BarBarEqualsToken, K.AmpersandAmpersandEqualsToken].includes(p.operatorToken.kind);
+      let closure = false;
+      if (ts.isCallExpression(p) || ts.isArrayLiteralExpression(p) || ts.isObjectLiteralExpression(p)) { const w = (n) => { if (ts.isFunctionLike(n)) { closure = true; return; } ts.forEachChild(n, w); }; w(p); }
+      const optionalCall = ts.isCallExpression(p) && ts.isPropertyAccessExpression(p.expression) && p.expression.questionDotToken;
+      if ((logical && child === p.right) || (ts.isConditionalExpression(p) && child !== p.condition) || p.questionDotToken || optionalCall || closure || (ts.isNewExpression(p) && child === p.expression) || (ts.isTaggedTemplateExpression(p) && child === p.tag) || ts.isBindingElement(p) || ts.isParameter(p) || ts.isCaseClause(p) || ts.isJsxExpression(p) || (ts.isForStatement(p) && child !== p.statement)) {
+        v(e, 'operator-value-context', 'move this value step into an explicit statement and conditional branch'); return false;
+      }
+      if (ts.isStatement(p)) break;
+    }
+    return true;
+  }
+  function commaValue(e) {
+    if (!operatorContext(e)) return;
+    const parts = ts.isCommaListExpression(e) ? e.elements : [e.left, e.right];
+    for (const part of parts.slice(0, -1)) {
+      let p = part; while (ts.isParenthesizedExpression(p)) p = p.expression;
+      if (ts.isCallExpression(p) && ts.isPropertyAccessExpression(p.expression) && MUT_NAMES.has(p.expression.name.text) && (isArrayExpr(p.expression.expression) || nonNull(tOf(p.expression.expression)).some((t) => isSetT(t) || isMapT(t)))) return v(p, 'operator-value-context', 'write this mutating method call as a separate statement');
+    }
+    parts.forEach(expr);
+  }
+  function operatorValue(e) {
+    if (!operatorContext(e)) return;
+    const update = ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e);
+    const target = update ? e.operand : e.left;
+    const rule = update ? 'update-expression' : 'assignment-expression';
+    if (update && !isNum(tOf(target))) return v(e, rule, 'increment a numeric local or numeric field');
+    if (!update && ![K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) return v(e, rule, 'write this assignment as a statement');
+    if (!update && e.operatorToken.kind !== K.EqualsToken && !isNum(tOf(target)) && !(e.operatorToken.kind === K.PlusEqualsToken && isStr(tOf(target)) && isStr(tOf(e.right)))) return v(e, rule, 'use numeric compound assignment or string += with a string value');
+    let root = target;
+    while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root)) root = root.expression;
+    if (root !== target && ts.isIdentifier(root)) {
+      let conflict = false;
+      const w = (n) => {
+        if (ts.isFunctionLike(n)) return;
+        if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
+          let r = n.left; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r)) r = r.expression;
+          if (ts.isIdentifier(r) && r.text === root.text) conflict = true;
+        }
+        if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) {
+          let r = n.operand; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r)) r = r.expression;
+          if (ts.isIdentifier(r) && r.text === root.text) conflict = true;
+        }
+        ts.forEachChild(n, w);
+      };
+      if (!update) w(e.right);
+      if (ts.isElementAccessExpression(target)) w(target.argumentExpression);
+      if (conflict) return v(e, 'operator-value-context', 'keep the target root unchanged while evaluating the assignment reference and right side');
+    }
+    for (let p = e.parent; p && !ts.isFunctionLike(p); p = p.parent) {
+      if (ts.isBinaryExpression(p) && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment && (ts.isPropertyAccessExpression(p.left) || ts.isElementAccessExpression(p.left))) {
+        let r = p.left; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r)) r = r.expression;
+        if (ts.isIdentifier(r) && ts.isIdentifier(root) && r.text === root.text) return v(e, 'operator-value-context', 'keep the target root unchanged while evaluating an enclosing assignment');
+      }
+      if (ts.isStatement(p)) break;
+    }
+    if (ts.isPropertyAccessExpression(target) && root.kind !== K.ThisKeyword) {
+      let t = target.expression;
+      while (ts.isPropertyAccessExpression(t)) { if (nonNull(tOf(t)).length !== (tOf(t).types?.length ?? 1)) return v(e, rule, 'narrow optional paths before assigning'); t = t.expression; }
+    }
+    exprStmt(e);
+    // the statement receiver rule returns early; a value assignment must still check its right side
+    if (!update && ts.isPropertyAccessExpression(target) && root.kind === K.ThisKeyword) expr(e.right);
+  }
+
   function expr(e) {
     switch (e.kind) {
       case K.Identifier: return checkIdent(e);
@@ -512,10 +579,10 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.NonNullExpression: return expr(e.expression); // absence becomes an uninterpreted value
       case K.PrefixUnaryExpression:
         if (e.operator === K.ExclamationToken || e.operator === K.MinusToken) return expr(e.operand);
-        if (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) return v(e, 'update-expression', '++/-- is a statement only');
+        if (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) return operatorValue(e);
         if (e.operator === K.TildeToken) return v(e, 'bitwise', 'bitwise operators are outside the subset');
         return v(e, 'unary-coercion', 'unary + coerces; it is outside the subset');
-      case K.PostfixUnaryExpression: return v(e, 'update-expression', '++/-- is a statement only');
+      case K.PostfixUnaryExpression: return operatorValue(e);
       case K.TypeOfExpression: return expr(e.expression); // an uninterpreted read of the run-time type
       case K.DeleteExpression: {
         // `delete r.f` on an optional field, `delete m[k]` on a dictionary, on a local, a parameter or a field of this
@@ -567,7 +634,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         });
         return;
       case K.SpreadElement: return v(e, 'spread', 'spread is allowed in array and record literals only');
-      case K.CommaListExpression: return v(e, 'comma', 'the comma operator is outside the subset');
+      case K.CommaListExpression: return commaValue(e);
       default: return v(e, 'unsupported-syntax', `expression ${ts.SyntaxKind[e.kind]} is outside the subset`);
     }
   }
@@ -576,7 +643,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   let floorDepth = 0;
   function binary(e) {
     const op = e.operatorToken.kind;
-    if (op === K.EqualsToken || (op >= K.FirstAssignment && op <= K.LastAssignment)) return v(e, 'assignment-expression', 'assignment is a statement only');
+    if (op === K.EqualsToken || (op >= K.FirstAssignment && op <= K.LastAssignment)) return operatorValue(e);
     if (op === K.SlashToken) {
       const lt = tOf(e.left), rt = tOf(e.right);
       if (floorDepth === 0 && !(lt.flags & TF.BigIntLike) && !fileReal) return v(e, 'division', '`/` on numbers is real division; write Math.floor(a / b) for integer division');
@@ -604,7 +671,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       return;
     }
     if (op === K.InKeyword) { expr(e.left); expr(e.right); return; } // required properties and dictionaries are exact; open-record absence stays uninterpreted
-    if (op === K.CommaToken) return v(e, 'comma', 'the comma operator is outside the subset');
+    if (op === K.CommaToken) return commaValue(e);
     if (!(ARITH.has(op) || CMP.has(op) || EQ.has(op) || LOGIC.has(op))) return v(e, 'bitwise', 'bitwise and shift operators are outside the subset');
     expr(e.left); expr(e.right);
     if (LOGIC.has(op) && (isJsxNode(e.left) || isJsxNode(e.right))) return; // `cond && <X/>`: a conditional element
