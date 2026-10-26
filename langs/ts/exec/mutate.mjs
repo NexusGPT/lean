@@ -54,15 +54,25 @@ export function sitesOf(file, unitName, opts = {}) {
   return { sites, text, unit: u };
 }
 
+// the count of type errors of a source placed beside the parent (same imports, same project); a mutant that adds
+// errors is not a candidate anyone could ship, so it is not planted
+function typeErrors(file, source, opts) {
+  const tmp = path.join(path.dirname(file), `.lean_typecheck_${process.pid}${path.extname(file)}`);
+  try { fs.writeFileSync(tmp, source); const { diagnostics } = loadProgram(tmp, { project: opts.project ?? true }); return diagnostics.filter((d) => d.category === ts.DiagnosticCategory.Error).length; }
+  catch { return Infinity; }
+  finally { try { fs.rmSync(tmp, { force: true }); } catch { /* already gone */ } }
+}
 export function mutate(file, unitName, index, opts = {}) {
   const { sites, text } = sitesOf(file, unitName, opts);
   if (!sites.length) return null;
+  const baseErrors = opts.typecheck === false ? 0 : typeErrors(file, text, opts);
   // the k-th site whose edit still parses; a site that breaks the syntax is skipped (it would be an ASK, not a change)
   for (let tries = 0; tries < sites.length; tries++) {
     const s = sites[(index + tries) % sites.length];
     const source = text.slice(0, s.start) + s.text + text.slice(s.end);
     const sf2 = ts.createSourceFile('m.ts', source, ts.ScriptTarget.ES2020, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
     if (sf2.parseDiagnostics && sf2.parseDiagnostics.length) continue;
+    if (opts.typecheck !== false && typeErrors(file, source, opts) > baseErrors) continue; // a mutant that breaks the types is not a candidate
     return { source, site: s, count: sites.length, skipped: tries };
   }
   return null;

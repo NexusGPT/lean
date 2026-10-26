@@ -411,6 +411,7 @@ export function translate(file, fnName, opts = {}) {
   const innerOf = (d) => d.slice('Option<'.length, -1);
   function convertD(code, fd, td) {
     if (fd === td) return code;
+    if (td === 'Unit') return 'Unit';
     if (td === 'Any') return `${external(`Any_of_${mangle(fd)}`, [fd], 'Any')}(${code})`;
     if (fd === 'Any') return `${external(`Any_as_${mangle(td)}`, ['Any'], td)}(${code})`;
     if (td.startsWith('Option<') && !fd.startsWith('Option<')) { usesOption = true; return `Some(${convertD(code, fd, innerOf(td))})`; }
@@ -766,6 +767,7 @@ export function translate(file, fnName, opts = {}) {
       } else rv = expr(n.expression, anyTarget());
       return `${external(`Any_${name}`, [anyType()], rd)}(${rv})`;
     }
+    if (n.questionDotToken && !isOptional(recvT) && !isAny(recvT)) return fieldOf(expr(n.expression), recvT, name, n); // ?. on a value that cannot be absent
     if (n.questionDotToken) {
       // a?.b : Option propagation
       const r = rawOperand(n.expression);
@@ -1439,13 +1441,13 @@ export function translate(file, fnName, opts = {}) {
     const inTypes = ['World', ...(usesSelf ? [selfType(u)] : []), ...free.map((v) => v.d)];
     const outTypes = ['World', ...(returns ? [`Option<${RD}>`] : []), ...M.map((m) => m.d)];
     if (returns) usesOption = true;
-    const name = external(id, inTypes, `(${outTypes.join(', ')})`);
+    const name = external(id, inTypes, outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`);
     // record the callees on the prelude block so the theorem can refuse a block whose callee changed
     const key = [...prelude.keys()].find((k) => k === name);
     if (key && calls.size) prelude.set(key, `${prelude.get(key)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
     const args = [WORLD, ...(usesSelf ? [SELF] : []), ...free.map((v) => dn(v.name))];
     const outs = [WORLD, ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
-    const line = `var (${outs.join(', ')}) := ${name}(${args.join(', ')});`;
+    const line = outs.length === 1 ? `var ${outs[0]} := ${name}(${args.join(', ')});` : `var (${outs.join(', ')}) := ${name}(${args.join(', ')});`;
     if (!returns) return `${line}\n${tr(rest, fin, u)}`;
     return `${line}\nif retb.Some? then\n${indentBlock(retIn(`(${WORLD}, retb.value)`))}\nelse\n${indentBlock(wrapLet(tr(rest, fin, u)))}`;
   }
@@ -1521,7 +1523,7 @@ export function translate(file, fnName, opts = {}) {
     }
     const next = () => `${hn}(${[...leadArgsNext, ...constArgs, ...mNames].join(', ')})`;
     const exitVal = () => (returns ? tupleOf(['None', ...mNames]) : tupleOf(mNames));
-    loopCtx.push({ cont: next, brk: exitVal, ret: (code) => (returns ? tupleOf([`Some(${outerParens(code)})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
+    loopCtx.push({ cont: next, brk: exitVal, ret: (code) => (returns ? tupleOf([`Some(${code})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
     try { bodyE = tr(flatten(s.statement), next, u); } finally { loopCtx.pop(); }
     const params = [...lead, ...constParams, ...stateParams];
