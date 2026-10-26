@@ -191,6 +191,16 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
   const d = path.join(pairsDir, name);
   const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
   const tmpd = path.join(tmp, `pair_${name}`); fs.mkdirSync(tmpd, { recursive: true });
+  if (exp.candidateOnly) {
+    for (const [i, want] of exp.candidateOnly.entries()) {
+      const out = path.join(tmpd, `new_${i}.json`);
+      run('node', [path.join(here, '../check.mjs'), ...(want.parent ? ['--parent', path.join(d, want.parent)] : []), '--candidate', path.join(d, want.file), '--unit', want.unit, '--n', '30', ...(want.project ? [] : ['--no-project']), '--out', out]);
+      let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
+      const ok = got.verdict === want.verdict && (!want.kind || got.kind === want.kind) && (!want.environmentClass || got.environmentClass === want.environmentClass) && (!want.phase || got.phase === want.phase) && (!want.linkKind || got.link?.kind === want.linkKind) && (!want.reason || got.reason?.includes(want.reason)) && (want.inputs === undefined || got.inputs === want.inputs) && (want.faults === undefined || got.faults === want.faults) && (got.verdict !== 'NEW' || (got.loaded === true && got.seed === 1 && Array.isArray(got.fakes) && got.traceShape?.reduce((n, s) => n + s.inputs, 0) === got.inputs && !got.certificate?.lanes?.A));
+      add('pair', name, `${want.file} ${want.unit} ${want.verdict}`, ok, JSON.stringify({ verdict: got.verdict, inputs: got.inputs, faults: got.faults, reason: got.reason }));
+    }
+    continue;
+  }
   const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...extra]);
   const p1 = tr('parent', []);
   const eff = p1.status === 0 ? (fs.readFileSync(path.join(tmpd, 'parent.dfy'), 'utf8').match(/^\/\/ EFFECTFUL: (.*)$/m)?.[1] ?? '') : '';
@@ -231,11 +241,12 @@ for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) 
   const want = (src.match(/^\/\/ expect:\s*(\S+)/m) ?? [])[1];
   const name = f.replace(/\.ts$/, '');
   if (!want) { add('escape', name, 'expect line', false, 'missing `// expect: <rule>`'); continue; }
-  const l = run('node', [lint, file]);
+  const candidateUnit = (src.match(/^\/\/ candidate-unit:\s*(\S+)/m) ?? [])[1];
+  const l = run('node', [lint, ...(candidateUnit ? ['--candidate', file, '--unit', candidateUnit, '--n', '1', '--no-project'] : [file])]);
   const hit = l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s`).test(line));
   add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', lscAccepts(file));
   const fn = (src.match(/^export (?:async )?function (\w+)/m) ?? [])[1];
-  if (fn) {
+  if (fn && !candidateUnit) {
     const t = run('node', [translate, file, '--fn', fn, '--out', path.join(tmp, `esc_${name}.dfy`)]);
     add('escape', name, 'translate refuses', t.status === 1, t.status === 1 ? 'refused' : 'TRANSLATED');
   }

@@ -18,7 +18,7 @@
 
 TypeScript is the first language. The core (the theorem, the checker, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`. Python is next.
 
-Every change to a program is a claim: *I changed this, and nothing else.* Tests sample that claim. Review guesses at it. lean checks it, and answers with one of four words, each backed by something you can re-run:
+Every change to a program is a claim: *I changed this, and nothing else.* Tests sample that claim. Review guesses at it. lean checks it, and answers with one of six verdicts, each backed by something you can re-run:
 
 | verdict | what it means | what backs it |
 |---|---|---|
@@ -26,6 +26,8 @@ Every change to a program is a claim: *I changed this, and nothing else.* Tests 
 | **`PASS-proved`** | equal on **every** input outside the change you declared | a theorem, checked by [Dafny](https://dafny.org) |
 | **`PASS-bounded`** | no difference found on *n* generated inputs under a frozen environment | the inputs, the seed, the bound |
 | **`ASK`** | undecided, and here is exactly why | the construct, the timeout, the changed interface |
+| **`REFUSE`** | a local source import cannot resolve or a local named export is absent | kind `load`, file and loader error |
+| **`NEW`** | a unit without a parent loaded and ran on drawn inputs | input count, seed, fakes, faults and trace shapes; no equality claim |
 
 A bounded pass never becomes a proof. A proof never comes from a model's opinion. The producer of the change is never consulted.
 
@@ -188,7 +190,7 @@ The same lint runs from the command line: `node langs/ts/lint/lint.mjs file.ts`.
 
 **What you can still do.** Write TypeScript the way your team writes it. A function outside the subset is not blocked: it gets lane B, a bounded execution verdict, and the exact reason the proof lane stopped. You decide what to tighten.
 
-**What changes in your workflow.** A pull request carries, per changed function, one of four words and its certificate. `WITNESS` comes with the input that shows the difference. `PASS-proved` comes with a theorem anyone can re-check. Reviewers read the scope you declared and the asks, not the diff.
+**What changes in your workflow.** A pull request carries, per changed function, one of six verdicts and its certificate. `WITNESS` comes with the input that shows the difference. `PASS-proved` comes with a theorem anyone can re-check. Reviewers read the scope you declared and the asks, not the diff.
 
 ## A change, end to end
 

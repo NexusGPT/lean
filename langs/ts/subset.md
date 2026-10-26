@@ -17,6 +17,30 @@ The measured reach of this version on code written before it existed: 60.0 perce
 across 39 repositories, 83.4 percent of the nexus backend (`langs/ts/census.mjs` prints the share and the blocking
 rules per package).
 
+## Verdicts and units without a parent
+
+| Verdict | Meaning |
+|---|---|
+| `WITNESS` | a paired execution differs on a recorded input |
+| `PASS-proved` | paired observations are equal under the proof's stated model |
+| `PASS-bounded` | paired observations agreed on the drawn inputs |
+| `ASK` | the requested check remains undecided |
+| `REFUSE` | a local source link failed; `kind: load` names the file and real loader error |
+| `NEW` | the candidate-only unit loaded and ran; input count, seed, fakes, faults and trace shapes are recorded |
+
+`check.mjs`, `exec/run.mjs` and `lint/lint.mjs` accept `--candidate file --unit name`
+without `--parent`. A parent file that lacks the unit has the same reading. The harness leaves a missing
+candidate undecided. `NEW` never means equality, correctness or absence of faults.
+There is no Dafny equality lemma without a parent. Input throws count as faults in `NEW`;
+every evaluation failure is `ASK` with its environment class, as are budgets and timeouts.
+Test modules are `ASK(test module)` before loading. Ordinary proof lint and translation are unchanged.
+
+Declared external packages are recording fakes even without installed dependencies. Local
+and aliased source imports use TypeScript resolution and Node's module linker. Undeclared
+packages use Node resolution; missing external packages, generated output and build assets are ASK. A literal dynamic import is resolved before input generation,
+even on a branch not drawn. Computed imports resolve only when executed. These assumptions
+are carried by every candidate-only result. See [the design](design/new-units.md).
+
 ## What is exact
 
 | Part | Allowed | Example |

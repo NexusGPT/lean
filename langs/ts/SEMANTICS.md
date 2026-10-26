@@ -44,3 +44,15 @@ Both versions run in one process, each in its own sandbox, against the same fake
 ## What stays outside
 
 Assignment to a field of `this`, `super`, generators, closures that change an outer variable, mutation of a parameter, more than one asynchronous schedule, code the repository does not contain. Each is an ASK with its reason, never a PASS.
+
+## A unit without a parent
+
+A candidate-only unit has no equality proposition. Lane B links and loads its module under
+recording fakes, then draws inputs using the paired input policy. It returns `NEW` with
+`loaded`, `inputs`, `seed`, `fakes`, `faults`, `traceShape`, `bound` and `assumptions`.
+Input throws are observations. Only local unresolved source or absent local named exports
+are `REFUSE` with `kind: load`, the file and real loader error. Evaluation failures are
+ASK with their environment class; generated output, external resolution failures and
+test modules are ASK. Test modules are excluded before loading. Budgets are ASK. Neither `NEW` nor `REFUSE(load)`
+is a PASS, and neither enters the proof lane. Declared packages are provided as fakes;
+local and aliased imports link their source, and undeclared packages use Node resolution.

@@ -1354,6 +1354,16 @@ export function agentReport(file, findings) {
 
 if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv[1] ?? '') === new URL(import.meta.url).pathname) {
   const args = process.argv.slice(2);
+  // candidate-only admission is an execution reading, not admission to a proof
+  if (args.includes('--candidate')) {
+    const opt = (k, d) => args.includes(k) ? args[args.indexOf(k) + 1] : d;
+    const { runPair } = await import('../exec/run.mjs');
+    const result = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 30)), seed: Number(opt('--seed', 1)), project: args.includes('--no-project') ? false : opt('--project', true) });
+    if (args.includes('--json')) console.log(JSON.stringify(result, null, 2));
+    else console.log(`${opt('--candidate')}:1:1  ${result.kind ?? result.verdict}  ${result.reason ?? 'candidate-only execution; no equality claim'}`);
+    process.exit(result.verdict === 'NEW' ? 0 : result.verdict === 'REFUSE' ? 1 : 2);
+  }
+
   const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--changed' && args[i - 1] !== '--project');
   if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--project <tsconfig>|--no-project]'); process.exit(2); }
   const ci = args.indexOf('--changed');

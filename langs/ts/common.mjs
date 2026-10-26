@@ -121,7 +121,7 @@ export function* loadManyChunks(files, opts = {}) {
 }
 
 // the compiler options loadProgram uses for a file under a config (shared by loadProgram and loadMany)
-function loadProgramOptions(abs, configFile) {
+export function loadProgramOptions(abs, configFile) {
   let options = { ...COMPILER_OPTIONS };
   if (configFile && fs.existsSync(configFile)) {
     const raw = ts.readConfigFile(configFile, ts.sys.readFile);

@@ -1,0 +1,72 @@
+--- a/run_b.py
++++ b/run_b.py
+@@ -12,22 +12,39 @@
+     key, path, fn, pf, bf, ro, n = job
+     uk = unit_key(path, fn['name'])
+     rec = dict(unit=uk, key=key, name=fn['name'], cls=fn['cls'], path=path)
+-    if not (os.path.exists(pf) and os.path.exists(bf)): rec.update(verdict='ASK', reason='file absent on a side'); return rec
++    if not os.path.exists(bf): rec.update(verdict='ASK', reason='candidate file absent'); return rec
++    parent_args = ['--parent', pf] if os.path.exists(pf) else []
+     os.makedirs(os.path.dirname(ro), exist_ok=True)
+     t = time.time()
+     try:
+-        r = subprocess.run(["node", LEAN + "/langs/ts/exec/run.mjs", "--parent", pf, "--candidate", bf, "--unit", fn['name'], "--n", n, "--out", ro], capture_output=True, text=True, timeout=600)
++        r = subprocess.run(["node", "--experimental-vm-modules", LEAN + "/langs/ts/exec/run.mjs", *parent_args, "--candidate", bf, "--unit", fn['name'], "--n", n, "--out", ro], capture_output=True, text=True, timeout=600)
+         res = json.load(open(ro)) if os.path.exists(ro) else {"verdict": "ASK", "reason": (r.stdout + r.stderr)[-300:]}
+     except subprocess.TimeoutExpired: res = {"verdict": "ASK", "reason": "harness timeout 600 s"}
+     except Exception as ex: res = {"verdict": "ASK", "reason": f"harness: {ex}"}
+     rec.update(verdict=res.get('verdict'), reason=res.get('reason'), witnesses=len(res.get('witnesses') or []), where=(res.get('witnesses') or [{}])[0].get('where') if res.get('witnesses') else None, seconds=round(time.time() - t, 1))
++    for field in ('kind', 'phase', 'environmentClass', 'link', 'loaded', 'inputs', 'seed', 'fakes', 'faults', 'traceShape', 'assumptions', 'bound', 'candidateOnly'):
++        if field in res: rec[field] = res[field]
+     return rec
++
++def candidate_units(pf, bf, known):
++    """actual unit names recover additions omitted by corpus metadata"""
++    def read(file):
++        if not os.path.exists(file): return []
++        p = subprocess.run(['node', LEAN + '/langs/ts/units.mjs', file, '--no-project'], capture_output=True, text=True, timeout=120)
++        if p.returncode: raise RuntimeError(p.stdout + p.stderr)
++        return json.loads(p.stdout)
++    old = {u['name'] for u in read(pf)}
++    result = {u['name']: u for u in known}
++    for u in read(bf):
++        if u['name'] not in old:
++            result[u['name']] = dict(u, cls='nested' if u['form'] == 'method' else 'effect')
++    return list(result.values())
+ 
+ def main():
+     from concurrent.futures import ThreadPoolExecutor, as_completed
+     a = sys.argv[1:]; opt = lambda k, d=None: (a[a.index(k) + 1] if k in a else d)
+     keys = set(opt('--keys', '').split(',')) - {''}; classes = set(opt('--classes', 'pure,effect,nested').split(',')); n = opt('--n', '100'); limit = int(opt('--limit', '0')); max_lines = int(opt('--max-lines', '400'))
+-    jobs_n = int(os.environ.get('JOBS', '8'))
++    jobs_n = min(3, int(os.environ.get('JOBS', '3')))
+     corpus = json.load(open(os.environ.get("CORPUS", ROOT + "/corpus.json")))
+     os.makedirs(RESULTS, exist_ok=True)
+     plan = []  # (key, recs, units, made)
+@@ -39,13 +56,13 @@
+         made = []
+         for ver, tree, commit in (('parent', pt, d['parent_commit']), ('buggy', bt, d['def_commit'])):
+             if not os.path.exists(tree + "/.exported"):
+-                paths = [f['path'] for f in d['def_files'] if f['in_parent']]
++                paths = [f['path'] for f in d['def_files']]
+                 try: export_tree(d['repo'], commit, paths, tree); made.append(tree)
+                 except AssertionError as ex: print(key, 'no tree', str(ex)[:80], flush=True); break
+         if not (os.path.exists(pt + "/.exported") and os.path.exists(bt + "/.exported")): continue
+         out = f"{RESULTS}/{key}.b.json"
+         recs = {r['unit']: r for r in json.load(open(out))} if os.path.exists(out) else {}
+-        units = [(f['path'], fn) for f in d['def_files'] if f['in_parent'] for fn in f['functions'] if fn['cls'] in classes and (fn['cls'] != 'nested' or fn['form'] == 'method') and fn['lines'] <= max_lines]
++        units = [(f['path'], fn) for f in d['def_files'] for fn in candidate_units(f"{pt}/{f['path']}", f"{bt}/{f['path']}", f['functions']) if fn['cls'] in classes and (fn['cls'] != 'nested' or fn['form'] == 'method') and fn['lines'] <= max_lines]
+         todo = [(key, path, fn, f"{pt}/{path}", f"{bt}/{path}", f"{ROOT}/work/{key}/b/{unit_key(path, fn['name'])}.json", n) for path, fn in units if unit_key(path, fn['name']) not in recs or os.environ.get('REDO')]
+         if limit: todo = todo[:limit]
+         plan.append((key, recs, todo, made, out))
+@@ -65,7 +82,8 @@
+ 
+ def finish(key, recs, made, out):
+     json.dump(list(recs.values()), open(out, 'w'), indent=1)
+-    print(key, 'B', {v: sum(1 for r in recs.values() if r.get('verdict') == v) for v in ('WITNESS', 'PASS-bounded', 'ASK')}, flush=True)
++    print(key, 'B', {v: sum(1 for r in recs.values() if r.get('verdict') == v) for v in ('WITNESS', 'PASS-bounded', 'ASK', 'REFUSE', 'NEW')}, flush=True)
+     for tree in made:  # a tree exported for this run alone goes once the run is done (disk is the bound)
+         if 'buggy' in tree: shutil.rmtree(tree, ignore_errors=True)
+-main()
++if __name__ == '__main__':
++    main()

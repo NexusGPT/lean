@@ -7,6 +7,7 @@
 // Order: lane B (bounded execution) first; a WITNESS ends the question. Then lane A (proof): lint, translate both
 // sides (the effect set shared), theorem, Dafny. The verdict is the strongest statement the evidence supports:
 //   WITNESS       > PASS-proved > PASS-bounded > ASK
+//   NEW and REFUSE(load) are candidate-only observations, outside the equality ordering.
 // A PASS-bounded never becomes a proof; a proof lemma that fails is ASK:unproved (not a refutation).
 // The certificate lists what was checked: file hashes, the unit, the bound, the theorem and prelude hashes, the
 // Dafny and Z3 versions, the time limit, and the lemma results, so a reader can re-run every step.
@@ -19,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { runPair } from './exec/run.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const sha = (p) => (fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
+const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
 const snake = (n) => n.replace('.', '_').replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const run = (cmd, args, timeoutMs) => { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: !!r.error && r.error.code === 'ETIMEDOUT' }; };
 
@@ -29,6 +30,7 @@ export async function check(opts) {
   // ---- lane B ----
   const b = await runPair({ parent, candidate, unit, n, seed, project });
   cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where })) : null };
+  if (b.verdict === 'NEW' || b.verdict === 'REFUSE' || b.candidateOnly) { cert.lanes.B = b; return finish(b.verdict, cert, b); }
   if (b.verdict === 'WITNESS') return finish('WITNESS', cert, { witness: b.witnesses[0] });
   // ---- lane A ----
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-check-'));
