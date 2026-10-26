@@ -23,7 +23,7 @@ rules per package).
 |---|---|---|
 | Types | `number` (an exact `int`, or an exact `real` in a file with a float literal or a bare `/`), `bigint`, `boolean`, `string`, literal unions, enums, type parameters of the function | `function id<T>(x: T): T` |
 | Arrays | `T[]`, `readonly T[]`, `as const` lists, tuples, array-like interfaces (a match result) | `xs: readonly number[]` |
-| Records | any object type the compiler can list, from any file; an intersection; two types with the same fields are one datatype | `type Account = { readonly id: number; readonly balance: number }` |
+| Records | any object type the compiler can list, from any file; an intersection; two types with the same fields are one datatype; disjoint literal-tag record unions retain each member in a sum datatype | `type Account = { readonly id: number; readonly balance: number }` |
 | Dictionaries | `{ [k: string]: V }`, `Record<string, V>`; read by a computed string key; assigned by key on a local | `counts[key] = 1` |
 | Sets and maps | `Set<T>`, `Map<K, V>` (`has`, `get`, `size`, `keys`, `values`, `entries`, `add`/`set`/`delete` on a local) | `new Set(xs).has(x)` |
 | Optionals | `T \| undefined`, `T \| null`, `f?: T`; `x == null`, `x ?? y`, `x?.f`, `x?.m()`, `x!` | `x: number \| null` |
@@ -31,6 +31,7 @@ rules per package).
 | Control | `if`/`else`, `switch` (each case ends in `return` or `break`), early `return`, `return` inside a loop, `break`, `continue`, `throw`, `void f()` | `switch (kind) { case "a": return 1; default: return 0; }` |
 | Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` and `do..while` with `// @decreases`; `xs.forEach((x) => body)` with a sync arrow (a `return` ends one step); `await Promise.all(xs.map((x) => body))`, collecting in input order when no observable continuation runs after suspension; async `flatMap` under `Promise.all` collects each resolved value without flattening it | `for (let i = n - 1; i >= 0; i--)` |
 | Operators | `+ - * %`, `Math.floor(a / b)`, `Math.trunc(a / b)`, `Math.min`, `Math.max`, `Math.abs`, unary `-`, `! && \|\| ??`, `=== !==`, `< <= > >=`, `?:`, `typeof`, `instanceof`, `in`; `&&`, `\|\|` and `??` as values of any types (both sides lifted to the result type); a transition inside a `?:` branch or on the right of `&&`/`\|\|` happens only when that side runs | `Math.floor(n / 2)` |
+| Type tests | nominal class ancestry and disjoint tagged class unions for `instanceof`; static and sum-constructor tags for `typeof`; array/primitive alternatives for `Array.isArray`; required record keys for `in`; narrowed sum payload reads | `if (r.kind === "a") return r.left` |
 | Assignment | `=`, `+=`, `-=`, `*=`, `++`, `--` on a local; `x.f = v`, `x.f += v`, `x.f++`, `xs[i] = v`, `x.f.push(v)` on a local or on a PARAMETER (a mutated parameter is an output of the function, returned beside the result; a caller that passed a name takes the new value back); `this.f = v`, `this.f += v`, `this.f++` on a field of the receiver | `user.tags.push(t);` |
 | Arrays at work | `xs[i]`, `.length`, `[...a, ...b]`, statement-form `push`/`unshift` with ordinary and spread arguments on a local or parameter (including record paths), `includes`, `indexOf`, `slice`, `concat`, `join`, `flat`, `at`, `some`, `every`, `find`, `findIndex`, `map`, `filter`, `flatMap`, `reduce`, with index callbacks | `xs.map((x, i) => x * i)` |
 | Effectful array callbacks | sync inline arrows with element/index names in `map`, `filter`, `find`, `findIndex`, `some`, `every`, `flatMap`; `reduce` with accumulator/element names and an initial value; each body threads the world, and find/some/every stop before visiting later elements | `xs.filter(x => svc.ok(x))` |
@@ -74,14 +75,14 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 |---|---|---|
 | Other Object operations and dictionaries | `Object.assign/freeze/fromEntries`, dictionary `Object.keys/values/entries` | existing pure uninterpreted calls; no new exact mutation or freezing claim |
 | Module constants, enum members | `LIMITS.max` | `ext_LIMITS_max()` |
-| `any`, `unknown`, a union of records, `string \| SomeObject` | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
+| `any`, `unknown`, overlapping or unclassified unions, `never`, `object`, symbols | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
 | Library calls with no exact rule: non-ASCII case conversion, split with limit or dynamic separator, regex/callback replacement, `localeCompare`, `normalize`, `JSON`, general numeric `String`, `Buffer`, non-string-array `join` | `s.normalize()` | a pure function of all arguments |
 | Regular expressions, `new RegExp`, `.test`, `.replace(re, …)` | `/a+/.test(s)` | an opaque constant per literal, externals for the operations |
 | A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its exact text and captured values; same-file callees are checked dependencies |
 | A callback with an effect inside | `xs.map(async (x) => await f(x))` | a symbolic deferred sequence for supported zero-argument arrows, otherwise an opaque value with its captures |
 | Effectful callbacks handed to an outside library | `register(x => svc.log(x))` | an opaque function value by its text |
-| `as T`, `<T>x` | `x as number[]` | identity when the Dafny types agree, else `ext_cast_A_B(x)` |
-| `typeof x`, `x instanceof C`, `k in o` | `typeof x === "string"` | `ext_typeof_Any(x)`, `ext_instanceof_C(x)`, `ext_in(k, o)` |
+| `as T`, `<T>x` | a compatible assertion or opaque conversion | identity when Dafny types agree, else `ext_cast_A_B(x)`; tests of assertion-derived values remain uninterpreted |
+| Undecided type tests | assertion-derived values, unknown catch values, public structural class instances, optional or undeclared record keys | uninterpreted membership/tag functions of their values; an undeclared key is not known absent |
 | `throw e` | `throw new Error("bad")` | the function's result is `ext_throw_R(e)` |
 | Tagged templates | ``sql`select ${id}` `` | `ext_tag_sql_1(["select ", ""], id)` |
 | `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first); an untyped `let x;` is `None` of the Option of its first assigned type, every narrowed read takes `.value` |
@@ -109,6 +110,7 @@ one, never proved equal and never proved different (the execution lane decides i
 |---|---|---|
 | `dynamic-key` | record keys that are unrestricted strings, numbers, missing fields, method values or calls inside the key; optional/union receivers must first be narrowed | `r[k]` with `k: string` and `r: { a: number }` |
 | `index-assign` | dynamic writes to records | `r[k] = v` with `k: "a" \| "b"` |
+| `instanceof-constructor` | dynamic constructor expressions, constructor values and custom `Symbol.hasInstance` hooks | `x instanceof chooseConstructor()` |
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
 | `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |
 | `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |

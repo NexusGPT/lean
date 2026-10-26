@@ -38,7 +38,7 @@ reading no value model can give; the lint says what to write instead).
 | `==` loose equality | 398 | refused except against `null`/`undefined` | by design: the lint says `===` | by design |
 | `===` on primitives | 19,845 | exact | same | done |
 | `===` on objects and arrays | | refused (`reference-equality`) | exact Ref identity for represented objects; fresh refs compared under one observation-wide correspondence ([design](design/heap-layer.md)) | gap (layer 2; design and toy only) |
-| `typeof` | 3,351 | exact by the static type when it decides the tag, an Option deciding between its tag and `"undefined"` (dev); uninterpreted on `any` and on unions | same | done (dev) |
+| `typeof` | 3,351 | exact static tags, represented sum alternatives and single-absence Options; null reports `"object"`; assertion-derived values, unknown and ambiguous absences stay uninterpreted | same | partial (lane) |
 | regular expressions | 1,950 | an opaque constant per literal, externals for `test`, `match`, `replace` | the same; an exact reading of regular expressions is a project of its own | by design |
 | `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` and `new Date()` with no argument are transitions (dev 364eb1e); `new Date(x)` a pure value; methods uninterpreted | same | done (dev) |
 | `Math.*` | | `min`/`max` exact on nonempty argument sequences (lane); possibly empty spreads refused (`math-empty`); `abs`, `floor`, `trunc` exact; the rest uninterpreted; `Math.random` a transition | `ceil`, `round`, `sign`, `pow` on integers exact | gap (small) |
@@ -66,8 +66,9 @@ reading no value model can give; the lint says what to write instead).
 | prototype access, `Object.create`, `Object.defineProperty`, `Object.setPrototypeOf` | 134 + 7 + 20 + 1 | refused (`prototype`) | by design: no value reading | by design |
 | `Proxy`, `Reflect` | 41 | refused | by design | by design |
 | `Object.assign`, `Object.freeze`, `Object.fromEntries`, `Object.keys/values/entries`, `structuredClone` | 390 assign, 6 freeze, 196 fromEntries, 32 clone | keys/values/entries exact on immediate plain records and enumeration-only const literals; unknown record provenance uses a source-sensitive world transition; assign/freeze/fromEntries/clone remain uninterpreted | preserve own keys and insertion order (integer indices first); assign needs target mutation, freeze needs later write faults, fromEntries needs key coercion | partial (lane) |
-| `instanceof` | 2,204 | uninterpreted `ext_instanceof_C(x)` | exact when the static type decides it; uninterpreted otherwise | partial |
-| `in` | 1,071 | exact on a dictionary with a string key (dev); uninterpreted otherwise | by static type on a record | partial (dev) |
+| `Array.isArray` | 1,562 | exact arrays, primitive non-arrays and represented alternatives; assertion-derived, generic and structural-record uncertainty uninterpreted | array brand, preserving open structural types | partial (lane) |
+| `instanceof` | 2,204 | exact nominal class ancestry and disjoint tagged class members; assertion-derived values, public structural classes and unknown catch values stay uninterpreted | exact only when static types establish runtime membership; subclasses included | partial (lane) |
+| `in` | 1,071 | dictionary membership and required record fields exact, including sum alternatives; assertion-derived operands and missing or optional fields uninterpreted | open records may carry undeclared or inherited keys; absence needs runtime information | partial (lane) |
 | `x!` non-null | 501 | `.value` when optional | same | done |
 | optional chaining `a?.b`, `a?.m()` | 6,061, 493 | exact (Option propagation; a conditional transition for calls) | same | done |
 | `??`, `??=`, `\|\|=`, `&&=` | 7,882, 107 | exact (dev): `x ??= v` keeps x when present, `\|\|=` keeps a truthy x, `&&=` takes v when x is truthy | same | done (dev) |
@@ -112,7 +113,7 @@ reading no value model can give; the lint says what to write instead).
 | class expression | 2 | refused | by design | by design |
 | decorators | 2 inside units (many on classes) | ignored by the translator (a declaration-level attribute); run by lane B | same | done |
 | `new C()` of a same-file class | 10,265 `new` | a fresh handle from the world, then the class's constructor as a unit on it (its field initialisers, parameter properties and body as set transitions; `super(...)` a transition); a method called on the instance is the file's own unit; a field one of its methods assigns is read and written through the world (dev) | the same; a record value where no method writes a field (a later refinement) | done (dev) |
-| `instanceof` for narrowing on classes | | uninterpreted | by the static type when the checker narrows | partial |
+| `instanceof` for narrowing on classes | | tagged nominal class union constructor tests and payload projection; assertion-derived values and public structural classes stay uninterpreted | nominal ancestry and justified disjoint members; unknown membership uninterpreted | partial (lane) |
 
 ## 5. Control flow and exceptions
 
