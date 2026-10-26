@@ -425,7 +425,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (o.kind === 'local') return argsOf(e); // a function-typed parameter or local
       if (o.kind === 'unit') {
         const u = units.get(f.text);
-        if (u && u.params.length !== e.arguments.length) v(e, 'unsupported-call', `${f.text} takes ${u.params.length} arguments`);
+        if (u && u.params.length !== e.arguments.length && !e.arguments.some(ts.isSpreadElement)) v(e, 'unsupported-call', `${f.text} takes ${u.params.length} arguments`);
         if (u && u.isAsync && !(e.parent && ts.isAwaitExpression(e.parent))) v(e, 'async', 'an async unit is called without await');
       }
       if (o.kind === 'unit') { e.arguments.forEach((a) => { if (ts.isSpreadElement(a)) v(a, 'spread', 'spread arguments are outside the subset'); else if (!ts.isArrowFunction(a)) expr(a); else v(a, 'function-value', 'a same-file function takes values, not callbacks'); }); return; }
@@ -453,7 +453,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (name === 'forEach') return v(e, 'foreach', 'forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop');
         if (name === 'sort' || name === 'reverse') {
           // in place on a value nobody else holds (a literal, a spread copy, a call result): the result is a new sequence
-          if (ts.isIdentifier(recv) || ts.isPropertyAccessExpression(recv) || ts.isElementAccessExpression(recv)) return v(e, 'param-mutation', `${name} mutates in place; sort a copy: [...xs].${name}()`);
+          if (ts.isIdentifier(recv) || ts.isPropertyAccessExpression(recv) || ts.isElementAccessExpression(recv)) { const own = ts.isIdentifier(recv) && declOf(recv).kind === 'local' && !isParam(declOf(recv).decl); return v(e, own ? 'in-place-mutation' : 'param-mutation', own ? `${name} changes \`${recv.text}\` in place; write \`${recv.text} = [...${recv.text}].${name}(...)\`` : `${name} mutates in place; sort a copy: [...xs].${name}()`); }
           expr(recv); if (e.arguments[0]) callback(e.arguments[0], 2); return;
         }
         if (name === 'push') return v(e, 'param-mutation', 'push is a statement on a local only');
@@ -600,6 +600,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       continue;
     }
+    else if (ts.isExpressionStatement(st) && (ts.isStringLiteral(st.expression) || ts.isNoSubstitutionTemplateLiteral(st.expression))) continue; // a directive ("use client", "use strict") is not code
     else v(st, 'toplevel-effect', 'code at module level runs on import; it is outside the subset');
   }
   // compiler diagnostics (strict mode) that fall inside a checked region; unresolved-module codes get their own rule
@@ -615,9 +616,12 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (pa) { const rt = checker.getTypeAtLocation(pa.expression); const decl = rt.symbol?.declarations?.[0] ?? rt.aliasSymbol?.declarations?.[0]; if (decl && /node_modules/.test(decl.getSourceFile().fileName)) continue; }
     }
     const rule = RESOLUTION_CODES.has(d.code) ? 'unresolved-module' : 'ts-strict';
-    out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule, msg: `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}` });
+    const msg = `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`;
+    if (rule === 'ts-strict' && /JSX\.IntrinsicElements|JSX element implicitly has type 'any'|JSX element type/.test(msg)) continue; // missing React types: one environment cause; the JSX itself is already reported
+    out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule, msg, env: rule === 'unresolved-module' });
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
+  for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
   // the unit each finding sits in, and the advice for its rule
   const unitSpans = [...units.values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
   for (const st of sf.statements) for (const m of classMethodUnits(st)) unitSpans.push([m.name, lineOf(sf, m.node.getStart(sf)), lineOf(sf, m.node.getEnd())]);

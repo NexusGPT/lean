@@ -56,7 +56,7 @@ export function census(root, opts = {}) {
     const blocked = new Set();
     for (const f of findings) {
       const unit = unitNames.find(([, a, b]) => a <= f.line && f.line <= b)?.[0] ?? null;
-      if (unit) blocked.add(unit);
+      if (unit && !f.env) blocked.add(unit); // an unresolved import is the checkout's, not the code's
       const r = rules.get(f.rule) ?? { count: 0, units: new Set(), examples: [] };
       r.count++; if (unit) r.units.add(`${file}:${unit}`);
       if (r.examples.length < 3) r.examples.push(`${path.relative(root, file)}:${f.line} ${f.msg.slice(0, 110)}`);
