@@ -76,7 +76,7 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) {
         const callee = fns.get(n.expression.text);
         if (callee && originOf(checker, n.expression, sf, null).kind === 'unit') collect(callee);
-      } else if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n)) {
+      } else if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && (ts.isJsxOpeningElement(n.parent) || ts.isJsxSelfClosingElement(n.parent) || ts.isJsxClosingElement(n.parent)))) {
         // a same-file function named as a value (a callback): emitted like a callee
         const callee = fns.get(n.text);
         if (callee && originOf(checker, n, sf, null).kind === 'unit') collect(callee);
@@ -96,7 +96,7 @@ export function translate(file, fnName, opts = {}) {
   else for (const u of fns.values()) collect(u);
 
   // ----- the subset gate: refuse before translating -----
-  const gate = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project });
+  const gate = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
   if (gate.length) {
     throw new Unsupported(`outside the subset:\n${gate.map((g) => `  ${g.file}:${g.line}:${g.col}  ${g.rule}  ${g.msg}`).join('\n')}`);
   }
@@ -203,11 +203,18 @@ export function translate(file, fnName, opts = {}) {
   const isRecordish = (t) => !!(t.flags & (TF.Object | TF.Intersection)) && !isArrayLike(checker, t) && !isSetT(t) && !isMapT(t) && !isPromiseT(t);
   const stringIndex = (t) => (t.flags & TF.Object ? checker.getIndexInfoOfType(t, ts.IndexKind.String) : null);
   const anyType = () => { addPrelude('Any', 'type Any(==)'); return 'Any'; };
+  // JSX: an element is a value. JsxElem(tag, props, children): the tag name, the attributes as a string-keyed map of
+  // opaque values (a handler is an opaque function value keyed by its text), the children in order. A string child is
+  // JsxText; false, null and undefined render nothing; an array child is JsxList.
+  const jsxType = () => { anyType(); addPrelude('JsxNode', 'datatype JsxNode = JsxElem(tag: string, props: map<string, Any>, children: seq<JsxNode>) | JsxText(s: string) | JsxNothing | JsxList(items: seq<JsxNode>)'); return 'JsxNode'; };
+  const isElementSym = (sym) => { if (!sym) return false; const nm = sym.name; if (!['ReactElement', 'Element', 'ReactPortal', 'JSXElementConstructor'].includes(nm)) return false; if (sym.parent && sym.parent.name === 'JSX') return true; const f = sym.declarations?.[0]?.getSourceFile().fileName ?? ''; return /react|jsx/i.test(f); };
+  const isNodeT = (t) => ((t.flags & TF.Union) ? t.types : [t]).some((p) => isElementSym(p.symbol) || (p.aliasSymbol && ['ReactNode', 'ReactElement', 'JSX.Element'].includes(p.aliasSymbol.name)));
 
   function dtype(t, n, depth = 0) {
     if (depth > 8) fail(n, 'type nesting too deep');
     const f = t.flags;
     if (f & (TF.Any | TF.Unknown)) return anyType();
+    if (isNodeT(t)) return jsxType();
     if (f & (TF.NumberLike)) return NUM;
     if (f & TF.BigIntLike) return 'int';
     if (f & TF.BooleanLike) return 'bool';
@@ -467,6 +474,15 @@ export function translate(file, fnName, opts = {}) {
   const innerOf = (d) => d.slice('Option<'.length, -1);
   function convertD(code, fd, td) {
     if (fd === td) return code;
+    if (td === 'JsxNode') {
+      jsxType();
+      if (fd === 'string') return `JsxText(${code})`;
+      if (fd === 'int' || fd === 'real') return `JsxText(${external('text_of_number', [fd], 'string')}(${code}))`;
+      if (fd === 'bool' || fd === 'Unit') return 'JsxNothing';
+      if (fd === 'Any') return `${external('node_of_Any', ['Any'], 'JsxNode')}(${code})`;
+      if (fd.startsWith('Option<')) { usesOption = true; const v = `jn_${hash(code).slice(0, 4)}`; return `(var ${v} := ${code}; if ${v}.Some? then ${convertD(`${v}.value`, innerOf(fd), 'JsxNode')} else JsxNothing)`; }
+      if (fd.startsWith('seq<')) { const el = fd.slice(4, -1); if (el === 'JsxNode') return `JsxList(${code})`; const v = `js_${hash(code).slice(0, 4)}`; return `(var ${v} := ${code}; JsxList(seq(|${v}|, (i: int) requires 0 <= i < |${v}| => ${convertD(`${v}[i]`, el, 'JsxNode')})))`; }
+    }
     if (td === 'Unit') return 'Unit';
     if (td === 'Any' && code === 'None') return `${external('Any_undefined', [], 'Any')}()`; // `undefined` as an opaque value
     if (td === 'Any') return `${external(`Any_of_${mangle(fd)}`, [fd], 'Any')}(${code})`;
@@ -587,6 +603,7 @@ export function translate(file, fnName, opts = {}) {
         if (n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
         return `(-${expr(n.operand)})`;
       case K.BinaryExpression: return binary(n);
+      case K.JsxElement: case K.JsxSelfClosingElement: case K.JsxFragment: { const code = jsxNode(n); return isAny(typeOf(n)) ? convertD(code, 'JsxNode', 'Any') : code; }
       case K.PropertyAccessExpression: return propAccess(n);
       case K.ElementAccessExpression: return elemAccess(n);
       case K.ArrayLiteralExpression: {
@@ -654,6 +671,7 @@ export function translate(file, fnName, opts = {}) {
     if (op === K.AmpersandAmpersandToken || op === K.BarBarToken) {
       if (containsEffect(n.right)) fail(n, 'an effect on the right of && or || runs conditionally; bind it to a const first');
       const t = typeOf(n);
+      if (isNodeT(t) || isJsxLit(n.left) || isJsxLit(n.right)) return jsxChild(n); // `cond && <X/>`: a conditional element
       if (!(t.flags & TF.BooleanLike)) {
         // value-returning && / ||: a && b is b when a is truthy, else a. Translated when both sides share a Dafny type
         const ld = dtype(typeOf(n.left), n), rd = dtype(typeOf(n.right), n), td = dtype(t, n);
@@ -771,6 +789,74 @@ export function translate(file, fnName, opts = {}) {
   }
   // a function value the gate does not interpret: a constant named by the hash of its normalised text, so the same text on
   // both sides is the same value and any change to it is a different one; used for callbacks handed to outside calls
+  const isJsxLit = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x) || ts.isJsxFragment(x); };
+  // the text of a JSX text child, by the JSX rule: lines are trimmed, blank lines dropped, the rest joined by one space;
+  // text on one line keeps its spaces. Null when nothing is left
+  function jsxTextOf(c) {
+    const raw = c.text;
+    if (!raw.includes('\n')) return raw.length ? raw : null;
+    const lines = raw.split('\n').map((l) => l.trim()).filter((l) => l.length);
+    return lines.length ? lines.join(' ') : null;
+  }
+  // a child expression as a JsxNode: an element, a conditional of elements, or a value converted by its type
+  function jsxChild(e) {
+    while (ts.isParenthesizedExpression(e)) e = e.expression;
+    jsxType();
+    if (isJsxLit(e)) return jsxNode(e);
+    if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.AmpersandAmpersandToken) return `(if ${outerParens(truthy(e.left))} then ${jsxChild(e.right)} else JsxNothing)`;
+    if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.BarBarToken) return `(if ${outerParens(truthy(e.left))} then ${jsxChild(e.left)} else ${jsxChild(e.right)})`;
+    if (ts.isConditionalExpression(e)) return `(if ${outerParens(truthy(e.condition))} then ${jsxChild(e.whenTrue)} else ${jsxChild(e.whenFalse)})`;
+    if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || ts.isTemplateExpression(e)) return `JsxText(${expr(e)})`;
+    if (e.kind === K.NullKeyword || (ts.isIdentifier(e) && e.text === 'undefined') || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return 'JsxNothing';
+    const t = typeOf(e);
+    const d = isAny(t) ? anyType() : dtype(t, e);
+    return convertD(expr(e), d, 'JsxNode');
+  }
+  // an attribute value as an opaque value: a handler by its text, anything else converted to Any
+  function jsxAttrValue(x) {
+    while (ts.isParenthesizedExpression(x)) x = x.expression;
+    if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return `${external(`handler_${hash(x.getText(sf).replace(/\s+/g, ' '))}`, [], anyType())}()`; // a handler: an opaque value keyed by its text
+    if (isJsxLit(x)) return convertD(jsxNode(x), 'JsxNode', 'Any');
+    const t = typeOf(x);
+    if (isAny(t)) return expr(x);
+    return convertD(expr(x), dtype(t, x), 'Any');
+  }
+  function jsxNode(n) {
+    jsxType();
+    let tagCode, attrs, kids;
+    if (ts.isJsxFragment(n)) { tagCode = '""'; attrs = []; kids = n.children; }
+    else {
+      const open = ts.isJsxSelfClosingElement(n) ? n : n.openingElement;
+      const tag = open.tagName;
+      if (ts.isIdentifier(tag)) {
+        const o = /^[a-z]/.test(tag.text) ? { kind: null } : originOf(checker, tag, sf, currentUnit?.node ?? null);
+        tagCode = o.kind === 'local' && (typeOf(tag).flags & TF.StringLike) ? expr(tag) : strEsc(tag.text); // a component is named; a local string tag is its value
+      } else tagCode = strEsc(tag.getText(sf));
+      attrs = open.attributes.properties; kids = ts.isJsxElement(n) ? n.children : [];
+    }
+    // props: map literals and spreads merged in source order; a later key wins, as in JavaScript
+    const pieces = []; let entries = [];
+    const flush = () => { if (entries.length) { pieces.push(`map[${entries.join(', ')}]`); entries = []; } };
+    for (const a of attrs) {
+      if (ts.isJsxSpreadAttribute(a)) { flush(); const t = typeOf(a.expression); const d = isAny(t) ? anyType() : dtype(t, a); pieces.push(`${external(`props_of_${mangle(d)}`, [d], 'map<string, Any>')}(${expr(a.expression)})`); continue; }
+      const name = a.name.getText(sf);
+      let val;
+      if (!a.initializer) val = convertD('true', 'bool', 'Any');
+      else if (ts.isStringLiteral(a.initializer)) val = convertD(strEsc(a.initializer.text), 'string', 'Any');
+      else if (ts.isJsxExpression(a.initializer)) { if (!a.initializer.expression) continue; val = jsxAttrValue(a.initializer.expression); }
+      else val = convertD(jsxNode(a.initializer), 'JsxNode', 'Any');
+      entries.push(`${strEsc(name)} := ${val}`);
+    }
+    flush();
+    const props = pieces.length === 0 ? 'map[]' : pieces.length === 1 ? pieces[0] : pieces.map(outerParens).join(' + ');
+    const items = [];
+    for (const c of kids) {
+      if (ts.isJsxText(c)) { const t = jsxTextOf(c); if (t !== null) items.push(`JsxText(${strEsc(t)})`); }
+      else if (ts.isJsxExpression(c)) { if (!c.expression) continue; items.push(c.dotDotDotToken ? `JsxList(${seqOf(c.expression)})` : jsxChild(c.expression)); }
+      else items.push(jsxNode(c));
+    }
+    return `JsxElem(${tagCode}, ${props}, [${items.join(', ')}])`;
+  }
   function opaqueFn(cb) {
     const text = cb.getText(sf).replace(/\s+/g, ' ');
     const t = typeOf(cb); let d;
@@ -841,7 +927,9 @@ export function translate(file, fnName, opts = {}) {
       pattern.elements.forEach((el, i) => {
         if (ts.isOmittedExpression(el)) return;
         if (el.dotDotDotToken) fail(el, 'a rest element is not translated');
-        const code = tuple ? `${sourceCode}.${i}` : `${sourceCode}[${i}]`;
+        const opaque = srcType && isAny(srcType);
+        const elT = ts.isIdentifier(el.name) ? typeOf(el.name) : null;
+        const code = opaque ? `${external(`Any_at_${i}`, ['Any'], elT && !isAny(elT) ? dtype(elT, el) : anyType())}(${sourceCode})` : tuple ? `${sourceCode}.${i}` : `${sourceCode}[${i}]`; // an opaque source: element i is an uninterpreted accessor
         if (ts.isIdentifier(el.name)) out.push(`var ${dn(el.name.text)} := ${code};`);
         else out.push(...destructure(el.name, code));
       });
@@ -909,9 +997,17 @@ export function translate(file, fnName, opts = {}) {
       const T = dtype(recvT, n);
       const ft = typeOf(n);
       if (hasMethods || !props.length || !checker.getPropertyOfType(recvT, name)) {
-        // an opaque type, or a field reached through an index signature: an uninterpreted accessor
+        // an opaque type, or a field reached through an index signature: an uninterpreted accessor of the DECLARED field
+        // type (one declaration per accessor); a read narrowed by a guard takes `.value`
         if (T.startsWith('map<')) return `(if ${strEsc(name)} in ${recvCode} then Some(${recvCode}[${strEsc(name)}]) else None)`;
-        return `${external(`${T}_${name}`, [T], dtype(ft, n))}(${recvCode})`;
+        const pr = checker.getPropertyOfType(recvT, name);
+        const declared = pr ? checker.getTypeOfSymbolAtLocation(pr, pr.valueDeclaration ?? n) : ft;
+        const dOpt = pr ? (isOptional(declared) || !!(pr.flags & ts.SymbolFlags.Optional)) : false;
+        let rd = isAny(declared) ? anyType() : dtype(declared, n);
+        if (dOpt && !rd.startsWith('Option<')) { usesOption = true; rd = `Option<${rd}>`; }
+        const code = `${external(`${T}_${name}`, [T], rd)}(${recvCode})`;
+        if (dOpt && !isOptional(ft) && !isNullish(ft) && !n.__keepOption) return `${code}.value`;
+        return code;
       }
     }
     const p = isRecordish(recvT) ? checker.getPropertyOfType(recvT, name) : null;

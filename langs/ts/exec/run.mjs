@@ -46,6 +46,25 @@ function resolveRelative(fromFile, spec) {
   return null;
 }
 
+// The JSX runtime of the sandbox: an element is a plain value {$el, props, children}, never a fake, so that two versions
+// are compared on the tree they render, by React's rules: null, undefined and booleans render nothing; arrays are
+// flattened; numbers render as text; the key is a prop. A component tag is named, not called: the tree holds its name.
+function jsxChildren(c) {
+  const out = [];
+  const add = (x) => { if (x === null || x === undefined || typeof x === 'boolean') return; if (Array.isArray(x)) { x.forEach(add); return; } if (typeof x === 'number' || typeof x === 'bigint') { out.push(String(x)); return; } out.push(x); };
+  add(c);
+  return out;
+}
+function jsxValue(type, props, key) {
+  const tag = typeof type === 'string' ? type : type && type.__isFake ? { $fake: type.__fakePath } : typeof type === 'function' ? { $component: type.name || 'anonymous' } : type === JSX_FRAGMENT ? '' : String(type);
+  const rest = {}; let children = [];
+  for (const k of Object.keys(props ?? {})) { if (k === 'children') children = jsxChildren(props[k]); else rest[k] = props[k]; }
+  if (key !== undefined && key !== null) rest.key = key;
+  return { $el: tag, props: rest, children };
+}
+const JSX_FRAGMENT = '';
+const jsxRuntime = { jsx: jsxValue, jsxs: jsxValue, jsxDEV: jsxValue, Fragment: JSX_FRAGMENT, __esModule: true };
+
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
   const cache = new Map();
@@ -88,6 +107,7 @@ export function sandbox(env, root) {
         if (r && (!root || r.startsWith(root))) return load(r);
         return env.module(spec);
       }
+      if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntime; // an element is a value tree, by React's rules for children
       return env.module(spec); // packages, builtins, path aliases: the environment
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names

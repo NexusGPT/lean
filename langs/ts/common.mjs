@@ -22,8 +22,7 @@ export const COMPILER_OPTIONS = {
   noEmit: true,
   skipLibCheck: true,
   allowJs: true,
-  checkJs: true,
-};
+  checkJs: true, jsx: ts.JsxEmit.ReactJSX };
 
 // Diagnostics that only say "this file's neighbours are not here". With a project they do not occur; alone
 // they would hide the real verdict behind missing modules, so they are reported under their own rule.
@@ -47,6 +46,7 @@ export function loadProgram(file, opts = {}) {
       const parsed = ts.parseJsonConfigFileContent(raw.config, ts.sys, path.dirname(configFile));
       // the project's own options decide resolution; ours decide strictness and emit
       options = { ...parsed.options, strict: true, noEmit: true, skipLibCheck: true, noImplicitReturns: true, allowJs: true, checkJs: true };
+      if (options.jsx === undefined) options.jsx = ts.JsxEmit.ReactJSX; // a project without a jsx setting still parses .tsx
       // a lib file the vendored compiler does not carry would make TypeScript load no lib at all
       if (Array.isArray(options.lib)) {
         const libDir = path.join(here, 'vendor', 'typescript', 'lib');

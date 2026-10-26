@@ -326,6 +326,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   const CMP = new Set([K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken]);
   const EQ = new Set([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken]);
   const LOGIC = new Set([K.AmpersandAmpersandToken, K.BarBarToken, K.QuestionQuestionToken]);
+  const isJsxNode = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x) || ts.isJsxFragment(x); };
   const isPrim = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.Undefined | TF.Null | TF.EnumLike));
 
   function awaitExpr(e, asStatement = false) {
@@ -346,6 +347,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     switch (e.kind) {
       case K.Identifier: return checkIdent(e);
       case K.NumericLiteral: case K.BigIntLiteral: case K.StringLiteral: case K.TrueKeyword: case K.FalseKeyword: case K.NullKeyword: return;
+      case K.JsxElement: case K.JsxSelfClosingElement: case K.JsxFragment: return jsx(e);
+      case K.JsxExpression: return e.expression ? expr(e.expression) : undefined;
       case K.NoSubstitutionTemplateLiteral: return;
       case K.TemplateExpression: return e.templateSpans.forEach((sp) => expr(sp.expression));
       case K.TaggedTemplateExpression: { // an uninterpreted function of its parts, keyed by the tag
@@ -437,6 +440,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (op === K.CommaToken) return v(e, 'comma', 'the comma operator is outside the subset');
     if (!(ARITH.has(op) || CMP.has(op) || EQ.has(op) || LOGIC.has(op))) return v(e, 'bitwise', 'bitwise and shift operators are outside the subset');
     expr(e.left); expr(e.right);
+    if (LOGIC.has(op) && (isJsxNode(e.left) || isJsxNode(e.right))) return; // `cond && <X/>`: a conditional element
     const lt = tOf(e.left), rt = tOf(e.right);
     if (op === K.PlusToken) {
       const ok = (isNum(lt) && isNum(rt)) || isStr(lt) || isStr(rt) || isAny(lt) || isAny(rt);
@@ -537,6 +541,30 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isBlock(a.body)) { const prev = current; stmts(a.body.statements); current = prev; }
       else expr(a.body);
     } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; }
+  }
+  // JSX: an element is a value (a tag, a record of attributes, a list of children). A tag names a component or an
+  // intrinsic element; a handler attribute is a callback value keyed by its text; every other attribute and every child
+  // expression is an ordinary expression
+  function jsx(e) {
+    if (ts.isJsxFragment(e)) return e.children.forEach(jsxChild);
+    const open = ts.isJsxSelfClosingElement(e) ? e : e.openingElement;
+    const tag = open.tagName;
+    if (ts.isIdentifier(tag) && /^[a-z]/.test(tag.text)) { /* an intrinsic element: a string */ }
+    else if (ts.isIdentifier(tag)) { const o = declOf(tag); if (o.kind === 'local' && !isParam(o.decl) && !nonNull(tOf(tag)).every(isStr)) v(tag, 'unsupported-syntax', 'a local component value must be a string tag name or a named component'); }
+    else if (!ts.isPropertyAccessExpression(tag) && !ts.isJsxNamespacedName(tag)) v(tag, 'unsupported-syntax', `tag form ${ts.SyntaxKind[tag.kind]} is outside the subset`);
+    for (const a of open.attributes.properties) {
+      if (ts.isJsxSpreadAttribute(a)) { expr(a.expression); continue; }
+      const init = a.initializer;
+      if (!init || ts.isStringLiteral(init)) continue;
+      if (ts.isJsxExpression(init)) { const x = init.expression; if (!x) continue; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) { if (ts.isArrowFunction(x)) callback(x, null); else v(x, 'callback-form', 'a handler is an arrow function'); } else expr(x); continue; }
+      jsx(init);
+    }
+    if (ts.isJsxElement(e)) e.children.forEach(jsxChild);
+  }
+  function jsxChild(c) {
+    if (ts.isJsxText(c)) return;
+    if (ts.isJsxExpression(c)) { if (c.expression) expr(c.expression); return; }
+    jsx(c);
   }
   // an argument list of an external, a local function value, a record method or an opaque receiver: values, or callbacks
   const argsOf = (e) => e.arguments.forEach((a) => ts.isSpreadElement(a) ? v(a, 'spread', 'spread arguments are outside the subset') : ts.isArrowFunction(a) ? callback(a, null) : expr(a));

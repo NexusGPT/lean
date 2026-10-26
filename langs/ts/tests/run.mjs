@@ -73,6 +73,7 @@ for (const name of fs.readdirSync(sharedDir).sort()) {
 }
 
 // ----- constructs: one small function per construct, translated both ways -----
+const pairFile = (d, side) => fs.existsSync(path.join(d, side + '.tsx')) ? path.join(d, side + '.tsx') : path.join(d, side + '.ts');
 const casesDir = path.join(here, 'cases');
 const cases = JSON.parse(fs.readFileSync(path.join(here, 'cases.json'), 'utf8'));
 const tflags = (c, withInv) => {
@@ -175,7 +176,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
   const d = path.join(pairsDir, name);
   const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
   const tmpd = path.join(tmp, `pair_${name}`); fs.mkdirSync(tmpd, { recursive: true });
-  const tr = (which, extra) => run('node', [translate, path.join(d, `${which}.ts`), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...extra]);
+  const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...extra]);
   const p1 = tr('parent', []);
   const eff = p1.status === 0 ? (fs.readFileSync(path.join(tmpd, 'parent.dfy'), 'utf8').match(/^\/\/ EFFECTFUL: (.*)$/m)?.[1] ?? '') : '';
   const c1 = tr('candidate', eff ? ['--effectful', eff] : []);
@@ -200,7 +201,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
-    const r = run('node', [path.join(here, '../exec/run.mjs'), '--parent', path.join(d, 'parent.ts'), '--candidate', path.join(d, 'candidate.ts'), '--unit', unit, '--n', '30', '--no-project', '--out', path.join(tmpd, `b_${unit}.json`)]);
+    const r = run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', path.join(tmpd, `b_${unit}.json`)]);
     let got = 'no result';
     try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);

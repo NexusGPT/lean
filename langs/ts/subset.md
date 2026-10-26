@@ -38,6 +38,7 @@ rules per package).
 | Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with `k` a literal union or a string on a dictionary | `{ ...a, balance: a.balance + n }` |
 | Calls | top-level functions of the same file, recursion included (a fuel bounds the unfolding; the theorem holds for every fuel), default arguments, a function-typed parameter or local, a local lambda `const f = (x) => ...` | `double(double(x))` |
 | Functions | `function` declarations, `const f = (...) => ...`, `async` functions (the result type is unwrapped), generic functions, same-file functions named as callback values | `xs.map(double)` |
+| JSX | an element is a value tree: `JsxElem(tag, props, children)`, `JsxText`, `JsxNothing` for `false`/`null`/`undefined`, `JsxList` for an array child; a handler attribute is an opaque function value keyed by its text; `cond && <X/>`, `cond ? <A/> : <B/>`, `{xs.map((x) => <li/>)}`, fragments, spread attributes (merged in order) | `<li key={i.id} onClick={() => pick(i.id)}>{i.label}</li>` |
 | Classes | methods and static methods; a constructor that stores injected ports; fields read through `this`; a field any method assigns lives in the world (each read and write is a transition); a method of `this` called from a method | `class Svc { constructor(private readonly repo: Repo) {} async find(id: string) { return this.repo.find(id); } }` |
 
 ## What is a transition of the world
@@ -109,7 +110,7 @@ different (the execution lane decides it). A `try` whose body returns a value is
 | `bitwise`, `unary-coercion`, `update-expression`, `assignment-expression`, `comma` | `& \| ^ ~ << >>`, unary `+`, `x++` inside an expression, `a = b` inside an expression, `,` | `+x` |
 | `callback-form` | a callback that is not an arrow function, a same-file function or a local function value | `xs.map(function (x) { return x; })` |
 | `spread` | spread outside array and record literals, or of a value that is not an array or a set | `f(...args)` |
-| `unsupported-syntax`, `unsupported-call`, `unsupported-member`, `unsupported-operator`, `unsupported-type` | JSX (the next version), a method with no rule, a property the type does not declare, an operator or a type with no reading | `<div/>` |
+| `unsupported-syntax`, `unsupported-call`, `unsupported-member`, `unsupported-operator`, `unsupported-type` | a statement form, a method with no rule, a property the type does not declare, an operator or a type with no reading | `x ** 2` |
 | `ts-strict` | a compiler error in strict mode | a type mismatch |
 
 ## Proof hints

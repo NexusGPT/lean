@@ -64,7 +64,7 @@ A whole change at once: `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--
 
 **What you need.** Node 20 or newer, Python 3, and [Dafny](https://dafny.org) 4 or newer on your `PATH` (it brings Z3). Nothing is installed into your repository.
 
-**What becomes checkable.** A function gets a *proof* when it lives inside the subset: plain data (records, arrays, strings, sets, maps, optionals, literal unions), loops, early returns, `switch`, destructuring, `async` functions, class methods, recursion, and calls into the outside world. Those calls are modelled as transitions of an explicit world, so a service method that awaits a repository and logs is inside the subset. `try`/`catch` and loops without a bound are inside too, as opaque blocks named by their text.
+**What becomes checkable.** A function gets a *proof* when it lives inside the subset: plain data (records, arrays, strings, sets, maps, optionals, literal unions), loops, early returns, `switch`, destructuring, `async` functions, class methods, recursion, JSX (an element is a value tree), and calls into the outside world. Those calls are modelled as transitions of an explicit world, so a service method that awaits a repository and logs is inside the subset. `try`/`catch` and loops without a bound are inside too, as opaque blocks named by their text.
 
 **What you can no longer do, if you want proofs.** Six things make a function uncheckable by proof, and lean names the one it hit:
 
@@ -77,7 +77,7 @@ A whole change at once: `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--
 | `n / 2` on numbers | `ASK: division` | `Math.floor(n / 2)` when you mean integer division |
 | `eval`, `new Function`, `Object.getPrototypeOf`, `super` | `ASK: dynamic-eval`, `prototype`, `class` | there is no mathematical reading of these; keep them out of the function you want proved |
 
-Everything else that lean cannot read (JSX, generators, callbacks to a library, an unknown constructor) is not a refusal: it becomes an uninterpreted value or call, the same on both sides, and the proof still goes through when the rest is equal.
+Everything else that lean cannot read (generators, callbacks to a library, an unknown constructor) is not a refusal: it becomes an uninterpreted value or call, the same on both sides, and the proof still goes through when the rest is equal.
 
 ## How to write code lean can prove
 
@@ -147,7 +147,23 @@ A loop that keeps something true across passes (a running maximum, a sorted pref
 
 **7. Reach the world through calls.** An imported function, a method of an injected service, a clock, `Math.random`, `fetch`, a constructor of a class lean cannot see: each is a transition of the world, named by what was called and with what. The same call in the same world answers the same; two calls are two transitions; a candidate that makes a call the parent did not make (or makes it with another argument, or in another order) is not equal. Nothing is pretended pure. What stays outside the subset is code that changes the world without a call: writing to a module-level variable, `process.env` assignment, `eval`, the prototype chain, `super`. Those have no reading as a value or a transition, and lean names them.
 
-Everything else is yours: `async`/`await`, `try`/`catch` (an opaque block, like an unbounded loop), `switch`, destructuring with defaults, optional chaining, template strings, `Set`, `Map`, generics, recursion, early returns, callbacks to array methods, local lambdas. [`langs/ts/subset.md`](langs/ts/subset.md) lists every construct and whether it is exact, uninterpreted, or refused.
+**8. A component returns a tree.** JSX is read as a value: `<li key={id} onClick={pick}>{label}</li>` is the record `JsxElem("li", {key, onClick}, [JsxText(label)])`. Text is `JsxText`; `false`, `null` and `undefined` render `JsxNothing`; an array of elements is `JsxList`; `cond && <X/>` and `cond ? <A/> : <B/>` are conditionals of trees. A handler attribute is an opaque function value keyed by its text, so a rewired handler is a different value. Hooks are calls into the world at the top of the render (`useState`, `useQuery` are transitions), the same shape as a service field of `this`. A component is then a function from props and world to a tree, and two versions are equal when the trees are equal for every props value and every world.
+
+```tsx
+export function ItemList(props: { items: readonly Item[]; onPick: (id: string) => void }) {
+  const open = props.items.filter((i) => !i.done);
+  return (
+    <ul>
+      {open.map((i) => <li key={i.id} onClick={() => props.onPick(i.id)}>{i.label}</li>)}
+      {open.length === 0 && <p>Nothing left</p>}
+    </ul>
+  );
+}
+```
+
+What this buys: a candidate that drops the empty-state paragraph, renders the wrong field, moves a button or wires another handler produces a different tree, and lane B shows the props on which the trees differ; a refactor from `cond ? <A/> : null` to `cond && <A/>` is proved equal. What it does not judge: pixels, CSS and layout, which stay with the recording gate. Measured on three React front ends written before this rule (nexus-landing, nexus-ui, the apps starter): 13.7, 9.3 and 33.7 percent of units inside before JSX was read as a value; 67.5, 87.8 and 48.8 percent after.
+
+Everything else is yours: `async`/`await`, `try`/`catch` (an opaque block, like an unbounded loop), `switch`, destructuring with defaults, optional chaining, template strings, `Set`, `Map`, generics, recursion, early returns, callbacks to array methods, local lambdas, JSX. [`langs/ts/subset.md`](langs/ts/subset.md) lists every construct and whether it is exact, uninterpreted, or refused.
 
 **How much real code is inside.** Measured on 39 repositories (nexus, n8n, langchainjs, driftbench, pipedream, nutshell, pyka and 32 smaller ones; 48,696 functions and methods written before this style existed): 60.0 percent of all units are inside the subset as written, 71.5 percent of the nexus backend. The rest get lane B and the rule that stopped the proof lane. Code written with the lint on is inside from the first line.
 
@@ -248,7 +264,8 @@ Measured on private corpora of production TypeScript. Numbers, not code, are pub
 | planted behaviour changes in real nexus units (143 type-checked mutants: flipped operators, shifted boundaries, negated conditions, swapped arguments, dropped calls, changed returns) found by lane B with a concrete input | **120 of 143** |
 | planted changes the proof lane wrongly proved equal | **0 of 143** |
 | pairs of real commits that kept behaviour (145 untouched functions, parent against the defective commit) | **132 PASS** (39 proved, 93 bounded), 12 ASK, 1 wrong WITNESS through a changed callee |
-| real functions inside the subset as written (39 repositories, 48,696 units) | **60.0 percent**; nexus backend 71.5 percent |
+| real functions inside the subset as written (39 repositories, 48,696 units) | **60.0 percent**; nexus backend 83.4 percent |
+| React front ends with JSX read as a value tree (nexus-landing 1,318 units, nexus-ui 353, the apps starter 86) | **67.5**, **87.8**, **48.8 percent** inside |
 | the two-clock pair (`readClock() === readClock()` vs `true`) | **not provable**, as it must be |
 | test suite | 197 checks, conformance 21 of 21 |
 
@@ -256,7 +273,7 @@ The run over 43 repaired production defects (every changed function through both
 
 ## Limits
 
-lean says `ASK` rather than guess. Today it asks on: assignment to a field of a field of `this`, `super`, generators, callbacks that change an outer variable, mutation of a parameter, `eval` and the prototype chain, JSX, more than one asynchronous schedule, and code the repository does not contain. A changed function that calls a changed recursive sibling needs an induction the theorem does not yet write.
+lean says `ASK` rather than guess. Today it asks on: assignment to a field of a field of `this`, `super`, generators, callbacks that change an outer variable, mutation of a parameter, `eval` and the prototype chain, more than one asynchronous schedule, and code the repository does not contain. A changed function that calls a changed recursive sibling needs an induction the theorem does not yet write.
 
 Lane B's bound is real: a frozen clock, generated inputs, one microtask order. Its word is `PASS-bounded`, and it stays that word.
 
