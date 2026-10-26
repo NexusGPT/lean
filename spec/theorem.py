@@ -152,12 +152,16 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     unscoped = sorted(set(cf) - set(funcs) - set(hc))
     if unscoped:
         raise Refusal('candidate defines functions that the scope does not list: ' + ', '.join(unscoped))
+    slot_layout_differs = set()
     for f in funcs:
         if f not in pf:
             raise Refusal(f'scope lists {f}, which the parent does not define')
         if f not in cf:
             raise Refusal(f'scope lists {f}, which the candidate does not define')
         if (pf[f]['params'], pf[f]['ret']) != (cf[f]['params'], cf[f]['ret']):
+            if 'Slots_' in str(pf[f]['params']) + str(cf[f]['params']) + str(pf[f]['ret']) + str(cf[f]['ret']):
+                slot_layout_differs.add(f)  # a component whose hook slots changed: nothing to compare slot by slot; its lemma is withheld
+                continue
             raise Refusal(f'{f}: signature of candidate differs from parent')
     extra_edits = sorted(set(edit) - set(funcs))
     if extra_edits:
@@ -194,7 +198,7 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
                 guards.setdefault(name[: -len(suffix)], {})[label] = json.loads(m.group(2))
             except ValueError:
                 raise Refusal(f'{label}: guard for {name} is not JSON')
-    unguarded = {}
+    unguarded = {f: 'slot layout differs: the hook slots of parent and candidate are not the same list' for f in slot_layout_differs}
     for f, g in guards.items():
         if f not in funcs or f in aliased or 'parent' not in g or 'candidate' not in g:
             continue

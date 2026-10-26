@@ -168,6 +168,28 @@ export function translate(file, fnName, opts = {}) {
   let completionMode = false;
   const FAULT_CHECK = '// fault checkpoint';
   const effectfulUnits = new Set(); // same-file units that take and return the world
+  // ----- hook slots: a plain unit whose top-level statements call React's useState, and that no other unit of the
+  // file calls, is read as a function of its props AND its slots (one per useState call, in order): the render reads
+  // slot i, a handler's setter call becomes a ReactSet step carrying the next value of slot i, and the unit also
+  // returns its initial slots. Equal renders for every slots value, equal next slots for every handler and equal
+  // initial slots make every click sequence equal (the induction is in design/moonshots/02-step-lemma). A unit called
+  // by another unit (a custom hook) keeps the world reading: its slots would belong to its caller's list.
+  const slotUnits = new Map(); // unit name -> [{ call, index }]
+  const slotOfCall = new Map(); // useState call node -> { unit, index }
+  const setterSlot = new Map(); // the setter local's symbol -> slot index (filled when the call is translated)
+  {
+    const calledUnits = new Set();
+    for (const [, u] of fns) { const w = (n) => { if (ts.isIdentifier(n) && fns.has(n.text) && n.text !== u.name) { const d = checker.getSymbolAtLocation(n)?.declarations?.[0]; if (d && d.getSourceFile() === sf) calledUnits.add(n.text); } ts.forEachChild(n, w); }; if (u.body) w(u.body); }
+    for (const [name, u] of fns) {
+      if (!u.body || !ts.isBlock(u.body) || u.cls || u.fn.asteriskToken || calledUnits.has(name)) continue;
+      const calls = [];
+      for (const st of u.body.statements) if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) { const init = d.initializer; if (init && ts.isCallExpression(init) && reactHook(checker, init) === 'useState' && ts.isArrayBindingPattern(d.name)) calls.push(init); }
+      if (!calls.length || calls.some((c) => { const st = checker.getTypeArguments(checker.getTypeAtLocation(c))[0]; return !st || !!(st.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)); })) continue; // a state type the reader cannot see keeps the world reading
+      slotUnits.set(name, calls.map((call, index) => ({ call, index })));
+      calls.forEach((call, index) => slotOfCall.set(call, { unit: name, index }));
+    }
+  }
+  let currentSlots = null; // while a slot unit is emitted: { T: the Slots datatype, n: slot count, types: [D] }
   const PURE_RECEIVERS = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Buffer', 'Array', 'BigInt', 'Symbol', 'Object']); // Object.keys/values/entries/assign/fromEntries: pure functions of their arguments (the lint refuses the prototype ones)
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
   const localEffectScan = new Set();
@@ -389,7 +411,7 @@ export function translate(file, fnName, opts = {}) {
   // the final value of a unit: the result, with the world first when effectful, and the mutated parameters after it
   function wrapRet(code) {
     const outs = currentUnit ? mutatedOf(currentUnit).map(dn) : [];
-    const parts = [...(unitEffectful() ? [WORLD] : []), outerParens(code), ...outs];
+    const parts = [...(unitEffectful() ? [WORLD] : []), outerParens(code), ...outs, ...(currentSlots ? [`${currentSlots.T}(${Array.from({ length: currentSlots.n }, (_, i) => `init${i}_`).join(', ')})`] : [])];
     return parts.length === 1 ? code : `(${parts.join(', ')})`;
   }
   // ----- world fields: a field of `this` that a method of the class assigns, updates, or mutates through a method-call
@@ -2067,7 +2089,8 @@ export function translate(file, fnName, opts = {}) {
     for (const st of steps) {
       if (!ts.isExpressionStatement(st) && !ts.isReturnStatement(st)) return null;
       const e = st.expression;
-      if (e && ts.isCallExpression(e) && !e.questionDotToken && e.arguments.every((a) => renderPure(checker, a))) {
+      const setterCallee = (c) => !!currentSlots && ts.isIdentifier(c.expression) && setterSlot.has(checker.getSymbolAtLocation(c.expression)); // a slot setter may take an updater arrow: the ReactSet step applies it
+      if (e && ts.isCallExpression(e) && !e.questionDotToken && (e.arguments.every((a) => renderPure(checker, a)) || (setterCallee(e) && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])))) {
         let f = e.expression, name, recv = [];
         if (ts.isIdentifier(f)) {
           const o = originOf(checker, f, sf, currentUnit?.node ?? null);
@@ -2087,7 +2110,7 @@ export function translate(file, fnName, opts = {}) {
     }
     anyType();
     addPrelude('ReactExpr', 'datatype ReactExpr = ReactAtom(atom: Any) | ReactExpr(op: string, operands: seq<ReactExpr>)');
-    addPrelude('ReactStep', 'datatype ReactStep = ReactCall(callee: string, receiver: seq<ReactExpr>, args: seq<ReactExpr>, returnsResult: bool) | ReactReturn(value: ReactExpr)');
+    addPrelude('ReactStep', 'datatype ReactStep = ReactCall(callee: string, receiver: seq<ReactExpr>, args: seq<ReactExpr>, returnsResult: bool) | ReactReturn(value: ReactExpr) | ReactSet(slot: int, next: Any)');
     addPrelude('ReactHandler', 'datatype ReactHandler = ReactHandler(steps: seq<ReactStep>)');
     const box = (e) => {
       if (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e)) return box(e.expression);
@@ -2098,7 +2121,19 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isTemplateExpression(e)) return `ReactExpr(${strEsc('template:' + JSON.stringify([e.head.text, ...e.templateSpans.map((s) => s.literal.text)]))}, [${e.templateSpans.map((s) => box(s.expression)).join(', ')}])`;
       return `ReactAtom(${expr(e, anyTarget())})`;
     };
-    const codes = specs.map((s) => s.name !== undefined ? `ReactCall(${strEsc(s.name)}, [${s.recv.map(box).join(', ')}], [${s.args.map(box).join(', ')}], ${s.returns})` : `ReactReturn(${s.value ? box(s.value) : `ReactAtom(${convertD('Unit', 'Unit', anyType())})`})`);
+    // a setter of a slot unit: the step carries the NEXT value of the slot (the handler captured this render's values; an
+    // updater is applied to the slot's running value, so chained updaters compose), not the setter's descriptor
+    const cur = currentSlots ? Array.from({ length: currentSlots.n }, (_, i) => `slots.s${i}`) : null;
+    const setStep = (sp) => {
+      if (!cur || sp.name !== 'value' || sp.recv.length !== 1 || !ts.isIdentifier(sp.recv[0]) || sp.args.length !== 1) return null;
+      const sym = checker.getSymbolAtLocation(sp.recv[0]); if (!sym || !setterSlot.has(sym)) return null;
+      const i = setterSlot.get(sym), D = currentSlots.types[i], a = sp.args[0];
+      let code;
+      try { code = ts.isArrowFunction(a) && a.parameters.length <= 1 && !a.modifiers?.some((m) => m.kind === K.AsyncKeyword) ? `(${lambda(a, 1, [checker.getTypeAtLocation(a.parameters[0]?.name ?? a)])})(${cur[i]})` : outerParens(expr(a, checker.getTypeAtLocation(a))); } catch (e) { if (!(e instanceof Unsupported)) throw e; return null; }
+      cur[i] = code;
+      return `ReactSet(${i}, ${convertD(code, D, anyType())})`;
+    };
+    const codes = specs.map((s) => s.name !== undefined ? (setStep(s) ?? `ReactCall(${strEsc(s.name)}, [${s.recv.map(box).join(', ')}], [${s.args.map(box).join(', ')}], ${s.returns})`) : `ReactReturn(${s.value ? box(s.value) : `ReactAtom(${convertD('Unit', 'Unit', anyType())})`})`);
     const d = dtype(typeOf(cb), cb);
     return `${external(`react_handler_${mangle(d)}`, ['ReactHandler'], d)}(ReactHandler([${codes.join(', ')}]))`;
   }
@@ -2587,6 +2622,16 @@ export function translate(file, fnName, opts = {}) {
       }
     }
     if (ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Array' && n.expression.name.text === 'from' && n.arguments.length === 1 && generators.pureCall(n.arguments[0]) && originOf(checker, n.expression.expression, sf, currentUnit?.node ?? null).kind === 'global') return seqOf(n.arguments[0]);
+    if (currentSlots && slotOfCall.has(n) && slotOfCall.get(n).unit === currentUnit?.name) { // useState in a slot unit: (slots.s_i, setter_i), and the initial value bound for the returned slots
+      const { index } = slotOfCall.get(n); const D = currentSlots.types[index];
+      const a0 = n.arguments[0];
+      const initCode = !a0 ? `${external(`uninit_${mangle(D)}`, [], D)}()` : ts.isArrowFunction(a0) && a0.parameters.length === 0 ? outerParens(expr(ts.isBlock(a0.body) ? (a0.body.statements.length === 1 && ts.isReturnStatement(a0.body.statements[0]) ? a0.body.statements[0].expression : fail(a0, 'a lazy initializer with more than a return is not read')) : a0.body, checker.getTypeArguments(typeOf(n))[0])) : outerParens(expr(a0, checker.getTypeArguments(typeOf(n))[0]));
+      pending.push(`var init${index}_: ${D} := ${initCode};`);
+      const decl = n.parent; if (ts.isVariableDeclaration(decl) && ts.isArrayBindingPattern(decl.name)) { const el = decl.name.elements[1]; if (el && ts.isBindingElement(el) && ts.isIdentifier(el.name)) { const sym = checker.getSymbolAtLocation(el.name); if (sym) setterSlot.set(sym, index); } }
+      const setter = external(`setter_${currentUnit.name}_${index}`, [], `(${D}) -> Unit`);
+      pending.push(`var hook${index}_: (${D}, (${D}) -> Unit) := (slots.s${index}, ${setter}());`); // a named tuple: the destructuring reads .0 and .1
+      return `hook${index}_`;
+    }
     const hook = exactReactHook(checker, n);
     if (hook) return convert(expr(hook.value), typeOf(hook.value), typeOf(n), n);
     const form = exactPromiseForm(n);
@@ -4096,6 +4141,13 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (core) {
       const eff = effectfulUnits.has(u.name);
       if (eff) addPrelude('World', 'type World');
+      currentSlots = null;
+      if (slotUnits.has(u.name) && !exceptionUnits.has(u.name) && !recursiveUnits.has(u.name) && !u.isCtor) {
+        const types = slotUnits.get(u.name).map(({ call }) => dtype(checker.getTypeArguments(typeOf(call))[0], call));
+        const T = `Slots_${hash(types.join(','))}`;
+        addPrelude(T, `datatype ${T} = ${T}(${types.map((d, i) => `s${i}: ${d}`).join(', ')})`);
+        currentSlots = { T, n: types.length, types };
+      }
       const endVal = () => yieldState ? wrapRet(yieldState.name) : (u.isCtor || (retType(u).flags & TF.Void) ? wrapRet('Unit') : retType(u).flags & TF.Undefined ? wrapRet(absentValue(retType(u))) : fail(u.node, 'a path ends without a return'));
       const ctx = { ret: wrapRet, fault: () => faultResult(u) };
       const opaqueBody = () => { const ps = [...(eff ? ['World'] : []), ...(!u.isStatic ? [selfType(u)] : []), ...u.params.map((p) => dtype(typeOf(p.name), p)), 'seq<string>']; const args = [...(eff ? [WORLD] : []), ...(!u.isStatic ? [SELF] : []), ...u.params.map((p) => dn(p.name.text)), `[${(Buffer.from(sf.text).toString('hex').match(/.{1,128}/g) ?? []).map(strEsc).join(', ')}]`]; return `${external(`accessor_${u.name}`, ps, eff ? `(World, ${rt})` : rt)}(${args.join(', ')})`; };
@@ -4109,12 +4161,13 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const mutLets = mutatedOf(u).map((m) => `var ${dn(m)} := ${dn(m)};`); // a mutated parameter starts as the argument and is rebound by the body
       const full = usedModuleOpaque ? body : [...sp.lets, ...mutLets].length ? `${[...sp.lets, ...mutLets].join('\n')}\n${body}` : body;
       const selfParam = classOf(u) && !u.isStatic ? `${SELF}: ${selfType(u)}` : '';
-      const plain = [selfParam, sp.text].filter(Boolean).join(', ');
+      const plain = [selfParam, sp.text, ...(currentSlots ? [`slots: ${currentSlots.T}`] : [])].filter(Boolean).join(', ');
       const rec = recursiveUnits.has(u.name);
       const plain2 = rec ? [`${FUEL}: nat`, plain].filter(Boolean).join(', ') : plain;
       const sig = eff ? `${WORLD}: World${plain2 ? ', ' + plain2 : ''}` : plain2;
       const mutTypes = mutatedOf(u).map((m) => { const pr = u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m); return dtype(typeOf(pr.name), pr); });
-      const rtype = [...(eff ? ['World'] : []), rt, ...mutTypes].length === 1 ? rt : `(${[...(eff ? ['World'] : []), rt, ...mutTypes].join(', ')})`;
+      const rparts = [...(eff ? ['World'] : []), rt, ...mutTypes, ...(currentSlots ? [currentSlots.T] : [])];
+      const rtype = rparts.length === 1 ? rt : `(${rparts.join(', ')})`;
       const outOfFuel = rec ? wrapRet(`${external(`fuel_out_${mangle(rt)}`, [], rt)}()`) : null;
       const full2 = rec ? `if ${FUEL} == 0 then ${outOfFuel} else\n${indentBlock(wrapLet(full))}` : full;
       const specs2 = rec ? [...specs, `  decreases ${FUEL}`] : specs;
@@ -4132,6 +4185,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     }
     yieldState = null;
     currentUnit = null;
+    currentSlots = null;
     faultMode = false;
   }
   if (heapT) report.heap = { core: [...heapT.core()].sort(), whyNot: Object.fromEntries(order.filter((u) => !heapT.isCore(u)).map((u) => [u.name, heapT.whyNot(u.name)])), layer1Risk: Object.fromEntries(order.filter((u) => !heapT.isCore(u)).map((u) => [u.name, heapT.layer1Risk(u)]).filter(([, r]) => r.length)) };

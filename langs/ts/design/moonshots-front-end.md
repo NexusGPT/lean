@@ -52,6 +52,13 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   the induction lemma over n clicks, 4 verified in 0.9 s; `counter-mutant.dfy` (one more per click) fails the
   step lemma, 3 verified, 1 error, 1.0 s. The shape holds; the open part is reading `Step` off the real handler
   descriptor in `translate.mjs` instead of writing it by hand.
+- Built (2026-10-27, lane A): a component whose top-level statements call `useState`, and that no other unit of
+  the file calls, is read as a function of its props and its slots (`Slots_<hash>`, one field per call); the render
+  reads slot i, a handler's setter call is a `ReactSet(i, next)` step carrying the next value (an updater applied to
+  the slot's running value), and the unit returns its initial slots. Pair `tests/pairs/hook_slots`: `setN(1 + n)`
+  for `setN(n + 1)` proved; an updater against the value form proved; a lazy initializer against the eager one
+  proved; `n + 2` refuted; a second `useState` withheld (the slot lists differ) and witnessed by lane B. The 17
+  jsx_handlers proof expectations unchanged. The induction over sequences is the meta-argument of the probe.
 - Kill: the setter descriptor cannot be read as a slot transition without an axiom on the uninterpreted
   handle (`design/react-handlers-memo.md` records that equality of `() -> Unit` values is unproved).
 
