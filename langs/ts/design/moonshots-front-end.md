@@ -102,6 +102,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   against `fn_` (opaque); (b) a 50-line interpreter in lane B that applies the `set` steps to the slots and
   compares with the real invocation on the 17 units of `tests/pairs/jsx_handlers`.
 - Pass: at least 40% of handlers descriptor-readable; interpreter and invocation agree on every readable one.
+- Measured (part a, 2026-10-26, 200 census files with handler attributes, 1,718 attributes, translate.mjs
+  --tolerant): 812 units, 469 translated, 332 linted out, 11 failed; in the translated units 245 function-valued
+  props are boxed, of which 62 are descriptors (25%), 155 opaque by text (63%), the rest inline lambdas or named
+  functions. Below the 40% bar, above the 20% kill: the lever is the descriptor reader (event parameters,
+  `preventDefault`, a local declaration, a branch keep a handler opaque today). Part b (the interpreter) waits
+  on the hook-slot runtime.
 - Kill: under 20% readable.
 
 ## 7. Deep render: a page as one unit
