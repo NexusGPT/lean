@@ -169,11 +169,11 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | element, fragment, text, attributes | 5,972, 713 | exact (`JsxNode` value tree) | same | done |
-| handler attribute | 1,560 | an opaque value keyed by its text | the handler body as a lambda when it is in the subset, so a rewired call is a difference inside the handler too | partial |
+| handler attribute | 1,560 | pure lambdas; zero-argument straight-line calls as symbolic deferred steps with captured values; other bodies opaque by text and captures | event parameters and branching deferred bodies as symbolic expressions too | partial (lane) |
 | spread attribute | 1,295 | a map merge in order | same | done |
 | conditional children, `.map` children, arrays | | exact (`JsxNothing`, `JsxList`) | same | done |
-| hooks (`useState`, `useEffect`, `useQuery`, `useRouter`) | 2,585 | transitions of the world at the top of the render | same; `useState`'s setter is an opaque function value | done |
-| `useEffect` bodies, `useCallback`, `useMemo` | | the callback is an opaque value by text | `useMemo(() => e, deps)` is `e`; `useCallback(f)` is `f`; `useEffect` stays a transition with its body an opaque value | gap (small) |
+| hooks (`useState`, `useEffect`, `useQuery`, `useRouter`) | 2,585 | state and scheduling transitions; current state and setter are values returned by the world; setter invocation is a transition | same | done (lane) |
+| `useEffect` bodies, `useCallback`, `useMemo` | | pure scalar `useMemo` is its expression and `useCallback` is its function when dependencies cover captures; other forms stay transitions; effect bodies remain opaque with captures | broader pure memo expressions and complete render-history semantics | partial (lane) |
 | context, refs, portals, `forwardRef`, `memo` | | uninterpreted | same | done |
 | class components | | section 4 | same | partial |
 

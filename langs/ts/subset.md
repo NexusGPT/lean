@@ -42,7 +42,8 @@ rules per package).
 | Record enumeration | `Object.keys/values/entries` on a plain immediate record literal or an enumeration-only const literal; integer-index keys first, then insertion order | `Object.keys({ b: 2, a: 1 })` is `["b", "a"]` |
 | Calls | top-level functions of the same file, recursion included (a fuel bounds the unfolding; the theorem holds for every fuel), default arguments, a function-typed parameter or local, a local lambda `const f = (x) => ...` | `double(double(x))` |
 | Functions | `function` declarations, `const f = (...) => ...`, `async` functions (the result type is unwrapped), generic functions, same-file functions named as callback values | `xs.map(double)` |
-| JSX | an element is a value tree: `JsxElem(tag, props, children)`, `JsxText`, `JsxNothing` for `false`/`null`/`undefined`, `JsxList` for an array child; a handler attribute is an opaque function value keyed by its text; `cond && <X/>`, `cond ? <A/> : <B/>`, `{xs.map((x) => <li/>)}`, fragments, spread attributes (merged in order) | `<li key={i.id} onClick={() => pick(i.id)}>{i.label}</li>` |
+| JSX | an element is a value tree: `JsxElem(tag, props, children)`, `JsxText`, `JsxNothing` for `false`/`null`/`undefined`, `JsxList` for an array child; a handler is a pure lambda or symbolic deferred call sequence with captured values; other bodies are opaque by text and captures; `cond && <X/>`, `cond ? <A/> : <B/>`, `{xs.map((x) => <li/>)}`, fragments, spread attributes (merged in order) | `<li key={i.id} onClick={() => pick(i.id)}>{i.label}</li>` |
+| React memo values | `useMemo(() => e, deps)` is a pure scalar `e`, and `useCallback(f, deps)` is `f`, when a literal dependency list covers local captures (or dependencies are omitted); other forms remain transitions | `useMemo(() => props.id + 1, [props.id])` |
 | Classes | methods and static methods; a constructor that stores injected ports; fields read through `this`; a field any method assigns lives in the world (each read and write is a transition); a method of `this` called from a method; `super.m(...)` and `super(...)` as transitions on the receiver; `new C(args)` of a class in the same file: a fresh handle from the world, then C's constructor as a unit on it (initialisers, parameter properties, the body as writes); a method called on that instance is the file's own unit, and a field its methods write is read through the world | `class Svc { constructor(private readonly repo: Repo) {} async find(id: string) { return this.repo.find(id); } }` |
 
 ## What is a transition of the world
@@ -53,6 +54,7 @@ transition the parent did not make, or makes it with another argument or in anot
 
 | Part | Example | Modelled as |
 |---|---|---|
+| React state and effects | `useState(initial)`, `useEffect(body, deps)` | a state read returns current state and a setter value; a setter call is a transition; an effect registers deferred work with an opaque body and its captures |
 | An imported function, a method of an imported object, a value from another file | `isRequiredUuid(id)` | `ext_isRequiredUuid(wld, id)` |
 | Spread to an outside callee, including opaque methods | `f(a, ...xs, b)` | `ext_f_seq(wld, [a] + xs + [b])`; a pure library external keeps the same sequence without the world |
 | `await f(x)`, `await p` | `await repo.find(id)` | `ext_await_Repo_find(wld, repo, id)` |
@@ -74,7 +76,8 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | `any`, `unknown`, a union of records, `string \| SomeObject` | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
 | Library calls with no exact rule: `trim`, `toLowerCase`, `split`, `replace`, `JSON`, `String`, `Buffer` | `s.trim()` | `ext_str_trim(s)` |
 | Regular expressions, `new RegExp`, `.test`, `.replace(re, …)` | `/a+/.test(s)` | an opaque constant per literal, externals for the operations |
-| A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its text; the same text proves equal, a different one does not |
+| A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its exact text and captured values; same-file callees are checked dependencies |
+| A callback with an effect inside | `xs.map(async (x) => await f(x))` | a symbolic deferred sequence for supported zero-argument arrows, otherwise an opaque value with its captures |
 | Effectful callbacks handed to an outside library | `register(x => svc.log(x))` | an opaque function value by its text |
 | `as T`, `<T>x` | `x as number[]` | identity when the Dafny types agree, else `ext_cast_A_B(x)` |
 | `typeof x`, `x instanceof C`, `k in o` | `typeof x === "string"` | `ext_typeof_Any(x)`, `ext_instanceof_C(x)`, `ext_in(k, o)` |
@@ -113,6 +116,7 @@ one, never proved equal and never proved different (the execution lane decides i
 | `global-mutation`, `global-read`, `toplevel-state`, `toplevel-effect` | module `let`/`var`, assignment to anything the function does not own, code at module level that runs on import | `counter = counter + 1` |
 | `alias-mutation` | changing a value through a local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`); the [heap reading](design/heap-layer.md) is a design and verified toy only | `const t = user.tags; t.push(1)` |
 | `param-assign`, `param-mutation`, `property-assign`, `index-assign`, `in-place-mutation` | rebinding a parameter (`p = v`); a field or slot of what the function does not own (a module object, a cast, a value from the world); `sort`/`reverse` on a named array | `(x as any).f = 1` |
+| `react-handler-capture` | a React closure captures a local that changes during render or is declared later; a captured record mutated by the render | `let n = 0; const f = useCallback(() => save(n), [n]); n++;` |
 | `closure-mutation`, `foreach` | a callback (not a loop body) changing a variable declared outside it; `forEach` with an async callback, which the function does not wait for | `xs.forEach(async (x) => { await f(x); })` |
 | `opaque-mutation` | a mutating method on an opaque value used as a value, or as a statement when a field of the same receiver is read later | `const n = list.push(x)` |
 | `function-value` | a callback passed to a same-file function (a same-file function takes values; a function value anywhere else is a pure lambda or an opaque value keyed by its text) | `twice((y) => y + 1, x)` |
@@ -172,6 +176,7 @@ translator derives it.
   `ext_absent_V()`.
 - An effect is `effect(world, op, args) = (world', result)`. It is the only axiom. Two calls are two transitions;
   reordering two independent effects is reported as a difference.
+- React props and captured records follow the existing value model. Exact memo erasure requires a pure scalar expression and dependency coverage; incomplete dependencies can preserve stale values and are never erased. Lane B exercises one mount render, its effects and each returned JSX handler, not a complete React renderer.
 - Two syntactically identical lambdas are equal in Dafny; a changed lambda passed to an external is a changed argument.
 - Addresses never count: two records with the same fields are one value. Two parameters are two objects; a function
   that changes a parameter returns its new value beside the result; a local alias of a parameter is never changed
