@@ -142,6 +142,23 @@ zones: obligations unmet; `structuredClone` of unsupported values: refused by na
 - Not yet from the table: sort (its comparator), map and filter (a lambda in the core emitter), Map and Set cells
   (new shape kinds), Object.assign, and the three drafts (freeze, structuredClone, Date).
 
+### 4.2 Built, 2026-10-27: Map and Set cells, map and filter
+
+- Shapes `M_<k>_<v>` (a Map cell: an insertion-ordered entry list, primitive keys) and `S_<e>` (a Set cell of
+  primitives) join the heap; the prelude instantiates the table's MapSet_, MapGet_, MapHas_, MapDelete_, SetAdd_,
+  SetHas_, SetDelete_ with their helpers (SetEntry_, Lookup_, RemoveKey_, RemoveItem_), plus MapSize_ and SetSize_;
+  `new Map()` and `new Set()` allocate an empty cell. The core admits `set`, `add`, `delete` as statements, `has`
+  and `size` as expressions; `get` stays out (its Option result needs the nullish reading of the ordinary lane).
+- `map` and `filter` with a one-parameter pure arrow (an expression body, no allocation inside) are the table's
+  Map_<K>_<K2> and Filter_<K> (Keep_<K>); each map instance is generated for its (source, result) shape pair.
+- Pair `tests/pairs/library_cells`: a renamed callback parameter proved; a changed filter bound and a skipped delete
+  refuted (the delete only by lane A: lane B's generated keys never meet a generated entry, a generator gap); three
+  idempotent double writes (set twice, add twice) unproved: the second write is a no-op update of the heap map and
+  the prover does not reach `m[r := m[r]] == m` without a lemma body, which theorem.py never writes. The idempotence
+  of cell writes is the next proof obligation; a fuel attribute does not reach it (tried).
+- Still out of the table: sort (its comparator), Object.assign (the lint's assign-target refusal stands until the
+  ordinary lane also writes the target), the drafts (freeze, structuredClone, Date).
+
 ## 5. State over time (brief 14)
 
 **Settled.** A one-step proof over the complete state composes by induction; the hole is a cell omitted, reset or

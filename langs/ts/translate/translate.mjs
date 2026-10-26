@@ -4207,6 +4207,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
 
   const pre = [];
   const heapPre = heapT ? heapT.prelude() : [];
+  if (heapPre.some((l) => l.includes('Option<'))) usesOption = true; // the table's Map.get answers an Option
   if (prelude.size || usesOption || heapPre.length) {
     pre.push('datatype Unit = Unit');
     if (usesOption) pre.push('datatype Option<T> = None | Some(value: T)');
