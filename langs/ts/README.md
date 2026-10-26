@@ -40,15 +40,15 @@ The run takes about a minute, because every row calls Dafny.
 
 ## What the subset covers
 
-Pure functions over `number`, `bigint`, `boolean`, `string`, arrays, records, tuples and `T | undefined`, with `let`/`const`, `if`, early return, `for...of`, counted `for`, bounded `while`, `map`/`filter`/`reduce`, `Math.min`/`max`/`floor`. [subset.md](subset.md) lists every allowed and every refused construct with one example each.
+Functions and class methods over `number`, `bigint`, `boolean`, `string`, arrays, records, tuples, sets, maps and optionals, with `let`/`const`, `if`, `switch`, early return, `for...of`, counted `for`, bounded `while`, the array and string methods, recursion, generics, `async`/`await`, and calls into the outside world modelled as transitions of an explicit world. A `try`/`catch` and an unbounded `while` are opaque blocks. [subset.md](subset.md) lists every exact, transition, uninterpreted, opaque and refused construct with one example each.
 
 ## Known gaps
 
 - **`number` is not a float.** It is `int` by default and `real` with `--real`. Neither models IEEE 754, overflow or `NaN`. A float literal is refused in `int` mode.
-- **Strings are thin.** Concatenation, equality and length only.
-- **No async.** `await`, `Promise` and exceptions are refused. A handler that calls a database is outside the subset by design.
-- **No recursion, no `return` inside a loop in `--core`.**
-- **Loop equality needs a prover.** `--core` turns a loop, `filter`, `map`, `reduce`, `Math.min` and `Math.max` into private helper functions named `<f>_<helper>_<suffix>`, the form `spec/` accepts. Dafny proves a property of one function when its helper carries the right `ensures`. Proving that a parent loop equals a candidate loop needs a relational support lemma, which the prover writes. Measured on a parent and a candidate of `sum_of_positives` that differ only in `0 < x` against `x > 0`: the translation is accepted, and `Equal_sum_of_positives` is refuted without a support lemma.
+- **Strings are thin.** The methods with a rule are listed in subset.md; the rest are uninterpreted functions of their arguments.
+- **A `try` whose body returns a value is not translated.** The block is opaque; a `return` inside it has no reading yet.
+- **JSX is refused** in this version; the next version reads an element as a value tree.
+- **Loop equality needs a prover.** `--core` turns a loop, `filter`, `map`, `reduce`, `Math.min` and `Math.max` into private helper functions named `<f>_<helper>_<suffix>`, the form `spec/` accepts. Proving that a parent loop equals a candidate loop needs a relational support lemma, which the prover writes. Measured on a parent and a candidate of `sum_of_positives` that differ only in `0 < x` against `x > 0`: the translation is accepted, and `Equal_sum_of_positives` is refuted without a support lemma.
 - **Hints are untrusted.** A wrong `@invariant` fails the proof; it never passes a wrong one.
 
 ## Comparison with LemmaScript
