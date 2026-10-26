@@ -74,6 +74,10 @@ export function translate(file, fnName, opts = {}) {
         const callee = fns.get(n.expression.text);
         if (callee && originOf(checker, n.expression, sf, null).kind === 'unit') collect(callee);
       }
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.expression.kind === K.ThisKeyword && u.cls) {
+        const callee = fns.get(`${u.className}.${n.expression.name.text}`);
+        if (callee) collect(callee);
+      }
       ts.forEachChild(n, walk);
     };
     walk(u.body);
@@ -81,7 +85,7 @@ export function translate(file, fnName, opts = {}) {
     order.push(u);
   }
   if (target) collect(target);
-  else if (only) { for (const name of only) { const u = fns.get(name); if (!u) fail(sf, `no top-level function named ${name}`); collect(u); } }
+  else if (only) { for (const name of only) { const u = fns.get(name); if (!u) fail(sf, `no top-level function or class method named ${name}`); collect(u); } }
   else for (const u of fns.values()) collect(u);
 
   // ----- the subset gate: refuse before translating -----
@@ -114,14 +118,16 @@ export function translate(file, fnName, opts = {}) {
     }
     if (ts.isPropertyAccessExpression(f)) {
       const recv = f.expression;
-      if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return false;
+      if (recv.kind === K.ThisKeyword && currentUnit?.cls) { const callee = fns.get(`${currentUnit.className}.${f.name.text}`); if (callee) return effectfulUnits.has(callee.name); return true; }
+      if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
       const t = baseOf(typeOf(recv));
       if (isArrayLike(checker, t) || (t.flags & TF.StringLike) || isSetT(t) || isMapT(t) || (t.flags & (TF.NumberLike | TF.BooleanLike))) return false;
       return true; // opaque, record method, imported object, any
     }
     return true;
   }
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if (isEffectCall(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const isOpaqueStmt = (x) => ts.isTryStatement(x) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if (isEffectCall(x) || isOpaqueStmt(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   function hoist(code, rd) {
     // the call text already takes the world first; bind the next world and the result, return the result name
@@ -148,7 +154,11 @@ export function translate(file, fnName, opts = {}) {
   const curUnitName = () => (currentUnit ? dn(snake(currentUnit.name)) : 'g');
   let loopCount = 0;
   const intVars = new Set();
-  const fname = (tsName) => (core ? dn(snake(tsName)) + sfx : dn(tsName));
+  const fname = (tsName) => (core ? dn(snake(tsName.replace('.', '_'))) + sfx : dn(tsName.replace('.', '_')));
+  const SELF = 'self';
+  const classOf = (u) => (u && u.cls ? u : null);
+  // the receiver's Dafny type: the class instance type, opaque (its methods make it so)
+  const selfType = (u) => dtype(checker.getTypeAtLocation(u.cls.name), u.node);
 
   // ----- types -----
   const isSetT = (t) => !!t.symbol && (t.symbol.name === 'Set' || t.symbol.name === 'ReadonlySet');
@@ -477,6 +487,7 @@ export function translate(file, fnName, opts = {}) {
       case K.TrueKeyword: return 'true';
       case K.FalseKeyword: return 'false';
       case K.NullKeyword: return 'None';
+      case K.ThisKeyword: if (!classOf(currentUnit)) fail(n, '`this` outside a class method'); return SELF;
       case K.SatisfiesExpression: return expr(n.expression, expected);
       case K.AsExpression: case K.TypeAssertionExpression: {
         // identity at run time; the types may differ, so the value is converted (opaque when they do)
@@ -575,6 +586,8 @@ export function translate(file, fnName, opts = {}) {
       const o = op === K.AmpersandAmpersandToken ? '&&' : '||';
       return `(${truthy(n.left)} ${o} ${truthy(n.right)})`;
     }
+    if (op === K.InstanceOfKeyword) return `${external(`instanceof_${mangle(n.right.getText(sf))}`, [anyType()], 'bool')}(${expr(n.left, anyTarget())})`;
+    if (op === K.InKeyword) return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
     if (op === K.PercentToken) {
       if (real) fail(n, '`%` in real mode is not translated');
       return `${helper('JsRem', ['int'])}(${expr(n.left)}, ${expr(n.right)})`;
@@ -708,7 +721,7 @@ export function translate(file, fnName, opts = {}) {
         return `${external(`${n.expression.text}_${name}`, [], dtype(t, n))}()`;
       }
     }
-    const recvT = typeOf(n.expression);
+    const recvT = n.expression.kind === K.ThisKeyword && classOf(currentUnit) ? checker.getTypeAtLocation(currentUnit.cls.name) : typeOf(n.expression);
     const declaredOpaque = (() => { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e)) return false; const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (!o.sym || o.kind !== 'local') return false; const dt = symType(o.sym, e); try { return dtype(isOptional(dt) ? baseOf(dt) : dt, n) === 'Any'; } catch { return false; } })();
     if (isAny(recvT) || (isOptional(recvT) && isAny(baseOf(recvT))) || declaredOpaque) {
       const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
@@ -843,10 +856,27 @@ export function translate(file, fnName, opts = {}) {
     }
     if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
     const recv = f.expression, name = f.name.text;
+    if (recv.kind === K.ThisKeyword && classOf(currentUnit)) {
+      const callee = fns.get(`${currentUnit.className}.${name}`);
+      if (callee) {
+        const sig = checker.getResolvedSignature(n);
+        const args = n.arguments.map((a, i) => expr(a, sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined));
+        const selfArg = callee.isStatic ? [] : [SELF];
+        if (effectfulUnits.has(callee.name)) {
+          if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure method');
+          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+          return hoist(`${fname(callee.name)}(${[WORLD, ...selfArg, ...args].join(', ')})`, dtype(rt, n));
+        }
+        return `${fname(callee.name)}(${[...selfArg, ...args].join(', ')})`;
+      }
+      // an inherited method or a function-typed field: an uninterpreted external of the receiver and the arguments
+      const T = selfType(currentUnit);
+      return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
+    }
     const recvT = typeOf(recv);
     const base = baseOf(recvT);
     if (isAny(base)) return externalCall(`${awaited ? 'await_' : ''}Any_${name}`, n, [...n.arguments], expr(recv, anyTarget()), anyType());
-    if (ts.isIdentifier(recv) && recv.text === 'Math') {
+    if (ts.isIdentifier(recv) && recv.text === 'Math' && name !== 'random') {
       const [a, b] = n.arguments;
       if (name === 'floor' || name === 'trunc') {
         if (real) return `((${expr(a)}).Floor as real)`;
@@ -1301,7 +1331,11 @@ export function translate(file, fnName, opts = {}) {
       }
       case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: flatten(s.thenStatement) }], s.elseStatement ? flatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
       case K.SwitchStatement: { let parts; const h = capture(() => { parts = switchChain(s); return ''; }); const body = ifChain(parts.chain, parts.dflt, s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
-      case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: { let body; const h = capture(() => { body = coreLoop(s, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body; }
+      case K.TryStatement: return opaqueBlock(s, rest, fin, u);
+      case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: {
+        if (isOpaqueStmt(s)) return opaqueBlock(s, rest, fin, u);
+        let body; const h = capture(() => { body = coreLoop(s, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body;
+      }
       case K.ContinueStatement: if (!loopCtx.length) fail(s, 'continue outside a loop'); return loopCtx[loopCtx.length - 1].cont();
       case K.BreakStatement: if (!loopCtx.length) fail(s, 'break outside a loop'); return loopCtx[loopCtx.length - 1].brk();
       default: return fail(s, `statement ${ts.SyntaxKind[s.kind]} is not translated`);
@@ -1328,6 +1362,43 @@ export function translate(file, fnName, opts = {}) {
     return `var ${tupleOf(names)} := ${out};\n${tr(rest, fin, u)}`;
   }
 
+  // An opaque block: a statement the translator does not model (try/catch, a loop without a bound). It becomes an
+  // uninterpreted transition of the world named by the block's own text: inputs are the locals it reads (and the
+  // receiver), outputs are the locals it assigns and, when it may return, the function's result. The same text on both
+  // sides is the same transition; a changed text is a different one, so a changed block is never provably equal. The
+  // name also lists the same-file functions the block calls: the theorem refuses the block when one of them changed.
+  function opaqueBlock(s, rest, fin, u) {
+    if (!unitEffectful()) fail(s, 'internal: an opaque block in a unit not marked effectful');
+    const returns = containsReturn(s);
+    const M = assignedOutside(s).filter((m) => !m.synthetic).map((m) => ({ ...m, d: dtype(symType(m.sym, m.node), m.node) }));
+    // inputs: every local the block reads, and every local it assigns (it may read it first)
+    const free = [...M, ...freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: dtype(symType(v.sym, v.node), v.node) }))];
+    let usesSelf = false; const calls = new Set();
+    const w = (x) => {
+      if (x.kind === K.ThisKeyword) usesSelf = true;
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && fns.has(x.expression.text) && originOf(checker, x.expression, sf, currentUnit?.node ?? null).kind === 'unit') calls.add(x.expression.text);
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
+      ts.forEachChild(x, w);
+    };
+    w(s);
+    if (containsJump(s) && loopCtx.length) fail(s, 'a break or continue of an enclosing loop inside an opaque block');
+    const text = s.getText(sf).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' ').trim();
+    const RD = dtype(retType(u), s);
+    const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
+    const id = `block_${hash(text)}${calleeTag ? '_calls_' + calleeTag : ''}`;
+    const inTypes = ['World', ...(usesSelf ? [selfType(u)] : []), ...free.map((v) => v.d)];
+    const outTypes = ['World', ...(returns ? [`Option<${RD}>`] : []), ...M.map((m) => m.d)];
+    if (returns) usesOption = true;
+    const name = external(id, inTypes, `(${outTypes.join(', ')})`);
+    // record the callees on the prelude block so the theorem can refuse a block whose callee changed
+    const key = [...prelude.keys()].find((k) => k === name);
+    if (key && calls.size) prelude.set(key, `${prelude.get(key)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
+    const args = [WORLD, ...(usesSelf ? [SELF] : []), ...free.map((v) => dn(v.name))];
+    const outs = [WORLD, ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
+    const line = `var (${outs.join(', ')}) := ${name}(${args.join(', ')});`;
+    if (!returns) return `${line}\n${tr(rest, fin, u)}`;
+    return `${line}\nif retb.Some? then\n${indentBlock(retIn(`(${WORLD}, retb.value)`))}\nelse\n${indentBlock(wrapLet(tr(rest, fin, u)))}`;
+  }
   function coreLoop(s, rest, fin, u) {
     const id = loopCount++;
     const returns = containsReturn(s);
@@ -1441,6 +1512,14 @@ export function translate(file, fnName, opts = {}) {
     u.params.forEach((p, i) => {
       const t = typeOf(p.name);
       let d = dtype(t, p);
+      if (p.initializer && ts.isIdentifier(p.name)) {
+        // a default: the caller may omit it; the parameter is an Option and the default fills None
+        usesOption = true;
+        const pn = `${dn(p.name.text)}_opt`;
+        parts.push(`${pn}: Option<${d}>`);
+        lets.push(`var ${dn(p.name.text)}: ${d} := if ${pn}.Some? then ${pn}.value else ${outerParens(expr(p.initializer, t))};`);
+        return;
+      }
       if (p.questionToken && !d.startsWith('Option<')) { usesOption = true; d = `Option<${d}>`; }
       if (ts.isIdentifier(p.name)) parts.push(`${dn(p.name.text)}: ${d}`);
       else { const pn = `arg${i}_`; parts.push(`${pn}: ${d}`); lets.push(...destructure(p.name, pn)); }
@@ -1468,7 +1547,9 @@ export function translate(file, fnName, opts = {}) {
       const endVal = () => (retType(u).flags & (TF.Void | TF.Undefined) ? (eff ? `(${WORLD}, Unit)` : 'Unit') : fail(u.node, 'a path ends without a return'));
       const body = bodyList ? tr(bodyList, endVal, u) : capture(() => { const c = expr(u.body, retType(u)); return eff ? `(${WORLD}, ${outerParens(c)})` : c; });
       const full = sp.lets.length ? `${sp.lets.join('\n')}\n${body}` : body;
-      const sig = eff ? `${WORLD}: World${sp.text ? ', ' + sp.text : ''}` : sp.text;
+      const selfParam = classOf(u) && !u.isStatic ? `${SELF}: ${selfType(u)}` : '';
+      const plain = [selfParam, sp.text].filter(Boolean).join(', ');
+      const sig = eff ? `${WORLD}: World${plain ? ', ' + plain : ''}` : plain;
       const rtype = eff ? `(World, ${rt})` : rt;
       chunks.push(...coreHelpers.splice(0), [`function ${name}(${sig}): ${rtype}`, ...specs, '{', indentBlock(full), '}'].join('\n'));
     } else if (kindOf.get(u) === 'function') {

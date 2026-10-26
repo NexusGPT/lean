@@ -1,8 +1,6 @@
-// expect: try-catch
-export function safe(x: number): number {
-  try {
-    return x + 1;
-  } catch (e) {
-    return 0;
-  }
+// expect: uninitialised
+export function later(x: number): number {
+  let y: number;
+  y = x + 1;
+  return y;
 }

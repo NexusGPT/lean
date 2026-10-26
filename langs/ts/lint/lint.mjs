@@ -10,22 +10,22 @@
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES } from '../common.mjs';
+import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits } from '../common.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
 
 // globals that are effects or nondeterminism: never externals
+// version 3: an effect is a world transition, so I/O, the clock, randomness and the console are admitted as effects;
+// what stays out is dynamic code and the prototype chain, which no transition models
 const EFFECT_GLOBALS = {
-  eval: 'dynamic-eval', Function: 'dynamic-eval', Date: 'nondeterminism', Math_random: 'nondeterminism',
-  Object: 'prototype', Reflect: 'prototype', Proxy: 'prototype', Symbol: 'prototype', globalThis: 'global-read',
-  console: 'effect', process: 'effect', window: 'effect', document: 'effect', fetch: 'effect', setTimeout: 'effect',
-  setInterval: 'effect', require: 'effect', import: 'effect', localStorage: 'effect', crypto: 'nondeterminism',
+  eval: 'dynamic-eval', Function: 'dynamic-eval', Reflect: 'prototype', Proxy: 'prototype', globalThis: 'global-read', require: 'dynamic-eval', import: 'dynamic-eval',
 };
+const EFFECT_WORLD = new Set(['Date', 'console', 'process', 'window', 'document', 'fetch', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'localStorage', 'sessionStorage', 'crypto', 'queueMicrotask', 'structuredClone', 'Object', 'Promise', 'Intl', 'TextEncoder', 'TextDecoder', 'URL', 'URLSearchParams', 'AbortController', 'Error', 'TypeError', 'RangeError', 'Symbol']);
 // modules whose exports are effects by nature; everything else imported is an uninterpreted external
 const EFFECT_MODULES = /^(node:.*|fs|fs\/promises|path|os|http|https|http2|net|dns|tls|child_process|cluster|worker_threads|process|stream|crypto|readline|zlib|util|events|timers|timers\/promises|axios|node-fetch|undici|got|ioredis|redis|pg|mysql2?|mongodb|mongoose|@prisma\/client|knex|typeorm|sequelize|nodemailer|ws|socket\.io|express|fastify|@nestjs\/.*|@aws-sdk\/.*|aws-sdk|@google-cloud\/.*|openai|@anthropic-ai\/.*|stripe|twilio)$/;
 // pure library globals the translator models as externals (uninterpreted functions)
-const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'Set', 'Map', 'Promise', 'BigInt']);
+const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'Set', 'Map', 'BigInt', ...EFFECT_WORLD]);
 const ARRAY_METHODS = new Set(['map', 'filter', 'reduce', 'some', 'every', 'find', 'findIndex', 'includes', 'indexOf', 'slice', 'concat', 'join', 'flatMap', 'flat', 'at', 'push', 'sort', 'reverse', 'entries', 'keys', 'values', 'forEach']);
 const STRING_METHODS = new Set(['includes', 'startsWith', 'endsWith', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase', 'slice', 'substring', 'indexOf', 'lastIndexOf', 'split', 'replace', 'replaceAll', 'padStart', 'padEnd', 'charAt', 'charCodeAt', 'codePointAt', 'at', 'localeCompare', 'normalize', 'repeat', 'match', 'test', 'concat']);
 const SET_METHODS = new Set(['has', 'add', 'delete', 'size', 'values', 'keys', 'entries', 'forEach', 'clear']);
@@ -37,6 +37,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   const units = topLevelFunctions(sf);
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
+  let currentClass = null; // the class whose method is being checked; `this` is its receiver
   let switchDepth = 0;
   let loopDepth = 0;
   const callbackStack = []; // the arrow functions being checked, innermost last
@@ -72,8 +73,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (parts.length === 1) return checkType(parts[0], n, depth + 1);
       // a discriminated union of records: each member must be a record
       if (parts.every((x) => (x.flags & (TF.Object | TF.Intersection)) && !isArrayLike(checker, x))) { parts.forEach((x) => checkType(x, n, depth + 1)); return; }
-      if (parts.some((x) => x.flags & TF.Any)) return; // any absorbs the union
-      return v(n, 'union-type', `union ${checker.typeToString(t)} is outside the subset`);
+      return; // any other union is opaque (version 3): reads and operations on it are uninterpreted
     }
     if (f & TF.TypeParameter) return v(n, 'generic', `type parameter ${checker.typeToString(t)} is outside the subset`);
     if (f & TF.Intersection) { for (const p of checker.getPropertiesOfType(t)) checkType(checker.getTypeOfSymbolAtLocation(p, n), n, depth + 1); return; }
@@ -148,8 +148,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       case K.ForStatement: return forStmt(s);
       case K.WhileStatement: {
-        const h = hintsOf(sf, s);
-        if (!h.decreases) v(s, 'unbounded-loop', 'a while loop needs a bound: put `// @decreases <expr>` before it');
+        // with a bound it is translated; without one it becomes an opaque block (version 3), so its inside is still checked
         expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return;
       }
       case K.DoStatement: return v(s, 'do-while', 'do-while is outside the subset');
@@ -157,7 +156,13 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
       case K.ContinueStatement: if (loopDepth > 0) return; return v(s, 'break-continue', 'continue outside a loop');
       case K.ThrowStatement: return expr(s.expression); // modelled as an uninterpreted result of the function
-      case K.TryStatement: return v(s, 'try-catch', 'try/catch is outside the subset');
+      case K.TryStatement: {
+        // an opaque block (version 3): its text names it; what it reads and writes are its inputs and outputs
+        stmt(s.tryBlock);
+        if (s.catchClause) { if (s.catchClause.variableDeclaration && !ts.isIdentifier(s.catchClause.variableDeclaration.name)) v(s.catchClause, 'destructuring', 'catch binds one name'); stmt(s.catchClause.block); }
+        if (s.finallyBlock) stmt(s.finallyBlock);
+        return;
+      }
       case K.SwitchStatement: return switchStmt(s);
       case K.LabeledStatement: return v(s, 'label', 'labels are outside the subset');
       case K.FunctionDeclaration: return v(s, 'nested-function', 'nested functions are outside the subset');
@@ -223,6 +228,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           expr(l.argumentExpression);
         } else if (ts.isPropertyAccessExpression(l)) {
           let root = l; while (ts.isPropertyAccessExpression(root)) root = root.expression;
+          if (root.kind === K.ThisKeyword) return v(l, 'receiver-mutation', 'a method that assigns a field of `this` is outside the subset in this version');
           const o = ts.isIdentifier(root) ? declOf(root) : { kind: null };
           if (!ts.isIdentifier(root) || o.kind !== 'local' || isParam(o.decl)) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
@@ -255,9 +261,10 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       if ((name === 'add' || name === 'delete') && nonNull(rt).every(isSetT)) { if (!localOwned) v(e, 'param-mutation', 'set mutation on a non-local'); return e.arguments.forEach(expr); }
       if ((name === 'set' || name === 'delete') && nonNull(rt).every(isMapT)) { if (!localOwned) v(e, 'param-mutation', 'map mutation on a non-local'); return e.arguments.forEach(expr); }
-      return v(e, 'unsupported-syntax', `.${name}() as a statement is outside the subset (only push, add, set, delete on a local)`);
+      return expr(e); // a method call as a statement: a world transition (or a dropped value)
     }
-    return v(e, 'unsupported-syntax', 'only assignments, ++/--, push/add/set/delete on a local, and await may stand as statements');
+    if (ts.isCallExpression(e) || ts.isNewExpression(e)) return expr(e);
+    return v(e, 'unsupported-syntax', 'only assignments, ++/--, calls, and await may stand as statements');
   }
   function forStmt(s) {
     const i = s.initializer, c = s.condition, u = s.incrementor;
@@ -330,7 +337,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.VoidExpression: return v(e, 'void', '`void` is outside the subset');
       case K.AwaitExpression: return awaitExpr(e);
       case K.YieldExpression: return v(e, 'generator', 'generators are outside the subset');
-      case K.ThisKeyword: return v(e, 'this', '`this` is outside the subset');
+      case K.ThisKeyword: if (currentClass) return; return v(e, 'this', '`this` outside a class method');
       case K.SuperKeyword: return v(e, 'class', '`super` is outside the subset');
       case K.ClassExpression: return v(e, 'class', 'classes are outside the subset');
       case K.FunctionExpression: case K.ArrowFunction: return v(e, 'function-value', 'function values are allowed only as callbacks of array methods');
@@ -338,7 +345,6 @@ export function lintFile(file, ranges = null, opts = {}) {
         const n = e.expression.getText(sf);
         if (n === 'Set' || n === 'Map' || n === 'RegExp') return e.arguments?.forEach(expr);
         if (n === 'Function') return v(e, 'dynamic-eval', '`new Function` is outside the subset');
-        if (n === 'Date' && !e.arguments?.length) return v(e, 'nondeterminism', '`new Date()` reads the clock');
         if (n === 'Promise') return v(e, 'async', '`new Promise` is outside the subset');
         // any other constructor: an uninterpreted value built from its arguments (Error, a class, a library object)
         if (ts.isPropertyAccessExpression(e.expression)) expr(e.expression.expression);
@@ -390,7 +396,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (nul(e.left) || nul(e.right)) { expr(e.left); return expr(e.right); } // `x == null` is the absence test
       return v(e, 'loose-equality', 'use === and !==');
     }
-    if (op === K.InKeyword || op === K.InstanceOfKeyword) return v(e, 'in-instanceof', '`in` and `instanceof` read the prototype chain');
+    if (op === K.InKeyword || op === K.InstanceOfKeyword) { expr(e.left); if (op === K.InKeyword) expr(e.right); return; } // uninterpreted boolean tests (version 3)
     if (op === K.CommaToken) return v(e, 'comma', 'the comma operator is outside the subset');
     if (!(ARITH.has(op) || CMP.has(op) || EQ.has(op) || LOGIC.has(op))) return v(e, 'bitwise', 'bitwise and shift operators are outside the subset');
     expr(e.left); expr(e.right);
@@ -401,8 +407,9 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     if (CMP.has(op) && (isStr(lt) || isStr(rt)) && !(isAny(lt) || isAny(rt))) v(e, 'string-order', 'string ordering is outside the subset');
     if (EQ.has(op)) {
+      const nul = (x) => x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined');
       const prim = (t) => nonNull(t).every((x) => isPrim(x) || isAny(x));
-      if (!prim(lt) || !prim(rt)) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
+      if (!nul(e.left) && !nul(e.right) && (!prim(lt) || !prim(rt))) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
     }
   }
 
@@ -425,8 +432,9 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (f.questionDotToken) return v(e, 'optional-chain', 'optional calls are outside the subset');
       const recv = f.expression, name = f.name.text;
       const rt = tOf(recv);
+      if (recv.kind === K.ThisKeyword) { if (!currentClass) return v(e, 'this', '`this` outside a class method'); return argsOf(e); } // a method of this class, or a function-typed field
       if (ts.isIdentifier(recv) && recv.text === 'Math') {
-        if (name === 'random') return v(e, 'nondeterminism', 'Math.random is outside the subset');
+        void 0; // Math.random is a world transition (version 3)
         if (name === 'floor' || name === 'trunc') { floorDepth++; e.arguments.forEach(expr); floorDepth--; return; }
         return e.arguments.forEach(expr);
       }
@@ -483,6 +491,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   const argsOf = (e) => e.arguments.forEach((a) => ts.isSpreadElement(a) ? v(a, 'spread', 'spread arguments are outside the subset') : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
     const name = e.name.text;
+    if (e.expression.kind === K.ThisKeyword) return; // a field or method of the receiver: read through an accessor
     if (name === 'prototype' || name === '__proto__' || name === 'constructor') return v(e, 'prototype', `\`.${name}\` reaches the prototype chain`);
     const rt = tOf(e.expression);
     if (ts.isIdentifier(e.expression)) {
@@ -528,7 +537,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       // externals, except modules whose whole purpose is an effect: those cannot be a pure function of their arguments
       const spec = ts.isImportDeclaration(st) ? st.moduleSpecifier.text : (st.moduleReference.expression?.text ?? '');
       const typeOnly = ts.isImportDeclaration(st) && (st.importClause?.isTypeOnly || (st.importClause?.namedBindings && ts.isNamedImports(st.importClause.namedBindings) && st.importClause.namedBindings.elements.every((e) => e.isTypeOnly)));
-      if (!typeOnly && EFFECT_MODULES.test(spec)) v(st, 'import', `module \`${spec}\` is an effect (I/O, process, network); its values cannot be modelled as pure externals`);
+      void typeOnly; void spec; // version 3: every import is an external; a call into it is a world transition
       continue;
     }
     if (ts.isTypeAliasDeclaration(st) || ts.isInterfaceDeclaration(st) || ts.isEnumDeclaration(st)) continue; // types are read through the checker
@@ -546,7 +555,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (!u.isAsync && isPromiseT(rt)) v(st, 'promise', 'a Promise-returning function must be async');
       checkType(inner, u.typeNode ?? st);
       for (const p of u.params) {
-        if (p.initializer || p.dotDotDotToken) v(p, 'param-form', 'parameters have no defaults and no rest');
+        if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset');
+        if (p.initializer) expr(p.initializer);
         const names = []; bindingNames(p.name, names);
         checkType(tOf(p.name), p);
       }
@@ -562,7 +572,31 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     if (!inScope) continue;
     checkedDiagSpans.push(st);
-    if (ts.isClassDeclaration(st)) v(st, 'class', 'classes are outside the subset');
+    if (ts.isClassDeclaration(st)) {
+      if (!st.name) { v(st, 'class', 'an anonymous class is outside the subset'); continue; }
+      // a class that extends another: inherited members are read through opaque accessors; `super` stays refused
+      for (const u of classMethodUnits(st)) {
+        if (!overlaps(sf, u.node, ranges)) continue;
+        checkedDiagSpans.push(u.node);
+        current = u.node; currentFn = u.fn; currentClass = st;
+        if (u.fn.asteriskToken) v(u.node, 'generator', 'generators are outside the subset');
+        if (u.generics?.length) v(u.node, 'generic', 'generic methods are outside the subset');
+        const sig = checker.getSignatureFromDeclaration(u.fn);
+        const rt = sig.getReturnType();
+        const inner = isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;
+        if (!u.isAsync && isPromiseT(rt)) v(u.node, 'promise', 'a Promise-returning method must be async');
+        checkType(inner, u.typeNode ?? u.node);
+        for (const p of u.params) {
+          if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset');
+          if (p.initializer) expr(p.initializer);
+          const names = []; bindingNames(p.name, names);
+          checkType(tOf(p.name), p);
+        }
+        stmts(u.body.statements);
+        current = null; currentFn = null; currentClass = null;
+      }
+      continue;
+    }
     else v(st, 'toplevel-effect', 'code at module level runs on import; it is outside the subset');
   }
   // compiler diagnostics (strict mode) that fall inside a checked region; unresolved-module codes get their own rule
@@ -571,6 +605,12 @@ export function lintFile(file, ranges = null, opts = {}) {
     const hit = !ranges || checkedDiagSpans.some((n) => d.start >= n.getStart(sf) && d.start <= n.getEnd());
     if (!hit) continue;
     if (d.code === 7006 || d.code === 7031 || d.code === 7053) continue; // implicit any: opaque, admitted
+    if (d.code === 2339 || d.code === 2551) {
+      // a property missing on a type that lives in node_modules: the dependency's version may differ from the commit's; the read is opaque
+      const at = (function find(n) { if (d.start >= n.getStart(sf) && d.start < n.getEnd()) { let hit = n; ts.forEachChild(n, (c) => { const r = find(c); if (r) hit = r; }); return hit; } return null; })(sf);
+      let pa = at; while (pa && !ts.isPropertyAccessExpression(pa)) pa = pa.parent;
+      if (pa) { const rt = checker.getTypeAtLocation(pa.expression); const decl = rt.symbol?.declarations?.[0] ?? rt.aliasSymbol?.declarations?.[0]; if (decl && /node_modules/.test(decl.getSourceFile().fileName)) continue; }
+    }
     const rule = RESOLUTION_CODES.has(d.code) ? 'unresolved-module' : 'ts-strict';
     out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule, msg: `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}` });
   }

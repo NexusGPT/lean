@@ -1,8 +1,6 @@
-// expect: unbounded-loop
-export function spin(n: number): number {
+// expect: do-while
+export function countDown(n: number): number {
   let i = n;
-  while (i > 0) {
-    i = i - 1;
-  }
+  do { i = i - 1; } while (i > 0);
   return i;
 }

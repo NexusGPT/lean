@@ -180,8 +180,27 @@ export function topLevelFunctions(sf) {
   for (const st of sf.statements) {
     const u = unitOf(st);
     if (u) map.set(u.name, u);
+    for (const m of classMethodUnits(st)) map.set(m.name, m);
   }
   return map;
+}
+
+/**
+ * The methods of a top-level class as units named `Class.method`. A method is a function of an explicit receiver
+ * (`self`), its parameters and, when effectful, the world. Constructors, getters, setters and abstract or
+ * bodiless methods are not units.
+ */
+export function classMethodUnits(st) {
+  if (!ts.isClassDeclaration(st) || !st.name) return [];
+  const out = [];
+  for (const m of st.members) {
+    if (!ts.isMethodDeclaration(m) || !m.body || !m.name || !ts.isIdentifier(m.name)) continue;
+    const isStatic = !!m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword);
+    out.push({ name: `${st.name.text}.${m.name.text}`, node: m, fn: m, params: m.parameters, body: m.body, typeNode: m.type,
+      isAsync: !!m.modifiers?.some((x) => x.kind === ts.SyntaxKind.AsyncKeyword), isArrow: false, generics: m.typeParameters,
+      cls: st, className: st.name.text, method: m.name.text, isStatic });
+  }
+  return out;
 }
 
 export function isArrayLike(checker, type) {
@@ -220,6 +239,7 @@ export function originOf(checker, id, sf, current) {
   if (!decl) return { kind: 'global', sym: s, decl: null };
   if (decl.getSourceFile() !== sf) return { kind: decl.getSourceFile().isDeclarationFile ? 'global' : 'other', sym: s, decl };
   for (let p = decl; p; p = p.parent) if (p === current) return { kind: 'local', sym: s, decl };
+  if (ts.isMethodDeclaration(decl) && decl.parent && ts.isClassDeclaration(decl.parent) && decl.parent.parent === sf) return { kind: 'unit', sym: s, decl };
   if (ts.isFunctionDeclaration(decl) || (ts.isVariableDeclaration(decl) && decl.initializer && (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer)) && decl.parent?.parent && ts.isVariableStatement(decl.parent.parent) && decl.parent.parent.parent === sf)) return { kind: 'unit', sym: s, decl };
   if (ts.isVariableDeclaration(decl) && (ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const)) return { kind: 'module', sym: s, decl };
   if (ts.isTypeAliasDeclaration(decl) || ts.isInterfaceDeclaration(decl) || ts.isEnumDeclaration(decl)) return { kind: 'type', sym: s, decl };

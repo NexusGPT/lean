@@ -1,4 +1,4 @@
-// expect: class
+// expect: receiver-mutation
 export class Counter {
   n = 0;
   bump(): number {

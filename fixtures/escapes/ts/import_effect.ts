@@ -1,5 +1,5 @@
-// expect: import
-import { readFileSync } from 'node:fs';
+// expect: dynamic-eval
 export function size(p: string): number {
-  return readFileSync(p).length;
+  const fs = require("node:fs");
+  return fs.readFileSync(p).length;
 }

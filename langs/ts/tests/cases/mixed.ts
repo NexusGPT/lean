@@ -3,7 +3,7 @@ export function good(x: number): number {
 }
 
 export function bad(x: number): number {
-  return Math.random() + x;
+  return eval("x") + x;
 }
 
 export function alsoGood(x: number): number {
