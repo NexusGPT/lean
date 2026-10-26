@@ -11,6 +11,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   for (const re of regexes) { const xs = sampleRegex(re, rng, 2); if (xs) spool.push(...xs); } // strings that match the unit's own patterns // string literals of the unit: a comparison against a constant should go both ways
   let edge = startEdge; // the i-th generated input leans on the i-th boundary value: the caller passes i, so the first
   // inputs of a run walk the boundary list instead of every run starting at its first value
+  let leafIx = 0; // each leaf of one input leans on a different boundary, and the same leaf walks the list across inputs
   const pool = [...NUM_EDGE, ...literals]; // numbers already seen join the pool, so fields coincide
   function number() {
     const u = rng();
@@ -34,7 +35,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'set': return new Set(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => gen(spec.of, depth + 1, env, `${path}{${i}}`)));
       case 'map': return new Map(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => [gen(spec.key, depth + 1, env, `${path}<k${i}>`), gen(spec.value, depth + 1, env, `${path}<v${i}>`)]));
       case 'dict': { const o = {}; for (let i = 0, n = Math.floor(rng() * 4); i < n; i++) o[`k${i}`] = gen(spec.value, depth + 1, env, `${path}.k${i}`); return o; }
-      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3) continue; o[k] = gen(f.spec, depth + 1, env, `${path}.${k}`, leaf); } return o; }
+      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); } return o; }
       case 'union': return gen(spec.options[Math.floor(rng() * spec.options.length)], depth + 1, env, path);
       case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
@@ -45,8 +46,10 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'opaque': default: return env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {};
     }
   }
+  // an optional field that is present: its union without the absent option (absence was drawn already)
+  function present(u) { const opts = u.options.filter((o) => o.kind !== 'undefined'); return opts.length && opts.length < u.options.length ? (opts.length === 1 ? opts[0] : { kind: 'union', options: opts }) : u; }
   function pick(edges, random) {
-    if (edge < edges.length && rng() < 0.6) return edges[edge++ % edges.length];
+    if (rng() < 0.6) return edges[(edge + leafIx++) % edges.length];
     return random();
   }
   return { gen, rng };

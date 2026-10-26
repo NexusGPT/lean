@@ -47,13 +47,16 @@ function changedUnits(file, ranges, project) {
 }
 
 export async function prReport(opts) {
-  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set() } = opts;
+  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set(), filesRoot = null } = opts;
+  // filesRoot: a tree that mirrors the checkout (an export of it); the temporary files are written there, so a checkout
+  // that must stay untouched is only read through git
   const files = changedRanges(repo, base, head);
   const rows = []; const temps = [];
   try {
     for (const [rel, ranges] of files) {
       if (!CODE.test(rel) || SKIP.test(rel)) continue;
-      const abs = path.join(repo, rel);
+      const abs = path.join(filesRoot ?? repo, rel);
+      if (filesRoot && !fs.existsSync(path.dirname(abs))) fs.mkdirSync(path.dirname(abs), { recursive: true });
       if (head !== 'WORKTREE') { const txt = (() => { try { return git(repo, ['show', `${head}:${rel}`]); } catch { return null; } })(); if (txt === null) continue; }
       const headFile = head === 'WORKTREE' ? abs : (() => { const p = path.join(path.dirname(abs), `.lean_head_${path.basename(abs)}`); fs.writeFileSync(p, git(repo, ['show', `${head}:${rel}`])); temps.push(p); return p; })();
       if (!fs.existsSync(headFile)) continue;
@@ -108,7 +111,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
   if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--out report.md] [--json report.json]'); process.exit(2); }
   const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
-  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope });
+  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, filesRoot: opt('--files-root', null) });
   const md = markdown(rows, base, head);
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(rows, null, 1));
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);

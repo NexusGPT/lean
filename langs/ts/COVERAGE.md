@@ -40,7 +40,7 @@ reading no value model can give; the lint says what to write instead).
 | `===` on objects and arrays | | refused (`reference-equality`) | by design in a value model; the heap layer (section 4) would give it an address reading | by design until the heap layer |
 | `typeof` | 3,351 | uninterpreted `ext_typeof_Any` | exact by the static type when it is known (`"string"` for a `string`), uninterpreted on `any` | partial |
 | regular expressions | 1,950 | an opaque constant per literal, externals for `test`, `match`, `replace` | the same; an exact reading of regular expressions is a project of its own | by design |
-| `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` a transition; `new Date(x)` and `new Date()` pure values; methods uninterpreted | `new Date()` with no argument is a clock read, a transition; today two such reads are one constant | gap (small, a soundness hole: fix first) |
+| `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` and `new Date()` with no argument are transitions (dev 364eb1e); `new Date(x)` a pure value; methods uninterpreted | same | done (dev) |
 | `Math.*` | | `min`, `max`, `abs`, `floor`, `trunc` exact; the rest uninterpreted; `Math.random` a transition | `ceil`, `round`, `sign`, `pow` on integers exact | gap (small) |
 | `JSON.stringify`, `JSON.parse` | 1,714, 699 | uninterpreted functions of their argument | same (a serialisation is a function of its value) | done |
 | `Symbol`, `Symbol.iterator` | 37 | refused (`unsupported-syntax` on use) | a symbol is an opaque constant per declaration; iterator protocol is section 6 | gap (small) |
@@ -85,7 +85,7 @@ reading no value model can give; the lint says what to write instead).
 | destructuring, defaults in object patterns | 7,988, 241 | exact | same | done |
 | defaults in array patterns, rest patterns | 346 rest | refused | exact (`xs[i]` with a bound, `xs[i..]`) | gap (small) |
 | nested function value (arrow) as a callback to an array method | 14,867 nested values | exact lambda when pure | same | done |
-| callback with an effect inside (`xs.map(async (x) => await f(x))`, `forEach` with a call) | 2,209 async callbacks | opaque function value keyed by text; `forEach` refused | the loop reading: a callback to `map`/`filter`/`forEach` with effects is a loop over the sequence, each iteration a transition; `Promise.all(xs.map(async ...))` is the same loop | gap (the largest translate-pass failure class, 10 of 44) |
+| callback with an effect inside (`xs.map(async (x) => await f(x))`, `forEach` with a call) | 2,209 async callbacks | `forEach` with a sync arrow is a loop over the sequence (dev 364eb1e; a `return` ends one step); an async `forEach` callback is refused with the bug named (`forEach` does not wait); other callbacks with effects stay opaque values by text | `map`/`filter` with effects under `Promise.all` as a loop producing a sequence | partial |
 | closure that assigns an outer variable | 65 | refused (`closure-mutation`) | the loop reading above when the callback is a loop body; by design otherwise | partial |
 | closure that mutates an outer object | 1,831 | refused | the loop reading; the heap layer for the rest | gap |
 | nested function declaration | 215 | refused | a local lambda | gap (small) |
@@ -124,8 +124,8 @@ reading no value model can give; the lint says what to write instead).
 | `while` without a bound, `do..while`, labelled statements, `for..in` | 477 (some), 196, 10, 76 | opaque block / refused | `do..while` is a `while` with the body first; `for..in` over a dictionary is `for..of` over its keys; a label is a named exit of the helper | gap (small) |
 | `break`, `continue` | 578, 1,837 | exact | same | done |
 | `&&`, `\|\|` as values of one type | 6,855 | exact | same | done |
-| `&&`, `\|\|` as values of mixed types (`a && b.c`, `x \|\| "default"` with `x: number \| undefined`) | | refused by the translator (6 of 44 translate-pass failures) | exact as a conditional on truthiness with the union lifted to `Any` or to the common Dafny type | gap |
-| an effect inside a conditional branch (`cond ? await a() : b`) | | refused by the translator (4 of 44) | an `if` statement with the transition in one branch | gap (small) |
+| `&&`, `\|\|` as values of mixed types (`a && b.c`, `x \|\| "default"` with `x: number \| undefined`) | | exact: a conditional on truthiness with both sides lifted to the result type (dev); `??` lifted the same way | same | done (dev) |
+| an effect inside a conditional branch (`cond ? await a() : b`, `a && await b()`) | | exact: the branch's transitions happen only when it is taken; the world and the value come out as one pair (dev) | same | done (dev) |
 | `throw` outside a `try` | 5,417 | the function's result is `ext_throw_R(e)` | a thrown value is a second result channel: `Result<R, Any>`; the caller's `try` would then read it | partial (section 5, exceptions across calls) |
 | `try`/`catch` | 5,378 | exact: a fault flag on the world after each transition of the body; the catch path binds the fault value | same; plus: a same-file callee's `throw` should raise the caller's fault (today it is the callee's result) | partial |
 | `try`/`finally` without catch | 332 | opaque block | the `finally` statements run on both paths | gap (small) |
@@ -203,9 +203,9 @@ Of 316 lint-admitted units in 120 sampled nexus files, 272 translate (86.1 perce
 
 ## 11. Ranked next readings, by units unlocked
 
-1. Callbacks with effects as loops (`forEach`, `map` + `Promise.all`, async callbacks): 2,209 async callbacks and the top translate-pass class.
-2. `new Date()` without arguments as a clock read (a soundness hole today), then `super` calls (115 units).
-3. `&&`/`||` as mixed-type values and effects in conditional branches: 10 of 44 translate-pass failures.
+1. Callbacks with effects as loops: `forEach` done on dev; `map`/`filter` with effects under `Promise.all` next.
+2. `super` calls (115 units); the clock read of `new Date()` is done on dev.
+3. Done on dev: `&&`/`||` as mixed-type values, `??` lifting, effects in conditional branches and on the right of a logic operator.
 4. `.then` chains, `new Promise`, `Promise.all` as readings instead of transitions with opaque handlers: 1,086 + 368 + 607.
 5. Division and floats per unit (`/` 1,399 units, float literals 1,205): a real unit when it uses either.
 6. `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `for..in`, fall-through, `**`, bitwise on `bv32`: small each, about 2,000 units together.

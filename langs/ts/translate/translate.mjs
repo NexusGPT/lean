@@ -41,7 +41,8 @@ const RESERVED = new Set(['abstract', 'allocated', 'as', 'assert', 'assume', 'bo
   'ghost', 'if', 'import', 'in', 'include', 'inductive', 'int', 'invariant', 'is', 'iterator', 'label', 'lemma', 'map', 'match', 'method', 'modifies',
   'modify', 'module', 'multiset', 'nameonly', 'nat', 'new', 'newtype', 'null', 'object', 'old', 'opaque', 'predicate', 'print', 'provides', 'reads',
   'real', 'refines', 'requires', 'return', 'returns', 'reveal', 'seq', 'set', 'static', 'string', 'then', 'this', 'trait', 'true', 'type', 'unchanged',
-  'var', 'while', 'witness', 'yield', 'yields', 'result', 'Option', 'None', 'Some', 'value']);
+  'var', 'while', 'witness', 'yield', 'yields', 'result', 'Option', 'None', 'Some', 'value',
+  'fresh', 'twostate', 'ORDINAL', 'array', 'iset', 'imap', 'bv', 'least', 'greatest', 'continue', 'default', 'extern', 'exports', 'synthesize']);
 const dn = (name) => { let n = name.replace(/[^A-Za-z0-9_]/g, '_'); if (n.startsWith('_')) n = 'u' + n; return RESERVED.has(n) ? `${n}_` : n; };
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -264,6 +265,18 @@ export function translate(file, fnName, opts = {}) {
     let text;
     try { text = f(); } finally { const h = pending; pending = saved; text = h.length ? `${h.join('\n')}\n${text}` : text; }
     return text;
+  }
+  function captureParts(f) {
+    const saved = pending; pending = [];
+    let text, lines;
+    try { text = f(); } finally { lines = pending; pending = saved; }
+    return { lines, text };
+  }
+  // a branch with transitions inside, as one Dafny expression of type (World, T): the hoisted lines, then the pair
+  function branchWithWorld(f, d) {
+    const { lines, text } = captureParts(f);
+    const body = `(${WORLD}, ${outerParens(text)})`;
+    return lines.length ? `(\n${indentBlock(`${lines.join('\n')}\n${body}`)}\n)` : body;
   }
 
   // (effectful units are computed after the subset gate, below)
@@ -621,7 +634,16 @@ export function translate(file, fnName, opts = {}) {
     switch (n.kind) {
       case K.ParenthesizedExpression: return expr(n.expression, expected);
       case K.ConditionalExpression:
-        if (containsEffect(n.whenTrue) || containsEffect(n.whenFalse)) fail(n, 'an effect inside a conditional branch; use an if statement');
+        if (containsEffect(n.whenTrue) || containsEffect(n.whenFalse)) {
+          // `cond ? await a() : b`: the branch's transitions happen only when it is taken; the world and the value come out as one pair
+          if (!unitEffectful()) fail(n, 'internal: an effect in a conditional branch of a pure unit');
+          const tt = expected ?? typeOf(n); const d = isAny(tt) ? anyType() : dtype(tt, n);
+          const cond = outerParens(truthy(n.condition));
+          const a = branchWithWorld(() => expr(n.whenTrue, tt), d), b = branchWithWorld(() => expr(n.whenFalse, tt), d);
+          const tv = `t${tempCount++}_`;
+          pending.push(`var (${WORLD}, ${tv}) := if ${cond} then ${a} else ${b};`);
+          return tv;
+        }
         return `(if ${outerParens(truthy(n.condition))} then ${outerParens(expr(n.whenTrue, expected))} else ${outerParens(expr(n.whenFalse, expected))})`;
       default: return coerce(rawExpr(n, expected), n, expected);
     }
@@ -760,17 +782,33 @@ export function translate(file, fnName, opts = {}) {
       const lt = typeOf(n.left);
       if (!isOptional(lt)) return expr(n.left);
       const l = rawOperand(n.left);
+      const t = typeOf(n); const td = isAny(t) ? anyType() : dtype(t, n); const inner = isAny(baseOf(lt)) ? anyType() : dtype(baseOf(lt), n); const rtp = typeOf(n.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, n);
+      if (td !== inner || td !== rd) return `(if ${l}.Some? then ${convertD(`${l}.value`, inner, td)} else ${convertD(outerParens(expr(n.right)), rd, td)})`; // `x ?? "none"` with x: number | undefined: both sides lifted to the result type
       return `(if ${l}.Some? then ${l}.value else ${outerParens(expr(n.right, baseOf(lt)))})`;
     }
     if (op === K.AmpersandAmpersandToken || op === K.BarBarToken) {
-      if (containsEffect(n.right)) fail(n, 'an effect on the right of && or || runs conditionally; bind it to a const first');
       const t = typeOf(n);
+      if (containsEffect(n.right)) {
+        // `a && await b()`: the right side's transitions happen only when a is truthy (for &&) or falsy (for ||)
+        if (!unitEffectful()) fail(n, 'internal: an effect on the right of a logic operator in a pure unit');
+        const td = isAny(t) ? anyType() : dtype(t, n); const ld = isAny(typeOf(n.left)) ? anyType() : dtype(typeOf(n.left), n); const rd = isAny(typeOf(n.right)) ? anyType() : dtype(typeOf(n.right), n);
+        const isBool = !!(t.flags & TF.BooleanLike);
+        const cond = outerParens(truthy(n.left));
+        const left = isBool ? truthy(n.left) : convertD(outerParens(expr(n.left)), ld, td);
+        const right = branchWithWorld(() => (isBool ? truthy(n.right) : convertD(outerParens(expr(n.right)), rd, td)), td);
+        const tv = `t${tempCount++}_`;
+        pending.push(op === K.AmpersandAmpersandToken ? `var (${WORLD}, ${tv}) := if ${cond} then ${right} else (${WORLD}, ${left});` : `var (${WORLD}, ${tv}) := if ${cond} then (${WORLD}, ${left}) else ${right};`);
+        return tv;
+      }
       if (isNodeT(t) || isJsxLit(n.left) || isJsxLit(n.right)) return jsxChild(n); // `cond && <X/>`: a conditional element
       if (!(t.flags & TF.BooleanLike)) {
         // value-returning && / ||: a && b is b when a is truthy, else a. Translated when both sides share a Dafny type
-        const ld = dtype(typeOf(n.left), n), rd = dtype(typeOf(n.right), n), td = dtype(t, n);
+        const lt = typeOf(n.left), rtp = typeOf(n.right);
+        const ld = isAny(lt) ? anyType() : dtype(lt, n), rd = isAny(rtp) ? anyType() : dtype(rtp, n), td = isAny(t) ? anyType() : dtype(t, n);
         if (ld === td && rd === td) return op === K.AmpersandAmpersandToken ? `(if ${truthy(n.left)} then ${outerParens(expr(n.right))} else ${outerParens(expr(n.left))})` : `(if ${truthy(n.left)} then ${outerParens(expr(n.left))} else ${outerParens(expr(n.right))})`;
-        fail(n, '`&&` and `||` as values of mixed types are not translated; use a conditional expression');
+        // mixed types: each side is lifted to the type of the whole (an Option, an Any, a JsxNode)
+        const L = convertD(outerParens(expr(n.left)), ld, td), R = convertD(outerParens(expr(n.right)), rd, td);
+        return op === K.AmpersandAmpersandToken ? `(if ${truthy(n.left)} then ${R} else ${L})` : `(if ${truthy(n.left)} then ${L} else ${R})`;
       }
       const o = op === K.AmpersandAmpersandToken ? '&&' : '||';
       return `(${truthy(n.left)} ${o} ${truthy(n.right)})`;
