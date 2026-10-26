@@ -27,15 +27,15 @@ rules per package).
 | Dictionaries | `{ [k: string]: V }`, `Record<string, V>`; read by a computed string key; assigned by key on a local | `counts[key] = 1` |
 | Sets and maps | `Set<T>`, `Map<K, V>` (`has`, `get`, `size`, `keys`, `values`, `entries`, `add`/`set`/`delete` on a local) | `new Set(xs).has(x)` |
 | Optionals | `T \| undefined`, `T \| null`, `f?: T`; `x == null`, `x ?? y`, `x?.f`, `x?.m()`, `x!` | `x: number \| null` |
-| Declarations | `let`, `const`, `let x: T;` assigned before any read, destructuring patterns with defaults on object patterns | `const { a = 1, b } = r;` |
+| Declarations | `let`, `const`, `let x: T;` assigned before any read, `let x;` (an Option of its first assigned type, absent until then), destructuring patterns with defaults on object patterns, a nested `function f() {}` (a local function value) | `const { a = 1, b } = r;` |
 | Control | `if`/`else`, `switch` (each case ends in `return` or `break`), early `return`, `return` inside a loop, `break`, `continue`, `throw`, `void f()` | `switch (kind) { case "a": return 1; default: return 0; }` |
-| Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` with `// @decreases` | `for (let i = n - 1; i >= 0; i--)` |
-| Operators | `+ - * %`, `Math.floor(a / b)`, `Math.trunc(a / b)`, `Math.min`, `Math.max`, `Math.abs`, unary `-`, `! && \|\| ??`, `=== !==`, `< <= > >=`, `?:`, `typeof`, `instanceof`, `in`; `&&`/`\|\|` as values when both sides share a type | `Math.floor(n / 2)` |
+| Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` and `do..while` with `// @decreases`; `xs.forEach((x) => body)` with a sync arrow (a `return` ends one step); `await Promise.all(xs.map((x) => body))`, a loop collecting each iteration's value, its transitions in array order | `for (let i = n - 1; i >= 0; i--)` |
+| Operators | `+ - * %`, `Math.floor(a / b)`, `Math.trunc(a / b)`, `Math.min`, `Math.max`, `Math.abs`, unary `-`, `! && \|\| ??`, `=== !==`, `< <= > >=`, `?:`, `typeof`, `instanceof`, `in`; `&&`, `\|\|` and `??` as values of any types (both sides lifted to the result type); a transition inside a `?:` branch or on the right of `&&`/`\|\|` happens only when that side runs | `Math.floor(n / 2)` |
 | Assignment | `=`, `+=`, `-=`, `*=`, `++`, `--` on a local; `x.f = v`, `x.f += v`, `x.f++`, `xs[i] = v`, `x.f.push(v)` on a local or on a PARAMETER (a mutated parameter is an output of the function, returned beside the result; a caller that passed a name takes the new value back); `this.f = v`, `this.f += v`, `this.f++` on a field of the receiver | `user.tags.push(t);` |
 | Arrays at work | `xs[i]`, `.length`, `[a, ...xs]`, `push`/`unshift` on a local, `includes`, `indexOf`, `slice`, `concat`, `join`, `flat`, `at`, `some`, `every`, `find`, `findIndex`, `map`, `filter`, `flatMap`, `reduce`, with index callbacks | `xs.map((x, i) => x * i)` |
 | Strings | literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number | `n.toFixed(2)` |
-| Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with `k` a literal union or a string on a dictionary | `{ ...a, balance: a.balance + n }` |
+| Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with `k` a literal union or a string on a dictionary; `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
 | Calls | top-level functions of the same file, recursion included (a fuel bounds the unfolding; the theorem holds for every fuel), default arguments, a function-typed parameter or local, a local lambda `const f = (x) => ...` | `double(double(x))` |
 | Functions | `function` declarations, `const f = (...) => ...`, `async` functions (the result type is unwrapped), generic functions, same-file functions named as callback values | `xs.map(double)` |
 | JSX | an element is a value tree: `JsxElem(tag, props, children)`, `JsxText`, `JsxNothing` for `false`/`null`/`undefined`, `JsxList` for an array child; a handler attribute is an opaque function value keyed by its text; `cond && <X/>`, `cond ? <A/> : <B/>`, `{xs.map((x) => <li/>)}`, fragments, spread attributes (merged in order) | `<li key={i.id} onClick={() => pick(i.id)}>{i.label}</li>` |
@@ -53,7 +53,7 @@ transition the parent did not make, or makes it with another argument or in anot
 | `await f(x)`, `await p` | `await repo.find(id)` | `ext_await_Repo_find(wld, repo, id)` |
 | A method of a record, a class instance, an `any` | `date.getTime()` | `ext_Ext_Date_getTime(wld, date)` |
 | A method of a field of `this`, a method-call statement on any receiver | `this.items.push(x)` | a transition on the field's value |
-| A clock, randomness, the environment, a console, a fetch | `Date.now()`, `Math.random()`, `console.log(x)` | `ext_Date_now(wld)`, `ext_Math_random(wld)`, a transition of the console |
+| A clock, randomness, the environment, a console, a fetch | `Date.now()`, `new Date()`, `Math.random()`, `console.log(x)` | `ext_Date_now(wld)`, `ext_new_Date(wld)`, `ext_Math_random(wld)`, a transition of the console |
 | `new X(...)` for any `X` but `Set`, `Map`, `RegExp`, `Error`, `Date`, `URL`, `Array`, typed arrays | `new Client(cfg)` | `ext_new_Client(wld, cfg)` |
 | `.then`, `.catch`, `.finally` on a promise | `p.catch(() => null)` | a transition with the handler as an opaque function value |
 | `Object.keys`, `Object.entries`, `Object.values` on a record | `Object.keys(r)` | `ext_Object_keys(wld, r)` |
@@ -74,7 +74,7 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | `typeof x`, `x instanceof C`, `k in o` | `typeof x === "string"` | `ext_typeof_Any(x)`, `ext_instanceof_C(x)`, `ext_in(k, o)` |
 | `throw e` | `throw new Error("bad")` | the function's result is `ext_throw_R(e)` |
 | Tagged templates | ``sql`select ${id}` `` | `ext_tag_sql_1(["select ", ""], id)` |
-| `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first) |
+| `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first); an untyped `let x;` is `None` of the Option of its first assigned type, every narrowed read takes `.value` |
 
 ## What is a fault
 
@@ -98,26 +98,26 @@ one, never proved equal and never proved different (the execution lane decides i
 | Rule | Refused | Example that is refused |
 |---|---|---|
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
+| `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |
 | `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |
 | `class`, `inheritance` | `super`, a class that extends another | `class B extends A {}` |
 | `receiver-mutation` | assignment through a field of a field of `this` | `this.stats.n += 1` |
 | `global-mutation`, `global-read`, `toplevel-state`, `toplevel-effect` | module `let`/`var`, assignment to anything the function does not own, code at module level that runs on import | `counter = counter + 1` |
 | `alias-mutation` | changing a value through a local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`) | `const t = user.tags; t.push(1)` |
 | `param-assign`, `param-mutation`, `property-assign`, `index-assign`, `in-place-mutation` | rebinding a parameter (`p = v`); a field or slot of what the function does not own (a module object, a cast, a value from the world); `sort`/`reverse` on a named array | `(x as any).f = 1` |
-| `closure-mutation`, `foreach` | a callback changing a variable declared outside it; `forEach` | `xs.forEach((x) => { n += x; })` |
+| `closure-mutation`, `foreach` | a callback (not a loop body) changing a variable declared outside it; `forEach` with an async callback, which the function does not wait for | `xs.forEach(async (x) => { await f(x); })` |
 | `opaque-mutation` | a mutating method on an opaque value used as a value, or as a statement when a field of the same receiver is read later | `const n = list.push(x)` |
 | `function-value` | a function value as a bare expression (not a local const, a record field or a call argument) | `return (x) => x + 1` |
-| `nested-function` | a nested `function` declaration | `function inner() {}` inside |
 | `division` | bare `/` on numbers (write `Math.floor(a / b)`), `/=`, `%=`, `**` | `x / 2` |
 | `loose-equality` | `==` and `!=` except against `null`/`undefined` | `a == b` |
 | `reference-equality` | `===` on arrays and records | `xs === ys` |
 | `string-order` | ordering strings | `a < b` on strings |
-| `unbounded-loop`, `do-while`, `for-in`, `label`, `loop-form` | `while` without `// @decreases`; any other loop form | `do { } while (c)` |
+| `for-in`, `label`, `loop-form` | `for..in`, a labelled statement, any other loop form (a `while` or `do..while` without `// @decreases` is an opaque block, not a refusal) | `for (const k in o)` |
 | `optional-chain` | optional calls on a function value `f?.()` | `cb?.()` |
 | `async`, `promise` | `await` outside an async function, `for await`, `new Promise`, a Promise-returning function that is not async | `new Promise(r => ...)` |
 | `generator` | generators | `function* g() {}` |
 | `union-type` | a union the translator cannot name (two different arrays) | `number[] \| string[]` |
-| `destructuring`, `param-form` | defaults in array patterns, rest patterns, rest parameters | `const [a = 0] = xs` |
+| `destructuring`, `param-form`, `uninitialised` | defaults in array patterns, rest patterns, rest parameters, a pattern with no initial value | `const [a = 0] = xs` |
 | `bitwise`, `unary-coercion`, `update-expression`, `assignment-expression`, `comma` | `& \| ^ ~ << >>`, unary `+`, `x++` inside an expression, `a = b` inside an expression, `,` | `+x` |
 | `callback-form` | a callback that is not an arrow function, a same-file function or a local function value | `xs.map(function (x) { return x; })` |
 | `spread` | spread outside array and record literals, or of a value that is not an array or a set | `f(...args)` |

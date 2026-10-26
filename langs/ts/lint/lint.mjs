@@ -529,6 +529,13 @@ export function lintFile(file, ranges = null, opts = {}) {
         return argsOf(e);
       }
       if (parts.every((t) => isArrayLike(checker, t)) && ARRAY_METHODS.has(name)) {
+        if (name === 'map' && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0]) && e.arguments[0].parameters.length === 1 && ts.isIdentifier(e.arguments[0].parameters[0].name) && underPromiseAll(e)) {
+          const cb = e.arguments[0];
+          checkType(tOf(cb.parameters[0].name), cb.parameters[0]);
+          loopDepth++; forEachDepth++;
+          try { if (ts.isBlock(cb.body)) stmts(cb.body.statements); else expr(cb.body); } finally { loopDepth--; forEachDepth--; }
+          return;
+        }
         if (name === 'forEach') {
           // `xs.forEach((x) => body)` is a loop over xs: the body is checked as a loop body (an outer local may change)
           const cb = e.arguments[0]; const r0 = e.expression.expression; const rt0 = tOf(r0);
@@ -571,6 +578,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     return v(e, 'unsupported-call', 'calls through computed callees are outside the subset');
   }
+  // `.map(cb)` directly under an awaited `Promise.all(...)`: the callback is a loop body (its returns are collected values)
+  const underPromiseAll = (call) => { let p = call.parent; while (p && ts.isParenthesizedExpression(p)) p = p.parent; if (!(p && ts.isCallExpression(p) && p.arguments[0] === call && ts.isPropertyAccessExpression(p.expression) && p.expression.name.text === 'all' && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Promise')) return false; let q = p.parent; while (q && ts.isParenthesizedExpression(q)) q = q.parent; return !!(q && ts.isAwaitExpression(q)); };
   function callback(a, arity) {
     if (ts.isIdentifier(a)) {
       // a named callback: a same-file function (not async, not a method) or a local function value

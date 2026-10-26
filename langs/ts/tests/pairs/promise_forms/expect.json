@@ -1,0 +1,6 @@
+{
+ "scope": ["totals_sum_all", "totals_pair", "totals_touch", "totals_labels"],
+ "equal": { "totals_sum_all": false, "totals_pair": true, "totals_touch": false, "totals_labels": true },
+ "why": "sumAll doubles each value in the candidate; touch writes 2 instead of 1 inside the Promise.all map; pair (a literal Promise.all) and labels (a map with returns) are untouched",
+ "b": { "Totals.sumAll": "WITNESS", "Totals.pair": "PASS-bounded", "Totals.touch": "WITNESS", "Totals.labels": "PASS-bounded" }
+}

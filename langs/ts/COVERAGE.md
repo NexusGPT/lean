@@ -141,7 +141,7 @@ reading no value model can give; the lint says what to write instead).
 | `await` of a held promise | | a transition on the value | same | done |
 | `.then`/`.catch`/`.finally` chains | 1,086 | a transition with the handler as an opaque value | the handler's body is a continuation: `p.then(f)` is `await p` followed by `f`; readable when `f` is a lambda in the subset | gap |
 | `new Promise((resolve, reject) => ...)` | 368 | refused | a transition whose result is what `resolve` was called with: the executor body is read with `resolve(v)` as the result | gap (small) |
-| `Promise.all`, `Promise.allSettled`, `Promise.race` | 607, 57, 38 | an external call with the array argument | `Promise.all(xs)` is the sequence of the awaited values in order (the transitions happen in array order, a stated reading); `race` is a transition with an uninterpreted choice | gap |
+| `Promise.all` over a map, `Promise.all` of a literal | 607 | exact on dev: `await Promise.all(xs.map(cb))` is a loop over xs collecting each iteration's value (sync or async callback; the transitions start in array order, the stated reading); `await Promise.all([a(), b()])` awaits each element in order, a tuple or a sequence | `allSettled` (57) and `race` (38) stay transitions | done (dev) |
 | fire-and-forget `void p`, unawaited calls | | the call is a transition | same | done |
 | timers `setTimeout`, `setInterval` | 450, 84 | transitions; lane B records them as pending work | same | done |
 | `for await`, async iterators, generators, `yield` | 225, 62, 201 | refused (`async`, `generator`) | a generator is a function returning a sequence (bounded by a fuel); `for await` over an async iterable is a loop of transitions | gap |
@@ -206,7 +206,7 @@ Of 316 lint-admitted units in 120 sampled nexus files, 272 translate (86.1 perce
 1. Callbacks with effects as loops: `forEach` done on dev; `map`/`filter` with effects under `Promise.all` next.
 2. `super` calls (115 units); the clock read of `new Date()` is done on dev.
 3. Done on dev: `&&`/`||` as mixed-type values, `??` lifting, effects in conditional branches and on the right of a logic operator.
-4. `.then` chains, `new Promise`, `Promise.all` as readings instead of transitions with opaque handlers: 1,086 + 368 + 607.
+4. `.then` chains and `new Promise` as readings instead of transitions with opaque handlers: 1,086 + 368; `Promise.all` is done on dev.
 5. Division and floats per unit (`/` 1,399 units, float literals 1,205): a real unit when it uses either.
 6. `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `for..in`, fall-through, `**`, bitwise on `bv32`: small each, about 2,000 units together.
 7. Exceptions across same-file calls (`Result` channel) and `try`/`finally`.

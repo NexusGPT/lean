@@ -167,10 +167,25 @@ export function translate(file, fnName, opts = {}) {
     if (!(isArrayLike(checker, recvT) || isSetT(recvT) || isMapT(recvT) || isAny(recvT))) return null;
     return { call: e, cb };
   };
-  const isLoopCallback = (x) => !!(x.parent && ts.isCallExpression(x.parent) && x.parent.arguments[0] === x && x.parent.parent && forEachShape(x.parent.parent));
-  function fakeForOf(st, fe) {
+  // `await Promise.all(xs.map((x) => body))`, sync or async callback: a loop over xs whose iterations happen in array order,
+  // each one's value collected into a sequence (the stated reading of Promise.all over a map: the transitions start in order)
+  const promiseAllMapShape = (e0) => {
+    let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isAwaitExpression(e)) return null; e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.expression.name.text !== 'all' || !ts.isIdentifier(e.expression.expression) || e.expression.expression.text !== 'Promise' || e.arguments.length !== 1) return null;
+    let m = e.arguments[0]; while (ts.isParenthesizedExpression(m)) m = m.expression;
+    if (!ts.isCallExpression(m) || !ts.isPropertyAccessExpression(m.expression) || m.expression.name.text !== 'map' || m.arguments.length !== 1) return null;
+    const cb = m.arguments[0];
+    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name)) return null;
+    let recvT; try { recvT = baseOf(typeOf(m.expression.expression)); } catch { return null; }
+    if (!(isArrayLike(checker, recvT) || isAny(recvT))) return null;
+    return { call: m, cb, all: e };
+  };
+  const isLoopCallback = (x) => !!(x.parent && ts.isCallExpression(x.parent) && x.parent.arguments[0] === x && x.parent.parent && (forEachShape(x.parent.parent) || (() => { let p = x.parent.parent; while (p && !ts.isStatement(p)) { if (promiseAllMapShape(p)) return true; p = p.parent; } return false; })()));
+  function fakeForOf(st, fe, collect = null) {
     const { call, cb } = fe; const name = cb.parameters[0].name;
-    const body = ts.isBlock(cb.body) ? cb.body : { kind: K.ExpressionStatement, expression: cb.body, parent: cb, pos: cb.body.pos, end: cb.body.end, getStart: () => cb.body.getStart(sf), getEnd: () => cb.body.getEnd(), getText: () => cb.body.getText(sf), getFullStart: () => cb.body.getFullStart() };
+    if (collect) { const f = fakeForOf(st, fe); f.__collect = collect; return f; }
+    const body = ts.isBlock(cb.body) ? cb.body : { kind: collect ? K.ReturnStatement : K.ExpressionStatement, expression: cb.body, parent: cb, pos: cb.body.pos, end: cb.body.end, getStart: () => cb.body.getStart(sf), getEnd: () => cb.body.getEnd(), getText: () => cb.body.getText(sf), getFullStart: () => cb.body.getFullStart() };
     const decl = { kind: K.VariableDeclaration, name, pos: name.pos, end: name.end, parent: null };
     const list = { kind: K.VariableDeclarationList, declarations: [decl], flags: ts.NodeFlags.Const, pos: name.pos, end: name.end, parent: null };
     decl.parent = list;
@@ -760,6 +775,16 @@ export function translate(file, fnName, opts = {}) {
   }
   function awaitExpr(n) {
     let inner = n.expression; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
+    if (ts.isCallExpression(inner) && ts.isPropertyAccessExpression(inner.expression) && ts.isIdentifier(inner.expression.expression) && inner.expression.expression.text === 'Promise' && inner.expression.name.text === 'all' && inner.arguments.length === 1) {
+      let arr = inner.arguments[0]; while (ts.isParenthesizedExpression(arr)) arr = arr.expression;
+      if (ts.isArrayLiteralExpression(arr) && arr.elements.every((el) => !ts.isSpreadElement(el))) {
+        // the awaited values in array order: each element is awaited as a transition, the result is the sequence
+        const vals = arr.elements.map((el) => { let x = el; while (ts.isParenthesizedExpression(x)) x = x.expression; if (ts.isCallExpression(x)) return outerParens(call(x, true)); if (!unitEffectful()) fail(n, 'internal: await in a unit not marked effectful'); addPrelude('World', 'type World'); const pt = typeOf(x); const aw = checker.getAwaitedType ? checker.getAwaitedType(pt) : null; const rd = aw ? (isAny(aw) ? anyType() : dtype(aw, n)) : anyType(); const pd = (() => { try { return dtype(pt, n); } catch { return anyType(); } })(); return hoist(`${external('await_value', ['World', pd], `(World, ${rd})`)}(${WORLD}, ${expr(x)})`, rd); });
+        const awAll = checker.getAwaitedType ? checker.getAwaitedType(typeOf(inner)) : null;
+        if (awAll && checker.isTupleType(baseOf(awAll)) && vals.length >= 2 && !dtype(baseOf(awAll), n).startsWith('seq<')) { const tv = `t${tempCount++}_`; pending.push(`var ${tv} := (${vals.join(', ')});`); return tv; } // a tuple when the elements differ in type, bound to a name (a bare tuple loses its parentheses in a pattern)
+        return `[${vals.join(', ')}]`;
+      }
+    }
     if (!ts.isCallExpression(inner)) {
       // awaiting a held promise: a transition of the world on that value, returning the awaited type
       if (!unitEffectful()) fail(n, 'internal: await in a unit not marked effectful');
@@ -1454,6 +1479,7 @@ export function translate(file, fnName, opts = {}) {
   const insideNode = (decl, node) => decl.pos >= node.pos && decl.end <= node.end;
   function assignedOutside(node) {
     const names = [];
+    if (node.__collect) names.push({ name: node.__collect.name, sym: node.__collect.sym, node: node.__collect.node }); // the collector of a Promise.all over a map
     if (unitEffectful() && containsEffect(node)) names.push({ name: WORLD, sym: null, node, synthetic: true, d: 'World' });
     const note = (id) => {
       if (names.some((m) => m.name === id.text)) return;
@@ -1842,11 +1868,24 @@ export function translate(file, fnName, opts = {}) {
       case K.EmptyStatement: return more();
       case K.ReturnStatement: {
         const top = loopCtx[loopCtx.length - 1];
+        if (top && top.forEach && top.collect) return capture(() => { const v = s.expression ? outerParens(expr(s.expression, top.collect.elT)) : 'Unit'; const c = dn(top.collect.name); return `var ${c} := ${c} + [${v}];\n${top.cont()}`; }); // a return inside a collected map appends the value
         if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
         return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
       }
       case K.ThrowStatement: { const t = tryOf(s); if (t) return capture(() => catchPath(t, u, expr(s.expression, anyTarget()))); return capture(() => { const R = dtype(retType(u), s); const code = `${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`; return retIn(wrapRet(code)); }); }
       case K.VariableStatement: {
+        const d0 = s.declarationList.declarations[0];
+        const pam = s.declarationList.declarations.length === 1 && ts.isIdentifier(d0.name) && d0.initializer ? promiseAllMapShape(d0.initializer) : null;
+        if (pam) {
+          // the collector starts empty; the loop appends each iteration's value; the rest of the unit sees the sequence
+          const t = typeOf(d0.name); const D = isAny(t) ? anyType() : dtype(t, d0);
+          const elT = (() => { const aw = checker.getAwaitedType ? checker.getAwaitedType(typeOf(pam.all.expression)) : null; const base = aw ? baseOf(aw) : null; return base && isArrayLike(checker, base) ? checker.getTypeArguments(base)[0] : null; })();
+          const sym = checker.getSymbolAtLocation(d0.name);
+          const fake = fakeForOf(s, pam, { name: d0.name.text, sym, node: d0.name, elT });
+          let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; });
+          const bodyForm = ts.isBlock(pam.cb.body) ? body : body; // an expression body is a return of that expression (handled by the fake statement)
+          return `var ${dn(d0.name.text)}: ${D} := [];\n${h.trim() ? h.trim() + '\n' : ''}${bodyForm}`;
+        }
         const out = [];
         for (const d of s.declarationList.declarations) {
           out.push(capture(() => {
@@ -1866,6 +1905,8 @@ export function translate(file, fnName, opts = {}) {
         return tryOf(s) && containsEffect(s) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
       }
       case K.ExpressionStatement: {
+        const pam0 = promiseAllMapShape(s.expression);
+        if (pam0) { const fake = fakeForOf(s, pam0); let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body; }
         const fe = forEachShape(s);
         if (fe) { const fake = fakeForOf(s, fe); let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body; }
         const line = capture(() => {
@@ -2035,7 +2076,7 @@ export function translate(file, fnName, opts = {}) {
     }
     const next = () => `${hn}(${[...leadArgsNext, ...constArgs, ...mNames].join(', ')})`;
     const exitVal = () => (returns ? tupleOf(['None', ...mNames]) : tupleOf(mNames));
-    loopCtx.push({ cont: next, brk: exitVal, forEach: !!s.__forEach, ret: (code) => (returns ? tupleOf([`Some(${code})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
+    loopCtx.push({ cont: next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ?? null, ret: (code) => (returns ? tupleOf([`Some(${code})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
     try { bodyE = tr(flatten(s.statement), next, u); } finally { loopCtx.pop(); }
     const params = [...lead, ...constParams, ...stateParams];
