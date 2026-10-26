@@ -69,9 +69,10 @@ transition the parent did not make, or makes it with another argument or in anot
 | A method of a field of `this`, a method-call statement on any receiver | `this.items.push(x)` | a transition on the field's value |
 | A clock, randomness, the environment, a console, a fetch | `Date.now()`, `new Date()`, `Math.random()`, `console.log(x)` | `ext_Date_now(wld)`, `ext_new_Date(wld)`, `ext_Math_random(wld)`, a transition of the console |
 | `new X(...)` for any `X` but `Set`, `Map`, `Error`, `Date`, `Array`, typed arrays | `new Client(cfg)` | `ext_new_Client(wld, cfg)` |
-| consumed `.then`, `.catch`, `.finally` on a native promise | `return p.then(r => r.value)` in an async unit | inline arrow continuation or named same-file/imported call; catch reads and clears the fault; finally runs on both paths and preserves the outcome unless it faults |
+| consumed `.then`, `.catch`, `.finally` on a native promise | `return p.then(r => r.value)` in an async unit | inline arrow continuation or named same-file/imported call; catch reads and clears the fault; finally runs on both paths and preserves the outcome unless it faults; other forms keep the outside-call reading with opaque handlers |
 | consumed `new Promise` | `await new Promise<number>(resolve => resolve(n))` | synchronous terminal settlement bodies return the resolve value or raise the reject fault; a single outside callback bridge is opaque by text, captures and callees |
-| consumed `Promise.resolve`, `Promise.reject` | `return Promise.resolve(n)` | plain value/adoption, or raise the world fault |
+| consumed `Promise.resolve`, `Promise.reject` | `return Promise.resolve(n)` | plain value/adoption, or raise the world fault when eligible; otherwise the existing outside call |
+| other promise calls | stored/dangling/loop chains; `Promise.race`, `Promise.allSettled`, `Promise.any`; stored `Promise.resolve` | outside transition on the receiver and supplied values; handlers are opaque values by text, with captures and dependencies retained |
 | Unknown record enumeration | `Object.keys/values/entries(r)` for a parameter, escaped or mutated record | source-sensitive transition; own keys/order cannot be recovered from the structural datatype |
 
 ## What is uninterpreted
@@ -170,10 +171,9 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `async-callback`, `promise-all-order` | async map/flatMap without direct awaited Promise.all; multiple suspensions or observable work after suspension | `xs.map(async x => { await f(x); log(x); })` |
 | `callback-control`, `callback-result` | callback try/throw or return from an inner loop; effectful type guards, mixed flatMap results or PromiseLike callbacks | `xs.map(x => { for (;;) return svc.get(x); })` |
 | `async`, `promise` | `await` outside an async function, a Promise-returning function that is not async | `function f() { return Promise.resolve(1); }` |
-| `promise-pending` | dangling or stored chains/executors, new promise forms inside loops | `p.then(f);` |
+| `promise-pending` | unconsumed or loop-contained constructors, which had no earlier reading | `new Promise(resolve => resolve(1));` |
 | `promise-unsettled`, `promise-executor-escape`, `promise-executor` | missing settlement paths, statements after settlement, saved/passed resolvers, nonterminal settlement or async executors | `new Promise(resolve => { if (ok) resolve(1); })` |
-| `promise-handler`, `promise-thenable` | unsupported handler control forms or parameter shapes, mutating/throwing named handlers, unknown/custom thenable adoption | `p.then(r => { for (;;) {} })` |
-| `promise-combinator` | `Promise.race`, `Promise.allSettled`, `Promise.any` | `await Promise.race(xs)` |
+| `promise-handler`, `promise-thenable` | unsupported bodies or unknown/custom thenable adoption in newly admitted executors; existing chains fall back to opaque calls | `await new Promise(resolve => resolve(unknownValue))` |
 | `generator`, `generator-effect`, `generator-bound`, `generator-use` | nested generators; effectful sync producers, mutable captures/yields, unbounded sync loops, sent values or escaping pure iterators | `function* g() { while (true) yield 1; }` |
 | `iterator-protocol` | custom Symbol.iterator / Symbol.asyncIterator methods in object literals | `{ [Symbol.iterator]() { ... } }` |
 | `union-type` | a union the translator cannot name (two different arrays) | `number[] \| string[]` |

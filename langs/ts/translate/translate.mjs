@@ -113,7 +113,8 @@ export function translate(file, fnName, opts = {}) {
   else for (const u of fns.values()) collect(u);
 
   // ----- the subset gate: refuse before translating -----
-  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  const promiseReadings = new Set();
+  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
   const report = { lintedOut: [], translated: [], failed: [] }; // --tolerant: per-unit outcomes for a census
   const failedUnits = new Set();
   let gate = gate0;
@@ -1403,6 +1404,32 @@ export function translate(file, fnName, opts = {}) {
     if (isMapT(t)) fail(e, 'spreading a map is not translated');
     return expr(e);
   }
+  const exactPromiseForm = (n) => promiseReadings.has(`${unparen(n).pos}:${unparen(n).end}`) ? promiseForm(unparen(n), checker, sf) : null;
+  // an opaque promise call evaluates its receiver and arguments, then records one outside transition
+  function promiseOutsideCall(n, form, awaited) {
+    if (!unitEffectful()) fail(n, 'an opaque promise call requires an effectful unit');
+    const R = dtype(promiseResultType(n), n), types = [], values = [];
+    if (form.source) { types.push(dtype(typeOf(form.source), form.source)); values.push(expr(form.source)); }
+    for (const a of n.arguments) {
+      types.push(dtype(typeOf(a), a));
+      values.push(ts.isArrowFunction(a) || ts.isFunctionExpression(a) ? opaqueFn(a) : expr(a));
+    }
+    // captures and same-file dependencies remain observable when a handler body is opaque
+    const free = freeVars(n, null), calls = new Set(); let usesSelf = false;
+    const scan = (x) => {
+      if (x.kind === K.ThisKeyword) usesSelf = true;
+      if (ts.isIdentifier(x) && originOf(checker, x, sf, currentUnit?.node ?? null).kind === 'unit' && fns.has(x.text)) calls.add(x.text);
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
+      ts.forEachChild(x, scan);
+    };
+    scan(n);
+    if (usesSelf) { types.push(selfType(currentUnit)); values.push(SELF); }
+    for (const v of free) { types.push(dtype(symType(v.sym, v.node), v.node)); values.push(dn(v.name)); }
+    const callees = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), ''));
+    const name = external(`${awaited ? 'await_' : ''}promise_${form.kind}_${mangle(R)}${callees.length ? '_calls_' + callees.join('_') : ''}`, ['World', ...types], `(World, ${R})`);
+    if (calls.size) prelude.set(name, `${prelude.get(name)}\n// CALLS: ${callees.join(',')}`);
+    return hoist(`${name}(${[WORLD, ...values].join(', ')})`, R);
+  }
   // promise reactions are continuations of the settled source, sharing the exact try fault channel
   const promiseResultType = (n) => checker.getAwaitedType(typeOf(n)) ?? typeOf(n);
   const promiseFailure = (R) => { const P = faultPreds(); return `${external(`throw_${mangle(R)}`, [anyType()], R)}(${P.value}(${WORLD}))`; };
@@ -1414,7 +1441,7 @@ export function translate(file, fnName, opts = {}) {
     return convertD('Unit', 'Unit', R);
   }
   function promiseValueCode(n, rt) {
-    if (!isPromiseT(typeOf(n)) && !promiseForm(n, checker, sf)) {
+    if (!isPromiseT(typeOf(n)) && !exactPromiseForm(n)) {
       const code = expr(n, rt);
       return isNullish(typeOf(n)) ? promiseAbsent(rt, n) : code;
     }
@@ -1422,7 +1449,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function settledPromise(n) {
     n = unparen(n);
-    const form = promiseForm(n, checker, sf);
+    const form = exactPromiseForm(n);
     if (form) return promiseExpression(n, form);
     if (!isPromiseT(typeOf(n))) return expr(n);
     if (ts.isCallExpression(n)) return call(n, true);
@@ -1560,13 +1587,13 @@ export function translate(file, fnName, opts = {}) {
     return hoist(`(var ${old} := ${WORLD}; var ${was} := ${P.faulted}(${old}); var ${error} := ${P.value}(${old});\nvar ${WORLD} := if ${was} then ${P.clear}(${WORLD}) else ${WORLD};\nvar (${WORLD}, ignored${tempCount++}_) := (${body});\nif ${P.faulted}(${WORLD}) then ${promisePair(promiseFailure(R))} else (var ${WORLD} := if ${was} then ${P.raise}(${WORLD}, ${error}) else ${WORLD}; ${promisePair(convertD(source, D, R))}))`, R);
   }
   // an async await exits on a fault before its following statements, just like a promise reaction
-  const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || promiseForm(x, checker, sf)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; };
+  const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; };
   const asyncFailure = (u) => retIn(wrapRet(promiseFailure(dtype(retType(u), u.node))));
   function awaitExpr(n) {
     const shape = promiseAllMapShape(n);
     if (shape) return callbackValue(n, shape);
     let inner = n.expression; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
-    const form = promiseForm(inner, checker, sf);
+    const form = exactPromiseForm(inner);
     if (form) return promiseExpression(inner, form);
     if (ts.isCallExpression(inner) && ts.isPropertyAccessExpression(inner.expression) && ts.isIdentifier(inner.expression.expression) && inner.expression.expression.text === 'Promise' && inner.expression.name.text === 'all' && inner.arguments.length === 1) {
       let arr = inner.arguments[0]; while (ts.isParenthesizedExpression(arr)) arr = arr.expression;
@@ -2228,7 +2255,7 @@ export function translate(file, fnName, opts = {}) {
     return `${expr(n.expression)}[${index(n.argumentExpression)}]`;
   }
   function newExpr(n) {
-    const form = promiseForm(n, checker, sf);
+    const form = exactPromiseForm(n);
     if (form) return promiseExpression(n, form);
     const name = n.expression.getText(sf);
     const t = typeOf(n);
@@ -2420,8 +2447,10 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Array' && n.expression.name.text === 'from' && n.arguments.length === 1 && generators.pureCall(n.arguments[0]) && originOf(checker, n.expression.expression, sf, currentUnit?.node ?? null).kind === 'global') return seqOf(n.arguments[0]);
     const hook = exactReactHook(checker, n);
     if (hook) return convert(expr(hook.value), typeOf(hook.value), typeOf(n), n);
-    const form = promiseForm(n, checker, sf);
+    const form = exactPromiseForm(n);
     if (form) return promiseExpression(n, form);
+    const outside = promiseForm(n, checker, sf);
+    if (outside) return promiseOutsideCall(n, outside, awaited);
     const f = n.expression;
     if (moduleLoader(checker, n, sf, currentUnit?.node)) {
       addPrelude('World', 'type World'); addPrelude('Ext_Module', 'type Ext_Module');

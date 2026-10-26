@@ -16,10 +16,6 @@ theorem: wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-the
 $ dafny verify --verification-time-limit 30 /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/validation/theorem.dfy
 Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 260 (  0.0)
 
-Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 271 (  0.0)
-
-Prover error: Could not parse any models
-
 Prover error: Could not parse any models
 
 Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 219 (  0.0)
@@ -27,6 +23,14 @@ Prover error: Model parsing error: Invalid model: invalid element name 0.0, at l
 Prover error: Could not parse any models
 
 Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 247 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 271 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 354 (  0.0)
 
 Prover error: Could not parse any models
 
@@ -39,10 +43,6 @@ results-bench/validation/theorem.dfy(401,39): Related location: this is the post
     |
 401 |   ensures changed_parent(wld, svc, id) == changed_candidate(wld, svc, id)
     |                                        ^^
-
-Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 354 (  0.0)
-
-Prover error: Could not parse any models
 
 results-bench/validation/theorem.dfy(408,0): Error: a postcondition could not be proved on this return path
     |
@@ -84,11 +84,15 @@ results-bench/validation/theorem.dfy(425,41): Related location: this is the post
 425 |   ensures finalised_parent(wld, svc, id) == finalised_candidate(wld, svc, id)
     |                                          ^^
 
-Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 277 (  0.0)
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 302 (  0.0)
 
 Prover error: Could not parse any models
 
-Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 302 (  0.0)
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 291 (  0.0)
+
+Prover error: Could not parse any models
+
+Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 277 (  0.0)
 
 Prover error: Could not parse any models
 
@@ -111,10 +115,6 @@ results-bench/validation/theorem.dfy(485,32): Related location: this is the post
     |
 485 |   ensures thrown_parent(wld, n) == thrown_candidate(wld, n)
     |                                 ^^
-
-Prover error: Model parsing error: Invalid model: invalid element name 0.0, at line 291 (  0.0)
-
-Prover error: Could not parse any models
 
 results-bench/validation/theorem.dfy(492,0): Error: a postcondition could not be proved on this return path
     |
@@ -198,42 +198,13 @@ $ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-la
 /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_after_settlement.ts:2:118  unresolved-module  TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.
 2 violation(s)
 
-$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_allsettled.ts --no-project
-/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_allsettled.ts:2:76  promise-combinator  Promise.allSettled needs completion order or per-element outcomes; use a sequential await
-1 violation(s)
-
-$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_any.ts --no-project
-/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_any.ts:2:73  promise-combinator  Promise.any needs completion order or per-element outcomes; use a sequential await
-1 violation(s)
-
-$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_dangling.ts --no-project
-/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_dangling.ts:2:60  promise-pending  await or return the promise directly; a dangling or stored continuation leaves observable pending work
-1 violation(s)
-
-$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_generic_handler.ts --no-project
-/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_generic_handler.ts:3:91  promise-handler  use an arrow or a named same-file or imported function with at most one plain parameter
-1 violation(s)
-
-$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_loop.ts --no-project
-/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_loop.ts:2:85  promise-pending  await or return the promise directly; a dangling or stored continuation leaves observable pending work
-1 violation(s)
-
-$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_race.ts --no-project
-/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_race.ts:2:73  promise-combinator  Promise.race needs completion order or per-element outcomes; use a sequential await
-1 violation(s)
-
-$ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_receiver_pending.ts --no-project
-/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_receiver_pending.ts:4:40  promise-pending  await or return the promise directly; a dangling or stored continuation leaves observable pending work
-1 violation(s)
-
 $ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_resolver_escape.ts --no-project
 /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_resolver_escape.ts:2:73  promise-executor-escape  resolve and reject cannot be stored or passed away; call them at the end of each executor path
 1 violation(s)
 
 $ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_type.ts --no-project
 /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_type.ts:2:1  promise  a Promise-returning function must be async
-/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_type.ts:3:10  promise-pending  await or return the promise directly; a dangling or stored continuation leaves observable pending work
-2 violation(s)
+1 violation(s)
 
 $ node langs/ts/lint/lint.mjs /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_unsettled.ts --no-project
 /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/fixtures/escapes/ts/promise_unsettled.ts:2:73  promise-unsettled  every executor path must end with resolve, reject or throw, with no statements after settlement

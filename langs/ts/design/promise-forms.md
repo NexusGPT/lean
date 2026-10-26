@@ -5,13 +5,12 @@ thenables. Reactions run after settlement: then on fulfilment, catch on rejectio
 finally on either path. A finally return is ignored, but a throw/rejection replaces
 the previous outcome. Returning a promise from an async unit adopts its outcome.
 
-The reading accepts awaited or returned chains on statically typed Promise values.
-Arrow bodies are continuations with statement-order world transitions. Named
-same-file handlers call their emitted unit; imported handlers are transitions.
-The source call uses the same awaited operation as an explicit await refactor.
-Catch binds ext_fault_value and clears the fault. Finally runs its body with the
-old fault saved and cleared; a new fault wins, otherwise the old fault is restored.
-Several links compose these operations. No promise scheduler order is invented.
+Eligible awaited or returned native chains have an exact continuation reading.
+Arrow bodies preserve statement-order world transitions. Named same-file handlers
+call their emitted unit; imported handlers are transitions. The source call uses
+the same awaited operation as an explicit await refactor. Catch binds fault_value
+and clears the fault. Finally saves and clears the old fault, runs the handler,
+and restores the old outcome unless the handler faults. Several links compose.
 
 Example (names shortened):
 ```dafny
@@ -20,54 +19,56 @@ if ext_faulted(wld) then (wld, ext_throw_int(ext_fault_value(wld)))
 else (wld, r.value + 1)
 ```
 
-Await of a held promise keeps the existing await_value transition. Creating a
-promise and awaiting it later is not collapsed into a single request: intervening
-calls stay between creation and await. Newly supported chains/executors must be
-consumed directly. A dangling chain is refused as promise-pending: pending work is
-part of SEMANTICS.md and running it synchronously would lose an observation.
+Exact admission is optional. The lint records selected expression spans for the
+translator. A failed exact attempt restores lint state and runs the old gate.
+Opaque roots suppress exact reading of their descendants, avoiding accidental
+inline execution of a pending continuation. Existing calls are never refused only
+because the exact reading cannot handle them.
 
-Direct executors have a synchronous arrow and terminal resolve/reject on every
-path. resolve(v) supplies the result; reject(e) and throw raise the world fault.
-Statements after settlement are refused because resolve is not a JavaScript return.
-A single outside callback bridge is an opaque transition keyed by executor text,
-all captured values, receiver, and same-file dependencies. The environment controls
-callback count, time and non-settlement, so this is deliberately not an inline call
-of the callback. A changed resolved expression changes the transition identity.
-Stored/passed resolvers are promise-executor-escape; an uncovered path or statements
-after settlement are promise-unsettled. Async executors are promise-executor.
+Dangling/stored chains, loops, unsupported handlers and nested consumption keep
+an outside transition on the receiver and supplied arguments. Handlers are opaque
+values keyed by text; captured values, receiver and same-file dependencies remain
+arguments/dependencies of the transition. Actual argument and result types avoid
+optional-handler coercion and differing-result declaration collisions. The model
+can retain pending work in the world without inventing a callback schedule.
+Straight-line awaits short-circuit on faults; existing loop helpers are unchanged.
 
-Promise.resolve of a plain value is identity. Promise inputs are adopted through
-the existing await reading. Unknown/custom thenables are refused as promise-thenable.
-Promise.reject raises the fault. race, allSettled and any are refused as
-promise-combinator: race/any require completion order; allSettled needs a separate
-per-element outcome channel. Promise.all's existing reading is unchanged.
+Await of a held promise keeps the existing await_value transition. Intervening
+calls stay between creation and await. Promise.resolve/reject get their exact
+value/adoption or raise reading only when eligible, otherwise they remain outside
+calls. Unknown/custom thenables also keep that fallback. Promise.race, allSettled
+and any remain outside calls of the sequence: no winner or completion order is
+asserted. Promise.all's existing map and literal readings are unchanged.
 
-Handlers use monomorphic, single-signature plain parameters, declarations,
-conditionals, calls, return and throw.
-Other control forms are promise-handler. Consumed forms must occupy a return,
-initializer or expression statement; nested consumption stays promise-pending. Outer mutation keeps closure-mutation.
-Named handlers with mutation or an unmodelled throw are refused as promise-handler.
-Faults follow the existing world's fault flag, including statement-level checks;
-this does not add axioms for clear_fault or raise. Faulted continuations never run.
-Straight-line async awaits also short-circuit before following statements.
-Existing loop readings are unchanged; new promise forms inside loops are refused
-as promise-pending because those helpers have no async fault exit channel.
+New constructors have no older reading to fall back to. Direct executors use a
+synchronous arrow and terminal resolve/reject on every path. resolve(v) supplies
+the result; reject(e) and throw raise the world fault. Statements after settlement
+are refused because resolve is not a JavaScript return. A single outside callback
+bridge is opaque by text, captures, receiver and same-file dependencies: the outside
+controls callback count, time and non-settlement.
+Stored/passed resolvers are promise-executor-escape; uncovered paths or statements
+after settlement are promise-unsettled. Unsupported executors are promise-executor;
+unconsumed/loop constructors are promise-pending. Unsupported executor bodies or
+thenable values keep promise-handler/promise-thenable. These had no earlier reading.
+Exact handlers have monomorphic plain parameters and declarations, conditionals,
+calls, return and throw. Wider handlers retain the old gate and opaque reading.
 
-Lane B runs native promises and callbacks. Typed fakes preserve Promise return
-shapes and reject on the seeded fault draw, so then and catch actually execute.
-An outside callback fake invokes once with fake arguments. Its callback source is
-also recorded; a changed callback is a witness in the outside request observation.
+The world fault channel remains an overapproximation with no new clear/raise axioms.
+Lane B uses native Promise shapes and seeded rejection draws, so handlers execute.
+The outside callback fake invokes once; its source is also recorded as an argument.
+The original pair checks exact chains and executors; promise_fallback checks pending,
+stored, loop, combinator, receiver and mixed opaque/exact chains.
 
 Instances inspected (paths relative to their named census/export root):
 - n8n, packages/editor-ui/src/models/history.ts:256 RenameNodeCommand.revert:
-  enters terminal executor reading; historyBus.emit precedes resolve().
+  terminal executor; historyBus.emit precedes resolve().
 - nutshell, core/conversations/src/keepers/burst-drain.ts:18 schedule:
-  stored pending chain refused; this also exposed a receiver-RHS lint bypass.
-- nutshell, core/conversations/src/streams.ts:54 SerialLane.run: non-async,
-  stored/two-handler chains stay refused (promise, promise-pending).
+  a stored chain retains the opaque outside reading.
+- nutshell, core/conversations/src/streams.ts:54 SerialLane.run:
+  non-async Promise-returning unit retains the pre-existing promise refusal.
 - nutshell, adapters/cli-link/src/change-cli-link-on-disk.ts:23 clearQuarantine:
-  callback bridge shape, but its non-async unit stays refused (promise).
+  callback bridge shape, but non-async unit retains promise refusal.
 - driftbench, packages/adapters/src/crewai/index.ts:240 crewaiHttp: sleep passes
   its resolver to setTimeout, outside the executor reading (resolver escape).
-Unresolved/custom promise-like receivers retain the existing opaque call reading.
+Unresolved/custom promise-like receivers retain their existing call reading.
 Bench scorecards and exact validation output are under results-bench/.

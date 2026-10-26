@@ -108,8 +108,11 @@
 | changed      | mixed.ts                 | bad function untouched: accepted         | PASS |             | exit 0
 | changed      | mixed.ts                 | bad function changed: refused            | PASS |             | exit 1, dynamic-eval
 | changed      | mixed.ts                 | no ranges: refused                       | PASS |             | exit 1
-| pair         | callbacks                | theorem generated                        | FAIL |             | ^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/r2/k83h9fg92j7f6pfxshk0nn280000gn/T/lean-ts-LAZshX/pair_callbacks/parent.dfy'
+| pair         | callbacks                | theorem generated                        | PASS |             | ok
+| pair         | callbacks                | Equal_subscribe not proved               | PASS |             | not proved
+| pair         | callbacks                | Equal_relay proved                       | PASS |             | proved
+| pair         | callbacks                | lane B subscribe WITNESS                 | PASS |             | WITNESS
+| pair         | callbacks                | lane B relay PASS-bounded                | PASS |             | PASS-bounded
 | pair         | clock                    | theorem generated                        | PASS |             | ok
 | pair         | clock                    | Equal_same not proved                    | PASS |             | not proved
 | pair         | clock                    | Equal_always proved                      | PASS |             | proved
@@ -131,8 +134,13 @@ FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/r2/k83h9fg
 | pair         | counter                  | lane B Counter.bump WITNESS              | PASS |             | WITNESS
 | pair         | counter                  | lane B Counter.flush PASS-bounded        | PASS |             | PASS-bounded
 | pair         | counter                  | lane B Counter.label PASS-bounded        | PASS |             | PASS-bounded
-| pair         | for_each                 | theorem generated                        | FAIL |             | ^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/r2/k83h9fg92j7f6pfxshk0nn280000gn/T/lean-ts-LAZshX/pair_for_each/parent.dfy'
+| pair         | for_each                 | theorem generated                        | PASS |             | ok
+| pair         | for_each                 | Equal_notifier_notify_all proved         | PASS |             | proved
+| pair         | for_each                 | Equal_total not proved                   | PASS |             | not proved
+| pair         | for_each                 | Equal_labels proved                      | PASS |             | proved
+| pair         | for_each                 | lane B Notifier.notifyAll PASS-bounded   | PASS |             | PASS-bounded
+| pair         | for_each                 | lane B total WITNESS                     | PASS |             | WITNESS
+| pair         | for_each                 | lane B labels PASS-bounded               | PASS |             | PASS-bounded
 | pair         | function_values          | theorem generated                        | PASS |             | ok
 | pair         | function_values          | Equal_adder not proved                   | PASS |             | not proved
 | pair         | function_values          | Equal_pick proved                        | PASS |             | proved
@@ -199,8 +207,36 @@ FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/r2/k83h9fg
 | pair         | optional_calls           | Equal_label_of not proved                | PASS |             | not proved
 | pair         | optional_calls           | lane B notify PASS-bounded               | PASS |             | PASS-bounded
 | pair         | optional_calls           | lane B labelOf WITNESS                   | PASS |             | WITNESS
-| pair         | promise_forms            | theorem generated                        | FAIL |             | ^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/r2/k83h9fg92j7f6pfxshk0nn280000gn/T/lean-ts-LAZshX/pair_promise_forms/parent.dfy'
+| pair         | promise_fallback         | theorem generated                        | PASS |             | ok
+| pair         | promise_fallback         | Equal_dangling not proved                | PASS |             | not proved
+| pair         | promise_fallback         | Equal_stored not proved                  | PASS |             | not proved
+| pair         | promise_fallback         | Equal_loop not proved                    | PASS |             | not proved
+| pair         | promise_fallback         | Equal_race proved                        | PASS |             | proved
+| pair         | promise_fallback         | Equal_settled proved                     | PASS |             | proved
+| pair         | promise_fallback         | Equal_any proved                         | PASS |             | proved
+| pair         | promise_fallback         | Equal_resolve_later proved               | PASS |             | proved
+| pair         | promise_fallback         | Equal_wide_handler proved                | PASS |             | proved
+| pair         | promise_fallback         | Equal_mixed proved                       | PASS |             | proved
+| pair         | promise_fallback         | Equal_pending_schedule proved            | PASS |             | proved
+| pair         | promise_fallback         | lane B dangling WITNESS                  | PASS |             | WITNESS
+| pair         | promise_fallback         | lane B stored WITNESS                    | PASS |             | WITNESS
+| pair         | promise_fallback         | lane B loop WITNESS                      | PASS |             | WITNESS
+| pair         | promise_fallback         | lane B race PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | promise_fallback         | lane B settled PASS-bounded              | PASS |             | PASS-bounded
+| pair         | promise_fallback         | lane B any PASS-bounded                  | PASS |             | PASS-bounded
+| pair         | promise_fallback         | lane B resolveLater PASS-bounded         | PASS |             | PASS-bounded
+| pair         | promise_fallback         | lane B wideHandler PASS-bounded          | PASS |             | PASS-bounded
+| pair         | promise_fallback         | lane B mixed PASS-bounded                | PASS |             | PASS-bounded
+| pair         | promise_fallback         | lane B Pending.schedule PASS-bounded     | PASS |             | PASS-bounded
+| pair         | promise_forms            | theorem generated                        | PASS |             | ok
+| pair         | promise_forms            | Equal_totals_sum_all not proved          | PASS |             | not proved
+| pair         | promise_forms            | Equal_totals_pair proved                 | PASS |             | proved
+| pair         | promise_forms            | Equal_totals_touch not proved            | PASS |             | not proved
+| pair         | promise_forms            | Equal_totals_labels proved               | PASS |             | proved
+| pair         | promise_forms            | lane B Totals.sumAll WITNESS             | PASS |             | WITNESS
+| pair         | promise_forms            | lane B Totals.pair PASS-bounded          | PASS |             | PASS-bounded
+| pair         | promise_forms            | lane B Totals.touch WITNESS              | PASS |             | WITNESS
+| pair         | promise_forms            | lane B Totals.labels PASS-bounded        | PASS |             | PASS-bounded
 | pair         | promise_then             | theorem generated                        | PASS |             | ok
 | pair         | promise_then             | Equal_changed not proved                 | PASS |             | not proved
 | pair         | promise_then             | Equal_bridge not proved                  | PASS |             | not proved
@@ -315,17 +351,6 @@ FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/r2/k83h9fg
 | escape       | parameter_mutation       | translate refuses                        | PASS |             | refused
 | escape       | promise_after_settlement | lint refuses                             | PASS | no          | refused: promise-unsettled
 | escape       | promise_after_settlement | translate refuses                        | PASS |             | refused
-| escape       | promise_allsettled       | lint refuses                             | PASS | no          | refused: promise-combinator
-| escape       | promise_allsettled       | translate refuses                        | PASS |             | refused
-| escape       | promise_any              | lint refuses                             | PASS | no          | refused: promise-combinator
-| escape       | promise_any              | translate refuses                        | PASS |             | refused
-| escape       | promise_dangling         | lint refuses                             | PASS | no          | refused: promise-pending
-| escape       | promise_dangling         | translate refuses                        | PASS |             | refused
-| escape       | promise_generic_handler  | lint refuses                             | PASS | no          | refused: promise-handler
-| escape       | promise_generic_handler  | translate refuses                        | PASS |             | refused
-| escape       | promise_race             | lint refuses                             | PASS | no          | refused: promise-combinator
-| escape       | promise_race             | translate refuses                        | PASS |             | refused
-| escape       | promise_receiver_pending | lint refuses                             | PASS | yes         | refused: promise-pending
 | escape       | promise_resolver_escape  | lint refuses                             | PASS | no          | refused: promise-executor-escape
 | escape       | promise_resolver_escape  | translate refuses                        | PASS |             | refused
 | escape       | promise_type             | lint refuses                             | PASS | no          | refused: promise
@@ -337,5 +362,5 @@ FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/r2/k83h9fg
 | escape       | try_catch                | lint refuses                             | PASS | yes         | refused: delete
 | escape       | unbounded_while          | lint refuses                             | PASS | no          | refused: label
 | escape       | unbounded_while          | translate refuses                        | PASS |             | refused
-| repo         | conformance/run.py ts    | runner                                   | PASS |             | conformance: PASS, 31 of 31 checks passed, languages: ts
-| TOTAL | 336 checks | 3 FAILED |
+| repo         | conformance/run.py ts    | runner                                   | PASS |             | conformance: PASS, 25 of 25 checks passed, languages: ts
+| TOTAL | 364 checks | ALL PASS |

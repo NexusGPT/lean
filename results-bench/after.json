@@ -3,12 +3,11 @@
     {
       "concept": ".then/.catch chain",
       "n": 10,
-      "inside": 3,
-      "translated": 3,
-      "planted": 9,
-      "witnessed": 6,
+      "inside": 6,
+      "translated": 6,
+      "planted": 14,
+      "witnessed": 9,
       "blockers": {
-        "promise-pending": 3,
         "global-read": 1,
         "promise": 2,
         "closure-mutation": 1
@@ -33,13 +32,13 @@
     {
       "concept": "Promise.resolve",
       "n": 10,
-      "inside": 0,
+      "inside": 1,
       "translated": 0,
       "planted": 0,
       "witnessed": 0,
       "blockers": {
         "promise": 8,
-        "promise-pending": 1,
+        "translate: agent-access-wiring.ts:144: canonicalPathSync is a": 1,
         "ts-strict": 1
       }
     },
@@ -53,7 +52,7 @@
       "blockers": {
         "promise": 5,
         "closure-mutation": 2,
-        "promise-pending": 1,
+        "property-assign": 1,
         "param-mutation": 1,
         "async": 1
       }
@@ -61,28 +60,30 @@
     {
       "concept": "Promise.race",
       "n": 10,
-      "inside": 0,
-      "translated": 0,
-      "planted": 0,
+      "inside": 2,
+      "translated": 2,
+      "planted": 6,
       "witnessed": 0,
       "blockers": {
         "generator": 2,
-        "promise-combinator": 3,
-        "promise-pending": 3,
-        "async": 1,
+        "async": 2,
+        "promise-pending": 2,
+        "opaque-mutation": 1,
         "promise": 1
       }
     },
     {
       "concept": "Promise.allSettled",
       "n": 10,
-      "inside": 0,
-      "translated": 0,
-      "planted": 0,
+      "inside": 4,
+      "translated": 2,
+      "planted": 6,
       "witnessed": 0,
       "blockers": {
-        "promise-combinator": 7,
-        "async": 2,
+        "translate: chat-attachment-upload.service.ts:101: an effect i": 1,
+        "async": 4,
+        "translate: agent-tool-configs.service.ts:678: an effect insid": 1,
+        "global-read": 1,
         "opaque-mutation": 1
       }
     },
@@ -104,9 +105,23 @@
         "unit": "openingWhenHostIsThere",
         "lines": 8,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+        "status": "translated",
+        "planted": 2,
+        "witnessed": 0,
+        "misses": [
+          {
+            "mutation": "swapped-args",
+            "was": "hostWaitMilliseconds, giveUp.signal",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "dropped-effect",
+            "was": "giveUp.abort();",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          }
+        ]
       },
       {
         "root": "/Users/assem/Documents/GitHub/nexus",
@@ -166,9 +181,10 @@
         "unit": "useStarredSkills",
         "lines": 9,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
-        "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+        "status": "translated",
+        "planted": 1,
+        "witnessed": 1,
+        "misses": []
       },
       {
         "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
@@ -176,9 +192,10 @@
         "unit": "BurstDrain.schedule",
         "lines": 4,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+        "status": "translated",
+        "planted": 2,
+        "witnessed": 2,
+        "misses": []
       },
       {
         "root": "/Users/assem/promo-app",
@@ -372,9 +389,8 @@
         "unit": "agentAccessOn",
         "lines": 63,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+        "status": "translate-fail",
+        "detail": "agent-access-wiring.ts:144: canonicalPathSync is a function value; call it"
       },
       {
         "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
@@ -475,8 +491,8 @@
         "lines": 78,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
         "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+        "rule": "property-assign",
+        "detail": "assignment into `(globalThis as { fetch: unknown })`, which this function does not own; records it owns are updated in place"
       },
       {
         "root": "/Users/assem/Documents/GitHub/driftbench",
@@ -546,9 +562,29 @@
         "unit": "WaitForFirstOffers.wait",
         "lines": 5,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.race needs completion order or per-element outcomes; use a sequential await"
+        "status": "translated",
+        "planted": 3,
+        "witnessed": 0,
+        "misses": [
+          {
+            "mutation": "dropped-effect",
+            "was": "await Promise.race([this.arrival, clock.",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "swapped-args",
+            "was": "atMostMilliseconds, stopSleeping.signal",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "dropped-effect",
+            "was": "stopSleeping.abort();",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          }
+        ]
       },
       {
         "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
@@ -557,8 +593,8 @@
         "lines": 13,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
         "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.race needs completion order or per-element outcomes; use a sequential await"
+        "rule": "async",
+        "detail": "`new Promise` inside an opaque promise call has no reading"
       },
       {
         "root": "/Users/assem/Documents/GitHub/nexus",
@@ -576,9 +612,29 @@
         "unit": "LargeFrameKeeper.flush",
         "lines": 14,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
-        "status": "lint-out",
-        "rule": "promise-pending",
-        "detail": "await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+        "status": "translated",
+        "planted": 3,
+        "witnessed": 0,
+        "misses": [
+          {
+            "mutation": "swapped-args",
+            "was": "flushBoundMilliseconds, bound.signal",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "swapped-args",
+            "was": "flushBoundMilliseconds, bound.signal",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "swapped-args",
+            "was": "flushBoundMilliseconds, bound.signal",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          }
+        ]
       },
       {
         "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
@@ -587,8 +643,8 @@
         "lines": 85,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
         "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.race needs completion order or per-element outcomes; use a sequential await"
+        "rule": "opaque-mutation",
+        "detail": ".kill() on `child` may change it, and `child` is read later; read it before the call or through a method"
       },
       {
         "root": "/Users/assem/Documents/GitHub/n8n",
@@ -638,9 +694,8 @@
         "unit": "ChatAttachmentUploadService.uploadMultiple",
         "lines": 36,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.allSettled needs completion order or per-element outcomes; use a sequential await"
+        "status": "translate-fail",
+        "detail": "chat-attachment-upload.service.ts:101: an effect inside a callback; the order of its world transitions is not defined"
       },
       {
         "root": "/Users/assem/Documents/GitHub/n8n",
@@ -658,9 +713,8 @@
         "unit": "AgentToolConfigsService.bustWorkflowCaches",
         "lines": 17,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
-        "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.allSettled needs completion order or per-element outcomes; use a sequential await"
+        "status": "translate-fail",
+        "detail": "agent-tool-configs.service.ts:678: an effect inside a callback; the order of its world transitions is not defined"
       },
       {
         "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
@@ -669,8 +723,8 @@
         "lines": 7,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
         "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.allSettled needs completion order or per-element outcomes; use a sequential await"
+        "rule": "global-read",
+        "detail": "`queue` is module state that can change; the subset reads constants only"
       },
       {
         "root": "/Users/assem/promo-app",
@@ -678,9 +732,29 @@
         "unit": "settled",
         "lines": 7,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
-        "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.allSettled needs completion order or per-element outcomes; use a sequential await"
+        "status": "translated",
+        "planted": 3,
+        "witnessed": 0,
+        "misses": [
+          {
+            "mutation": "dropped-effect",
+            "was": "console.error(\"[pyka] page read failed:\"",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "dropped-effect",
+            "was": "console.error(\"[pyka] page read failed:\"",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "dropped-effect",
+            "was": "console.error(\"[pyka] page read failed:\"",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          }
+        ]
       },
       {
         "root": "/Users/assem/Documents/GitHub/nexus",
@@ -689,8 +763,8 @@
         "lines": 19,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
         "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.allSettled needs completion order or per-element outcomes; use a sequential await"
+        "rule": "async",
+        "detail": "async callbacks are outside the subset"
       },
       {
         "root": "/Users/assem/promo-app",
@@ -698,9 +772,29 @@
         "unit": "settled",
         "lines": 7,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
-        "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.allSettled needs completion order or per-element outcomes; use a sequential await"
+        "status": "translated",
+        "planted": 3,
+        "witnessed": 0,
+        "misses": [
+          {
+            "mutation": "dropped-effect",
+            "was": "console.error(\"[pyka] home feed failed:\"",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "dropped-effect",
+            "was": "console.error(\"[pyka] home feed failed:\"",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          },
+          {
+            "mutation": "dropped-effect",
+            "was": "console.error(\"[pyka] home feed failed:\"",
+            "verdict": "PASS-bounded",
+            "reason": ""
+          }
+        ]
       },
       {
         "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
@@ -719,8 +813,8 @@
         "lines": 8,
         "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
         "status": "lint-out",
-        "rule": "promise-combinator",
-        "detail": "Promise.allSettled needs completion order or per-element outcomes; use a sequential await"
+        "rule": "async",
+        "detail": "async callbacks are outside the subset"
       },
       {
         "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",

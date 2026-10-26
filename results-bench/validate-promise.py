@@ -1,6 +1,6 @@
 from pathlib import Path
-import subprocess,json,re
-r=Path('/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise');d=r/'results-bench/validation';pair=r/'langs/ts/tests/pairs/promise_then'
+import subprocess,json,re,sys
+r=Path('/Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise');name=sys.argv[1] if len(sys.argv)>1 else 'promise_then';d=r/'results-bench'/('validation' if name=='promise_then' else 'validation-'+name);d.mkdir(exist_ok=True);pair=r/'langs/ts/tests/pairs'/name
 e=json.loads((pair/'expect.json').read_text());out=[]
 def run(args):
  p=subprocess.run(args,cwd=r,text=True,capture_output=True);t=p.stdout+p.stderr;out.append('$ '+' '.join(map(str,args))+'\n'+t);print(t,flush=True);return p.returncode,t
@@ -12,7 +12,7 @@ assert run(['python3','-I','spec/theorem.py','--parent',str(d/'parent.dfy'),'--c
 rc,t=run(['dafny','verify','--verification-time-limit','30',str(d/'theorem.dfy')]);(d/'dafny.log').write_text(t)
 lines=(d/'theorem.dfy').read_text().splitlines();spans={};name=None
 for i,line in enumerate(lines,1):
- m=re.match(r'lemma Equal_(\w+)\(',line)
+ m=re.match(r'lemma Equal_(\w+)(?:<[^>]*>)?\(',line)
  if m:name=m[1];spans[name]=[i,0]
  if line.startswith('} // END Equal_'):spans[name][1]=i
 errors=[int(x) for x in re.findall(r'theorem.dfy\((\d+),\d+\): Error',t)]

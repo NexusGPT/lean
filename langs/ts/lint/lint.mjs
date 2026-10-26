@@ -476,7 +476,20 @@ export function lintFile(file, ranges = null, opts = {}) {
   const isJsxNode = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x) || ts.isJsxFragment(x); };
   const isPrim = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.Undefined | TF.Null | TF.EnumLike));
 
-  // a consumed native promise has an inline continuation; pending work has no sequential reading
+  // the gate selects exact continuations; other existing forms keep their outside-call reading
+  const promiseReadings = opts.promiseReadings ?? new Set();
+  let opaquePromiseDepth = 0;
+  function opaquePromise(read) { opaquePromiseDepth++; try { return read(); } finally { opaquePromiseDepth--; } }
+  function readPromise(e, form) {
+    if (form.kind !== 'executor' && (['race', 'allSettled', 'any'].includes(form.kind) || !promiseConsumed(e, checker, sf))) return false;
+    const start = out.length, aliases = new Set(aliasLocals), types = new Set(seenTypes), selected = new Set(promiseReadings);
+    readExactPromise(e, form);
+    if (out.length === start) { promiseReadings.add(`${e.pos}:${e.end}`); return true; }
+    if (form.kind === 'executor') return true; // constructors had no older reading to fall back to
+    out.length = start;
+    for (const [target, saved] of [[aliasLocals, aliases], [seenTypes, types], [promiseReadings, selected]]) { target.clear(); for (const value of saved) target.add(value); }
+    return false;
+  }
   function unsafePromiseCallee(u, seen = new Set()) {
     if (!u || seen.has(u.name)) return false;
     seen.add(u.name); let unsafe = false;
@@ -519,8 +532,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (isAny(t) || (!isNativePromise(t, checker) && checker.getPropertyOfType(t, 'then'))) v(e, 'promise-thenable', 'use a plain value or a statically typed native Promise; custom thenable adoption is not read');
   }
   function promiseValue(e) { promiseValueType(e); expr(e); }
-  function readPromise(e, form) {
-    if (['race', 'allSettled', 'any'].includes(form.kind)) return v(e, 'promise-combinator', `Promise.${form.kind} needs completion order or per-element outcomes; use a sequential await`);
+  function readExactPromise(e, form) {
     if (!promiseConsumed(e, checker, sf)) return v(e, 'promise-pending', 'await or return the promise directly; a dangling or stored continuation leaves observable pending work');
     if (form.kind === 'executor') {
       const shape = executorShape(e, checker, sf);
@@ -548,7 +560,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (!fnHere || !fnHere.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return v(e, 'async', '`await` outside an async function');
     const inner = unparen(e.expression);
     const form = promiseForm(inner, checker, sf);
-    if (form) return readPromise(inner, form);
+    if (form && !opaquePromiseDepth) { if (readPromise(inner, form)) return; return opaquePromise(() => awaitExpr(e, asStatement)); }
     if (ts.isCallExpression(inner) && ts.isPropertyAccessExpression(inner.expression) && ARRAY_METHODS.has(inner.expression.name.text) && nonNull(tOf(inner.expression.expression)).every((t) => isArrayLike(checker, t))) return call(inner);
     if (!ts.isCallExpression(inner)) return expr(inner); // awaiting a held promise: a transition of the world on that value
     // the awaited call is an external (or a local async unit): its arguments are checked, the call itself is uninterpreted
@@ -684,7 +696,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (n === 'Set' || n === 'Map' || n === 'RegExp') return e.arguments?.forEach(expr);
         if (n === 'Function') return v(e, 'dynamic-eval', '`new Function` is outside the subset');
         const form = promiseForm(e, checker, sf);
-        if (form) return readPromise(e, form);
+        if (form) { if (opaquePromiseDepth) return v(e, 'async', '`new Promise` inside an opaque promise call has no reading'); return readPromise(e, form); }
         // any other constructor: an uninterpreted value built from its arguments (Error, a class, a library object)
         if (ts.isPropertyAccessExpression(e.expression)) expr(e.expression.expression);
         else if (ts.isIdentifier(e.expression) && (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined) && (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined) !== 'global-read') return v(e, (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined), `\`new ${n}\` is outside the subset`);
@@ -785,7 +797,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     conditionalSpreadArgs(e);
     if (['useMemo', 'useCallback', 'useEffect'].includes(reactHook(checker, e))) reactCapture(e.arguments[0]);
     const form = promiseForm(e, checker, sf);
-    if (form) return readPromise(e, form);
+    if (form && !opaquePromiseDepth) { if (readPromise(e, form)) return; return opaquePromise(() => call(e)); }
     const f = e.expression;
     if (moduleLoader(checker, e, sf, current)) return argsOf(e);
     if (e.questionDotToken) v(e, 'optional-chain', 'calling an optional function value is outside the subset');
