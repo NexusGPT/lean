@@ -4,6 +4,8 @@ export const ADVICE = {
   'loose-equality': 'Use `===` / `!==`; `==` coerces.',
   'assign-target': 'Copy into a fresh object: `Object.assign({}, a, b)` or `{ ...a, ...b }`; writing into an argument is not read.',
   'date-mutation': 'Build the new instant as a number and construct `new Date(t)`; a setter changes the Date in place.',
+  'hook-order': 'Call every hook at the top of the render, unconditionally; put the condition inside the hook or split the component.',
+  'render-impure': 'A render only computes its tree; move the write into an event handler or a `useEffect`, or hold the value in state or a ref.',
   'reference-equality': '`===` on objects compares addresses. Compare the fields you mean (`a.id === b.id`).',
   'foreach': 'Write `for (const x of xs) { ... }`; a loop may update a local, a callback may not.',
   'closure-mutation': 'A callback may compute, not assign an outer variable. Use `for (const x of xs)` or `reduce`, and let the state come out of the loop.',

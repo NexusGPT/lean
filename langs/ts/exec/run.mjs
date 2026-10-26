@@ -76,12 +76,12 @@ function reactRuntime(env) {
   const runtime = {
     useMemo: (fn) => fn(),
     useCallback: (fn) => fn,
-    useState: (initial) => {
-      const key = `react:state:${slot++}`;
-      const value = typeof initial === 'function' ? initial() : initial;
-      env.record('hook', key, [render(value)]);
-      let current = value;
-      const setter = (next) => { current = typeof next === 'function' ? next(current) : next; env.record('set', key, [render(current)]); };
+    useState: (initial) => { // slots are retained on the environment, keyed by call order, as React keys them: a second render reads the same slot
+      const i = slot++; const key = `react:state:${i}`;
+      const slots = (env.hookSlots ??= []);
+      if (!(i in slots)) { slots[i] = typeof initial === 'function' ? initial() : initial; env.record('hook', key, [render(slots[i])]); }
+      const value = slots[i];
+      const setter = (next) => { slots[i] = typeof next === 'function' ? next(slots[i]) : next; env.record('set', key, [render(slots[i])]); };
       return [value, setter];
     },
     useEffect: (fn, deps) => {
@@ -91,7 +91,9 @@ function reactRuntime(env) {
     },
     use: (x) => { if (x && typeof x.then === 'function') throw new Suspended('use(promise)'); return x; }, // a suspended render: no model of the fallback and the retry; the run ends as ASK:suspense
   };
+  runtime.__beginRender = () => { slot = 0; }; // a render starts at slot 0 (React's call-order keying)
   const proxy = new Proxy(runtime, { get(t, p) { if (p === '__esModule') return true; if (p === 'default') return proxy; return p in t ? t[p] : env.module('react')[p]; } });
+  env.react = runtime;
   return proxy;
 }
 const isJsxValue = (v) => (Array.isArray(v) ? v.some(isJsxValue) : !!v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el'));
@@ -239,8 +241,18 @@ export async function observe(side, spec, args, ms) {
   let outcome, outcomeValue, hasOutcome = false;
   lateErrors.length = 0;
   try {
+    const slotsBefore = (env.hookSlots ?? []).slice(), traceBefore = env.trace.length;
+    env.react?.__beginRender?.();
     const r = unit.call(args);
     const v = (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r;
+    if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
+      const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
+      env.hookSlots = slotsBefore.slice(); env.react.__beginRender();
+      const r2 = unit.call(args); const v2 = (r2 && typeof r2.then === 'function') ? await withTimeout(r2, ms) : r2;
+      const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
+      env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; // the second render leaves nothing behind
+      if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
+    }
     for (const effect of env.reactEffects ?? []) {
       try { const cleanup = await withTimeout(Promise.resolve(effect()), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); }
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); }
@@ -301,6 +313,7 @@ export async function runPair(opts) {
     const oP = await observe(sides.parent, spec, sides.parent.inputs, ms);
     const oC = await observe(sides.candidate, spec, sides.candidate.inputs, ms);
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
+    if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, args: sides.parent.inputs.map((a) => render(a)), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
