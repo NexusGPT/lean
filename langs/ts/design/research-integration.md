@@ -115,9 +115,11 @@ SameValueZero in insertion order; `structuredClone` builds a fresh graph preserv
 into the prelude per shape; the Dafny forms exist and verify (`design/library-ops.dfy`). A callback inside `map`,
 `filter`, `sort` is read only when the lint proves it pure. The engine validates the table on every run through the
 call recording and the checker (`exec/transitions.mjs`): a mismatch is a model defect that refuses the operation
-until the row is fixed. Test262's directories for these operations (push 24, splice 81, sort 54, reverse 18, slice
-71, concat 69, map 216, Map.set 14, Set.add 21, Object.assign 38, Object.freeze 53, setFullYear 20 entries) run as
-a corpus of call patterns.
+until the row is fixed. Test262's directories for these operations run as a corpus of call patterns (`exec/test262.mjs`, a sparse BSD checkout
+under `work/lean-deps/test262`): on 2026-10-26, 996 files, 12,459 in-model records, 0 disagreements between the engine
+and the table; 2,814 records out of the model (array-likes, subclasses, accessors, symbol keys, string sources), 11 callback
+effects counted apart (`design/test262-report.json`). The recorder and checker (`exec/transitions.mjs`) are the standing
+validation; their wiring around `unit.call` in lane B follows the heap merge.
 
 **Boundary.** Getters, setters, proxies, species constructors, effectful comparators, Date string parsing and time
 zones: obligations unmet; `structuredClone` of unsupported values: refused by name. `Object.freeze` needs a
