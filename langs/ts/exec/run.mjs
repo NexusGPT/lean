@@ -69,6 +69,7 @@ function jsxValue(type, props, key) {
 const JSX_FRAGMENT = '';
 const jsxRuntime = { jsx: jsxValue, jsxs: jsxValue, jsxDEV: jsxValue, Fragment: JSX_FRAGMENT, __esModule: true };
 
+class Suspended extends Error { constructor(why) { super(`suspense: ${why}`); this.name = 'Suspended'; } } // a render that suspends (a thrown thenable, use(promise)): React would show a fallback and retry; lean has no model of that schedule
 // hooks belong to React's render protocol, rather than the generic external callback fake
 function reactRuntime(env) {
   let slot = 0;
@@ -88,6 +89,7 @@ function reactRuntime(env) {
       env.pending.push({ op: key, deps: render(deps) });
       (env.reactEffects ??= []).push(fn);
     },
+    use: (x) => { if (x && typeof x.then === 'function') throw new Suspended('use(promise)'); return x; }, // a suspended render: no model of the fallback and the retry; the run ends as ASK:suspense
   };
   const proxy = new Proxy(runtime, { get(t, p) { if (p === '__esModule') return true; if (p === 'default') return proxy; return p in t ? t[p] : env.module('react')[p]; } });
   return proxy;
@@ -249,6 +251,7 @@ export async function observe(side, spec, args, ms) {
   } catch (e) {
     if (e && e.message === '__timeout__') return { harness: 'timeout' };
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
+    if (e instanceof Suspended || (e && typeof e.then === 'function')) return { harness: `suspense: ${e instanceof Suspended ? e.message.slice(10) : 'a thenable thrown during render'}` }; // ASK:suspense, never a crash and never a thrown-value outcome
     if (e instanceof RangeError && /call stack/.test(String(e.message))) return { harness: 'stack overflow' };
     outcome = { threw: render(e) };
   }
