@@ -1,30 +1,24 @@
 # Exceptions across same-file calls
 
-JavaScript completes a statement normally, returns a value, or throws a value.
-A callee throw aborts evaluation at the call site and reaches the nearest catch.
-Finally runs for normal completion, return and throw. Its own return or throw
-replaces the saved completion; otherwise the saved completion resumes.
+JavaScript completes normally, returns a value, or throws a value. A callee throw
+aborts evaluation at the call site and reaches the nearest catch. Finally runs
+on every completion; its own return or throw replaces the pending completion.
 
 ## Reading
 
-The existing `(World, R)` signature carries the second result channel in World.
-World contains an opaque history and an explicit optional fault value. This is
-isomorphic to a result channel for the outcome, without changing every call ABI.
+The existing `(World, R)` signature carries an optional fault beside WorldHistory.
 `ext_faulted`, `fault_value`, `clear_fault` and `raise` have concrete bodies.
-An uncaught throw raises the world fault and returns an unobserved placeholder R.
-The old `ext_throw_R(e)` reading is removed: a discarded result cannot discard a throw.
-A syntactically pure same-file throwing function therefore needs the world.
-The may-fault set is the same-file call component of throw, try and known failing
-library calls, including callees whose outside transitions may fail. Each transition can fault.
-JSON.parse/stringify, new URL/RegExp, BigInt and URI codecs are transitions.
-Other implicit library exceptions remain a coverage gap. Library faults are an
-overapproximation: repeated pure calls need not prove equivalent to one call.
+A terminal uncaught `throw` raises the fault and returns an unused result placeholder.
+This replaces `ext_throw_R(e)`: discarding the result can no longer discard a throw.
+An otherwise pure throwing function needs the world. Its callers inherit the
+outcome channel; its ordinary callees keep their existing reading.
 
-Each hoisted transition has a checkpoint before later evaluation or assignment.
-Outside method lookup is a transition before arguments, as lane B records it.
-The caller sees the callee's returned fault and invokes its current fault
-continuation. Conditions and return expressions have checkpoints too.
-For example, `try { return leaf(x); } catch { return 0; }` reads as:
+General transition checkpoints are local to an exact try, including its return
+and condition expressions, and the cleanup of an exact finally. A unit's unrelated
+transitions do not acquire checkpoints because another unit calls it inside try.
+Same-file exception calls propagate their returned outcome, including discarded calls.
+An outside method lookup precedes argument evaluation inside checked expressions.
+For `try { return leaf(x); } catch { return 0; }`, the central reading is:
 
 ```dafny
 var (wld, t) := leaf_parent(wld, x);
@@ -33,44 +27,50 @@ if ext_faulted_World(wld) then
 else (wld, t)
 ```
 
-Finally has continuations for normal completion, return and throw. A pending
-return is evaluated and saved before cleanup. A pending fault is saved and
-cleared while cleanup runs, then restored on cleanup's normal completion.
-A fault or return from cleanup uses the enclosing continuation and overrides it.
-Nested catches and finalizers follow the same rule.
+An exact finally saves a return value before cleanup. It saves and clears a fault,
+runs cleanup, then restores the fault on normal completion. Cleanup's own return
+or fault overrides the saved outcome. Nested handlers use the same continuations.
+JSON.parse/stringify, new URL/RegExp, BigInt and URI codecs are may-fault transitions.
+Their world dependency overapproximates argument-only operations. Outside a checked
+region they retain the ordinary transition reading, without extra checkpoints.
+Other implicit library exceptions and existing numeric/heap limits remain gaps.
 
-## Gate and soundness
+## Local fallback and gate
 
-Before probes: lint admits throw, same-file propagation and finally-only. The
-finally-only probe fails translation with `a path ends without a return`;
-throw is an uninterpreted result, and a return expression bypasses catch guards.
-The new gate names the boundaries needed by the completion reading:
-`exception-loop` for loops in exception units; `exception-callback` for nested
-function values/calls there, other-receiver methods or throwing units as values; `exception-expression`
-for lazy expressions containing calls, effectful switch tests and defaults;
-`exception-binding` for repeated local binding names in an exception unit;
-`exception-return` for object-valued returns across finally (alias lifetime).
-These need loop completions, function-value fault channels or lexical renaming.
-Move them into separate straight-line units with uniquely named locals.
+The old lint admitted throw, calls and finally-only; the baseline finally-only
+probe failed translation with `a path ends without a return`. A returned callee's
+throw was an ordinary result and bypassed the caller's catch.
 
-A raised fault and a normal completion have different datatype constructors.
-Thus a throw replacing a return, including an ignored callee result, cannot be
-proved equal. Catch clears only the fault, preserving the outside history.
-Every transition checkpoint aborts subsequent evaluation, and finally preserves
-or overrides the saved outcome exactly. Uninterpreted outside histories remain
-universally quantified, so dropping cleanup transitions cannot prove equality.
-The existing numeric, heap and pure-library modelling limitations still apply.
+Loops, callbacks and unsafe expression sequencing inside try now select the
+existing text-keyed opaque transition for that try, not a whole-unit refusal.
+Complex finally statements also retain this fallback; straight-line finally
+remains exact. Object-valued completions and duplicate local names select opacity.
+An opaque statement that always returns or throws has a terminal result channel,
+so translation does not invent a fall-through path needing another return.
+Opaque blocks retain dependency guards for same-file callees.
+Ordinary helpers keep their loops, callbacks and expression reading in full.
+An outside loop containing a throw or an exception call uses an opaque completion.
 
-Lane B executes JavaScript: it observes returned versus thrown values, mutation,
-and ordered fake calls. Pair cases exercise explicit string throws and a typed
-port cleanup call, including fault paths and overridden returns.
+Only a finally's concrete alias conflict (`exception-return`) or shadowed binding
+read by cleanup (`exception-binding`) is refused. A direct throw in a callback,
+or a throwing unit used as a function value outside opaque try, remains
+`exception-callback`. There is no exception-loop or exception-expression refusal.
+
+The concrete normal/fault constructors separate return from throw. Checkpoints
+abort later evaluation where the exact handler applies. Finally preserves or
+replaces the completion. Opaque text changes and changed callee dependency guards
+prevent a changed block from silently proving equal. These guarantees do not
+claim exact propagation of every implicit exception outside the checked regions.
+
+Lane B observes returned versus thrown values, mutations and ordered fake calls.
+The original 17-unit pair covers propagation, ignored calls, cleanup and overrides.
+The scope pair covers ordinary helpers, loop/callback fallback and lexical shadowing.
 
 ## Corpus instances inspected
 
 Root: `/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos`.
-- `blocks/apps/api/src/application/queries/GetPermissions.ts:17`: enters, explicit throws after outside reads.
-- `nutshell/apps/cli/src/node-io.ts:73`: enters, a faulting return expression is caught.
-- `nutshell/tools/proof-host/src/shell-sweep-fixes-scenarios.ts:118`: `exception-return`, array return through finally.
-- `nutshell/core/conversations/src/keepers/burst-drain.ts:33`: `exception-loop`, draining loop in try/finally.
-- `nexus-learning/packages/storage/scripts/check-schema.ts:211`: `exception-return`, record returned before cleanup.
-The sample includes nested callbacks that remain opaque; a translated unit need not enter this reading.
+- `blocks/apps/api/src/application/queries/GetPermissions.ts:17`: terminal throws after outside reads.
+- `nutshell/apps/cli/src/node-io.ts:73`: faulting return expression reaches the exact catch.
+- `nutshell/tools/proof-host/src/shell-sweep-fixes-scenarios.ts:118`: admitted, object return selects opaque finally.
+- `nutshell/core/conversations/src/keepers/burst-drain.ts:33`: admitted, loop selects opaque finally.
+- `nexus-learning/packages/storage/scripts/check-schema.ts:211`: admitted, record return selects opaque finally.

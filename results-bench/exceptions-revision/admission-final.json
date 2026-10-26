@@ -1,0 +1,182 @@
+[
+  {
+    "concept": "throw",
+    "file": "apps/backend/src/workflow/workflow-engine/workflow-node-executor/nodes/humanInput/application/use-cases/send-slack-human-input.use-case.ts",
+    "unit": "SendSlackHumanInputUseCase.execute",
+    "status": "translated"
+  },
+  {
+    "concept": "throw",
+    "file": "packages/cli/src/UserManagement/email/UserManagementMailer.ts",
+    "unit": "UserManagementMailer.verifyConnection",
+    "status": "translated"
+  },
+  {
+    "concept": "throw",
+    "file": "libs/providers/langchain-cohere/src/client.ts",
+    "unit": "getCohereClient",
+    "status": "translated"
+  },
+  {
+    "concept": "throw",
+    "file": "apps/backend/src/voice-relay/application/use-cases/assert-web-voice-origin.ts",
+    "unit": "assertWebVoiceOriginAllowed",
+    "status": "translated"
+  },
+  {
+    "concept": "throw",
+    "file": "apps/backend/src/providers/anthropic/internal/message-converter.ts",
+    "unit": "convertMessageContentToBlockParams",
+    "status": "translated"
+  },
+  {
+    "concept": "throw",
+    "file": "examples/src/langchain-classic/use_cases/human_in_the_loop/accept-feedback.ts",
+    "unit": "humanApproval",
+    "status": "lint-out"
+  },
+  {
+    "concept": "throw",
+    "file": "packages/workflow/src/Expression.ts",
+    "unit": "Expression.renderExpression",
+    "status": "lint-out"
+  },
+  {
+    "concept": "throw",
+    "file": "apps/api/src/application/queries/GetPermissions.ts",
+    "unit": "GetPermissionsQuery.execute",
+    "status": "translated"
+  },
+  {
+    "concept": "throw",
+    "file": "packages/core/src/ExtractValue.ts",
+    "unit": "extractValueOther",
+    "status": "lint-out"
+  },
+  {
+    "concept": "throw",
+    "file": "packages/cli/src/skills-corpus/platform.ts",
+    "unit": "fetchCorpus",
+    "status": "translate-fail"
+  },
+  {
+    "concept": "try/catch",
+    "file": "apps/backend/src/echo/infrastructure/services/echo-export-cleanup.service.ts",
+    "unit": "EchoExportCleanupService.cleanupHandler",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/catch",
+    "file": "apps/cli/src/node-io.ts",
+    "unit": "readText",
+    "status": "translated"
+  },
+  {
+    "concept": "try/catch",
+    "file": "packages/nodes-base/nodes/DeepL/GenericFunctions.ts",
+    "unit": "deepLApiRequest",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/catch",
+    "file": "packages/sdk/src/http-client.ts",
+    "unit": "HttpClient.send",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/catch",
+    "file": "apps/backend/src/skill-notifications/infrastructure/listeners/slack-skill-notification.listener.ts",
+    "unit": "SlackSkillNotificationListener.onSkillProgress",
+    "status": "translated"
+  },
+  {
+    "concept": "try/catch",
+    "file": "apps/backend/src/workflow/workflow-engine/workflow-node-executor/nodes/JsonParseNode.ts",
+    "unit": "JsonParseNode.preCompute",
+    "status": "translated"
+  },
+  {
+    "concept": "try/catch",
+    "file": "libs/langchain-core/src/runnables/base.ts",
+    "unit": "RunnableWithFallbacks._streamIterator",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/catch",
+    "file": "packages/cli/src/InternalHooks.ts",
+    "unit": "InternalHooks.onWorkflowCrashed",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/catch",
+    "file": "libs/langchain-core/src/callbacks/manager.ts",
+    "unit": "CallbackManagerForChainRun.handleChainEnd",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/catch",
+    "file": "packages/cli/src/commands/auth/switch.command.ts",
+    "unit": "registerAuthSwitchCommand",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "tools/proof-host/src/shell-sweep-fixes-scenarios.ts",
+    "unit": "tabWithMode",
+    "status": "translated"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "core/conversations/src/keepers/burst-drain.ts",
+    "unit": "BurstDrain.run",
+    "status": "translated"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "tools/proof-host/src/nexus-folder-scenarios.ts",
+    "unit": "anUninstallThatCannotRemoveTheToolSaysSo",
+    "status": "translated"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "apps/backend/src/deployments/core/application/services/voice-reply.service.ts",
+    "unit": "VoiceReplyService.buildVoiceContent",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "apps/frontend/src/modules/DocumentTemplates/AddWordTemplateContent.tsx",
+    "unit": "AddWordTemplateContent",
+    "status": "translated"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "packages/storage/scripts/check-schema.ts",
+    "unit": "readTarget",
+    "status": "translated"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "packages/cli/src/util/tenant-http.stream-body.ts",
+    "unit": "readTextChunks",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "packages/sandbox/src/folder.ts",
+    "unit": "FolderSandbox.readFile",
+    "status": "translated"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "packages/cli/src/commands/workspace-mount/install/win32/install-winfsp-msi.ts",
+    "unit": "installWinFspMsi",
+    "status": "lint-out"
+  },
+  {
+    "concept": "try/finally only",
+    "file": "apps/backend/src/tools/scripts/heal-prompt-mark-splitting.ts",
+    "unit": "main",
+    "status": "translated"
+  }
+]

@@ -29,7 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals } from '../common.mjs';
-import { lintFile, exceptionUnitsOf, mayFaultPure } from '../lint/lint.mjs';
+import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 
 const K = ts.SyntaxKind;
@@ -133,6 +133,7 @@ export function translate(file, fnName, opts = {}) {
   let pending = []; // hoisted `var (wld, tN) := ...;` lines of the statement being translated, in source order
   let tempCount = 0;
   let faultMode = false;
+  let completionMode = false;
   const FAULT_CHECK = '// fault checkpoint';
   const effectfulUnits = new Set(); // same-file units that take and return the world
   const PURE_RECEIVERS = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Buffer', 'Array', 'BigInt', 'Symbol', 'Object']); // Object.keys/values/entries/assign/fromEntries: pure functions of their arguments (the lint refuses the prototype ones)
@@ -173,9 +174,9 @@ export function translate(file, fnName, opts = {}) {
   }
   // try/catch, exact: an effect inside the body may fault; the fault is a flag on the world, checked after each statement
   // of the body that makes a transition (or throws); the catch path binds the fault value and runs with the flag cleared.
-  // A try without a catch, or whose body loops over an effect, stays an opaque block.
+  // complex try statements keep their text-keyed opaque transition; the gate is local to the statement.
   const loopsOverEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x)) && !isLoopCallback(x)) return; if ((isLoopCallback(x) || ts.isForOfStatement(x) || ts.isForStatement(x) || ts.isWhileStatement(x) || ts.isForInStatement(x)) && containsEffect(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
-  const exactTry = (x) => core && ts.isTryStatement(x) && !!x.catchClause && !loopsOverEffect(x.tryBlock) && !(x.catchClause && loopsOverEffect(x.catchClause.block));
+  const exactTry = (x) => core && ts.isTryStatement(x) && !opaqueExceptionTry(x, checker);
   const isOpaqueStmt = (x) => (ts.isTryStatement(x) && !exactTry(x)) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
   // `xs.forEach((x) => body)` as a statement: a loop over xs whose body is the callback's body, each iteration's transitions
   // in order. The callback takes one plain parameter and returns nothing (a `return` inside it would end one step).
@@ -1703,13 +1704,15 @@ export function translate(file, fnName, opts = {}) {
           const temps = names.map((nm, k) => (nm === '_' || nm === null ? `_` : `${t}m${k}`));
           pending.push(`var (${[...(eff ? [WORLD] : []), t, ...temps].join(', ')}) := ${fname(f.text)}(${[...(eff ? [WORLD] : []), ...fuelArg(callee), ...args].join(', ')});`);
           names.forEach((nm, k) => { if (nm && nm !== '_') pending.push(`var ${nm} := ${t}m${k};`); });
-          if (faultMode && eff) pending.push(FAULT_CHECK);
+          if (eff && (faultMode || (completionMode && exceptionUnits.has(callee.name)))) pending.push(FAULT_CHECK);
           return t;
         }
         if (effectfulUnits.has(f.text)) {
           if (!unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
-          return hoist(`${fname(f.text)}(${[WORLD, ...fuelArg(callee), ...args].join(', ')})`, dtype(rt, n));
+          const value = hoist(`${fname(f.text)}(${[WORLD, ...fuelArg(callee), ...args].join(', ')})`, dtype(rt, n));
+          if (!faultMode && completionMode && exceptionUnits.has(callee.name)) pending.push(FAULT_CHECK);
+          return value;
         }
         return `${fname(f.text)}(${[...fuelArg(callee), ...args].join(', ')})`;
       }
@@ -1747,7 +1750,9 @@ export function translate(file, fnName, opts = {}) {
         if (effectfulUnits.has(callee.name)) {
           if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure method');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
-          return hoist(`${fname(callee.name)}(${[WORLD, ...fuelArg(callee), ...selfArg, ...args].join(', ')})`, dtype(rt, n));
+          const value = hoist(`${fname(callee.name)}(${[WORLD, ...fuelArg(callee), ...selfArg, ...args].join(', ')})`, dtype(rt, n));
+          if (!faultMode && completionMode && exceptionUnits.has(callee.name)) pending.push(FAULT_CHECK);
+          return value;
         }
         return `${fname(callee.name)}(${[...fuelArg(callee), ...selfArg, ...args].join(', ')})`;
       }
@@ -1991,7 +1996,7 @@ export function translate(file, fnName, opts = {}) {
       chain.push({ cond: pendingConds.join(' || '), stmts: body });
       pendingConds = [];
     }
-    if (!faultMode && dflt === null && chain.length && !(retType(currentUnit).flags & (TF.Void | TF.Undefined))) {
+    if (!exceptionUnits.has(currentUnit?.name) && dflt === null && chain.length && !(retType(currentUnit).flags & (TF.Void | TF.Undefined))) {
       // no default and a value must come out: TypeScript accepted the switch as exhaustive, so the last case is the fall-back
       dflt = chain.pop().stmts;
     }
@@ -2344,9 +2349,17 @@ export function translate(file, fnName, opts = {}) {
     const after = [...cc.block.statements, ...(t.finallyBlock ? t.finallyBlock.statements : []), ...cont.rest];
     return `${lines.join('\n')}\n${tr(after, cont.fin, u)}`;
   }
+  const unitNameOfCall = (n) => {
+    const decl = checker.getResolvedSignature(n)?.declaration;
+    return [...fns.values()].find((u) => u.fn === decl)?.name;
+  };
   // a transition completes before its result is used; a fault resumes the enclosing handler
   function faultEval(read, next, ctx) {
-    const { lines, text } = captureParts(read);
+    const oldFault = faultMode, oldCompletion = completionMode;
+    faultMode = !!ctx.check; completionMode = true;
+    let parts;
+    try { parts = captureParts(read); } finally { faultMode = oldFault; completionMode = oldCompletion; }
+    const { lines, text } = parts;
     let out = next(text);
     for (let i = lines.length - 1; i >= 0; i--) {
       if (lines[i] === FAULT_CHECK) out = `if ${faultPreds().faulted}(${WORLD}) then\n${indentBlock(wrapLet(ctx.fault()))}\nelse\n${indentBlock(wrapLet(out))}`;
@@ -2361,7 +2374,7 @@ export function translate(file, fnName, opts = {}) {
   // normal, return and throw are separate continuations; finally runs before the saved completion
   function faultTry(s, next, u, ctx) {
     const P = faultPreds();
-    const cleanup = (resume) => s.finallyBlock ? faultTr([...s.finallyBlock.statements], resume, u, ctx) : resume();
+    const cleanup = (resume) => s.finallyBlock ? faultTr([...s.finallyBlock.statements], resume, u, { ...ctx, check: true }) : resume();
     const ret = (code) => {
       const saved = `return${tempCount++}_`;
       return `var ${saved} := ${code};\n${cleanup(() => ctx.ret(saved))}`;
@@ -2375,18 +2388,28 @@ export function translate(file, fnName, opts = {}) {
       const cc = s.catchClause;
       if (!cc) return fault();
       const binding = cc.variableDeclaration ? `var ${dn(cc.variableDeclaration.name.text)}: Any := ${P.value}(${WORLD});\n` : '';
-      return `${binding}var ${WORLD} := ${P.clear}(${WORLD});\n${faultTr([...cc.block.statements], done, u, { ret, fault })}`;
+      return `${binding}var ${WORLD} := ${P.clear}(${WORLD});\n${faultTr([...cc.block.statements], done, u, { ret, fault, check: !!s.finallyBlock || !!ctx.check })}`;
     };
-    return faultTr([...s.tryBlock.statements], done, u, { ret, fault: caught });
+    return faultTr([...s.tryBlock.statements], done, u, { ret, fault: caught, check: true });
   }
   function faultTr(list, fin, u, ctx) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
     const next = () => faultTr(rest, fin, u, ctx);
+    if (!ts.isTryStatement(s) && opaqueExceptionTry(s, checker)) {
+      let propagates = false;
+      const scan = (n) => {
+        if (ts.isFunctionLike(n)) return;
+        if (ts.isThrowStatement(n) || ts.isTryStatement(n) || (ts.isCallExpression(n) && exceptionUnits.has(unitNameOfCall(n)))) propagates = true;
+        ts.forEachChild(n, scan);
+      };
+      scan(s);
+      return propagates ? opaqueCompletion(s, next, u, ctx) : tr([s], next, u);
+    }
     switch (s.kind) {
       case K.Block: return faultTr([...s.statements, ...rest], fin, u, ctx);
       case K.EmptyStatement: return next();
-      case K.TryStatement: return faultTry(s, next, u, ctx);
+      case K.TryStatement: return exactTry(s) ? faultTry(s, next, u, ctx) : opaqueCompletion(s, next, u, ctx);
       case K.ReturnStatement: return faultEval(() => s.expression ? expr(s.expression, retType(u)) : 'Unit', ctx.ret, ctx);
       case K.ThrowStatement: return faultEval(() => expr(s.expression, anyTarget()), (value) => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${value});\n${ctx.fault()}`, ctx);
       case K.IfStatement: return faultEval(() => truthy(s.expression), (cond) => {
@@ -2430,7 +2453,7 @@ export function translate(file, fnName, opts = {}) {
         const fd = LT && e.right ? dtype(typeOf(e.right), e) : td;
         return `var ${dn(n)}: ${td} := ${convertD(value, fd, td)};\n${next()}`;
       }, ctx);
-      default: return fail(s, 'exception completion is not read for this statement; use straight-line units');
+      default: return tr([s], next, u);
     }
   }
   function tr(list, fin, u) {
@@ -2441,7 +2464,7 @@ export function translate(file, fnName, opts = {}) {
     const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) return `${code}${code ? '\n' : ''}${tr(r, fin, u)}`; const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
     const more = (r = rest) => (tryOf(s) && containsEffect(s) ? guard('', r) : more0(r));
     switch (s.kind) {
-      case K.TryStatement: if (exactTry(s)) { s.__cont = { rest, fin }; return tr([...s.tryBlock.statements, ...(s.finallyBlock ? s.finallyBlock.statements : []), ...rest], fin, u); } return opaqueBlock(s, rest, fin, u);
+      case K.TryStatement: return exactTry(s) ? faultTry(s, () => tr(rest, fin, u), u, { ret: (code) => retIn(wrapRet(code)), fault: () => retIn(faultResult(u)) }) : opaqueBlock(s, rest, fin, u);
       case K.Block: return tr([...s.statements, ...rest], fin, u);
       case K.EmptyStatement: return more();
       case K.ReturnStatement: {
@@ -2450,7 +2473,7 @@ export function translate(file, fnName, opts = {}) {
         if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
         return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
       }
-      case K.ThrowStatement: return fail(s, 'throw needs the exception completion reading');
+      case K.ThrowStatement: return capture(() => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${expr(s.expression, anyTarget())});\n${retIn(faultResult(u))}`);
       case K.VariableStatement: {
         const d0 = s.declarationList.declarations[0];
         const pam = s.declarationList.declarations.length === 1 && ts.isIdentifier(d0.name) && d0.initializer ? (promiseAllMapShape(d0.initializer) || arrayCallbackShape(d0.initializer)) : null;
@@ -2540,15 +2563,25 @@ export function translate(file, fnName, opts = {}) {
   // receiver), outputs are the locals it assigns and, when it may return, the function's result. The same text on both
   // sides is the same transition; a changed text is a different one, so a changed block is never provably equal. The
   // name also lists the same-file functions the block calls: the theorem refuses the block when one of them changed.
-  function opaqueBlock(s, rest, fin, u) {
+  // an opaque statement that cannot fall through returns its completion directly
+  const alwaysLeaves = (s) => {
+    if (ts.isReturnStatement(s) || ts.isThrowStatement(s)) return true;
+    if (ts.isBlock(s)) return s.statements.some(alwaysLeaves);
+    if (ts.isIfStatement(s)) return !!s.elseStatement && alwaysLeaves(s.thenStatement) && alwaysLeaves(s.elseStatement);
+    if (ts.isTryStatement(s)) return (s.finallyBlock && alwaysLeaves(s.finallyBlock)) || (alwaysLeaves(s.tryBlock) && (!s.catchClause || alwaysLeaves(s.catchClause.block)));
+    return false;
+  };
+  function opaqueStep(s, u) {
     if (!unitEffectful()) fail(s, 'internal: an opaque block in a unit not marked effectful');
     const returns = containsReturn(s);
+    const terminal = returns && alwaysLeaves(s);
     const M = assignedOutside(s).filter((m) => !m.synthetic).map((m) => ({ ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) }));
     // inputs: every local the block reads, and every local it assigns (it may read it first)
     const free = [...M, ...freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }))];
     let usesSelf = false; const calls = new Set();
     const w = (x) => {
       if (x.kind === K.ThisKeyword) usesSelf = true;
+      if (ts.isCallExpression(x)) { const name = unitNameOfCall(x); if (name) calls.add(name); }
       if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && fns.has(x.expression.text) && originOf(checker, x.expression, sf, currentUnit?.node ?? null).kind === 'unit') calls.add(x.expression.text);
       if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
       ts.forEachChild(x, w);
@@ -2560,7 +2593,7 @@ export function translate(file, fnName, opts = {}) {
     const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
     const id = `block_${hash(text)}${calleeTag ? '_calls_' + calleeTag : ''}`;
     const inTypes = ['World', ...(usesSelf ? [selfType(u)] : []), ...free.map((v) => v.d)];
-    const outTypes = ['World', ...(returns ? [`Option<${RD}>`] : []), ...M.map((m) => m.d)];
+    const outTypes = ['World', ...(returns ? [terminal ? RD : `Option<${RD}>`] : []), ...M.map((m) => m.d)];
     if (returns) usesOption = true;
     const name = external(id, inTypes, outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`);
     // record the callees on the prelude block so the theorem can refuse a block whose callee changed
@@ -2569,6 +2602,11 @@ export function translate(file, fnName, opts = {}) {
     const args = [WORLD, ...(usesSelf ? [SELF] : []), ...free.map((v) => dn(v.name))];
     const outs = [WORLD, ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
     const line = outs.length === 1 ? `var ${outs[0]} := ${name}(${args.join(', ')});` : `var (${outs.join(', ')}) := ${name}(${args.join(', ')});`;
+    return { line, returns, terminal };
+  }
+  function opaqueBlock(s, rest, fin, u) {
+    const { line, returns, terminal } = opaqueStep(s, u);
+    if (terminal) return `${line}\n${retIn(wrapRet('retb'))}`;
     if (!returns) return `${line}\n${tr(rest, fin, u)}`;
     return `${line}\nif retb.Some? then\n${indentBlock(retIn(wrapRet('retb.value')))}\nelse\n${indentBlock(wrapLet(tr(rest, fin, u)))}`;
   }
@@ -2612,6 +2650,11 @@ export function translate(file, fnName, opts = {}) {
     const name = `cb${tempCount++}_`;
     const body = capture(() => callbackLoop(node, shape, name, resultType, [], () => `(${WORLD}, ${name})`, currentUnit));
     return hoist(wrapLet(body), dtype(resultType, node));
+  }
+  function opaqueCompletion(s, next, u, ctx) {
+    const { line, returns, terminal } = opaqueStep(s, u);
+    const after = terminal ? ctx.ret('retb') : returns ? `if retb.Some? then\n${indentBlock(wrapLet(ctx.ret('retb.value')))}\nelse\n${indentBlock(wrapLet(next()))}` : next();
+    return `${line}\nif ${faultPreds().faulted}(${WORLD}) then\n${indentBlock(wrapLet(ctx.fault()))}\nelse\n${indentBlock(wrapLet(after))}`;
   }
   function coreLoop(s, rest, fin, u) {
     const id = loopCount++;
@@ -2763,7 +2806,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function emitUnit(u) {
     currentUnit = u;
-    faultMode = core && exceptionUnits.has(u.name);
+    faultMode = false;
     loopCount = 0;
     const rt = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
     const name = fname(u.name);
@@ -2781,8 +2824,8 @@ export function translate(file, fnName, opts = {}) {
       if (eff) addPrelude('World', 'type World');
       const endVal = () => (u.isCtor || (retType(u).flags & (TF.Void | TF.Undefined)) ? wrapRet('Unit') : fail(u.node, 'a path ends without a return'));
       const ctx = { ret: wrapRet, fault: () => faultResult(u) };
-      const body0 = faultMode ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
-      const body = faultMode ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
+      const body0 = exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
+      const body = exceptionUnits.has(u.name) ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
       const withCtor = u.isCtor ? `${ctorPrefix(u)}${body}` : body;
       const mutLets = mutatedOf(u).map((m) => `var ${dn(m)} := ${dn(m)};`); // a mutated parameter starts as the argument and is rebound by the body
       const full = [...sp.lets, ...mutLets].length ? `${[...sp.lets, ...mutLets].join('\n')}\n${withCtor}` : withCtor;

@@ -87,27 +87,26 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 
 ## What is a fault
 
-A straight-line exception unit has a second outcome channel in its returned world: an optional thrown
-value, beside the opaque outside history. `throw e` raises that fault; the ordinary result slot is unused.
-A same-file call tests its returned fault before using its result or running the next expression.
-Conditions and return expressions also test faults. The same-file call component of a unit with `throw`
-or `try`, or a known failing pure call, uses this reading, so an otherwise pure throwing function takes and returns the world.
-Every world transition in these units can fault. An outside method lookup is a transition before its
-arguments, so a throwing argument does not erase the lookup. Catch binds the fault value and clears it.
+An uncaught `throw e` raises a concrete optional fault in the returned world and ends the unit;
+the ordinary result slot is unused. A same-file exception call propagates that outcome before using
+its result. Throwing functions and their callers need the world; ordinary callees keep their reading.
 
-`finally` runs on normal, return and throw paths. A return value is saved before cleanup. A pending
-throw is saved and cleared while cleanup runs, then restored. A return or throw from cleanup overrides
-the saved outcome. Nested catches and finalizers use the same completion rules. `JSON.parse/stringify`,
-`new URL/RegExp`, `BigInt` and URI codecs are may-fault transitions. Other implicit library exceptions
-remain a coverage gap; repeated pure calls may not prove equivalent to a single call.
-Lane B executes the JavaScript and observes throws and the ordered fake requests.
+Inside an exact try, transition checkpoints abort evaluation before the next expression and catch
+binds and clears the fault. Outside method lookup precedes arguments. Finally runs on normal,
+return and throw paths, preserving the saved completion unless cleanup returns or throws.
+General transition checkpoints do not spread through the whole unit or its callees.
+`JSON.parse/stringify`, `new URL/RegExp`, `BigInt` and URI codecs are may-fault transitions;
+other implicit library exceptions remain a gap. Lane B executes the actual JavaScript.
 
 ## What is an opaque block
 
-A `while` loop without `// @decreases` outside an exception unit
-becomes one uninterpreted transition named by the block's own text, taking the variables the block reads and
-returning the ones it assigns. The same block on both sides is the same transition; a changed block is a different
-one, never proved equal and never proved different (the execution lane decides it).
+A try containing loops, callbacks, unsafe expression sequencing or duplicate bindings retains a
+text-keyed opaque transition, including complex finally statements and object-valued completions.
+A loop containing an explicit throw or exception call uses an opaque completion too. Ordinary loops
+and callbacks keep their existing reading. A `while` without `// @decreases` remains opaque.
+The transition takes the locals read and returns the locals assigned, the world and any result.
+A statement that cannot fall through has a terminal result. Changed block text cannot silently
+prove equal, and same-file callee dependency guards catch changes hidden behind the block.
 
 ## What is refused
 
@@ -115,11 +114,9 @@ one, never proved equal and never proved different (the execution lane decides i
 |---|---|---|
 | `dynamic-key` | record keys that are unrestricted strings, numbers, missing fields, method values or calls inside the key; optional/union receivers must first be narrowed | `r[k]` with `k: string` and `r: { a: number }` |
 | `index-assign` | dynamic writes to records | `r[k] = v` with `k: "a" \| "b"` |
-| `exception-loop` | loops in the same-file call component of an exception unit | `for (const x of xs) { if (x < 0) throw "bad"; }` |
-| `exception-callback` | nested function values and function-valued calls in exception units; throwing units passed as values | `xs.map(throwingUnit)` |
-| `exception-expression` | lazy expressions, optional-call arguments, switch tests or defaults with calls or receiver-field effects | `x && throwingUnit(x)` |
-| `exception-binding` | repeated local binding names across exception continuations | `try { ... } catch (x) { ... }` when `x` is also a parameter |
-| `exception-return` | a nonprimitive return whose enclosing finally may reach its aliases | `try { return xs; } finally { xs.push(1); }` |
+| `exception-callback` | throwing callbacks or throwing units passed as values outside an opaque try | `xs.map(throwingUnit)` |
+| `exception-binding` | a try local shadows a binding read by its finally | `try { const x = 1; return x; } finally { x += 1; }` |
+| `exception-return` | a returned object alias directly referenced by its finally | `try { return xs; } finally { xs.push(1); }` |
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
 | `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |
 | `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |

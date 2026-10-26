@@ -1,5 +1,7 @@
 # Exceptions across calls: validation
 
+Historical validation for `0a6ac74`. The scoped revision and current acceptance results are in [exceptions-across-calls-revision-validation.md](exceptions-across-calls-revision-validation.md).
+
 Worktree: `/Users/assem/nexus/nexus-organisation/work/lean-lanes/exceptions-across-calls`.
 Branch: `lane/exceptions-across-calls`. No push.
 
