@@ -92,6 +92,9 @@ function reactRuntime(env) {
   const proxy = new Proxy(runtime, { get(t, p) { if (p === '__esModule') return true; if (p === 'default') return proxy; return p in t ? t[p] : env.module('react')[p]; } });
   return proxy;
 }
+const isJsxValue = (v) => (Array.isArray(v) ? v.some(isJsxValue) : !!v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el'));
+// the layer a front-end verdict names (research 18, 19: every verdict names its layer and its admitted set)
+export const FRONT_END_OBSERVATION = Object.freeze({ layer: 'element tree', renders: 'one', handlers: 'each invoked once on a fake event, its result and requests recorded', effects: 'run once after the render, in registration order; cleanups recorded as pending', schedule: 'synchronous; microtasks drained after the call; timers recorded as pending, never fired' });
 // handlers are observed after render and registered effects, in tree order, on a bounded event input
 async function observeJsx(v, env) {
   if (Array.isArray(v)) { const items = []; for (const x of v) items.push(await observeJsx(x, env)); return items; }
@@ -241,6 +244,7 @@ export async function observe(side, spec, args, ms) {
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); }
     }
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
+    if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
     outcome = { returned: render(outcomeValue) };
   } catch (e) {
     if (e && e.message === '__timeout__') return { harness: 'timeout' };
@@ -274,7 +278,7 @@ export async function runPair(opts) {
   try { spec = specOf(candidate, unit, { project }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   const diffs = [];
-  let harnessAsk = null;
+  let harnessAsk = null, sawJsx = false;
   for (let i = 0; i < n; i++) {
     const sides = {};
     for (const [name, file] of [['parent', parent], ['candidate', candidate]]) {
@@ -293,6 +297,7 @@ export async function runPair(opts) {
     if (harnessAsk) break;
     const oP = await observe(sides.parent, spec, sides.parent.inputs, ms);
     const oC = await observe(sides.candidate, spec, sides.candidate.inputs, ms);
+    if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
@@ -301,6 +306,7 @@ export async function runPair(opts) {
     }
   }
   const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work' };
+  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
   return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
