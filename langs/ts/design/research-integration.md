@@ -1,6 +1,6 @@
 # Integrating the five research results into lean
 
-Design note, 2026-10-26, second version. Sources: the five deep-research results on briefs 13 to 17 (shared
+Design note, 2026-10-26, third version (section 10 added for the front-end results). Sources: the five deep-research results on briefs 13 to 17 (shared
 references, state over time, escaping functions, identity-bearing built-ins, dynamic features), read in full, and
 the five element dossiers under `research-elements/` (one per result, every named system opened at its primary
 artifact where reachable, with a verdict DEPENDENCY / PORT / REFERENCE / IRRELEVANT and the file-level HOW).
@@ -163,6 +163,95 @@ escape, and (finding 3) the `Object` prototype functions; rewrites labelled `pro
 with the ESLint preconditions where ESLint has one and a stricter one where it has none; the refusal-economics
 script over the corpus's changed functions.
 
+## 10. Front-end (briefs 18 and 19)
+
+Sources: the three results read in full on 2026-10-26 (two on brief 18: 49 and 65 items; one on brief 19: 58
+items), judged element by element in `research-elements/18-front-end.md` and `19-interface-equality.md`.
+Verdict counts over the 172 items: PORT 12, DEPENDENCY 4 (two distinct: React-tRace, fast-check), REFERENCE 49,
+IRRELEVANT 107. The 107 are the browser layers (DOM, computed style, layout, pixels, accessibility tree), the
+raster metrics and datasets, the trained models, the dead builds and the fields with no display in them.
+
+**The one finding all three share:** there is no single "same" for a screen. Equality is `Same(L, E, S)`: at a
+layer L, in an environment E, over an admitted set S of inputs, states, events and schedules. PASS needs a
+proof over a named model or a complete exploration of a finite state space; a bounded run is never PASS;
+WITNESS carries the shortest replayable sequence and the first differing layer; ASK is a bound hit; REFUSE
+names the unsupported construct.
+
+**What lean holds today** (measured, not claimed): lane A reads a render as the tree `JsxNode`
+(`translate.mjs:534`), handlers as descriptors or opaque values (`:2049`, `:2112`), `useMemo`/`useCallback`
+exact under coverage (`react.mjs:63`); lane B mounts one render with fake hooks (`run.mjs:73-93`), runs the
+effects once (`:239`) and invokes each handler once (`:96`). The three results call this the right first layer
+and say: keep it, label it "tree, one render". The census holds 2,041 `.tsx` files against 9,955 `.ts`
+(measured 2026-10-26); brief 18 counted 2,585 hook calls and 1,560 handler attributes.
+
+### 10.1 The layer lean decides, and the layers it never will
+
+| Layer | lean | Why |
+|---|---|---|
+| element tree | decided today (one render); proved or decided over sequences after 10.2 | a value, no browser |
+| effect and setter trace | observed today; ordered queue after 10.2 | lane B records it |
+| pending work and schedule | observed; a named class after the clock row | the HTML event loop fixes task-source order and the microtask drain; paint cadence is the browser's |
+| committed DOM | out | needs a DOM; a tree WITNESS is stronger for markup changes |
+| computed styles, layout | out | needs a browser and a stylesheet model; a class name change is a tree WITNESS, its visual effect unjudged |
+| pixels | out | needs a pinned browser, fonts and a threshold; a threshold is not transitive; no proof exists anywhere |
+| accessibility tree | out unless asked | a computed projection from the tree (Core-AAM) is possible as an opt-in weaker layer; it is Cue's addition and waits for the owner |
+
+### 10.2 The mechanism: a component is a Mealy machine on the ledger
+
+- **State** = the hook slots (one cell per `useState`, keyed by call order; a `useRef` cell), plus the props.
+- **Input** = a command: `set(slot, value)` through a captured setter, `fire(handler, event)`, `settle`
+  (drain microtasks, run the effects whose deps changed by `Object.is`, cleanup first, layout effects before
+  passive), `unmount` (every cleanup), `tick` (the virtual clock).
+- **Output** = the tree and the trace after each command.
+- **Lane B** runs command sequences with retained slots (the retained-state runner of section 5 gains these
+  commands); after every command it re-renders and compares the tree and the trace; a divergence is a
+  WITNESS with the command sequence; a clean run is PASS-bounded with the sequence count and depth.
+- **Lane B, finite**: when every slot type and every prop is finite by the types (boolean, literal union, enum,
+  null or undefined), the product of the two machines is explored fully (the finite-state lane of section 5):
+  PASS-decided with the pair count; the shortest separating sequence as WITNESS. A census of `useState<T>`
+  types says how many corpus components qualify before the lane is built.
+- **Lane A** proves the step: equal props and slots give an equal tree and equal handler descriptors; the
+  descriptors' deferred `set` steps are the slot transition, so equal descriptors give equal next slots;
+  induction over the sequence is the bisimulation certificate (dossier 19, items 02 and 03). The slots are
+  cells of the ledger (`heap.mjs` shapes), the setter a `Set_` on a slot, the re-render a call of the render
+  unit on the new slots; one lemma per unit, as the heap core.
+- **Semantics source**: React-tRace's 44 rules (MIT) fix setter-during-render, effect timing and cleanup; its
+  38 tests run against lane B's fake runtime in `exec/react-trace.mjs`, as Test262 validates the library
+  table. The repository is opened at that row; if its tests are not JavaScript, the 18 scenarios are ported
+  by hand and the port is said.
+
+### 10.3 The checks lean adds without a browser
+
+- **Layer in the certificate**: `check.mjs:29` and `run.mjs:303` carry `observation: {layer: 'tree', renders:
+  'one' | 'sequence(k)' | 'all-finite', effects: 'ordered', schedule: 'sync commits, microtasks per command,
+  timers by virtual clock'}`. Today's PASS on a component is "tree, one render" and says so.
+- **Purity, two ways**: the lint refuses `hook-order` (a hook call under a branch, loop, nested function or
+  after an early return) and `render-impure` (a write to an outer, captured or module variable during render,
+  outside handlers and effects); lane B renders each side twice from the same slots and a differing tree or
+  trace is REFUSE `render-impure` with both renders (Strict Mode's rule, run by lean alone).
+- **Suspense**: a thenable thrown during render, or `use()` from react, ends the run as `ASK:suspense`.
+- **Keys**: keys are props and are compared; a child component is a name in the tree and is never rendered
+  (its state is its own unit's), so instance retention across re-renders is out of the unit's scope. Stated
+  in the certificate's layer line.
+- **Effects as an ordered queue**: deps compared by `Object.is`, cleanup before re-run and on unmount,
+  `useLayoutEffect` before `useEffect`; a differing effect trace over a sequence is a WITNESS at the effect
+  layer.
+- **Schedule class**: the clock row (section 6) gains animation frames and idle callbacks as timer kinds and a
+  microtask checkpoint after each command; anything outside the class is ASK.
+- **Class components**: counted in the corpus first (`extends Component`); a lifecycle machine in the fake
+  runtime only if the count earns it.
+
+### 10.4 What cannot be done, by theorem or by setting
+
+- Styles, layout, pixels, the accessibility tree: a browser, a pinned environment and a threshold; no proof
+  exists in any field read; out of lean.
+- Unbounded slot types (a string or number in `useState`): PASS-bounded only; equality over all sequences is
+  undecidable in general (Rice), so only the finite case is decided.
+- Concurrent-mode interruption and retry: an implementation detail; lean compares commits only.
+- Hydration, server components, streaming: no server in the sandbox.
+- A catch rate: no dataset of React component regressions exists; lean's measure is its own corpus, and the
+  count of front-end defects among the 43 is still to be taken.
+
 ## 8. Order of work
 
 1. The four findings of section 0 (lint refusals; the cleared-timer gap with the clock). Days: 1 plus the clock.
@@ -171,6 +260,10 @@ script over the corpus's changed functions.
 4. The program runner on fast-check, the virtual clock, callable records (section 6). Days: 21 to 32.
 5. Explicit operands and labelled rewrites, the refusal-economics script (section 7). Days: 7 to 9.
 6. Korat enumeration and the canonical-heap certificate (section 3). Days: 8.
+7. Front-end (section 10): the layer line in the certificate, the purity refusals, the suspense ASK and the
+   two censuses (finite slot types, class components) now, days 4; the hook-slot runtime with re-render
+   sequences and the React-tRace corpus beside step 3, days 5; finite components inside the finite-state lane
+   of step 3, days 3; lane A's slot lemma after the runtime proves useful, days 6.
 
 Each step carries its validating measurement: the named pairs, the bench domains, the corpus re-measure. Days are
 CLAIM from the dossiers.
@@ -180,4 +273,6 @@ CLAIM from the dossiers.
 No model anywhere in lean (owner, 2026-10-26, Jev retracted): no learned invariants, no model-proposed couplings,
 no learned perceptual metric. No JVM, OCaml, Coq, Haskell or .NET dependency (ESMeta, Hobbit, JSCert, TorXakis,
 Coyote are references). No bisimulation up-to engine in this cycle. No conformance suite as a proof: Test262 is a
-corpus for validation only.
+corpus for validation only. No browser layer (DOM, styles, layout, pixels, accessibility tree): lean decides
+the tree, the effect trace and the schedule class, and names that layer in every front-end verdict
+(section 10); an accessibility projection waits for the owner's ask.
