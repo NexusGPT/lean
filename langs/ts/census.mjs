@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { lintFile } from './lint/lint.mjs';
-import { loadMany, topLevelFunctions, lineOf } from './common.mjs';
+import { loadManyChunks, topLevelFunctions, lineOf } from './common.mjs';
 
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
 const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
@@ -37,10 +37,10 @@ export function census(root, opts = {}) {
     if (limit && list.length >= limit) break;
     list.push(file);
   }
-  // one program per tsconfig, every file of the project as a root: the type checker is built once, not per file
-  const loaded = loadMany(list, { log });
-  log(`${list.length} files in ${loaded.size ? new Set([...loaded.values()].map((l) => l.projectFile ?? '')).size : 0} projects, ${Math.round((Date.now() - t0) / 1000)} s to load`);
-  for (const file of list) {
+  // one program per tsconfig (in chunks), every file of the project as a root: the type checker is built once per
+  // chunk, not per file, and a chunk is dropped once its files are linted
+  for (const loaded of loadManyChunks(list, { log })) for (const abs of loaded.keys()) {
+    const file = abs;
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);

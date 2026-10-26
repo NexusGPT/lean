@@ -85,21 +85,28 @@ export function loadProgram(file, opts = {}) {
  * checker, diagnostics, abs, projectFile}; a file whose project cannot read it maps to {error}.
  */
 export function loadMany(files, opts = {}) {
+  const out = new Map();
+  for (const part of loadManyChunks(files, opts)) for (const [k, v] of part) out.set(k, v);
+  return out;
+}
+
+// loadManyChunks: the same, one Map per chunk of one project, so a caller can lint a chunk and let it go
+export function* loadManyChunks(files, opts = {}) {
   const groups = new Map(); // configFile|'' -> [abs]
   for (const f of files) {
     const abs = path.resolve(f);
     const cfg = opts.project === false ? null : (ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? null);
     const k = cfg ?? ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(abs);
   }
-  const out = new Map();
   const CHUNK = opts.chunk ?? 1200; // a program over thousands of roots exhausts the heap; chunks share nothing but cost little
   const chunks = [];
   for (const [cfg, absList] of groups) for (let i = 0; i < absList.length; i += CHUNK) chunks.push([cfg, absList.slice(i, i + CHUNK)]);
   for (const [cfg, absList] of chunks) {
+    const out = new Map();
     // options exactly as loadProgram computes them, with the whole group as roots
     const first = loadProgramOptions(absList[0], cfg || null);
     let program;
-    try { program = ts.createProgram(absList, first.options); } catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); continue; }
+    try { program = ts.createProgram(absList, first.options); } catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); yield out; continue; }
     const checker = program.getTypeChecker();
     for (const abs of absList) {
       const sf = program.getSourceFile(abs);
@@ -109,8 +116,8 @@ export function loadMany(files, opts = {}) {
       out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: cfg || null });
     }
     opts.log?.(`project ${cfg || '(none)'}: ${absList.length} files`);
+    yield out;
   }
-  return out;
 }
 
 // the compiler options loadProgram uses for a file under a config (shared by loadProgram and loadMany)
