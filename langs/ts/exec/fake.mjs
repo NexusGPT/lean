@@ -96,13 +96,13 @@ export class Environment {
         env.record('call', path, args.map((x) => render(x)));
         // called with a real function first (a class or member decorator, a wrapper): the callee keeps what it was
         // given, so the result is undefined and the decorated class stays the class
-        if (args.length && typeof args[0] === 'function' && !args[0].__isFake) {
+        if (env.loading && args.length && typeof args[0] === 'function' && !args[0].__isFake) { // decorators run while the module loads
           for (const a of args) if (typeof a === 'function' && !a.__isFake && a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) { try { const r = a(env.fake(`${path}#cb.arg0`), env.fake(`${path}#cb.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path, [String(e && e.message)]); } }
           return undefined;
         }
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
-        // a callback argument is invoked once with fakes, so its own reads reach the trace
-        for (const a of args) if (typeof a === 'function' && !a.__isFake) { try { const r = a(env.fake(`${path}#cb.arg0`), env.fake(`${path}#cb.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path, [String(e && e.message)]); } }
+        // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
+        if (!env.loading) for (const a of args) if (typeof a === 'function' && !a.__isFake && a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) { try { const r = a(env.fake(`${path}#cb.arg0`), env.fake(`${path}#cb.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path, [String(e && e.message)]); } }
         return env.answer(`${path}()#${k}`);
       },
       construct(t, args) { env.record('new', path, args.map((x) => render(x))); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); return env.fake(`new ${path}#${k}`); },
