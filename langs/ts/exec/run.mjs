@@ -73,6 +73,14 @@ class Suspended extends Error { constructor(why) { super(`suspense: ${why}`); th
 // hooks belong to React's render protocol, rather than the generic external callback fake
 function reactRuntime(env) {
   let slot = 0;
+  // an effect is a slot too: its body and deps from the latest render, the deps it last ran with, its cleanup. At the
+  // first render it joins the mount list (run once after the render); afterwards `settleEffects` re-runs it when a dep
+  // changed by Object.is, cleanup first (React's rule)
+  const effectSlot = (fn, deps, kind) => {
+    const i = slot++; const key = `${kind}:${i}`; const es = (env.effectSlots ??= []); const prev = es[i];
+    es[i] = { key, fn, deps, lastDeps: prev ? prev.lastDeps : undefined, cleanup: prev ? prev.cleanup : null, ran: prev ? prev.ran : false };
+    if (!prev) { env.pending.push({ op: key, deps: render(deps) }); (env.reactEffects ??= []).push(fn); }
+  };
   const runtime = {
     useMemo: (fn) => fn(),
     useCallback: (fn) => fn,
@@ -84,17 +92,13 @@ function reactRuntime(env) {
       const setter = (next) => { slots[i] = typeof next === 'function' ? next(slots[i]) : next; env.record('set', key, [render(slots[i])]); };
       return [value, setter];
     },
-    useEffect: (fn, deps) => {
-      const key = `react:effect:${slot++}`;
-      env.pending.push({ op: key, deps: render(deps) });
-      (env.reactEffects ??= []).push(fn);
-    },
+    useEffect: (fn, deps) => effectSlot(fn, deps, 'react:effect'),
     use: (x) => { if (x && typeof x.then === 'function') throw new Suspended('use(promise)'); return x; }, // a suspended render: no model of the fallback and the retry; the run ends as ASK:suspense
     useRef: (initial) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; }, // one box per slot, the same box on every render
     useId: () => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = `:r${i}:`; return slots[i]; }, // a stable id per slot
     useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
     useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { slots[i] = reducer(slots[i], action); env.record('set', key, [render(slots[i])]); }; return [slots[i], dispatch]; },
-    useLayoutEffect: (fn, deps) => { const key = `react:layout-effect:${slot++}`; env.pending.push({ op: key, deps: render(deps) }); (env.reactEffects ??= []).push(fn); }, // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
+    useLayoutEffect: (fn, deps) => effectSlot(fn, deps, 'react:layout-effect'), // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
   runtime.__beginRender = () => { slot = 0; }; // a render starts at slot 0 (React's call-order keying)
   const proxy = new Proxy(runtime, { get(t, p) { if (p === '__esModule') return true; if (p === 'default') return proxy; return p in t ? t[p] : env.module('react')[p]; } });
@@ -260,8 +264,9 @@ export async function observe(side, spec, args, ms) {
       if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
     }
     for (const effect of env.reactEffects ?? []) {
-      try { const cleanup = await withTimeout(Promise.resolve(effect()), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); }
-      catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); }
+      const es = (env.effectSlots ?? []).find((x) => x && x.fn === effect);
+      try { const cleanup = await withTimeout(Promise.resolve(effect()), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); if (es) { es.ran = true; es.lastDeps = es.deps; es.cleanup = typeof cleanup === 'function' ? cleanup : null; } }
+      catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
@@ -289,8 +294,72 @@ export async function observe(side, spec, args, ms) {
   return { outcome, heap, receiver, trace: env.trace, pending: env.pending };
 }
 
+// ----- re-render sequences: the component as a machine over its hook slots -----
+// After the mount, a bounded set of command sequences runs on both sides from a fresh mount each: `fire` a handler of
+// the current tree on a fake event, `settle` (effects whose deps changed by Object.is, cleanup first; microtasks
+// drained), re-render, compare the tree, the requests and the pending work; `unmount` closes every path (every
+// cleanup). A divergence is a WITNESS with the sequence; a clean run states its depth and breadth in the bound.
+const sameDeps = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((x, i) => Object.is(x, b[i]));
+async function settleEffects(env, ms) {
+  for (const es of env.effectSlots ?? []) {
+    if (!es) continue;
+    if (es.ran && es.deps !== undefined && sameDeps(es.deps, es.lastDeps)) continue;
+    if (es.cleanup) { env.record('call', `${es.key}.cleanup`, []); try { await withTimeout(Promise.resolve(es.cleanup()), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
+    env.record('call', es.key, []);
+    try { const c = await withTimeout(Promise.resolve(es.fn()), ms); es.cleanup = typeof c === 'function' ? c : null; } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', es.key, [render(e)]); }
+    es.ran = true; es.lastDeps = es.deps;
+  }
+  await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r));
+}
+const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers) } : v);
+const treeHandlers = (v, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeHandlers(c, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (/^on[A-Z]/.test(k) && typeof x === 'function') out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeHandlers(c, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); return out; };
+async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth }) {
+  const mount = async (name) => { // a fresh mount: the same seed gives the same fakes and the same inputs as the pair's run of this input
+    const env = new Environment(seed * 7919 + inputIndex); env.shapes = spec;
+    const exportsObj = sandbox(env, roots[name]).load(files[name]); const u = pickUnit(exportsObj, spec, env); if (!u) throw new Error(`${name}: unit ${unit} not exported`);
+    await new Promise((r) => setImmediate(r)); env.trace.length = 0; env.pending.length = 0; env.calls.clear();
+    const inputs = aliasInputs(inputsFor(spec, seed, inputIndex, env), spec, seed, inputIndex); env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake);
+    return { env, u, inputs };
+  };
+  const renderOnce = async (s) => { s.env.react?.__beginRender?.(); const r = s.u.call(s.inputs); return (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r; };
+  // run one command path on one side; returns the observation after every command
+  const runPath = async (name, labels) => {
+    const s = await mount(name); const obs = [];
+    let tree = await renderOnce(s); await settleEffects(s.env, ms); // the mount and its effects, as the pair's own run
+    for (const label of labels) {
+      const from = s.env.trace.length;
+      const h = treeHandlers(tree).find((x) => x.label === label);
+      if (!h) { obs.push({ command: label, missing: true, handlers: treeHandlers(tree).map((x) => x.label) }); return { obs, s }; }
+      try { const r = h.fn(s.env.fake(`react:event:${label}`)); if (r && typeof r.then === 'function') await withTimeout(r, ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('handler-throw', label, [render(e)]); }
+      tree = await renderOnce(s); await settleEffects(s.env, ms);
+      obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending) });
+    }
+    // unmount: every cleanup, in slot order
+    const from = s.env.trace.length;
+    for (const es of s.env.effectSlots ?? []) if (es && es.cleanup) { s.env.record('call', `${es.key}.cleanup`, []); try { await withTimeout(Promise.resolve(es.cleanup()), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
+    obs.push({ command: 'unmount', trace: s.env.trace.slice(from).map((x) => render(x)) });
+    return { obs, s, handlers: treeHandlers(tree).map((x) => x.label) };
+  };
+  let paths = 0; let frontier = [[]]; const done = new Set();
+  for (let level = 0; level <= depth; level++) {
+    const next = [];
+    for (const labels of frontier) {
+      const key = labels.join('>'); if (done.has(key)) continue; done.add(key); paths++;
+      let P, C;
+      try { P = await runPath('parent', labels); C = await runPath('candidate', labels); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended) return { ask: `sequence ${JSON.stringify(labels)}: ${e.message}` }; throw e; }
+      for (let k = 0; k < Math.max(P.obs.length, C.obs.length); k++) {
+        const a = JSON.stringify(P.obs[k] ?? null), b = JSON.stringify(C.obs[k] ?? null);
+        if (a !== b) return { witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null } };
+      }
+      if (level < depth) for (const label of (P.handlers ?? []).slice(0, breadth)) next.push([...labels, label]);
+    }
+    frontier = next;
+  }
+  return { paths };
+}
+
 export async function runPair(opts) {
-  const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true } = opts;
+  const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2 } = opts;
   // a missing parent unit has no equality question
   if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
     return runNew(opts);
@@ -331,6 +400,17 @@ export async function runPair(opts) {
   if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
+  if (sawJsx && sequenceDepth > 0) { // the one-render check found no difference: re-render sequences from a fresh mount, on the first inputs
+    let paths = 0;
+    for (let i = 0; i < Math.min(sequenceInputs, n); i++) {
+      const r = await runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth });
+      if (r.ask) return { verdict: 'ASK', reason: `input ${i}: ${r.ask}`, unit, bound };
+      if (r.witness) { bound.frontEnd.renders = `one, then command sequences of up to ${sequenceDepth} clicks`; return { verdict: 'WITNESS', unit, witnesses: [{ input: i, sequence: r.witness.sequence, step: r.witness.step, parent: r.witness.parent, candidate: r.witness.candidate, where: { field: 'sequence', command: r.witness.sequence[r.witness.step] ?? 'unmount' } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
+      paths += r.paths ?? 0;
+    }
+    bound.frontEnd.renders = `one, then every command sequence of up to ${sequenceDepth} clicks over at most ${sequenceBreadth} handlers per step, from a fresh mount, on ${Math.min(sequenceInputs, n)} inputs (${paths} paths); effects re-run by Object.is deps with cleanup first; unmount runs every cleanup`;
+    bound.frontEnd.notObserved = 'committed DOM, computed styles, layout, pixels, accessibility tree; timers never fire; sequences beyond the depth';
+  }
   return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
 }
 
@@ -356,7 +436,7 @@ function findRoot(file) {
 if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) {
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), project: a.includes('--no-project') ? false : opt('--project', true) });
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) });
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);
   if (out) fs.writeFileSync(out, text); else console.log(text);
