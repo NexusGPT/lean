@@ -10,6 +10,7 @@
 // structurally equal outcomes, agree. A candidate that asks something new, or reads a field the parent never read,
 // diverges on the trace.
 import { createHash } from 'node:crypto';
+import { generator } from './gen.mjs';
 
 export class BudgetError extends Error {}
 const depthOf = (path) => (path.match(/[.\[(]/g) || []).length;
@@ -31,6 +32,28 @@ export class Environment {
     this.calls = new Map(); // path -> number of calls so far
     this.loading = false;   // true while modules load: every answer is a handle
     this.cbDepth = 0;       // nesting of callbacks the environment is running
+    this.shapes = null;     // the unit's spec (defs, literals, strings, regexes, receiver, imports): typed answers draw from it
+  }
+  // A typed answer: the value at `path` generated from its declared shape, seeded by (seed, path) so the same question
+  // has the same answer on both sides and in any order. A method member is a callable fake that answers its return
+  // type; a service is a fake with typed members.
+  typed(path, tspec, optional = false) {
+    if (this.cache.has(path)) return this.cache.get(path);
+    if (!tspec) return this.answer(path);
+    if (tspec.kind === 'method' || tspec.kind === 'service') return this.fake(path, tspec);
+    if (tspec.kind === 'field') return this.typed(path, tspec.spec, tspec.optional);
+    if (tspec.kind === 'function') return this.fake(`${path}#fn`, tspec.returns ? { kind: 'method', returns: tspec.returns } : null);
+    const sh = this.shapes ?? {};
+    const h = createHash('sha256').update(`${this.seed}:typed:${path}`).digest().readUInt32BE(0);
+    const g = generator(h, sh.defs ?? {}, sh.literals ?? [], 0, sh.strings ?? [], sh.regexes ?? []);
+    const v = optional && g.rng() < 0.3 ? undefined : g.gen(tspec, 0, this, path);
+    this.cache.set(path, v);
+    return v;
+  }
+  // a member of a handle: typed when the handle's shape names it, a plain answer otherwise
+  member(path, prop, tspec) {
+    const m = tspec && tspec.kind === 'service' && tspec.members && Object.hasOwn(tspec.members, prop) ? tspec.members[prop] : null;
+    return m ? this.typed(`${path}.${prop}`, m) : this.answer(`${path}.${prop}`);
   }
   record(op, path, args) {
     this.trace.push({ op, path, args: args ?? [] });
@@ -67,10 +90,11 @@ export class Environment {
     this.cache.set(path, v);
     return v;
   }
-  fake(path, hint = null) {
+  fake(path, tspec = null) {
     if (path.length > 400) throw new BudgetError('a fake path longer than 400 characters (unbounded recursion through the environment)');
     const key = path;
     if (this.cache.has(key)) return this.cache.get(key);
+    const typedMember = tspec && tspec.kind === 'service' && tspec.members ? (prop) => Object.hasOwn(tspec.members, prop) : () => false;
     const env = this;
     const target = function fakeTarget() {};
     target.__fakePath = path;
@@ -85,6 +109,7 @@ export class Environment {
         if (prop === 'toString') return () => env.primitive('string', path);
         if (prop === Symbol.iterator) return function* () { const n = depthOf(path) > 8 ? 0 : 2; for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
+        if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return env.member(path, prop, tspec); }
         if (prop === 'length') { env.record('get', `${path}.length`); return depthOf(path) > 8 ? 0 : 2; }
         if (prop === 'constructor') return Object;
         if (typeof prop === 'symbol') return undefined;
@@ -120,6 +145,7 @@ export class Environment {
             finally { env.cbDepth--; }
           }
         }
+        if (tspec && tspec.kind === 'method') return env.typed(`${path}()#${k}`, tspec.returns); // the declared return type answers
         return env.answer(`${path}()#${k}`);
       },
       construct(t, args) { env.record('new', path, args.map((x) => render(x))); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); return env.fake(`new ${path}#${k}`); },
@@ -132,7 +158,7 @@ export class Environment {
     return p;
   }
   // the module fake: `require('x')` gives a fake whose members are fakes; default export is itself
-  module(name) { const m = this.fake(`module:${name}`); return m; }
+  module(name) { return this.fake(`module:${name}`, this.shapes?.imports?.[name] ?? null); }
 }
 
 // A rendering of a value for the trace and for outcome comparison: fakes by path, objects structurally, functions by name.

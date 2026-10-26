@@ -13,8 +13,9 @@ export function specOf(file, unitName, opts = {}) {
   const TF = ts.TypeFlags;
   const seen = new Map();
   const defs = {};
+  let budget = 6000; // shape nodes; a type with a very large closure (a database client) ends in opaque leaves
   function spec(t, depth = 0) {
-    if (depth > 5) return { kind: 'opaque' };
+    if (depth > 5 || budget-- <= 0) return { kind: 'opaque' };
     const f = t.flags;
     if (f & (TF.Any | TF.Unknown)) return { kind: 'opaque' };
     if (f & TF.StringLiteral) return { kind: 'literal', values: [t.value] };
@@ -43,7 +44,7 @@ export function specOf(file, unitName, opts = {}) {
       if (name === 'Date') return { kind: 'date' };
       if (name === 'Promise') return spec(checker.getTypeArguments(t)[0], depth + 1);
       const sigs = checker.getSignaturesOfType(t, ts.SignatureKind.Call);
-      if (sigs.length) return { kind: 'function', arity: sigs[0].getParameters().length };
+      if (sigs.length) return { kind: 'function', arity: sigs[0].getParameters().length, returns: spec(sigs[0].getReturnType(), depth + 1) }; // what a call of it answers
       return recordSpec(t, depth);
     }
     if (f & TF.TypeParameter) return { kind: 'tparam' }; // a value of an unknown type: drawn from a small shared pool so that equal values occur
@@ -56,7 +57,19 @@ export function specOf(file, unitName, opts = {}) {
     const hasMethods = props.some((p) => checker.getSignaturesOfType(checker.getTypeOfSymbolAtLocation(p, u.node), ts.SignatureKind.Call).length);
     const ix = checker.getIndexInfoOfType(t, ts.IndexKind.String);
     if (!props.length && ix) return { kind: 'dict', value: spec(ix.type, depth + 1) };
-    if (!props.length || hasMethods) { const o = { kind: 'opaque', name: key.slice(0, 40) }; seen.set(key, o); return o; }
+    if (!props.length) { const o = { kind: 'opaque', name: key.slice(0, 40) }; seen.set(key, o); return o; }
+    if (hasMethods) {
+      // a service: a handle whose members are typed, so a call of one of its methods answers a value of the declared
+      // return type (an empty list, a record, null) and not a bare handle; the handle itself stays a fake
+      const o = { kind: 'service', name: key.slice(0, 40), members: {} };
+      seen.set(key, o); defs[key] = o;
+      for (const p of props.slice(0, 80)) {
+        const pt = checker.getTypeOfSymbolAtLocation(p, u.node);
+        const sigs = checker.getSignaturesOfType(pt, ts.SignatureKind.Call);
+        o.members[p.name] = sigs.length ? { kind: 'method', returns: spec(sigs[0].getReturnType(), depth + 1) } : { kind: 'field', spec: spec(pt, depth + 1), optional: !!(p.flags & ts.SymbolFlags.Optional) };
+      }
+      return o;
+    }
     const out = { kind: 'record', fields: {} };
     seen.set(key, out); defs[key] = out;
     for (const p of props) out.fields[p.name] = { spec: spec(checker.getTypeOfSymbolAtLocation(p, u.node), depth + 1), optional: !!(p.flags & ts.SymbolFlags.Optional) };
@@ -76,7 +89,19 @@ export function specOf(file, unitName, opts = {}) {
     ts.forEachChild(n, walk);
   };
   walk(u.body);
-  return { unit: unitName, isMethod: !!u.cls, className: u.className ?? null, isStatic: !!u.isStatic, isAsync: !!u.isAsync, params, returns: spec(rt), defs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12) };
+  // the receiver's fields and methods, and every fake module's imported members, typed the same way
+  const receiver = u.cls ? spec(checker.getTypeAtLocation(u.cls.name)) : null;
+  const imports = {};
+  for (const st of sf.statements) {
+    if (!ts.isImportDeclaration(st) || !st.importClause || !ts.isStringLiteral(st.moduleSpecifier)) continue;
+    const members = {};
+    const add = (name, node) => { try { const t = checker.getTypeAtLocation(node); const sg = checker.getSignaturesOfType(t, ts.SignatureKind.Call); members[name] = sg.length ? { kind: 'method', returns: spec(sg[0].getReturnType(), 1) } : { kind: 'field', spec: spec(t, 1), optional: false }; } catch {} };
+    if (st.importClause.name) add('default', st.importClause.name);
+    const nb = st.importClause.namedBindings;
+    if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) add((el.propertyName ?? el.name).text, el.name);
+    if (Object.keys(members).length) imports[st.moduleSpecifier.text] = { kind: 'service', name: st.moduleSpecifier.text, members };
+  }
+  return { unit: unitName, isMethod: !!u.cls, className: u.className ?? null, isStatic: !!u.isStatic, isAsync: !!u.isAsync, params, returns: spec(rt), defs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports };
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {

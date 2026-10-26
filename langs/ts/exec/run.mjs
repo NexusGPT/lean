@@ -120,8 +120,9 @@ function pickUnit(exportsObj, spec, env) {
       if (p === '__isFake') return false;
       if (typeof p === 'symbol') return t[p];
       if (p in Cls.prototype) { const v = Cls.prototype[p]; return typeof v === 'function' ? v.bind(self) : v; }
+      if (Object.prototype.hasOwnProperty.call(t, p)) return t[p]; // a field this run assigned: its value
       env.record('get', `this.${String(p)}`);
-      return env.fake(`this.${String(p)}`); // a field of the receiver is a service or a value: always a handle, its own answers vary
+      return env.member('this', p, spec.receiver); // a field of the receiver: typed by the class (a service handle, a value of the field's type)
     },
     set(t, p, v) { env.record('set', `this.${String(p)}`, [render(v)]); t[p] = v; return true; },
   });
@@ -172,6 +173,7 @@ export async function runPair(opts) {
     const sides = {};
     for (const [name, file] of [['parent', parent], ['candidate', candidate]]) {
       const env = new Environment(seed * 7919 + i);
+      env.shapes = spec;
       let exportsObj;
       try { exportsObj = sandbox(env, roots[name]).load(file); } catch (e) { harnessAsk = `${name}: load failed: ${String(e && e.message).slice(0, 200)}`; break; }
       const u = pickUnit(exportsObj, spec, env);
