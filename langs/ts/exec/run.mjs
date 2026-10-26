@@ -161,6 +161,7 @@ export async function runPair(opts) {
       try { exportsObj = sandbox(env, roots[name]).load(file); } catch (e) { harnessAsk = `${name}: load failed: ${String(e && e.message).slice(0, 200)}`; break; }
       const u = pickUnit(exportsObj, spec, env);
       if (!u) { harnessAsk = `${name}: unit ${unit} not exported`; break; }
+      env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       sides[name] = { env, unit: u, inputs: inputsFor(spec, seed, i, env) };
     }
     if (harnessAsk) break;

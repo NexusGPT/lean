@@ -53,8 +53,15 @@ export function sitesOf(file, unitName, opts = {}) {
 export function mutate(file, unitName, index, opts = {}) {
   const { sites, text } = sitesOf(file, unitName, opts);
   if (!sites.length) return null;
-  const s = sites[index % sites.length];
-  return { source: text.slice(0, s.start) + s.text + text.slice(s.end), site: s, count: sites.length };
+  // the k-th site whose edit still parses; a site that breaks the syntax is skipped (it would be an ASK, not a change)
+  for (let tries = 0; tries < sites.length; tries++) {
+    const s = sites[(index + tries) % sites.length];
+    const source = text.slice(0, s.start) + s.text + text.slice(s.end);
+    const sf2 = ts.createSourceFile('m.ts', source, ts.ScriptTarget.ES2020, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+    if (sf2.parseDiagnostics && sf2.parseDiagnostics.length) continue;
+    return { source, site: s, count: sites.length, skipped: tries };
+  }
+  return null;
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) {
