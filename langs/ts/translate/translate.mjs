@@ -194,6 +194,7 @@ export function translate(file, fnName, opts = {}) {
     if (f & TF.StringLike) return 'string';
     if (f & TF.EnumLike) return (t.flags & TF.NumberLike) ? 'int' : 'string';
     if (f & (TF.Void | TF.Undefined | TF.Null)) return 'Unit';
+    if (f & TF.TypeParameter) { const nm = t.symbol?.name ?? checker.typeToString(t); if (!currentUnit || !(currentUnit.generics ?? []).some((g) => g.name.text === nm)) fail(n, `type parameter ${nm} is not one of this function's`); return dn(nm); }
     if (f & TF.Union) {
       const parts = nonNull(t);
       if (parts.length !== t.types.length) {
@@ -279,10 +280,12 @@ export function translate(file, fnName, opts = {}) {
   const symType = (sym, n) => (checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n));
 
   // ----- externals -----
+  const unitTParams = () => (currentUnit?.generics ?? []).map((g) => dn(g.name.text));
+  const tclause = (types) => { const ps = unitTParams().filter((p) => types.some((t) => new RegExp(`\\b${p}\\b`).test(t))); return ps.length ? `<${ps.map((p) => `${p}(==)`).join(', ')}>` : ''; };
   function external(name, paramTypes, retType) {
     const id = `ext_${mangle(name)}${paramTypes.length ? '_' + paramTypes.map(mangle).join('_') : ''}`;
     const ps = paramTypes.map((t, i) => `a${i}: ${t}`).join(', ');
-    addPrelude(id, `function ${id}(${ps}): ${retType}`);
+    addPrelude(id, `function ${id}${tclause([...paramTypes, retType])}(${ps}): ${retType}`); // generic when a type parameter of the unit appears
     return id;
   }
   function externalValue(id) {
@@ -1669,7 +1672,7 @@ export function translate(file, fnName, opts = {}) {
       ...hints.map((h) => `  ensures (${h}) ==> (var ${tupleOf(outNames)} := ${callS}; ${h})`),
       ...exitFact,
       `  decreases ${decreases}`];
-    coreHelpers.push([`function ${hn}(${params.join(', ')}): ${resT}`, ...specs, '{',
+    coreHelpers.push([`function ${hn}${tclause([...params, resT])}(${params.join(', ')}): ${resT}`, ...specs, '{',
       indentBlock(`if ${exit} then ${exitVal()}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
     if (isFor && real) intVars.delete(lp.i);
     const first = `${hn}(${[...leadArgsFirst, ...constArgs, ...mNames].join(', ')})`;
@@ -1737,7 +1740,8 @@ export function translate(file, fnName, opts = {}) {
       const outOfFuel = rec ? (eff ? `(${WORLD}, ${external(`fuel_out_${mangle(rt)}`, [], rt)}())` : `${external(`fuel_out_${mangle(rt)}`, [], rt)}()`) : null;
       const full2 = rec ? `if ${FUEL} == 0 then ${outOfFuel} else\n${indentBlock(wrapLet(full))}` : full;
       const specs2 = rec ? [...specs, `  decreases ${FUEL}`] : specs;
-      chunks.push(...coreHelpers.splice(0), [`function ${name}(${sig}): ${rtype}`, ...specs2, '{', indentBlock(full2), '}'].join('\n'));
+      const tp = unitTParams().length ? `<${unitTParams().map((p) => `${p}(==)`).join(', ')}>` : '';
+      chunks.push(...coreHelpers.splice(0), [`function ${name}${tp}(${sig}): ${rtype}`, ...specs2, '{', indentBlock(full2), '}'].join('\n'));
     } else if (kindOf.get(u) === 'function') {
       const body = bodyList ? bodyExpr(bodyList, u) : expr(u.body, retType(u));
       const full = sp.lets.length ? `${sp.lets.join('\n')}\n${body}` : body;

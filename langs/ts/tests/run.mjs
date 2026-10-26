@@ -190,7 +190,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
-  lines.forEach((ln, i) => { const m = ln.match(/^lemma (Equal_\w+)\(/); if (m) { cur = m[1]; spans[cur] = [i + 1, null]; } if (ln.startsWith('} // END Equal_') && cur) spans[cur][1] = i + 1; });
+  lines.forEach((ln, i) => { const m = ln.match(/^lemma (Equal_\w+)(?:<[^>]*>)?\(/); if (m) { cur = m[1]; spans[cur] = [i + 1, null]; } if (ln.startsWith('} // END Equal_') && cur) spans[cur][1] = i + 1; });
   const errs = [...text.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1]));
   const finished = /finished with \d+ verified/.test(text); // no verdict line: a resolution error, nothing is proved
   for (const [f, want] of Object.entries(exp.equal)) {

@@ -79,7 +79,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (parts.every((x) => (x.flags & (TF.Object | TF.Intersection)) && !isArrayLike(checker, x))) { parts.forEach((x) => checkType(x, n, depth + 1)); return; }
       return; // any other union is opaque (version 3): reads and operations on it are uninterpreted
     }
-    if (f & TF.TypeParameter) return v(n, 'generic', `type parameter ${checker.typeToString(t)} is outside the subset`);
+    if (f & TF.TypeParameter) return; // a type parameter: a value compared only by equality; reads on it go through its constraint
     if (f & TF.Intersection) { for (const p of checker.getPropertiesOfType(t)) checkType(checker.getTypeOfSymbolAtLocation(p, n), n, depth + 1); return; }
     if (f & TF.Object) {
       if (checker.isTupleType(t)) { checker.getTypeArguments(t).forEach((a) => checkType(a, n, depth + 1)); return; }
@@ -440,7 +440,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (CMP.has(op) && (isStr(lt) || isStr(rt)) && !(isAny(lt) || isAny(rt))) v(e, 'string-order', 'string ordering is outside the subset');
     if (EQ.has(op)) {
       const nul = (x) => x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined');
-      const prim = (t) => nonNull(t).every((x) => isPrim(x) || isAny(x));
+      const prim = (t) => nonNull(t).every((x) => isPrim(x) || isAny(x) || !!(x.flags & TF.TypeParameter)); // a type parameter is compared by value
       const litSide = (x) => ts.isStringLiteral(x) || ts.isNumericLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword;
       // a comparison with a primitive on either side is a value comparison; only record against record (or array against array) compares references
       const mixed = (t) => { const ps = nonNull(t); return ps.some((x) => isPrim(x)) && ps.some((x) => !isPrim(x) && !isAny(x)); };
@@ -593,7 +593,6 @@ export function lintFile(file, ranges = null, opts = {}) {
       checkedDiagSpans.push(st);
       current = st; currentFn = u.fn;
       if (u.fn.asteriskToken) v(st, 'generator', 'generators are outside the subset');
-      if (u.generics?.length) v(st, 'generic', 'generic functions are outside the subset');
       if (!u.body) v(st, 'unsupported-syntax', 'function without a body');
       const sig = checker.getSignatureFromDeclaration(u.fn);
       const rt = sig.getReturnType();
@@ -626,7 +625,6 @@ export function lintFile(file, ranges = null, opts = {}) {
         checkedDiagSpans.push(u.node);
         current = u.node; currentFn = u.fn; currentClass = st;
         if (u.fn.asteriskToken) v(u.node, 'generator', 'generators are outside the subset');
-        if (u.generics?.length) v(u.node, 'generic', 'generic methods are outside the subset');
         const sig = checker.getSignatureFromDeclaration(u.fn);
         const rt = sig.getReturnType();
         const inner = isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;

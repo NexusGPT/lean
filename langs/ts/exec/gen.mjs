@@ -39,6 +39,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
       case 'function': return env ? env.fake(`${path}#fn`) : () => undefined;
+      case 'tparam': { const pool = [0, 1, 2, 'a', 'b', '', true, false, 7]; return pool[Math.floor(rng() * pool.length)]; }
       case 'opaque': default: return env ? env.fake(path) : {};
     }
   }

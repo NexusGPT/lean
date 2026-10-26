@@ -46,7 +46,7 @@ export function specOf(file, unitName, opts = {}) {
       if (sigs.length) return { kind: 'function', arity: sigs[0].getParameters().length };
       return recordSpec(t, depth);
     }
-    if (f & TF.TypeParameter) return { kind: 'opaque' };
+    if (f & TF.TypeParameter) return { kind: 'tparam' }; // a value of an unknown type: drawn from a small shared pool so that equal values occur
     return { kind: 'opaque' };
   }
   function recordSpec(t, depth) {

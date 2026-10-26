@@ -64,7 +64,7 @@ def parse_functions(text, suffix, label):
     function named <base>_<suffix>. Refuses a function without a body."""
     clean = strip_comments(text)
     found = {}
-    for m in re.finditer(r'\bfunction\s+(?:method\s+)?(?:\{[^}]*\}\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*(<[^>(]*>)?\s*\(', clean):
+    for m in re.finditer(r'\bfunction\s+(?:method\s+)?(?:\{[^}]*\}\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*(<[^>]*>)?\s*\(', clean):
         name = m.group(1)
         if suffix is None:
             base = name
@@ -74,8 +74,7 @@ def parse_functions(text, suffix, label):
             base = name[: -len(suffix) - 1]
         if not IDENT.match(base):
             raise Refusal(f'{label}: bad function name {name}')
-        if m.group(2):
-            raise Refusal(f'{label}: generic function {name} is outside the subset of the generator')
+        tparams = m.group(2).strip() if m.group(2) else ''  # `<T(==)>`: the lemma takes the same type parameters
         open_i = m.end() - 1
         close_i = balanced(clean, open_i)
         params = []
@@ -98,7 +97,7 @@ def parse_functions(text, suffix, label):
             raise Refusal(f'{label}: function {name} has no body (an unproved specification is not code)')
         if base in found:
             raise Refusal(f'{label}: function {name} is defined twice')
-        found[base] = {'params': params, 'ret': ret, 'pos': m.start()}
+        found[base] = {'params': params, 'ret': ret, 'pos': m.start(), 'tparams': tparams}
     order = sorted(found, key=lambda b: found[b]['pos'])
     for i, b in enumerate(order):
         end = found[order[i + 1]]['pos'] if i + 1 < len(order) else len(clean)
@@ -197,8 +196,9 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         if not isinstance(ins, str) or not ins.strip():
             raise Refusal(f'scope: {f} needs "in_scope" (a Dafny boolean expression, or false)')
         ed = edit.get(f)
-        out.append(f'predicate InScope_{f}({params}) {{ {ins.strip()} }}')
-        out.append(f'lemma Equal_{f}({params})')
+        tp = sig.get('tparams', '')
+        out.append(f'predicate InScope_{f}{tp}({params}) {{ {ins.strip()} }}')
+        out.append(f'lemma Equal_{f}{tp}({params})')
         out.append(f'  requires !InScope_{f}({names})')
         out.append(f'  ensures {f}_parent({names}) == {f}_candidate({names})')
         out.append('{ // PROOF Equal_' + f)
