@@ -193,9 +193,9 @@ export async function runPair(opts) {
     }
   }
   const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, frozen clock', inputs: 'from parameter types with boundary values first' };
-  if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec };
+  if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
-  return { verdict: 'PASS-bounded', unit, bound, spec };
+  return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
 }
 
 function firstDifference(a, b) {

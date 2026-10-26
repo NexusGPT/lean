@@ -13,6 +13,8 @@ export function specOf(file, unitName, opts = {}) {
   const TF = ts.TypeFlags;
   const seen = new Map();
   const defs = {};
+  // the names the file mentions: a member a file never names is never asked, so only named members of a service are typed
+  const named = new Set(); { const w = (n) => { if (ts.isIdentifier(n) || ts.isPrivateIdentifier(n)) named.add(n.text); ts.forEachChild(n, w); }; w(sf); }
   let budget = 6000; // shape nodes; a type with a very large closure (a database client) ends in opaque leaves
   function spec(t, depth = 0) {
     if (depth > 5 || budget-- <= 0) return { kind: 'opaque' };
@@ -63,7 +65,7 @@ export function specOf(file, unitName, opts = {}) {
       // return type (an empty list, a record, null) and not a bare handle; the handle itself stays a fake
       const o = { kind: 'service', name: key.slice(0, 40), members: {} };
       seen.set(key, o); defs[key] = o;
-      for (const p of props.slice(0, 80)) {
+      for (const p of props.filter((x) => named.has(x.name)).slice(0, 80)) {
         const pt = checker.getTypeOfSymbolAtLocation(p, u.node);
         const sigs = checker.getSignaturesOfType(pt, ts.SignatureKind.Call);
         o.members[p.name] = sigs.length ? { kind: 'method', returns: spec(sigs[0].getReturnType(), depth + 1) } : { kind: 'field', spec: spec(pt, depth + 1), optional: !!(p.flags & ts.SymbolFlags.Optional) };
@@ -84,12 +86,22 @@ export function specOf(file, unitName, opts = {}) {
   walkRe(sf);
   // the unit's own literals join the input pools, so a comparison against a constant can go both ways
   // a name bound to a numeric constant outside the unit (a module const, a static readonly field) is a literal of the unit too
-  const constOf = (id) => { try { const sym = checker.getSymbolAtLocation(id); const d = sym?.valueDeclaration; if (!d) return null; if ((ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d)) && d.initializer) { let e = d.initializer; let neg = false; if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.MinusToken) { neg = true; e = e.operand; } if (ts.isNumericLiteral(e)) return neg ? -Number(e.text) : Number(e.text); } } catch {} return null; };
+  // the literal a name or a `CONST.field` is bound to, when its declaration carries one (a module const, a static field, a
+  // property of a const object literal); a number or a string
+  const constOf = (n) => { try {
+    const sym = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(n) ? n.name : n); const d = sym?.valueDeclaration; if (!d) return null;
+    const init = (ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d) || ts.isPropertyAssignment(d)) ? d.initializer : ts.isEnumMember(d) ? d.initializer : null;
+    if (!init) return null;
+    let e = init; let neg = false; if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.MinusToken) { neg = true; e = e.operand; }
+    if (ts.isAsExpression(e)) e = e.expression;
+    if (ts.isNumericLiteral(e)) return neg ? -Number(e.text) : Number(e.text);
+    if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return e.text;
+  } catch {} return null; };
   let usesLength = false;
   const walk = (n) => {
     if (ts.isNumericLiteral(n)) { const v = Number(n.text); if (Number.isFinite(v) && !literals.includes(v)) literals.push(v, v + 1, v - 1); }
     if (ts.isPropertyAccessExpression(n) && n.name.text === 'length') usesLength = true;
-    if (ts.isIdentifier(n)) { const v = constOf(n); if (v !== null && Number.isFinite(v) && !literals.includes(v)) literals.push(v, v + 1, v - 1); }
+    if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) { const v = constOf(n); if (typeof v === 'number' && Number.isFinite(v) && !literals.includes(v)) literals.push(v, v + 1, v - 1); else if (typeof v === 'string' && v.length <= 80 && !strings.includes(v)) strings.push(v); }
     if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) && n.text.length <= 80 && !strings.includes(n.text)) strings.push(n.text);
     ts.forEachChild(n, walk);
   };
@@ -108,7 +120,12 @@ export function specOf(file, unitName, opts = {}) {
     if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) add((el.propertyName ?? el.name).text, el.name);
     if (Object.keys(members).length) imports[st.moduleSpecifier.text] = { kind: 'service', name: st.moduleSpecifier.text, members };
   }
-  return { unit: unitName, isMethod: !!u.cls, className: u.className ?? null, isStatic: !!u.isStatic, isAsync: !!u.isAsync, params, returns: spec(rt), defs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports };
+  const returns = spec(rt);
+  // only the shapes a `ref` points at are emitted; a shape is written inline where it first occurs
+  const used = new Set(); const mark = (x) => { if (!x || typeof x !== 'object') return; if (Array.isArray(x)) return x.forEach(mark); if (x.kind === 'ref' && !used.has(x.key)) { used.add(x.key); mark(defs[x.key]); } for (const v of Object.values(x)) mark(v); };
+  mark(params); mark(returns); mark(receiver); mark(imports);
+  const usedDefs = {}; for (const k of used) usedDefs[k] = defs[k];
+  return { unit: unitName, isMethod: !!u.cls, className: u.className ?? null, isStatic: !!u.isStatic, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports };
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {
