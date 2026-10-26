@@ -79,6 +79,62 @@ Class methods work too: `--unit PricingService.applyDiscount`. The whole file is
 
 Everything else that lean cannot read (JSX, generators, callbacks to a library, an unknown constructor) is not a refusal: it becomes an uninterpreted value or call, the same on both sides, and the proof still goes through when the rest is equal.
 
+## How to write code lean can prove
+
+The rule in one line: **a function owns what it creates, and everything else flows through its arguments and its result.** Nothing you write has to look like a proof. These six habits are the whole style, each shown as the shape lean refuses and the shape it proves.
+
+**1. Build new values instead of changing old ones.** A function may change what it made (a local array, a local record); it may not change what it was handed.
+
+```ts
+// refused: param-mutation          // proved
+function addTag(user: User, t: string) {       function addTag(user: User, t: string): User {
+  user.tags.push(t);                            return { ...user, tags: [...user.tags, t] };
+  return user;                                }
+}
+```
+
+**2. Let state come out of loops, not out of callbacks.** A loop may update a local; a callback may only compute.
+
+```ts
+// refused: closure-mutation         // proved
+let total = 0;                                 let total = 0;
+prices.forEach(p => { total += p; });          for (const p of prices) total += p;
+                                               // or: const total = prices.reduce((a, p) => a + p, 0);
+```
+
+**3. Say what you compare.** `===` between two objects compares addresses; lean has no addresses. Compare fields.
+
+```ts
+// refused: reference-equality       // proved
+if (a === b) ...                               if (a.id === b.id) ...
+```
+
+**4. Say what kind of number you mean.** `/` is real division in JavaScript. Write the integer one when you mean it.
+
+```ts
+// refused: division                  // proved
+const half = n / 2;                            const half = Math.floor(n / 2);   // or n * 0.5 when a real is meant
+```
+
+**5. Keep an object's state in its result, not in `this`.** A method may read its fields; a method that assigns one is not provable yet. Return the new state.
+
+```ts
+// refused: receiver-mutation        // proved
+bump() { this.n = this.n + 1; }                bump(): number { return this.n + 1; }     // the caller keeps the count
+```
+
+**6. Give a `while` loop its bound.** `for` and `for...of` need nothing. A `while` is proved when you say what shrinks; without it, it becomes an opaque block (same on both sides, never proved different).
+
+```ts
+// opaque block                       // proved
+while (i > 0) { i -= 1; }                      // @decreases i
+                                               while (i > 0) { i -= 1; }
+```
+
+Everything else is yours: `async`/`await`, imports, service calls, `try`/`catch`, `switch`, destructuring, optional chaining, template strings, `Set`, `Map`, class methods, recursion. A call into the outside world is fine; it is a transition of the world, and both versions make it in the same order or they are not equal.
+
+Run `node langs/ts/lint/lint.mjs file.ts` to see, per function, the one rule in the way; the message names the line and the replacement.
+
 **What you can still do.** Write TypeScript the way your team writes it. A function outside the subset is not blocked: it gets lane B, a bounded execution verdict, and the exact reason the proof lane stopped. You decide what to tighten.
 
 **What changes in your workflow.** A pull request carries, per changed function, one of four words and its certificate. `WITNESS` comes with the input that shows the difference. `PASS-proved` comes with a theorem anyone can re-check. Reviewers read the scope you declared and the asks, not the diff.
