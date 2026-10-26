@@ -102,7 +102,14 @@ export class Environment {
         }
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
-        if (!env.loading) for (const a of args) if (typeof a === 'function' && !a.__isFake && a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) { try { const r = a(env.fake(`${path}#cb.arg0`), env.fake(`${path}#cb.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path, [String(e && e.message)]); } }
+        if (!env.loading) {
+          const cbs = [];
+          for (const a of args) {
+            if (typeof a === 'function' && !a.__isFake) cbs.push([a, '']);
+            else if (a && typeof a === 'object' && !a.__isFake && !Array.isArray(a)) for (const k of Object.keys(a)) if (typeof a[k] === 'function' && !a[k].__isFake) cbs.push([a[k], '.' + k]);
+          }
+          for (const [a, tag] of cbs) if (a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) { try { const r = a(env.fake(`${path}#cb${tag}.arg0`), env.fake(`${path}#cb${tag}.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path + tag, [String(e && e.message)]); } }
+        }
         return env.answer(`${path}()#${k}`);
       },
       construct(t, args) { env.record('new', path, args.map((x) => render(x))); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); return env.fake(`new ${path}#${k}`); },
@@ -127,7 +134,7 @@ export function render(v, depth = 0, seen = new Set()) {
   if (t === 'string' || t === 'boolean') return v;
   if (t === 'bigint') return { $bigint: v.toString() };
   if (t === 'symbol') return { $symbol: String(v) };
-  if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : { $fn: v.name || 'anonymous' };
+  if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : { $fn: v.name || 'anonymous', src: fnHash(v) };
   if (v.__isFake) return { $fake: v.__fakePath };
   if (depth > 6) return { $deep: true };
   if (seen.has(v)) return { $cycle: true };
@@ -145,3 +152,5 @@ export function render(v, depth = 0, seen = new Set()) {
 }
 
 export function stable(v) { return JSON.stringify(render(v)); }
+// the hash of a function's own source text, comments and whitespace folded
+export function fnHash(f) { try { const src = Function.prototype.toString.call(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' '); return createHash('sha256').update(src).digest('hex').slice(0, 12); } catch { return 'native'; } }
