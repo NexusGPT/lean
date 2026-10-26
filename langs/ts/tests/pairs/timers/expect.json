@@ -1,0 +1,28 @@
+{
+ "scope": [
+  "later",
+  "arm_clear",
+  "ordered",
+  "every_tick",
+  "chain",
+  "frame"
+ ],
+ "equal": {
+  "later": false,
+  "arm_clear": false,
+  "ordered": false,
+  "every_tick": false,
+  "chain": true,
+  "frame": false
+ },
+ "why": "lane B's virtual clock. later: the fired callback sends y for x, witnessed after the call. armClear: a timer armed and cleared is nothing, the candidate without it is equal (PASS-bounded; lane A sees a transition and cannot prove it). ordered: two timers armed in the other order fire in due order, the same trace. everyTick: a different interval is a different pending record, witnessed. chain: a timer arming a timer runs both, untouched and proved. frame: an idle callback for an animation frame is a different pending kind, witnessed.",
+ "heap": false,
+ "b": {
+  "later": "WITNESS",
+  "armClear": "PASS-bounded",
+  "ordered": "PASS-bounded",
+  "everyTick": "WITNESS",
+  "chain": "PASS-bounded",
+  "frame": "WITNESS"
+ }
+}

@@ -162,10 +162,9 @@ export function sandbox(env, root) {
   const fakePerformance = new Proxy(env.module('performance'), { get(t, p) { return p === 'now' ? performanceNow : Reflect.get(t, p); } });
   const g = {
     console: env.module('console'), process: fakeProcess, fetch: env.fake('global:fetch'), Date: FakeDate,
-    setTimeout: (fn, ms, ...a) => { env.pending.push({ op: 'setTimeout', ms: Number(ms) || 0 }); return env.pending.length; },
-    setInterval: (fn, ms) => { env.pending.push({ op: 'setInterval', ms: Number(ms) || 0 }); return env.pending.length; },
-    setImmediate: (fn) => { env.pending.push({ op: 'setImmediate' }); return env.pending.length; },
-    clearTimeout: (id) => { env.record('call', 'global:clearTimeout', [render(id)]); }, clearInterval: (id) => { env.record('call', 'global:clearInterval', [render(id)]); }, queueMicrotask: (fn) => Promise.resolve().then(fn),
+    setTimeout: (fn, ms, ...a) => env.arm('timeout', fn, ms, a), setInterval: (fn, ms, ...a) => env.arm('interval', fn, ms, a), setImmediate: (fn, ...a) => env.arm('immediate', fn, 0, a),
+    requestAnimationFrame: (fn) => env.arm('frame', fn, 16), requestIdleCallback: (fn) => env.arm('idle', fn, 1),
+    clearTimeout: (id) => env.clearTimer(id), clearInterval: (id) => env.clearTimer(id), clearImmediate: (id) => env.clearTimer(id), cancelAnimationFrame: (id) => env.clearTimer(id), cancelIdleCallback: (id) => env.clearTimer(id), queueMicrotask: (fn) => Promise.resolve().then(fn),
     Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
     Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect, Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
@@ -296,6 +295,7 @@ export async function observe(side, spec, args, ms) {
     }
     if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
+    if (env.timers.queue.length) await runTimers(env, ms); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
     outcome = { returned: render(outcomeValue) };
   } catch (e) {
@@ -303,6 +303,7 @@ export async function observe(side, spec, args, ms) {
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
     if (e instanceof Suspended || (e && typeof e.then === 'function')) return { harness: `suspense: ${e instanceof Suspended ? e.message.slice(10) : 'a thenable thrown during render'}` }; // ASK:suspense, never a crash and never a thrown-value outcome
     if (e instanceof RenderLoop) return { harness: e.message }; // ASK:render-loop: React would throw or never settle
+    if (e instanceof CallTimeout) return { harness: 'timeout' };
     if (e instanceof RangeError && /call stack/.test(String(e.message))) return { harness: 'stack overflow' };
     outcome = { threw: render(e) };
   }
@@ -319,9 +320,31 @@ export async function observe(side, spec, args, ms) {
   // object; a fresh object is named by its first sight, so two runs equal up to a renaming serialise the same
   let heap;
   try { heap = graph.after(args, own, outcomeValue, hasOutcome); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
-  return { outcome, heap, receiver, trace: env.trace, pending: env.pending };
+  return { outcome, heap, receiver, trace: env.trace, pending: env.pending.map(({ id, ...rest }) => rest) }; // a timer id is an arm counter, not an observation
 }
 
+// ----- the virtual clock: armed timers fire in due order -----
+// runTimers fires every armed timer once, in due order (ties by arm order), moving the clock to each due instant; an
+// interval re-arms after its run and stays pending; a timer that arms another runs it too, up to the limit (then a
+// budget: ASK). The observation holds the fired order (a 'fire' record per timer) and what each callback asked of
+// the environment.
+async function runTimers(env, ms, limit = 50) {
+  const t = env.timers; let fired = 0;
+  for (;;) {
+    const due = t.queue.filter((e) => e.fired === 0).sort((a, b) => a.due - b.due || a.order - b.order);
+    if (!due.length) break;
+    const e = due[0]; if (e.due > t.now) t.now = e.due;
+    const i = t.queue.indexOf(e); t.queue.splice(i, 1); const j = env.pending.findIndex((x) => x.id === e.id); if (j >= 0) env.pending.splice(j, 1);
+    if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
+    env.record('fire', { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[e.kind], [e.due]); // the instant, never the id: an id is an arm counter nobody outside sees
+    try { const r = guardedCall(env, () => e.fn(...e.args), ms); if (r && typeof r.then === 'function') await withTimeout(r, ms); } catch (x) { if (x instanceof BudgetError || x?.message === '__timeout__') throw x; env.record('timer-throw', e.kind, [render(x)]); }
+    if (e.interval) { e.fired = 1; e.due = t.now + e.interval; e.order = t.nextId++; t.queue.push(e); env.pending.push({ op: 'setInterval', ms: e.interval, id: e.id }); } // once per run: the interval stays pending for the next tick
+    await new Promise((r) => setImmediate(r));
+  }
+  for (const e of t.queue) e.fired = 0; // the next run may fire the intervals again
+  await new Promise((r) => setImmediate(r));
+}
+export { runTimers };
 // ----- re-render sequences: the component as a machine over its hook slots -----
 // After the mount, a bounded set of command sequences runs on both sides from a fresh mount each: `fire` a handler of
 // the current tree on a fake event, `settle` (effects whose deps changed by Object.is, cleanup first; microtasks
@@ -355,14 +378,14 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
   // run one command path on one side; returns the observation after every command
   const runPath = async (name, labels) => {
     const s = await mount(name); const obs = [];
-    let tree = await commit(s); // the mount, its effects, and the re-renders they cause
+    let tree = await commit(s); if (s.env.timers.queue.length) { await runTimers(s.env, ms); tree = await commit(s); } // the mount, its effects, the re-renders they cause, and the timers they armed
     for (const label of labels) {
       const from = s.env.trace.length;
       const h = treeHandlers(tree).find((x) => x.label === label);
       if (!h) { obs.push({ command: label, missing: true, handlers: treeHandlers(tree).map((x) => x.label) }); return { obs, s }; }
       try { const r = guardedCall(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await withTimeout(r, ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('handler-throw', label, [render(e)]); }
-      tree = await commit(s);
-      obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending) });
+      tree = await commit(s); if (s.env.timers.queue.length) { await runTimers(s.env, ms); tree = await commit(s); }
+      obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
     }
     // unmount: every cleanup, in slot order
     const from = s.env.trace.length;
@@ -428,7 +451,7 @@ export async function runPair(opts) {
       if (diffs.length >= 3) break;
     }
   }
-  const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work' };
+  const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop); the input proves nothing' };
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
   if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };

@@ -30,6 +30,7 @@ export class Environment {
     this.seed = seed;
     this.trace = [];       // [{op, path, args}]
     this.pending = [];     // timers and jobs armed and not run
+    this.timers = { now: 0, queue: [], nextId: 1 }; // the virtual clock: armed callbacks with their due instant; run.mjs fires them in due order (ties by arm order), intervals re-arm, a cleared one leaves no trace
     this.demand = 0;       // count of primitive demands, drives the generator
     this.rng = makeRng(seed);
     this.cache = new Map(); // path -> fake, so the same handle is one handle
@@ -71,6 +72,20 @@ export class Environment {
   member(path, prop, tspec) {
     const m = tspec && tspec.kind === 'service' && tspec.members && Object.hasOwn(tspec.members, prop) ? tspec.members[prop] : null;
     return m ? this.typed(`${path}.${prop}`, m) : this.answer(`${path}.${prop}`);
+  }
+  // arm a timer: kind timeout | interval | immediate | frame | idle; the pending record is the observation (a cleared
+  // timer removes it, so a timer that never fires is unobservable, as it is to the outside world)
+  arm(kind, fn, ms, args = []) {
+    const t = this.timers; const id = t.nextId++;
+    const delay = kind === 'immediate' ? 0 : kind === 'frame' ? 16 : kind === 'idle' ? 1 : Math.max(0, Number(ms) || 0);
+    const entry = { id, kind, fn, args, due: t.now + delay, interval: kind === 'interval' ? Math.max(1, Number(ms) || 0) : null, order: id, fired: 0 };
+    t.queue.push(entry);
+    this.pending.push({ op: { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[kind], ms: kind === 'immediate' ? undefined : delay, id });
+    return id;
+  }
+  clearTimer(id) {
+    const t = this.timers; const i = t.queue.findIndex((e) => e.id === id); if (i < 0) return;
+    t.queue.splice(i, 1); const j = this.pending.findIndex((e) => e.id === id); if (j >= 0) this.pending.splice(j, 1);
   }
   record(op, path, args) {
     this.trace.push({ op, path, args: args ?? [] });
