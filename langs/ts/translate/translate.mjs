@@ -466,7 +466,12 @@ export function translate(file, fnName, opts = {}) {
       if (inner.flags & TF.NumberLike) return `(${v}.Some? && ${v}.value != ${real ? '0.0' : '0'})`;
       return `${v}.Some?`;
     }
-    if (isAny(t)) return `${external('truthy_Any', ['Any'], 'bool')}(${expr(n)})`;
+    if (isAny(t)) {
+      // `a?.b` whose field is `any`: TypeScript collapses the type to any, the translation still lifts the chain to an Option
+      const chained = (() => { let e = n; while (ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e) || ts.isCallExpression(e)) { if (e.questionDotToken) return true; e = e.expression; } return false; })();
+      if (chained) { usesOption = true; const v = `ot_${hash(n.getText(sf)).slice(0, 4)}`; return `(var ${v} := ${expr(n)}; ${v}.Some? && ${external('truthy_Any', ['Any'], 'bool')}(${v}.value))`; }
+      return `${external('truthy_Any', ['Any'], 'bool')}(${expr(n)})`;
+    }
     if (t.flags & TF.BooleanLike) return expr(n);
     if (t.flags & TF.StringLike) return `(|${expr(n)}| > 0)`;
     if (t.flags & (TF.NumberLike | TF.BigIntLike)) return `(${expr(n)} != ${real ? '0.0' : '0'})`;
