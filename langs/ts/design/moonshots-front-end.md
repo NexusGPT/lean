@@ -42,6 +42,10 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `Equal_step(p, s)` ensuring both; then the mutant `count + 2` must fail. Command: `dafny verify
   counter.dfy` on both files.
 - Pass: proved and refuted, each under 60 seconds.
+- Measured (2026-10-26, `langs/ts/design/moonshots/02-step-lemma/`): `counter.dfy` proves the step lemma and
+  the induction lemma over n clicks, 4 verified in 0.9 s; `counter-mutant.dfy` (one more per click) fails the
+  step lemma, 3 verified, 1 error, 1.0 s. The shape holds; the open part is reading `Step` off the real handler
+  descriptor in `translate.mjs` instead of writing it by hand.
 - Kill: the setter descriptor cannot be read as a slot transition without an axiom on the uninterpreted
   handle (`design/react-handlers-memo.md` records that equality of `() -> Unit` values is unproved).
 
