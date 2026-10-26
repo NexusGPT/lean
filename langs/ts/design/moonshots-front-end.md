@@ -145,6 +145,14 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   two-command sequence; print catches per operator and per layer.
 - Pass: the pipeline runs on 30 components with a table per operator; the one-render check catches the text
   and conditional mutants and misses the deps and cleanup ones (that gap sizes concepts 5 and 9).
+- Measured (2026-10-26, `langs/ts/design/mutate-components.mjs`, 30 stateful components of the census, 20
+  inputs each, `design/mutation-benchmark.json`): 71 applicable mutants, 40 caught at one render (56%).
+  Per operator, caught of applicable: change-text 14 of 20, flip-conditional 11 of 16, key-index 7 of 10,
+  swap-setters 4 of 9, drop-dep 3 of 11, remove-cleanup 1 of 5. The misses: a dropped `useMemo` or
+  `useCallback` dependency is invisible in one render; setters inside a timer never run (the clock, concept 9);
+  an effect that calls `requestAnimationFrame` or `window.addEventListener` throws in the sandbox on both
+  sides before its cleanup (two globals to add); a list or text inside a branch the generated inputs never
+  take. The bar stands: concepts 5 and 9 are sized by the 17 misses on deps, cleanup and setters.
 - Kill: none; this is the measure the other nine are judged on.
 
 ## Two more, cheaper, waiting for the owner
