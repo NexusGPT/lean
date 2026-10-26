@@ -244,8 +244,8 @@ into unions and dictionaries, not into the core (the two-repository probe: 349 `
 Layer 1's exposure, measured by `layer1Risk` in `heap.mjs` (reported, never acted on): outside the core, a unit is EXPOSED when it (a) writes
 through a nested reference path of an input (`p.a.b = v`, `p.a.push(x)`, through a local alias of a path), where the old inner object differs
 from a fresh replacement, or (b) returns a value that may hold an input reference or share one (any reference-typed result that is not a
-literal tree of primitives and literals), where the same tree can be another graph. On the two-repository probe 649 of 1,175 units outside
-the core are exposed (628 by their result, 31 by a nested write). The full count is in `heap-core-census.json` (`layer1`). An exposed unit
+literal tree of primitives and literals), where the same tree can be another graph. Over the 39 roots, 34,544 of the 53,865 units outside the core are
+exposed (31,992 by their result, 3,066 by a nested write; `heap-core-census.json`, `layer1`); 19,321 are not. An exposed unit
 is one where tree equality proved by layer 1 is weaker than SEMANTICS item 2; lane B's graph observation (stage 1) sees the difference on
 every input that reaches it, so a false PASS-proved needs the differing path unreached by lane B's inputs. The decision on what lane A
 claims for exposed units (a caveated proof, a refusal, an identity-skeleton check on both sides, or a wider core) is the owner's; the
