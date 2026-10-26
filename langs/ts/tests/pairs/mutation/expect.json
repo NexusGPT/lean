@@ -1,0 +1,6 @@
+{
+ "scope": ["add_tag", "rename", "visit", "tag_twice", "count_only"],
+ "equal": { "add_tag": true, "rename": false, "visit": true, "tag_twice": true, "count_only": true },
+ "why": "addTag appends by push in the parent and by a spread assignment in the candidate: the same new value of `user`; rename writes a different id; visit, tagTwice and countOnly are untouched",
+ "b": { "addTag": "PASS-bounded", "rename": "WITNESS", "visit": "PASS-bounded", "tagTwice": "PASS-bounded", "countOnly": "PASS-bounded" }
+}

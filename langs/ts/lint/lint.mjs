@@ -44,6 +44,8 @@ export function lintFile(file, ranges = null, opts = {}) {
   let switchDepth = 0;
   let loopDepth = 0;
   const callbackStack = []; // the arrow functions being checked, innermost last
+  const aliasLocals = new Set(); // declarations of locals bound to another name's object (an alias): never mutated here
+  const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   const ownedHere = (decl) => { const cb = callbackStack[callbackStack.length - 1]; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
 
   const v = (node, rule, msg) => {
@@ -215,6 +217,12 @@ export function lintFile(file, ranges = null, opts = {}) {
       const t = tOf(n);
       checkType(t, n);
     }
+    { // `const u = user`, `const t = user.tags`, `const x = xs[i]`: another name for an object the function did not build
+      let init = d.initializer; while (ts.isParenthesizedExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init)) init = init.expression;
+      const ref = ts.isIdentifier(init) || ts.isPropertyAccessExpression(init) || ts.isElementAccessExpression(init);
+      const objish = (t) => nonNull(t).some((x) => !isPrim(x) && !isAny(x));
+      if (ref && ts.isIdentifier(d.name) && objish(tOf(d.name))) aliasLocals.add(d);
+    }
     if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name)) return callback(d.initializer, null); // a local function value: a pure lambda, called by name or passed as a callback
     expr(d.initializer);
   }
@@ -235,7 +243,8 @@ export function lintFile(file, ranges = null, opts = {}) {
           // an element of a local array, or a key of a local dictionary (a record with a string index): the local is rebuilt
           const dict = !isArrayExpr(l.expression);
           const o = declOf(l.expression);
-          if (o.kind !== 'local' || isParam(o.decl)) v(l, 'index-assign', `index assignment into \`${l.expression.text}\`, which this function does not own`);
+          if (o.kind !== 'local') v(l, 'index-assign', `index assignment into \`${l.expression.text}\`, which this function does not own`);
+          else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', `\`${l.expression.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `a callback cannot change an outer ${dict ? 'dictionary' : 'array'}`);
           else if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
           else if (dict && !nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
@@ -244,9 +253,10 @@ export function lintFile(file, ranges = null, opts = {}) {
           let root = l; while (ts.isPropertyAccessExpression(root)) root = root.expression;
           if (root.kind === K.ThisKeyword) { if (l.expression.kind !== K.ThisKeyword) return v(l, 'receiver-mutation', 'assignment through a field of `this` changes a value the receiver holds; assign the field itself'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return; } // a field of the receiver: a world transition (the right side is checked below)
           const o = ts.isIdentifier(root) ? declOf(root) : { kind: null };
-          if (!ts.isIdentifier(root) || o.kind !== 'local' || isParam(o.decl)) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
+          if (!ts.isIdentifier(root) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
+          else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', `\`${root.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
-          else if (op !== K.EqualsToken) v(l, 'property-assign', 'compound assignment on a field is outside the subset');
+          else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
         }
         else if (ts.isElementAccessExpression(l)) v(l, 'index-assign', 'arrays change by push on a local only');
         else v(l, 'unsupported-syntax', 'assignment target');
@@ -257,6 +267,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     if ((ts.isPostfixUnaryExpression(e) || ts.isPrefixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken)) {
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
+      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasLocals.has(o.decl) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
       if (o.kind !== 'local') v(e, 'global-mutation', `update of \`${e.operand.text}\`, which this function does not own`);
@@ -267,7 +278,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
       const name = e.expression.name.text, r = e.expression.expression;
       const rt = tOf(r);
-      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && !isParam(declOf(r).decl) && ownedHere(declOf(r).decl);
+      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasLocals.has(declOf(r).decl);
+      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasLocals.has(declOf(r).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', `\`${r.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
       if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
       if (nonNull(rt).some(isAny)) {
         // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
@@ -283,13 +295,18 @@ export function lintFile(file, ranges = null, opts = {}) {
         }
         return v(e, 'opaque-mutation', `.${name}() as a statement on an opaque value may mutate it; name the receiver first`);
       }
+      // a path on a local or a parameter (user.tags): the owner of the root owns the path
+      const pathRootOf = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
+      const pr = pathRootOf(r);
+      const pathOwned = ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && ownedHere(declOf(pr).decl) && !aliasLocals.has(declOf(pr).decl);
+      if (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && aliasLocals.has(declOf(pr).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', `\`${pr.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
       if ((name === 'push' || name === 'unshift') && isArrayExpr(r)) {
-        if (!localOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
+        if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
         if (e.arguments.length !== 1) v(e, 'unsupported-call', `${name} takes exactly one value (or one spread array)`);
         return e.arguments.forEach((a) => expr(ts.isSpreadElement(a) ? a.expression : a));
       }
-      if ((name === 'add' || name === 'delete') && nonNull(rt).every(isSetT)) { if (!localOwned) v(e, 'param-mutation', 'set mutation on a non-local'); return e.arguments.forEach(expr); }
-      if ((name === 'set' || name === 'delete') && nonNull(rt).every(isMapT)) { if (!localOwned) v(e, 'param-mutation', 'map mutation on a non-local'); return e.arguments.forEach(expr); }
+      if ((name === 'add' || name === 'delete') && nonNull(rt).every(isSetT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'set mutation on a non-local'); return e.arguments.forEach(expr); }
+      if ((name === 'set' || name === 'delete') && nonNull(rt).every(isMapT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'map mutation on a non-local'); return e.arguments.forEach(expr); }
       return expr(e); // a method call as a statement: a world transition (or a dropped value)
     }
     if (ts.isCallExpression(e) || ts.isNewExpression(e)) return expr(e);

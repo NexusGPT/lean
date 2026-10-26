@@ -72,7 +72,7 @@ A whole change at once: `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--
 |---|---|---|
 | `this.stats.n = 1` inside a method | `ASK: receiver-mutation` | assign the field itself: `this.stats = { ...this.stats, n: 1 }` |
 | `xs.forEach(x => { total += x })` | `ASK: closure-mutation` | `for (const x of xs) total += x`, or `reduce` |
-| `items.push(x)` where `items` is a parameter | `ASK: param-mutation` | return `[...items, x]` |
+| `const t = user.tags; t.push(x)` | `ASK: alias-mutation` | `user.tags.push(x)`: change it through the parameter, which becomes an output |
 | `a === b` on two objects or arrays | `ASK: reference-equality` | compare the fields you mean |
 | `n / 2` on numbers | `ASK: division` | `Math.floor(n / 2)` when you mean integer division |
 | `eval`, `new Function`, `Object.getPrototypeOf`, `super` | `ASK: dynamic-eval`, `prototype`, `class` | there is no mathematical reading of these; keep them out of the function you want proved |
@@ -85,17 +85,18 @@ Everything else that lean cannot read (generators, callbacks to a library, an un
 
 The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.**
 
-**1. Build new values instead of changing old ones.** In the value reading an argument is a value, and a value cannot change. `user.tags.push(t)` writes through the argument into the caller's memory, which the function's signature says nothing about. The proved shape returns the new record, and the translator renders it as a datatype update (`user.(tags := user.tags + [t])`), on which the verifier can reason. A local the function made (a local array, a local record) may still be changed in place: lean rebuilds it as a new value at each assignment.
+**1. Change what you were handed through its own name, or build a new value.** In the value reading an argument is a value. A function that assigns a field, a slot or the contents of a parameter (`user.tags.push(t)`, `user.id = name`, `counts[k] = n`) is read as a function that also returns the parameter's new value: `addTag(user, t)` becomes `(result, user')`, written as a datatype update (`user.(tags := user.tags + [t])`), and a caller that passed a name takes the new value back into that name. Two rules keep this sound. Two parameters are two objects (the stated axiom; lane B tests it by passing one object twice). A local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`) may not be changed: the model has one value per name, so a change through the alias would not reach the parameter. The lint says `alias-mutation` with the line; change the parameter itself, or copy first.
 
 ```ts
-// refused: param-mutation          // proved
-function addTag(user: User, t: string) {       function addTag(user: User, t: string): User {
-  user.tags.push(t);                            return { ...user, tags: [...user.tags, t] };
-  return user;                                }
+// refused: alias-mutation            // proved
+function addTag(user: User, t: string) {       function addTag(user: User, t: string): number {
+  const tags = user.tags;                         user.tags.push(t);          // user is an output of addTag
+  tags.push(t);                                   return user.tags.length;
+  return tags.length;                           }
 }
 ```
 
-What this buys: a candidate that appends twice, appends to the wrong record, or skips the append on an empty list is a different map, and the verifier says so with the argument on which the two differ. A mutation would hide the second append from the signature.
+What this buys: a candidate that appends twice, appends to the wrong record, or skips the append on an empty list returns a different `user'`, and the verifier says so with the argument on which the two differ. `user.tags.push(t)` and `user.tags = [...user.tags, t]` are proved equal: the same new value.
 
 **2. Let state come out of loops, not out of callbacks.** A loop body is translated as a recursive helper over the variables it changes; the verifier sees `total` go in and come out. A callback is translated as a lambda: a value with no access to the variables around it. `prices.forEach(p => { total += p })` asks the lambda to change `total`, which the lambda cannot do in the model. Write the loop, or fold with `reduce`, and the sum is a function of `prices`.
 
@@ -273,7 +274,7 @@ The run over 43 repaired production defects (every changed function through both
 
 ## Limits
 
-lean says `ASK` rather than guess. Today it asks on: assignment to a field of a field of `this`, `super`, generators, callbacks that change an outer variable, mutation of a parameter, `eval` and the prototype chain, more than one asynchronous schedule, and code the repository does not contain. A changed function that calls a changed recursive sibling needs an induction the theorem does not yet write.
+lean says `ASK` rather than guess. Today it asks on: assignment to a field of a field of `this`, `super`, generators, callbacks that change an outer variable, mutation through an alias of a parameter, `eval` and the prototype chain, more than one asynchronous schedule, and code the repository does not contain. A changed function that calls a changed recursive sibling needs an induction the theorem does not yet write.
 
 Lane B's bound is real: a frozen clock, generated inputs, one microtask order. Its word is `PASS-bounded`, and it stays that word.
 

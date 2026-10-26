@@ -31,7 +31,7 @@ rules per package).
 | Control | `if`/`else`, `switch` (each case ends in `return` or `break`), early `return`, `return` inside a loop, `break`, `continue`, `throw`, `void f()` | `switch (kind) { case "a": return 1; default: return 0; }` |
 | Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` with `// @decreases` | `for (let i = n - 1; i >= 0; i--)` |
 | Operators | `+ - * %`, `Math.floor(a / b)`, `Math.trunc(a / b)`, `Math.min`, `Math.max`, `Math.abs`, unary `-`, `! && \|\| ??`, `=== !==`, `< <= > >=`, `?:`, `typeof`, `instanceof`, `in`; `&&`/`\|\|` as values when both sides share a type | `Math.floor(n / 2)` |
-| Assignment | `=`, `+=`, `-=`, `*=`, `++`, `--` on a local; `x.f = v` and `xs[i] = v` on a local the function owns; `this.f = v`, `this.f += v`, `this.f++` on a field of the receiver | `total = total + x;` |
+| Assignment | `=`, `+=`, `-=`, `*=`, `++`, `--` on a local; `x.f = v`, `x.f += v`, `x.f++`, `xs[i] = v`, `x.f.push(v)` on a local or on a PARAMETER (a mutated parameter is an output of the function, returned beside the result; a caller that passed a name takes the new value back); `this.f = v`, `this.f += v`, `this.f++` on a field of the receiver | `user.tags.push(t);` |
 | Arrays at work | `xs[i]`, `.length`, `[a, ...xs]`, `push`/`unshift` on a local, `includes`, `indexOf`, `slice`, `concat`, `join`, `flat`, `at`, `some`, `every`, `find`, `findIndex`, `map`, `filter`, `flatMap`, `reduce`, with index callbacks | `xs.map((x, i) => x * i)` |
 | Strings | literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number | `n.toFixed(2)` |
@@ -92,7 +92,8 @@ different (the execution lane decides it). A `try` whose body returns a value is
 | `class`, `inheritance` | `super`, a class that extends another | `class B extends A {}` |
 | `receiver-mutation` | assignment through a field of a field of `this` | `this.stats.n += 1` |
 | `global-mutation`, `global-read`, `toplevel-state`, `toplevel-effect` | module `let`/`var`, assignment to anything the function does not own, code at module level that runs on import | `counter = counter + 1` |
-| `param-assign`, `param-mutation`, `property-assign`, `index-assign`, `in-place-mutation` | changing a parameter, or a field or slot of what the function does not own; `sort`/`reverse` on a named array | `xs.push(1)` on a parameter |
+| `alias-mutation` | changing a value through a local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`) | `const t = user.tags; t.push(1)` |
+| `param-assign`, `param-mutation`, `property-assign`, `index-assign`, `in-place-mutation` | rebinding a parameter (`p = v`); a field or slot of what the function does not own (a module object, a cast, a value from the world); `sort`/`reverse` on a named array | `(x as any).f = 1` |
 | `closure-mutation`, `foreach` | a callback changing a variable declared outside it; `forEach` | `xs.forEach((x) => { n += x; })` |
 | `opaque-mutation` | a mutating method on an opaque value used as a value, or as a statement when a field of the same receiver is read later | `const n = list.push(x)` |
 | `function-value` | a function value as a bare expression (not a local const, a record field or a call argument) | `return (x) => x + 1` |
@@ -147,5 +148,6 @@ translator derives it.
 - An effect is `effect(world, op, args) = (world', result)`. It is the only axiom. Two calls are two transitions;
   reordering two independent effects is reported as a difference.
 - Two syntactically identical lambdas are equal in Dafny; a changed lambda passed to an external is a changed argument.
-- Addresses never count: two records with the same fields are one value. Aliasing counts: a function cannot change
-  what it was handed, so a change through one alias cannot hide from the model.
+- Addresses never count: two records with the same fields are one value. Two parameters are two objects; a function
+  that changes a parameter returns its new value beside the result; a local alias of a parameter is never changed
+  (`alias-mutation`), so a change through one name cannot hide from the other.

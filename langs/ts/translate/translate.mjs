@@ -139,6 +139,57 @@ export function translate(file, fnName, opts = {}) {
   const isOpaqueStmt = (x) => ts.isTryStatement(x) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
   const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
+  // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
+  // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
+  // local that starts as the argument; the function returns its final value beside the result, and a caller that passed
+  // a name takes the new value back into that name. Two parameters are distinct objects (the stated axiom; the lint
+  // refuses a mutation through a local alias). A parameter passed to a same-file function that mutates it is mutated too.
+  const mutatedByUnit = new Map(); // unit name -> [param names] in parameter order
+  const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
+  function syntacticMutations(u) {
+    const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
+    const out = new Set();
+    const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+    const hit = (x) => { const r = rootOf(x); if (ts.isIdentifier(r) && params.has(r.text) && r !== x) out.add(r.text); };
+    const walk = (n) => {
+      if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return; // a callback cannot mutate an outer value (lint)
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) hit(n.left);
+      if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) hit(n.operand);
+      if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) { const r = rootOf(e.expression.expression); if (ts.isIdentifier(r) && params.has(r.text)) out.add(r.text); } }
+      if (ts.isDeleteExpression(n)) hit(n.expression);
+      ts.forEachChild(n, walk);
+    };
+    walk(u.body);
+    return out;
+  }
+  function computeMutations() {
+    const all = [...fns.values()];
+    const sets = new Map(all.map((u) => [u.name, syntacticMutations(u)]));
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const u of all) {
+        const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
+        const walk = (n) => {
+          if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return;
+          if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text)) {
+            const callee = fns.get(n.expression.text); const cm = sets.get(callee.name);
+            callee.params.forEach((cp, i) => { if (ts.isIdentifier(cp.name) && cm.has(cp.name.text)) { const a = n.arguments[i]; if (a && ts.isIdentifier(a) && params.has(a.text) && !sets.get(u.name).has(a.text)) { sets.get(u.name).add(a.text); changed = true; } } });
+          }
+          ts.forEachChild(n, walk);
+        };
+        walk(u.body);
+      }
+    }
+    for (const u of all) mutatedByUnit.set(u.name, u.params.filter((p) => ts.isIdentifier(p.name) && sets.get(u.name).has(p.name.text)).map((p) => p.name.text));
+  }
+  const mutatedOf = (u) => mutatedByUnit.get(u.name) ?? [];
+  // the final value of a unit: the result, with the world first when effectful, and the mutated parameters after it
+  function wrapRet(code) {
+    const outs = currentUnit ? mutatedOf(currentUnit).map(dn) : [];
+    const parts = [...(unitEffectful() ? [WORLD] : []), outerParens(code), ...outs];
+    return parts.length === 1 ? code : `(${parts.join(', ')})`;
+  }
   // ----- world fields: a field of `this` that a method of the class assigns, updates, or mutates through a method-call
   // statement lives in the world. Every read is a transition (ext_<C>_get_<f>(wld, self)), every write a transition
   // (ext_<C>_set_<f>(wld, self, v)); the method becomes effectful. A field no method changes stays a pure accessor of self.
@@ -1110,6 +1161,19 @@ export function translate(file, fnName, opts = {}) {
       if (o.kind === 'unit' && callee) {
         if (!core && kindOf.get(callee) === 'method') fail(n, `${f.text} loops, so it is a Dafny method and cannot be called inside an expression`);
         const args = unitArgs(callee, n);
+        const muts = mutatedOf(callee);
+        if (muts.length) {
+          // the callee returns (world?, result, p1', ...): bind each new value back to the name that was passed
+          const names = muts.map((m) => { const i = callee.params.findIndex((p) => ts.isIdentifier(p.name) && p.name.text === m); let a = n.arguments[i]; while (a && ts.isParenthesizedExpression(a)) a = a.expression; if (!a) return null; if (ts.isIdentifier(a)) return dn(a.text); if (ts.isArrayLiteralExpression(a) || ts.isObjectLiteralExpression(a) || ts.isNewExpression(a)) return `_`; fail(a, `the argument for \`${m}\`, which ${f.text} changes, must be a name or a fresh literal`); });
+          const eff = effectfulUnits.has(f.text);
+          if (eff && !unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
+          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+          const t = `t${tempCount++}_`;
+          const temps = names.map((nm, k) => (nm === '_' || nm === null ? `_` : `${t}m${k}`));
+          pending.push(`var (${[...(eff ? [WORLD] : []), t, ...temps].join(', ')}) := ${fname(f.text)}(${[...(eff ? [WORLD] : []), ...fuelArg(callee), ...args].join(', ')});`);
+          names.forEach((nm, k) => { if (nm && nm !== '_') pending.push(`var ${nm} := ${t}m${k};`); });
+          return t;
+        }
         if (effectfulUnits.has(f.text)) {
           if (!unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
@@ -1265,7 +1329,8 @@ export function translate(file, fnName, opts = {}) {
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;
   const isUpdate = (x) => (ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken);
   const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set']);
-  const isMutCall = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT.has(x.expression.name.text) && ts.isIdentifier(x.expression.expression);
+  const pathRoot = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
+  const isMutCall = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT.has(x.expression.name.text) && ts.isIdentifier(pathRoot(x.expression.expression)) && !isWorldField(x.expression.expression) && !(ts.isPropertyAccessExpression(x.expression.expression) && pathRoot(x.expression.expression).kind === K.ThisKeyword);
   const hasLoopOrMutation = (body) => {
     if (!ts.isBlock(body)) return false;
     let found = false;
@@ -1301,7 +1366,8 @@ export function translate(file, fnName, opts = {}) {
       if (isAssign(x) && ts.isPropertyAccessExpression(x.left)) { let r = x.left; while (ts.isPropertyAccessExpression(r)) r = r.expression; if (ts.isIdentifier(r)) note(r); }
       if (isAssign(x) && ts.isElementAccessExpression(x.left) && ts.isIdentifier(x.left.expression)) note(x.left.expression);
       if (isUpdate(x) && ts.isIdentifier(x.operand)) note(x.operand);
-      if (isMutCall(x)) note(x.expression.expression);
+      if (isMutCall(x)) { const r = pathRoot(x.expression.expression); if (ts.isIdentifier(r)) note(r); }
+      if (isUpdate(x) && ts.isPropertyAccessExpression(x.operand)) { const r = pathRoot(x.operand); if (ts.isIdentifier(r)) note(r); }
       ts.forEachChild(x, walk);
     };
     walk(node);
@@ -1430,6 +1496,7 @@ export function translate(file, fnName, opts = {}) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` is the call f()
     if (ts.isAwaitExpression(e) || (ts.isCallExpression(e) && isEffectCall(e)) || (ts.isNewExpression(e) && isEffectCall(e))) { expr(e); return null; } // the transition is hoisted
+    if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && fns.has(e.expression.text) && mutatedOf(fns.get(e.expression.text)).length) { expr(e); return null; } // a call that changes what was passed: the new values are bound by the call
     if (ts.isBinaryExpression(e) && ts.isElementAccessExpression(e.left) && ts.isIdentifier(e.left.expression)) {
       const arr = e.left.expression; const t = baseOf(typeOf(arr));
       const ix = !isArrayLike(checker, t) ? stringIndex(t) : null;
@@ -1451,24 +1518,36 @@ export function translate(file, fnName, opts = {}) {
       hoist(`${worldFieldAccessor(target, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit');
       return null;
     }
-    if (ts.isBinaryExpression(e) && ts.isPropertyAccessExpression(e.left)) {
-      // x.a.b = v on a local record: x := x.(a := x.a.(b := v))
-      const chain = []; let root = e.left;
+    // a path x.a.b rooted at a local or a parameter, rebuilt with a new leaf: x := x.(a := x.a.(b := leaf(x.a.b)))
+    function pathUpdate(target, leaf) {
+      const chain = []; let root = target;
       while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
-      if (!ts.isIdentifier(root)) fail(e, 'assignment target is not a local record');
-      const value = outerParens(expr(e.right, typeOf(e.left)));
+      if (!ts.isIdentifier(root)) fail(target, 'assignment target is not a path on a local record');
+      if (!chain.length) return [root.text, leaf(dn(root.text), null, typeOf(root)), root];
       const build = (i, recvCode, recvT) => {
         const pa = chain[i]; const fname_ = pa.name.text;
         if (!isRecordish(recvT) || !checker.getPropertyOfType(recvT, fname_)) fail(pa, `field ${fname_} is not a declared field of a record`);
         const p = checker.getPropertyOfType(recvT, fname_);
         const ft = checker.getTypeOfSymbolAtLocation(p, pa);
+        const cur = `${recvCode}.${dn(fname_)}`;
         let inner;
-        if (i === chain.length - 1) inner = (p.flags & ts.SymbolFlags.Optional) && !isOptional(typeOf(e.right)) ? (usesOption = true, `Some(${value})`) : value;
-        else { if (isOptional(ft)) fail(pa, 'assignment through an optional field is not translated'); inner = build(i + 1, `${recvCode}.${dn(fname_)}`, ft); }
+        if (i === chain.length - 1) inner = leaf(cur, p, ft);
+        else { if (isOptional(ft)) fail(pa, 'assignment through an optional field is not translated'); inner = build(i + 1, cur, ft); }
         return `${recvCode}.(${dn(fname_)} := ${inner})`;
       };
       return [root.text, build(0, dn(root.text), typeOf(root)), root];
     }
+    if (ts.isBinaryExpression(e) && ts.isPropertyAccessExpression(e.left)) {
+      const op = e.operatorToken.kind;
+      const value = outerParens(expr(e.right, typeOf(e.left)));
+      return pathUpdate(e.left, (cur, p, ft) => {
+        if (op === K.EqualsToken) return (p && (p.flags & ts.SymbolFlags.Optional)) && !isOptional(typeOf(e.right)) ? (usesOption = true, `Some(${value})`) : value;
+        if (p && (isOptional(ft) || (p.flags & ts.SymbolFlags.Optional))) fail(e, 'a compound assignment on an optional field is not translated');
+        const sym = op === K.PlusEqualsToken ? '+' : op === K.MinusEqualsToken ? '-' : op === K.AsteriskEqualsToken ? '*' : fail(e, 'assignment operator is not translated');
+        return `${cur} ${sym} ${value}`;
+      });
+    }
+    if (isUpdate(e) && ts.isPropertyAccessExpression(e.operand)) return pathUpdate(e.operand, (cur) => `${cur} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${one()}`);
     if (ts.isBinaryExpression(e)) {
       const name = dn(e.left.text);
       const op = e.operatorToken.kind;
@@ -1478,15 +1557,18 @@ export function translate(file, fnName, opts = {}) {
     }
     if (isUpdate(e)) { const name = dn(e.operand.text); return [e.operand.text, `${name} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${one()}`]; }
     if (isMutCall(e)) {
+      // push/unshift/add/set/delete on a local, a parameter, or a path on one: the path is rebuilt with the new contents
       const r = e.expression.expression, m = e.expression.name.text;
       const t = baseOf(typeOf(r));
-      const R = dn(r.text);
       const a0 = e.arguments[0];
-      const piece = ts.isSpreadElement(a0) ? seqOf(a0.expression) : `[${outerParens(expr(a0, checker.getTypeArguments(t)[0]))}]`;
-      if (m === 'push') return [r.text, `${R} + ${piece}`];
-      if (m === 'unshift') return [r.text, `${piece} + ${R}`];
-      if (isSetT(t)) { const A = checker.getTypeArguments(t)[0]; return [r.text, m === 'add' ? `${R} + {${expr(e.arguments[0], A)}}` : `${R} - {${expr(e.arguments[0], A)}}`]; }
-      if (isMapT(t)) { const [kt, vt] = checker.getTypeArguments(t); return [r.text, m === 'set' ? `${R}[${expr(e.arguments[0], kt)} := ${expr(e.arguments[1], vt)}]` : `${R} - {${expr(e.arguments[0], kt)}}`]; }
+      const piece = (m === 'push' || m === 'unshift') ? (ts.isSpreadElement(a0) ? seqOf(a0.expression) : `[${outerParens(expr(a0, checker.getTypeArguments(t)[0]))}]`) : null;
+      return pathUpdate(r, (cur) => {
+        if (m === 'push') return `${cur} + ${piece}`;
+        if (m === 'unshift') return `${piece} + ${cur}`;
+        if (isSetT(t)) { const A = checker.getTypeArguments(t)[0]; return m === 'add' ? `${cur} + {${expr(e.arguments[0], A)}}` : `${cur} - {${expr(e.arguments[0], A)}}`; }
+        if (isMapT(t)) { const [kt, vt] = checker.getTypeArguments(t); return m === 'set' ? `${cur}[${expr(e.arguments[0], kt)} := ${expr(e.arguments[1], vt)}]` : `${cur} - {${expr(e.arguments[0], kt)}}`; }
+        return fail(e, `.${m}() is not translated here`);
+      });
     }
     return fail(e, 'statement expression is not translated');
   }
@@ -1626,8 +1708,8 @@ export function translate(file, fnName, opts = {}) {
     switch (s.kind) {
       case K.Block: return tr([...s.statements, ...rest], fin, u);
       case K.EmptyStatement: return more();
-      case K.ReturnStatement: return capture(() => { const rt = retType(u); let code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); if (unitEffectful()) code = `(${WORLD}, ${outerParens(code)})`; return retIn(code); });
-      case K.ThrowStatement: return capture(() => { const R = dtype(retType(u), s); let code = `${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`; if (unitEffectful()) code = `(${WORLD}, ${code})`; return retIn(code); });
+      case K.ReturnStatement: return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
+      case K.ThrowStatement: return capture(() => { const R = dtype(retType(u), s); const code = `${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`; return retIn(wrapRet(code)); });
       case K.VariableStatement: {
         const out = [];
         for (const d of s.declarationList.declarations) {
@@ -1720,7 +1802,7 @@ export function translate(file, fnName, opts = {}) {
     const outs = [WORLD, ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
     const line = outs.length === 1 ? `var ${outs[0]} := ${name}(${args.join(', ')});` : `var (${outs.join(', ')}) := ${name}(${args.join(', ')});`;
     if (!returns) return `${line}\n${tr(rest, fin, u)}`;
-    return `${line}\nif retb.Some? then\n${indentBlock(retIn(`(${WORLD}, retb.value)`))}\nelse\n${indentBlock(wrapLet(tr(rest, fin, u)))}`;
+    return `${line}\nif retb.Some? then\n${indentBlock(retIn(wrapRet('retb.value')))}\nelse\n${indentBlock(wrapLet(tr(rest, fin, u)))}`;
   }
   function coreLoop(s, rest, fin, u) {
     const id = loopCount++;
@@ -1819,7 +1901,7 @@ export function translate(file, fnName, opts = {}) {
     if (!returns) return `var ${tupleOf(mNames)} := ${first};\n${tr(rest, fin, u)}`;
     // a return from inside the loop ends the function (or the enclosing loop helper) with that value
     const after = tr(rest, fin, u);
-    return `var ${tupleOf(outNames)} := ${first};\nif ${retName}.Some? then\n${indentBlock(retIn(`${retName}.value`))}\nelse\n${indentBlock(wrapLet(after))}`;
+    return `var ${tupleOf(outNames)} := ${first};\nif ${retName}.Some? then\n${indentBlock(retIn(wrapRet(`${retName}.value`)))}\nelse\n${indentBlock(wrapLet(after))}`;
   }
 
   // ----- which units are effectful: callees come first in `order`, so a caller sees its callee's flag -----
@@ -1829,6 +1911,7 @@ export function translate(file, fnName, opts = {}) {
     if (core && containsEffect(u.body)) effectfulUnits.add(u.name);
     currentUnit = null;
   }
+  if (core) computeMutations();
   // ----- emit functions -----
   for (const u of order) kindOf.set(u, hasLoopOrMutation(u.body) ? 'method' : 'function');
   function sigParams(u) {
@@ -1868,16 +1951,18 @@ export function translate(file, fnName, opts = {}) {
     if (core) {
       const eff = effectfulUnits.has(u.name);
       if (eff) addPrelude('World', 'type World');
-      const endVal = () => (retType(u).flags & (TF.Void | TF.Undefined) ? (eff ? `(${WORLD}, Unit)` : 'Unit') : fail(u.node, 'a path ends without a return'));
-      const body = bodyList ? tr(bodyList, endVal, u) : capture(() => { const c = expr(u.body, retType(u)); return eff ? `(${WORLD}, ${outerParens(c)})` : c; });
-      const full = sp.lets.length ? `${sp.lets.join('\n')}\n${body}` : body;
+      const endVal = () => (retType(u).flags & (TF.Void | TF.Undefined) ? wrapRet('Unit') : fail(u.node, 'a path ends without a return'));
+      const body = bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))));
+      const mutLets = mutatedOf(u).map((m) => `var ${dn(m)} := ${dn(m)};`); // a mutated parameter starts as the argument and is rebound by the body
+      const full = [...sp.lets, ...mutLets].length ? `${[...sp.lets, ...mutLets].join('\n')}\n${body}` : body;
       const selfParam = classOf(u) && !u.isStatic ? `${SELF}: ${selfType(u)}` : '';
       const plain = [selfParam, sp.text].filter(Boolean).join(', ');
       const rec = recursiveUnits.has(u.name);
       const plain2 = rec ? [`${FUEL}: nat`, plain].filter(Boolean).join(', ') : plain;
       const sig = eff ? `${WORLD}: World${plain2 ? ', ' + plain2 : ''}` : plain2;
-      const rtype = eff ? `(World, ${rt})` : rt;
-      const outOfFuel = rec ? (eff ? `(${WORLD}, ${external(`fuel_out_${mangle(rt)}`, [], rt)}())` : `${external(`fuel_out_${mangle(rt)}`, [], rt)}()`) : null;
+      const mutTypes = mutatedOf(u).map((m) => { const pr = u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m); return dtype(typeOf(pr.name), pr); });
+      const rtype = [...(eff ? ['World'] : []), rt, ...mutTypes].length === 1 ? rt : `(${[...(eff ? ['World'] : []), rt, ...mutTypes].join(', ')})`;
+      const outOfFuel = rec ? wrapRet(`${external(`fuel_out_${mangle(rt)}`, [], rt)}()`) : null;
       const full2 = rec ? `if ${FUEL} == 0 then ${outOfFuel} else\n${indentBlock(wrapLet(full))}` : full;
       const specs2 = rec ? [...specs, `  decreases ${FUEL}`] : specs;
       const tp = unitTParams().length ? `<${unitTParams().map((p) => `${p}(==)`).join(', ')}>` : '';
