@@ -1,0 +1,1080 @@
+{
+ "census": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/concepts-all.json",
+ "generatedAt": "2026-10-26T21:57:14.165Z",
+ "roots": 39,
+ "files": 28925,
+ "units": 62657,
+ "perRepo": {
+  "apps-starter": {
+   "units": 96,
+   "files": 32
+  },
+  "claude-chat-clean": {
+   "units": 89,
+   "files": 4
+  },
+  "driftbench": {
+   "units": 3161,
+   "files": 701
+  },
+  "n8n": {
+   "units": 5437,
+   "files": 3704
+  },
+  "nexus": {
+   "units": 25294,
+   "files": 12217
+  },
+  "agent-nexus": {
+   "units": 3718,
+   "files": 2465
+  },
+  "apps-ui": {
+   "units": 1038,
+   "files": 278
+  },
+  "blocks": {
+   "units": 250,
+   "files": 121
+  },
+  "blog-studio-lambda": {
+   "units": 422,
+   "files": 100
+  },
+  "car-select-api": {
+   "units": 31,
+   "files": 10
+  },
+  "claude-skills": {
+   "units": 273,
+   "files": 146
+  },
+  "cue-status-page": {
+   "units": 49,
+   "files": 31
+  },
+  "ftp-server-orange": {
+   "units": 70,
+   "files": 16
+  },
+  "itsme-backend": {
+   "units": 27,
+   "files": 6
+  },
+  "langchainjs": {
+   "units": 5601,
+   "files": 2184
+  },
+  "linear-status-page": {
+   "units": 49,
+   "files": 31
+  },
+  "lucca-unofficial-api": {
+   "units": 22,
+   "files": 15
+  },
+  "nano-banana": {
+   "units": 14,
+   "files": 4
+  },
+  "nexus-agent-api": {
+   "units": 14,
+   "files": 20
+  },
+  "nexus-automations": {
+   "units": 101,
+   "files": 43
+  },
+  "nexus-chat-embed": {
+   "units": 364,
+   "files": 127
+  },
+  "nexus-learning": {
+   "units": 3826,
+   "files": 1316
+  },
+  "nexus-linkedin-dashboard": {
+   "units": 1522,
+   "files": 587
+  },
+  "nexus-meeting-recorder": {
+   "units": 52,
+   "files": 66
+  },
+  "nexus-tokens": {
+   "units": 49,
+   "files": 28
+  },
+  "nexus-ui": {
+   "units": 355,
+   "files": 414
+  },
+  "nutshell": {
+   "units": 7464,
+   "files": 2803
+  },
+  "odoo-unofficial-api": {
+   "units": 44,
+   "files": 14
+  },
+  "orange-checkout-automation": {
+   "units": 96,
+   "files": 56
+  },
+  "orange-identity-card-collection": {
+   "units": 22,
+   "files": 17
+  },
+  "pipedream": {
+   "units": 229,
+   "files": 599
+  },
+  "snitch": {
+   "units": 885,
+   "files": 274
+  },
+  "status": {
+   "units": 533,
+   "files": 171
+  },
+  "theirstack-unofficial-api": {
+   "units": 9,
+   "files": 9
+  },
+  "workday-unofficial-api": {
+   "units": 49,
+   "files": 15
+  },
+  "promo-app": {
+   "units": 1402,
+   "files": 301
+  }
+ },
+ "rows": [
+  {
+   "kind": "Identifier",
+   "units": 59378,
+   "share": 94.8
+  },
+  {
+   "kind": "Block",
+   "units": 59338,
+   "share": 94.7
+  },
+  {
+   "kind": "PropertyAccessExpression",
+   "units": 50650,
+   "share": 80.8
+  },
+  {
+   "kind": "CallExpression",
+   "units": 50125,
+   "share": 80
+  },
+  {
+   "kind": "ReturnStatement",
+   "units": 49908,
+   "share": 79.7
+  },
+  {
+   "kind": "StringLiteral",
+   "units": 38403,
+   "share": 61.3
+  },
+  {
+   "kind": "BinaryExpression",
+   "units": 34883,
+   "share": 55.7
+  },
+  {
+   "kind": "VariableDeclaration",
+   "units": 33616,
+   "share": 53.7
+  },
+  {
+   "kind": "VariableDeclarationList",
+   "units": 33350,
+   "share": 53.2
+  },
+  {
+   "kind": "FirstStatement",
+   "units": 32918,
+   "share": 52.5
+  },
+  {
+   "kind": "ObjectLiteralExpression",
+   "units": 28851,
+   "share": 46
+  },
+  {
+   "kind": "PropertyAssignment",
+   "units": 26056,
+   "share": 41.6
+  },
+  {
+   "kind": "ExpressionStatement",
+   "units": 24981,
+   "share": 39.9
+  },
+  {
+   "kind": "IfStatement",
+   "units": 23894,
+   "share": 38.1
+  },
+  {
+   "kind": "FirstLiteralToken",
+   "units": 18802,
+   "share": 30
+  },
+  {
+   "kind": "EqualsEqualsEqualsToken",
+   "units": 18451,
+   "share": 29.4
+  },
+  {
+   "kind": "ArrowFunction",
+   "units": 17699,
+   "share": 28.2
+  },
+  {
+   "kind": "EqualsGreaterThanToken",
+   "units": 17699,
+   "share": 28.2
+  },
+  {
+   "kind": "ThisKeyword",
+   "units": 17059,
+   "share": 27.2
+  },
+  {
+   "kind": "ParenthesizedExpression",
+   "units": 16252,
+   "share": 25.9
+  },
+  {
+   "kind": "TemplateExpression",
+   "units": 16167,
+   "share": 25.8
+  },
+  {
+   "kind": "TemplateHead",
+   "units": 16167,
+   "share": 25.8
+  },
+  {
+   "kind": "TemplateSpan",
+   "units": 16167,
+   "share": 25.8
+  },
+  {
+   "kind": "LastTemplateToken",
+   "units": 16167,
+   "share": 25.8
+  },
+  {
+   "kind": "AwaitExpression",
+   "units": 15997,
+   "share": 25.5
+  },
+  {
+   "kind": "Parameter",
+   "units": 15777,
+   "share": 25.2
+  },
+  {
+   "kind": "QuestionToken",
+   "units": 15239,
+   "share": 24.3
+  },
+  {
+   "kind": "ConditionalExpression",
+   "units": 14656,
+   "share": 23.4
+  },
+  {
+   "kind": "ColonToken",
+   "units": 14656,
+   "share": 23.4
+  },
+  {
+   "kind": "ArrayLiteralExpression",
+   "units": 14558,
+   "share": 23.2
+  },
+  {
+   "kind": "TypeReference",
+   "units": 13851,
+   "share": 22.1
+  },
+  {
+   "kind": "PrefixUnaryExpression",
+   "units": 13715,
+   "share": 21.9
+  },
+  {
+   "kind": "NewExpression",
+   "units": 12963,
+   "share": 20.7
+  },
+  {
+   "kind": "ShorthandPropertyAssignment",
+   "units": 12737,
+   "share": 20.3
+  },
+  {
+   "kind": "FirstAssignment",
+   "units": 10538,
+   "share": 16.8
+  },
+  {
+   "kind": "NullKeyword",
+   "units": 10147,
+   "share": 16.2
+  },
+  {
+   "kind": "AmpersandAmpersandToken",
+   "units": 9545,
+   "share": 15.2
+  },
+  {
+   "kind": "QuestionQuestionToken",
+   "units": 9205,
+   "share": 14.7
+  },
+  {
+   "kind": "StringKeyword",
+   "units": 8911,
+   "share": 14.2
+  },
+  {
+   "kind": "ExclamationEqualsEqualsToken",
+   "units": 8862,
+   "share": 14.1
+  },
+  {
+   "kind": "BindingElement",
+   "units": 8691,
+   "share": 13.9
+  },
+  {
+   "kind": "ElementAccessExpression",
+   "units": 8672,
+   "share": 13.8
+  },
+  {
+   "kind": "AsExpression",
+   "units": 8500,
+   "share": 13.6
+  },
+  {
+   "kind": "TemplateMiddle",
+   "units": 8318,
+   "share": 13.3
+  },
+  {
+   "kind": "BarBarToken",
+   "units": 8053,
+   "share": 12.9
+  },
+  {
+   "kind": "TrueKeyword",
+   "units": 7702,
+   "share": 12.3
+  },
+  {
+   "kind": "QuestionDotToken",
+   "units": 7350,
+   "share": 11.7
+  },
+  {
+   "kind": "ThrowStatement",
+   "units": 6263,
+   "share": 10
+  },
+  {
+   "kind": "JsxAttributes",
+   "units": 6119,
+   "share": 9.8
+  },
+  {
+   "kind": "JsxAttribute",
+   "units": 5979,
+   "share": 9.5
+  },
+  {
+   "kind": "TryStatement",
+   "units": 5893,
+   "share": 9.4
+  },
+  {
+   "kind": "ArrayType",
+   "units": 5866,
+   "share": 9.4
+  },
+  {
+   "kind": "FalseKeyword",
+   "units": 5564,
+   "share": 8.9
+  },
+  {
+   "kind": "ObjectBindingPattern",
+   "units": 5564,
+   "share": 8.9
+  },
+  {
+   "kind": "CatchClause",
+   "units": 5517,
+   "share": 8.8
+  },
+  {
+   "kind": "ForOfStatement",
+   "units": 5511,
+   "share": 8.8
+  },
+  {
+   "kind": "JsxExpression",
+   "units": 5495,
+   "share": 8.8
+  },
+  {
+   "kind": "SpreadAssignment",
+   "units": 5325,
+   "share": 8.5
+  },
+  {
+   "kind": "JsxSelfClosingElement",
+   "units": 5080,
+   "share": 8.1
+  },
+  {
+   "kind": "JsxElement",
+   "units": 4911,
+   "share": 7.8
+  },
+  {
+   "kind": "JsxOpeningElement",
+   "units": 4911,
+   "share": 7.8
+  },
+  {
+   "kind": "JsxClosingElement",
+   "units": 4911,
+   "share": 7.8
+  },
+  {
+   "kind": "JsxText",
+   "units": 4770,
+   "share": 7.6
+  },
+  {
+   "kind": "PlusToken",
+   "units": 4747,
+   "share": 7.6
+  },
+  {
+   "kind": "GreaterThanToken",
+   "units": 4448,
+   "share": 7.1
+  },
+  {
+   "kind": "ArrayBindingPattern",
+   "units": 3982,
+   "share": 6.4
+  },
+  {
+   "kind": "SpreadElement",
+   "units": 3661,
+   "share": 5.8
+  },
+  {
+   "kind": "TypeOfExpression",
+   "units": 3649,
+   "share": 5.8
+  },
+  {
+   "kind": "UnionType",
+   "units": 3456,
+   "share": 5.5
+  },
+  {
+   "kind": "UnknownKeyword",
+   "units": 3418,
+   "share": 5.5
+  },
+  {
+   "kind": "AsyncKeyword",
+   "units": 2989,
+   "share": 4.8
+  },
+  {
+   "kind": "MinusToken",
+   "units": 2942,
+   "share": 4.7
+  },
+  {
+   "kind": "FirstBinaryOperator",
+   "units": 2750,
+   "share": 4.4
+  },
+  {
+   "kind": "TypeLiteral",
+   "units": 2597,
+   "share": 4.1
+  },
+  {
+   "kind": "PropertySignature",
+   "units": 2520,
+   "share": 4
+  },
+  {
+   "kind": "RegularExpressionLiteral",
+   "units": 2457,
+   "share": 3.9
+  },
+  {
+   "kind": "LiteralType",
+   "units": 2338,
+   "share": 3.7
+  },
+  {
+   "kind": "InstanceOfKeyword",
+   "units": 2285,
+   "share": 3.6
+  },
+  {
+   "kind": "ContinueStatement",
+   "units": 2049,
+   "share": 3.3
+  },
+  {
+   "kind": "NumberKeyword",
+   "units": 2039,
+   "share": 3.3
+  },
+  {
+   "kind": "AsteriskToken",
+   "units": 1869,
+   "share": 3
+  },
+  {
+   "kind": "SuperKeyword",
+   "units": 1636,
+   "share": 2.6
+  },
+  {
+   "kind": "UndefinedKeyword",
+   "units": 1596,
+   "share": 2.5
+  },
+  {
+   "kind": "FirstCompoundAssignment",
+   "units": 1545,
+   "share": 2.5
+  },
+  {
+   "kind": "ForStatement",
+   "units": 1542,
+   "share": 2.5
+  },
+  {
+   "kind": "FirstTemplateToken",
+   "units": 1537,
+   "share": 2.5
+  },
+  {
+   "kind": "SlashToken",
+   "units": 1451,
+   "share": 2.3
+  },
+  {
+   "kind": "PostfixUnaryExpression",
+   "units": 1345,
+   "share": 2.1
+  },
+  {
+   "kind": "JsxSpreadAttribute",
+   "units": 1306,
+   "share": 2.1
+  },
+  {
+   "kind": "GreaterThanEqualsToken",
+   "units": 1261,
+   "share": 2
+  },
+  {
+   "kind": "FirstNode",
+   "units": 1255,
+   "share": 2
+  },
+  {
+   "kind": "InKeyword",
+   "units": 1161,
+   "share": 1.9
+  },
+  {
+   "kind": "SwitchStatement",
+   "units": 1120,
+   "share": 1.8
+  },
+  {
+   "kind": "CaseBlock",
+   "units": 1120,
+   "share": 1.8
+  },
+  {
+   "kind": "CaseClause",
+   "units": 1120,
+   "share": 1.8
+  },
+  {
+   "kind": "BooleanKeyword",
+   "units": 976,
+   "share": 1.6
+  },
+  {
+   "kind": "LessThanEqualsToken",
+   "units": 955,
+   "share": 1.5
+  },
+  {
+   "kind": "DefaultClause",
+   "units": 846,
+   "share": 1.4
+  },
+  {
+   "kind": "VoidExpression",
+   "units": 743,
+   "share": 1.2
+  },
+  {
+   "kind": "AnyKeyword",
+   "units": 742,
+   "share": 1.2
+  },
+  {
+   "kind": "JsxFragment",
+   "units": 717,
+   "share": 1.1
+  },
+  {
+   "kind": "JsxOpeningFragment",
+   "units": 717,
+   "share": 1.1
+  },
+  {
+   "kind": "JsxClosingFragment",
+   "units": 717,
+   "share": 1.1
+  },
+  {
+   "kind": "VoidKeyword",
+   "units": 703,
+   "share": 1.1
+  },
+  {
+   "kind": "NonNullExpression",
+   "units": 665,
+   "share": 1.1
+  },
+  {
+   "kind": "NeverKeyword",
+   "units": 619,
+   "share": 1
+  },
+  {
+   "kind": "BreakStatement",
+   "units": 613,
+   "share": 1
+  },
+  {
+   "kind": "IndexedAccessType",
+   "units": 603,
+   "share": 1
+  },
+  {
+   "kind": "ComputedPropertyName",
+   "units": 557,
+   "share": 0.9
+  },
+  {
+   "kind": "WhileStatement",
+   "units": 525,
+   "share": 0.8
+  },
+  {
+   "kind": "DeleteExpression",
+   "units": 524,
+   "share": 0.8
+  },
+  {
+   "kind": "DotDotDotToken",
+   "units": 516,
+   "share": 0.8
+  },
+  {
+   "kind": "TypeQuery",
+   "units": 474,
+   "share": 0.8
+  },
+  {
+   "kind": "TypeOperator",
+   "units": 467,
+   "share": 0.7
+  },
+  {
+   "kind": "PercentToken",
+   "units": 384,
+   "share": 0.6
+  },
+  {
+   "kind": "FirstTypeNode",
+   "units": 375,
+   "share": 0.6
+  },
+  {
+   "kind": "FunctionType",
+   "units": 335,
+   "share": 0.5
+  },
+  {
+   "kind": "TupleType",
+   "units": 295,
+   "share": 0.5
+  },
+  {
+   "kind": "YieldExpression",
+   "units": 295,
+   "share": 0.5
+  },
+  {
+   "kind": "MethodDeclaration",
+   "units": 285,
+   "share": 0.5
+  },
+  {
+   "kind": "AwaitKeyword",
+   "units": 278,
+   "share": 0.4
+  },
+  {
+   "kind": "ExclamationEqualsToken",
+   "units": 251,
+   "share": 0.4
+  },
+  {
+   "kind": "FunctionDeclaration",
+   "units": 248,
+   "share": 0.4
+  },
+  {
+   "kind": "OmittedExpression",
+   "units": 217,
+   "share": 0.3
+  },
+  {
+   "kind": "ParenthesizedType",
+   "units": 202,
+   "share": 0.3
+  },
+  {
+   "kind": "DoStatement",
+   "units": 196,
+   "share": 0.3
+  },
+  {
+   "kind": "ImportKeyword",
+   "units": 192,
+   "share": 0.3
+  },
+  {
+   "kind": "TaggedTemplateExpression",
+   "units": 186,
+   "share": 0.3
+  },
+  {
+   "kind": "EqualsEqualsToken",
+   "units": 179,
+   "share": 0.3
+  },
+  {
+   "kind": "IntersectionType",
+   "units": 172,
+   "share": 0.3
+  },
+  {
+   "kind": "TypeParameter",
+   "units": 151,
+   "share": 0.2
+  },
+  {
+   "kind": "MinusEqualsToken",
+   "units": 136,
+   "share": 0.2
+  },
+  {
+   "kind": "QuestionQuestionEqualsToken",
+   "units": 115,
+   "share": 0.2
+  },
+  {
+   "kind": "SatisfiesExpression",
+   "units": 113,
+   "share": 0.2
+  },
+  {
+   "kind": "ObjectKeyword",
+   "units": 113,
+   "share": 0.2
+  },
+  {
+   "kind": "IndexSignature",
+   "units": 109,
+   "share": 0.2
+  },
+  {
+   "kind": "PrivateIdentifier",
+   "units": 90,
+   "share": 0.1
+  },
+  {
+   "kind": "FunctionExpression",
+   "units": 90,
+   "share": 0.1
+  },
+  {
+   "kind": "ForInStatement",
+   "units": 81,
+   "share": 0.1
+  },
+  {
+   "kind": "AmpersandToken",
+   "units": 68,
+   "share": 0.1
+  },
+  {
+   "kind": "TypeAliasDeclaration",
+   "units": 60,
+   "share": 0.1
+  },
+  {
+   "kind": "GreaterThanGreaterThanGreaterThanToken",
+   "units": 52,
+   "share": 0.1
+  },
+  {
+   "kind": "AsteriskAsteriskToken",
+   "units": 48,
+   "share": 0.1
+  },
+  {
+   "kind": "BarToken",
+   "units": 46,
+   "share": 0.1
+  },
+  {
+   "kind": "MetaProperty",
+   "units": 41,
+   "share": 0.1
+  },
+  {
+   "kind": "ReadonlyKeyword",
+   "units": 41,
+   "share": 0.1
+  },
+  {
+   "kind": "LessThanLessThanToken",
+   "units": 37,
+   "share": 0.1
+  },
+  {
+   "kind": "BigIntKeyword",
+   "units": 29,
+   "share": 0
+  },
+  {
+   "kind": "CaretToken",
+   "units": 28,
+   "share": 0
+  },
+  {
+   "kind": "GreaterThanGreaterThanToken",
+   "units": 23,
+   "share": 0
+  },
+  {
+   "kind": "AsteriskEqualsToken",
+   "units": 22,
+   "share": 0
+  },
+  {
+   "kind": "GetAccessor",
+   "units": 22,
+   "share": 0
+  },
+  {
+   "kind": "BigIntLiteral",
+   "units": 20,
+   "share": 0
+  },
+  {
+   "kind": "MethodSignature",
+   "units": 15,
+   "share": 0
+  },
+  {
+   "kind": "LastBinaryOperator",
+   "units": 13,
+   "share": 0
+  },
+  {
+   "kind": "BarEqualsToken",
+   "units": 11,
+   "share": 0
+  },
+  {
+   "kind": "LastTypeNode",
+   "units": 11,
+   "share": 0
+  },
+  {
+   "kind": "ThisType",
+   "units": 11,
+   "share": 0
+  },
+  {
+   "kind": "ExpressionWithTypeArguments",
+   "units": 10,
+   "share": 0
+  },
+  {
+   "kind": "LabeledStatement",
+   "units": 10,
+   "share": 0
+  },
+  {
+   "kind": "InterfaceDeclaration",
+   "units": 9,
+   "share": 0
+  },
+  {
+   "kind": "HeritageClause",
+   "units": 9,
+   "share": 0
+  },
+  {
+   "kind": "CommaToken",
+   "units": 8,
+   "share": 0
+  },
+  {
+   "kind": "MappedType",
+   "units": 8,
+   "share": 0
+  },
+  {
+   "kind": "ExclamationToken",
+   "units": 8,
+   "share": 0
+  },
+  {
+   "kind": "PropertyDeclaration",
+   "units": 7,
+   "share": 0
+  },
+  {
+   "kind": "ClassDeclaration",
+   "units": 7,
+   "share": 0
+  },
+  {
+   "kind": "SymbolKeyword",
+   "units": 7,
+   "share": 0
+  },
+  {
+   "kind": "ClassExpression",
+   "units": 5,
+   "share": 0
+  },
+  {
+   "kind": "BarBarEqualsToken",
+   "units": 5,
+   "share": 0
+  },
+  {
+   "kind": "Constructor",
+   "units": 5,
+   "share": 0
+  },
+  {
+   "kind": "SlashEqualsToken",
+   "units": 5,
+   "share": 0
+  },
+  {
+   "kind": "ConditionalType",
+   "units": 5,
+   "share": 0
+  },
+  {
+   "kind": "RestType",
+   "units": 4,
+   "share": 0
+  },
+  {
+   "kind": "EmptyStatement",
+   "units": 4,
+   "share": 0
+  },
+  {
+   "kind": "ConstructorType",
+   "units": 3,
+   "share": 0
+  },
+  {
+   "kind": "SetAccessor",
+   "units": 3,
+   "share": 0
+  },
+  {
+   "kind": "TypeAssertionExpression",
+   "units": 3,
+   "share": 0
+  },
+  {
+   "kind": "Decorator",
+   "units": 2,
+   "share": 0
+  },
+  {
+   "kind": "ConstructSignature",
+   "units": 2,
+   "share": 0
+  },
+  {
+   "kind": "NamedTupleMember",
+   "units": 2,
+   "share": 0
+  },
+  {
+   "kind": "AmpersandEqualsToken",
+   "units": 2,
+   "share": 0
+  },
+  {
+   "kind": "GreaterThanGreaterThanGreaterThanEqualsToken",
+   "units": 1,
+   "share": 0
+  },
+  {
+   "kind": "StaticKeyword",
+   "units": 1,
+   "share": 0
+  },
+  {
+   "kind": "AmpersandAmpersandEqualsToken",
+   "units": 1,
+   "share": 0
+  }
+ ]
+}
