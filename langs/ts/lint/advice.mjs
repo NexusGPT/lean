@@ -2,6 +2,8 @@
 export const ADVICE = {
   'division': 'JavaScript `/` is real division. Write `Math.floor(a / b)` for integer division, or `a * (1 / b)` is still real: say which you mean.',
   'loose-equality': 'Use `===` / `!==`; `==` coerces.',
+  'assign-target': 'Copy into a fresh object: `Object.assign({}, a, b)` or `{ ...a, ...b }`; writing into an argument is not read.',
+  'date-mutation': 'Build the new instant as a number and construct `new Date(t)`; a setter changes the Date in place.',
   'reference-equality': '`===` on objects compares addresses. Compare the fields you mean (`a.id === b.id`).',
   'foreach': 'Write `for (const x of xs) { ... }`; a loop may update a local, a callback may not.',
   'closure-mutation': 'A callback may compute, not assign an outer variable. Use `for (const x of xs)` or `reduce`, and let the state come out of the loop.',

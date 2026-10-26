@@ -20,10 +20,11 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { createRequire } from 'node:module';
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
-import { Environment, render, stable, BudgetError } from './fake.mjs';
+import { Environment, render, BudgetError } from './fake.mjs';
 import { specOf } from './spec.mjs';
-import { inputsFor } from './gen.mjs';
+import { inputsFor, aliasInputs } from './gen.mjs';
 import { runNew } from './new-unit.mjs';
+import { Graph } from './graph.mjs';
 
 const require = createRequire(import.meta.url);
 
@@ -227,8 +228,10 @@ const lateErrors = [];
 if (!globalThis.__leanLateHooks) { globalThis.__leanLateHooks = true; process.on('unhandledRejection', (e) => lateErrors.push(String(e && e.message || e))); process.on('uncaughtException', (e) => lateErrors.push(String(e && e.message || e))); }
 export async function observe(side, spec, args, ms) {
   const { env, unit } = side;
-  const before = args.map((a) => stable(a));
-  let outcome;
+  // the heap layer, stage 1: the object graph reachable from the arguments is named before the call (graph.mjs)
+  let graph;
+  try { graph = new Graph().before(args); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
+  let outcome, outcomeValue, hasOutcome = false;
   lateErrors.length = 0;
   try {
     const r = unit.call(args);
@@ -237,7 +240,8 @@ export async function observe(side, spec, args, ms) {
       try { const cleanup = await withTimeout(Promise.resolve(effect()), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); }
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); }
     }
-    outcome = { returned: render(await withTimeout(observeJsx(v, env), ms)) };
+    outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
+    outcome = { returned: render(outcomeValue) };
   } catch (e) {
     if (e && e.message === '__timeout__') return { harness: 'timeout' };
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
@@ -246,15 +250,18 @@ export async function observe(side, spec, args, ms) {
   }
   // drain microtasks so pending work settles
   await new Promise((r) => setImmediate(r));
-  const after = args.map((a) => stable(a));
-  const mutated = args.map((a, i) => (before[i] === after[i] ? null : JSON.parse(after[i])));
   await new Promise((r) => setImmediate(r)); // let a fire-and-forget continuation fail now rather than during the next side
   for (const m of lateErrors.splice(0)) env.record('late-error', 'process', [m.slice(0, 200)]);
   // the receiver's own state after the call: every field of `this` the run touched, rendered (a typed field such as a
   // Map or a counter is a real value, so a change to it is seen here, not on the trace)
   const receiver = {};
-  if (side.unit && side.unit.receiver) { for (const [k, v] of env.cache) if (k.startsWith('this.') && !k.includes('(') && !k.includes('#') && !k.includes('.', 5)) receiver[k] = render(v); const own = side.unit.receiver.__own ? side.unit.receiver.__own() : {}; for (const k of Object.keys(own)) receiver[`this.${k}`] = render(own[k]); }
-  return { outcome, mutated, receiver, trace: env.trace, pending: env.pending };
+  let own = {};
+  if (side.unit && side.unit.receiver) { for (const [k, v] of env.cache) if (k.startsWith('this.') && !k.includes('(') && !k.includes('#') && !k.includes('.', 5)) receiver[k] = render(v); own = side.unit.receiver.__own ? side.unit.receiver.__own() : {}; for (const k of Object.keys(own)) receiver[`this.${k}`] = render(own[k]); }
+  // the graph after the call: the arguments, the receiver's own fields and the outcome as roots, then every pre-call
+  // object; a fresh object is named by its first sight, so two runs equal up to a renaming serialise the same
+  let heap;
+  try { heap = graph.after(args, own, outcomeValue, hasOutcome); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
+  return { outcome, heap, receiver, trace: env.trace, pending: env.pending };
 }
 
 export async function runPair(opts) {
@@ -279,7 +286,7 @@ export async function runPair(opts) {
       if (!u) { harnessAsk = `${name}: unit ${unit} not exported`; break; }
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
-      const inputs = inputsFor(spec, seed, i, env);
+      const inputs = aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i); // the i-th input set may share objects between positions of one shape (heap layer, stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
       sides[name] = { env, unit: u, inputs };
     }
@@ -293,17 +300,18 @@ export async function runPair(opts) {
       if (diffs.length >= 3) break;
     }
   }
-  const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first' };
+  const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work' };
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
   return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
 }
 
 function firstDifference(a, b) {
-  for (const k of ['outcome', 'mutated', 'receiver', 'trace', 'pending']) {
+  for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending']) {
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
       if (k === 'trace') { const i = a.trace.findIndex((e, j) => JSON.stringify(e) !== JSON.stringify(b.trace[j])); return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }
+      if (k === 'heap') { const h = a.heap ?? {}, g = b.heap ?? {}; for (const part of ['roots', 'outcome', 'own']) if (JSON.stringify(h[part]) !== JSON.stringify(g[part])) return { field: 'heap', part }; const n = Math.max((h.heap ?? []).length, (g.heap ?? []).length); for (let j = 0; j < n; j++) if (JSON.stringify((h.heap ?? [])[j]) !== JSON.stringify((g.heap ?? [])[j])) return { field: 'heap', object: j, anchor: j < (h.anchors ?? 0), parent: (h.heap ?? [])[j] ?? null, candidate: (g.heap ?? [])[j] ?? null }; return { field: 'heap' }; }
       return { field: k };
     }
   }

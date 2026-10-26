@@ -72,3 +72,41 @@ export function inputsFor(spec, seed, i, env) {
   const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? []);
   return spec.params.map((p, k) => (p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`)));
 }
+
+// Heap layer, stage 1: the i-th input set may alias. Positions of one declared shape (an argument, a record field, an
+// array element, to depth 3) are grouped; a seeded draw makes some later positions the SAME object as an earlier one,
+// and a record whose shape names its own definition may point at itself. The draw depends on (seed, i) and on the
+// shapes only, so both sides receive the same sharing; fakes and primitives are never aliased.
+export function aliasInputs(args, spec, seed, i) {
+  const rng = makeRng(seed * 31337 + i * 101 + 7);
+  if (rng() < 0.4) return args; // most inputs stay unshared, so a behaviour that needs no aliasing is exercised too
+  const defs = spec.defs ?? {};
+  const resolve = (s, d = 0) => (s && s.kind === 'ref' && defs[s.key] && d < 4 ? resolve(defs[s.key], d + 1) : s);
+  const shapeKey = (s) => { const r = resolve(s); return r ? JSON.stringify({ kind: r.kind, of: r.of ? shapeKey(r.of) : undefined, fields: r.fields ? Object.keys(r.fields).sort() : undefined, key: s && s.kind === 'ref' ? s.key : undefined }) : null; };
+  const isObj = (v) => v !== null && typeof v === 'object' && !v.__isFake && !(v instanceof Date) && !(v instanceof RegExp) && !(v instanceof Map) && !(v instanceof Set) && typeof v.then !== 'function';
+  const positions = []; // {get, set, shape, self: the record's own shape key when it is a record}
+  const visit = (holder, key, s, depth) => {
+    const v = holder[key]; if (!isObj(v) || depth > 3) return;
+    const r = resolve(s); if (!r) return;
+    positions.push({ get: () => holder[key], set: (x) => { holder[key] = x; }, shape: shapeKey(s), refKey: s && s.kind === 'ref' ? s.key : null });
+    if (r.kind === 'record' && r.fields) for (const [k, f] of Object.entries(r.fields)) if (Object.hasOwn(v, k)) visit(v, k, f.spec ?? f, depth + 1);
+    else if (r.kind === 'array' && Array.isArray(v)) for (let j = 0; j < v.length; j++) visit(v, j, r.of, depth + 1);
+    else if (r.kind === 'tuple' && Array.isArray(v)) for (let j = 0; j < Math.min(v.length, r.items.length); j++) visit(v, j, r.items[j], depth + 1);
+  };
+  spec.params.forEach((p, k) => visit(args, k, p.spec, 0));
+  const groups = new Map();
+  for (const pos of positions) { if (!pos.shape) continue; if (!groups.has(pos.shape)) groups.set(pos.shape, []); groups.get(pos.shape).push(pos); }
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    const first = group[0].get();
+    for (let j = 1; j < group.length; j++) if (rng() < 0.5) group[j].set(first); // two names, one object
+  }
+  // a self-referencing shape: a record whose field can be the record itself
+  for (const pos of positions) {
+    if (!pos.refKey) continue;
+    const v = pos.get(); const r = resolve({ kind: 'ref', key: pos.refKey });
+    if (!r || r.kind !== 'record' || !r.fields) continue;
+    for (const [k, f] of Object.entries(r.fields)) { const fs = f.spec ?? f; if (fs && fs.kind === 'ref' && fs.key === pos.refKey && Object.hasOwn(v, k) && isObj(v[k]) && rng() < 0.2) v[k] = v; }
+  }
+  return args;
+}

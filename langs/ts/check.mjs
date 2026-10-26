@@ -34,13 +34,16 @@ export async function check(opts) {
   if (b.verdict === 'WITNESS') return finish('WITNESS', cert, { witness: b.witnesses[0] });
   // ---- lane A ----
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-check-'));
-  const tr = (file, suffix, eff) => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', unit, '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), ...(eff ? ['--effectful', eff] : [])], 120000);
-  const effOf = (suffix) => { const p = path.join(tmp, `${suffix}.dfy`); if (!fs.existsSync(p)) return ''; const m = fs.readFileSync(p, 'utf8').match(/^\/\/ EFFECTFUL: (.*)$/m); return m ? m[1].trim() : ''; };
-  const p1 = tr(parent, 'parent', '');
+  // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature
+  const tr = (file, suffix, eff, heapUnits) => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', unit, '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000);
+  const headerOf = (suffix, key) => { const p = path.join(tmp, `${suffix}.dfy`); if (!fs.existsSync(p)) return ''; const m = fs.readFileSync(p, 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm')); return m ? m[1].trim() : ''; };
+  const effOf = (suffix) => headerOf(suffix, 'EFFECTFUL');
+  const heapOf = (suffix) => headerOf(suffix, 'HEAP');
+  const p1 = tr(parent, 'parent', '', undefined);
   if (p1.status !== 0) { cert.lanes.A = { verdict: 'ASK', stage: 'translate-parent', detail: p1.out.trim().slice(-600) }; return finish(b.verdict === 'PASS-bounded' ? 'PASS-bounded' : 'ASK', cert, {}); }
-  const c1 = tr(candidate, 'candidate', effOf('parent'));
+  const c1 = tr(candidate, 'candidate', effOf('parent'), heapOf('parent'));
   if (c1.status !== 0) { cert.lanes.A = { verdict: 'ASK', stage: 'translate-candidate', detail: c1.out.trim().slice(-600) }; return finish(b.verdict === 'PASS-bounded' ? 'PASS-bounded' : 'ASK', cert, {}); }
-  if (effOf('candidate') !== effOf('parent')) tr(parent, 'parent', effOf('candidate'));
+  if (effOf('candidate') !== effOf('parent') || heapOf('candidate') !== heapOf('parent')) tr(parent, 'parent', effOf('candidate'), heapOf('candidate'));
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
   const names = [...new Set([...cand.matchAll(/\bfunction\s+([A-Za-z0-9_]+)_candidate\s*\(/g)].map((m) => m[1]))].filter((x) => !/_loop\d+$/.test(x));
   const scopeObj = scope ? JSON.parse(fs.readFileSync(scope, 'utf8')) : { functions: Object.fromEntries(names.map((x) => [x, { in_scope: 'false' }])) };
@@ -61,8 +64,9 @@ export async function check(opts) {
   const errs = [...text.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((x) => Number(x[1]));
   const lemmas = Object.fromEntries(Object.entries(spans).map(([k, [a, bb]]) => [k, !errs.some((L) => a <= L && L <= bb)]));
   const main = `Equal_${snake(unit)}`;
-  cert.lanes.A = { verdict: m ? (lemmas[main] ? 'PASS-proved' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), lemmas, dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnySeconds, dir: tmp };
-  if (m && lemmas[main]) return finish('PASS-proved', cert, {});
+  const unguarded = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED ${main}: (.*)$`, 'm')) || [])[1] ?? null; // the identity guard withheld the lemma: the value reading could not be shown to be a graph reading
+  cert.lanes.A = { verdict: unguarded ? 'ASK:identity' : m ? (lemmas[main] ? 'PASS-proved' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), identity: unguarded, lemmas, heapCore: heapOf('candidate').split(',').filter(Boolean), dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnySeconds, dir: tmp };
+  if (m && lemmas[main] && !unguarded) return finish('PASS-proved', cert, {});
   return finish(b.verdict === 'PASS-bounded' ? 'PASS-bounded' : 'ASK', cert, {});
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }

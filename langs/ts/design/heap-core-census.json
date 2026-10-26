@@ -1,0 +1,433 @@
+{
+ "census": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/concepts-all.json",
+ "resolve": false,
+ "layer1": {
+  "outsideCore": 53865,
+  "exposed": 34655,
+  "notExposed": 19210,
+  "byClass": {
+   "result may carry an input or shared reference": 31992,
+   "nested write through an input": 3066,
+   "input field assigned a reference": 290
+  },
+  "determinate": 14559,
+  "exposedDeterminate": 3579
+ },
+ "policy": "heap core as planned by translate/heap.mjs (stage 2): structural membership per unit, modules unresolved; a count of units the core reads, not of proofs",
+ "files": 23359,
+ "units": 53899,
+ "core": 34,
+ "ownSyntaxFitsCallGraphExcludes": 44,
+ "perRepo": {
+  "agent-nexus": {
+   "files": 2074,
+   "units": 2911,
+   "core": 5,
+   "own": 0
+  },
+  "apps-starter": {
+   "files": 28,
+   "units": 86,
+   "core": 0,
+   "own": 0
+  },
+  "apps-ui": {
+   "files": 269,
+   "units": 1022,
+   "core": 0,
+   "own": 2
+  },
+  "blocks": {
+   "files": 121,
+   "units": 250,
+   "core": 1,
+   "own": 1
+  },
+  "blog-studio-lambda": {
+   "files": 100,
+   "units": 422,
+   "core": 0,
+   "own": 0
+  },
+  "car-select-api": {
+   "files": 8,
+   "units": 29,
+   "core": 0,
+   "own": 0
+  },
+  "claude-chat-clean": {
+   "files": 2,
+   "units": 75,
+   "core": 0,
+   "own": 0
+  },
+  "claude-skills": {
+   "files": 131,
+   "units": 260,
+   "core": 0,
+   "own": 0
+  },
+  "cue-status-page": {
+   "files": 31,
+   "units": 49,
+   "core": 0,
+   "own": 0
+  },
+  "driftbench": {
+   "files": 395,
+   "units": 2483,
+   "core": 3,
+   "own": 5
+  },
+  "ftp-server-orange": {
+   "files": 16,
+   "units": 70,
+   "core": 0,
+   "own": 0
+  },
+  "itsme-backend": {
+   "files": 5,
+   "units": 25,
+   "core": 0,
+   "own": 2
+  },
+  "langchainjs": {
+   "files": 1486,
+   "units": 4858,
+   "core": 2,
+   "own": 0
+  },
+  "linear-status-page": {
+   "files": 31,
+   "units": 49,
+   "core": 0,
+   "own": 0
+  },
+  "lucca-unofficial-api": {
+   "files": 15,
+   "units": 22,
+   "core": 0,
+   "own": 0
+  },
+  "n8n": {
+   "files": 3071,
+   "units": 5015,
+   "core": 4,
+   "own": 2
+  },
+  "nano-banana": {
+   "files": 2,
+   "units": 11,
+   "core": 0,
+   "own": 0
+  },
+  "nexus": {
+   "files": 9759,
+   "units": 20453,
+   "core": 9,
+   "own": 12
+  },
+  "nexus-agent-api": {
+   "files": 18,
+   "units": 14,
+   "core": 0,
+   "own": 0
+  },
+  "nexus-app-starter": {
+   "files": 191,
+   "units": 626,
+   "core": 0,
+   "own": 0
+  },
+  "nexus-automations": {
+   "files": 36,
+   "units": 95,
+   "core": 0,
+   "own": 0
+  },
+  "nexus-chat-embed": {
+   "files": 72,
+   "units": 229,
+   "core": 0,
+   "own": 0
+  },
+  "nexus-landing": {
+   "files": 385,
+   "units": 1318,
+   "core": 3,
+   "own": 2
+  },
+  "nexus-learning": {
+   "files": 696,
+   "units": 2335,
+   "core": 3,
+   "own": 5
+  },
+  "nexus-learning-landing": {
+   "files": 63,
+   "units": 170,
+   "core": 0,
+   "own": 0
+  },
+  "nexus-linkedin-dashboard": {
+   "files": 297,
+   "units": 1007,
+   "core": 0,
+   "own": 2
+  },
+  "nexus-meeting-recorder": {
+   "files": 59,
+   "units": 50,
+   "core": 0,
+   "own": 0
+  },
+  "nexus-tokens": {
+   "files": 17,
+   "units": 44,
+   "core": 0,
+   "own": 0
+  },
+  "nexus-ui": {
+   "files": 402,
+   "units": 353,
+   "core": 0,
+   "own": 0
+  },
+  "nutshell": {
+   "files": 2266,
+   "units": 6562,
+   "core": 3,
+   "own": 5
+  },
+  "odoo-unofficial-api": {
+   "files": 14,
+   "units": 44,
+   "core": 0,
+   "own": 0
+  },
+  "orange-checkout-automation": {
+   "files": 38,
+   "units": 75,
+   "core": 0,
+   "own": 0
+  },
+  "orange-identity-card-collection": {
+   "files": 17,
+   "units": 22,
+   "core": 0,
+   "own": 0
+  },
+  "pipedream": {
+   "files": 599,
+   "units": 228,
+   "core": 0,
+   "own": 0
+  },
+  "promo-app": {
+   "files": 303,
+   "units": 1403,
+   "core": 0,
+   "own": 4
+  },
+  "snitch": {
+   "files": 212,
+   "units": 775,
+   "core": 0,
+   "own": 0
+  },
+  "status": {
+   "files": 106,
+   "units": 401,
+   "core": 1,
+   "own": 2
+  },
+  "theirstack-unofficial-api": {
+   "files": 9,
+   "units": 9,
+   "core": 0,
+   "own": 0
+  },
+  "workday-unofficial-api": {
+   "files": 15,
+   "units": 49,
+   "core": 0,
+   "own": 0
+  }
+ },
+ "firstReasonCoarse": {
+  "method, accessor or constructor": 21519,
+  "parameter type": 12676,
+  "generator or async": 4965,
+  "parameter form": 4626,
+  "return type": 4426,
+  "expression outside the core": 2476,
+  "method call": 1028,
+  "generic": 581,
+  "local type": 409,
+  "recursive": 309,
+  "statement outside the core": 216,
+  "operator outside the core": 169,
+  "array literal type": 113,
+  "call outside the file": 85,
+  "value type": 66,
+  "binding form": 62,
+  "element access": 39,
+  "receiver type": 25,
+  "calls a unit outside the core": 24,
+  "called by a unit outside the core": 20,
+  "property outside the shape": 17,
+  "object literal type": 7,
+  "expression statement outside the core": 2,
+  "write target": 2,
+  "mutator arity": 1,
+  "if branch without return": 1,
+  "element write": 1
+ },
+ "typeLeaves": {
+  "any or unknown": 12376,
+  "union": 2329,
+  "dictionary": 778,
+  "optional field": 603,
+  "void": 511,
+  "function": 397,
+  "method field": 155,
+  "Date": 137,
+  "other": 99,
+  "Map": 75,
+  "Promise": 74,
+  "tuple": 68,
+  "Set": 50,
+  "RegExp": 43,
+  "depth": 12,
+  "array of any or unknown": 6,
+  "class": 3,
+  "array of union": 2,
+  "empty object": 2,
+  "array of void": 1,
+  "array of array of any or unknown": 1
+ },
+ "methodCalls": {
+  "replace": 184,
+  "trim": 88,
+  "join": 83,
+  "filter": 53,
+  "map": 52,
+  "split": 45,
+  "max": 37,
+  "indexOf": 33,
+  "slice": 30,
+  "toLowerCase": 27,
+  "floor": 24,
+  "min": 23,
+  "startsWith": 21,
+  "digest": 20,
+  "includes": 18,
+  "toUpperCase": 18,
+  "test": 16,
+  "replaceAll": 13,
+  "lastIndexOf": 12,
+  "toString": 12,
+  "sort": 11,
+  "find": 11,
+  "round": 10,
+  "isFinite": 10,
+  "from": 10,
+  "reduce": 10,
+  "stringify": 9,
+  "toISOString": 9,
+  "parse": 9,
+  "toFixed": 8,
+  "format": 8,
+  "toLocaleString": 6,
+  "repeat": 5,
+  "green": 5,
+  "randomUUID": 5,
+  "resolve": 4,
+  "ceil": 4,
+  "endsWith": 4,
+  "get": 4,
+  "padStart": 4,
+  "parseFloat": 3,
+  "isInteger": 3,
+  "fill": 3,
+  "toLocaleDateString": 3,
+  "sqrt": 3,
+  "getInstanceBaseUrl": 3,
+  "pow": 3,
+  "keys": 3,
+  "search": 3,
+  "at": 3,
+  "existsSync": 2,
+  "findIndex": 2,
+  "flatMap": 2,
+  "isNaN": 2,
+  "readFileSync": 2,
+  "isArray": 2,
+  "pop": 2,
+  "parseInt": 2,
+  "error": 1,
+  "yellow": 1,
+  "homedir": 1,
+  "sin": 1,
+  "forEach": 1,
+  "exp": 1,
+  "trimEnd": 1,
+  "run": 1,
+  "substring": 1,
+  "escape": 1,
+  "getEnv": 1,
+  "getPath": 1,
+  "charCodeAt": 1,
+  "abs": 1,
+  "dirname": 1,
+  "now": 1,
+  "sanitize": 1,
+  "red": 1,
+  "stats": 1,
+  "some": 1,
+  "fromCharCode": 1,
+  "has": 1,
+  "toSorted": 1,
+  "canParse": 1,
+  "fromCodePoint": 1,
+  "localeCompare": 1,
+  "getStore": 1
+ },
+ "coreSample": [
+  "repos/agent-nexus/packages/cli/src/commands/api/_shared/query-pairs.ts:collect",
+  "repos/agent-nexus/packages/cli/src/commands/collection/query.command.ts:collectFilter",
+  "repos/agent-nexus/packages/cli/src/commands/document/collect-metadata.ts:collectMetadata",
+  "repos/agent-nexus/packages/cli/src/commands/workflow/_shared/collect.ts:collect",
+  "repos/agent-nexus/packages/cli/src/commands/workspace-mount/install/darwin/install-fuse-t.ts:sudoInstaller",
+  "repos/blocks/apps/api/src/infrastructure/templates/data-sync/files/src/sync.ts:getLastSync",
+  "../../../../../../../../Documents/GitHub/driftbench/packages/cli/src/commands/campaign.ts:collect",
+  "../../../../../../../../Documents/GitHub/driftbench/packages/cli/src/commands/ci.ts:collect",
+  "../../../../../../../../Documents/GitHub/driftbench/packages/cli/src/commands/replay.ts:collectAll",
+  "repos/langchainjs/libs/langchain-core/src/utils/zod-to-json-schema/parsers/boolean.ts:parseBooleanDef",
+  "repos/langchainjs/libs/providers/langchain-xai/src/tools/code_execution.ts:xaiCodeExecution",
+  "../../../../../../../../Documents/GitHub/n8n/packages/editor-ui/src/hooks/utils/hooksNodesPanel.ts:hooksGenerateNodesPanelEvent",
+  "../../../../../../../../Documents/GitHub/n8n/packages/nodes-base/nodes/Asana/GenericFunctions.ts:getTaskFields",
+  "../../../../../../../../Documents/GitHub/n8n/packages/nodes-base/nodes/Jwt/Jwt.node.ts:prettifyOperation",
+  "../../../../../../../../Documents/GitHub/n8n/packages/nodes-base/nodes/Magento/GenericFunctions.ts:getOrderFields",
+  "../../../../../../../../Documents/GitHub/nexus/apps/backend/src/_common/utils/org-role.util.ts:normalizeOrgRole",
+  "../../../../../../../../Documents/GitHub/nexus/apps/backend/src/vault/domain/value-objects/encrypted-payload.vo.ts:createRotatedPayload",
+  "../../../../../../../../Documents/GitHub/nexus/apps/frontend/src/modules/Admin/contexts/AdminDebugContext.tsx:getPermissionColor",
+  "../../../../../../../../Documents/GitHub/nexus/packages/cli/src/commands/collection.ts:collectFilter",
+  "../../../../../../../../Documents/GitHub/nexus/packages/cli/src/commands/document.ts:collectMetadata",
+  "../../../../../../../../Documents/GitHub/nexus/packages/cli/src/commands/workflow.ts:collect",
+  "../../../../../../../../Documents/GitHub/nexus/packages/types/src/schemas/CueMessage/cue-messages.ts:skippedReasonForTool",
+  "../../../../../../../../Documents/GitHub/nexus/packages/types/src/shared/domain/role-coverage/coverage-dimension.types.ts:multiplyCoverageDimensions",
+  "../../../../../../../../Documents/GitHub/nexus/packages/types/src/shared/domain/role-coverage/coverage-dimension.types.ts:divideCoverageDimensions",
+  "../../../../../../../../Documents/GitHub/nexus-landing/app/dieteren-workshop/scene.ts:flipColors",
+  "../../../../../../../../Documents/GitHub/nexus-landing/app/orange-workshop/scene.ts:flipColors",
+  "../../../../../../../../Documents/GitHub/nexus-landing/components/customer-support/lab/variations/arch/A11InfraClone.tsx:mkPlane",
+  "repos/nexus-learning/packages/cli/src/views/layout.ts:section",
+  "repos/nexus-learning/packages/core/src/progress/badges.ts:badgeAchievement",
+  "repos/nexus-learning/packages/core/src/progress/badges.ts:badgeNotification",
+  "repos/nutshell/adapters/claude-cli/src/live/claude-launch.ts:forkPointArguments",
+  "repos/nutshell/adapters/claude-cli/src/live/types.ts:longestQuit",
+  "repos/nutshell/core/commands/src/envelope.ts:invalidRequestMessage",
+  "repos/status/src/domain/uptime.ts:addCounts"
+ ],
+ "manifestSha256": "90e67fd167eab62315eab7e97d5971317005d216fe8baa20cc8849dffc1e25d5"
+}

@@ -1,6 +1,7 @@
 # References, layer 2: a shared heap
 
 Design and standalone prototypes only. No translator flag or lint relaxation is shipped.
+(2026-10-26, stage 2: the translator flag `--heap` ships and `check.mjs` passes it; the lint is unchanged. See "Stage 2" at the end.)
 This is larger than a day: signatures, the theorem, callbacks, external answers and lane B's observation must change together.
 `SEMANTICS.md` item 2 is the contract, including objects reachable BEFORE the call that become disconnected during it.
 Its later descriptions of refusals predate layer 1; this design does not treat those descriptions as current implementation facts.
@@ -198,3 +199,55 @@ The conservative measured core has little corpus reach; resolving imported shape
 Suite run once: `node /Users/assem/nexus/nexus-organisation/work/lean-lanes/heap-layer/langs/ts/tests/run.mjs`
 
 `| TOTAL | 304 checks | ALL PASS |`
+
+## Stage 2 (2026-10-26): the heap core as shipped
+
+`langs/ts/translate/heap.mjs`, reached by `translate.mjs --heap` (`--heap-units a,b` restricts the core to named units, `-` to none).
+`check.mjs` passes `--heap` on both sides and agrees the core like `EFFECTFUL` (parent, then candidate restricted to the parent's core,
+then the parent again when the candidate's core differs); the certificate's lane A names the core units (`heapCore`).
+
+What a core unit becomes. A total Dafny function `(hw_: HWorld, params) -> (HWorld, result)`:
+* `type Ref = nat`; `datatype Obj = R_<hash>(fields) | A_<elem>(items: seq<..>) | Dead`; `datatype HWorld = HWorld(heap: map<Ref, Obj>, next: nat)`.
+  A record shape is structural (the hash of its sorted field names and shapes), so a type alias and the anonymous type it names are one constructor.
+* Every read and write is a prelude function that is total: `Get_<shape>_<field>` reads a default through a bad reference, `Set_`, `Push_`,
+  `Unshift_`, `Pop_` leave the heap unchanged through one, `Alloc_<shape>` takes `next`, `Len_`/`Items_` read an array. No unit body carries
+  a proof obligation, so a chain of same-file heap calls needs no preservation lemma.
+* The hypothesis the typed program guarantees (`WF(hw_)`: every cell well typed, every reference below `next`; each reference parameter of its
+  declared shape) is written as `// HYP <unit>: <expr>` and `spec/theorem.py` copies it into the unit's lemmas, refusing when the two sides
+  state different hypotheses. The lemma therefore quantifies over well-formed heaps only; a false proof needs a difference no well-formed heap shows.
+* Equality is of the result and the WHOLE final heap, `next` included: the identity allocation certificate of "Equality and fresh references".
+  Corresponding allocations in the same order are the same reference; two versions allocating on different schedules (one more temporary
+  object, the other order) are unproved and reach lane B as ASK, never a WITNESS. Dead garbage counts, by design, for now.
+* Nothing assumes two parameters are two objects: `addTag(user, user.tags)` is one of the inputs the lemma ranges over.
+
+The core by syntax (a unit is in it when its own syntax fits AND every same-file unit it calls, and every same-file unit calling it, is in it):
+primitive, plain-record and array-of-those parameters, locals and results; `const`/`let` with an initializer; `=`, `+=`, `-=` to a local or a
+field path; `push`/`unshift`/`pop` statements on an array path; `return`; `if`/`else` whose branches return; same-file calls; `.length`,
+`+ - *`, comparisons, `&& || !`, literals, spread array and record literals, `.slice()`. Out, this stage: element access, loops, methods,
+async, generics, optionals and unions, dictionaries, Map/Set/Date, any call outside the file, `this`.
+
+Measured on the two pairs (`dafny verify`, 30 s per lemma, suite machine):
+* `mutation`: `add_tag`, `rename`, `tag_twice` unproved; `visit`, `count_only` proved (19 verified, 3 errors, each error inside an expected lemma).
+  Layer 1 alone proved `add_tag` and `tag_twice`: that false proof is gone for core units.
+* `heap_graph`: `add_tag`, `identity` unproved; `alias_refactor`, `count_tags` proved (17 verified, 2 errors). `alias_refactor` is the
+  identity certificate at work: the same allocation in the same order through a local alias.
+* `check.mjs` end to end on `visit` and `aliasRefactor`: `PASS-proved` with `heapCore` naming the unit.
+
+Reach, `heap-core-census.mjs` over the 39 census roots, modules unresolved (an imported shape is unknown, as the stage-1 census chose):
+53,899 named units, 34 in the core (34 own-syntax fits are kept out only by their call graph). First reason out, coarse: method, accessor or
+constructor 21,519; a parameter type without a shape 12,676 (12,376 of those `any`/`unknown`, mostly unresolved imports; 2,329 unions; 778
+dictionaries; 603 optional fields); generator or async 4,965; parameter form (destructuring, defaults, rest) 4,626; return type 4,426;
+an expression outside the core 2,476; a method call 1,028 (`replace` 184, `trim` 88, `join` 83, `filter` 53, `map` 52). The core as a proof
+lane reaches well under one unit in a thousand; the gain of stage 2 is soundness on those units, not reach. Resolving imports moves `any`
+into unions and dictionaries, not into the core (the two-repository probe: 349 `any` became 193, unions 80 became 223, the core stayed at 1).
+
+Layer 1's exposure, measured by `layer1Risk` in `heap.mjs` (reported, never acted on): outside the core, a unit is EXPOSED when it (a) writes
+through a nested reference path of an input (`p.a.b = v`, `p.a.push(x)`, through a local alias of a path), where the old inner object differs
+from a fresh replacement, or (b) returns a value that may hold an input reference or share one (any reference-typed result that is not a
+literal tree of primitives and literals), where the same tree can be another graph. Over the 39 roots, 34,544 of the 53,865 units outside the core are
+exposed (31,992 by their result, 3,066 by a nested write; `heap-core-census.json`, `layer1`); 19,321 are not. An exposed unit
+is one where tree equality proved by layer 1 is weaker than SEMANTICS item 2; lane B's graph observation (stage 1) sees the difference on
+every input that reaches it, so a false PASS-proved needs the differing path unreached by lane B's inputs. The decision on what lane A
+claims for exposed units (a caveated proof, a refusal, an identity-skeleton check on both sides, or a wider core) is the owner's; the
+numbers above are what it costs.
+
