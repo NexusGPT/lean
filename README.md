@@ -1,6 +1,5 @@
 <p align="center">
-  <strong style="font-size: 2.4em">lean</strong><br>
-  <em>Write TypeScript like mathematics. Prove a change did only what you asked.</em>
+  <img src="docs/header.svg" alt="lean: write TypeScript like mathematics. Prove a change did only what you asked." width="100%">
 </p>
 
 <p align="center">
