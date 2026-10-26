@@ -269,7 +269,10 @@ export function lintFile(file, ranges = null, opts = {}) {
         return;
       }
       case K.SwitchStatement: return switchStmt(s);
-      case K.LabeledStatement: return v(s, 'label', 'labels are outside the subset');
+      case K.LabeledStatement: {
+        if (!(ts.isForStatement(s.statement) || ts.isForOfStatement(s.statement) || ts.isForInStatement(s.statement) || ts.isWhileStatement(s.statement) || ts.isDoStatement(s.statement))) return v(s, 'label', 'a label must name a loop; replace a labelled block with conditional control');
+        return stmt(s.statement);
+      }
       case K.FunctionDeclaration: { // a nested function declaration: a local function value, checked as a callback value
         if (s.asteriskToken) return v(s, 'generator', 'generators are outside the subset');
         if (!s.body) return;
@@ -296,9 +299,6 @@ export function lintFile(file, ranges = null, opts = {}) {
     for (const c of s.caseBlock.clauses) {
       if (ts.isCaseClause(c)) expr(c.expression);
       const body = c.statements;
-      const last = body[body.length - 1];
-      const ends = last && (ts.isReturnStatement(last) || ts.isBreakStatement(last) || ts.isThrowStatement(last) || ts.isContinueStatement(last) || ts.isBlock(last));
-      if (body.length && !ends) v(c, 'switch-fallthrough', 'each case ends with return or break');
       stmts(body);
     }
     switchDepth--;
@@ -436,6 +436,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
   function forStmt(s) {
     const i = s.initializer, c = s.condition, u = s.incrementor;
+    if (!i && !c && !u) { loopDepth++; stmt(s.statement); loopDepth--; return; }
     let name = null;
     if (i && ts.isVariableDeclarationList(i) && (i.flags & ts.NodeFlags.Let) && i.declarations.length === 1 && ts.isIdentifier(i.declarations[0].name) && i.declarations[0].initializer) {
       name = i.declarations[0].name.text; expr(i.declarations[0].initializer);
@@ -1147,6 +1148,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (d.file !== sf || d.start === undefined) continue;
     const hit = !ranges || checkedDiagSpans.some((n) => d.start >= n.getStart(sf) && d.start <= n.getEnd());
     if (!hit) continue;
+    if (d.code === 7029) continue; // switch fall-through is an ordered clause continuation
     if (d.code === 7006 || d.code === 7031 || d.code === 7053) continue; // implicit any: opaque, admitted
     if (d.code === 2339 || d.code === 2551) {
       // a property missing on a type that lives in node_modules: the dependency's version may differ from the commit's; the read is opaque

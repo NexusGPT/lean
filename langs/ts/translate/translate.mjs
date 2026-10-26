@@ -178,8 +178,66 @@ export function translate(file, fnName, opts = {}) {
   // of the body that makes a transition (or throws); the catch path binds the fault value and runs with the flag cleared.
   // complex try statements keep their text-keyed opaque transition; the gate is local to the statement.
   const loopsOverEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x)) && !isLoopCallback(x)) return; if ((isLoopCallback(x) || ts.isForOfStatement(x) || ts.isForStatement(x) || ts.isWhileStatement(x) || ts.isForInStatement(x)) && containsEffect(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
-  const exactTry = (x) => core && ts.isTryStatement(x) && !opaqueExceptionTry(x, checker);
-  const isOpaqueStmt = (x) => (ts.isTryStatement(x) && !exactTry(x)) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
+  const exactTry = (x) => core && ts.isTryStatement(x) && !opaqueExceptionTry(x, checker) && !escapingLabels(x).length;
+  const emptyFor = (s) => ts.isForStatement(s) && !s.initializer && !s.condition && !s.incrementor;
+  const boundCache = new WeakMap();
+  // a bound is derived only when every next iteration moves one integer local toward a stable limit
+  function derivedBound(s) {
+    if (boundCache.has(s)) return boundCache.get(s);
+    boundCache.set(s, null);
+    if (real || !(ts.isWhileStatement(s) || emptyFor(s))) return null;
+    const unwrap = (e) => { while (e && ts.isParenthesizedExpression(e)) e = e.expression; return e; };
+    let condition = emptyFor(s) ? null : unwrap(s.expression), negate = false;
+    let body = ts.isBlock(s.statement) ? [...s.statement.statements] : [s.statement];
+    if (!condition || condition.kind === K.TrueKeyword) {
+      const first = body[0];
+      if (!first || !ts.isIfStatement(first) || first.elseStatement) return null;
+      const exit = ts.isBlock(first.thenStatement) ? first.thenStatement.statements : [first.thenStatement];
+      if (exit.length !== 1 || !ts.isBreakStatement(exit[0]) || (exit[0].label && !(ts.isLabeledStatement(s.parent) && s.parent.label.text === exit[0].label.text))) return null;
+      condition = unwrap(first.expression); negate = true; body = body.slice(1);
+    }
+    while (condition && ts.isPrefixUnaryExpression(condition) && condition.operator === K.ExclamationToken) { negate = !negate; condition = unwrap(condition.operand); }
+    if (!condition || !ts.isBinaryExpression(condition) || !ts.isIdentifier(condition.left)) return null;
+    const inverse = { [K.LessThanToken]: K.GreaterThanEqualsToken, [K.LessThanEqualsToken]: K.GreaterThanToken, [K.GreaterThanToken]: K.LessThanEqualsToken, [K.GreaterThanEqualsToken]: K.LessThanToken };
+    const kind = negate ? inverse[condition.operatorToken.kind] : condition.operatorToken.kind;
+    const op = { [K.LessThanToken]: '<', [K.LessThanEqualsToken]: '<=', [K.GreaterThanToken]: '>', [K.GreaterThanEqualsToken]: '>=' }[kind];
+    if (!op) return null;
+    const counter = condition.left, sym = checker.getSymbolAtLocation(counter), decl = sym?.valueDeclaration;
+    if (!decl || !ts.isVariableDeclaration(decl) || decl.end > s.pos || originOf(checker, counter, sf, currentUnit?.node).kind !== 'local' || !(checker.getTypeAtLocation(counter).flags & TF.NumberLike)) return null;
+    const limit = unwrap(condition.right), boundNames = new Set();
+    const integer = (e) => ts.isNumericLiteral(e) && Number.isSafeInteger(Number(e.text)) || ts.isPrefixUnaryExpression(e) && e.operator === K.MinusToken && ts.isNumericLiteral(e.operand) && Number.isSafeInteger(Number(e.operand.text));
+    if (ts.isIdentifier(limit)) {
+      const d = checker.getSymbolAtLocation(limit)?.valueDeclaration;
+      if (!d || !ts.isVariableDeclaration(d) || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) || !d.initializer || !integer(d.initializer)) return null;
+      boundNames.add(limit.text);
+    } else if (ts.isPropertyAccessExpression(limit) && limit.name.text === 'length' && ts.isIdentifier(limit.expression)) {
+      const t = checker.getTypeAtLocation(limit.expression);
+      if (!(isArrayLike(checker, t) || t.flags & TF.StringLike) || originOf(checker, limit.expression, sf, currentUnit?.node).kind !== 'local') return null;
+      boundNames.add(limit.expression.text);
+    } else if (!integer(limit)) return null;
+    const last = body[body.length - 1];
+    if (!last || !ts.isExpressionStatement(last)) return null;
+    const step = last.expression; const down = kind === K.GreaterThanToken || kind === K.GreaterThanEqualsToken;
+    let target, delta;
+    if ((ts.isPostfixUnaryExpression(step) || ts.isPrefixUnaryExpression(step)) && [K.PlusPlusToken, K.MinusMinusToken].includes(step.operator)) { target = step.operand; delta = step.operator === K.PlusPlusToken ? 1 : -1; }
+    else if (ts.isBinaryExpression(step) && [K.PlusEqualsToken, K.MinusEqualsToken].includes(step.operatorToken.kind) && ts.isNumericLiteral(step.right)) { target = step.left; delta = Number(step.right.text) * (step.operatorToken.kind === K.PlusEqualsToken ? 1 : -1); }
+    if (!target || !ts.isIdentifier(target) || checker.getSymbolAtLocation(target) !== sym || !Number.isSafeInteger(delta) || (down ? delta >= 0 : delta <= 0)) return null;
+    let safe = true;
+    const scan = (n) => {
+      if (!safe || n === step) return;
+      if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isFunctionLike(n) || ts.isIterationStatement(n, false) || ts.isTryStatement(n) || ts.isContinueStatement(n)) { safe = false; return; }
+      let lhs = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? n.left : (ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) ? n.operand : null;
+      while (lhs && (ts.isPropertyAccessExpression(lhs) || ts.isElementAccessExpression(lhs))) lhs = lhs.expression;
+      if (lhs && ts.isIdentifier(lhs) && (lhs.text === counter.text || boundNames.has(lhs.text))) { safe = false; return; }
+      ts.forEachChild(n, scan);
+    };
+    body.forEach(scan);
+    if (!safe) return null;
+    const result = { counter, limit, op, down, body };
+    boundCache.set(s, result); return result;
+  }
+  const opaqueSwitch = (s) => { const t = checker.getTypeAtLocation(s.expression); return (t.flags & TF.Union ? t.types : [t]).some((p) => !(p.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.Null | TF.Undefined | TF.Never))); };
+  const isOpaqueStmt = (x) => (ts.isSwitchStatement(x) && opaqueSwitch(x)) || (ts.isTryStatement(x) && !exactTry(x)) || ((ts.isWhileStatement(x) || ts.isDoStatement(x) || emptyFor(x)) && (!hintsOf(sf, x).decreases && !derivedBound(x)));
   // `xs.forEach((x) => body)` as a statement: a loop over xs whose body is the callback's body, each iteration's transitions
   // in order. The callback takes one plain parameter and returns nothing (a `return` inside it would end one step).
   const forEachShape = (st) => {
@@ -489,6 +547,7 @@ export function translate(file, fnName, opts = {}) {
   }
   // disjoint runtime alternatives retain their member values instead of erasing to Any
   const sums = new Map();
+  const opaqueSums = new Set();
   const literalValue = (t) => t.flags & TF.StringLiteral ? JSON.stringify(t.value) : t.flags & TF.NumberLiteral ? (real && Number.isInteger(t.value) ? `${t.value}.0` : String(t.value)) : t.flags & TF.BooleanLiteral ? t.intrinsicName : null;
   const arrayBrand = (t) => checker.isArrayType(t) || checker.isTupleType(t) || t.symbol?.name === 'ReadonlyArray';
   const runtimeTag = (t) => { const f = t.flags; if (f & TF.StringLike) return 'string'; if (f & TF.NumberLike) return 'number'; if (f & TF.BigIntLike) return 'bigint'; if (f & TF.BooleanLike) return 'boolean'; if (f & TF.Undefined) return 'undefined'; if (f & TF.Null) return 'object'; if (f & TF.ESSymbolLike) return 'symbol'; if (f & TF.Object) return isCallable(t) ? 'function' : 'object'; return null; };
@@ -508,11 +567,22 @@ export function translate(file, fnName, opts = {}) {
     if (!(records && parts.every((t, i) => parts.slice(i + 1).every((u) => disjointTags(t, u, n)))) && !(cats.every(Boolean) && new Set(cats).size === cats.length)) return null;
     const ordered = [...parts].sort((a, b) => checker.typeToString(a).localeCompare(checker.typeToString(b)));
     const name = `Union_${hash(ordered.map((t) => checker.typeToString(t)).join('|'))}`;
+    if (opaqueSums.has(name)) return null;
     if (sums.has(name)) return name;
-    const members = ordered.map((t, i) => ({ t, ctor: `${name}_${i}`, field: `item${i}`, d: dtype(t, n, depth + 1) }));
-    sums.set(name, members);
-    addPrelude(name, `datatype ${name} = ${members.map((m) => `${m.ctor}(${m.field}: ${m.d})`).join(' | ')}`);
-    return name;
+    // a union whose members cannot be represented keeps its prior opaque reading
+    const saved = [prelude, sums, recordAlias, recordByShape].map((m) => new Map(m));
+    const optionBefore = usesOption, nullishBefore = usesNullish;
+    const restore = () => { [prelude, sums, recordAlias, recordByShape].forEach((m, i) => { m.clear(); for (const [k, v] of saved[i]) m.set(k, v); }); usesOption = optionBefore; usesNullish = nullishBefore; };
+    try {
+      const members = ordered.map((t, i) => ({ t, ctor: `${name}_${i}`, field: `item${i}`, d: dtype(t, n, depth + 1) }));
+      if (opaqueSums.has(name)) { restore(); return null; }
+      sums.set(name, members);
+      addPrelude(name, `datatype ${name} = ${members.map((m) => `${m.ctor}(${m.field}: ${m.d})`).join(' | ')}`);
+      return name;
+    } catch (e) {
+      if (!(e instanceof Unsupported)) throw e;
+      restore(); opaqueSums.add(name); return null;
+    }
   }
   function sumCases(code, members, read) {
     const v = `u_${hash(code)}`;
@@ -2428,6 +2498,7 @@ export function translate(file, fnName, opts = {}) {
     if (unitEffectful() && containsEffect(node)) names.push({ name: WORLD, sym: null, node, synthetic: true, d: 'World' });
     if (node.__collect) names.push(node.__collect); // the callback's result state
     const note = (id) => {
+      if (moduleState(checker, id, sf)) return; // module writes travel through the world
       if (names.some((m) => m.name === id.text)) return;
       const sym = checker.getSymbolAtLocation(id);
       const d = sym?.valueDeclaration;
@@ -2446,26 +2517,44 @@ export function translate(file, fnName, opts = {}) {
     walk(node);
     return names;
   }
-  // switch → [{cond, stmts}], default stmts; each clause ends in return or break (lint rule); break is dropped
-  function switchChain(s) {
-    const scrut = s.expression;
-    const scrutValue = containsValueStep(scrut) ? expr(scrut) : null;
-    const chain = []; let dflt = null; let pendingConds = [];
-    for (const c of s.caseBlock.clauses) {
-      if (ts.isCaseClause(c)) {
-        pendingConds.push(`(${scrutValue ?? expr(scrut)} == ${expr(c.expression, typeOf(scrut))})`);
-        if (!c.statements.length) continue;
-      }
-      const body = c.statements.filter((x) => !ts.isBreakStatement(x)).flatMap((x) => (ts.isBlock(x) ? [...x.statements].filter((y) => !ts.isBreakStatement(y)) : [x]));
-      if (ts.isDefaultClause(c)) { dflt = body; pendingConds = []; continue; }
-      chain.push({ cond: pendingConds.join(' || '), stmts: body });
-      pendingConds = [];
+  // the first matching case selects a suffix; default is used only after every case test failed
+  function coreSwitch(s, rest, fin, u, ctx = null) {
+    const clauses = [...s.caseBlock.clauses];
+    if (ctx && (opaqueSwitch(s) || containsEffect(s.expression) || clauses.some((c) => ts.isCaseClause(c) && containsEffect(c.expression)))) return opaqueCompletion(s, () => faultTr(rest, fin, u, ctx), u, ctx);
+    const value = `switch${tempCount++}_`, start = `start${tempCount++}_`;
+    const head = capture(() => `var ${value} := ${outerParens(expr(s.expression))};`);
+    const d = clauses.findIndex((c) => ts.isDefaultClause(c));
+    let fallback = d;
+    // a literal union exhausted by case literals has no unmatched path
+    if (d < 0 && !rest.length && !(retType(u).flags & (TF.Void | TF.Undefined))) {
+      const t = typeOf(s.expression), parts = t.flags & TF.Union ? t.types : [t];
+      const literals = clauses.filter(ts.isCaseClause).map((c) => typeOf(c.expression));
+      if (parts.every((p) => (p.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral)) && literals.some((q) => p.flags === q.flags && (p.value ?? p.intrinsicName) === (q.value ?? q.intrinsicName)))) fallback = clauses.length - 1;
     }
-    if (!exceptionUnits.has(currentUnit?.name) && dflt === null && chain.length && !(retType(currentUnit).flags & (TF.Void | TF.Undefined))) {
-      // no default and a value must come out: TypeScript accepted the switch as exhaustive, so the last case is the fall-back
-      dflt = chain.pop().stmts;
+    const caseNames = new Set();
+    const note = (n) => { if (ts.isIdentifier(n)) caseNames.add(n.text); ts.forEachChild(n, note); };
+    clauses.filter(ts.isCaseClause).forEach((c) => note(c.expression));
+    const searchState = [...(unitEffectful() ? [WORLD] : []), ...freeVars(s, null).filter((v) => caseNames.has(v.name)).map((v) => dn(v.name))];
+    const selected = (i) => tupleOf([...searchState, String(i)]);
+    let search = selected(fallback);
+    for (let i = clauses.length - 1; i >= 0; i--) {
+      const c = clauses[i]; if (!ts.isCaseClause(c)) continue;
+      const tail = search;
+      search = capture(() => `if ${value} == ${outerParens(expr(c.expression, typeOf(s.expression)))} then ${selected(i)} else ${wrapLet(tail)}`);
     }
-    return { chain, dflt: dflt ?? [] };
+    const switchDepth = switchCtx.length;
+    const after = () => { const saved = switchCtx.splice(switchDepth); try { return ctx ? faultTr(rest, fin, u, ctx) : tr(rest, fin, u); } finally { switchCtx.push(...saved); } };
+    const run = (i) => {
+      if (i === clauses.length) return after();
+      switchCtx.push({ depth: loopCtx.length, label: labelId(s), brk: after });
+      try { return ctx ? faultTr([...clauses[i].statements], () => run(i + 1), u, ctx) : tr([...clauses[i].statements], () => run(i + 1), u); } finally { switchCtx.pop(); }
+    };
+    let body = fallback < 0 ? after() : run(fallback);
+    for (let i = clauses.length - 1; i >= 0; i--) {
+      if (i === fallback) continue;
+      body = `if ${start} == ${i} then\n${indentBlock(wrapLet(run(i)))}\nelse\n${indentBlock(wrapLet(body))}`;
+    }
+    return `${head}\nvar ${tupleOf([...searchState, start])} := ${wrapLet(search)};\n${body}`;
   }
 
   // ===== proof shape (methods with loops): unchanged from version 1, used by the fixtures =====
@@ -2725,9 +2814,43 @@ export function translate(file, fnName, opts = {}) {
 
   // ===== --core shape: pure functions, loops as recursive helpers =====
   const coreHelpers = [];
-  const loopCtx = []; // {cont, brk, ret} of the enclosing core loop
+  const loopCtx = []; // {cont, brk, ret, jump} of the enclosing core loop
+  const switchCtx = []; // a switch break belongs to the current helper depth
+  const labelIds = new Map();
+  const labelId = (target) => { if (!labelIds.has(target)) labelIds.set(target, labelIds.size + 1); return labelIds.get(target); };
+  function jumpTarget(x) {
+    for (let p = x.parent; p; p = p.parent) {
+      if (ts.isFunctionLike(p)) return null;
+      if (x.label ? ts.isLabeledStatement(p) && p.label.text === x.label.text : ts.isIterationStatement(p, false) || ts.isBreakStatement(x) && ts.isSwitchStatement(p)) return x.label ? p.statement : p;
+    }
+    return null;
+  }
+  function escapingLabels(node) {
+    const out = new Set();
+    const scan = (x) => {
+      if (ts.isFunctionLike(x)) return;
+      if (ts.isBreakStatement(x) || ts.isContinueStatement(x)) {
+        const target = jumpTarget(x);
+        if (target && target !== node && !insideNode(target, node)) out.add((ts.isBreakStatement(x) ? 1 : -1) * labelId(target));
+      }
+      ts.forEachChild(x, scan);
+    };
+    scan(node); return [...out];
+  }
+  function dispatchJump(code, choices) {
+    const ctx = loopCtx[loopCtx.length - 1];
+    const branch = (choice) => {
+      const sw = switchCtx[switchCtx.length - 1];
+      if (choice > 0 && sw && sw.depth === loopCtx.length && sw.label === choice) return sw.brk();
+      if (!ctx) fail(currentUnit.node, 'an abrupt exit has no enclosing loop or switch');
+      return Math.abs(choice) === ctx.label ? (choice > 0 ? ctx.brk() : ctx.cont()) : ctx.jump(String(choice));
+    };
+    let out = branch(choices[choices.length - 1]);
+    for (let i = choices.length - 2; i >= 0; i--) out = `if ${code} == ${choices[i]} then\n${indentBlock(wrapLet(branch(choices[i])))}\nelse\n${indentBlock(wrapLet(out))}`;
+    return out;
+  }
   // a `return v` inside a loop helper becomes (Some(v), state...); outside any loop it is the value itself
-  const retIn = (code) => (loopCtx.length ? loopCtx[loopCtx.length - 1].ret(code) : code);
+  const retIn = (code) => (loopCtx.length ? loopCtx[loopCtx.length - 1].ret(code) : wrapRet(code));
   const guardFacts = (c) => {
     const out = new Set();
     const lit = (e) => ts.isNumericLiteral(e) && Number(e.text) >= 0;
@@ -2860,10 +2983,11 @@ export function translate(file, fnName, opts = {}) {
     }
     return out;
   }
-  function faultResult(u) {
+  function faultValue(u) {
     const R = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
-    return wrapRet(`${external(`fault_result_${mangle(R)}`, [], R)}()`);
+    return `${external(`fault_result_${mangle(R)}`, [], R)}()`;
   }
+  function faultResult(u) { return wrapRet(faultValue(u)); }
   // normal, return and throw are separate continuations; finally runs before the saved completion
   function faultTry(s, next, u, ctx) {
     const P = faultPreds();
@@ -2910,12 +3034,7 @@ export function translate(file, fnName, opts = {}) {
         const no = s.elseStatement ? faultTr(flatten(s.elseStatement), next, u, ctx) : next();
         return `if ${outerParens(cond)} then\n${indentBlock(wrapLet(yes))}\nelse\n${indentBlock(wrapLet(no))}`;
       }, ctx);
-      case K.SwitchStatement: {
-        const { chain, dflt } = switchChain(s);
-        let out = faultTr(dflt, next, u, ctx);
-        for (let i = chain.length - 1; i >= 0; i--) out = `if ${outerParens(chain[i].cond)} then\n${indentBlock(wrapLet(faultTr(chain[i].stmts, next, u, ctx)))}\nelse\n${indentBlock(wrapLet(out))}`;
-        return out;
-      }
+      case K.SwitchStatement: return coreSwitch(s, rest, fin, u, ctx);
       case K.VariableStatement: {
         const bind = (ds) => {
           if (!ds.length) return next();
@@ -2957,16 +3076,16 @@ export function translate(file, fnName, opts = {}) {
     const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) return `${code}${code ? '\n' : ''}${tr(r, fin, u)}`; const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
     const more = (r = rest) => (tryOf(s) && containsEffect(s) ? guard('', r) : more0(r));
     switch (s.kind) {
-      case K.TryStatement: return exactTry(s) ? faultTry(s, () => tr(rest, fin, u), u, { ret: (code) => retIn(wrapRet(code)), fault: () => retIn(faultResult(u)) }) : opaqueBlock(s, rest, fin, u);
+      case K.TryStatement: return exactTry(s) ? faultTry(s, () => tr(rest, fin, u), u, { ret: retIn, fault: () => retIn(faultValue(u)) }) : opaqueBlock(s, rest, fin, u);
       case K.Block: return tr([...s.statements, ...rest], fin, u);
       case K.EmptyStatement: return more();
       case K.ReturnStatement: {
         const top = loopCtx[loopCtx.length - 1];
         if (top && top.forEach && top.collect) return callbackStep(s.expression, top); // a callback return supplies the next result state
         if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
-        return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & TF.Undefined ? absentValue(rt) : rt.flags & TF.Void ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
+        return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & TF.Undefined ? absentValue(rt) : rt.flags & TF.Void ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(code); });
       }
-      case K.ThrowStatement: return capture(() => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${expr(s.expression, anyTarget())});\n${retIn(faultResult(u))}`);
+      case K.ThrowStatement: return capture(() => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${expr(s.expression, anyTarget())});\n${retIn(faultValue(u))}`);
       case K.VariableStatement: {
         const d0 = s.declarationList.declarations[0];
         const pam = s.declarationList.declarations.length === 1 && ts.isIdentifier(d0.name) && d0.initializer ? (promiseAllMapShape(d0.initializer) || arrayCallbackShape(d0.initializer)) : null;
@@ -3009,24 +3128,26 @@ export function translate(file, fnName, opts = {}) {
         return line.trim() ? `${line}\n${more0()}` : more0();
       }
       case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: flatten(s.thenStatement) }], s.elseStatement ? flatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
-      case K.SwitchStatement: { let parts; const h = capture(() => { parts = switchChain(s); return ''; }); const body = ifChain(parts.chain, parts.dflt, s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
+      case K.SwitchStatement: return isOpaqueStmt(s) ? opaqueBlock(s, rest, fin, u) : coreSwitch(s, rest, fin, u);
+      case K.LabeledStatement: return isOpaqueStmt(s.statement) ? opaqueBlock(s, rest, fin, u) : tr([s.statement, ...rest], fin, u);
       case K.FunctionDeclaration: {
         // a nested `function f(...) {...}`: a local function value, like `const f = (...) => {...}`
         if (!s.name) fail(s, 'a nested function needs a name');
         const code = capture(() => lambda(s, s.parameters.length, [], true));
         return `var ${dn(s.name.text)} := ${outerParens(code)};\n${tr(rest, fin, u)}`;
       }
-      case K.DoStatement: {
-        // `do B while (c)` is `B; while (c) B`: the body once, then the loop (the `// @decreases` hint before the do binds the loop)
-        const w = { kind: K.WhileStatement, expression: s.expression, statement: s.statement, parent: s.parent, pos: s.pos, end: s.end, getStart: () => s.getStart(sf), getEnd: () => s.getEnd(), getText: () => s.getText(sf), getFullStart: () => s.getFullStart() };
-        return tr([...flatten(s.statement), w, ...rest], fin, u);
-      }
-      case K.ForInStatement: case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: {
+      case K.DoStatement: case K.ForInStatement: case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: {
         if (isOpaqueStmt(s)) return opaqueBlock(s, rest, fin, u);
         let body; const h = capture(() => { body = coreLoop(s, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body;
       }
-      case K.ContinueStatement: if (!loopCtx.length) fail(s, 'continue outside a loop'); return loopCtx[loopCtx.length - 1].cont();
-      case K.BreakStatement: if (!loopCtx.length) fail(s, 'break outside a loop'); return loopCtx[loopCtx.length - 1].brk();
+      case K.ContinueStatement: case K.BreakStatement: {
+        const isBreak = ts.isBreakStatement(s);
+        if (s.label) return dispatchJump(String((isBreak ? 1 : -1) * labelId(jumpTarget(s))), [(isBreak ? 1 : -1) * labelId(jumpTarget(s))]);
+        const sw = switchCtx[switchCtx.length - 1];
+        if (isBreak && sw && sw.depth === loopCtx.length) return sw.brk();
+        if (!loopCtx.length) fail(s, 'break or continue outside a loop');
+        return isBreak ? loopCtx[loopCtx.length - 1].brk() : loopCtx[loopCtx.length - 1].cont();
+      }
       default: return fail(s, `statement ${ts.SyntaxKind[s.kind]} is not translated`);
     }
   }
@@ -3034,7 +3155,7 @@ export function translate(file, fnName, opts = {}) {
   // a break or continue of the ENCLOSING loop inside this statement (not one of a nested loop)
   const containsJump = (node) => { let f = false; const w = (x) => { if (ts.isContinueStatement(x) || ts.isBreakStatement(x)) f = true; if (!f && !ts.isArrowFunction(x) && !ts.isForStatement(x) && !ts.isForOfStatement(x) && !ts.isWhileStatement(x) && !ts.isSwitchStatement(x)) ts.forEachChild(x, w); }; w(node); return f; };
   function ifChain(chain, dflt, node, rest, fin, u) {
-    const anyReturn = containsReturn(node) || (loopCtx.length > 0 && containsJump(node));
+    const anyReturn = containsReturn(node) || escapingLabels(node).length > 0 || ((loopCtx.length > 0 || switchCtx.length > 0) && containsJump(node));
     const allTerminate = chain.every((c) => c.stmts.length && terminates(c.stmts[c.stmts.length - 1])) && dflt.length && terminates(dflt[dflt.length - 1]);
     if (anyReturn) {
       const branch = (ss) => tr([...ss, ...(ss.length && terminates(ss[ss.length - 1]) ? [] : rest)], fin, u);
@@ -3068,12 +3189,20 @@ export function translate(file, fnName, opts = {}) {
   function opaqueStep(s, u) {
     if (!unitEffectful()) fail(s, 'internal: an opaque block in a unit not marked effectful');
     const returns = containsReturn(s);
-    const terminal = returns && alwaysLeaves(s);
+    const jumps = escapingLabels(s);
+    const loop = ts.isLabeledStatement(s) ? s.statement : s;
+    let hasBreak = false;
+    const scanBreak = (n) => { if (ts.isFunctionLike(n)) return; if (ts.isBreakStatement(n)) hasBreak = true; ts.forEachChild(n, scanBreak); };
+    scanBreak(loop);
+    const closed = returns && !jumps.length && !hasBreak && (emptyFor(loop) || ts.isWhileStatement(loop) && loop.expression.kind === K.TrueKeyword);
+    const terminal = returns && !jumps.length && (closed || alwaysLeaves(s));
     const M = assignedOutside(s).filter((m) => !m.synthetic).map((m) => ({ ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) }));
     // inputs: every local the block reads, and every local it assigns (it may read it first)
     const free = [...M, ...freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }))];
-    let usesSelf = false; const calls = new Set();
+    let usesSelf = false; const calls = new Set(), moduleBindings = new Set();
     const w = (x) => {
+      const binding = moduleState(checker, x, sf);
+      if (binding) moduleBindings.add(binding.getText(sf));
       if (x.kind === K.ThisKeyword) usesSelf = true;
       if (ts.isCallExpression(x) || ts.isNewExpression(x)) { const name = unitNameOfCall(x); if (name) calls.add(name); }
       if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && fns.has(x.expression.text) && originOf(checker, x.expression, sf, currentUnit?.node ?? null).kind === 'unit') calls.add(x.expression.text);
@@ -3081,28 +3210,32 @@ export function translate(file, fnName, opts = {}) {
       ts.forEachChild(x, w);
     };
     w(s);
-    if (containsJump(s) && loopCtx.length) fail(s, 'a break or continue of an enclosing loop inside an opaque block');
     const text = s.getText(sf).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' ').trim();
     const RD = u.isCtor ? 'Unit' : dtype(retType(u), s);
     const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
-    const id = `block_${hash(text)}${calleeTag ? '_calls_' + calleeTag : ''}`;
+    const jumpTag = jumps.length ? '_exits_' + jumps.map((j) => `${j > 0 ? 'b' : 'c'}${Math.abs(j)}`).join('_') : '';
+    const moduleTag = moduleBindings.size ? `_modules_${hash([...moduleBindings].sort().join('|'))}` : '';
+    const id = `block_${hash(text)}${jumpTag}${moduleTag}${calleeTag ? '_calls_' + calleeTag : ''}`;
     const inTypes = ['World', ...(usesSelf ? [selfType(u)] : []), ...free.map((v) => v.d)];
-    const outTypes = ['World', ...(returns ? [terminal ? RD : `Option<${RD}>`] : []), ...M.map((m) => m.d)];
-    if (returns) usesOption = true;
+    const outTypes = ['World', ...(jumps.length ? ['int'] : []), ...(returns ? [terminal ? RD : `Option<${RD}>`] : []), ...M.map((m) => m.d)];
+    if (returns && !terminal) usesOption = true;
     const name = external(id, inTypes, outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`);
     // record the callees on the prelude block so the theorem can refuse a block whose callee changed
     const key = [...prelude.keys()].find((k) => k === name);
     if (key && calls.size) prelude.set(key, `${prelude.get(key)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
     const args = [WORLD, ...(usesSelf ? [SELF] : []), ...free.map((v) => dn(v.name))];
-    const outs = [WORLD, ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
+    const jumpName = `jumpb${loopCount}_`;
+    const outs = [WORLD, ...(jumps.length ? [jumpName] : []), ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
     const line = outs.length === 1 ? `var ${outs[0]} := ${name}(${args.join(', ')});` : `var (${outs.join(', ')}) := ${name}(${args.join(', ')});`;
-    return { line, returns, terminal };
+    return { line, returns, terminal, jumps, jumpName };
   }
   function opaqueBlock(s, rest, fin, u) {
-    const { line, returns, terminal } = opaqueStep(s, u);
-    if (terminal) return `${line}\n${retIn(wrapRet('retb'))}`;
-    if (!returns) return `${line}\n${tr(rest, fin, u)}`;
-    return `${line}\nif retb.Some? then\n${indentBlock(retIn(wrapRet('retb.value')))}\nelse\n${indentBlock(wrapLet(tr(rest, fin, u)))}`;
+    const { line, returns, terminal, jumps, jumpName } = opaqueStep(s, u);
+    if (terminal) return `${line}\n${retIn('retb')}`;
+    let after = tr(rest, fin, u);
+    if (returns) after = `if retb.Some? then\n${indentBlock(retIn('retb.value'))}\nelse\n${indentBlock(wrapLet(after))}`;
+    if (jumps.length) after = `if ${jumpName} != 0 then\n${indentBlock(wrapLet(dispatchJump(jumpName, jumps)))}\nelse\n${indentBlock(wrapLet(after))}`;
+    return `${line}\n${after}`;
   }
   // a callback local may shadow the variable that receives the method's result
   function callbackShadows(cb, name) {
@@ -3146,19 +3279,21 @@ export function translate(file, fnName, opts = {}) {
     return hoist(wrapLet(body), dtype(resultType, node));
   }
   function opaqueCompletion(s, next, u, ctx) {
-    const { line, returns, terminal } = opaqueStep(s, u);
-    const after = terminal ? ctx.ret('retb') : returns ? `if retb.Some? then\n${indentBlock(wrapLet(ctx.ret('retb.value')))}\nelse\n${indentBlock(wrapLet(next()))}` : next();
+    const { line, returns, terminal, jumps, jumpName } = opaqueStep(s, u);
+    let after = terminal ? ctx.ret('retb') : returns ? `if retb.Some? then\n${indentBlock(wrapLet(ctx.ret('retb.value')))}\nelse\n${indentBlock(wrapLet(next()))}` : next();
+    if (jumps.length) after = `if ${jumpName} != 0 then\n${indentBlock(wrapLet(dispatchJump(jumpName, jumps)))}\nelse\n${indentBlock(wrapLet(after))}`;
     return `${line}\nif ${faultPreds().faulted}(${WORLD}) then\n${indentBlock(wrapLet(ctx.fault()))}\nelse\n${indentBlock(wrapLet(after))}`;
   }
   function coreLoop(s, rest, fin, u) {
     const id = loopCount++;
+    const jumps = escapingLabels(s);
     const returns = !s.__forEach && containsReturn(s); // a return inside a forEach callback ends one step, never the function
     const M = assignedOutside(s).map((m) => (m.synthetic ? m : { ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) }));
-    if (!M.length && !returns) return tr(rest, fin, u);
-    if (ts.isForStatement(s) && (containsEffect(s.condition) || containsEffect(s.incrementor))) fail(s, 'an effect in a for header');
+    if (!M.length && !returns && !jumps.length) return tr(rest, fin, u);
+    if (ts.isForStatement(s) && !emptyFor(s) && (containsEffect(s.condition) || containsEffect(s.incrementor))) fail(s, 'an effect in a for header');
     const RD = u.isCtor ? 'Unit' : dtype(retType(u), s);
     if (returns) usesOption = true;
-    const isIn = ts.isForInStatement(s); const isOf = ts.isForOfStatement(s) || isIn, isFor = ts.isForStatement(s); // `for (k in o)` is a for-of over the keys of o
+    const isIn = ts.isForInStatement(s); const isOf = ts.isForOfStatement(s) || isIn, isFor = ts.isForStatement(s) && !emptyFor(s); // `for (k in o)` is a for-of over the keys of o
     const userHints = [...hintsOf(sf, s).invariants, ...invariants.filter((x) => x.loop === null || x.loop === id).map((x) => x.expr)];
     const hintWords = new Set(userHints.flatMap((h) => h.match(/[A-Za-z_]\w*/g) ?? []));
     const inScopeVars = [];
@@ -3176,7 +3311,8 @@ export function translate(file, fnName, opts = {}) {
     const hn = `${curUnitName()}_loop${id}${sfx}`;
     const mNames = M.map((m) => dn(m.name));
     const retName = `ret${id}`;
-    const outNames = returns ? [retName, ...mNames] : mNames; // what the helper returns
+    const jumpName = `jump${id}`;
+    const outNames = [...(jumps.length ? [jumpName] : []), ...(returns ? [retName] : []), ...mNames]; // what the helper returns
     let loopUsesSelf = false; { const w = (x) => { if (x.kind === K.ThisKeyword) loopUsesSelf = true; if (!loopUsesSelf) ts.forEachChild(x, w); }; w(s); }
     const constParams = [...(loopUsesSelf && classOf(u) ? [`${SELF}: ${selfType(u)}`] : []), ...free.map((v) => `${dn(v.name)}: ${v.d}`)];
     const stateParams = M.map((m) => `${dn(m.name)}: ${m.d}`);
@@ -3220,27 +3356,38 @@ export function translate(file, fnName, opts = {}) {
       decreases = forDecreases(lp, cond);
       if (ts.isNumericLiteral(s.initializer.declarations[0].initializer)) { factsIn = new Set([lp.i]); if (!lp.down && !real) requiresL.push(`${dn(lp.i)} >= ${lp.start}`); }
     } else {
-      const h = hintsOf(sf, s);
-      const condition = captureParts(() => truthy(s.expression));
+      const h = hintsOf(sf, s), bound = derivedBound(s);
+      const condition = captureParts(() => bound ? `${dn(bound.counter.text)} ${bound.op} ${outerParens(expr(bound.limit))}` : emptyFor(s) ? 'true' : truthy(s.expression));
       conditionLines = condition.lines;
-      exit = `!(${outerParens(condition.text)})`;
-      decreases = h.decreases ?? fail(s, 'while needs `// @decreases <expr>`');
+      const cond = outerParens(condition.text);
+      exit = `!(${cond})`;
+      decreases = h.decreases ?? (bound ? `if ${cond} then ${bound.down ? `${dn(bound.counter.text)} - ${outerParens(expr(bound.limit))}` : `${outerParens(expr(bound.limit))} - ${dn(bound.counter.text)}`} + 1 else 0` : fail(s, 'while needs `// @decreases <expr>`'));
+      if (ts.isDoStatement(s)) {
+        lead = [`first${id}: bool`]; leadArgsFirst = ['true']; leadArgsNext = ['false'];
+        if (conditionLines.length) {
+          const stop = `stop${id}`;
+          conditionLines = [`var ${tupleOf([...mNames, stop])} := if first${id} then ${tupleOf([...mNames, 'false'])} else ${wrapLet([...conditionLines, tupleOf([...mNames, exit])].join('\n'))};`];
+          exit = stop;
+        } else exit = `!first${id} && (${exit})`;
+        decreases = `(if first${id} then 1 else 0), ${decreases}`;
+      }
     }
     const next = () => `${hn}(${[...leadArgsNext, ...constArgs, ...mNames].join(', ')})`;
-    const exitVal = () => (returns ? tupleOf(['None', ...mNames]) : tupleOf(mNames));
-    loopCtx.push({ cont: next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ? { ...s.__collect, element: dn(s.initializer.declarations[0].name.text), index: `idx${id}` } : null, ret: (code) => (returns ? tupleOf([`Some(${code})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
+    const completed = (jump = '0', ret = 'None') => tupleOf([...(jumps.length ? [jump] : []), ...(returns ? [ret] : []), ...mNames]);
+    const exitVal = () => completed();
+    loopCtx.push({ label: labelId(s), jump: (code) => jumps.length ? completed(code) : fail(s, 'a labelled exit lacks its completion channel'), cont: next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ? { ...s.__collect, element: dn(s.initializer.declarations[0].name.text), index: `idx${id}` } : null, ret: (code) => (returns ? completed('0', `Some(${code})`) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
-    try { bodyE = tr(flatten(s.statement), s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next, u); } finally { loopCtx.pop(); }
+    try { bodyE = tr(derivedBound(s)?.body ?? flatten(s.statement), s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next, u); } finally { loopCtx.pop(); }
     const params = [...lead, ...constParams, ...stateParams];
     const selfArgs = [...lead.map((p) => p.split(':')[0]), ...constArgs, ...mNames];
     const callS = `${hn}(${selfArgs.join(', ')})`;
-    const outTypes = returns ? [`Option<${RD}>`, ...M.map((m) => m.d)] : M.map((m) => m.d);
+    const outTypes = [...(jumps.length ? ['int'] : []), ...(returns ? [`Option<${RD}>`] : []), ...M.map((m) => m.d)];
     const resT = outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`;
     const hints = [...userHints];
     for (const m of M) {
       if ((m.d === 'int' || m.d === 'real') && keepsNonneg(m.name, s.statement, factsIn)) hints.push(`${dn(m.name)} >= ${m.d === 'real' ? '0.0' : '0'}`);
     }
-    const exitFact = !isOf && !isFor && !returns && !conditionLines.length ? [`  ensures (var ${tupleOf(outNames)} := ${callS}; ${exit})`] : [];
+    const exitFact = !isOf && !isFor && !returns && !conditionLines.length && !jumps.length && !ts.isDoStatement(s) && !(derivedBound(s)?.body ?? [s.statement]).some((b) => escapingLabels(b).length > 0) ? [`  ensures (var ${tupleOf(outNames)} := ${callS}; ${exit})`] : [];
     const specs = [...requiresL.map((r) => `  requires ${r}`),
       ...hints.map((h) => `  ensures (${h}) ==> (var ${tupleOf(outNames)} := ${callS}; ${h})`),
       ...exitFact,
@@ -3249,10 +3396,10 @@ export function translate(file, fnName, opts = {}) {
       indentBlock(`${conditionLines.length ? conditionLines.join('\n') + '\n' : ''}if ${exit} then ${exitVal()}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
     if (isFor && real) intVars.delete(lp.i);
     const first = `${hn}(${[...leadArgsFirst, ...constArgs, ...mNames].join(', ')})`;
-    if (!returns) return `var ${tupleOf(mNames)} := ${first};\n${tr(rest, fin, u)}`;
-    // a return from inside the loop ends the function (or the enclosing loop helper) with that value
-    const after = tr(rest, fin, u);
-    return `var ${tupleOf(outNames)} := ${first};\nif ${retName}.Some? then\n${indentBlock(retIn(wrapRet(`${retName}.value`)))}\nelse\n${indentBlock(wrapLet(after))}`;
+    let after = tr(rest, fin, u);
+    if (returns) after = `if ${retName}.Some? then\n${indentBlock(retIn(`${retName}.value`))}\nelse\n${indentBlock(wrapLet(after))}`;
+    if (jumps.length) after = `if ${jumpName} != 0 then\n${indentBlock(wrapLet(dispatchJump(jumpName, jumps)))}\nelse\n${indentBlock(wrapLet(after))}`;
+    return `var ${tupleOf(outNames)} := ${first};\n${after}`;
   }
 
   // ----- which units are effectful: callees come first in `order`, so a caller sees its callee's flag -----
@@ -3360,7 +3507,7 @@ export function translate(file, fnName, opts = {}) {
   function emitUnit(u) {
     currentUnit = u;
     faultMode = false;
-    loopCount = 0;
+    loopCount = 0; labelIds.clear();
     const rt = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
     const name = fname(u.name);
     const specs = [];

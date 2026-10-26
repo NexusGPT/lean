@@ -1,10 +1,8 @@
 // expect: label
-export function firstPair(xs: readonly number[]): number {
-  let found = -1;
-  outer: for (const x of xs) {
-    for (const y of xs) {
-      if (x + y === 10) { found = x; break outer; }
-    }
+export function labelledBlock(n: number): number {
+  exit: {
+    if (n > 0) break exit;
+    return 1;
   }
-  return found;
+  return 0;
 }
