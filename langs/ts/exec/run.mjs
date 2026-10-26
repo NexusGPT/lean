@@ -69,6 +69,22 @@ function jsxValue(type, props, key) {
 const JSX_FRAGMENT = '';
 const jsxRuntime = { jsx: jsxValue, jsxs: jsxValue, jsxDEV: jsxValue, Fragment: JSX_FRAGMENT, __esModule: true };
 
+class RenderLoop extends Error { constructor(why) { super(`render-loop: ${why}`); this.name = 'RenderLoop'; } } // React's own limits: 25 re-renders from a setter during render, then it throws; effects that keep setting state re-render without end
+// one commit: render until a setter during render stops changing the state (React re-renders at once, up to 25 times)
+async function commitRender(env, call, ms) {
+  let v, renders = 0;
+  do { env.stateDirty = false; env.react?.__beginRender?.(); renders++; const r = call(); v = (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r; if (env.stateDirty && renders >= 25) throw new RenderLoop('a setter during render re-rendered 25 times'); } while (env.stateDirty && env.react);
+  return v;
+}
+// after a commit: effects run (settleEffects), and an effect that set the state re-renders and settles again, bounded
+async function commitEffects(env, call, ms, v) {
+  for (let rounds = 0; ; rounds++) {
+    env.stateDirty = false; await settleEffects(env, ms);
+    if (!env.stateDirty) return v;
+    if (rounds >= 1000) throw new RenderLoop('effects re-rendered 1000 times');
+    v = await commitRender(env, call, ms);
+  }
+}
 class Suspended extends Error { constructor(why) { super(`suspense: ${why}`); this.name = 'Suspended'; } } // a render that suspends (a thrown thenable, use(promise)): React would show a fallback and retry; lean has no model of that schedule
 // hooks belong to React's render protocol, rather than the generic external callback fake
 function reactRuntime(env) {
@@ -89,7 +105,7 @@ function reactRuntime(env) {
       const slots = (env.hookSlots ??= []);
       if (!(i in slots)) { slots[i] = typeof initial === 'function' ? initial() : initial; env.record('hook', key, [render(slots[i])]); }
       const value = slots[i];
-      const setter = (next) => { slots[i] = typeof next === 'function' ? next(slots[i]) : next; env.record('set', key, [render(slots[i])]); };
+      const setter = (next) => { const v = typeof next === 'function' ? next(slots[i]) : next; if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; env.record('set', key, [render(slots[i])]); };
       return [value, setter];
     },
     useEffect: (fn, deps) => effectSlot(fn, deps, 'react:effect'),
@@ -97,7 +113,7 @@ function reactRuntime(env) {
     useRef: (initial) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; }, // one box per slot, the same box on every render
     useId: () => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = `:r${i}:`; return slots[i]; }, // a stable id per slot
     useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
-    useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { slots[i] = reducer(slots[i], action); env.record('set', key, [render(slots[i])]); }; return [slots[i], dispatch]; },
+    useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; env.record('set', key, [render(slots[i])]); }; return [slots[i], dispatch]; },
     useLayoutEffect: (fn, deps) => effectSlot(fn, deps, 'react:layout-effect'), // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
   runtime.__beginRender = () => { slot = 0; }; // a render starts at slot 0 (React's call-order keying)
@@ -251,23 +267,22 @@ export async function observe(side, spec, args, ms) {
   lateErrors.length = 0;
   try {
     const slotsBefore = (env.hookSlots ?? []).slice(), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
-    env.react?.__beginRender?.();
-    const r = unit.call(args);
-    const v = (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r;
+    let v = await commitRender(env, () => unit.call(args), ms);
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
-      env.hookSlots = slotsBefore.slice(); env.calls = new Map(callsBefore); env.demand = demandBefore; env.react.__beginRender();
-      const r2 = unit.call(args); const v2 = (r2 && typeof r2.then === 'function') ? await withTimeout(r2, ms) : r2;
+      env.hookSlots = slotsBefore.slice(); env.calls = new Map(callsBefore); env.demand = demandBefore;
+      const v2 = await commitRender(env, () => unit.call(args), ms);
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
       env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
     }
-    for (const effect of env.reactEffects ?? []) {
+    for (const effect of env.reactEffects ?? []) { // the mount's effects, once, in registration order (the pending records of their cleanups are part of the one-render observation)
       const es = (env.effectSlots ?? []).find((x) => x && x.fn === effect);
       try { const cleanup = await withTimeout(Promise.resolve(effect()), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); if (es) { es.ran = true; es.lastDeps = es.deps; es.cleanup = typeof cleanup === 'function' ? cleanup : null; } }
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
+    if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, () => unit.call(args), ms, await commitRender(env, () => unit.call(args), ms)); // an effect set the state: React re-renders and settles again
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
     outcome = { returned: render(outcomeValue) };
@@ -275,6 +290,7 @@ export async function observe(side, spec, args, ms) {
     if (e && e.message === '__timeout__') return { harness: 'timeout' };
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
     if (e instanceof Suspended || (e && typeof e.then === 'function')) return { harness: `suspense: ${e instanceof Suspended ? e.message.slice(10) : 'a thenable thrown during render'}` }; // ASK:suspense, never a crash and never a thrown-value outcome
+    if (e instanceof RenderLoop) return { harness: e.message }; // ASK:render-loop: React would throw or never settle
     if (e instanceof RangeError && /call stack/.test(String(e.message))) return { harness: 'stack overflow' };
     outcome = { threw: render(e) };
   }
@@ -321,17 +337,18 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
     const inputs = aliasInputs(inputsFor(spec, seed, inputIndex, env), spec, seed, inputIndex); env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake);
     return { env, u, inputs };
   };
-  const renderOnce = async (s) => { s.env.react?.__beginRender?.(); const r = s.u.call(s.inputs); return (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r; };
+  const renderOnce = async (s) => commitRender(s.env, () => s.u.call(s.inputs), ms);
+  const commit = async (s) => commitEffects(s.env, () => s.u.call(s.inputs), ms, await renderOnce(s)); // render, effects, and again while an effect changes the state
   // run one command path on one side; returns the observation after every command
   const runPath = async (name, labels) => {
     const s = await mount(name); const obs = [];
-    let tree = await renderOnce(s); await settleEffects(s.env, ms); // the mount and its effects, as the pair's own run
+    let tree = await commit(s); // the mount, its effects, and the re-renders they cause
     for (const label of labels) {
       const from = s.env.trace.length;
       const h = treeHandlers(tree).find((x) => x.label === label);
       if (!h) { obs.push({ command: label, missing: true, handlers: treeHandlers(tree).map((x) => x.label) }); return { obs, s }; }
       try { const r = h.fn(s.env.fake(`react:event:${label}`)); if (r && typeof r.then === 'function') await withTimeout(r, ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('handler-throw', label, [render(e)]); }
-      tree = await renderOnce(s); await settleEffects(s.env, ms);
+      tree = await commit(s);
       obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending) });
     }
     // unmount: every cleanup, in slot order
@@ -346,7 +363,7 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
     for (const labels of frontier) {
       const key = labels.join('>'); if (done.has(key)) continue; done.add(key); paths++;
       let P, C;
-      try { P = await runPath('parent', labels); C = await runPath('candidate', labels); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended) return { ask: `sequence ${JSON.stringify(labels)}: ${e.message}` }; throw e; }
+      try { P = await runPath('parent', labels); C = await runPath('candidate', labels); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop) return { ask: `sequence ${JSON.stringify(labels)}: ${e.message}` }; throw e; }
       for (let k = 0; k < Math.max(P.obs.length, C.obs.length); k++) {
         const a = JSON.stringify(P.obs[k] ?? null), b = JSON.stringify(C.obs[k] ?? null);
         if (a !== b) return { witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null } };
@@ -358,6 +375,7 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
   return { paths };
 }
 
+export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
 export async function runPair(opts) {
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2 } = opts;
   // a missing parent unit has no equality question

@@ -264,6 +264,12 @@ const clocks = run('node', [path.join(here, 'clock-read.mjs')]);
 add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clocks.stdout + clocks.stderr).trim());
 
 // ----- the repository's own conformance run, when present -----
+// ----- lane B's hook runtime against React-tRace's scenarios (langs/ts/exec/react-trace.mjs) -----
+{
+  const r = run('node', [path.join(here, '../exec/react-trace.mjs'), '--json']);
+  let summary = null; try { summary = JSON.parse(r.stdout).summary; } catch { /* no JSON: the runner crashed */ }
+  add('repo', 'react-trace scenarios', 'runner', !!summary && summary.disagree.length === 0, summary ? `${summary.agree} of ${summary.scenarios} agree${summary.disagree.length ? '; ' + summary.disagree.map((d) => d.scenario).join(', ') : ''}` : (r.stderr || r.stdout).trim().slice(-160));
+}
 if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.join(root, 'langs/ts/conformance.json'))) {
   const c = run('python3', ['-I', 'conformance/run.py', 'ts']);
   const last = (c.stdout ?? '').trim().split('\n').pop();
