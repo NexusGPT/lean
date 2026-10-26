@@ -154,16 +154,17 @@ function domainsOf(unit, sf) {
 function unitsOf(sf) {
   const out = [];
   for (const st of sf.statements) {
-    if (ts.isFunctionDeclaration(st) && st.body) out.push({ kind: 'function', node: st, body: st.body, params: st.parameters });
-    else if (ts.isVariableStatement(st)) { for (const d of st.declarationList.declarations) if (d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer)) && d.initializer.body) out.push({ kind: 'function', node: d.initializer, body: d.initializer.body, params: d.initializer.parameters }); }
-    else if (ts.isClassDeclaration(st)) { for (const m of st.members) if (ts.isMethodDeclaration(m) && m.body) out.push({ kind: 'method', node: m, body: m.body, params: m.parameters, cls: st, isStatic: !!m.modifiers?.some((x) => x.kind === K.StaticKeyword) }); }
-    else if (ts.isExportAssignment(st) && st.expression && (ts.isArrowFunction(st.expression) || ts.isFunctionExpression(st.expression)) && st.expression.body) out.push({ kind: 'function', node: st.expression, body: st.expression.body, params: st.expression.parameters });
+    if (ts.isFunctionDeclaration(st) && st.body) out.push({ kind: 'function', name: st.name ? st.name.text : null, node: st, body: st.body, params: st.parameters });
+    else if (ts.isVariableStatement(st)) { for (const d of st.declarationList.declarations) if (d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer)) && d.initializer.body) out.push({ kind: 'function', name: ts.isIdentifier(d.name) ? d.name.text : null, node: d.initializer, body: d.initializer.body, params: d.initializer.parameters }); }
+    else if (ts.isClassDeclaration(st)) { for (const m of st.members) if (ts.isMethodDeclaration(m) && m.body) out.push({ kind: 'method', name: st.name && ts.isIdentifier(m.name) ? `${st.name.text}.${m.name.text}` : null, node: m, body: m.body, params: m.parameters, cls: st, isStatic: !!m.modifiers?.some((x) => x.kind === K.StaticKeyword) }); }
+    else if (ts.isExportAssignment(st) && st.expression && (ts.isArrowFunction(st.expression) || ts.isFunctionExpression(st.expression)) && st.expression.body) out.push({ kind: 'function', name: null, node: st.expression, body: st.expression.body, params: st.expression.parameters });
   }
   return out;
 }
 
-export function concepts(root) {
+export function concepts(root, opts = {}) {
   const kinds = new Map(); const domains = new Map();
+  const wanted = opts.instances ? new Set(opts.instances) : null; const instances = {};
   let units = 0, files = 0;
   for (const file of walk(root)) {
     const src = fs.readFileSync(file, 'utf8');
@@ -175,9 +176,12 @@ export function concepts(root) {
       const w = (n) => { seen.add(K[n.kind]); ts.forEachChild(n, w); };
       w(u.body);
       for (const k of seen) kinds.set(k, (kinds.get(k) ?? 0) + 1);
-      for (const d of domainsOf(u, sf)) domains.set(d, (domains.get(d) ?? 0) + 1);
+      const ds = domainsOf(u, sf);
+      for (const d of ds) domains.set(d, (domains.get(d) ?? 0) + 1);
+      if (wanted && u.name) { const lines = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line - sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1; for (const d of ds) if (wanted.has(d)) (instances[d] ??= []).push({ root, file: path.relative(root, file), unit: u.name, lines }); }
     }
   }
+  if (wanted) return { root, files, units, instances };
   const sortDesc = (m) => Object.fromEntries([...m.entries()].sort((a, b) => b[1] - a[1]));
   return { root, files, units, kinds: sortDesc(kinds), domains: sortDesc(domains) };
 }
@@ -185,7 +189,9 @@ export function concepts(root) {
 if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) {
   const a = process.argv.slice(2);
   const out = a.includes('--out') ? a[a.indexOf('--out') + 1] : null;
-  const roots = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--out');
+  const inst = a.includes('--instances') ? a[a.indexOf('--instances') + 1].split('|') : null;
+  const roots = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--out' && a[i - 1] !== '--instances');
+  if (inst) { const all = {}; for (const r of roots) { const c = concepts(r, { instances: inst }); for (const [d, xs] of Object.entries(c.instances)) (all[d] ??= []).push(...xs); } const json = JSON.stringify(all, null, 1); if (out) fs.writeFileSync(out, json); else process.stdout.write(json); process.exit(0); }
   const reports = roots.map((r) => { const c = concepts(r); console.error(`${r}: ${c.files} files, ${c.units} units`); return c; });
   const merged = { roots, files: 0, units: 0, kinds: {}, domains: {}, perRepo: {} };
   for (const c of reports) { merged.files += c.files; merged.units += c.units; for (const [k, v] of Object.entries(c.kinds)) merged.kinds[k] = (merged.kinds[k] ?? 0) + v; for (const [k, v] of Object.entries(c.domains)) merged.domains[k] = (merged.domains[k] ?? 0) + v; merged.perRepo[path.basename(c.root)] = { files: c.files, units: c.units, domains: c.domains }; }

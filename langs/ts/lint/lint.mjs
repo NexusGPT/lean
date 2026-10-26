@@ -41,6 +41,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
+  let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
   let switchDepth = 0;
   let loopDepth = 0;
   const callbackStack = []; // the arrow functions being checked, innermost last
@@ -142,6 +143,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.IfStatement:
         expr(s.expression); stmt(s.thenStatement); if (s.elseStatement) stmt(s.elseStatement); return;
       case K.ReturnStatement:
+        if (forEachDepth > 0) { if (s.expression) expr(s.expression); return; } // one step of a forEach ends
         if (!s.expression) { if (!returnsVoid()) v(s, 'bare-return', 'return needs a value'); return; }
         return expr(s.expression);
       case K.ForOfStatement: {
@@ -509,7 +511,19 @@ export function lintFile(file, ranges = null, opts = {}) {
         return argsOf(e);
       }
       if (parts.every((t) => isArrayLike(checker, t)) && ARRAY_METHODS.has(name)) {
-        if (name === 'forEach') return v(e, 'foreach', 'forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop');
+        if (name === 'forEach') {
+          // `xs.forEach((x) => body)` is a loop over xs: the body is checked as a loop body (an outer local may change)
+          const cb = e.arguments[0]; const r0 = e.expression.expression; const rt0 = tOf(r0);
+          const iterable = isArrayExpr(r0) || nonNull(rt0).every((t) => isSetT(t) || isMapT(t)) || nonNull(rt0).some(isAny);
+          if (e.arguments.length === 1 && ts.isArrowFunction(cb) && cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return v(e, 'foreach', 'forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x of xs)` and await inside');
+          if (e.arguments.length === 1 && ts.isArrowFunction(cb) && cb.parameters.length === 1 && ts.isIdentifier(cb.parameters[0].name) && iterable) {
+            checkType(tOf(cb.parameters[0].name), cb.parameters[0]);
+            loopDepth++; forEachDepth++;
+            try { if (ts.isBlock(cb.body)) stmts(cb.body.statements); else exprStmt(cb.body); } finally { loopDepth--; forEachDepth--; }
+            return;
+          }
+          return v(e, 'foreach', 'forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter');
+        }
         if (name === 'sort' || name === 'reverse') {
           // in place on a value nobody else holds (a literal, a spread copy, a call result): the result is a new sequence
           if (ts.isIdentifier(recv) || ts.isPropertyAccessExpression(recv) || ts.isElementAccessExpression(recv)) { const own = ts.isIdentifier(recv) && declOf(recv).kind === 'local' && !isParam(declOf(recv).decl); return v(e, own ? 'in-place-mutation' : 'param-mutation', own ? `${name} changes \`${recv.text}\` in place; write \`${recv.text} = [...${recv.text}].${name}(...)\`` : `${name} mutates in place; sort a copy: [...xs].${name}()`); }

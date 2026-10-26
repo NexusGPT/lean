@@ -126,7 +126,7 @@ export function translate(file, fnName, opts = {}) {
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
   function isEffectCall(n) {
     if (ts.isAwaitExpression(n)) return true;
-    if (ts.isNewExpression(n)) return !PURE_CTORS.has(n.expression.getText(sf));
+    if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
     if (!ts.isCallExpression(n)) return false;
     const f = n.expression;
     if (ts.isIdentifier(f)) {
@@ -154,10 +154,33 @@ export function translate(file, fnName, opts = {}) {
   const loopsOverEffect = (node) => { let f = false; const w = (x) => { if (f || ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if ((ts.isForOfStatement(x) || ts.isForStatement(x) || ts.isWhileStatement(x) || ts.isForInStatement(x)) && containsEffect(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const exactTry = (x) => core && ts.isTryStatement(x) && !!x.catchClause && !loopsOverEffect(x.tryBlock) && !(x.catchClause && loopsOverEffect(x.catchClause.block));
   const isOpaqueStmt = (x) => (ts.isTryStatement(x) && !exactTry(x)) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
+  // `xs.forEach((x) => body)` as a statement: a loop over xs whose body is the callback's body, each iteration's transitions
+  // in order. The callback takes one plain parameter and returns nothing (a `return` inside it would end one step).
+  const forEachShape = (st) => {
+    if (!ts.isExpressionStatement(st)) return null;
+    let e = st.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.expression.name.text !== 'forEach' || e.arguments.length !== 1) return null;
+    const cb = e.arguments[0];
+    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null; // an async callback is not awaited by forEach: not a loop
+    let recvT; try { recvT = baseOf(typeOf(e.expression.expression)); } catch { return null; }
+    if (!(isArrayLike(checker, recvT) || isSetT(recvT) || isMapT(recvT) || isAny(recvT))) return null;
+    return { call: e, cb };
+  };
+  const isLoopCallback = (x) => !!(x.parent && ts.isCallExpression(x.parent) && x.parent.arguments[0] === x && x.parent.parent && forEachShape(x.parent.parent));
+  function fakeForOf(st, fe) {
+    const { call, cb } = fe; const name = cb.parameters[0].name;
+    const body = ts.isBlock(cb.body) ? cb.body : { kind: K.ExpressionStatement, expression: cb.body, parent: cb, pos: cb.body.pos, end: cb.body.end, getStart: () => cb.body.getStart(sf), getEnd: () => cb.body.getEnd(), getText: () => cb.body.getText(sf), getFullStart: () => cb.body.getFullStart() };
+    const decl = { kind: K.VariableDeclaration, name, pos: name.pos, end: name.end, parent: null };
+    const list = { kind: K.VariableDeclarationList, declarations: [decl], flags: ts.NodeFlags.Const, pos: name.pos, end: name.end, parent: null };
+    decl.parent = list;
+    const fake = { kind: K.ForOfStatement, expression: call.expression.expression, initializer: list, statement: body, parent: st.parent, pos: st.pos, end: st.end, getStart: () => st.getStart(sf), getEnd: () => st.getEnd(), getText: () => st.getText(sf), getFullStart: () => st.getFullStart(), __forEach: true };
+    list.parent = fake;
+    return fake;
+  }
   // the innermost exact try whose BODY holds the statement, within the same function
   const tryOf = (st) => { let n = st; let child = null; while (n && !ts.isFunctionLike(n)) { if (ts.isTryStatement(n) && exactTry(n) && child === n.tryBlock) return n; child = n; n = n.parent; } return null; };
   const faultPreds = () => { addPrelude('World', 'type World'); return { faulted: external('faulted', ['World'], 'bool'), value: external('fault_value', ['World'], anyType()), clear: external('clear_fault', ['World'], 'World'), raise: external('raise', ['World', anyType()], 'World') }; };
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -1746,7 +1769,11 @@ export function translate(file, fnName, opts = {}) {
       case K.TryStatement: if (exactTry(s)) { s.__cont = { rest, fin }; return tr([...s.tryBlock.statements, ...(s.finallyBlock ? s.finallyBlock.statements : []), ...rest], fin, u); } return opaqueBlock(s, rest, fin, u);
       case K.Block: return tr([...s.statements, ...rest], fin, u);
       case K.EmptyStatement: return more();
-      case K.ReturnStatement: return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
+      case K.ReturnStatement: {
+        const top = loopCtx[loopCtx.length - 1];
+        if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
+        return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
+      }
       case K.ThrowStatement: { const t = tryOf(s); if (t) return capture(() => catchPath(t, u, expr(s.expression, anyTarget()))); return capture(() => { const R = dtype(retType(u), s); const code = `${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`; return retIn(wrapRet(code)); }); }
       case K.VariableStatement: {
         const out = [];
@@ -1761,6 +1788,8 @@ export function translate(file, fnName, opts = {}) {
         return tryOf(s) && containsEffect(s) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
       }
       case K.ExpressionStatement: {
+        const fe = forEachShape(s);
+        if (fe) { const fake = fakeForOf(s, fe); let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body; }
         const line = capture(() => {
           const nv = newValue(s.expression);
           if (!nv) return ''; // a bare effect call: its world transition was hoisted; nothing else to bind
@@ -1844,7 +1873,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function coreLoop(s, rest, fin, u) {
     const id = loopCount++;
-    const returns = containsReturn(s);
+    const returns = !s.__forEach && containsReturn(s); // a return inside a forEach callback ends one step, never the function
     const M = assignedOutside(s).map((m) => (m.synthetic ? m : { ...m, d: dtype(symType(m.sym, m.node), m.node) }));
     if (!M.length && !returns) return tr(rest, fin, u);
     if (ts.isWhileStatement(s) && containsEffect(s.expression)) fail(s, 'an effect in a while condition');
@@ -1915,7 +1944,7 @@ export function translate(file, fnName, opts = {}) {
     }
     const next = () => `${hn}(${[...leadArgsNext, ...constArgs, ...mNames].join(', ')})`;
     const exitVal = () => (returns ? tupleOf(['None', ...mNames]) : tupleOf(mNames));
-    loopCtx.push({ cont: next, brk: exitVal, ret: (code) => (returns ? tupleOf([`Some(${code})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
+    loopCtx.push({ cont: next, brk: exitVal, forEach: !!s.__forEach, ret: (code) => (returns ? tupleOf([`Some(${code})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
     try { bodyE = tr(flatten(s.statement), next, u); } finally { loopCtx.pop(); }
     const params = [...lead, ...constParams, ...stateParams];
