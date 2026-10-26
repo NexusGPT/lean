@@ -29,6 +29,7 @@ export class Environment {
     this.rng = makeRng(seed);
     this.cache = new Map(); // path -> fake, so the same handle is one handle
     this.calls = new Map(); // path -> number of calls so far
+    this.loading = false;   // true while modules load: every answer is a handle
   }
   record(op, path, args) {
     this.trace.push({ op, path, args: args ?? [] });
@@ -47,6 +48,9 @@ export class Environment {
   // answer to the same question; a field read twice answers the same way.
   answer(path) {
     if (this.cache.has(path)) return this.cache.get(path);
+    // while a module loads (schemas, decorators, constants), and for a module's own members, the answer is always
+    // a handle: varied answers are for what the unit itself asks at run time
+    if (this.loading || (path.startsWith('module:') && !path.includes('('))) return this.fake(path);
     const h = createHash('sha256').update(`${this.seed}:answer:${path}`).digest();
     const u = h.readUInt32BE(0) / 4294967296;
     const d = depthOf(path);
@@ -90,15 +94,21 @@ export class Environment {
       deleteProperty(t, prop) { env.record('delete', `${path}.${String(prop)}`); return true; },
       apply(t, thisArg, args) {
         env.record('call', path, args.map((x) => render(x)));
+        // called with a real function first (a class or member decorator, a wrapper): the callee keeps what it was
+        // given, so the result is undefined and the decorated class stays the class
+        if (args.length && typeof args[0] === 'function' && !args[0].__isFake) {
+          for (const a of args) if (typeof a === 'function' && !a.__isFake && a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) { try { const r = a(env.fake(`${path}#cb.arg0`), env.fake(`${path}#cb.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path, [String(e && e.message)]); } }
+          return undefined;
+        }
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // a callback argument is invoked once with fakes, so its own reads reach the trace
         for (const a of args) if (typeof a === 'function' && !a.__isFake) { try { const r = a(env.fake(`${path}#cb.arg0`), env.fake(`${path}#cb.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path, [String(e && e.message)]); } }
         return env.answer(`${path}()#${k}`);
       },
       construct(t, args) { env.record('new', path, args.map((x) => render(x))); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); return env.fake(`new ${path}#${k}`); },
-      getPrototypeOf() { return Object.prototype; },
-      ownKeys() { env.record('keys', path); return []; },
-      getOwnPropertyDescriptor() { return undefined; },
+      getPrototypeOf() { return Function.prototype; },
+      ownKeys(t) { env.record('keys', path); return Reflect.ownKeys(t); },
+      getOwnPropertyDescriptor(t, prop) { return Reflect.getOwnPropertyDescriptor(t, prop); },
     };
     const p = new Proxy(target, handler);
     this.cache.set(key, p);

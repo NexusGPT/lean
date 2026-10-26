@@ -24,7 +24,7 @@ import { inputsFor } from './gen.mjs';
 
 const require = createRequire(import.meta.url);
 
-const COMPILE = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, experimentalDecorators: true, emitDecoratorMetadata: false, esModuleInterop: true, importHelpers: false, strict: false, sourceMap: false, removeComments: true, jsx: ts.JsxEmit.React, allowJs: true, moduleDetection: ts.ModuleDetectionKind.Force };
+const COMPILE = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, experimentalDecorators: true, emitDecoratorMetadata: false, esModuleInterop: true, importHelpers: false, strict: false, sourceMap: false, removeComments: true, jsx: ts.JsxEmit.ReactJSX, allowJs: true, moduleDetection: ts.ModuleDetectionKind.Force };
 
 // every top-level function and class of the file, exported or not, reachable for the harness
 function unitShim(src, abs) {
@@ -59,13 +59,17 @@ export function sandbox(env, root) {
     clearTimeout: () => {}, clearInterval: () => {}, queueMicrotask: (fn) => Promise.resolve().then(fn),
     Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
     Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect, Proxy, structuredClone,
-    globalThis: null, crypto: env.module('crypto'), performance: env.module('performance'),
+    globalThis: null, crypto: env.module('crypto'), performance: env.module('performance'), React: env.module('react'),
   };
   g.globalThis = g; g.global = g; g.window = undefined;
   const ctx = vm.createContext(g);
   function load(file) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
+    const wasLoading = env.loading; env.loading = true;
+    try { return loadInner(abs); } finally { env.loading = wasLoading; }
+  }
+  function loadInner(abs) {
     const src = fs.readFileSync(abs, 'utf8');
     const tsName = /\.(mjs|cjs|js)$/.test(abs) ? abs.replace(/\.(mjs|cjs|js)$/, '.ts') : abs; // a script file is read as TypeScript so its imports become requires
     const src2 = src.replace(/\bimport\.meta\.url\b/g, JSON.stringify('file://' + abs)).replace(/\bimport\.meta\b/g, '({})'); // a script's import.meta under CommonJS
