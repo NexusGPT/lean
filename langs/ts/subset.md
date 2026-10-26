@@ -29,10 +29,11 @@ rules per package).
 | Optionals | `T \| undefined`, `T \| null`, `f?: T`; `x == null`, `x ?? y`, `x?.f`, `x?.m()`, `x!` | `x: number \| null` |
 | Declarations | `let`, `const`, `let x: T;` assigned before any read, `let x;` (an Option of its first assigned type, absent until then), destructuring patterns with defaults on object patterns, a nested `function f() {}` (a local function value) | `const { a = 1, b } = r;` |
 | Control | `if`/`else`, `switch` (each case ends in `return` or `break`), early `return`, `return` inside a loop, `break`, `continue`, `throw`, `void f()` | `switch (kind) { case "a": return 1; default: return 0; }` |
-| Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` and `do..while` with `// @decreases`; `xs.forEach((x) => body)` with a sync arrow (a `return` ends one step); `await Promise.all(xs.map((x) => body))`, a loop collecting each iteration's value, its transitions in array order | `for (let i = n - 1; i >= 0; i--)` |
+| Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` and `do..while` with `// @decreases`; `xs.forEach((x) => body)` with a sync arrow (a `return` ends one step); `await Promise.all(xs.map((x) => body))`, collecting in input order when no observable continuation runs after suspension; async `flatMap` under `Promise.all` collects each resolved value without flattening it | `for (let i = n - 1; i >= 0; i--)` |
 | Operators | `+ - * %`, `Math.floor(a / b)`, `Math.trunc(a / b)`, `Math.min`, `Math.max`, `Math.abs`, unary `-`, `! && \|\| ??`, `=== !==`, `< <= > >=`, `?:`, `typeof`, `instanceof`, `in`; `&&`, `\|\|` and `??` as values of any types (both sides lifted to the result type); a transition inside a `?:` branch or on the right of `&&`/`\|\|` happens only when that side runs | `Math.floor(n / 2)` |
 | Assignment | `=`, `+=`, `-=`, `*=`, `++`, `--` on a local; `x.f = v`, `x.f += v`, `x.f++`, `xs[i] = v`, `x.f.push(v)` on a local or on a PARAMETER (a mutated parameter is an output of the function, returned beside the result; a caller that passed a name takes the new value back); `this.f = v`, `this.f += v`, `this.f++` on a field of the receiver | `user.tags.push(t);` |
 | Arrays at work | `xs[i]`, `.length`, `[a, ...xs]`, `push`/`unshift` on a local, `includes`, `indexOf`, `slice`, `concat`, `join`, `flat`, `at`, `some`, `every`, `find`, `findIndex`, `map`, `filter`, `flatMap`, `reduce`, with index callbacks | `xs.map((x, i) => x * i)` |
+| Effectful array callbacks | sync inline arrows with element/index names in `map`, `filter`, `find`, `findIndex`, `some`, `every`, `flatMap`; `reduce` with accumulator/element names and an initial value; each body threads the world, and find/some/every stop before visiting later elements | `xs.filter(x => svc.ok(x))` |
 | Strings | literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number; `a ** b` as an uninterpreted power of both sides | `n.toFixed(2)` |
 | Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with `k` a literal union or a string on a dictionary; `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
@@ -69,7 +70,7 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Library calls with no exact rule: `trim`, `toLowerCase`, `split`, `replace`, `JSON`, `String`, `Buffer` | `s.trim()` | `ext_str_trim(s)` |
 | Regular expressions, `new RegExp`, `.test`, `.replace(re, …)` | `/a+/.test(s)` | an opaque constant per literal, externals for the operations |
 | A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its text; the same text proves equal, a different one does not |
-| A callback with an effect inside | `xs.map(async (x) => await f(x))` | the same: an opaque function value by its text |
+| Effectful callbacks handed to an outside library | `register(x => svc.log(x))` | an opaque function value by its text |
 | `as T`, `<T>x` | `x as number[]` | identity when the Dafny types agree, else `ext_cast_A_B(x)` |
 | `typeof x`, `x instanceof C`, `k in o` | `typeof x === "string"` | `ext_typeof_Any(x)`, `ext_instanceof_C(x)`, `ext_in(k, o)` |
 | `throw e` | `throw new Error("bad")` | the function's result is `ext_throw_R(e)` |
@@ -114,6 +115,9 @@ one, never proved equal and never proved different (the execution lane decides i
 | `string-order` | ordering strings | `a < b` on strings |
 | `for-in`, `label`, `loop-form` | `for..in`, a labelled statement, any other loop form (a `while` or `do..while` without `// @decreases` is an opaque block, not a refusal) | `for (const k in o)` |
 | `optional-chain` | optional calls on a function value `f?.()` | `cb?.()` |
+| `async-predicate`, `async-reduce` | promises are truthy predicates; reduce does not await its accumulator | `xs.filter(async x => svc.ok(x))` |
+| `async-callback`, `promise-all-order` | async map/flatMap without direct awaited Promise.all; multiple suspensions or observable work after suspension | `xs.map(async x => { await f(x); log(x); })` |
+| `callback-control`, `callback-result` | callback try/throw or return from an inner loop; effectful type guards, mixed flatMap results or PromiseLike callbacks | `xs.map(x => { for (;;) return svc.get(x); })` |
 | `async`, `promise` | `await` outside an async function, `for await`, `new Promise`, a Promise-returning function that is not async | `new Promise(r => ...)` |
 | `generator` | generators | `function* g() {}` |
 | `union-type` | a union the translator cannot name (two different arrays) | `number[] \| string[]` |

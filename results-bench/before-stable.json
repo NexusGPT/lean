@@ -1,0 +1,243 @@
+{
+ "rows": [
+  {
+   "concept": "async callback",
+   "n": 10,
+   "inside": 4,
+   "translated": 2,
+   "planted": 6,
+   "witnessed": 6,
+   "blockers": {
+    "closure-mutation": 1,
+    "foreach": 1,
+    "property-assign": 3,
+    "translate: actions.ts:148: callee write was not translated": 1,
+    "loop-form": 1,
+    "translate: settings-sweep-intro-failure-scenarios.ts:168: a p": 1
+   }
+  },
+  {
+   "concept": "Promise.all",
+   "n": 10,
+   "inside": 3,
+   "translated": 2,
+   "planted": 5,
+   "witnessed": 5,
+   "blockers": {
+    "unsupported-syntax": 1,
+    "translate: list-workspaces.use-case.ts:85: an effect inside a": 1,
+    "async": 3,
+    "global-read": 1,
+    "ts-strict": 1,
+    "loose-equality": 1
+   }
+  }
+ ],
+ "instances": {
+  "async callback": [
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/nodes-base/nodes/Postgres/v1/genericFunctions.ts",
+    "unit": "pgInsert",
+    "lines": 82,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "closure-mutation",
+    "detail": "a callback cannot change an outer dictionary"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/cli/src/databases/migrations/common/1658930531669-AddNodeIds.ts",
+    "unit": "AddNodeIds1658930531669.down",
+    "lines": 13,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "foreach",
+    "detail": "forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x of xs)` and await inside"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/commands/apps/git-project/pull.command.ts",
+    "unit": "registerAppsGitProjectPullCommand",
+    "lines": 49,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "property-assign",
+    "detail": "assignment into `process`, which this function does not own; records it owns are updated in place"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/commands/deployment/template/attach.command.ts",
+    "unit": "registerDeploymentTemplateAttachCommand",
+    "lines": 52,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "property-assign",
+    "detail": "assignment into `process`, which this function does not own; records it owns are updated in place"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "file": "apps/web/app/(manage)/manage/cohorts/actions.ts",
+    "unit": "createCohortAction",
+    "lines": 32,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "status": "translate-fail",
+    "detail": "actions.ts:148: callee write was not translated"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "file": "packages/cli/src/commands/emulator/session/delete.command.ts",
+    "unit": "registerEmulatorSessionDeleteCommand",
+    "lines": 40,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "status": "lint-out",
+    "rule": "property-assign",
+    "detail": "assignment into `process`, which this function does not own; records it owns are updated in place"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/vault/infrastructure/persistence/prisma-vault.repository.ts",
+    "unit": "PrismaVaultRepository.claimPoolSlotAndCreateSecret",
+    "lines": 71,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/documents/providers/zero-entropy/zero-entropy.service.ts",
+    "unit": "ZeroEntropyService.addDocuments",
+    "lines": 69,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "loop-form",
+    "detail": "for needs the step `i++`, `i += k`, `i--` or `i -= k` (k a positive literal), in the direction of the condition"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/system-prompts/infrastructure/persistence/prisma/admin/publish-system-prompt-version.prisma.adapter.ts",
+    "unit": "PublishSystemPromptVersionPrismaAdapter.execute",
+    "lines": 43,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "tools/proof-host/src/settings-sweep-intro-failure-scenarios.ts",
+    "unit": "everyWayTheFolderCannotBeMadeNamesItselfAndTheNextPressMakesIt",
+    "lines": 66,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translate-fail",
+    "detail": "settings-sweep-intro-failure-scenarios.ts:168: a path ends without a return"
+   }
+  ],
+  "Promise.all": [
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "adapters/claude-cli/src/sessions/lifecycle-ports.ts",
+    "unit": "WatchFinishingAgentInClaudeCLI.watch",
+    "lines": 29,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/promo-app",
+    "file": "src/views/DStore.tsx",
+    "unit": "loadBrandPage",
+    "lines": 37,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
+    "status": "lint-out",
+    "rule": "unsupported-syntax",
+    "detail": "statement TypeAliasDeclaration is outside the subset"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/workspaces/application/use-cases/list-workspaces.use-case.ts",
+    "unit": "ListWorkspacesUseCase.execute",
+    "lines": 41,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translate-fail",
+    "detail": "list-workspaces.use-case.ts:85: an effect inside a callback; the order of its world transitions is not defined"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "apps/desktop/core-host/src/control/setting-ports.ts",
+    "unit": "settingPortsOver",
+    "lines": 22,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "async",
+    "detail": "an async unit is called without await"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/conversations/src/launch/quit-sequence.ts",
+    "unit": "runQuitSequence",
+    "lines": 6,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "async",
+    "detail": "an async unit is called without await"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-core/src/prompts/few_shot.ts",
+    "unit": "FewShotChatMessagePromptTemplate.format",
+    "lines": 14,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "translated",
+    "planted": 2,
+    "witnessed": 2,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/cli/src/PublicApi/index.ts",
+    "unit": "loadPublicApiVersions",
+    "lines": 20,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "global-read",
+    "detail": "`__dirname` cannot be resolved"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/providers/langchain-cloudflare/src/vectorstores.ts",
+    "unit": "CloudflareVectorizeStore.delete",
+    "lines": 8,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "ts-strict",
+    "detail": "TS2585: 'Promise' only refers to a type, but is being used as a value here. Do you need to change your target library? Try changing the 'lib"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/knowledge/services/knowledge-document.service.ts",
+    "unit": "KnowledgeDocumentService.createKnowledgeFileForMessage",
+    "lines": 61,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "loose-equality",
+    "detail": "use === and !=="
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "file": "lib/read-models/linkedin/campaign.ts",
+    "unit": "campaignPane",
+    "lines": 102,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "status": "lint-out",
+    "rule": "async",
+    "detail": "an async unit is called without await"
+   }
+  ]
+ }
+}

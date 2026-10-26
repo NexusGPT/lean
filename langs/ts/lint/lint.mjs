@@ -185,8 +185,8 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (!s.body) return;
         for (const p of s.parameters) { if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset'); checkType(tOf(p.name), p); }
         callbackStack.push(s);
-        const savedLoop = loopDepth, savedSwitch = switchDepth; loopDepth = 0; switchDepth = 0;
-        try { const prev = current; stmts(s.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; }
+        const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
+        try { const prev = current; stmts(s.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; forEachDepth = savedEach; }
         return;
       }
       case K.ClassDeclaration: return v(s, 'class', 'classes are outside the subset');
@@ -369,6 +369,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const fnHere = callbackStack.length ? callbackStack[callbackStack.length - 1] : currentFn;
     if (!fnHere || !fnHere.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return v(e, 'async', '`await` outside an async function');
     const inner = ts.isParenthesizedExpression(e.expression) ? e.expression.expression : e.expression;
+    if (ts.isCallExpression(inner) && ts.isPropertyAccessExpression(inner.expression) && ARRAY_METHODS.has(inner.expression.name.text) && nonNull(tOf(inner.expression.expression)).every((t) => isArrayLike(checker, t))) return call(inner);
     if (!ts.isCallExpression(inner)) return expr(inner); // awaiting a held promise: a transition of the world on that value
     // the awaited call is an external (or a local async unit): its arguments are checked, the call itself is uninterpreted
     inner.arguments.forEach((a) => ts.isSpreadElement(a) ? v(a, 'spread', 'spread arguments are outside the subset') : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
@@ -535,19 +536,43 @@ export function lintFile(file, ranges = null, opts = {}) {
         return argsOf(e);
       }
       if (parts.every((t) => isArrayLike(checker, t)) && ARRAY_METHODS.has(name)) {
-        if (name === 'map' && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0]) && e.arguments[0].parameters.length === 1 && ts.isIdentifier(e.arguments[0].parameters[0].name) && underPromiseAll(e)) {
+        if (['map', 'filter', 'find', 'findIndex', 'some', 'every', 'flatMap', 'reduce'].includes(name)) {
           const cb = e.arguments[0];
-          checkType(tOf(cb.parameters[0].name), cb.parameters[0]);
-          loopDepth++; forEachDepth++;
-          try { if (ts.isBlock(cb.body)) stmts(cb.body.statements); else expr(cb.body); } finally { loopDepth--; forEachDepth--; }
-          return;
+          const sig = cb && checker.getSignaturesOfType(tOf(cb), ts.SignatureKind.Call)[0];
+          const asyncCb = !!(cb?.modifiers?.some((m) => m.kind === K.AsyncKeyword) || (sig && nonNull(sig.getReturnType()).some((t) => isPromiseT(t) || t.symbol?.name === 'PromiseLike')));
+          if (asyncCb && ['filter', 'find', 'findIndex', 'some', 'every'].includes(name)) return v(e, 'async-predicate', `${name} does not await its predicate: a Promise is truthy even when it resolves false; await values with Promise.all(map(...)), then use a synchronous predicate`);
+          if (asyncCb && name === 'reduce') return v(e, 'async-reduce', 'reduce passes a Promise accumulator without waiting; use a for-of loop with await');
+          if (asyncCb && !underPromiseAll(e)) return v(e, 'async-callback', `${name} does not await its callbacks; use await Promise.all(xs.${name}(...))`);
+          if (e.arguments.length > (name === 'reduce' ? 2 : 1)) return v(e, 'callback-form', 'a callback thisArg is outside the subset; capture the receiver in an arrow');
+          if (cb && ts.isIdentifier(cb) && callbackNeedsLoop(cb)) return v(cb, 'callback-form', 'an effectful array callback needs an inline arrow so its world transitions are read in array order');
+          if (cb && ts.isArrowFunction(cb)) {
+            if (cb.type && ts.isTypePredicateNode(cb.type) && callbackNeedsLoop(cb)) return v(cb, 'callback-result', 'an effectful type-predicate callback needs an explicit for-of loop with a type guard');
+            if (sig.getReturnType().symbol?.name === 'PromiseLike') return v(cb, 'callback-result', 'a thenable callback needs an async arrow with an explicit await');
+            if (name === 'flatMap' && !asyncCb && callbackNeedsLoop(cb)) { const parts = nonNull(sig.getReturnType()); if (parts.some((t) => isArrayLike(checker, t)) && !parts.every((t) => isArrayLike(checker, t))) return v(cb, 'callback-result', 'an effectful flatMap callback returns either arrays on every path or scalar values on every path; use a for-of loop for mixed results'); }
+            if (callbackNeedsLoop(cb) && (cb.parameters.length < (name === 'reduce' ? 2 : 1) || cb.parameters.length > 2 || cb.parameters.some((p) => !ts.isIdentifier(p.name)))) return v(cb, 'callback-form', 'an effectful array callback takes plain element/index names, or accumulator/element names for reduce');
+            if (asyncCb && !orderedAsyncCallback(cb)) return v(cb, 'promise-all-order', 'Promise.all does not order work after await; use a for-of loop with await for ordered effects');
+            checkCallbackControl(cb);
+            if (underPromiseAll(e) && ['map', 'flatMap'].includes(name)) {
+              if (cb.parameters.length < 1 || cb.parameters.length > 2 || cb.parameters.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken)) return v(cb, 'callback-form', 'Promise.all callback loops take one element name and an optional index name');
+              expr(recv);
+              callbackStack.push(cb);
+              const savedLoop = loopDepth, savedEach = forEachDepth; loopDepth = 0; forEachDepth = 0;
+              try { for (const p of cb.parameters) checkType(tOf(p.name), p); if (ts.isBlock(cb.body)) stmts(cb.body.statements); else expr(cb.body); }
+              finally { callbackStack.pop(); loopDepth = savedLoop; forEachDepth = savedEach; }
+              return;
+            }
+          }
         }
         if (name === 'forEach') {
           // `xs.forEach((x) => body)` is a loop over xs: the body is checked as a loop body (an outer local may change)
           const cb = e.arguments[0]; const r0 = e.expression.expression; const rt0 = tOf(r0);
           const iterable = isArrayExpr(r0) || nonNull(rt0).every((t) => isSetT(t) || isMapT(t)) || nonNull(rt0).some(isAny);
-          if (e.arguments.length === 1 && ts.isArrowFunction(cb) && cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return v(e, 'foreach', 'forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x of xs)` and await inside');
+          if (e.arguments.length === 1 && ts.isArrowFunction(cb) && (cb.modifiers?.some((m) => m.kind === K.AsyncKeyword) || isPromiseT(checker.getSignatureFromDeclaration(cb).getReturnType()))) return v(e, 'foreach', 'forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x of xs)` and await inside');
           if (e.arguments.length === 1 && ts.isArrowFunction(cb) && cb.parameters.length === 1 && ts.isIdentifier(cb.parameters[0].name) && iterable) {
+            let use = e; while (use.parent && ts.isParenthesizedExpression(use.parent)) use = use.parent;
+            const outer = use.parent;
+            if (!(outer && (ts.isExpressionStatement(outer) || (ts.isArrowFunction(outer) && outer.body === use && outer.parent && ts.isCallExpression(outer.parent) && ts.isPropertyAccessExpression(outer.parent.expression) && outer.parent.expression.name.text === 'forEach')))) return v(e, 'foreach', 'forEach is read as a statement; put it in a block before returning a value');
+            expr(recv); checkCallbackControl(cb);
             checkType(tOf(cb.parameters[0].name), cb.parameters[0]);
             loopDepth++; forEachDepth++;
             try { if (ts.isBlock(cb.body)) stmts(cb.body.statements); else exprStmt(cb.body); } finally { loopDepth--; forEachDepth--; }
@@ -585,7 +610,87 @@ export function lintFile(file, ranges = null, opts = {}) {
     return v(e, 'unsupported-call', 'calls through computed callees are outside the subset');
   }
   // `.map(cb)` directly under an awaited `Promise.all(...)`: the callback is a loop body (its returns are collected values)
-  const underPromiseAll = (call) => { let p = call.parent; while (p && ts.isParenthesizedExpression(p)) p = p.parent; if (!(p && ts.isCallExpression(p) && p.arguments[0] === call && ts.isPropertyAccessExpression(p.expression) && p.expression.name.text === 'all' && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Promise')) return false; let q = p.parent; while (q && ts.isParenthesizedExpression(q)) q = q.parent; return !!(q && ts.isAwaitExpression(q)); };
+  const underPromiseAll = (call) => { let arg = call; while (arg.parent && ts.isParenthesizedExpression(arg.parent)) arg = arg.parent; const p = arg.parent; if (!(p && ts.isCallExpression(p) && p.arguments.length === 1 && p.arguments[0] === arg && ts.isPropertyAccessExpression(p.expression) && p.expression.name.text === 'all' && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Promise')) return false; let q = p.parent; while (q && ts.isParenthesizedExpression(q)) q = q.parent; return !!(q && ts.isAwaitExpression(q)); };
+  // named effectful callbacks must enter the loop reading through an inline arrow
+  function callbackNeedsLoop(cb, seen = new Set()) {
+    if (seen.has(cb)) return false;
+    seen.add(cb);
+    if (ts.isIdentifier(cb)) {
+      const d = declOf(cb).decl;
+      if (d && ts.isVariableDeclaration(d) && d.initializer) return callbackNeedsLoop(d.initializer, seen);
+      if (d && ts.isFunctionDeclaration(d) && d.body) return callbackNeedsLoop(d, seen);
+      return true;
+    }
+    let found = false;
+    const w = (n) => {
+      if (found) return;
+      if (ts.isFunctionLike(n) && n !== cb) return;
+      if (ts.isAwaitExpression(n) || ts.isNewExpression(n) || (ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword)) { found = true; return; }
+      if (ts.isCallExpression(n)) {
+        const f = n.expression;
+        if (ts.isIdentifier(f)) {
+          const o = declOf(f);
+          if (o.kind === 'unit' || o.kind === 'local') found = callbackNeedsLoop(f, seen);
+          else if (!(o.kind === 'global' && ['String', 'Number', 'Boolean', 'parseInt', 'parseFloat', 'isNaN', 'isFinite'].includes(f.text))) found = true;
+        } else if (ts.isPropertyAccessExpression(f)) {
+          const r = f.expression, t = nonNull(tOf(r));
+          const pureGlobal = ts.isIdentifier(r) && ['Math', 'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean'].includes(r.text) && declOf(r).kind === 'global' && !(r.text === 'Math' && f.name.text === 'random');
+          if (!pureGlobal && !t.every((x) => isArrayLike(checker, x) || isStr(x) || isNum(x) || isSetT(x) || isMapT(x))) found = true;
+          if (['map', 'filter', 'find', 'findIndex', 'some', 'every', 'flatMap', 'reduce', 'forEach'].includes(f.name.text) && n.arguments[0]) found ||= callbackNeedsLoop(n.arguments[0], seen);
+        } else found = true;
+      }
+      ts.forEachChild(n, w);
+    };
+    w(cb); return found;
+  }
+  // a single suspension with a pure local continuation has no inter-iteration effect ordering to invent
+  function orderedAsyncCallback(cb, seen = new Set()) {
+    if (seen.has(cb)) return false;
+    seen.add(cb);
+    const awaits = []; let bad = false;
+    const collect = (n) => {
+      if (ts.isFunctionLike(n)) return;
+      if (ts.isAwaitExpression(n)) awaits.push(n);
+      if (ts.isCallExpression(n)) {
+        const f = n.expression, id = ts.isPropertyAccessExpression(f) ? f.name : f;
+        let d = checker.getSymbolAtLocation(id)?.valueDeclaration;
+        if (d && ts.isVariableDeclaration(d)) d = d.initializer;
+        if (d && d.getSourceFile() === sf && ts.isFunctionLike(d) && d.body && d.modifiers?.some((m) => m.kind === K.AsyncKeyword) && !orderedAsyncCallback(d, new Set(seen))) bad = true;
+      }
+      ts.forEachChild(n, collect);
+    };
+    collect(cb.body);
+    if (bad) return false;
+    if (!awaits.length) return true;
+    if (awaits.length !== 1) return false;
+    const aw = awaits[0];
+    for (let p = aw.parent; p && p !== cb; p = p.parent) if (ts.isIterationStatement(p, false) || ts.isTryStatement(p)) return false;
+    const w = (n) => {
+      if (ts.isFunctionLike(n)) { if (n.end > aw.end) bad = true; return; }
+      if (n.end > aw.end) {
+        if (ts.isCallExpression(n)) {
+          const primitive = ts.isIdentifier(n.expression) && ['String', 'Number', 'Boolean'].includes(n.expression.text) && declOf(n.expression).kind === 'global' && n.arguments.every((a) => nonNull(tOf(a)).every(isPrim));
+          if (!primitive) bad = true;
+        }
+        if (ts.isNewExpression(n) || n.kind === K.ThisKeyword || ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isDeleteExpression(n) || ts.isThrowStatement(n)) bad = true;
+        if (ts.isIdentifier(n) && n.pos >= aw.end && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n)) {
+          const o = declOf(n); const d = o.decl;
+          if (o.kind === 'local' && d && !(d.pos >= cb.pos && d.end <= cb.end) && !(ts.isVariableDeclaration(d) && (ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && nonNull(tOf(n)).every(isPrim))) bad = true;
+        }
+      }
+      ts.forEachChild(n, w);
+    };
+    w(cb.body); return !bad;
+  }
+  function checkCallbackControl(cb) {
+    const w = (n, depth = 0) => {
+      if (ts.isFunctionLike(n)) return;
+      if (ts.isTryStatement(n) || ts.isThrowStatement(n) || (ts.isReturnStatement(n) && depth > 0)) v(n, 'callback-control', 'try, throw or a return from an inner loop in a callback needs an explicit for-of loop');
+      const next = depth + (ts.isIterationStatement(n, false) ? 1 : 0);
+      ts.forEachChild(n, (c) => w(c, next));
+    };
+    w(cb.body);
+  }
   function callback(a, arity) {
     if (ts.isIdentifier(a)) {
       // a named callback: a same-file function (not async, not a method) or a local function value
@@ -600,11 +705,11 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (arity !== null && (a.parameters.length > arity || a.parameters.some((p) => p.initializer || p.dotDotDotToken || p.questionToken))) v(a, 'callback-form', `the callback takes at most ${arity} plain parameter(s)`);
     for (const p of a.parameters) { const names = []; bindingNames(p.name, names); checkType(tOf(p.name), p); }
     callbackStack.push(a);
-    const savedLoop = loopDepth, savedSwitch = switchDepth; loopDepth = 0; switchDepth = 0;
+    const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
     try {
       if (ts.isBlock(a.body)) { const prev = current; stmts(a.body.statements); current = prev; }
       else expr(a.body);
-    } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; }
+    } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; forEachDepth = savedEach; }
   }
   // JSX: an element is a value (a tag, a record of attributes, a list of children). A tag names a component or an
   // intrinsic element; a handler attribute is a callback value keyed by its text; every other attribute and every child

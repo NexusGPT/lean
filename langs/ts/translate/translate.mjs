@@ -153,7 +153,7 @@ export function translate(file, fnName, opts = {}) {
   // try/catch, exact: an effect inside the body may fault; the fault is a flag on the world, checked after each statement
   // of the body that makes a transition (or throws); the catch path binds the fault value and runs with the flag cleared.
   // A try without a catch, or whose body loops over an effect, stays an opaque block.
-  const loopsOverEffect = (node) => { let f = false; const w = (x) => { if (f || ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return; if ((ts.isForOfStatement(x) || ts.isForStatement(x) || ts.isWhileStatement(x) || ts.isForInStatement(x)) && containsEffect(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const loopsOverEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x)) && !isLoopCallback(x)) return; if ((isLoopCallback(x) || ts.isForOfStatement(x) || ts.isForStatement(x) || ts.isWhileStatement(x) || ts.isForInStatement(x)) && containsEffect(x)) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const exactTry = (x) => core && ts.isTryStatement(x) && !!x.catchClause && !loopsOverEffect(x.tryBlock) && !(x.catchClause && loopsOverEffect(x.catchClause.block));
   const isOpaqueStmt = (x) => (ts.isTryStatement(x) && !exactTry(x)) || (ts.isWhileStatement(x) && !hintsOf(sf, x).decreases);
   // `xs.forEach((x) => body)` as a statement: a loop over xs whose body is the callback's body, each iteration's transitions
@@ -168,29 +168,36 @@ export function translate(file, fnName, opts = {}) {
     if (!(isArrayLike(checker, recvT) || isSetT(recvT) || isMapT(recvT) || isAny(recvT))) return null;
     return { call: e, cb };
   };
-  // `await Promise.all(xs.map((x) => body))`, sync or async callback: a loop over xs whose iterations happen in array order,
-  // each one's value collected into a sequence (the stated reading of Promise.all over a map: the transitions start in order)
+  // an inline array callback is a loop body; its return supplies the method's result
+  const callbackMethods = new Set(['map', 'filter', 'find', 'findIndex', 'some', 'every', 'flatMap', 'reduce']);
+  const arrayCallbackShape = (e0) => {
+    let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || !callbackMethods.has(e.expression.name.text)) return null;
+    const method = e.expression.name.text, cb = e.arguments[0];
+    if (!cb || !ts.isArrowFunction(cb) || cb.parameters.length < (method === 'reduce' ? 2 : 1) || cb.parameters.length > 2 || cb.parameters.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken)) return null;
+    if (e.arguments.length !== (method === 'reduce' ? 2 : 1) || !isArrayLike(checker, baseOf(typeOf(e.expression.expression)))) return null;
+    return { call: e, cb, method };
+  };
+  // Promise.all collects results by index; the lint excludes observable work after suspension
   const promiseAllMapShape = (e0) => {
     let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (!ts.isAwaitExpression(e)) return null; e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.expression.name.text !== 'all' || !ts.isIdentifier(e.expression.expression) || e.expression.expression.text !== 'Promise' || e.arguments.length !== 1) return null;
-    let m = e.arguments[0]; while (ts.isParenthesizedExpression(m)) m = m.expression;
-    if (!ts.isCallExpression(m) || !ts.isPropertyAccessExpression(m.expression) || m.expression.name.text !== 'map' || m.arguments.length !== 1) return null;
-    const cb = m.arguments[0];
-    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name)) return null;
-    let recvT; try { recvT = baseOf(typeOf(m.expression.expression)); } catch { return null; }
-    if (!(isArrayLike(checker, recvT) || isAny(recvT))) return null;
-    return { call: m, cb, all: e };
+    const shape = arrayCallbackShape(e.arguments[0]);
+    if (!shape || !['map', 'flatMap'].includes(shape.method)) return null;
+    // flatMap does not flatten a promise; its resolved array remains one collected element
+    const rt = checker.getSignatureFromDeclaration(shape.cb).getReturnType();
+    if (shape.method === 'flatMap' && !isPromiseT(rt)) return null;
+    return { ...shape, method: 'map', all: e };
   };
-  const isLoopCallback = (x) => !!(x.parent && ts.isCallExpression(x.parent) && x.parent.arguments[0] === x && x.parent.parent && (forEachShape(x.parent.parent) || (() => { let p = x.parent.parent; while (p && !ts.isStatement(p)) { if (promiseAllMapShape(p)) return true; p = p.parent; } return false; })()));
+  const isLoopCallback = (x) => !!(x && x.parent && ts.isCallExpression(x.parent) && x.parent.arguments[0] === x && (arrayCallbackShape(x.parent) || forEachShape({ kind: K.ExpressionStatement, expression: x.parent })));
   function fakeForOf(st, fe, collect = null) {
-    const { call, cb } = fe; const name = cb.parameters[0].name;
-    if (collect) { const f = fakeForOf(st, fe); f.__collect = collect; return f; }
+    const { call, cb } = fe; const name = cb.parameters[fe.method === 'reduce' ? 1 : 0].name;
     const body = ts.isBlock(cb.body) ? cb.body : { kind: collect ? K.ReturnStatement : K.ExpressionStatement, expression: cb.body, parent: cb, pos: cb.body.pos, end: cb.body.end, getStart: () => cb.body.getStart(sf), getEnd: () => cb.body.getEnd(), getText: () => cb.body.getText(sf), getFullStart: () => cb.body.getFullStart() };
     const decl = { kind: K.VariableDeclaration, name, pos: name.pos, end: name.end, parent: null };
     const list = { kind: K.VariableDeclarationList, declarations: [decl], flags: ts.NodeFlags.Const, pos: name.pos, end: name.end, parent: null };
     decl.parent = list;
-    const fake = { kind: K.ForOfStatement, expression: call.expression.expression, initializer: list, statement: body, parent: st.parent, pos: st.pos, end: st.end, getStart: () => st.getStart(sf), getEnd: () => st.getEnd(), getText: () => st.getText(sf), getFullStart: () => st.getFullStart(), __forEach: true };
+    const fake = { kind: K.ForOfStatement, expression: call.expression.expression, initializer: list, statement: body, parent: st.parent, pos: st.pos, end: st.end, getStart: () => st.getStart(sf), getEnd: () => st.getEnd(), getText: () => st.getText(sf), getFullStart: () => st.getFullStart(), __forEach: true, __collect: collect, __callback: fe };
     list.parent = fake;
     return fake;
   }
@@ -786,6 +793,8 @@ export function translate(file, fnName, opts = {}) {
     return expr(e);
   }
   function awaitExpr(n) {
+    const shape = promiseAllMapShape(n);
+    if (shape) return callbackValue(n, shape);
     let inner = n.expression; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
     if (ts.isCallExpression(inner) && ts.isPropertyAccessExpression(inner.expression) && ts.isIdentifier(inner.expression.expression) && inner.expression.expression.text === 'Promise' && inner.expression.name.text === 'all' && inner.arguments.length === 1) {
       let arr = inner.arguments[0]; while (ts.isParenthesizedExpression(arr)) arr = arr.expression;
@@ -1395,6 +1404,8 @@ export function translate(file, fnName, opts = {}) {
       }
     }
     if (isArrayLike(checker, base)) {
+      const shape = arrayCallbackShape(n);
+      if (shape && containsEffect(shape.cb.body)) return callbackValue(n, shape);
       const A = () => dtype(elemType(recv), n);
       const R = expr(recv);
       const cb0 = n.arguments[0];
@@ -1504,8 +1515,8 @@ export function translate(file, fnName, opts = {}) {
   const insideNode = (decl, node) => decl.pos >= node.pos && decl.end <= node.end;
   function assignedOutside(node) {
     const names = [];
-    if (node.__collect) names.push({ name: node.__collect.name, sym: node.__collect.sym, node: node.__collect.node }); // the collector of a Promise.all over a map
     if (unitEffectful() && containsEffect(node)) names.push({ name: WORLD, sym: null, node, synthetic: true, d: 'World' });
+    if (node.__collect) names.push(node.__collect); // the callback's result state
     const note = (id) => {
       if (names.some((m) => m.name === id.text)) return;
       const sym = checker.getSymbolAtLocation(id);
@@ -1813,7 +1824,7 @@ export function translate(file, fnName, opts = {}) {
     const init = d.initializer;
     if (!init || !ts.isCallExpression(init) || !ts.isPropertyAccessExpression(init.expression) || init.expression.name.text !== 'filter') return null;
     const cb = init.arguments[0];
-    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name)) return null;
+    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || containsEffect(cb.body)) return null;
     return cb;
   }
   function elementFacts(s) {
@@ -1901,24 +1912,15 @@ export function translate(file, fnName, opts = {}) {
       case K.EmptyStatement: return more();
       case K.ReturnStatement: {
         const top = loopCtx[loopCtx.length - 1];
-        if (top && top.forEach && top.collect) return capture(() => { const v = s.expression ? outerParens(expr(s.expression, top.collect.elT)) : 'Unit'; const c = dn(top.collect.name); return `var ${c} := ${c} + [${v}];\n${top.cont()}`; }); // a return inside a collected map appends the value
+        if (top && top.forEach && top.collect) return callbackStep(s.expression, top); // a callback return supplies the next result state
         if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
         return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & (TF.Void | TF.Undefined) ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(wrapRet(code)); });
       }
       case K.ThrowStatement: { const t = tryOf(s); if (t) return capture(() => catchPath(t, u, expr(s.expression, anyTarget()))); return capture(() => { const R = dtype(retType(u), s); const code = `${external(`throw_${mangle(R)}`, [anyType()], R)}(${expr(s.expression, anyTarget())})`; return retIn(wrapRet(code)); }); }
       case K.VariableStatement: {
         const d0 = s.declarationList.declarations[0];
-        const pam = s.declarationList.declarations.length === 1 && ts.isIdentifier(d0.name) && d0.initializer ? promiseAllMapShape(d0.initializer) : null;
-        if (pam) {
-          // the collector starts empty; the loop appends each iteration's value; the rest of the unit sees the sequence
-          const t = typeOf(d0.name); const D = isAny(t) ? anyType() : dtype(t, d0);
-          const elT = (() => { const aw = checker.getAwaitedType ? checker.getAwaitedType(typeOf(pam.all.expression)) : null; const base = aw ? baseOf(aw) : null; return base && isArrayLike(checker, base) ? checker.getTypeArguments(base)[0] : null; })();
-          const sym = checker.getSymbolAtLocation(d0.name);
-          const fake = fakeForOf(s, pam, { name: d0.name.text, sym, node: d0.name, elT });
-          let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; });
-          const bodyForm = ts.isBlock(pam.cb.body) ? body : body; // an expression body is a return of that expression (handled by the fake statement)
-          return `var ${dn(d0.name.text)}: ${D} := [];\n${h.trim() ? h.trim() + '\n' : ''}${bodyForm}`;
-        }
+        const pam = s.declarationList.declarations.length === 1 && ts.isIdentifier(d0.name) && d0.initializer ? (promiseAllMapShape(d0.initializer) || arrayCallbackShape(d0.initializer)) : null;
+        if (pam && !callbackShadows(pam.cb, d0.name.text) && (pam.all || containsEffect(pam.cb.body)) && dtype(typeOf(d0.name), d0) === dtype(pam.all ? checker.getAwaitedType(typeOf(pam.all)) : typeOf(pam.call), d0)) return capture(() => callbackLoop(s, pam, d0.name.text, typeOf(d0.name), rest, fin, u));
         const out = [];
         for (const d of s.declarationList.declarations) {
           out.push(capture(() => {
@@ -1938,8 +1940,8 @@ export function translate(file, fnName, opts = {}) {
         return tryOf(s) && containsEffect(s) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
       }
       case K.ExpressionStatement: {
-        const pam0 = promiseAllMapShape(s.expression);
-        if (pam0) { const fake = fakeForOf(s, pam0); let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body; }
+        const pam0 = promiseAllMapShape(s.expression) || arrayCallbackShape(s.expression);
+        if (pam0 && (pam0.all || containsEffect(pam0.cb.body))) return capture(() => { callbackValue(s.expression, pam0); return more0(); });
         const fe = forEachShape(s);
         if (fe) { const fake = fakeForOf(s, fe); let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body; }
         const line = capture(() => {
@@ -2036,6 +2038,47 @@ export function translate(file, fnName, opts = {}) {
     if (!returns) return `${line}\n${tr(rest, fin, u)}`;
     return `${line}\nif retb.Some? then\n${indentBlock(retIn(wrapRet('retb.value')))}\nelse\n${indentBlock(wrapLet(tr(rest, fin, u)))}`;
   }
+  // a callback local may shadow the variable that receives the method's result
+  function callbackShadows(cb, name) {
+    let found = false;
+    const w = (n) => { if (found) return; if ((ts.isParameter(n) || ts.isVariableDeclaration(n) || ts.isBindingElement(n) || ts.isFunctionDeclaration(n)) && n.name && ts.isIdentifier(n.name) && n.name.text === name) { found = true; return; } ts.forEachChild(n, w); };
+    w(cb); return found;
+  }
+  function callbackStep(value, top) {
+    return capture(() => {
+      const c = top.collect, name = dn(c.name), method = c.method;
+      const predicate = ['filter', 'find', 'findIndex', 'some', 'every'].includes(method);
+      const code = value ? outerParens(predicate ? truthy(value) : expr(value, c.valueType)) : (predicate ? 'false' : c.valueD === 'Unit' ? 'Unit' : 'None');
+      if (method === 'map' || method === 'flatMap') return `var ${name}: ${c.d} := ${name} + ${method === 'map' || !c.flatSequence ? `[${code}]` : code};\n${top.cont()}`;
+      if (method === 'reduce') return `var ${name} := ${code};\n${top.cont()}`;
+      const hit = method === 'every' ? `!(${code})` : code;
+      const result = method === 'filter' ? `${name} + [${c.element}]` : method === 'find' ? `Some(${c.element})` : method === 'findIndex' ? (real ? `(${c.index} as real)` : c.index) : method === 'some' ? 'true' : 'false';
+      return `if ${hit} then\n${indentBlock(wrapLet(`var ${name} := ${result};\n${method === 'filter' ? top.cont() : top.brk()}`))}\nelse\n${indentBlock(top.cont())}`;
+    });
+  }
+  function callbackLoop(node, shape, name, resultType, rest, fin, u) {
+    const D = dtype(resultType, node), method = shape.method;
+    const rt = checker.getSignatureFromDeclaration(shape.cb).getReturnType();
+    const valueType = shape.all && checker.getAwaitedType ? checker.getAwaitedType(rt) : rt;
+    const valueD = dtype(valueType, shape.cb);
+    const collect = { name, node, sym: null, synthetic: true, d: D, method, valueType, valueD, flatSequence: isArrayLike(checker, baseOf(valueType)) };
+    const fake = fakeForOf(shape.call, shape, collect);
+    if (method === 'find') usesOption = true;
+    // the receiver is evaluated before reduce's initial value
+    const receiver = outerParens(expr(shape.call.expression.expression));
+    let init = ['map', 'filter', 'flatMap'].includes(method) ? '[]' : method === 'find' ? 'None' : method === 'findIndex' ? (real ? '-1.0' : '-1') : method === 'every' ? 'true' : 'false';
+    if (method === 'reduce') init = outerParens(expr(shape.call.arguments[1], resultType));
+    fake.__source = receiver;
+    let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; });
+    return `var ${dn(name)}: ${D} := ${init};\n${h.trim() ? h.trim() + '\n' : ''}${body}`;
+  }
+  function callbackValue(node, shape) {
+    if (!core) fail(node, 'effectful callbacks need --core');
+    const resultType = shape.all ? checker.getAwaitedType(typeOf(shape.all)) : typeOf(shape.call);
+    const name = `cb${tempCount++}_`;
+    const body = capture(() => callbackLoop(node, shape, name, resultType, [], () => `(${WORLD}, ${name})`, currentUnit));
+    return hoist(wrapLet(body), dtype(resultType, node));
+  }
   function coreLoop(s, rest, fin, u) {
     const id = loopCount++;
     const returns = !s.__forEach && containsReturn(s); // a return inside a forEach callback ends one step, never the function
@@ -2081,17 +2124,19 @@ export function translate(file, fnName, opts = {}) {
       else if (itT.flags & TF.StringLike) { T = 'string'; src = `${helper('Map', ['char', 'string'])}(${expr(s.expression)}, ((c: char) => [c]))`; }
       else if (isSetT(itT)) { T = dtype(checker.getTypeArguments(itT)[0], s); src = seqOf(s.expression); }
       else if (isMapT(itT)) { const [kt, vt] = checker.getTypeArguments(itT); const Kd = dtype(kt, s), Vd = dtype(vt, s); T = `(${Kd}, ${Vd})`; src = `${external('map_entries', [`map<${Kd}, ${Vd}>`], `seq<(${Kd}, ${Vd})>`)}(${expr(s.expression)})`; }
-      else { T = dtype(typeOf(x), x); src = outerParens(expr(s.expression)); }
+      else { T = dtype(typeOf(x), x); src = s.__source ?? outerParens(expr(s.expression)); }
       const sq = `seq${id}`, ix = `idx${id}`;
       lead = [`${sq}: seq<${T}>`, `${ix}: int`];
       leadArgsNext = [sq, `${ix} + 1`];
-      leadArgsFirst = [src, '0'];
+      leadArgsFirst = [s.__source ?? src, '0'];
       requiresL.push(`0 <= ${ix} <= |${sq}|`);
       const cb = filterProvenance(s.expression);
       if (cb) requiresL.push(`forall k :: 0 <= k < |${sq}| ==> ${lambda(cb, 1)}(${sq}[k])`);
       exit = `${ix} >= |${sq}|`;
       bind = ts.isIdentifier(x) ? `var ${dn(x.text)}: ${T} := ${sq}[${ix}];\n` : destructure(x, `${sq}[${ix}]`, typeOf(x)).join('\n') + '\n';
       decreases = `|${sq}| - ${ix}`;
+      if (s.__callback?.method === 'reduce') bind += `var ${dn(s.__callback.cb.parameters[0].name.text)} := ${dn(s.__collect.name)};\n`;
+      else if (s.__callback?.cb.parameters.length === 2) bind += `var ${dn(s.__callback.cb.parameters[1].name.text)} := ${real ? `(${ix} as real)` : ix};\n`;
       factsIn = elementFacts(s);
     } else if (isFor) {
       lp = forParts(s);
@@ -2110,9 +2155,9 @@ export function translate(file, fnName, opts = {}) {
     }
     const next = () => `${hn}(${[...leadArgsNext, ...constArgs, ...mNames].join(', ')})`;
     const exitVal = () => (returns ? tupleOf(['None', ...mNames]) : tupleOf(mNames));
-    loopCtx.push({ cont: next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ?? null, ret: (code) => (returns ? tupleOf([`Some(${code})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
+    loopCtx.push({ cont: next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ? { ...s.__collect, element: dn(s.initializer.declarations[0].name.text), index: `idx${id}` } : null, ret: (code) => (returns ? tupleOf([`Some(${code})`, ...mNames]) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
-    try { bodyE = tr(flatten(s.statement), next, u); } finally { loopCtx.pop(); }
+    try { bodyE = tr(flatten(s.statement), s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next, u); } finally { loopCtx.pop(); }
     const params = [...lead, ...constParams, ...stateParams];
     const selfArgs = [...lead.map((p) => p.split(':')[0]), ...constArgs, ...mNames];
     const callS = `${hn}(${selfArgs.join(', ')})`;
