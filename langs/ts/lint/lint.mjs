@@ -214,6 +214,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const t = tOf(n);
       checkType(t, n);
     }
+    if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name)) return callback(d.initializer, null); // a local function value: a pure lambda, called by name or passed as a callback
     expr(d.initializer);
   }
   function exprStmt(e) {
@@ -349,7 +350,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ThisKeyword: if (currentClass) return; return v(e, 'this', '`this` outside a class method');
       case K.SuperKeyword: return v(e, 'class', '`super` is outside the subset');
       case K.ClassExpression: return v(e, 'class', 'classes are outside the subset');
-      case K.FunctionExpression: case K.ArrowFunction: return v(e, 'function-value', 'function values are allowed only as callbacks of array methods');
+      case K.FunctionExpression: case K.ArrowFunction: return v(e, 'function-value', 'a function value lives in a local const, a record field or a callback position; here it is a bare expression');
       case K.NewExpression: {
         const n = e.expression.getText(sf);
         if (n === 'Set' || n === 'Map' || n === 'RegExp') return e.arguments?.forEach(expr);
@@ -378,6 +379,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (ts.isShorthandPropertyAssignment(p)) return checkIdent(p.name);
           if (ts.isPropertyAssignment(p)) {
             if (ts.isComputedPropertyName(p.name)) v(p, 'dynamic-key', 'computed property names are outside the subset');
+            if (ts.isArrowFunction(p.initializer)) return callback(p.initializer, null); // a handler in a record: a callback value
             return expr(p.initializer);
           }
           return v(p, 'unsupported-syntax', 'methods and accessors are outside the subset');
@@ -485,6 +487,13 @@ export function lintFile(file, ranges = null, opts = {}) {
     return v(e, 'unsupported-call', 'calls through computed callees are outside the subset');
   }
   function callback(a, arity) {
+    if (ts.isIdentifier(a)) {
+      // a named callback: a same-file function (not async, not a method) or a local function value
+      const o = declOf(a); checkIdent(a, true);
+      if (o.kind === 'unit') { const u = units.get(a.text); if (!u) return v(a, 'callback-form', 'a class method cannot be passed as a callback'); if (u.isAsync) return v(a, 'async', 'an async function cannot be a callback'); if (arity !== null && u.params.length > arity) return v(a, 'callback-form', `the callback takes at most ${arity} plain parameter(s)`); return; }
+      if (o.kind === 'local') return;
+      return v(a, 'callback-form', 'a callback is an arrow function, a same-file function or a local function value');
+    }
     if (!ts.isArrowFunction(a)) return v(a, 'callback-form', 'the callback must be an arrow function');
     if (a.modifiers?.some((m) => m.kind === K.AsyncKeyword)) v(a, 'async', 'async callbacks are outside the subset');
     if (arity !== null && (a.parameters.length > arity || a.parameters.some((p) => p.initializer || p.dotDotDotToken || p.questionToken))) v(a, 'callback-form', `the callback takes at most ${arity} plain parameter(s)`);

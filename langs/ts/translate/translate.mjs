@@ -76,6 +76,10 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) {
         const callee = fns.get(n.expression.text);
         if (callee && originOf(checker, n.expression, sf, null).kind === 'unit') collect(callee);
+      } else if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n)) {
+        // a same-file function named as a value (a callback): emitted like a callee
+        const callee = fns.get(n.text);
+        if (callee && originOf(checker, n, sf, null).kind === 'unit') collect(callee);
       }
       if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.expression.kind === K.ThisKeyword && u.cls) {
         const callee = fns.get(`${u.className}.${n.expression.name.text}`);
@@ -117,7 +121,9 @@ export function translate(file, fnName, opts = {}) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       if (o.kind === 'unit') return effectfulUnits.has(f.text);
       if (o.kind === 'global') return !PURE_RECEIVERS.has(f.text) && !['parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'String', 'Number', 'Boolean'].includes(f.text);
-      return true; // an import, a value from another file, a module const holding a function, a local function value
+      // a local bound to an arrow literal is a pure lambda (an effect inside it is refused by lambda()); any other local function value is opaque
+      if (o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer)) return false;
+      return true; // an import, a value from another file, a module const holding a function, a function-typed parameter
     }
     if (ts.isPropertyAccessExpression(f)) {
       const recv = f.expression;
@@ -709,6 +715,22 @@ export function translate(file, fnName, opts = {}) {
     return `${rname}(${fields.map(([k, v]) => `${dn(k)} := ${outerParens(v)}`).join(', ')})`;
   }
   function lambda(cb, arity, paramTypes = []) {
+    if (ts.isIdentifier(cb)) {
+      // a named callback: a same-file function or a local function value, applied through a lambda of the expected shape
+      const o = originOf(checker, cb, sf, currentUnit?.node ?? null);
+      const sg = checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call)[0];
+      if (!sg) fail(cb, `${cb.text} is not a function`);
+      const ps = sg.getParameters();
+      const names = ps.map((p, i) => `a${i}_: ${dtype(paramTypes[i] ?? checker.getTypeOfSymbolAtLocation(p, cb), cb)}`);
+      for (let i = ps.length; i < arity; i++) names.push(`uu${i}_: int`);
+      const argList = ps.map((_, i) => `a${i}_`).join(', ');
+      if (o.kind === 'unit' && fns.get(cb.text)) {
+        if (effectfulUnits.has(cb.text)) fail(cb, `${cb.text} has effects; it cannot be a callback`);
+        return `((${names.join(', ')}) => ${fname(cb.text)}(${[...fuelArg(fns.get(cb.text)), argList].filter(Boolean).join(', ')}))`;
+      }
+      if (o.kind === 'local') return `((${names.join(', ')}) => ${ident(cb)}(${argList}))`;
+      fail(cb, `${cb.text} is not a same-file function or a local function value`);
+    }
     if (containsEffect(cb.body)) fail(cb, 'an effect inside a callback; the order of its world transitions is not defined');
     const names = [];
     const lets = [];

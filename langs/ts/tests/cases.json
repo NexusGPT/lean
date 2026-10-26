@@ -244,5 +244,69 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "function_values",
+  "file": "function_values.ts",
+  "fn": "viaLocal",
+  "core": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ],
+    2
+   ],
+   [
+    [],
+    5
+   ],
+   [
+    [
+     -1
+    ],
+    0
+   ]
+  ]
+ },
+ {
+  "name": "function_values_named",
+  "file": "function_values.ts",
+  "fn": "viaNamed",
+  "core": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ]
+  ]
+ },
+ {
+  "name": "function_values_call",
+  "file": "function_values.ts",
+  "fn": "callLocal",
+  "core": true,
+  "samples": [
+   [
+    1,
+    2
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    -3,
+    3
+   ]
+  ]
  }
 ]
