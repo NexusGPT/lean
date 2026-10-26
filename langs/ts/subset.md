@@ -32,9 +32,11 @@ rules per package).
 | Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` and `do..while` with `// @decreases`; `xs.forEach((x) => body)` with a sync arrow (a `return` ends one step); `await Promise.all(xs.map((x) => body))`, a loop collecting each iteration's value, its transitions in array order | `for (let i = n - 1; i >= 0; i--)` |
 | Operators | `+ - * %`, `Math.floor(a / b)`, `Math.trunc(a / b)`, `Math.min`, `Math.max`, `Math.abs`, unary `-`, `! && \|\| ??`, `=== !==`, `< <= > >=`, `?:`, `typeof`, `instanceof`, `in`; `&&`, `\|\|` and `??` as values of any types (both sides lifted to the result type); a transition inside a `?:` branch or on the right of `&&`/`\|\|` happens only when that side runs | `Math.floor(n / 2)` |
 | Assignment | `=`, `+=`, `-=`, `*=`, `++`, `--` on a local; `x.f = v`, `x.f += v`, `x.f++`, `xs[i] = v`, `x.f.push(v)` on a local or on a PARAMETER (a mutated parameter is an output of the function, returned beside the result; a caller that passed a name takes the new value back); `this.f = v`, `this.f += v`, `this.f++` on a field of the receiver | `user.tags.push(t);` |
-| Arrays at work | `xs[i]`, `.length`, `[a, ...xs]`, `push`/`unshift` on a local, `includes`, `indexOf`, `slice`, `concat`, `join`, `flat`, `at`, `some`, `every`, `find`, `findIndex`, `map`, `filter`, `flatMap`, `reduce`, with index callbacks | `xs.map((x, i) => x * i)` |
+| Arrays at work | `xs[i]`, `.length`, `[...a, ...b]`, statement-form `push`/`unshift` with ordinary and spread arguments on a local or parameter (including record paths), `includes`, `indexOf`, `slice`, `concat`, `join`, `flat`, `at`, `some`, `every`, `find`, `findIndex`, `map`, `filter`, `flatMap`, `reduce`, with index callbacks | `xs.map((x, i) => x * i)` |
 | Strings | literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number; `a ** b` as an uninterpreted power of both sides | `n.toFixed(2)` |
+| Record rest | `{ a, ...rest } = r` builds a datatype of remaining fields; fixed scalar records, static keys, no defaults, nonempty remainder | `const { a: ignored, ...rest } = r` |
+| Numeric spread | `Math.min`/`Math.max` fold every argument; nonemptiness follows from a scalar argument, literal element, or a sole array identifier spread in a direct `?:` length guard | `xs.length > 0 ? Math.max(...xs) : 0` |
 | Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with `k` a literal union or a string on a dictionary; `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
 | Calls | top-level functions of the same file, recursion included (a fuel bounds the unfolding; the theorem holds for every fuel), default arguments, a function-typed parameter or local, a local lambda `const f = (x) => ...` | `double(double(x))` |
 | Functions | `function` declarations, `const f = (...) => ...`, `async` functions (the result type is unwrapped), generic functions, same-file functions named as callback values | `xs.map(double)` |
@@ -50,6 +52,7 @@ transition the parent did not make, or makes it with another argument or in anot
 | Part | Example | Modelled as |
 |---|---|---|
 | An imported function, a method of an imported object, a value from another file | `isRequiredUuid(id)` | `ext_isRequiredUuid(wld, id)` |
+| Spread to an outside callee, including opaque methods | `f(a, ...xs, b)` | `ext_f_seq(wld, [a] + xs + [b])`; a pure library external keeps the same sequence without the world |
 | `await f(x)`, `await p` | `await repo.find(id)` | `ext_await_Repo_find(wld, repo, id)` |
 | A method of a record, a class instance, an `any` | `date.getTime()` | `ext_Ext_Date_getTime(wld, date)` |
 | A method of a field of `this`, a method-call statement on any receiver | `this.items.push(x)` | a transition on the field's value |
@@ -117,10 +120,12 @@ one, never proved equal and never proved different (the execution lane decides i
 | `async`, `promise` | `await` outside an async function, `for await`, `new Promise`, a Promise-returning function that is not async | `new Promise(r => ...)` |
 | `generator` | generators | `function* g() {}` |
 | `union-type` | a union the translator cannot name (two different arrays) | `number[] \| string[]` |
-| `destructuring`, `param-form`, `uninitialised` | defaults in array patterns, rest patterns, rest parameters, a pattern with no initial value | `const [a = 0] = xs` |
+| `destructuring`, `param-form`, `uninitialised` | unsupported binding forms, rest parameters in nested declarations, a pattern with no initial value | `let { a };` |
+| `record-rest` | unknown, dictionary, class, accessor or reference-bearing shapes; computed exclusions, defaults or an empty remainder | `const { a, ...rest } = dictionary` |
+| `math-empty` | possibly empty min/max argument lists outside the supported direct conditional guard | `Math.max(...xs)` without a guard |
 | `bitwise`, `unary-coercion`, `update-expression`, `assignment-expression`, `comma` | `& \| ^ ~ << >>`, unary `+`, `x++` inside an expression, `a = b` inside an expression, `,` | `+x` |
 | `callback-form` | a callback that is not an arrow function, a same-file function or a local function value | `xs.map(function (x) { return x; })` |
-| `spread` | spread outside array and record literals, or of a value that is not an array or a set | `f(...args)` |
+| `spread` | call spreads of held tuples, sets or custom iterables; local function values, optional methods, constructors or exact builtins without a sequence reading; same-file call arguments inside conditional sequence calls (use an if statement) | `callback(...xs)` |
 | `unsupported-syntax`, `unsupported-call`, `unsupported-member`, `unsupported-operator`, `unsupported-type` | a statement form, a method with no rule, a property the type does not declare, an operator or a type with no reading | `x ** 2` |
 | `ts-strict` | a compiler error in strict mode | a type mismatch |
 

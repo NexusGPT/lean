@@ -41,7 +41,7 @@ reading no value model can give; the lint says what to write instead).
 | `typeof` | 3,351 | exact by the static type when it decides the tag, an Option deciding between its tag and `"undefined"` (dev); uninterpreted on `any` and on unions | same | done (dev) |
 | regular expressions | 1,950 | an opaque constant per literal, externals for `test`, `match`, `replace` | the same; an exact reading of regular expressions is a project of its own | by design |
 | `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` and `new Date()` with no argument are transitions (dev 364eb1e); `new Date(x)` a pure value; methods uninterpreted | same | done (dev) |
-| `Math.*` | | `min`, `max`, `abs`, `floor`, `trunc` exact; the rest uninterpreted; `Math.random` a transition | `ceil`, `round`, `sign`, `pow` on integers exact | gap (small) |
+| `Math.*` | | `min`/`max` exact on nonempty argument sequences (lane); possibly empty spreads refused (`math-empty`); `abs`, `floor`, `trunc` exact; the rest uninterpreted; `Math.random` a transition | `ceil`, `round`, `sign`, `pow` on integers exact | gap (small) |
 | `JSON.stringify`, `JSON.parse` | 1,714, 699 | uninterpreted functions of their argument | same (a serialisation is a function of its value) | done |
 | `Symbol`, `Symbol.iterator` | 37 | refused (`unsupported-syntax` on use) | a symbol is an opaque constant per declaration; iterator protocol is section 6 | gap (small) |
 | `null` and `undefined` as one value | | `None` | JavaScript distinguishes them (`== null` conflates); a two-constructor `Absent` datatype would keep the distinction | partial |
@@ -81,9 +81,9 @@ reading no value model can give; the lint says what to write instead).
 | top-level function, arrow const, call | | exact | same | done |
 | default parameters | 108 | exact (`Option` with the default filled) | same | done |
 | rest parameters `...xs` | 37 | a sequence parameter; the remaining arguments of a call form the sequence; a single spread passes it as it is (dev) | same | done (dev) |
-| spread in a call `f(...xs)` | 3,060 (with arrays) | exact to a same-file rest parameter (dev); refused elsewhere | an uninterpreted call for an external callee | partial (dev) |
+| spread in a call `f(...xs)` | 3,060 (with arrays) | same-file rest parameters (dev); outside callees receive one concatenated argument sequence as a transition or pure external; push/unshift concatenate all arguments; min/max fold nonempty sequences (`math-empty` otherwise) | same, plus custom iterators and local function values | partial (lane) |
 | destructuring, defaults in object patterns | 7,988, 241 | exact | same | done |
-| defaults in array patterns, rest patterns | 346 rest | exact on arrays (dev): a default past the end, a rest element as the tail; a rest pattern on a record stays refused | a record rest as the record without those fields | done (dev) for arrays |
+| defaults in array patterns, rest patterns | 346 rest | exact on arrays (dev); record rest builds the remaining datatype for fixed scalar records with a nonempty remainder; other record shapes refused (`record-rest`) | remaining fields as a datatype or map, with shallow aliases preserved | partial (lane) |
 | nested function value (arrow) as a callback to an array method | 14,867 nested values | exact lambda when pure | same | done |
 | callback with an effect inside (`xs.map(async (x) => await f(x))`, `forEach` with a call) | 2,209 async callbacks | `forEach` with a sync arrow is a loop over the sequence (dev 364eb1e; a `return` ends one step); an async `forEach` callback is refused with the bug named (`forEach` does not wait); other callbacks with effects stay opaque values by text | `map`/`filter` with effects under `Promise.all` as a loop producing a sequence | partial |
 | closure that assigns an outer variable | 65 | refused (`closure-mutation`) | the loop reading above when the callback is a loop body; by design otherwise | partial |

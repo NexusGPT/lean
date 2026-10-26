@@ -1,0 +1,495 @@
+{
+ "rows": [
+  {
+   "concept": "spread in call or array",
+   "n": 10,
+   "inside": 3,
+   "translated": 2,
+   "planted": 6,
+   "witnessed": 6,
+   "blockers": {
+    "this": 1,
+    "spread": 3,
+    "translate: index.ts:162: an effect inside a callback; the ord": 1,
+    "unsupported-member": 1,
+    "ts-strict": 1,
+    "alias-mutation": 1
+   }
+  },
+  {
+   "concept": "rest pattern",
+   "n": 10,
+   "inside": 0,
+   "translated": 0,
+   "planted": 0,
+   "witnessed": 0,
+   "blockers": {
+    "destructuring": 6,
+    "spread": 1,
+    "foreach": 1,
+    "ts-strict": 1,
+    "param-assign": 1
+   }
+  },
+  {
+   "concept": "Math.max",
+   "n": 10,
+   "inside": 5,
+   "translated": 4,
+   "planted": 11,
+   "witnessed": 9,
+   "blockers": {
+    "ts-strict": 2,
+    "foreach": 1,
+    "unsupported-call": 1,
+    "spread": 1,
+    "translate: multibuy.ts:315: callee holdsCard was not translat": 1
+   }
+  },
+  {
+   "concept": "Math.min",
+   "n": 10,
+   "inside": 6,
+   "translated": 5,
+   "planted": 15,
+   "witnessed": 15,
+   "blockers": {
+    "translate: memo.ts:110: callee refill was not translated": 1,
+    "spread": 2,
+    "foreach": 1,
+    "global-read": 1
+   }
+  }
+ ],
+ "instances": {
+  "spread in call or array": [
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/nodes-base/nodes/Microsoft/Excel/v2/actions/table/getColumns.operation.ts",
+    "unit": "execute",
+    "lines": 80,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "this",
+    "detail": "`this` outside a class method"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus-landing",
+    "file": "components/landing/problem-variations/V12Hundred.tsx",
+    "unit": "fOutScene",
+    "lines": 15,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus-landing/tree",
+    "status": "lint-out",
+    "rule": "spread",
+    "detail": "spread arguments are outside the subset"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "file": "lib/alerts/index.ts",
+    "unit": "evaluateAlerts",
+    "lines": 60,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "status": "translate-fail",
+    "detail": "index.ts:162: an effect inside a callback; the order of its world transitions is not defined"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-automations",
+    "file": "server/changelog-features.ts",
+    "unit": "applyFeatures",
+    "lines": 15,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-automations",
+    "status": "lint-out",
+    "rule": "unsupported-member",
+    "detail": "property .title on E is outside the subset"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "kits/ui/src/TableView/TableRowView.tsx",
+    "unit": "TableRowView",
+    "lines": 62,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "ts-strict",
+    "detail": "TS2322: Type '{ key: string; text: string; style: TableCellStyle | undefined; column: TableColumn; }' is not assignable to type '{ readonly "
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/driftbench",
+    "file": "packages/generate/src/seed/seeders.ts",
+    "unit": "probeDraft",
+    "lines": 77,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/driftbench/tree",
+    "status": "lint-out",
+    "rule": "alias-mutation",
+    "detail": "`first` is another name for a value this function was handed; change it through that name, or copy it first"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "tools/proof-host/src/nexus-page.ts",
+    "unit": "filesUnder",
+    "lines": 14,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/deployments/core/application/use-cases/slack/create-slack-app/concurrent-create-guard.ts",
+    "unit": "detectConcurrentCreation",
+    "lines": 60,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/frontend/src/modules/Conversations/realtime/cache/patch-notes.ts",
+    "unit": "patchAppendNoteOptimistic",
+    "lines": 15,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "spread",
+    "detail": "spread works on arrays and sets only"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "adapters/claude-cli/src/sessions/orphaned-agents.ts",
+    "unit": "OrphanedAgents.alivePids",
+    "lines": 4,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "spread",
+    "detail": "spread works on arrays and sets only"
+   }
+  ],
+  "rest pattern": [
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-classic/src/util/hub.ts",
+    "unit": "fetchWithTimeout",
+    "lines": 11,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "destructuring",
+    "detail": "a rest pattern on a record is outside the subset"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-classic/src/chains/analyze_documents_chain.ts",
+    "unit": "AnalyzeDocumentChain._call",
+    "lines": 19,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "destructuring",
+    "detail": "a rest pattern on a record is outside the subset"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/public/v1/v1-documents.controller.ts",
+    "unit": "V1DocumentsController.updateDocument",
+    "lines": 32,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "destructuring",
+    "detail": "a rest pattern on a record is outside the subset"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/claude-wire/src/claude-entry-assembler-background-tasks.ts",
+    "unit": "assembleBackgroundTaskUpdated",
+    "lines": 19,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "destructuring",
+    "detail": "a rest pattern on a record is outside the subset"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/providers/langchain-mongodb/src/vectorstores.ts",
+    "unit": "MongoDBAtlasVectorSearch.textBasedRerankSearchWithScore",
+    "lines": 54,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "status": "lint-out",
+    "rule": "spread",
+    "detail": "spread works on arrays and sets only"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/cli/src/TestWebhooks.ts",
+    "unit": "TestWebhooks.executeWebhook",
+    "lines": 117,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "foreach",
+    "detail": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "kits/ui/src/RailGroupHeader/RailGroupHeader.tsx",
+    "unit": "RailGroupHeader",
+    "lines": 42,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "destructuring",
+    "detail": "a rest pattern on a record is outside the subset"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/nodes-base/nodes/MySql/v2/transport/index.ts",
+    "unit": "createPool",
+    "lines": 105,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "ts-strict",
+    "detail": "TS2345: Argument of type '{ level: \"warning\"; }' is not assignable to parameter of type 'Partial<ErrorOptions> & { level?: Level | undefined"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/conversations/src/keepers/keep-conversation-sessions.ts",
+    "unit": "KeepConversationSessions.empty",
+    "lines": 13,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "destructuring",
+    "detail": "a rest pattern on a record is outside the subset"
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "file": "packages/core/src/NodeExecuteFunctions.ts",
+    "unit": "parseContentDisposition",
+    "lines": 21,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/n8n/tree",
+    "status": "lint-out",
+    "rule": "param-assign",
+    "detail": "parameter `contentDisposition` is assigned; copy it to a local first"
+   }
+  ],
+  "Math.max": [
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus-landing",
+    "file": "app/dieteren-workshop/scene.ts",
+    "unit": "drawIntegrationField",
+    "lines": 112,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus-landing/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "file": "apps/web/app/api/dev/reset/route.ts",
+    "unit": "seedLeaderboardBoard",
+    "lines": 109,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "status": "lint-out",
+    "rule": "ts-strict",
+    "detail": "TS2802: Type 'ArrayIterator<[number, { readonly uid: \"course.getting-started.m1.welcome\"; readonly verb: \"completed\"; } | { readonly uid: \"c"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+    "file": "src/blocks/fx/gooMath.ts",
+    "unit": "roundedRectPath",
+    "lines": 21,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus-landing",
+    "file": "app/orange-workshop/scene.ts",
+    "unit": "drawDeskChannels",
+    "lines": 84,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus-landing/tree",
+    "status": "lint-out",
+    "rule": "foreach",
+    "detail": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/conversations/src/live/live-conversations.ts",
+    "unit": "LiveConversations.note",
+    "lines": 32,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "file": "lib/read-models/linkedin/performance.ts",
+    "unit": "addDecimal",
+    "lines": 9,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "status": "lint-out",
+    "rule": "unsupported-call",
+    "detail": "method .toString() on bigint is outside the subset"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "file": "packages/cli/src/render.ts",
+    "unit": "foldBlock",
+    "lines": 16,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "status": "lint-out",
+    "rule": "ts-strict",
+    "detail": "TS2550: Property 'repeat' does not exist on type '\" \"'. Do you need to change your target library? Try changing the 'lib' compiler option to"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "file": "lib/read-models/linkedin/audience.ts",
+    "unit": "cardFor",
+    "lines": 32,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "status": "lint-out",
+    "rule": "spread",
+    "detail": "spread is allowed in array and record literals only"
+   },
+   {
+    "root": "/Users/assem/promo-app",
+    "file": "src/engine/multibuy.ts",
+    "unit": "priceAt",
+    "lines": 111,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
+    "status": "translate-fail",
+    "detail": "multibuy.ts:315: callee holdsCard was not translated"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+    "file": "src/record-core/KanbanBoard.tsx",
+    "unit": "clampIndex",
+    "lines": 3,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+    "status": "translated",
+    "planted": 2,
+    "witnessed": 0,
+    "misses": [
+     {
+      "mutation": "changed-return",
+      "was": "Math.max(0, Math.min(len, i))",
+      "verdict": "ASK",
+      "reason": "parent: load failed: {}.glob is not a function"
+     },
+     {
+      "mutation": "boundary",
+      "was": "0",
+      "verdict": "ASK",
+      "reason": "parent: load failed: {}.glob is not a function"
+     }
+    ]
+   }
+  ],
+  "Math.min": [
+   {
+    "root": "/Users/assem/promo-app",
+    "file": "src/server/memo.ts",
+    "unit": "memoStatic",
+    "lines": 11,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/promo-app/tree",
+    "status": "translate-fail",
+    "detail": "memo.ts:110: callee refill was not translated"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/newer-versions/src/state.ts",
+    "unit": "progressFraction",
+    "lines": 4,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "extensions/nexus/src/common/tracks/reader/deadlines.ts",
+    "unit": "nextRead",
+    "lines": 6,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "lint-out",
+    "rule": "spread",
+    "detail": "spread works on arrays and sets only"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "file": "core/window/src/window-frames.ts",
+    "unit": "overlapArea",
+    "lines": 7,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus-landing",
+    "file": "components/generate/GenerateFleetClient.tsx",
+    "unit": "Waiting",
+    "lines": 39,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus-landing/tree",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "apps/backend/src/admin/metrics/domain/services/time-series-aggregation.service.ts",
+    "unit": "TimeSeriesAggregationService.calculateAggregation",
+    "lines": 19,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "spread",
+    "detail": "spread is allowed in array and record literals only"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "file": "packages/core/src/quiz/grade/types.ts",
+    "unit": "shareOf",
+    "lines": 4,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/driftbench",
+    "file": "packages/generate/src/pilot/design.ts",
+    "unit": "conversationOf",
+    "lines": 110,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/driftbench/tree",
+    "status": "lint-out",
+    "rule": "foreach",
+    "detail": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter"
+   },
+   {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-tokens",
+    "file": "src/ramp/generate.ts",
+    "unit": "enforceGap",
+    "lines": 9,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-tokens",
+    "status": "translated",
+    "planted": 3,
+    "witnessed": 3,
+    "misses": []
+   },
+   {
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "file": "packages/cli/src/output.ts",
+    "unit": "printTable",
+    "lines": 39,
+    "base": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+    "status": "lint-out",
+    "rule": "global-read",
+    "detail": "`_jsonMode` is module state that can change; the subset reads constants only"
+   }
+  ]
+ }
+}

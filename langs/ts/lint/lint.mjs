@@ -213,11 +213,21 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     switchDepth--;
   }
+  // a scalar record rest has no shallow reference aliases or unknown enumerable keys
+  function recordRestShape(pattern, rest) {
+    const src = tOf(pattern), dst = tOf(rest.name);
+    const plain = (t) => !!(t.flags & TF.Object) && !(t.objectFlags & ts.ObjectFlags.Class) && !t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) || ts.isClassExpression(d)) && !isArrayLike(checker, t) && !checker.getIndexInfosOfType(t).length;
+    const scalar = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.Null | TF.Undefined)));
+    if (!plain(src) || !plain(dst) || !ts.isIdentifier(rest.name)) return false;
+    if (!checker.getPropertiesOfType(dst).length) return false;
+    if (pattern.elements.some((el) => el.initializer || (!el.dotDotDotToken && (!ts.isIdentifier(el.name) || (el.propertyName && !ts.isIdentifier(el.propertyName) && !ts.isStringLiteral(el.propertyName)))))) return false;
+    return checker.getPropertiesOfType(src).every((p) => !p.name.startsWith('__@') && !p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)) && scalar(checker.getTypeOfSymbolAtLocation(p, pattern)));
+  }
   function bindingNames(name, outNames) {
     if (ts.isIdentifier(name)) { outNames.push(name); return; }
     for (const el of name.elements) {
       if (ts.isOmittedExpression(el)) continue;
-      if (el.dotDotDotToken) { if (!ts.isArrayBindingPattern(name)) { v(el, 'destructuring', 'a rest pattern on a record is outside the subset'); continue; } bindingNames(el.name, outNames); continue; } // `[a, ...rest]`: the tail of the sequence
+      if (el.dotDotDotToken) { if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el)) { v(el, 'record-rest', 'record rest needs a fixed nonempty scalar record without defaults; copy named fields explicitly'); continue; } bindingNames(el.name, outNames); continue; } // `[a, ...rest]`: the tail of the sequence
       if (el.initializer) { expr(el.initializer); } // `{ a = d }` / `[a = d]`: the default applies when the field is absent
       bindingNames(el.name, outNames);
     }
@@ -321,8 +331,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && aliasLocals.has(declOf(pr).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', `\`${pr.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
       if ((name === 'push' || name === 'unshift') && isArrayExpr(r)) {
         if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
-        if (e.arguments.length !== 1) v(e, 'unsupported-call', `${name} takes exactly one value (or one spread array)`);
-        return e.arguments.forEach((a) => expr(ts.isSpreadElement(a) ? a.expression : a));
+        conditionalSpreadArgs(e);
+        return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
       }
       if ((name === 'add' || name === 'delete') && nonNull(rt).every(isSetT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'set mutation on a non-local'); return e.arguments.forEach(expr); }
       if ((name === 'set' || name === 'delete') && nonNull(rt).every(isMapT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'map mutation on a non-local'); return e.arguments.forEach(expr); }
@@ -371,7 +381,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     const inner = ts.isParenthesizedExpression(e.expression) ? e.expression.expression : e.expression;
     if (!ts.isCallExpression(inner)) return expr(inner); // awaiting a held promise: a transition of the world on that value
     // the awaited call is an external (or a local async unit): its arguments are checked, the call itself is uninterpreted
-    inner.arguments.forEach((a) => ts.isSpreadElement(a) ? v(a, 'spread', 'spread arguments are outside the subset') : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
+    if (inner.arguments.some(ts.isSpreadElement)) return call(inner);
+    inner.arguments.forEach((a) => ts.isArrowFunction(a) ? callback(a, null) : expr(a));
     if (ts.isPropertyAccessExpression(inner.expression) && !ts.isIdentifier(inner.expression.expression)) { expr(inner.expression.expression); return; }
     const f = inner.expression;
     if (ts.isIdentifier(f)) return checkIdent(f, true);
@@ -502,6 +513,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
 
   function call(e) {
+    conditionalSpreadArgs(e);
     const f = e.expression;
     if (e.questionDotToken) v(e, 'optional-chain', 'calling an optional function value is outside the subset');
     if (ts.isIdentifier(f)) {
@@ -521,10 +533,15 @@ export function lintFile(file, ranges = null, opts = {}) {
       const recv = f.expression, name = f.name.text;
       const rt = tOf(recv);
       if (recv.kind === K.ThisKeyword) { if (!currentClass) return v(e, 'this', '`this` outside a class method'); return argsOf(e); } // a method of this class, or a function-typed field
-      if (ts.isIdentifier(recv) && recv.text === 'Math') {
+      if (ts.isIdentifier(recv) && recv.text === 'Math' && declOf(recv).kind === 'global') {
         void 0; // Math.random is a world transition (version 3)
         if (name === 'floor' || name === 'trunc') { floorDepth++; e.arguments.forEach(expr); floorDepth--; return; }
-        return e.arguments.forEach(expr);
+        if (name === 'max' || name === 'min') {
+          if (!nonemptyMathArgs(e)) v(e, 'math-empty', 'Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback');
+          if (e.arguments.some(ts.isSpreadElement) || e.arguments.length !== 2) { const numeric = (a) => { if (ts.isSpreadElement(a) && ts.isArrayLiteralExpression(a.expression)) return a.expression.elements.every(numeric); const t = ts.isSpreadElement(a) ? checker.getTypeArguments(tOf(a.expression))[0] : tOf(a); return !!t && (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & TF.NumberLike)); }; if (!e.arguments.every(numeric)) v(e, 'spread', 'Math sequence arguments must be numbers; narrow opaque values before spreading'); }
+          return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
+        }
+        return argsOf(e);
       }
       if (ts.isIdentifier(recv) && PURE_GLOBALS.has(recv.text) && declOf(recv).kind === 'global') return argsOf(e);
       const parts = nonNull(rt);
@@ -631,7 +648,46 @@ export function lintFile(file, ranges = null, opts = {}) {
     jsx(c);
   }
   // an argument list of an external, a local function value, a record method or an opaque receiver: values, or callbacks
-  const argsOf = (e) => e.arguments.forEach((a) => ts.isSpreadElement(a) ? v(a, 'spread', 'spread arguments are outside the subset') : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
+  const spreadArray = (a) => { if (ts.isArrayLiteralExpression(a.expression)) return a.expression.elements.forEach((el) => ts.isSpreadElement(el) ? spreadArray(el) : expr(el)); if (!checker.isArrayType(tOf(a.expression))) v(a, 'spread', 'spread arguments need an ordinary array; tuples and custom iterables are outside the subset'); expr(a.expression); };
+  // conditional expressions do not carry a same-file callee's mutated parameters out of the branch
+  function conditionalSpreadArgs(e) {
+    const mathSequence = ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Math' && ['min', 'max'].includes(e.expression.name.text) && e.arguments.length !== 2;
+    if (!e.arguments.some(ts.isSpreadElement) && !mathSequence) return;
+    let conditional = false;
+    for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
+      if ((ts.isConditionalExpression(p) && p.condition !== child) || (ts.isBinaryExpression(p) && LOGIC.has(p.operatorToken.kind) && p.right === child)) conditional = true;
+    }
+    if (!conditional) return;
+    const w = (n) => { if (ts.isFunctionLike(n)) return; if (ts.isCallExpression(n) && ((ts.isIdentifier(n.expression) && declOf(n.expression).kind === 'unit') || (ts.isPropertyAccessExpression(n.expression) && n.expression.expression.kind === K.ThisKeyword))) v(n, 'spread', 'bind same-file call arguments inside an if statement before spreading; conditional expressions do not return parameter updates'); ts.forEachChild(n, w); };
+    e.arguments.forEach(w);
+  }
+  function outsideSpread(e) {
+    if (!ts.isCallExpression(e)) return false;
+    const f = e.expression;
+    if (e.questionDotToken || f.questionDotToken) return false;
+    if (ts.isIdentifier(f)) return !['local', 'unit'].includes(declOf(f).kind);
+    if (!ts.isPropertyAccessExpression(f)) return false;
+    const r = f.expression;
+    if (r.kind === K.ThisKeyword) return !units.has(`${currentClass?.name?.text}.${f.name.text}`);
+    if (ts.isIdentifier(r) && r.text === 'Math' && ['floor', 'trunc', 'abs'].includes(f.name.text)) return false;
+    return !nonNull(tOf(r)).some((t) => isArrayLike(checker, t) || isStr(t) || isSetT(t) || isMapT(t));
+  }
+  // a directly enclosing conditional proves a sole array spread nonempty on the chosen branch
+  function nonemptyMathArgs(e) {
+    const filled = (a) => !ts.isSpreadElement(a) || (ts.isArrayLiteralExpression(a.expression) && a.expression.elements.some(filled));
+    if (e.arguments.some(filled)) return true;
+    if (e.arguments.length !== 1 || !ts.isSpreadElement(e.arguments[0]) || !ts.isIdentifier(e.arguments[0].expression)) return false;
+    let child = e, p = e.parent;
+    while (p && ts.isParenthesizedExpression(p)) { child = p; p = p.parent; }
+    if (!p || !ts.isConditionalExpression(p) || p.condition === child) return false;
+    let c = p.condition; while (ts.isParenthesizedExpression(c)) c = c.expression;
+    if (!ts.isBinaryExpression(c) || !ts.isPropertyAccessExpression(c.left) || c.left.name.text !== 'length' || !ts.isIdentifier(c.left.expression) || !ts.isNumericLiteral(c.right)) return false;
+    if (checker.getSymbolAtLocation(c.left.expression) !== checker.getSymbolAtLocation(e.arguments[0].expression)) return false;
+    const n = Number(c.right.text), op = c.operatorToken.kind, yes = p.whenTrue === child;
+    return yes ? (op === K.GreaterThanToken && n >= 0) || (op === K.GreaterThanEqualsToken && n >= 1) || (op === K.ExclamationEqualsEqualsToken && n === 0)
+      : (op === K.LessThanEqualsToken && n >= 0) || (op === K.LessThanToken && n >= 1) || (op === K.EqualsEqualsEqualsToken && n === 0);
+  }
+  const argsOf = (e) => (e.arguments ?? []).forEach((a) => ts.isSpreadElement(a) ? (outsideSpread(e) ? spreadArray(a) : v(a, 'spread', 'spread arguments need an outside callee or a supported sequence operation')) : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
     const name = e.name.text;
     if (e.expression.kind === K.ThisKeyword) return; // a field or method of the receiver: read through an accessor

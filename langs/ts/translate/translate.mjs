@@ -409,6 +409,7 @@ export function translate(file, fnName, opts = {}) {
       return name;
     }
     const fields = props.map((p) => ({ name: p.name, type: checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional) })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    if (t.symbol?.declarations?.some((d) => ts.isBindingElement(d) && d.dotDotDotToken)) name = `Rest_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
     if (!name) name = `Rec_${hash(fields.map((f) => f.name).join(','))}`;
     name = dn(mangle(name));
     if (recordAlias.has(name)) return recordAlias.get(name);
@@ -462,13 +463,17 @@ export function translate(file, fnName, opts = {}) {
       if (decl && ts.isParameter(decl) && decl.dotDotDotToken && (checker.isArrayType(t) || checker.isTupleType(t))) t = checker.getTypeArguments(t)[0] ?? t; // a rest parameter: each extra argument has the element type
       return isAny(t) && !isAny(typeOf(a)) ? typeOf(a) : t;
     };
-    const pts = args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a) : dtype(typeOf(a), a); });
+    const spread = args.some(ts.isSpreadElement);
+    if (spread && recvCode !== null) { const v = `sr${tempCount++}_`; pending.push(`var ${v}: ${recvType} := ${recvCode};`); recvCode = v; }
+    const sequence = spread ? callSequence(args) : null;
+    const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a) : dtype(typeOf(a), a); });
     let rt = sig ? sig.getReturnType() : typeOf(n);
     if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
     else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
     let rd = dtype(rt, n);
     if (cond && rd.startsWith('Option<')) rd = innerOf(rd); // the signature's own result; the chain adds the Option once
-    const codes = args.map((a, i) => (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
+    calleeName = `${spread ? 'call_seq' : 'call_args'}_${calleeName}`; // disjoint call forms: f(...xs) never collides with a function named f_seq(xs)
+    const codes = spread ? [sequence.code] : args.map((a, i) => (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
     if (!isEff) {
       let code;
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
@@ -482,6 +487,38 @@ export function translate(file, fnName, opts = {}) {
     const id = external(calleeName, ptsW, `(World, ${rd})`);
     if (cond) { usesOption = true; const w = `w${tempCount}_`, x = `x${tempCount}_`; return hoist(`(if ${cond} then (var (${w}, ${x}) := ${id}(${argsW.join(', ')}); (${w}, Some(${x}))) else (${WORLD}, None))`, `Option<${rd}>`); } // an optional call: the transition happens only when the receiver is present
     return hoist(`${id}(${argsW.join(', ')})`, rd);
+  }
+
+  // a call's complete argument list: spread segments and singleton values in source order
+  function callSequence(args, element = null) {
+    const flatten = (a) => ts.isSpreadElement(a) && ts.isArrayLiteralExpression(a.expression) ? a.expression.elements.flatMap(flatten) : [a];
+    args = args.flatMap(flatten);
+    const ds = args.map((a) => {
+      if (!ts.isSpreadElement(a)) return dtype(typeOf(a), a);
+      const t = typeOf(a.expression);
+      if (!checker.isArrayType(t)) fail(a, 'spread arguments need an ordinary array');
+      return dtype(checker.getTypeArguments(t)[0], a);
+    });
+    const A = element ?? (ds.length && ds.every((d) => d === ds[0]) ? ds[0] : anyType());
+    const pieces = args.map((a, i) => captureParts(() => {
+      let code;
+      if (ts.isSpreadElement(a)) {
+        code = seqOf(a.expression);
+        if (ds[i] !== A) {
+          const v = `sa${tempCount++}_`;
+          code = `(var ${v} := ${code}; seq(|${v}|, (i: int) requires 0 <= i < |${v}| => ${convertD(`${v}[i]`, ds[i], A)}))`;
+        }
+      } else { const raw = expr(a); const value = isNullish(typeOf(a)) ? (A.startsWith('Option<') ? 'None' : A === 'Any' ? convertD('None', 'Unit', A) : convertD('Unit', 'Unit', A)) : convertD(raw, ds[i], A); code = `[${value}]`; }
+      return code;
+    }));
+    // a later argument can rebind a parameter via a same-file call; freeze earlier values first
+    const snapshots = pieces.some((p) => p.lines.length);
+    const parts = pieces.map(({ lines, text }) => {
+      pending.push(...lines);
+      if (!snapshots) return text;
+      const v = `sa${tempCount++}_`; pending.push(`var ${v}: seq<${A}> := ${text};`); return v;
+    });
+    return { type: `seq<${A}>`, code: parts.length ? `(${parts.join(' + ')})` : `([] : seq<${A}>)` };
   }
 
   // ----- prelude helpers with bodies -----
@@ -548,6 +585,10 @@ export function translate(file, fnName, opts = {}) {
 { if b == 0 then 0 else (var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q) }`; break;
       case 'JsRem': text = `function ${name}(a: int, b: int): int
 { if b == 0 then 0 else a - b * ${helper('TruncDiv', ['int'])}(a, b) }`; break;
+      case 'MinSeq': case 'MaxSeq': text = `function ${name}(s: seq<${A}>): ${A}
+  requires |s| > 0
+  decreases |s|
+{ if |s| == 1 then s[0] else ${helper(kind === 'MinSeq' ? 'Min' : 'Max', [A])}(s[0], ${name}(s[1..])) }`; break;
       case 'Min': text = `function ${name}(a: ${A}, b: ${A}): ${A} { if a < b then a else b }`; break;
       case 'Max': text = `function ${name}(a: ${A}, b: ${A}): ${A} { if a > b then a else b }`; break;
       case 'Abs': text = `function ${name}(a: ${A}): ${A} { if a < ${A === 'real' ? '0.0' : '0'} then -a else a }`; break;
@@ -1099,8 +1140,14 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isIdentifier(pattern)) return [`var ${dn(pattern.text)} := ${sourceCode};`];
     if (ts.isObjectBindingPattern(pattern)) {
       for (const el of pattern.elements) {
-        if (el.dotDotDotToken) fail(el, 'a rest pattern is not translated');
-        const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text;
+        if (el.dotDotDotToken) {
+          const rt = typeOf(el.name), rd = dtype(rt, el);
+          const props = checker.getPropertiesOfType(rt).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+          if (!props.length || rd.startsWith('Ext_') || rd === 'Any') fail(el, 'record rest needs a fixed nonempty scalar field set');
+          out.push(`var ${dn(el.name.text)} := ${rd}(${props.map((p) => `${sourceCode}.${dn(p.name)}`).join(', ')});`);
+          continue;
+        }
+        const prop = el.propertyName ? (ts.isStringLiteral(el.propertyName) ? el.propertyName.text : el.propertyName.getText(sf)) : el.name.text;
         const pt = srcType ? checker.getTypeOfPropertyOfType(baseOf(srcType), prop) : null;
         let code = `${sourceCode}.${dn(prop)}`;
         if (srcType) { const sd = (() => { try { return dtype(baseOf(srcType), el); } catch { return null; } })(); if (sd === 'Any' || (sd && sd.startsWith('Ext_'))) { const fd = pt ? (() => { try { return dtype(pt, el); } catch { return anyType(); } })() : anyType(); code = sd === 'Any' ? `${external(`Any_${prop}`, [anyType()], fd)}(${sourceCode})` : `${external(`${sd}_${prop}`, [sd], fd)}(${sourceCode})`; } } // a field of an opaque value: an accessor
@@ -1374,7 +1421,7 @@ export function translate(file, fnName, opts = {}) {
     const recvT = typeOf(recv);
     const base = baseOf(recvT);
     if (isAny(base)) return externalCall(`${awaited ? 'await_' : ''}Any_${name}`, n, [...n.arguments], expr(recv, anyTarget()), anyType());
-    if (ts.isIdentifier(recv) && recv.text === 'Math' && name !== 'random') {
+    if (ts.isIdentifier(recv) && recv.text === 'Math' && name !== 'random' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') {
       const [a, b] = n.arguments;
       if (name === 'floor' || name === 'trunc') {
         if (real) return `((${expr(a)}).Floor as real)`;
@@ -1384,7 +1431,12 @@ export function translate(file, fnName, opts = {}) {
         }
         return expr(a);
       }
-      if (name === 'min' || name === 'max') return `${helper(name === 'min' ? 'Min' : 'Max', [NUM])}(${expr(a)}, ${expr(b)})`;
+      if (name === 'min' || name === 'max') {
+        if (!n.arguments.length) fail(n, 'math-empty: provide a nonempty argument list');
+        if (n.arguments.length === 2 && !n.arguments.some(ts.isSpreadElement)) return `${helper(name === 'min' ? 'Min' : 'Max', [NUM])}(${expr(a)}, ${expr(b)})`;
+        if (n.arguments.length === 1 && !ts.isSpreadElement(a)) return expr(a);
+        return `${helper(name === 'min' ? 'MinSeq' : 'MaxSeq', [NUM])}(${callSequence([...n.arguments], NUM).code})`;
+      }
       if (name === 'abs') return `${helper('Abs', [NUM])}(${expr(a)})`;
       return externalCall(`Math_${name}`, n, [...n.arguments]);
     }
@@ -1735,7 +1787,7 @@ export function translate(file, fnName, opts = {}) {
       const r = e.expression.expression, m = e.expression.name.text;
       const t = baseOf(typeOf(r));
       const a0 = e.arguments[0];
-      const piece = (m === 'push' || m === 'unshift') ? (ts.isSpreadElement(a0) ? seqOf(a0.expression) : `[${outerParens(expr(a0, checker.getTypeArguments(t)[0]))}]`) : null;
+      const piece = (m === 'push' || m === 'unshift') ? callSequence([...e.arguments], dtype(checker.getTypeArguments(t)[0], r)).code : null;
       return pathUpdate(r, (cur) => {
         if (m === 'push') return `${cur} + ${piece}`;
         if (m === 'unshift') return `${piece} + ${cur}`;
