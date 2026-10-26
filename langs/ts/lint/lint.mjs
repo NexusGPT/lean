@@ -480,7 +480,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         }
         if (name === 'push') return v(e, 'param-mutation', 'push is a statement on a local only');
         expr(recv);
-        const cbNames = { map: 1, filter: 1, some: 1, every: 1, find: 1, findIndex: 1, flatMap: 1, reduce: 2 };
+        const cbNames = { map: 2, filter: 2, some: 2, every: 2, find: 2, findIndex: 2, flatMap: 2, reduce: 2 }; // the element, and the index when the callback takes two parameters
         if (Object.hasOwn(cbNames, name)) {
           if (!e.arguments.length) return v(e, 'unsupported-call', `${name} needs a callback`);
           callback(e.arguments[0], cbNames[name]);

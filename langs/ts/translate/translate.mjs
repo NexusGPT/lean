@@ -237,7 +237,7 @@ export function translate(file, fnName, opts = {}) {
     if (parts.some(isAny)) return anyType();
     // a union of records (a discriminated union), or of a primitive with a record: opaque. Every read on it is an
     // uninterpreted accessor, every construction an uninterpreted injection; the proof asks the same calls on both sides
-    if (parts.every((x) => isRecordish(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike)))) return anyType();
+    if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined)))) return anyType();
     return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
   }
   const typeNameOf = (t) => t.aliasSymbol?.name ?? (t.symbol && t.symbol.name !== '__type' && t.symbol.name !== '__object' ? t.symbol.name : null);
@@ -310,7 +310,7 @@ export function translate(file, fnName, opts = {}) {
     if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
     else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
     const rd = dtype(rt, n);
-    const codes = args.map((a, i) => (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : expr(a, ptype(a, i)));
+    const codes = args.map((a, i) => (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
     if (!isEff) {
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); return `${id}(${[recvCode, ...codes].join(', ')})`; }
       const id = external(calleeName, pts, rd);
@@ -335,6 +335,19 @@ export function translate(file, fnName, opts = {}) {
   ensures forall i :: 0 <= i < |r| ==> p(r[i])
   decreases |s|
 { if |s| == 0 then [] else (if p(s[0]) then [s[0]] else []) + ${name}(s[1..], p) }`; break;
+      case 'MapIdx': text = `function ${name}(s: seq<${A}>, f: (${A}, int) -> ${B}, i: int): (r: seq<${B}>)
+  ensures |r| == |s|
+  decreases |s|
+{ if |s| == 0 then [] else [f(s[0], i)] + ${name}(s[1..], f, i + 1) }`; break;
+      case 'FilterIdx': text = `function ${name}(s: seq<${A}>, p: (${A}, int) -> bool, i: int): (r: seq<${A}>)
+  decreases |s|
+{ if |s| == 0 then [] else (if p(s[0], i) then [s[0]] else []) + ${name}(s[1..], p, i + 1) }`; break;
+      case 'FindIdx': usesOption = true; text = `function ${name}(s: seq<${A}>, p: (${A}, int) -> bool, i: int): Option<${A}>
+  decreases |s|
+{ if |s| == 0 then None else if p(s[0], i) then Some(s[0]) else ${name}(s[1..], p, i + 1) }`; break;
+      case 'FindIndexIdx': text = `function ${name}(s: seq<${A}>, p: (${A}, int) -> bool, i: int): int
+  decreases |s|
+{ if |s| == 0 then -1 else if p(s[0], i) then i else ${name}(s[1..], p, i + 1) }`; break;
       case 'Map': text = `function ${name}(s: seq<${A}>, f: ${A} -> ${B}): (r: seq<${B}>)
   ensures |r| == |s|
   ensures forall i :: 0 <= i < |s| ==> r[i] == f(s[i])
@@ -428,6 +441,7 @@ export function translate(file, fnName, opts = {}) {
   function convertD(code, fd, td) {
     if (fd === td) return code;
     if (td === 'Unit') return 'Unit';
+    if (td === 'Any' && code === 'None') return `${external('Any_undefined', [], 'Any')}()`; // `undefined` as an opaque value
     if (td === 'Any') return `${external(`Any_of_${mangle(fd)}`, [fd], 'Any')}(${code})`;
     if (fd === 'Any') return `${external(`Any_as_${mangle(td)}`, ['Any'], td)}(${code})`;
     if (td.startsWith('Option<') && !fd.startsWith('Option<')) { usesOption = true; return `Some(${convertD(code, fd, innerOf(td))})`; }
@@ -768,8 +782,9 @@ export function translate(file, fnName, opts = {}) {
       for (const el of pattern.elements) {
         if (el.dotDotDotToken) fail(el, 'a rest pattern is not translated');
         const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text;
-        let code = `${sourceCode}.${dn(prop)}`;
         const pt = srcType ? checker.getTypeOfPropertyOfType(baseOf(srcType), prop) : null;
+        let code = `${sourceCode}.${dn(prop)}`;
+        if (srcType) { const sd = (() => { try { return dtype(baseOf(srcType), el); } catch { return null; } })(); if (sd === 'Any' || (sd && sd.startsWith('Ext_'))) { const fd = pt ? (() => { try { return dtype(pt, el); } catch { return anyType(); } })() : anyType(); code = sd === 'Any' ? `${external(`Any_${prop}`, [anyType()], fd)}(${sourceCode})` : `${external(`${sd}_${prop}`, [sd], fd)}(${sourceCode})`; } } // a field of an opaque value: an accessor
         if (el.initializer) {
           // `{ a = d }`: the field's value when present, the default when the field is absent or undefined
           const pd = pt ? dtype(pt, el) : null;
@@ -782,9 +797,11 @@ export function translate(file, fnName, opts = {}) {
       return out;
     }
     if (ts.isArrayBindingPattern(pattern)) {
+      const tuple = srcType && checker.isTupleType(baseOf(srcType)) && !dtype(baseOf(srcType), pattern).startsWith('seq<');
       pattern.elements.forEach((el, i) => {
         if (ts.isOmittedExpression(el)) return;
-        const code = `${sourceCode}[${i}]`;
+        if (el.dotDotDotToken) fail(el, 'a rest element is not translated');
+        const code = tuple ? `${sourceCode}.${i}` : `${sourceCode}[${i}]`;
         if (ts.isIdentifier(el.name)) out.push(`var ${dn(el.name.text)} := ${code};`);
         else out.push(...destructure(el.name, code));
       });
@@ -831,6 +848,7 @@ export function translate(file, fnName, opts = {}) {
     }
     if (name === 'length' && (isArrayLike(checker, recvT) || recvT.flags & TF.StringLike)) return lenOf(expr(n.expression));
     if (name === 'size' && (isSetT(recvT) || isMapT(recvT))) return lenOf(expr(n.expression));
+    if ((name === 'length' || name === 'size') && isOptional(recvT) && (isArrayLike(checker, baseOf(recvT)) || baseOf(recvT).flags & TF.StringLike || isSetT(baseOf(recvT)) || isMapT(baseOf(recvT)))) { usesOption = true; const v = `ol_${hash(n.getText(sf)).slice(0, 4)}`; return `(var ${v} := ${rawOperand(n.expression)}; if ${v}.Some? then Some(|${v}.value|) else None)`; } // `a?.b.length`: the length when the chain holds
     if (keepOption) n.__keepOption = true;
     const base = fieldOf(expr(n.expression), recvT, name, n);
     n.__keepOption = false;
@@ -930,6 +948,19 @@ export function translate(file, fnName, opts = {}) {
     if (currentUnit && recursiveUnits.has(currentUnit.name)) return [`${FUEL} - 1`];
     return [`${external('fuel_start', [], 'nat')}()`];
   }
+  // the arguments of a call to a same-file unit, shaped to its parameters: a defaulted parameter takes Some(v) or None
+  function unitArgs(callee, n) {
+    const sig = checker.getResolvedSignature(n);
+    const out = [];
+    callee.params.forEach((p, i) => {
+      const a = n.arguments[i];
+      const pt = sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a ?? n) : typeOf(p.name);
+      if (p.initializer && ts.isIdentifier(p.name)) { usesOption = true; out.push(a ? `Some(${outerParens(expr(a, pt))})` : 'None'); return; }
+      if (!a) { if (p.questionToken) { usesOption = true; out.push('None'); return; } fail(n, `${callee.name} needs ${callee.params.length} arguments`); }
+      out.push(expr(a, pt));
+    });
+    return out;
+  }
   function call(n, awaited = false) {
     const f = n.expression;
     if (ts.isIdentifier(f)) {
@@ -937,8 +968,7 @@ export function translate(file, fnName, opts = {}) {
       const callee = fns.get(f.text);
       if (o.kind === 'unit' && callee) {
         if (!core && kindOf.get(callee) === 'method') fail(n, `${f.text} loops, so it is a Dafny method and cannot be called inside an expression`);
-        const sig = checker.getResolvedSignature(n);
-        const args = n.arguments.map((a, i) => expr(a, sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined));
+        const args = unitArgs(callee, n);
         if (effectfulUnits.has(f.text)) {
           if (!unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
@@ -959,8 +989,7 @@ export function translate(file, fnName, opts = {}) {
     if (recv.kind === K.ThisKeyword && classOf(currentUnit)) {
       const callee = fns.get(`${currentUnit.className}.${name}`);
       if (callee) {
-        const sig = checker.getResolvedSignature(n);
-        const args = n.arguments.map((a, i) => expr(a, sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined));
+        const args = unitArgs(callee, n);
         const selfArg = callee.isStatic ? [] : [SELF];
         if (effectfulUnits.has(callee.name)) {
           if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure method');
@@ -1003,6 +1032,20 @@ export function translate(file, fnName, opts = {}) {
       const cb = cb0;
       const et = () => elemType(recv);
       const lambda1 = (c, k) => lambda(c, k, [et()]);
+      // a callback that also takes the index: the indexed helper, the lambda typed (A, int)
+      const withIdx = cb && ts.isArrowFunction(cb) && cb.parameters.length === 2 && ['map', 'filter', 'some', 'every', 'find', 'findIndex', 'flatMap'].includes(name);
+      const lambda2 = (c) => lambda(c, 2, [et(), checker.getNumberType ? checker.getNumberType() : typeOf(c.parameters[1].name)]);
+      if (withIdx) {
+        switch (name) {
+          case 'map': return `${helper('MapIdx', [A(), dtype(typeOf(n), n).replace(/^seq<(.*)>$/, '$1')])}(${R}, ${lambda2(cb)}, 0)`;
+          case 'filter': return `${helper('FilterIdx', [A()])}(${R}, ${lambda2(cb)}, 0)`;
+          case 'some': return `(exists ii_ :: 0 <= ii_ < |${R}| && ${lambda2(cb)}(${R}[ii_], ii_))`;
+          case 'every': return `(forall ii_ :: 0 <= ii_ < |${R}| ==> ${lambda2(cb)}(${R}[ii_], ii_))`;
+          case 'find': return `${helper('FindIdx', [A()])}(${R}, ${lambda2(cb)}, 0)`;
+          case 'findIndex': return `${helper('FindIndexIdx', [A()])}(${R}, ${lambda2(cb)}, 0)`;
+          case 'flatMap': { const inner = dtype(typeOf(n), n); return `${helper('Flat', [inner.replace(/^seq<(.*)>$/, '$1')])}(${helper('MapIdx', [A(), inner])}(${R}, ${lambda2(cb)}, 0))`; }
+        }
+      }
       switch (name) {
         case 'filter': return `${helper('Filter', [A()])}(${R}, ${lambda1(cb, 1)})`;
         case 'map': return `${helper('Map', [A(), dtype(typeOf(n), n).replace(/^seq<(.*)>$/, '$1')])}(${R}, ${lambda1(cb, 1)})`;
@@ -1539,9 +1582,10 @@ export function translate(file, fnName, opts = {}) {
     const mNames = M.map((m) => dn(m.name));
     const retName = `ret${id}`;
     const outNames = returns ? [retName, ...mNames] : mNames; // what the helper returns
-    const constParams = free.map((v) => `${dn(v.name)}: ${v.d}`);
+    let loopUsesSelf = false; { const w = (x) => { if (x.kind === K.ThisKeyword) loopUsesSelf = true; if (!loopUsesSelf) ts.forEachChild(x, w); }; w(s); }
+    const constParams = [...(loopUsesSelf && classOf(u) ? [`${SELF}: ${selfType(u)}`] : []), ...free.map((v) => `${dn(v.name)}: ${v.d}`)];
     const stateParams = M.map((m) => `${dn(m.name)}: ${m.d}`);
-    const constArgs = free.map((v) => dn(v.name));
+    const constArgs = [...(loopUsesSelf && classOf(u) ? [SELF] : []), ...free.map((v) => dn(v.name))];
     const requiresL = [];
     let lead = [], leadArgsNext = [], leadArgsFirst = [], exit, bind = '', decreases, factsIn = new Set();
     let lp = null;
@@ -1563,7 +1607,7 @@ export function translate(file, fnName, opts = {}) {
       const cb = filterProvenance(s.expression);
       if (cb) requiresL.push(`forall k :: 0 <= k < |${sq}| ==> ${lambda(cb, 1)}(${sq}[k])`);
       exit = `${ix} >= |${sq}|`;
-      bind = ts.isIdentifier(x) ? `var ${dn(x.text)}: ${T} := ${sq}[${ix}];\n` : destructure(x, `${sq}[${ix}]`).join('\n') + '\n';
+      bind = ts.isIdentifier(x) ? `var ${dn(x.text)}: ${T} := ${sq}[${ix}];\n` : destructure(x, `${sq}[${ix}]`, typeOf(x)).join('\n') + '\n';
       decreases = `|${sq}| - ${ix}`;
       factsIn = elementFacts(s);
     } else if (isFor) {

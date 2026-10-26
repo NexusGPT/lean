@@ -385,5 +385,80 @@
     true
    ]
   ]
+ },
+ {
+  "name": "default_args",
+  "file": "default_args.ts",
+  "fn": "widths",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "a",
+     "abcdef"
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     "xyz"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "index_callbacks",
+  "file": "index_callbacks.ts",
+  "fn": "weighted",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     5
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "index_callbacks_find",
+  "file": "index_callbacks.ts",
+  "fn": "firstAbove",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     5,
+     9
+    ],
+    4
+   ],
+   [
+    [
+     9,
+     1
+    ],
+    4
+   ],
+   [
+    [],
+    0
+   ]
+  ]
  }
 ]
