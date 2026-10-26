@@ -4132,6 +4132,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     currentUnit = null;
     faultMode = false;
   }
+  if (heapT) report.heap = { core: [...heapT.core()].sort(), whyNot: Object.fromEntries(order.filter((u) => !heapT.isCore(u)).map((u) => [u.name, heapT.whyNot(u.name)])), layer1Risk: Object.fromEntries(order.filter((u) => !heapT.isCore(u)).map((u) => [u.name, heapT.layer1Risk(u)]).filter(([, r]) => r.length)) };
   if (tolerant && reportOut) fs.writeFileSync(reportOut, JSON.stringify(report, null, 1));
 
   // integer division placeholders left by `/` under Math.floor are resolved in call(); a leftover is a defect

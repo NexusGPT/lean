@@ -82,84 +82,126 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     if (ts.isIfStatement(s) && s.elseStatement) return endsWithReturn(block(s.thenStatement)) && endsWithReturn(block(s.elseStatement));
     return false;
   };
+  const whyNot = new Map(); // unit name -> the reasons it is out of the core (the first reason met on each path)
   function coreUnit(u) {
-    if (u.cls || u.accessor || u.isCtor || u.fn.asteriskToken || u.isAsync || u.generics?.length || recursive.has(u.name)) return false;
-    if (!ts.isBlock(u.body)) return false;
-    const names = new Set();
-    for (const p of u.params) { if (!ts.isIdentifier(p.name) || p.initializer || p.questionToken || p.dotDotDotToken || !shapeOf(typeOf(p.name))) return false; names.add(p.name.text); }
-    const rt = checker.getSignatureFromDeclaration(u.fn)?.getReturnType();
-    if (!rt || !shapeOf(rt)) return false;
+    const reasons = new Set();
+    whyNot.set(u.name, reasons);
     let ok = true;
-    const no = () => { ok = false; };
+    const no = (why) => { ok = false; reasons.add(why); };
+    if (u.cls || u.accessor || u.isCtor) no('method, accessor or constructor');
+    if (u.fn.asteriskToken || u.isAsync) no('generator or async');
+    if (u.generics?.length) no('generic');
+    if (recursive.has(u.name)) no('recursive');
+    if (!ts.isBlock(u.body)) no('expression body');
+    if (!ok) return false;
+    const names = new Set();
+    for (const p of u.params) { if (!ts.isIdentifier(p.name) || p.initializer || p.questionToken || p.dotDotDotToken) no('parameter form'); else if (!shapeOf(typeOf(p.name))) no(`parameter type: ${shapeWhy(typeOf(p.name))}`); else names.add(p.name.text); }
+    const rt = checker.getSignatureFromDeclaration(u.fn)?.getReturnType();
+    if (!rt || !shapeOf(rt)) no(`return type: ${shapeWhy(rt)}`);
+    if (!ok) return false;
     const checkExpr = (e0) => {
       if (!ok) return;
       const e = unparen(e0);
-      if (ts.isIdentifier(e)) { if (e.text === HW || !shapeOf(typeOf(e))) no(); return; }
+      if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
       if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return;
       if (ts.isPropertyAccessExpression(e)) {
-        const s = shapeOf(typeOf(e.expression)); if (!s) return no();
-        if (s.kind === 'arr' ? e.name.text !== 'length' : !fieldOf(s, e.name.text)) return no();
+        const s = shapeOf(typeOf(e.expression)); if (!s) return no(`receiver type: ${shapeWhy(typeOf(e.expression))}`);
+        if (s.kind === 'arr' ? e.name.text !== 'length' : !fieldOf(s, e.name.text)) return no(`property ${e.name.text}`);
         return checkExpr(e.expression);
       }
-      if (ts.isBinaryExpression(e)) { if (!BINOPS.has(e.operatorToken.kind)) return no(); checkExpr(e.left); checkExpr(e.right); return; }
-      if (ts.isPrefixUnaryExpression(e)) { if (e.operator !== K.ExclamationToken && e.operator !== K.MinusToken) return no(); return checkExpr(e.operand); }
-      if (ts.isArrayLiteralExpression(e)) { if (!shapeOf(typeOf(e))) return no(); for (const x of e.elements) checkExpr(ts.isSpreadElement(x) ? x.expression : x); return; }
+      if (ts.isBinaryExpression(e)) { if (!BINOPS.has(e.operatorToken.kind)) return no(`operator ${e.operatorToken.getText(sf)}`); checkExpr(e.left); checkExpr(e.right); return; }
+      if (ts.isPrefixUnaryExpression(e)) { if (e.operator !== K.ExclamationToken && e.operator !== K.MinusToken) return no('prefix operator'); return checkExpr(e.operand); }
+      if (ts.isArrayLiteralExpression(e)) { if (!shapeOf(typeOf(e))) return no(`array literal type: ${shapeWhy(typeOf(e))}`); for (const x of e.elements) checkExpr(ts.isSpreadElement(x) ? x.expression : x); return; }
       if (ts.isObjectLiteralExpression(e)) {
-        const s = shapeOf(typeOf(e)); if (!s || s.kind !== 'rec') return no();
+        const s = shapeOf(typeOf(e)); if (!s || s.kind !== 'rec') return no(`object literal type: ${shapeWhy(typeOf(e))}`);
         const given = new Set(); let spread = false;
         for (const p of e.properties) {
           if (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) { given.add(p.name.text); checkExpr(p.initializer); }
           else if (ts.isShorthandPropertyAssignment(p)) { given.add(p.name.text); checkExpr(p.name); }
-          else if (ts.isSpreadAssignment(p)) { spread = true; const ss = shapeOf(typeOf(p.expression)); if (!ss || ss.kind !== 'rec') return no(); checkExpr(p.expression); }
-          else return no();
+          else if (ts.isSpreadAssignment(p)) { spread = true; const ss = shapeOf(typeOf(p.expression)); if (!ss || ss.kind !== 'rec') return no('spread of a non-record'); checkExpr(p.expression); }
+          else return no('object member form');
         }
-        if (!spread && s.fields.some((f) => !given.has(f.name))) return no();
+        if (!spread && s.fields.some((f) => !given.has(f.name))) return no('object literal misses a field');
         return;
       }
       if (sameFileCall(e)) { for (const a of e.arguments) checkExpr(a); return; }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'slice' && e.arguments.length === 0) {
-        const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(); return checkExpr(e.expression.expression);
+        const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no('slice of a non-array'); return checkExpr(e.expression.expression);
       }
-      no();
+      if (ts.isCallExpression(e)) return no(ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file');
+      if (ts.isElementAccessExpression(e)) return no('element access');
+      no(`expression ${K[e.kind]}`);
     };
     const checkTarget = (t0) => {
       const t = unparen(t0);
       if (ts.isIdentifier(t)) return checkExpr(t);
-      if (ts.isPropertyAccessExpression(t)) { const s = shapeOf(typeOf(t.expression)); if (!s || s.kind !== 'rec' || !fieldOf(s, t.name.text)) return no(); return checkExpr(t.expression); }
-      no();
+      if (ts.isPropertyAccessExpression(t)) { const s = shapeOf(typeOf(t.expression)); if (!s || s.kind !== 'rec' || !fieldOf(s, t.name.text)) return no('write target'); return checkExpr(t.expression); }
+      no(ts.isElementAccessExpression(t) ? 'element write' : 'write target');
     };
     const checkStmts = (list) => {
       for (let i = 0; i < list.length && ok; i++) {
         const s = list[i];
         if (ts.isVariableStatement(s)) {
-          for (const d of s.declarationList.declarations) { if (!ts.isIdentifier(d.name) || !d.initializer || d.name.text === HW || names.has(d.name.text) || !shapeOf(typeOf(d.name))) return no(); names.add(d.name.text); checkExpr(d.initializer); }
+          for (const d of s.declarationList.declarations) { if (!ts.isIdentifier(d.name) || !d.initializer) return no('binding form'); if (d.name.text === HW || names.has(d.name.text)) return no('name reused'); if (!shapeOf(typeOf(d.name))) return no(`local type: ${shapeWhy(typeOf(d.name))}`); names.add(d.name.text); checkExpr(d.initializer); }
           continue;
         }
-        if (ts.isReturnStatement(s)) { if (!s.expression || i !== list.length - 1) return no(); return checkExpr(s.expression); }
+        if (ts.isReturnStatement(s)) { if (!s.expression) return no('bare return'); if (i !== list.length - 1) return no('statement after return'); return checkExpr(s.expression); }
         if (ts.isIfStatement(s)) {
           checkExpr(s.expression);
-          const t = block(s.thenStatement); checkStmts(t); if (!endsWithReturn(t)) return no();
-          if (s.elseStatement) { const el = block(s.elseStatement); checkStmts(el); if (!endsWithReturn(el)) return no(); if (i !== list.length - 1) return no(); }
+          const t = block(s.thenStatement); checkStmts(t); if (!endsWithReturn(t)) return no('if branch without return');
+          if (s.elseStatement) { const el = block(s.elseStatement); checkStmts(el); if (!endsWithReturn(el)) return no('if branch without return'); if (i !== list.length - 1) return no('statement after if/else'); }
           continue;
         }
         if (ts.isExpressionStatement(s)) {
           const e = unparen(s.expression);
           if (ts.isBinaryExpression(e) && [K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken].includes(e.operatorToken.kind)) { checkTarget(e.left); checkExpr(e.right); continue; }
           if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) {
-            const s2 = shapeOf(typeOf(e.expression.expression)); if (!s2 || s2.kind !== 'arr') return no();
-            const m = e.expression.name.text; if (e.arguments.length !== (m === 'pop' ? 0 : 1)) return no();
+            const s2 = shapeOf(typeOf(e.expression.expression)); if (!s2 || s2.kind !== 'arr') return no('mutator on a non-array');
+            const m = e.expression.name.text; if (e.arguments.length !== (m === 'pop' ? 0 : 1)) return no('mutator arity');
             checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); continue;
           }
           if (sameFileCall(e)) { for (const a of e.arguments) checkExpr(a); continue; }
-          return no();
+          return no(ts.isCallExpression(e) ? (ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file') : `expression statement ${K[e.kind]}`);
         }
-        return no();
+        return no(`statement ${K[s.kind]}`);
       }
     };
     const body = [...u.body.statements];
     checkStmts(body);
-    if (!endsWithReturn(body)) ok = false;
+    if (!endsWithReturn(body)) no('path without return');
     return ok;
+  }
+  // why a type has no shape: the first offending part, for the census
+  function shapeWhy(t) {
+    if (!t) return 'none';
+    const parts = nonNull(t);
+    if (parts.length !== 1) return parts.length === 0 ? 'null or undefined only' : 'union';
+    t = parts[0];
+    if (t.flags & (TF.Any | TF.Unknown)) return 'any or unknown';
+    if (t.flags & TF.TypeParameter) return 'type parameter';
+    if (t.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) return 'primitive';
+    if (t.flags & (TF.Void | TF.Undefined | TF.Null | TF.Never)) return 'void';
+    if (t.flags & TF.EnumLike) return 'enum';
+    if (checker.isTupleType(t)) return 'tuple';
+    if (checker.isArrayType(t)) return `array of ${shapeWhy(checker.getTypeArguments(t)[0])}`;
+    if (t.flags & TF.Object) {
+      if (t.getCallSignatures().length) return 'function';
+      if (t.getConstructSignatures().length) return 'class';
+      const name = t.symbol?.name;
+      if (name && !['__type', '__object'].includes(name) && /^(Map|Set|Date|Promise|RegExp|WeakMap|WeakSet|Record)$/.test(name)) return name;
+      if (checker.getIndexInfoOfType(t, ts.IndexKind.String) || checker.getIndexInfoOfType(t, ts.IndexKind.Number)) return 'dictionary';
+      const props = checker.getPropertiesOfType(t);
+      if (!props.length) return 'empty object';
+      for (const p of props) {
+        if (p.flags & ts.SymbolFlags.Method) return 'method field';
+        if (p.flags & ts.SymbolFlags.Optional) return 'optional field';
+        if (p.flags & ts.SymbolFlags.Accessor) return 'accessor field';
+        const ft = checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? sf);
+        if (!shapeOf(ft, 1)) return `field ${p.name}: ${shapeWhy(ft)}`;
+      }
+      return 'depth';
+    }
+    return 'other';
   }
   let core = new Set();
   const callsOf = (u) => { const calls = new Set(); const w = (n) => { if (sameFileCall(n)) calls.add(n.expression.text); ts.forEachChild(n, w); }; w(u.body); return calls; };
@@ -172,8 +214,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
       for (const u of order) {
         if (!own.has(u.name)) continue;
         const calls = graph.get(u.name);
-        if ([...calls].some((c) => !own.has(c))) { own.delete(u.name); changed = true; continue; } // a callee outside the core
-        for (const [caller, cs] of graph) if (cs.has(u.name) && !own.has(caller)) { own.delete(u.name); changed = true; break; } // a caller outside the core would call with the other convention
+        const out = [...calls].find((c) => !own.has(c));
+        if (out !== undefined) { own.delete(u.name); whyNot.get(u.name)?.add(`calls ${out}, outside the core`); changed = true; continue; }
+        for (const [caller, cs] of graph) if (cs.has(u.name) && !own.has(caller)) { own.delete(u.name); whyNot.get(u.name)?.add(`called by ${caller}, outside the core`); changed = true; break; } // a caller outside the core would call with the other convention
       }
     }
     core = own;
@@ -325,5 +368,53 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     return { text, hyp };
   }
   const shapeLegend = () => [...shapes.keys()].sort().map((k) => { const s = shapes.get(k); return `${k} = ${s.kind === 'arr' ? `[${keyOf(s.elem)}]` : `{${s.fields.map((f) => `${f.name}: ${keyOf(f.shape)}`).join(', ')}}`}`; }).join('; ');
-  return { plan, isCore, emit, prelude, shapes, shapeLegend, core: () => core };
+  const whyNotOf = (name) => [...(whyNot.get(name) ?? [])];
+
+  // ----- the exposure of references, layer 1, measured per unit -----
+  // Layer 1 reads an object as a value tree and a mutated parameter as an output. SEMANTICS item 2 observes the graph:
+  // every object reachable before the call, field by field, after it, and the result up to a renaming of fresh objects.
+  // Tree equality is weaker than graph equality exactly where a unit (a) writes through a nested reference path of an
+  // input (the old inner object differs from a fresh replacement), or (b) returns a value that may hold an input
+  // reference or share a reference twice (the same tree, another graph). A unit with neither is one layer 1 reads
+  // soundly under item 2. This reports the two classes; it changes no verdict.
+  const isRefType = (t) => nonNull(t).some((x) => (x.flags & TF.Object) && !x.getCallSignatures().length) || nonNull(t).some((x) => x.flags & (TF.Any | TF.Unknown));
+  function layer1Risk(u) {
+    const risks = new Set();
+    const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) ? p.name.text : null)).filter(Boolean));
+    const aliases = new Set(); // locals bound to a reference-typed path of an input
+    const rootOf = (x) => { x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+    const depth = (x) => { let d = 0; x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { if (!ts.isParenthesizedExpression(x) && !ts.isNonNullExpression(x)) d++; x = x.expression; } return d; };
+    const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
+    const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
+      e = unparen(e);
+      if (!isRefType(typeOf(e))) return true;
+      if (ts.isObjectLiteralExpression(e)) return e.properties.every((p) => (ts.isPropertyAssignment(p) ? fresh(p.initializer) : ts.isShorthandPropertyAssignment(p) ? fresh(p.name) : ts.isSpreadAssignment(p) ? spreadFresh(p.expression) : false));
+      if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => (ts.isSpreadElement(x) ? spreadFresh(x.expression) : fresh(x)));
+      if (ts.isConditionalExpression(e)) return fresh(e.whenTrue) && fresh(e.whenFalse);
+      if (ts.isTemplateExpression(e) || ts.isStringLiteral(e) || ts.isNumericLiteral(e)) return true;
+      return false;
+    };
+    const spreadFresh = (src) => { // spreading copies the source's reference-typed members: fresh only when it has none
+      const t = typeOf(src); const s = shapeOf(t);
+      if (checker.isArrayType(nonNull(t)[0] ?? t)) { const el = checker.getTypeArguments(nonNull(t)[0])[0]; return !!el && !isRefType(el); }
+      if (!s || s.kind !== 'rec') return false;
+      return s.fields.every((f) => f.shape.kind === 'prim');
+    };
+    const walk = (n) => {
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || depth(n.initializer) >= 1)) aliases.add(n.name.text);
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
+        const L = unparen(n.left);
+        if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) { const r = rootOf(L); if (depth(L) >= 2 || aliases.has(r.text) || r.kind === K.ThisKeyword) risks.add('nested write through an input'); }
+      }
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) && inputRooted(n.expression.expression)) { const recv = unparen(n.expression.expression); const r = rootOf(recv); if (depth(recv) >= 1 || aliases.has(r.text) || r.kind === K.ThisKeyword) risks.add('nested write through an input'); }
+      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L) && depth(L) >= 2) risks.add('nested write through an input'); }
+      if (ts.isReturnStatement(n) && n.expression && !fresh(n.expression)) risks.add('result may carry an input or shared reference');
+      if (ts.isArrowFunction(n) && !ts.isBlock(n.body) && n.parent && ts.isCallExpression(n.parent) === false && n === u.fn.body) { /* unreachable: units with expression bodies are handled below */ }
+      ts.forEachChild(n, walk);
+    };
+    if (ts.isBlock(u.body)) walk(u.body); else { walk(u.body); if (!fresh(u.body)) risks.add('result may carry an input or shared reference'); }
+    return [...risks];
+  }
+  const MUTATORS_ALL = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin', 'set', 'add', 'delete', 'clear']);
+  return { plan, isCore, emit, prelude, shapes, shapeLegend, core: () => core, whyNot: whyNotOf, layer1Risk };
 }
