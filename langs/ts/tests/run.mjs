@@ -201,12 +201,16 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
     }
     continue;
   }
-  const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...extra]);
+  const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...(exp.heap ? ['--heap'] : []), ...extra]);
+  const headerOf = (which, key) => fs.readFileSync(path.join(tmpd, `${which}.dfy`), 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm'))?.[1] ?? '';
   const p1 = tr('parent', []);
-  const eff = p1.status === 0 ? (fs.readFileSync(path.join(tmpd, 'parent.dfy'), 'utf8').match(/^\/\/ EFFECTFUL: (.*)$/m)?.[1] ?? '') : '';
-  const c1 = tr('candidate', eff ? ['--effectful', eff] : []);
-  const eff2 = c1.status === 0 ? (fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8').match(/^\/\/ EFFECTFUL: (.*)$/m)?.[1] ?? '') : '';
-  if (eff2 !== eff) tr('parent', eff2 ? ['--effectful', eff2] : []);
+  const eff = p1.status === 0 ? headerOf('parent', 'EFFECTFUL') : '';
+  const hp = p1.status === 0 && exp.heap ? headerOf('parent', 'HEAP') : '';
+  const heapArgs = (units) => (exp.heap ? ['--heap-units', units || '-'] : []); // the heap core agreed on both sides: a unit in the core on one side only would change its signature
+  const c1 = tr('candidate', [...(eff ? ['--effectful', eff] : []), ...heapArgs(hp)]);
+  const eff2 = c1.status === 0 ? headerOf('candidate', 'EFFECTFUL') : '';
+  const hc = c1.status === 0 && exp.heap ? headerOf('candidate', 'HEAP') : '';
+  if (eff2 !== eff || hc !== hp) tr('parent', [...(eff2 ? ['--effectful', eff2] : []), ...heapArgs(hc)]);
   fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])) }));
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
   const th = run('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')]);

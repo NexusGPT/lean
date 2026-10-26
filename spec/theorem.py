@@ -167,6 +167,18 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     # comparison is on the full declaration text with comments removed and whitespace folded; any difference keeps
     # the candidate's own body.
     cand_text, aliased = alias_identical(parent_text, cand_text, pf, cf)
+    # a heap-core unit carries the hypothesis its inputs satisfy in the typed program (`// HYP <name>: <expr>`, written
+    # by the translator); the lemma assumes it. Both sides must state the same hypothesis, or there is no one theorem.
+    hyps = {}
+    for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
+        for m in re.finditer(r'^// HYP ([A-Za-z_][A-Za-z0-9_]*): (.+)$', text, flags=re.M):
+            name = m.group(1)
+            if not name.endswith(suffix):
+                raise Refusal(f'{label}: hypothesis for {name} does not end in {suffix}')
+            hyps.setdefault(name[: -len(suffix)], {})[label] = re.sub(r'\s+', ' ', m.group(2).strip())
+    for f, h in hyps.items():
+        if f in funcs and h.get('parent') != h.get('candidate'):
+            raise Refusal(f'{f}: hypothesis differs between parent and candidate')
     # an opaque block names the same-file functions it calls; if one of them is not identical on both sides the block's
     # transition is not the same transition, and the theorem cannot stand
     for m in re.finditer(r'// CALLS: ([A-Za-z0-9_,]+)', prelude_text or ''):
@@ -200,6 +212,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         out.append(f'predicate InScope_{f}{tp}({params}) {{ {ins.strip()} }}')
         out.append(f'lemma Equal_{f}{tp}({params})')
         out.append(f'  requires !InScope_{f}({names})')
+        if f in hyps:
+            out.append(f'  requires {hyps[f]["parent"]}')
         out.append(f'  ensures {f}_parent({names}) == {f}_candidate({names})')
         out.append('{ // PROOF Equal_' + f)
         out.append('} // END Equal_' + f)
@@ -213,6 +227,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             out.append(f'predicate Post_{f}({params}, result: {sig["ret"]}) {{ {ed["post"].strip()} }}')
             out.append(f'lemma Edit_{f}({params})')
             out.append(f'  requires InScope_{f}({names})')
+            if f in hyps:
+                out.append(f'  requires {hyps[f]["parent"]}')
             out.append(f'  ensures Post_{f}({names}, {f}_candidate({names}))')
             out.append('{ // PROOF Edit_' + f)
             out.append('} // END Edit_' + f)
