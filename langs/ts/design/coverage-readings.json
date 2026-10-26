@@ -1,0 +1,299 @@
+{
+ "_note": "lean's reading today per runtime syntax kind, and the faithful reading. today: exact (a value or statement read as is) | transition (a world step with a recorded request) | opaque (a value kept by text and captures) | refused (a lint rule names it) | erased (no runtime meaning). Sources: the lint's expression and statement switches (admitted kinds; the default refuses), translate.mjs, the design notes under design/. The faithful column is the target (CLAIM). 'uninterpreted' in the row's acceptance is the world read or transition without a model (named 'transition' here); 'absent' is a kind with no lint case.",
+ "Identifier": {
+  "today": "exact: a parameter, a local, a same-file unit; an outside name is a world read or refused (global-read)",
+  "faithful": "same; module and captured cells as ledger cells (research note section 1)"
+ },
+ "Block": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "PropertyAccessExpression": {
+  "today": "exact on records and arrays by shape; this.x a world read; a getter a callable unit; an unknown member refused (unsupported-member)",
+  "faithful": "heap read on the ledger for every reference-typed receiver"
+ },
+ "CallExpression": {
+  "today": "exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; refused for unsupported calls and .call/.apply",
+  "faithful": "same, plus the library table as transitions and callable records for escaped functions"
+ },
+ "ReturnStatement": {
+  "today": "exact; a bare return in a value unit refused (bare-return)",
+  "faithful": "same"
+ },
+ "StringLiteral": {
+  "today": "exact; a lone surrogate refused (string-code-unit)",
+  "faithful": "same"
+ },
+ "BinaryExpression": {
+  "today": "exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; assignment a write; bitwise refused unless the integer file",
+  "faithful": "same"
+ },
+ "VariableDeclaration": {
+  "today": "exact; a let rebinding read by its first assigned type",
+  "faithful": "same"
+ },
+ "VariableStatement": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "ObjectLiteralExpression": {
+  "today": "exact as a fresh record; in the heap core a fresh node; literal methods as function fields; getters and setters by name only",
+  "faithful": "fresh heap node with a proto edge"
+ },
+ "PropertyAssignment": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "ExpressionStatement": {
+  "today": "exact for assignments, ++/--, calls and awaits; anything else refused (unsupported-syntax)",
+  "faithful": "same"
+ },
+ "IfStatement": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "NumericLiteral": {
+  "today": "exact as int or real by file; -0 witnessed in lane B, refused from the heap core",
+  "faithful": "same"
+ },
+ "ArrowFunction": {
+  "today": "exact as a pure lambda; a React handler as a descriptor; otherwise opaque by text and captures; a changing capture refused",
+  "faithful": "callable record Fn(code, env) on the ledger"
+ },
+ "ThisKeyword": {
+  "today": "exact as the receiver (self) of a class unit; a field read a world read; a write a world write",
+  "faithful": "the receiver as a heap node"
+ },
+ "ParenthesizedExpression": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "TemplateExpression": {
+  "today": "exact (string concatenation of converted parts)",
+  "faithful": "same"
+ },
+ "AwaitExpression": {
+  "today": "exact as a settled source with the try fault channel (promise forms)",
+  "faithful": "same, with pending reactions on the ledger"
+ },
+ "Parameter": {
+  "today": "exact; rest parameters and defaults by the param-form rule",
+  "faithful": "same, rest parameters admitted"
+ },
+ "ConditionalExpression": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "ArrayLiteralExpression": {
+  "today": "exact as a sequence; holes refused; in the heap core a fresh node",
+  "faithful": "fresh heap node"
+ },
+ "PrefixUnaryExpression": {
+  "today": "exact for !, unary minus on numbers, ++/-- on a name; -0 refused from the heap core",
+  "faithful": "same"
+ },
+ "NewExpression": {
+  "today": "exact for same-file classes and value constructors (Date with fixed arguments, Map, Set); a service class a world transition; in the heap skeleton a fresh node",
+  "faithful": "allocation on the ledger with the class's proto"
+ },
+ "ShorthandPropertyAssignment": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "NullKeyword": {
+  "today": "exact (Absent)",
+  "faithful": "same"
+ },
+ "BindingElement": {
+  "today": "exact (destructuring)",
+  "faithful": "same"
+ },
+ "ElementAccessExpression": {
+  "today": "exact for literal and typed keys; a dynamic key refused (dynamic-key) outside the dynamic-record reading",
+  "faithful": "heap read by key"
+ },
+ "AsExpression": {
+  "today": "exact (the asserted type is read)",
+  "faithful": "same"
+ },
+ "ThrowStatement": {
+  "today": "exact as a fault on the try channel (exceptions across calls)",
+  "faithful": "same"
+ },
+ "JsxAttribute": {
+  "today": "exact as a boxed prop; a handler as a descriptor or opaque value",
+  "faithful": "same"
+ },
+ "TryStatement": {
+  "today": "exact (try/catch/finally with the fault channel)",
+  "faithful": "same"
+ },
+ "ObjectBindingPattern": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "CatchClause": {
+  "today": "exact (part of TryStatement)",
+  "faithful": "same"
+ },
+ "ForOfStatement": {
+  "today": "exact over sequences (loop forms); over an opaque iterable refused",
+  "faithful": "same, plus Map and Set iteration from the library table"
+ },
+ "JsxExpression": {
+  "today": "exact as a child or attribute value",
+  "faithful": "same"
+ },
+ "SpreadAssignment": {
+  "today": "exact as a record merge in order; spread of an opaque value refused (spread)",
+  "faithful": "heap copy of own keys"
+ },
+ "JsxSelfClosingElement": {
+  "today": "exact as a JsxElem value",
+  "faithful": "same, with component instance identity under re-render sequences"
+ },
+ "JsxElement": {
+  "today": "exact as a JsxElem value",
+  "faithful": "same"
+ },
+ "JsxText": {
+  "today": "exact (JSX whitespace rule)",
+  "faithful": "same"
+ },
+ "ArrayBindingPattern": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "SpreadElement": {
+  "today": "exact in array literals and calls of known shape; otherwise refused (spread)",
+  "faithful": "same"
+ },
+ "TypeOfExpression": {
+  "today": "exact (type tests)",
+  "faithful": "same"
+ },
+ "RegularExpressionLiteral": {
+  "today": "exact for the supported regex forms (strings reading); otherwise opaque",
+  "faithful": "same"
+ },
+ "ContinueStatement": {
+  "today": "exact (loop forms)",
+  "faithful": "same"
+ },
+ "SuperKeyword": {
+  "today": "exact for same-file parent classes (class_super pair)",
+  "faithful": "same"
+ },
+ "ForStatement": {
+  "today": "exact for the counted forms (loop forms); other forms refused (loop-form)",
+  "faithful": "same"
+ },
+ "PostfixUnaryExpression": {
+  "today": "exact on a name; on a member a world write",
+  "faithful": "heap write"
+ },
+ "JsxSpreadAttribute": {
+  "today": "exact as an ordered prop merge",
+  "faithful": "same"
+ },
+ "FunctionExpression": {
+  "today": "as ArrowFunction; a this-capturing one refused (this)",
+  "faithful": "callable record"
+ },
+ "SwitchStatement": {
+  "today": "exact (statements reading)",
+  "faithful": "same"
+ },
+ "WhileStatement": {
+  "today": "exact for the admitted forms; refused otherwise (loop-form)",
+  "faithful": "same"
+ },
+ "BreakStatement": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "DeleteExpression": {
+  "today": "refused (delete)",
+  "faithful": "heap key removal on the ledger"
+ },
+ "ClassDeclaration": {
+  "today": "exact as units Class.method with a receiver; inheritance across files refused (class)",
+  "faithful": "same, with a proto edge"
+ },
+ "YieldExpression": {
+  "today": "generators: a bounded reading; most forms refused (generator-use)",
+  "faithful": "a state machine on the ledger"
+ },
+ "NonNullExpression": {
+  "today": "exact (the assertion is read)",
+  "faithful": "same"
+ },
+ "VoidExpression": {
+  "today": "exact (Unit)",
+  "faithful": "same"
+ },
+ "TaggedTemplateExpression": {
+  "today": "refused (unsupported-syntax) unless the tag is a known pure tag",
+  "faithful": "a call with the strings array"
+ },
+ "ForInStatement": {
+  "today": "refused unless the dynamic-record reading applies",
+  "faithful": "key iteration on the ledger"
+ },
+ "DoStatement": {
+  "today": "exact for the admitted forms",
+  "faithful": "same"
+ },
+ "LabeledStatement": {
+  "today": "refused (unsupported-syntax)",
+  "faithful": "same as the loop it labels"
+ },
+ "SatisfiesExpression": {
+  "today": "exact (erased assertion)",
+  "faithful": "same"
+ },
+ "BigIntLiteral": {
+  "today": "exact as int",
+  "faithful": "same"
+ },
+ "CommaListExpression": {
+  "today": "refused",
+  "faithful": "sequence of effects"
+ },
+ "ClassExpression": {
+  "today": "refused (class)",
+  "faithful": "allocation of a class value"
+ },
+ "FunctionDeclaration": {
+  "today": "exact as a unit; nested declarations as local function values",
+  "faithful": "same"
+ },
+ "NoSubstitutionTemplateLiteral": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "TypeAssertionExpression": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "EmptyStatement": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "TrueKeyword": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "FalseKeyword": {
+  "today": "exact",
+  "faithful": "same"
+ },
+ "JsxFragment": {
+  "today": "exact as a JsxElem with an empty tag",
+  "faithful": "same"
+ },
+ "MethodDeclaration": {
+  "today": "exact for class methods as units Class.method and immutable object-literal methods as function fields; a mutating literal method refused (object-method-mutation)",
+  "faithful": "a callable record on the object's proto"
+ }
+}
