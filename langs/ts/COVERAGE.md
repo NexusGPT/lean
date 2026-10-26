@@ -106,12 +106,12 @@ reading no value model can give; the lint says what to write instead).
 | a constructor that stores ports; `this.port.m()` | | a transition of the world | same | done |
 | a field any method assigns | 739 | the world (get/set transitions) | same | done |
 | method of a class that extends another | 8,240 | inside: an inherited method call is a transition on the receiver, an inherited field a pure accessor (probed) | same; a same-file parent's method could be the parent's own translation | done |
-| `super.m()`, `super(...)` | 115 | refused (`class`) | a call of the parent's method: same-file parent exact, else a transition | gap (small) |
+| `super.m()`, `super(...)` | 115 | `super.m(args)` is a transition on the receiver (the parent's method, outside the reading); `super(...)` in a constructor is outside the unit; `super.m` as a value refused (`class`) (dev) | a call of the parent's method: same-file parent exact, else a transition | partial (dev) |
 | getters and setters on a class | 7 | section 2 | section 2 | partial |
 | `#private` fields | 81 | as fields | same | done |
 | class expression | 2 | refused | by design | by design |
 | decorators | 2 inside units (many on classes) | ignored by the translator (a declaration-level attribute); run by lane B | same | done |
-| `new C()` of a same-file class | 10,265 `new` | an uninterpreted constructor value of its arguments | exact: the record of the fields the constructor assigns, when the constructor is in the subset | gap |
+| `new C()` of a same-file class | 10,265 `new` | a fresh handle from the world, then the class's constructor as a unit on it (its field initialisers, parameter properties and body as set transitions; `super(...)` a transition); a method called on the instance is the file's own unit; a field one of its methods assigns is read and written through the world (dev) | the same; a record value where no method writes a field (a later refinement) | done (dev) |
 | `instanceof` for narrowing on classes | | uninterpreted | by the static type when the checker narrows | partial |
 
 ## 5. Control flow and exceptions
@@ -205,7 +205,7 @@ Of 316 lint-admitted units in 120 sampled nexus files, 272 translate (86.1 perce
 ## 11. Ranked next readings, by units unlocked
 
 1. Callbacks with effects as loops: `forEach` done on dev; `map`/`filter` with effects under `Promise.all` next.
-2. `super` calls (115 units); the clock read of `new Date()` is done on dev.
+2. Done on dev: `super.m()` as a transition on the receiver (115 units); the clock read of `new Date()`. A same-file parent read exactly remains.
 3. Done on dev: `&&`/`||` as mixed-type values, `??` lifting, effects in conditional branches and on the right of a logic operator.
 4. `.then` chains and `new Promise` as readings instead of transitions with opaque handlers: 1,086 + 368; `Promise.all` is done on dev.
 5. Done on dev: division and floats per file (`/` 1,399 units, float literals 1,205) and `**` as an uninterpreted power; bitwise and `NaN` remain.

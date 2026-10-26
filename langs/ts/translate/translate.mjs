@@ -64,6 +64,8 @@ export function translate(file, fnName, opts = {}) {
   const fail = (n, msg) => { throw new Unsupported(`${where(n)}: ${msg}`); };
 
   // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
+  const classDecls = new Map(); for (const st of sf.statements) if (ts.isClassDeclaration(st) && st.name) classDecls.set(st.name.text, st); // the file's own classes, by name
+  const classOfType = (t) => { const sym = t && t.symbol; const d = sym?.declarations?.[0]; return d && ts.isClassDeclaration(d) && d.getSourceFile() === sf && d.name ? (classDecls.get(d.name.text) ?? null) : null; };
   let order = [];
   const visiting = new Set();
   const visitStack = [];
@@ -86,6 +88,11 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.expression.kind === K.ThisKeyword && u.cls) {
         const callee = fns.get(`${u.className}.${n.expression.name.text}`);
         if (callee) collect(callee);
+      }
+      if (ts.isNewExpression(n) && ts.isIdentifier(n.expression) && classDecls.has(n.expression.text)) { const ctor = fns.get(`${n.expression.text}.constructor`); if (ctor) collect(ctor); } // `new C()`: the constructor runs
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.expression.kind !== K.ThisKeyword && n.expression.expression.kind !== K.SuperKeyword) {
+        const sfc = (ts.isIdentifier(n.expression.expression) && classDecls.has(n.expression.expression.text)) ? classDecls.get(n.expression.expression.text) : classOfType(checker.getTypeAtLocation(n.expression.expression));
+        if (sfc) { const callee = fns.get(`${sfc.name.text}.${n.expression.name.text}`); if (callee) collect(callee); }
       }
       ts.forEachChild(n, walk);
     };
@@ -141,9 +148,11 @@ export function translate(file, fnName, opts = {}) {
     }
     if (ts.isPropertyAccessExpression(f)) {
       const recv = f.expression;
+      if (recv.kind === K.SuperKeyword) return true; // the parent's method: a transition on the receiver
       if (recv.kind === K.ThisKeyword && currentUnit?.cls) { const callee = fns.get(`${currentUnit.className}.${f.name.text}`); if (callee) return effectfulUnits.has(callee.name); return true; }
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
       if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
+      { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag; an inherited method is a transition
       const t = baseOf(typeOf(recv));
       if (isArrayLike(checker, t) || (t.flags & TF.StringLike) || isSetT(t) || isMapT(t) || (t.flags & (TF.NumberLike | TF.BooleanLike))) return false;
       return true; // opaque, record method, imported object, any
@@ -197,7 +206,7 @@ export function translate(file, fnName, opts = {}) {
   // the innermost exact try whose BODY holds the statement, within the same function
   const tryOf = (st) => { let n = st; let child = null; while (n && !ts.isFunctionLike(n)) { if (ts.isTryStatement(n) && exactTry(n) && child === n.tryBlock) return n; child = n; n = n.parent; } return null; };
   const faultPreds = () => { addPrelude('World', 'type World'); return { faulted: external('faulted', ['World'], 'bool'), value: external('fault_value', ['World'], anyType()), clear: external('clear_fault', ['World'], 'World'), raise: external('raise', ['World', anyType()], 'World') }; };
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -268,7 +277,9 @@ export function translate(file, fnName, opts = {}) {
     for (const m of cls.members) if (!ts.isConstructorDeclaration(m)) walk(m);
     return out;
   }
-  const isWorldField = (n) => !!(ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && currentUnit?.cls && !fns.has(`${currentUnit.className}.${n.name.text}`) && mutatedFields(currentUnit.cls).has(n.name.text));
+  const isWorldField = (n) => !!(ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && currentUnit?.cls && !fns.has(`${currentUnit.className}.${n.name.text}`) && (mutatedFields(currentUnit.cls).has(n.name.text) || currentUnit.isCtor)); // in a constructor every field of this is written through the world: that is what the constructor does
+  // `a.f` where a is typed by a same-file class and f is a field one of its methods assigns: the field lives in the world
+  const isInstanceWorldField = (n) => { if (!ts.isPropertyAccessExpression(n) || n.expression.kind === K.ThisKeyword || n.expression.kind === K.SuperKeyword) return false; let t; try { t = typeOf(n.expression); } catch { return false; } if (isOptional(t)) return false; const cls = sameFileClassOf(t); return !!(cls && !fns.has(`${cls.name.text}.${n.name.text}`) && mutatedFields(cls).has(n.name.text)); };
   const worldFieldAccessor = (n, kind, extra = []) => { const T = selfType(currentUnit); addPrelude('World', 'type World'); return external(`${T}_${kind}_${n.name.text}`, kind === 'get' ? ['World', T] : ['World', T, ...extra.map((e) => e.d)], kind === 'get' ? `(World, ${extra[0].d})` : '(World, Unit)'); };
   function hoist(code, rd) {
     // the call text already takes the world first; bind the next world and the result, return the result name
@@ -312,6 +323,12 @@ export function translate(file, fnName, opts = {}) {
   const classOf = (u) => (u && u.cls ? u : null);
   // the receiver's Dafny type: the class instance type, opaque (its methods make it so)
   const selfType = (u) => dtype(checker.getTypeAtLocation(u.cls.name), u.node);
+  // ----- same-file classes: an instance built here (`new C(args)`) is a fresh handle from the world; its methods are the
+  // file's own units, its fields live in the world (get/set transitions), as for `this` inside the class -----
+  const sameFileClassOf = (t) => (t ? classOfType(isOptional(t) ? baseOf(t) : t) : null);
+  const classRef = (e) => (ts.isIdentifier(e) && classDecls.has(e.text) && originOf(checker, e, sf, currentUnit?.node ?? null).kind !== 'local' ? classDecls.get(e.text) : null); // the class itself, named (a static call, `new`)
+  const classTypeD = (cls) => dtype(checker.getTypeAtLocation(cls.name), cls);
+  const fieldAccessor = (Tn, field, kind, d) => { addPrelude('World', 'type World'); return external(`${Tn}_${kind}_${field}`, kind === 'get' ? ['World', Tn] : ['World', Tn, d], kind === 'get' ? `(World, ${d})` : '(World, Unit)'); };
 
   // ----- types -----
   const isSetT = (t) => !!t.symbol && (t.symbol.name === 'Set' || t.symbol.name === 'ReadonlySet');
@@ -1148,6 +1165,11 @@ export function translate(file, fnName, opts = {}) {
       const ft = typeOf(n); const d = isAny(ft) ? anyType() : dtype(ft, n);
       return hoist(`${worldFieldAccessor(n, 'get', [{ d }])}(${WORLD}, ${SELF})`, d);
     }
+    if (isInstanceWorldField(n)) {
+      if (!unitEffectful()) fail(n, 'internal: a world field read in a pure unit');
+      const ft = typeOf(n); const d = isAny(ft) ? anyType() : dtype(ft, n);
+      return hoist(`${fieldAccessor(classTypeD(sameFileClassOf(typeOf(n.expression))), name, 'get', d)}(${WORLD}, ${outerParens(expr(n.expression))})`, d);
+    }
     const recvT = n.expression.kind === K.ThisKeyword && classOf(currentUnit) ? checker.getTypeAtLocation(currentUnit.cls.name) : typeOf(n.expression);
     const declaredOpaque = (() => { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e)) return false; const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (!o.sym || o.kind !== 'local') return false; const dt = symType(o.sym, e); try { return dtype(isOptional(dt) ? baseOf(dt) : dt, n) === 'Any'; } catch { return false; } })();
     const recvD = (() => { try { return dtype(isOptional(recvT) ? baseOf(recvT) : recvT, n); } catch { return null; } })();
@@ -1273,8 +1295,42 @@ export function translate(file, fnName, opts = {}) {
       const id = external('map_of_pairs', [`seq<(${Kd}, ${Vd})>`], `map<${Kd}, ${Vd}>`);
       return `${id}(${seqOf(n.arguments[0])})`;
     }
+    const cls = classRef(n.expression);
+    if (cls) {
+      // `new C(args)` of a same-file class: a fresh handle from the world; then the constructor unit on it, or, when the
+      // class declares none, its field initialisers written in declaration order
+      if (!unitEffectful()) fail(n, 'internal: a same-file constructor called from a pure unit');
+      const Tn = classTypeD(cls);
+      const h = hoist(`${external(`alloc_${mangle(Tn)}`, ['World'], `(World, ${Tn})`)}(${WORLD})`, Tn);
+      const ctor = fns.get(`${cls.name.text}.constructor`);
+      if (ctor) { if (failedUnits.has(ctor.name)) fail(n, `the constructor of ${cls.name.text} was not translated`); const args = unitArgs(ctor, n); hoist(`${fname(ctor.name)}(${[WORLD, ...fuelArg(ctor), h, ...args].join(', ')})`, 'Unit'); }
+      else initFields(cls, h);
+      return h;
+    }
     // any other constructor: an uninterpreted external of its arguments, typed by what it builds
     return externalCall(`new_${mangle(name)}`, n, [...(n.arguments ?? [])]);
+  }
+  // the field initialisers of a class (`total = 0`), written on a handle in declaration order
+  function initFields(cls, h) {
+    const Tn = classTypeD(cls);
+    for (const m of cls.members) {
+      if (!ts.isPropertyDeclaration(m) || !m.initializer || !ts.isIdentifier(m.name) || m.modifiers?.some((x) => x.kind === K.StaticKeyword)) continue;
+      const ft = typeOf(m.name); const d = isAny(ft) ? anyType() : dtype(ft, m);
+      hoist(`${fieldAccessor(Tn, m.name.text, 'set', d)}(${WORLD}, ${h}, ${outerParens(expr(m.initializer, ft))})`, 'Unit');
+    }
+  }
+  // the start of a constructor unit: the initialisers, then the parameter properties (`constructor(private x: T)`), then the body
+  function ctorPrefix(u) {
+    return capture(() => {
+      initFields(u.cls, SELF);
+      const Tn = selfType(u);
+      for (const p of u.params) {
+        if (!ts.isIdentifier(p.name) || !p.modifiers?.some((x) => x.kind === K.PublicKeyword || x.kind === K.PrivateKeyword || x.kind === K.ProtectedKeyword || x.kind === K.ReadonlyKeyword)) continue;
+        const ft = typeOf(p.name); const d = isAny(ft) ? anyType() : dtype(ft, p);
+        hoist(`${fieldAccessor(Tn, p.name.text, 'set', d)}(${WORLD}, ${SELF}, ${dn(p.name.text)})`, 'Unit');
+      }
+      return '';
+    });
   }
   const cbArity = { map: 2, filter: 2, some: 2, every: 2, find: 2, findIndex: 2, flatMap: 2, reduce: 3 };
   // the fuel a call passes: one less inside the cycle, an uninterpreted start value from outside it
@@ -1340,6 +1396,7 @@ export function translate(file, fnName, opts = {}) {
       }
       return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
     }
+    if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); return externalCall(`super_init_${mangle(Tn)}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition
     if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
     const recv = f.expression, name = f.name.text;
     if ((f.questionDotToken || n.questionDotToken) && isOptional(typeOf(recv)) && recv.kind !== K.ThisKeyword) {
@@ -1349,6 +1406,11 @@ export function translate(file, fnName, opts = {}) {
       pending.push(`var ${v} := ${rawOperand(recv)};`);
       const Td = isAny(base) ? anyType() : dtype(base, n);
       return externalCall(`${awaited ? 'await_' : ''}${isAny(base) ? 'Any' : Td}_${name}`, n, [...n.arguments], `${v}.value`, Td, null, `${v}.Some?`);
+    }
+    if (recv.kind === K.SuperKeyword && classOf(currentUnit)) {
+      // `super.m(args)`: the parent class's method on this receiver, a transition of the world (its body is not read here)
+      const T = selfType(currentUnit);
+      return externalCall(`${awaited ? 'await_' : ''}super_${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
     }
     if (recv.kind === K.ThisKeyword && classOf(currentUnit)) {
       const callee = fns.get(`${currentUnit.className}.${name}`);
@@ -1365,6 +1427,27 @@ export function translate(file, fnName, opts = {}) {
       // an inherited method or a function-typed field: an uninterpreted external of the receiver and the arguments
       const T = selfType(currentUnit);
       return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
+    }
+    {
+      // a method of a same-file class: on the class itself (static) or on a receiver typed by it; the file's own unit
+      const asClass = classRef(recv); const sfc = asClass ?? (isOptional(typeOf(recv)) ? null : sameFileClassOf(typeOf(recv)));
+      const callee = sfc ? fns.get(`${sfc.name.text}.${name}`) : null;
+      if (callee && !callee.isCtor && !!asClass === !!callee.isStatic) {
+        if (failedUnits.has(callee.name)) fail(n, `callee ${callee.name} was not translated`);
+        const args = unitArgs(callee, n);
+        const selfArg = callee.isStatic ? [] : [outerParens(expr(recv))];
+        if (effectfulUnits.has(callee.name)) {
+          if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure unit');
+          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+          return hoist(`${fname(callee.name)}(${[WORLD, ...fuelArg(callee), ...selfArg, ...args].join(', ')})`, dtype(rt, n));
+        }
+        return `${fname(callee.name)}(${[...fuelArg(callee), ...selfArg, ...args].join(', ')})`;
+      }
+    }
+    if (isInstanceWorldField(recv)) {
+      // a method on a world field of an instance (`a.items.push(x)`): the field is read (a transition), the call is a transition on it
+      const ft = typeOf(recv); const Td = isAny(ft) ? anyType() : dtype(ft, n);
+      return externalCall(`${awaited ? 'await_' : ''}${mangle(classTypeD(sameFileClassOf(typeOf(recv.expression))))}_${recv.name.text}_${name}`, n, [...n.arguments], expr(recv), Td);
     }
     if (isWorldField(recv)) {
       // a method on a field that lives in the world: the field's value is read (a transition), the call is a transition on it
@@ -1656,18 +1739,21 @@ export function translate(file, fnName, opts = {}) {
       if (!isArrayLike(checker, t)) fail(e, 'index assignment on a non-array');
       return [arr.text, `${dn(arr.text)}[${index(e.left.argumentExpression)} := ${outerParens(expr(e.right, checker.getTypeArguments(t)[0]))}]`, arr];
     }
-    if ((ts.isBinaryExpression(e) && isWorldField(e.left)) || (isUpdate(e) && isWorldField(e.operand))) {
-      // a write to a world field: one transition, its result unused
+    if ((ts.isBinaryExpression(e) && (isWorldField(e.left) || isInstanceWorldField(e.left))) || (isUpdate(e) && (isWorldField(e.operand) || isInstanceWorldField(e.operand)))) {
+      // a write to a world field (of this, or of an instance of a same-file class): one transition, its result unused
       const target = ts.isBinaryExpression(e) ? e.left : e.operand;
-      if (!unitEffectful()) fail(e, 'internal: a world field written in a pure method');
-      const p = checker.getPropertyOfType(checker.getTypeAtLocation(currentUnit.cls.name), target.name.text);
+      if (!unitEffectful()) fail(e, 'internal: a world field written in a pure unit');
+      const onThis = isWorldField(target);
+      const cls = onThis ? currentUnit.cls : sameFileClassOf(typeOf(target.expression));
+      const p = checker.getPropertyOfType(checker.getTypeAtLocation(cls.name), target.name.text);
       const dt = p ? checker.getTypeOfSymbolAtLocation(p, target) : typeOf(target);
       const d = isAny(dt) ? anyType() : dtype(dt, target);
       let value;
       if (isUpdate(e)) value = `${expr(target)} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${one()}`;
       else if (e.operatorToken.kind === K.EqualsToken) value = outerParens(expr(e.right, dt));
       else { const sym = e.operatorToken.kind === K.PlusEqualsToken ? '+' : e.operatorToken.kind === K.MinusEqualsToken ? '-' : '*'; value = `${expr(target)} ${sym} ${expr(e.right)}`; }
-      hoist(`${worldFieldAccessor(target, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit');
+      const recvCode = onThis ? SELF : outerParens(expr(target.expression));
+      hoist(`${onThis ? worldFieldAccessor(target, 'set', [{ d }]) : fieldAccessor(classTypeD(cls), target.name.text, 'set', d)}(${WORLD}, ${recvCode}, ${value})`, 'Unit');
       return null;
     }
     // a path x.a.b rooted at a local or a parameter, rebuilt with a new leaf: x := x.(a := x.a.(b := leaf(x.a.b)))
@@ -2141,7 +2227,7 @@ export function translate(file, fnName, opts = {}) {
   for (const name of effectful) effectfulUnits.add(name); // forced by the other side of a pair: both sides thread the world
   for (const u of order) { // callees come first in `order`
     currentUnit = u;
-    if (core && containsEffect(u.body)) effectfulUnits.add(u.name);
+    if (core && (u.isCtor || containsEffect(u.body))) effectfulUnits.add(u.name); // a constructor writes its fields: a transition
     currentUnit = null;
   }
   if (core) computeMutations();
@@ -2179,7 +2265,7 @@ export function translate(file, fnName, opts = {}) {
   function emitUnit(u) {
     currentUnit = u;
     loopCount = 0;
-    const rt = dtype(retType(u), u.node);
+    const rt = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
     const name = fname(u.name);
     const specs = [];
     const argNames = u.params.map((p, i) => (ts.isIdentifier(p.name) ? dn(p.name.text) : `arg${i}_`)).join(', ');
@@ -2193,8 +2279,9 @@ export function translate(file, fnName, opts = {}) {
     if (core) {
       const eff = effectfulUnits.has(u.name);
       if (eff) addPrelude('World', 'type World');
-      const endVal = () => (retType(u).flags & (TF.Void | TF.Undefined) ? wrapRet('Unit') : fail(u.node, 'a path ends without a return'));
-      const body = bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))));
+      const endVal = () => (u.isCtor || (retType(u).flags & (TF.Void | TF.Undefined)) ? wrapRet('Unit') : fail(u.node, 'a path ends without a return'));
+      const body0 = bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))));
+      const body = u.isCtor ? `${ctorPrefix(u)}${body0}` : body0;
       const mutLets = mutatedOf(u).map((m) => `var ${dn(m)} := ${dn(m)};`); // a mutated parameter starts as the argument and is rebound by the body
       const full = [...sp.lets, ...mutLets].length ? `${[...sp.lets, ...mutLets].join('\n')}\n${body}` : body;
       const selfParam = classOf(u) && !u.isStatic ? `${SELF}: ${selfType(u)}` : '';

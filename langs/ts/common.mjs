@@ -264,13 +264,17 @@ export function topLevelFunctions(sf) {
 
 /**
  * The methods of a top-level class as units named `Class.method`. A method is a function of an explicit receiver
- * (`self`), its parameters and, when effectful, the world. Constructors, getters, setters and abstract or
- * bodiless methods are not units.
+ * (`self`), its parameters and, when effectful, the world. A constructor with a body is the unit `Class.constructor`
+ * (its receiver is the fresh handle `new` allocates). Getters, setters and abstract or bodiless methods are not units.
  */
 export function classMethodUnits(st) {
   if (!ts.isClassDeclaration(st) || !st.name) return [];
   const out = [];
   for (const m of st.members) {
+    if (ts.isConstructorDeclaration(m) && m.body) { // the constructor: a unit of an explicit receiver (the fresh handle) and the world
+      out.push({ name: `${st.name.text}.constructor`, node: m, fn: m, params: m.parameters, body: m.body, typeNode: undefined, isAsync: false, isArrow: false, generics: undefined, cls: st, className: st.name.text, method: 'constructor', isStatic: false, isCtor: true });
+      continue;
+    }
     if (!ts.isMethodDeclaration(m) || !m.body || !m.name || !ts.isIdentifier(m.name)) continue;
     const isStatic = !!m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword);
     out.push({ name: `${st.name.text}.${m.name.text}`, node: m, fn: m, params: m.parameters, body: m.body, typeNode: m.type,

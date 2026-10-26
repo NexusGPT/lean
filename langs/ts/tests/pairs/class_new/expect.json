@@ -1,0 +1,33 @@
+{
+ "scope": [
+  "account_constructor",
+  "account_deposit",
+  "account_label",
+  "open",
+  "opening",
+  "twice",
+  "ledger_constructor",
+  "ledger_take"
+ ],
+ "equal": {
+  "account_constructor": true,
+  "account_deposit": true,
+  "account_label": true,
+  "open": true,
+  "opening": false,
+  "twice": true,
+  "ledger_constructor": false,
+  "ledger_take": true
+ },
+ "why": "Ledger's constructor writes max + 1 where the parent wrote max; opening adds one to the balance it reads; open binds the deposit's result to a name first (the same transitions); Account's constructor, deposit, label, twice and take are untouched",
+ "b": {
+  "Account.constructor": "PASS-bounded",
+  "Account.deposit": "PASS-bounded",
+  "Account.label": "PASS-bounded",
+  "open": "PASS-bounded",
+  "opening": "WITNESS",
+  "twice": "PASS-bounded",
+  "Ledger.constructor": "WITNESS",
+  "Ledger.take": "PASS-bounded"
+ }
+}

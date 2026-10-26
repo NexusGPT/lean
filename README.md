@@ -64,7 +64,7 @@ A whole change at once: `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--
 
 **What you need.** Node 20 or newer, Python 3, and [Dafny](https://dafny.org) 4 or newer on your `PATH` (it brings Z3). Nothing is installed into your repository.
 
-**What becomes checkable.** A function gets a *proof* when it lives inside the subset: plain data (records, arrays, strings, sets, maps, optionals, literal unions), loops, early returns, `switch`, destructuring, `async` functions, class methods, recursion, JSX (an element is a value tree), and calls into the outside world. Those calls are modelled as transitions of an explicit world, so a service method that awaits a repository and logs is inside the subset. A `try`/`catch` is exact: a transition inside its body may fault, and the catch path is a branch the verifier sees. A `try` without a catch and a loop without a bound are opaque blocks named by their text.
+**What becomes checkable.** A function gets a *proof* when it lives inside the subset: plain data (records, arrays, strings, sets, maps, optionals, literal unions), loops, early returns, `switch`, destructuring, `async` functions, class methods and constructors (`new C()` of a class in the same file runs its constructor on a fresh handle; the instance's methods are the file's own functions), recursion, JSX (an element is a value tree), and calls into the outside world. Those calls are modelled as transitions of an explicit world, so a service method that awaits a repository and logs is inside the subset. A `try`/`catch` is exact: a transition inside its body may fault, and the catch path is a branch the verifier sees. A `try` without a catch and a loop without a bound are opaque blocks named by their text.
 
 **What you can no longer do, if you want proofs.** Six things make a function uncheckable by proof, and lean names the one it hit:
 
@@ -75,7 +75,7 @@ A whole change at once: `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--
 | `const t = user.tags; t.push(x)` | `ASK: alias-mutation` | `user.tags.push(x)`: change it through the parameter, which becomes an output |
 | `a === b` on two objects or arrays | `ASK: reference-equality` | compare the fields you mean |
 | `n / 2` on numbers | `ASK: division` | `Math.floor(n / 2)` when you mean integer division |
-| `eval`, `new Function`, `Object.getPrototypeOf`, `super` | `ASK: dynamic-eval`, `prototype`, `class` | there is no mathematical reading of these; keep them out of the function you want proved |
+| `eval`, `new Function`, `Object.getPrototypeOf`, `super` as a value (`const f = super.m`) | `ASK: dynamic-eval`, `prototype`, `class` | there is no mathematical reading of these; keep them out of the function you want proved (`super.m(...)` as a call is read: a transition on the receiver) |
 
 Everything else that lean cannot read (generators, callbacks to a library, an unknown constructor) is not a refusal: it becomes an uninterpreted value or call, the same on both sides, and the proof still goes through when the rest is equal.
 
@@ -256,6 +256,53 @@ One call of a function observes **(1)** the value returned or thrown, **(2)** ev
 
 The axiom that makes effects tractable: an effect is `effect(world, op, args) = (world', result)`. It is stated, not hidden, and it is the only axiom.
 
+## Why the whole program can be read as mathematics
+
+The question behind the subset is "how can code that renders screens, holds pointers and talks to the world be a
+mathematical object?" The answer is one axiom and three readings, and every habit above is one of them seen from
+the editor.
+
+**The axiom.** Every effect is a function of the world: `effect(world, op, args) = (world', result)`. The world is a
+value the function receives and returns; nothing is global, nothing happens behind the function's back. A function
+that reads a file, awaits a repository, logs a line and returns a number is, in this reading, a function from
+`(world, args)` to `(world', number)`. It is declarative in the exact sense: the function *says* what it does to
+the world, and the verifier compares two sayings. The translator does the threading; you write ordinary TypeScript.
+
+**Reading 1: the front end is a value.** A React component is a function from its props and its hook state to a
+value tree: `JsxElem(tag, props, children) | JsxText | JsxNothing | JsxList`. The DOM, the browser and React's
+scheduler are the world; the component never touches them, it returns the tree React will reconcile. So two
+versions of a component are equal when they return the same tree for every props and state, and a candidate that
+drops a `key`, renders a `null` child where the parent rendered `false`, or swaps a conditional branch is caught on
+the props that show it. A handler attribute (`onClick={() => save(id)}`) is a value: when its body is in the subset
+it is a lambda the verifier reads; otherwise it is an opaque value keyed by its text, so the same handler on both
+sides is the same value and a changed one differs. Lane B renders the tree by React's own children rules. Measured:
+67.5 percent of nexus-landing's units and 87.8 percent of nexus-ui's are inside as written. What is not yet read:
+the bodies of `useEffect` and `useMemo` callbacks as the functions they are (today opaque values), and a handler
+whose body reaches a store.
+
+**Reading 2: pointers are outputs.** TypeScript has no pointers, it has references, and a reference matters in one
+case: when a function changes what it points to. Layer 1, built: a parameter the function changes (`user.tags.push(t)`,
+`user.id = name`, `counts[k] = n`) is an *output* of the function, `(world', result, user')`, written as a datatype
+update, and a caller that passed a name takes the new value back into that name. Two parameters are two objects (the
+stated axiom; lane B tests it by passing one object twice), and a local alias of a parameter may not be changed
+(`alias-mutation`), because the value reading has one value per name. Layer 2, planned: objects that come from the
+world (a row from a repository, a node in a tree, a shared cache) are references into a heap carried by the world;
+reads and writes go through it; two versions are equal when results and final heaps agree up to a renaming of fresh
+allocations. The census counts 4,620 units that change an object through an alias; layer 2 is what makes them
+provable without rewriting them.
+
+**Reading 3: control is data.** A loop is a recursive helper over the variables it changes, with its own
+termination measure. An exception is a fault flag on the world: a transition may fault, `catch` is a branch the
+verifier sees, and a `throw` is a second result channel. A promise is a value awaited in order; `Promise.all` over a
+`map` is a collecting loop. A class is a record plus functions of an explicit receiver, with the fields any method
+assigns living in the world. A call into code lean cannot see (a library, an opaque block, a parent class's method
+through `super.m()`) is one uninterpreted transition named by what it is, the same on both sides.
+
+**What falls outside, on purpose.** `eval`, the prototype chain and module-level mutable state have no reading that
+keeps the axiom true, and lean refuses them by name rather than modelling them wrong. Everything else that is not read
+yet is a *gap* with a stated faithful reading (`langs/ts/COVERAGE.md`, one row per construct, with the unit count it
+unlocks), not a limit of the method.
+
 ## Numbers
 
 Measured on private corpora of production TypeScript. Numbers, not code, are published.
@@ -274,7 +321,7 @@ The run over 43 repaired production defects (every changed function through both
 
 ## Limits
 
-lean says `ASK` rather than guess. Today it asks on: assignment to a field of a field of `this`, `super`, generators, callbacks that change an outer variable, mutation through an alias of a parameter, `eval` and the prototype chain, more than one asynchronous schedule, and code the repository does not contain. A changed function that calls a changed recursive sibling needs an induction the theorem does not yet write.
+lean says `ASK` rather than guess. Today it asks on: assignment to a field of a field of `this`, `super` as a value, generators, callbacks that change an outer variable, mutation through an alias of a parameter, `eval` and the prototype chain, more than one asynchronous schedule, and code the repository does not contain. A changed function that calls a changed recursive sibling needs an induction the theorem does not yet write.
 
 Lane B's bound is real: a frozen clock, generated inputs, one microtask order. Its word is `PASS-bounded`, and it stays that word.
 

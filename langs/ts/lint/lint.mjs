@@ -420,7 +420,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.AwaitExpression: return awaitExpr(e);
       case K.YieldExpression: return v(e, 'generator', 'generators are outside the subset');
       case K.ThisKeyword: if (currentClass) return; return v(e, 'this', '`this` outside a class method');
-      case K.SuperKeyword: return v(e, 'class', '`super` is outside the subset');
+      case K.SuperKeyword: { if (currentClass && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.parent && ts.isCallExpression(e.parent.parent) && e.parent.parent.expression === e.parent) return; if (currentClass && currentFn && ts.isConstructorDeclaration(currentFn) && e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e) return; return v(e, 'class', '`super` is read only as `super.m(...)` or `super(...)` in a constructor, a call of the parent\'s method'); }
       case K.ClassExpression: return v(e, 'class', 'classes are outside the subset');
       case K.FunctionExpression: case K.ArrowFunction: return callback(e, null); // a function value anywhere: checked as a callback value (its body in the subset; it may hold effects, then it is an opaque value by its text);
       case K.NewExpression: {
@@ -582,6 +582,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (parts.every(isRecordish)) return argsOf(e); // a method of a record type (an interface with methods, a class instance): uninterpreted, keyed by the type
       return v(e, 'unsupported-call', `method .${name}() on ${checker.typeToString(rt)} is outside the subset`);
     }
+    if (e.expression.kind === K.SuperKeyword && currentClass && currentFn && ts.isConstructorDeclaration(currentFn)) return argsOf(e); // `super(args)` in a constructor: the parent's constructor on this handle, a transition
     return v(e, 'unsupported-call', 'calls through computed callees are outside the subset');
   }
   // `.map(cb)` directly under an awaited `Promise.all(...)`: the callback is a loop body (its returns are collected values)

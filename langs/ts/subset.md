@@ -39,7 +39,7 @@ rules per package).
 | Calls | top-level functions of the same file, recursion included (a fuel bounds the unfolding; the theorem holds for every fuel), default arguments, a function-typed parameter or local, a local lambda `const f = (x) => ...` | `double(double(x))` |
 | Functions | `function` declarations, `const f = (...) => ...`, `async` functions (the result type is unwrapped), generic functions, same-file functions named as callback values | `xs.map(double)` |
 | JSX | an element is a value tree: `JsxElem(tag, props, children)`, `JsxText`, `JsxNothing` for `false`/`null`/`undefined`, `JsxList` for an array child; a handler attribute is an opaque function value keyed by its text; `cond && <X/>`, `cond ? <A/> : <B/>`, `{xs.map((x) => <li/>)}`, fragments, spread attributes (merged in order) | `<li key={i.id} onClick={() => pick(i.id)}>{i.label}</li>` |
-| Classes | methods and static methods; a constructor that stores injected ports; fields read through `this`; a field any method assigns lives in the world (each read and write is a transition); a method of `this` called from a method | `class Svc { constructor(private readonly repo: Repo) {} async find(id: string) { return this.repo.find(id); } }` |
+| Classes | methods and static methods; a constructor that stores injected ports; fields read through `this`; a field any method assigns lives in the world (each read and write is a transition); a method of `this` called from a method; `super.m(...)` and `super(...)` as transitions on the receiver; `new C(args)` of a class in the same file: a fresh handle from the world, then C's constructor as a unit on it (initialisers, parameter properties, the body as writes); a method called on that instance is the file's own unit, and a field its methods write is read through the world | `class Svc { constructor(private readonly repo: Repo) {} async find(id: string) { return this.repo.find(id); } }` |
 
 ## What is a transition of the world
 
@@ -100,7 +100,7 @@ one, never proved equal and never proved different (the execution lane decides i
 | `dynamic-eval` | `eval`, `Function`, `new Function` | `eval(code)` |
 | `delete` | `delete` of a field of `this`, of a required field, or as a value | `delete this.cache.x` |
 | `prototype` | `.prototype`, `.constructor`, `__proto__`, `Reflect`, `Proxy` | `Object.getPrototypeOf(x)` |
-| `class`, `inheritance` | `super`, a class that extends another | `class B extends A {}` |
+| `class`, `inheritance` | `super` as a value (`const f = super.m`, `super.x`); `super.m(...)` as a call is read as a transition on the receiver | `const f = super.m` |
 | `receiver-mutation` | assignment through a field of a field of `this` | `this.stats.n += 1` |
 | `global-mutation`, `global-read`, `toplevel-state`, `toplevel-effect` | module `let`/`var`, assignment to anything the function does not own, code at module level that runs on import | `counter = counter + 1` |
 | `alias-mutation` | changing a value through a local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`) | `const t = user.tags; t.push(1)` |

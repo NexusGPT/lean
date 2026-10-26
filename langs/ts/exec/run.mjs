@@ -130,6 +130,11 @@ export function pickUnit(exportsObj, spec, env) {
   }
   const Cls = units[spec.className] ?? exportsObj[spec.className];
   if (typeof Cls !== 'function') return null;
+  if (spec.unit.split('.')[1] === 'constructor') {
+    // the constructor unit: the instance it builds is both the receiver observed after the call and the value returned
+    const holder = { inst: null };
+    return { call: (args) => { holder.inst = Reflect.construct(Cls, args); return holder.inst; }, receiver: { __own: () => (holder.inst ? { ...holder.inst } : {}) } };
+  }
   const method = Cls.prototype[spec.unit.split('.')[1]];
   if (typeof method !== 'function' && !spec.isStatic) return null;
   if (spec.isStatic) { const sm = Cls[spec.unit.split('.')[1]]; return typeof sm === 'function' ? { call: (args) => sm.apply(Cls, args), receiver: null } : null; }
