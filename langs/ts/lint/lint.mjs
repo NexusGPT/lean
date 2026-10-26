@@ -270,10 +270,13 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (nonNull(rt).some(isAny)) {
         // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
         // plain field read would not (reads are pure), so that is the one shape refused
-        if (ts.isIdentifier(r) && currentFn) {
-          let later = false; const walk = (x) => { if (later) return; if (x.getStart(sf) > e.getEnd() && ts.isPropertyAccessExpression(x) && ts.isIdentifier(x.expression) && x.expression.text === r.text && !(x.parent && ts.isCallExpression(x.parent) && x.parent.expression === x)) later = true; ts.forEachChild(x, walk); };
+        if (currentFn) {
+          // a fresh value as receiver (a call result, an element) cannot be read again later: the call is a plain transition
+          const rtext = (ts.isIdentifier(r) || ts.isPropertyAccessExpression(r) || r.kind === K.ThisKeyword) ? r.getText(sf) : null;
+          if (rtext === null) return expr(e);
+          let later = false; const walk = (x) => { if (later) return; if (x.getStart(sf) > e.getEnd() && ts.isPropertyAccessExpression(x) && x.expression.getText(sf) === rtext && !(x.parent && ts.isCallExpression(x.parent) && x.parent.expression === x)) later = true; ts.forEachChild(x, walk); };
           walk(currentFn.body);
-          if (later) return v(e, 'opaque-mutation', `.${name}() on \`${r.text}\` may change it, and \`${r.text}\` is read later; read it before the call or through a method`);
+          if (later) return v(e, 'opaque-mutation', `.${name}() on \`${rtext.slice(0, 40)}\` may change it, and \`${rtext.slice(0, 40)}\` is read later; read it before the call or through a method`);
           return expr(e);
         }
         return v(e, 'opaque-mutation', `.${name}() as a statement on an opaque value may mutate it; name the receiver first`);
@@ -478,7 +481,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const parts = nonNull(rt);
       if (parts.some(isAny)) {
         // an opaque receiver: the call is an uninterpreted external of (receiver, arguments); no callbacks, no mutation names
-        if (['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin'].includes(name)) { const own = ts.isIdentifier(recv) && declOf(recv).kind === 'local' && !isParam(declOf(recv).decl); return v(e, own ? 'opaque-mutation' : 'param-mutation', `.${name}() on \`${recv.getText(sf).slice(0, 40)}\`, an opaque value${own ? ' this function holds' : ''}: the call may mutate it`); }
+        if (['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin'].includes(name) && e.parent && !ts.isExpressionStatement(e.parent)) { const own = ts.isIdentifier(recv) && declOf(recv).kind === 'local' && !isParam(declOf(recv).decl); return v(e, own ? 'opaque-mutation' : 'param-mutation', `.${name}() on \`${recv.getText(sf).slice(0, 40)}\`, an opaque value${own ? ' this function holds' : ''}, used as a value: the call may mutate it`); } // as a statement it is a transition (checked above)
         expr(recv);
         return argsOf(e);
       }
@@ -507,6 +510,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a method call on an external value (an imported object or a record with methods): uninterpreted
       if (ts.isIdentifier(recv)) { const o = declOf(recv); if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return argsOf(e); }
       expr(recv);
+      if (parts.every(isPromiseT) && ['then', 'catch', 'finally'].includes(name)) return argsOf(e); // a promise chain: an outside call; its handlers are opaque callbacks
       if (parts.every(isRecordish)) return argsOf(e); // a method of a record type (an interface with methods, a class instance): uninterpreted, keyed by the type
       return v(e, 'unsupported-call', `method .${name}() on ${checker.typeToString(rt)} is outside the subset`);
     }
