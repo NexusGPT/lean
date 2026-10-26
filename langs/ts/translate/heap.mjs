@@ -25,6 +25,15 @@
 // unit it calls, and every same-file unit that calls it, is in the core. Everything else keeps the existing
 // translation. Element access `a[i]` stays out of the core in this stage.
 import { createHash } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+// the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
+// design/library-ops.dfy and against the engine by exec/transitions.mjs on Test262); the prelude instantiates a row's
+// form per shape by substituting <K> (the shape key) and <E> (its element type)
+const LIBRARY = JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'library.json'), 'utf8'));
+const LIB_ROW = Object.fromEntries(LIBRARY.operations.map((o) => [o.op, o]));
+const ARRAY_ROWS = { push: 'Array.prototype.push', unshift: 'Array.prototype.unshift', pop: 'Array.prototype.pop', shift: 'Array.prototype.shift', splice: 'Array.prototype.splice', reverse: 'Array.prototype.reverse', slice: 'Array.prototype.slice', concat: 'Array.prototype.concat' };
+const instantiate = (form, k, E) => form.replace(/<K>/g, k).replace(/<E>/g, E).replace(/\.items\b/g, `.items_${k}`); // the table writes `.items`; each array shape has its own destructor
 
 export const HW = 'hw_';
 
@@ -71,7 +80,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   const fieldOf = (s, name) => (s.kind === 'rec' ? s.fields.find((f) => f.name === name) : null);
 
   // ----- the core, by syntax -----
-  const MUTATORS = new Set(['push', 'unshift', 'pop']);
+  const MUTATORS = new Set(['push', 'unshift', 'pop', 'shift', 'reverse', 'splice']); // in-place array operations of the table, as statements
+  const MUTATOR_ARITY = { push: [1, 1], unshift: [1, 1], pop: [0, 0], shift: [0, 0], reverse: [0, 0], splice: [2, Infinity] }; // splice: start, delete count, then insertions
   const BINOPS = new Set([K.PlusToken, K.MinusToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken]);
   const unparen = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
   const isBoolT = (t) => !!(t.flags & ts.TypeFlags.BooleanLike); // `&&` and `||` in the core are the boolean connectives; a value on either side is the ordinary translation's mixed logic
@@ -127,8 +137,14 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         return;
       }
       if (sameFileCall(e)) { for (const a of e.arguments) checkExpr(a); return; }
-      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'slice' && e.arguments.length === 0) {
-        const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no('slice of a non-array'); return checkExpr(e.expression.expression);
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['slice', 'concat', 'reverse', 'splice'].includes(e.expression.name.text)) { // the table's rows that yield a reference: a fresh array (slice, concat, splice) or the receiver (reverse)
+        const m = e.expression.name.text; const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${m} of a non-array`);
+        if ((m === 'slice' || m === 'splice') && isReal) return no(`${m} index in a real file`);
+        if (m === 'slice' && e.arguments.length > 2) return no('slice arity');
+        if (m === 'reverse' && e.arguments.length !== 0) return no('reverse arity');
+        if (m === 'splice' && e.arguments.length < 2) return no('splice arity');
+        if (m === 'concat') { if (e.arguments.length !== 1) return no('concat arity'); const q = shapeOf(typeOf(e.arguments[0])); if (!q || q.kind !== 'arr' || q.key !== s.key) return no('concat of a different shape'); }
+        checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); return;
       }
       if (ts.isCallExpression(e)) return no(ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file');
       if (ts.isElementAccessExpression(e)) return no('element access');
@@ -159,7 +175,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
           if (ts.isBinaryExpression(e) && [K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken].includes(e.operatorToken.kind)) { checkTarget(e.left); checkExpr(e.right); continue; }
           if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) {
             const s2 = shapeOf(typeOf(e.expression.expression)); if (!s2 || s2.kind !== 'arr') return no('mutator on a non-array');
-            const m = e.expression.name.text; if (e.arguments.length !== (m === 'pop' ? 0 : 1)) return no('mutator arity');
+            const m = e.expression.name.text; const [lo, hi] = MUTATOR_ARITY[m]; if (e.arguments.length < lo || e.arguments.length > hi) return no('mutator arity');
+            if (m === 'splice' && isReal) return no('splice index in a real file');
             checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); continue;
           }
           if (sameFileCall(e)) { for (const a of e.arguments) checkExpr(a); continue; }
@@ -241,32 +258,33 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   function prelude() {
     if (!core.size) return [];
     const keys = [...shapes.keys()].sort();
-    const ctor = (k) => { const s = shapes.get(k); return s.kind === 'arr' ? `${k}(items: seq<${valD(s.elem)}>)` : `${k}(${s.fields.map((f) => `${dn(f.name)}: ${valD(f.shape)}`).join(', ')})`; };
+    const fld = (name) => `${dn(name)}_f`; // a record field's destructor: suffixed, so a field named items, heap or next never meets the array constructor's items
+    const ctor = (k) => { const s = shapes.get(k); return s.kind === 'arr' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : `${k}(${s.fields.map((f) => `${fld(f.name)}: ${valD(f.shape)}`).join(', ')})`; };
     const out = [];
     out.push('type Ref = nat');
     out.push(`datatype Obj = ${keys.length ? keys.map(ctor).join(' | ') + ' | ' : ''}Dead`);
     out.push('datatype HWorld = HWorld(heap: map<Ref, Obj>, next: nat)');
     for (const k of keys) out.push(`predicate Is${k}(hw: HWorld, r: Ref) { r in hw.heap && hw.heap[r].${k}? }`);
-    const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items| ==> Is${keyOf(s.elem)}(hw, o.items[i]))`); } else for (const f of s.fields) if (f.shape.kind !== 'prim') conds.push(`Is${keyOf(f.shape)}(hw, o.${dn(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
+    const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else for (const f of s.fields) if (f.shape.kind !== 'prim') conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
     out.push(`predicate WFCell(hw: HWorld, o: Obj) { match o ${keys.map((k) => `case ${k}(${(shapes.get(k).kind === 'arr' ? ['_'] : shapes.get(k).fields.map(() => '_')).join(', ')}) => ${cellOk(k)}`).join(' ')} case Dead => false }`);
     out.push('predicate WF(hw: HWorld) { (forall r :: r in hw.heap ==> r < hw.next) && (forall r :: r in hw.heap ==> WFCell(hw, hw.heap[r])) }');
+    if (!isReal && keys.some((k) => shapes.get(k).kind === 'arr')) out.push(LIBRARY.helpers.Clamp); // the index clamp of slice and splice
     for (const k of keys) {
       const s = shapes.get(k);
-      const ps = s.kind === 'arr' ? [`items: seq<${valD(s.elem)}>`] : s.fields.map((f) => `${dn(f.name)}: ${valD(f.shape)}`);
-      const args = s.kind === 'arr' ? ['items'] : s.fields.map((f) => dn(f.name));
+      const ps = s.kind === 'arr' ? [`items: seq<${valD(s.elem)}>`] : s.fields.map((f) => `${fld(f.name)}: ${valD(f.shape)}`);
+      const args = s.kind === 'arr' ? ['items'] : s.fields.map((f) => fld(f.name));
       out.push(`function Alloc_${k}(hw: HWorld, ${ps.join(', ')}): (HWorld, Ref) { (HWorld(hw.heap[hw.next := ${k}(${args.join(', ')})], hw.next + 1), hw.next) }`);
       if (s.kind === 'arr') {
         const E = valD(s.elem);
-        out.push(`function Len_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].items|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
-        out.push(`function Items_${k}(hw: HWorld, r: Ref): seq<${E}> { if Is${k}(hw, r) then hw.heap[r].items else [] }`);
-        out.push(`function Push_${k}(hw: HWorld, r: Ref, v: ${E}): HWorld { if Is${k}(hw, r) then hw.(heap := hw.heap[r := ${k}(hw.heap[r].items + [v])]) else hw }`);
-        out.push(`function Unshift_${k}(hw: HWorld, r: Ref, v: ${E}): HWorld { if Is${k}(hw, r) then hw.(heap := hw.heap[r := ${k}([v] + hw.heap[r].items)]) else hw }`);
-        out.push(`function Pop_${k}(hw: HWorld, r: Ref): HWorld { if Is${k}(hw, r) && |hw.heap[r].items| > 0 then hw.(heap := hw.heap[r := ${k}(hw.heap[r].items[..|hw.heap[r].items| - 1])]) else hw }`);
+        out.push(`function Len_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].items_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
+        out.push(`function Items_${k}(hw: HWorld, r: Ref): seq<${E}> { if Is${k}(hw, r) then hw.heap[r].items_${k} else [] }`);
+        for (const op of Object.values(ARRAY_ROWS)) { const row = LIB_ROW[op]; if (!row || row.status !== 'generated') throw new Error(`library table: ${op} has no generated form`); if ((op.endsWith('.splice') || op.endsWith('.slice')) && isReal) continue; out.push(instantiate(row.dafny, k, E)); } // the table's forms, per shape
+        out.push(instantiate(LIBRARY.helpers['Rev_<K>'], k, E));
       } else {
         for (const f of s.fields) {
           const F = dn(f.name), T = valD(f.shape);
-          out.push(`function Get_${k}_${F}(hw: HWorld, r: Ref): ${T} { if Is${k}(hw, r) then hw.heap[r].${F} else ${dflt(f.shape)} }`);
-          out.push(`function Set_${k}_${F}(hw: HWorld, r: Ref, v: ${T}): HWorld { if Is${k}(hw, r) then hw.(heap := hw.heap[r := hw.heap[r].(${F} := v)]) else hw }`);
+          out.push(`function Get_${k}_${F}(hw: HWorld, r: Ref): ${T} { if Is${k}(hw, r) then hw.heap[r].${fld(f.name)} else ${dflt(f.shape)} }`);
+          out.push(`function Set_${k}_${F}(hw: HWorld, r: Ref, v: ${T}): HWorld { if Is${k}(hw, r) then hw.(heap := hw.heap[r := hw.heap[r].(${fld(f.name)} := v)]) else hw }`);
         }
       }
     }
@@ -305,7 +323,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
       if (ts.isArrayLiteralExpression(e)) {
         const s = shapeExpr(e);
         const parts = e.elements.map((x) => (ts.isSpreadElement(x) ? `Items_${shapeExpr(x.expression).key}(${HW}, ${expr(x.expression)})` : `[${expr(x)}]`));
-        const items = parts.length ? parts.join(' + ') : `([] : seq<${valD(s.elem)}>)`;
+        const items = parts.length ? parts.join(' + ') : `[]`;
         const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${items});`); return r;
       }
       if (ts.isObjectLiteralExpression(e)) {
@@ -323,11 +341,20 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         const args = e.arguments.map((a) => expr(a));
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(e.expression.text)}(${[HW, ...args].join(', ')});`); return r;
       }
-      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'slice') {
-        const s = shapeExpr(e.expression.expression);
-        const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, Items_${s.key}(${HW}, ${expr(e.expression.expression)}));`); return r;
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['slice', 'concat', 'reverse', 'splice'].includes(e.expression.name.text)) {
+        const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression);
+        return libCall(e, s, r);
       }
       throw new Error(`heap: unsupported expression ${e.getText(sf)}`);
+    }
+    // a call of a table row that yields a reference: Slice_/Concat_/Splice_ allocate (a fresh ref), Reverse_ returns the receiver
+    function libCall(e, s, r) {
+      const m = e.expression.name.text; const out = fresh('r');
+      if (m === 'slice') { const a = e.arguments[0] ? expr(e.arguments[0]) : '0'; const b = e.arguments[1] ? expr(e.arguments[1]) : `Len_${s.key}(${HW}, ${r})`; lines.push(`var (${HW}, ${out}) := Slice_${s.key}(${HW}, ${r}, ${a}, ${b});`); return out; }
+      if (m === 'concat') { const q = expr(e.arguments[0]); lines.push(`var (${HW}, ${out}) := Concat_${s.key}(${HW}, ${r}, ${q});`); return out; }
+      if (m === 'reverse') { lines.push(`var (${HW}, ${out}) := Reverse_${s.key}(${HW}, ${r});`); return out; }
+      if (m === 'splice') { const a = expr(e.arguments[0]), d = expr(e.arguments[1]); const ins = e.arguments.slice(2).map((x) => `[${expr(x)}]`); lines.push(`var (${HW}, ${out}) := Splice_${s.key}(${HW}, ${r}, ${a}, ${d}, ${ins.length ? ins.join(' + ') : `[]`});`); return out; }
+      throw new Error(`heap: no table row for .${m}`);
     }
     function assign(target0, valueCode) {
       const target = unparen(target0);
@@ -359,7 +386,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         }
         if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) {
           const s2 = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const m = e.expression.name.text;
-          const args = m === 'pop' ? [HW, r] : [HW, r, expr(e.arguments[0])];
+          if (m === 'reverse' || m === 'splice') { libCall(e, s2, r); out.push(flush()); continue; } // the result (the receiver, a fresh array) is dropped
+          const args = (m === 'pop' || m === 'shift') ? [HW, r] : [HW, r, expr(e.arguments[0])];
           lines.push(`var ${HW} := ${m[0].toUpperCase() + m.slice(1)}_${s2.key}(${args.join(', ')});`);
           out.push(flush()); continue;
         }

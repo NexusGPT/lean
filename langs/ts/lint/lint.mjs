@@ -481,6 +481,12 @@ export function lintFile(file, ranges = null, opts = {}) {
         conditionalSpreadArgs(e);
         return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
       }
+      if ((name === 'shift' || name === 'reverse' || name === 'splice') && isArrayExpr(r)) { // the in-place rows of the library table, as statements whose result is dropped
+        if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
+        if ((name === 'shift' || name === 'reverse') && e.arguments.length) v(e, 'unsupported-call', `${name} takes no argument`);
+        if (name === 'splice' && (e.arguments.length < 2 || e.arguments.some(ts.isSpreadElement))) v(e, 'unsupported-call', 'splice as a statement needs a start, a count and plain items');
+        return e.arguments.forEach((a) => expr(a));
+      }
       if ((name === 'add' || name === 'delete') && nonNull(rt).every(isSetT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'set mutation on a non-local'); return e.arguments.forEach(expr); }
       if ((name === 'set' || name === 'delete') && nonNull(rt).every(isMapT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'map mutation on a non-local'); return e.arguments.forEach(expr); }
       return expr(e); // a method call as a statement: a world transition (or a dropped value)

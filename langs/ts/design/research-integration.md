@@ -125,6 +125,23 @@ validation; their wiring around `unit.call` in lane B follows the heap merge.
 zones: obligations unmet; `structuredClone` of unsupported values: refused by name. `Object.freeze` needs a
 `frozen` set in the heap world, a schema change, so it comes after the table.
 
+### 4.1 Built, 2026-10-27: the array rows generated into the prelude
+
+- `heap.mjs` reads `library.json` and instantiates, per array shape, the forms of push, unshift, pop, shift, splice,
+  reverse, slice and concat (`<K>` the shape key, `<E>` the element type, `.items` the shape's own destructor), with
+  the helpers `Clamp` and `Rev_<K>`; the core admits `shift()`, `reverse()` and `splice(start, count, ...items)`
+  as statements and `slice(a?, b?)`, `concat(q)`, `reverse()`, `splice(...)` as expressions; the lint admits the
+  three statements on an owned array as it admits push; the ordinary translation reads them as sequence rebuilds.
+- Two destructor collisions fixed on the way: a record field named `items` met the array constructor's `items`,
+  and two array shapes with different element types shared it; every record field is now `<name>_f` and every
+  array shape has `items_<K>`.
+- Pair `tests/pairs/library_ops`: flip, dropFirstCopy and count proved; head and joined refuted; dropFirst (shift
+  for splice(0, 1)) and dropTwo (two splices for one) leave the same reachable graph but a different heap, since
+  splice allocates the removed part: unproved under whole-heap equality, PASS-bounded in lane B. They are the
+  first concrete cases for the canonical-heap certificate of section 3.
+- Not yet from the table: sort (its comparator), map and filter (a lambda in the core emitter), Map and Set cells
+  (new shape kinds), Object.assign, and the three drafts (freeze, structuredClone, Date).
+
 ## 5. State over time (brief 14)
 
 **Settled.** A one-step proof over the complete state composes by induction; the hole is a cell omitted, reset or

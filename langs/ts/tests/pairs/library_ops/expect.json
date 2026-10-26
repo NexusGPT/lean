@@ -1,0 +1,31 @@
+{
+ "scope": [
+  "drop_first",
+  "drop_two",
+  "drop_first_copy",
+  "flip",
+  "head",
+  "joined",
+  "count"
+ ],
+ "equal": {
+  "drop_first": false,
+  "drop_two": false,
+  "drop_first_copy": true,
+  "flip": true,
+  "head": false,
+  "joined": false,
+  "count": true
+ },
+ "why": "The array rows of the library table as heap transitions in the proof lane. flip returning the receiver through a local bound after the reverse: proved. dropFirstCopy and count untouched: proved. head slices three for two and joined concatenates in the other order: unproved, witnessed. dropFirst (a shift for a splice(0, 1)) and dropTwo (two splice(0, 1) for one splice(0, 2)) leave the same reachable graph but not the same heap: splice allocates the removed part, which nobody keeps; whole-heap equality cannot prove them (the canonical-heap certificate of section 3 is what will), and lane B, which compares the reachable graph, finds no difference.",
+ "heap": true,
+ "b": {
+  "dropFirst": "PASS-bounded",
+  "dropTwo": "PASS-bounded",
+  "dropFirstCopy": "PASS-bounded",
+  "flip": "PASS-bounded",
+  "head": "WITNESS",
+  "joined": "WITNESS",
+  "count": "PASS-bounded"
+ }
+}

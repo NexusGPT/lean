@@ -2920,7 +2920,7 @@ export function translate(file, fnName, opts = {}) {
   const retType = (u) => { if (u.fn.asteriskToken && !u.isAsync) return checker.createArrayType(generators.shape(u).element); let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;
   const isUpdate = (x) => (ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken);
-  const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set']);
+  const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set', 'shift', 'reverse', 'splice']);
   const pathRoot = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
   const isMutCall = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT.has(x.expression.name.text) && ts.isIdentifier(pathRoot(x.expression.expression)) && !isWorldField(x.expression.expression) && !(ts.isPropertyAccessExpression(x.expression.expression) && pathRoot(x.expression.expression).kind === K.ThisKeyword);
   const hasLoopOrMutation = (body) => {
@@ -3248,6 +3248,15 @@ export function translate(file, fnName, opts = {}) {
       return pathUpdate(r, (cur) => {
         if (m === 'push') return `${cur} + ${piece}`;
         if (m === 'unshift') return `${piece} + ${cur}`;
+        if (m === 'shift') return `(if |${cur}| > 0 then ${cur}[1..] else ${cur})`; // ECMA-262 23.1.3.27: the first element leaves; an empty array stays
+        if (m === 'reverse') { addPrelude('SeqRev', 'function SeqRev<T>(xs: seq<T>): seq<T> decreases |xs| { if |xs| == 0 then [] else SeqRev(xs[1..]) + [xs[0]] }'); return `SeqRev(${cur})`; } // 23.1.3.26
+        if (m === 'splice') { // 23.1.3.31: start and count clamped as ToIntegerOrInfinity does; the removed run is replaced by the items
+          addPrelude('SeqClamp', 'function SeqClamp(i: int, lo: int, hi: int): int { if i < lo then lo else if i > hi then hi else i }');
+          const E = dtype(checker.getTypeArguments(t)[0], r); const toInt = (c) => (isReal ? `(${c}).Floor` : c);
+          const start = toInt(expr(e.arguments[0])), count = toInt(expr(e.arguments[1]));
+          const items = e.arguments.length > 2 ? callSequence(e.arguments.slice(2), E).code : `([] : seq<${E}>)`;
+          return `(var xs_ := ${cur}; var s_ := SeqClamp(${start}, 0, |xs_|); var d_ := SeqClamp(${count}, 0, |xs_| - s_); xs_[..s_] + ${items} + xs_[s_ + d_..])`;
+        }
         if (isSetT(t)) { const A = checker.getTypeArguments(t)[0]; return m === 'add' ? `${cur} + {${expr(e.arguments[0], A)}}` : `${cur} - {${expr(e.arguments[0], A)}}`; }
         if (isMapT(t)) { const [kt, vt] = checker.getTypeArguments(t); return m === 'set' ? `${cur}[${expr(e.arguments[0], kt)} := ${expr(e.arguments[1], vt)}]` : `${cur} - {${expr(e.arguments[0], kt)}}`; }
         return fail(e, `.${m}() is not translated here`);
