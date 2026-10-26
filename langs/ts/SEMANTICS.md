@@ -29,6 +29,18 @@ A function whose text is identical on both sides (comments removed, whitespace f
 
 S is written by the requester as function names, input predicates over the parameters, and effect operations allowed to change. Nothing is inferred from the request text.
 
+## Opaque blocks
+
+A statement the proof lane does not model (try/catch, a `while` without a bound) is one uninterpreted transition of the world, named by the block's own text. It takes the locals the block reads and the receiver; it returns the locals the block assigns and, when the block may return, the function's result. The same text on both sides is the same transition. The name also lists the same-file functions the block calls; when one of them changed, the theorem refuses the block (ASK), because the same text no longer means the same transition.
+
+## Recursion
+
+A function on a recursive cycle (alone or with others) takes a fuel. Every call on the cycle passes one less; at zero the function yields an uninterpreted out-of-fuel value. A caller outside the cycle passes an uninterpreted starting fuel. The theorem quantifies over the fuel: equal for every fuel. A function whose text is identical on both sides but whose recursive sibling changed is not aliased, and its proof needs an induction the theorem does not yet write: ASK.
+
+## Lane B (bounded execution)
+
+Both versions run in one process, each in its own sandbox, against the same fakes: every import that leaves the package, every global that reaches the outside, every field of a receiver. A fake records what is asked of it; its answers come from the seed and the path, the same on both sides; a call made twice is two values. The clock is frozen. Inputs come from the parameter types, boundary values first, recursive shapes unfolded to depth three. The observation is the one above; a difference on any input is a WITNESS with that input; none on n inputs is PASS-bounded, which states n, the seed, the fake policy and the time limit, and never becomes a proof.
+
 ## What stays outside
 
-Unbounded loops without a readable bound, recursion without a readable measure, inheritance, generators, more than one asynchronous schedule, code the repository does not contain. Each is an ASK with its reason, never a PASS.
+Assignment to a field of `this`, `super`, generators, closures that change an outer variable, mutation of a parameter, more than one asynchronous schedule, code the repository does not contain. Each is an ASK with its reason, never a PASS.
