@@ -1605,7 +1605,7 @@ export function translate(file, fnName, opts = {}) {
   }
   // an async await exits on a fault before its following statements, just like a promise reaction
   const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; };
-  const asyncFailure = (u) => retIn(wrapRet(promiseFailure(dtype(retType(u), u.node))));
+  const asyncFailure = (u) => retIn(promiseFailure(dtype(retType(u), u.node)));
   function awaitExpr(n) {
     const shape = promiseAllMapShape(n);
     if (shape) return callbackValue(n, shape);

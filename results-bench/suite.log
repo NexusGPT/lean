@@ -81,6 +81,18 @@
 | construct    | index_callbacks              | verify (--core)                          | PASS |             | 3 verified, 0 errors
 | construct    | index_callbacks_find         | lint                                     | PASS | yes         | inside the subset
 | construct    | index_callbacks_find         | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | loop_forms_nestedExits       | lint                                     | PASS | no          | inside the subset
+| construct    | loop_forms_nestedExits       | verify (--core)                          | PASS |             | 4 verified, 0 errors
+| construct    | loop_forms_switchControl     | lint                                     | PASS | no          | inside the subset
+| construct    | loop_forms_switchControl     | verify (--core)                          | PASS |             | 5 verified, 0 errors
+| construct    | loop_forms_finiteWhile       | lint                                     | PASS | no          | inside the subset
+| construct    | loop_forms_finiteWhile       | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | loop_forms_downwardWhile     | lint                                     | PASS | no          | inside the subset
+| construct    | loop_forms_downwardWhile     | verify (--core)                          | PASS |             | 1 verified, 0 errors
+| construct    | loop_forms_labelledDo        | lint                                     | PASS | no          | inside the subset
+| construct    | loop_forms_labelledDo        | verify (--core)                          | PASS |             | 2 verified, 0 errors
+| construct    | loop_forms_labelledWhile     | lint                                     | PASS | no          | inside the subset
+| construct    | loop_forms_labelledWhile     | verify (--core)                          | PASS |             | 2 verified, 0 errors
 | construct    | float_literal                | a float literal makes the file real      | PASS |             | real
 | construct    | float_literal                | --real accepts 0.1                       | PASS |             | translated
 | differential | sum_positive                 | 4 inputs, TS vs Dafny                    | PASS |             | same answers
@@ -102,7 +114,14 @@
 | differential | default_args                 | 3 inputs, TS vs Dafny                    | PASS |             | same answers
 | differential | index_callbacks              | 3 inputs, TS vs Dafny                    | PASS |             | same answers
 | differential | index_callbacks_find         | 3 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | loop_forms_nestedExits       | 6 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | loop_forms_switchControl     | 5 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | loop_forms_finiteWhile       | 4 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | loop_forms_downwardWhile     | 5 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | loop_forms_labelledDo        | 5 inputs, TS vs Dafny                    | PASS |             | same answers
+| differential | loop_forms_labelledWhile     | 4 inputs, TS vs Dafny                    | PASS |             | same answers
 | construct    | string_helpers               | concrete Dafny assertions                | PASS |             | Dafny program verifier finished with 7 verified, 0 errors
+| construct    | number_helpers               | concrete Dafny execution                 | PASS |             | 190 numeric execution checks and 6 distinct special-value renderings passed
 | control      | false theorem                | proof shape refuted                      | PASS |             | 0 verified, 1 errors
 | control      | false theorem                | --core refuted                           | PASS |             | 1 verified, 1 errors
 | control      | missing invariant            | proof shape refuted                      | PASS |             | 0 verified, 1 errors
@@ -319,6 +338,36 @@
 | pair         | function_values              | lane B pick PASS-bounded                 | PASS |             | PASS-bounded
 | pair         | function_values              | lane B Svc.handler WITNESS               | PASS |             | WITNESS
 | pair         | function_values              | lane B apply WITNESS                     | PASS |             | WITNESS
+| pair         | generators                   | theorem generated                        | PASS |             | ok
+| pair         | generators                   | Equal_changed not proved                 | PASS |             | not proved
+| pair         | generators                   | Equal_consume not proved                 | PASS |             | not proved
+| pair         | generators                   | Equal_two proved                         | PASS |             | proved
+| pair         | generators                   | Equal_refactor proved                    | PASS |             | proved
+| pair         | generators                   | Equal_composed proved                    | PASS |             | proved
+| pair         | generators                   | Equal_composition proved                 | PASS |             | proved
+| pair         | generators                   | Equal_counted proved                     | PASS |             | proved
+| pair         | generators                   | Equal_collect_counted proved             | PASS |             | proved
+| pair         | generators                   | Equal_outside not proved                 | PASS |             | not proved
+| pair         | generators                   | Equal_streamed proved                    | PASS |             | proved
+| pair         | generators                   | Equal_interleave proved                  | PASS |             | proved
+| pair         | generators                   | Equal_untouched proved                   | PASS |             | proved
+| pair         | generators                   | Equal_producer_step not proved           | PASS |             | not proved
+| pair         | generators                   | Equal_deferred not proved                | PASS |             | not proved
+| pair         | generators                   | Equal_deferred_consumer not proved       | PASS |             | not proved
+| pair         | generators                   | Equal_first_value proved                 | PASS |             | proved
+| pair         | generators                   | Equal_outside_sync proved                | PASS |             | proved
+| pair         | generators                   | Equal_labelled proved                    | PASS |             | proved
+| pair         | generators                   | lane B consume WITNESS                   | PASS |             | WITNESS
+| pair         | generators                   | lane B refactor PASS-bounded             | PASS |             | PASS-bounded
+| pair         | generators                   | lane B composition PASS-bounded          | PASS |             | PASS-bounded
+| pair         | generators                   | lane B collectCounted PASS-bounded       | PASS |             | PASS-bounded
+| pair         | generators                   | lane B outside WITNESS                   | PASS |             | WITNESS
+| pair         | generators                   | lane B interleave PASS-bounded           | PASS |             | PASS-bounded
+| pair         | generators                   | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | generators                   | lane B deferredConsumer WITNESS          | PASS |             | WITNESS
+| pair         | generators                   | lane B firstValue PASS-bounded           | PASS |             | PASS-bounded
+| pair         | generators                   | lane B outsideSync PASS-bounded          | PASS |             | PASS-bounded
+| pair         | generators                   | lane B labelled PASS-bounded             | PASS |             | PASS-bounded
 | pair         | generics                     | theorem generated                        | PASS |             | ok
 | pair         | generics                     | Equal_first_or proved                    | PASS |             | proved
 | pair         | generics                     | Equal_count_of not proved                | PASS |             | not proved
@@ -376,6 +425,47 @@
 | pair         | logic_values                 | lane B kind PASS-bounded                 | PASS |             | PASS-bounded
 | pair         | logic_values                 | lane B Svc.find WITNESS                  | PASS |             | WITNESS
 | pair         | logic_values                 | lane B Svc.maybe PASS-bounded            | PASS |             | PASS-bounded
+| pair         | loop_forms                   | theorem generated                        | PASS |             | ok
+| pair         | loop_forms                   | Equal_labelled_break not proved          | PASS |             | not proved
+| pair         | loop_forms                   | Equal_fall_through not proved            | PASS |             | not proved
+| pair         | loop_forms                   | Equal_guarded_while proved               | PASS |             | proved
+| pair         | loop_forms                   | Equal_derived_while proved               | PASS |             | proved
+| pair         | loop_forms                   | Equal_empty_for proved                   | PASS |             | proved
+| pair         | loop_forms                   | Equal_labelled_continue proved           | PASS |             | proved
+| pair         | loop_forms                   | Equal_untouched proved                   | PASS |             | proved
+| pair         | loop_forms                   | Equal_opaque_bound proved                | PASS |             | proved
+| pair         | loop_forms                   | Equal_switch_effects proved              | PASS |             | proved
+| pair         | loop_forms                   | Equal_labelled_return proved             | PASS |             | proved
+| pair         | loop_forms                   | Equal_closed_return proved               | PASS |             | proved
+| pair         | loop_forms                   | Equal_opaque_escape proved               | PASS |             | proved
+| pair         | loop_forms                   | Equal_switch_fault proved                | PASS |             | proved
+| pair         | loop_forms                   | Equal_deep_bound proved                  | PASS |             | proved
+| pair         | loop_forms                   | Equal_bare_undefined proved              | PASS |             | proved
+| pair         | loop_forms                   | Equal_nullish_return proved              | PASS |             | proved
+| pair         | loop_forms                   | Equal_module_loop proved                 | PASS |             | proved
+| pair         | loop_forms                   | Equal_module_bound not proved            | PASS |             | not proved
+| pair         | loop_forms                   | Equal_switch_update proved               | PASS |             | proved
+| pair         | loop_forms                   | Equal_do_update proved                   | PASS |             | proved
+| pair         | loop_forms                   | lane B labelledBreak WITNESS             | PASS |             | WITNESS
+| pair         | loop_forms                   | lane B fallThrough WITNESS               | PASS |             | WITNESS
+| pair         | loop_forms                   | lane B guardedWhile PASS-bounded         | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B derivedWhile PASS-bounded         | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B emptyFor PASS-bounded             | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B labelledContinue PASS-bounded     | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B opaqueBound PASS-bounded          | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B switchEffects PASS-bounded        | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B labelledReturn PASS-bounded       | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B closedReturn PASS-bounded         | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B opaqueEscape PASS-bounded         | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B switchFault PASS-bounded          | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B deepBound PASS-bounded            | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B bareUndefined PASS-bounded        | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B nullishReturn PASS-bounded        | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B moduleLoop PASS-bounded           | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B moduleBound WITNESS               | PASS |             | WITNESS
+| pair         | loop_forms                   | lane B switchUpdate PASS-bounded         | PASS |             | PASS-bounded
+| pair         | loop_forms                   | lane B doUpdate PASS-bounded             | PASS |             | PASS-bounded
 | pair         | module_forms                 | theorem generated                        | PASS |             | ok
 | pair         | module_forms                 | Equal_bump not proved                    | PASS |             | not proved
 | pair         | module_forms                 | Equal_twice not proved                   | PASS |             | not proved
@@ -478,6 +568,56 @@
 | pair         | numbers                      | lane B vat WITNESS                       | PASS |             | WITNESS
 | pair         | numbers                      | lane B discounted WITNESS                | PASS |             | WITNESS
 | pair         | numbers                      | lane B pages WITNESS                     | PASS |             | WITNESS
+| pair         | numbers_bits                 | theorem generated                        | PASS |             | ok
+| pair         | numbers_bits                 | Equal_flags not proved                   | PASS |             | not proved
+| pair         | numbers_bits                 | Equal_coerce proved                      | PASS |             | proved
+| pair         | numbers_bits                 | Equal_zero_guard not proved              | PASS |             | not proved
+| pair         | numbers_bits                 | Equal_untouched proved                   | PASS |             | proved
+| pair         | numbers_bits                 | Equal_unsigned proved                    | PASS |             | proved
+| pair         | numbers_bits                 | Equal_negative_zero not proved           | PASS |             | not proved
+| pair         | numbers_bits                 | Equal_infinity_sign not proved           | PASS |             | not proved
+| pair         | numbers_bits                 | Equal_nan_test not proved                | PASS |             | not proved
+| pair         | numbers_bits                 | Equal_boolean_number proved              | PASS |             | proved
+| pair         | numbers_bits                 | Equal_numeric_identity proved            | PASS |             | proved
+| pair         | numbers_bits                 | Equal_rounded proved                     | PASS |             | proved
+| pair         | numbers_bits                 | Equal_truncated proved                   | PASS |             | proved
+| pair         | numbers_bits                 | Equal_real_remainder proved              | PASS |             | proved
+| pair         | numbers_bits                 | Equal_parse_prefix proved                | PASS |             | proved
+| pair         | numbers_bits                 | Equal_string_number proved               | PASS |             | proved
+| pair         | numbers_bits                 | Equal_divide not proved                  | PASS |             | not proved
+| pair         | numbers_bits                 | Equal_observe_divide not proved          | PASS |             | not proved
+| pair         | numbers_bits                 | Equal_observe_module not proved          | PASS |             | not proved
+| pair         | numbers_bits                 | Equal_parse_numeric not proved           | PASS |             | not proved
+| pair         | numbers_bits                 | lane B flags WITNESS                     | PASS |             | WITNESS
+| pair         | numbers_bits                 | lane B coerce PASS-bounded               | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B zeroGuard WITNESS                 | PASS |             | WITNESS
+| pair         | numbers_bits                 | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B unsigned PASS-bounded             | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B negativeZero WITNESS              | PASS |             | WITNESS
+| pair         | numbers_bits                 | lane B infinitySign WITNESS              | PASS |             | WITNESS
+| pair         | numbers_bits                 | lane B nanTest WITNESS                   | PASS |             | WITNESS
+| pair         | numbers_bits                 | lane B booleanNumber PASS-bounded        | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B numericIdentity PASS-bounded      | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B rounded PASS-bounded              | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B truncated PASS-bounded            | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B realRemainder PASS-bounded        | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B parsePrefix PASS-bounded          | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B stringNumber PASS-bounded         | PASS |             | PASS-bounded
+| pair         | numbers_bits                 | lane B divide WITNESS                    | PASS |             | WITNESS
+| pair         | numbers_bits                 | lane B observeDivide WITNESS             | PASS |             | WITNESS
+| pair         | numbers_bits                 | lane B observeModule WITNESS             | PASS |             | WITNESS
+| pair         | numbers_bits                 | lane B parseNumeric WITNESS              | PASS |             | WITNESS
+| pair         | numbers_bits_rebase          | theorem generated                        | PASS |             | ok
+| pair         | numbers_bits_rebase          | Equal_module_number not proved           | PASS |             | not proved
+| pair         | numbers_bits_rebase          | Equal_nullable_default proved            | PASS |             | proved
+| pair         | numbers_bits_rebase          | Equal_nullable_optional proved           | PASS |             | proved
+| pair         | numbers_bits_rebase          | Equal_null_branch not proved             | PASS |             | not proved
+| pair         | numbers_bits_rebase          | Equal_untouched proved                   | PASS |             | proved
+| pair         | numbers_bits_rebase          | lane B moduleNumber WITNESS              | PASS |             | WITNESS
+| pair         | numbers_bits_rebase          | lane B nullableDefault PASS-bounded      | PASS |             | PASS-bounded
+| pair         | numbers_bits_rebase          | lane B nullableOptional PASS-bounded     | PASS |             | PASS-bounded
+| pair         | numbers_bits_rebase          | lane B nullBranch WITNESS                | PASS |             | WITNESS
+| pair         | numbers_bits_rebase          | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
 | pair         | operators                    | theorem generated                        | PASS |             | ok
 | pair         | operators                    | Equal_sum proved                         | PASS |             | proved
 | pair         | operators                    | Equal_total proved                       | PASS |             | proved
@@ -489,6 +629,63 @@
 | pair         | operators                    | lane B headTail WITNESS                  | PASS |             | WITNESS
 | pair         | operators                    | lane B withDefault WITNESS               | PASS |             | WITNESS
 | pair         | operators                    | lane B area PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | operators_values             | theorem generated                        | PASS |             | ok
+| pair         | operators_values             | Equal_temporary_names proved             | PASS |             | proved
+| pair         | operators_values             | Equal_cursor not proved                  | PASS |             | not proved
+| pair         | operators_values             | Equal_indexed proved                     | PASS |             | proved
+| pair         | operators_values             | Equal_arithmetic proved                  | PASS |             | proved
+| pair         | operators_values             | Equal_order not proved                   | PASS |             | not proved
+| pair         | operators_values             | Equal_chained proved                     | PASS |             | proved
+| pair         | operators_values             | Equal_compound proved                    | PASS |             | proved
+| pair         | operators_values             | Equal_sequence proved                    | PASS |             | proved
+| pair         | operators_values             | Equal_path proved                        | PASS |             | proved
+| pair         | operators_values             | Equal_arguments_in_order proved          | PASS |             | proved
+| pair         | operators_values             | Equal_assigned_test proved               | PASS |             | proved
+| pair         | operators_values             | Equal_counter_reset proved               | PASS |             | proved
+| pair         | operators_values             | Equal_counter_take not proved            | PASS |             | not proved
+| pair         | operators_values             | Equal_untouched proved                   | PASS |             | proved
+| pair         | operators_values             | Equal_optional_assigned proved           | PASS |             | proved
+| pair         | operators_values             | Equal_counter_prefix proved              | PASS |             | proved
+| pair         | operators_values             | Equal_counter_compound proved            | PASS |             | proved
+| pair         | operators_values             | Equal_local_postfix proved               | PASS |             | proved
+| pair         | operators_values             | Equal_mixed_truth proved                 | PASS |             | proved
+| pair         | operators_values             | Equal_assigned_ternary proved            | PASS |             | proved
+| pair         | operators_values             | Equal_receiver_value proved              | PASS |             | proved
+| pair         | operators_values             | Equal_awaited_receiver proved            | PASS |             | proved
+| pair         | operators_values             | Equal_module_postfix proved              | PASS |             | proved
+| pair         | operators_values             | Equal_assigned_absence proved            | PASS |             | proved
+| pair         | operators_values             | Equal_assigned_truth proved              | PASS |             | proved
+| pair         | operators_values             | Equal_assigned_coalesce proved           | PASS |             | proved
+| pair         | operators_values             | Equal_assigned_nullable proved           | PASS |             | proved
+| pair         | operators_values             | Equal_assigned_null proved               | PASS |             | proved
+| pair         | operators_values             | lane B temporaryNames PASS-bounded       | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B cursor WITNESS                    | PASS |             | WITNESS
+| pair         | operators_values             | lane B indexed PASS-bounded              | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B arithmetic PASS-bounded           | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B order WITNESS                     | PASS |             | WITNESS
+| pair         | operators_values             | lane B chained PASS-bounded              | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B compound PASS-bounded             | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B sequence PASS-bounded             | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B path PASS-bounded                 | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B argumentsInOrder PASS-bounded     | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B assignedTest PASS-bounded         | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B Counter.reset PASS-bounded        | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B Counter.take WITNESS              | PASS |             | WITNESS
+| pair         | operators_values             | lane B untouched PASS-bounded            | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B optionalAssigned PASS-bounded     | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B Counter.prefix PASS-bounded       | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B Counter.compound PASS-bounded     | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B localPostfix PASS-bounded         | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B mixedTruth PASS-bounded           | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B assignedTernary PASS-bounded      | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B Receiver.value PASS-bounded       | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B awaitedReceiver PASS-bounded      | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B modulePostfix PASS-bounded        | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B assignedAbsence PASS-bounded      | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B assignedTruth PASS-bounded        | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B assignedCoalesce PASS-bounded     | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B assignedNullable PASS-bounded     | PASS |             | PASS-bounded
+| pair         | operators_values             | lane B assignedNull PASS-bounded         | PASS |             | PASS-bounded
 | pair         | optional_calls               | theorem generated                        | PASS |             | ok
 | pair         | optional_calls               | Equal_notify proved                      | PASS |             | proved
 | pair         | optional_calls               | Equal_label_of not proved                | PASS |             | not proved
@@ -787,6 +984,8 @@
 | escape       | async_callback_unawaited     | translate refuses                        | PASS |             | refused
 | escape       | async_filter                 | lint refuses                             | PASS | no          | refused: async-predicate
 | escape       | async_filter                 | translate refuses                        | PASS |             | refused
+| escape       | bitwise_bigint               | lint refuses                             | PASS | yes         | refused: bitwise
+| escape       | bitwise_bigint               | translate refuses                        | PASS |             | refused
 | escape       | cast                         | lint refuses                             | PASS | yes         | refused: param-assign
 | escape       | cast                         | translate refuses                        | PASS |             | refused
 | escape       | class_this                   | lint refuses                             | PASS | yes         | refused: receiver-mutation
@@ -816,6 +1015,16 @@
 | escape       | foreach_async                | translate refuses                        | PASS |             | refused
 | escape       | function_value               | lint refuses                             | PASS | yes         | refused: function-value
 | escape       | function_value               | translate refuses                        | PASS |             | refused
+| escape       | generator_bound              | lint refuses                             | PASS | no          | refused: generator-bound
+| escape       | generator_bound              | translate refuses                        | PASS |             | refused
+| escape       | generator_capture            | lint refuses                             | PASS | no          | refused: generator-effect
+| escape       | generator_capture            | translate refuses                        | PASS |             | refused
+| escape       | generator_effect             | lint refuses                             | PASS | no          | refused: generator-effect
+| escape       | generator_effect             | translate refuses                        | PASS |             | refused
+| escape       | generator_opaque_dependency  | lint refuses                             | PASS | no          | refused: generator-effect
+| escape       | generator_opaque_dependency  | translate refuses                        | PASS |             | refused
+| escape       | generator_use                | lint refuses                             | PASS | no          | refused: generator-use
+| escape       | generator_use                | translate refuses                        | PASS |             | refused
 | escape       | global_mutation              | lint refuses                             | PASS | yes         | refused: global-mutation
 | escape       | global_mutation              | translate refuses                        | PASS |             | refused
 | escape       | import_effect                | lint refuses                             | PASS | no          | refused: dynamic-eval
@@ -826,6 +1035,8 @@
 | escape       | instanceof_constructor_value | translate refuses                        | PASS |             | refused
 | escape       | instanceof_custom            | lint refuses                             | PASS | yes         | refused: instanceof-constructor
 | escape       | instanceof_custom            | translate refuses                        | PASS |             | refused
+| escape       | iterator_protocol            | lint refuses                             | PASS | yes         | refused: iterator-protocol
+| escape       | iterator_protocol            | translate refuses                        | PASS |             | refused
 | escape       | loose_equality               | lint refuses                             | PASS | yes         | refused: loose-equality
 | escape       | loose_equality               | translate refuses                        | PASS |             | refused
 | escape       | module_global_write          | lint refuses                             | PASS | yes         | refused: property-assign
@@ -838,6 +1049,20 @@
 | escape       | nondeterminism               | translate refuses                        | PASS |             | refused
 | escape       | null_undefined_coercion      | lint refuses                             | PASS | yes         | refused: loose-equality
 | escape       | null_undefined_coercion      | translate refuses                        | PASS |             | refused
+| escape       | number_special               | lint refuses                             | PASS | yes         | refused: number-special
+| escape       | number_special               | translate refuses                        | PASS |             | refused
+| escape       | operator_value_constructor   | lint refuses                             | PASS | no          | refused: operator-value-context
+| escape       | operator_value_constructor   | translate refuses                        | PASS |             | refused
+| escape       | operator_value_context       | lint refuses                             | PASS | no          | refused: operator-value-context
+| escape       | operator_value_context       | translate refuses                        | PASS |             | refused
+| escape       | operator_value_logical       | lint refuses                             | PASS | yes         | refused: assignment-expression
+| escape       | operator_value_logical       | translate refuses                        | PASS |             | refused
+| escape       | operator_value_optional      | lint refuses                             | PASS | no          | refused: operator-value-context
+| escape       | operator_value_optional      | translate refuses                        | PASS |             | refused
+| escape       | operator_value_reference     | lint refuses                             | PASS | yes         | refused: operator-value-context
+| escape       | operator_value_reference     | translate refuses                        | PASS |             | refused
+| escape       | operator_value_tag           | lint refuses                             | PASS | no          | refused: operator-value-context
+| escape       | operator_value_tag           | translate refuses                        | PASS |             | refused
 | escape       | parameter_mutation           | lint refuses                             | PASS | yes         | refused: alias-mutation
 | escape       | parameter_mutation           | translate refuses                        | PASS |             | refused
 | escape       | promise_after_settlement     | lint refuses                             | PASS | no          | refused: promise-unsettled
@@ -878,7 +1103,9 @@
 | escape       | string_surrogate             | translate refuses                        | PASS |             | refused
 | escape       | super_field                  | lint refuses                             | PASS | yes         | refused: class
 | escape       | try_catch                    | lint refuses                             | PASS | yes         | refused: delete
+| escape       | unary_number_object          | lint refuses                             | PASS | yes         | refused: unary-coercion
+| escape       | unary_number_object          | translate refuses                        | PASS |             | refused
 | escape       | unbounded_while              | lint refuses                             | PASS | no          | refused: label
 | escape       | unbounded_while              | translate refuses                        | PASS |             | refused
-| repo         | conformance/run.py ts        | runner                                   | PASS |             | conformance: PASS, 57 of 57 checks passed, languages: ts
-| TOTAL | 882 checks | ALL PASS |
+| repo         | conformance/run.py ts        | runner                                   | PASS |             | conformance: PASS, 72 of 72 checks passed, languages: ts
+| TOTAL | 1109 checks | ALL PASS |
