@@ -6,6 +6,7 @@ export const ADVICE = {
   'foreach': 'Write `for (const x of xs) { ... }`; a loop may update a local, a callback may not.',
   'closure-mutation': 'A callback may compute, not assign an outer variable. Use `for (const x of xs)` or `reduce`, and let the state come out of the loop.',
   'param-mutation': 'This changes what the caller handed in. Return a new value: `[...xs, v]`, `{ ...r, f: v }`.',
+  'opaque-mutation': 'A mutating method on a value the gate cannot see into. Keep it, and the gate reads the call as a transition; or rebuild the value.',
   'in-place-mutation': 'This reorders a local in place. Assign the sorted copy back: `xs = [...xs].sort(cmp)`.',
   'param-assign': 'Copy the parameter to a local first (`let n = x`), then change the local.',
   'receiver-mutation': 'A method that assigns a field of `this` is not provable yet. Return the new state and let the caller keep it.',

@@ -280,8 +280,11 @@ export function classMethodUnits(st) {
   return out;
 }
 
+const TF = ts.TypeFlags;
 export function isArrayLike(checker, type) {
-  return checker.isArrayType(type) || checker.isTupleType(type);
+  if (checker.isArrayType(type) || checker.isTupleType(type)) return true;
+  // an interface that extends an array (RegExpMatchArray, a typed result list): the checker's own array-like test
+  return typeof checker.isArrayLikeType === 'function' && checker.isArrayLikeType(type) && !(type.flags & (TF.StringLike | TF.Any | TF.Unknown));
 }
 export function isTuple(checker, type) {
   return checker.isTupleType(type);

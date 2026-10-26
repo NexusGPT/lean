@@ -214,7 +214,7 @@ export function translate(file, fnName, opts = {}) {
         if (ds.length && (lit || rest || (ro && ds.length >= 2 && !/^(int|real|bool|string|char)$/.test(ds[0]))) && ds.every((d) => d === ds[0])) return `seq<${ds[0]}>`; // a literal list (`as const`), a readonly table or an open tuple [T, ...T[]]: a sequence
         return `(${ds.join(', ')})`;
       }
-      if (checker.isArrayType(t)) return `seq<${dtype(checker.getTypeArguments(t)[0], n, depth + 1)}>`;
+      if (isArrayLike(checker, t)) { const et = checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); if (!et) fail(n, `array-like type ${checker.typeToString(t)} has no element type`); return `seq<${dtype(et, n, depth + 1)}>`; } // arrays, tuples and interfaces that extend an array (a match result)
       if (isSetT(t)) return `set<${dtype(checker.getTypeArguments(t)[0], n, depth + 1)}>`;
       if (isMapT(t)) { const [k, vv] = checker.getTypeArguments(t); return `map<${dtype(k, n, depth + 1)}, ${dtype(vv, n, depth + 1)}>`; }
       if (isPromiseT(t)) return dtype(checker.getTypeArguments(t)[0], n, depth + 1);
@@ -792,7 +792,7 @@ export function translate(file, fnName, opts = {}) {
     }
     return fail(pattern, 'pattern is not translated');
   }
-  const elemType = (arrNode) => { const t = baseOf(typeOf(arrNode)); return checker.getTypeArguments(t)[0]; };
+  const elemType = (arrNode) => { const t = baseOf(typeOf(arrNode)); return checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); };
   function propAccess(n, keepOption = false) {
     const name = n.name.text;
     if (ts.isIdentifier(n.expression)) {

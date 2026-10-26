@@ -430,7 +430,11 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (EQ.has(op)) {
       const nul = (x) => x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined');
       const prim = (t) => nonNull(t).every((x) => isPrim(x) || isAny(x));
-      if (!nul(e.left) && !nul(e.right) && (!prim(lt) || !prim(rt))) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
+      const litSide = (x) => ts.isStringLiteral(x) || ts.isNumericLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword;
+      // a comparison with a primitive on either side is a value comparison; only record against record (or array against array) compares references
+      const mixed = (t) => { const ps = nonNull(t); return ps.some((x) => isPrim(x)) && ps.some((x) => !isPrim(x) && !isAny(x)); };
+      if (mixed(lt) || mixed(rt)) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array is opaque; narrow it before comparing');
+      else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt)) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
     }
   }
 
@@ -443,7 +447,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (o.kind === 'local') return argsOf(e); // a function-typed parameter or local
       if (o.kind === 'unit') {
         const u = units.get(f.text);
-        if (u && u.params.length !== e.arguments.length && !e.arguments.some(ts.isSpreadElement)) v(e, 'unsupported-call', `${f.text} takes ${u.params.length} arguments`);
+        if (u && !e.arguments.some(ts.isSpreadElement)) { const req = u.params.filter((p) => !p.initializer && !p.questionToken && !p.dotDotDotToken).length; if (e.arguments.length < req || e.arguments.length > u.params.length) v(e, 'unsupported-call', `${f.text} takes ${req === u.params.length ? req : `${req} to ${u.params.length}`} arguments`); }
         if (u && u.isAsync && !(e.parent && ts.isAwaitExpression(e.parent))) v(e, 'async', 'an async unit is called without await');
       }
       if (o.kind === 'unit') { e.arguments.forEach((a) => { if (ts.isSpreadElement(a)) v(a, 'spread', 'spread arguments are outside the subset'); else if (!ts.isArrowFunction(a)) expr(a); else v(a, 'function-value', 'a same-file function takes values, not callbacks'); }); return; }
@@ -463,7 +467,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const parts = nonNull(rt);
       if (parts.some(isAny)) {
         // an opaque receiver: the call is an uninterpreted external of (receiver, arguments); no callbacks, no mutation names
-        if (['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin'].includes(name)) return v(e, 'param-mutation', `.${name}() on an opaque value may mutate it`);
+        if (['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin'].includes(name)) { const own = ts.isIdentifier(recv) && declOf(recv).kind === 'local' && !isParam(declOf(recv).decl); return v(e, own ? 'opaque-mutation' : 'param-mutation', `.${name}() on \`${recv.getText(sf).slice(0, 40)}\`, an opaque value${own ? ' this function holds' : ''}: the call may mutate it`); }
         expr(recv);
         return argsOf(e);
       }
