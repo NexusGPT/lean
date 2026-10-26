@@ -30,6 +30,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `useState`; 265 (26%) have every slot finite; 98 (9%) are finite in slots and props strictly, 100 (10%)
   with function and node props as opaque inputs; 2,190 prop types are unknown with imports unresolved, so the
   true share is between 10% and 26%. Not killed (the kill bar is 5%); the population is 100 to 265 components.
+- Measured (part b, 2026-10-26, `langs/ts/design/moonshots/01-finite/explore.mjs` over run.mjs's sandbox with
+  retained slots): the Toggle (two boolean slots, two buttons) against candidate A (two setter calls swapped in
+  one handler) is PASS-decided over every click order, 4 state pairs, 0.3 s, for both props; against candidate B
+  (`setPinned(true)` for `setPinned(!pinned)`) a WITNESS of 2 clicks (`open`, then `pin`) in 0.3 s. The pass bar
+  holds. What the prototype leaves out: effects, the clock, finiteness read from the types (the census says who
+  qualifies), the certificate line; that is the finite-state row.
 - Kill: under 5% of components fully finite.
 
 ## 2. The induction proof: re-render equivalence with no renderer
