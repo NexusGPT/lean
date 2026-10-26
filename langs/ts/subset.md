@@ -35,6 +35,7 @@ rules per package).
 | Arrays at work | `xs[i]`, `.length`, `[...a, ...b]`, statement-form `push`/`unshift` with ordinary and spread arguments on a local or parameter (including record paths), `includes`, `indexOf`, `slice`, `concat`, `join`, `flat`, `at`, `some`, `every`, `find`, `findIndex`, `map`, `filter`, `flatMap`, `reduce`, with index callbacks | `xs.map((x, i) => x * i)` |
 | Effectful array callbacks | sync inline arrows with element/index names in `map`, `filter`, `find`, `findIndex`, `some`, `every`, `flatMap`; `reduce` with accumulator/element names and an initial value; each body threads the world, and find/some/every stop before visiting later elements | `xs.filter(x => svc.ok(x))` |
 | Strings | literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
+| Strings (BMP model envelope) | `trim`, `trimStart`, `trimEnd`, ASCII-guarded case conversion, literal `split` without limit, `padStart`/`padEnd`, literal-pattern `replace`/`replaceAll` with string replacement, `lastIndexOf`, lexicographic `< <= > >=`; literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number; `a ** b` as an uninterpreted power of both sides | `n.toFixed(2)` |
 | Record rest | `{ a, ...rest } = r` builds a datatype of remaining fields; fixed scalar records, static keys, no defaults, nonempty remainder | `const { a: ignored, ...rest } = r` |
 | Numeric spread | `Math.min`/`Math.max` fold every argument; nonemptiness follows from a scalar argument, literal element, or a sole array identifier spread in a direct `?:` length guard | `xs.length > 0 ? Math.max(...xs) : 0` |
@@ -74,7 +75,7 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Other Object operations and dictionaries | `Object.assign/freeze/fromEntries`, dictionary `Object.keys/values/entries` | existing pure uninterpreted calls; no new exact mutation or freezing claim |
 | Module constants, enum members | `LIMITS.max` | `ext_LIMITS_max()` |
 | `any`, `unknown`, a union of records, `string \| SomeObject` | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
-| Library calls with no exact rule: `trim`, `toLowerCase`, `split`, `replace`, `JSON`, `String`, `Buffer` | `s.trim()` | `ext_str_trim(s)` |
+| Library calls with no exact rule: non-ASCII case conversion, split with limit or dynamic separator, regex/callback replacement, `localeCompare`, `normalize`, `JSON`, general numeric `String`, `Buffer`, non-string-array `join` | `s.normalize()` | a pure function of all arguments |
 | Regular expressions, `new RegExp`, `.test`, `.replace(re, …)` | `/a+/.test(s)` | an opaque constant per literal, externals for the operations |
 | A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its exact text and captured values; same-file callees are checked dependencies |
 | A callback with an effect inside | `xs.map(async (x) => await f(x))` | a symbolic deferred sequence for supported zero-argument arrows, otherwise an opaque value with its captures |
@@ -123,7 +124,8 @@ one, never proved equal and never proved different (the execution lane decides i
 | `division` | `/=`, `%=`; a bare `/` in an integer file (a file with no float literal and no `/` outside `Math.floor`) | `x /= 2` |
 | `loose-equality` | `==` and `!=` except against `null`/`undefined` | `a == b` |
 | `reference-equality` | `===` on arrays and records | `xs === ys` |
-| `string-order` | ordering strings | `a < b` on strings |
+| `string-order` | mixed string/non-string ordering | explicitly convert both operands |
+| `string-code-unit` | astral and surrogate literal fragments | `"\u{1F600}".length` |
 | `for-in`, `label`, `loop-form` | `for..in`, a labelled statement, any other loop form (a `while` or `do..while` without `// @decreases` is an opaque block, not a refusal) | `for (const k in o)` |
 | `optional-chain` | optional calls on a function value `f?.()` | `cb?.()` |
 | `async-predicate`, `async-reduce` | promises are truthy predicates; reduce does not await its accumulator | `xs.filter(async x => svc.ok(x))` |
@@ -166,6 +168,14 @@ translator derives it.
   lines. It covers the exact subset only (no externals), for the fixtures.
 
 ## Modelling axioms
+
+- All string values, including outside results and intermediate values, contain only BMP Unicode scalars, excluding
+  surrogates. Dafny scalar length, indexing and lexicographic ordering then agree with JavaScript UTF-16 code units.
+  Known astral/surrogate literals are refused; external values are assumed in-envelope, not statically validated.
+  A string PASS-proved is conditional on this envelope. Case conversion additionally uses an `IsAscii` guard:
+  ASCII is exact; the whole non-ASCII string goes to an uninterpreted case function, never an identity mapping.
+  Template booleans and numeric literals convert exactly; other numbers remain uninterpreted. Allocation exhaustion
+  is outside the mathematical sequence model. See [strings design](design/strings.md).
 
 - `number` is an exact integer (`int`) in a file with no float literal and no bare `/`; a file with either is a real
   file: `number` is a Dafny `real`, exact decimal arithmetic, not IEEE 754 (`--real` forces it). Neither choice models
