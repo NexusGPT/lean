@@ -90,6 +90,11 @@ function reactRuntime(env) {
       (env.reactEffects ??= []).push(fn);
     },
     use: (x) => { if (x && typeof x.then === 'function') throw new Suspended('use(promise)'); return x; }, // a suspended render: no model of the fallback and the retry; the run ends as ASK:suspense
+    useRef: (initial) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; }, // one box per slot, the same box on every render
+    useId: () => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = `:r${i}:`; return slots[i]; }, // a stable id per slot
+    useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
+    useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { slots[i] = reducer(slots[i], action); env.record('set', key, [render(slots[i])]); }; return [slots[i], dispatch]; },
+    useLayoutEffect: (fn, deps) => { const key = `react:layout-effect:${slot++}`; env.pending.push({ op: key, deps: render(deps) }); (env.reactEffects ??= []).push(fn); }, // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
   runtime.__beginRender = () => { slot = 0; }; // a render starts at slot 0 (React's call-order keying)
   const proxy = new Proxy(runtime, { get(t, p) { if (p === '__esModule') return true; if (p === 'default') return proxy; return p in t ? t[p] : env.module('react')[p]; } });
@@ -241,16 +246,17 @@ export async function observe(side, spec, args, ms) {
   let outcome, outcomeValue, hasOutcome = false;
   lateErrors.length = 0;
   try {
-    const slotsBefore = (env.hookSlots ?? []).slice(), traceBefore = env.trace.length;
+    const slotsBefore = (env.hookSlots ?? []).slice(), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
     env.react?.__beginRender?.();
     const r = unit.call(args);
     const v = (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r;
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
-      env.hookSlots = slotsBefore.slice(); env.react.__beginRender();
+      const callsAfter = new Map(env.calls), demandAfter = env.demand;
+      env.hookSlots = slotsBefore.slice(); env.calls = new Map(callsBefore); env.demand = demandBefore; env.react.__beginRender();
       const r2 = unit.call(args); const v2 = (r2 && typeof r2.then === 'function') ? await withTimeout(r2, ms) : r2;
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
-      env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; // the second render leaves nothing behind
+      env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
     }
     for (const effect of env.reactEffects ?? []) {

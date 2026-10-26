@@ -78,6 +78,12 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   compared; run over every component of one app repository of the census (20 to 40 components); every
   REFUSE read by hand. Command: `node langs/ts/exec/run.mjs --double …` over the repo's `.tsx` units.
 - Pass: 0 false alarms in the hand read; a true impurity found, or none exists and the check stays.
+- Measured (2026-10-26, `run.mjs` double render, the 30 benchmark components each against itself): first run
+  13 of 30 refused, all false alarms (useRef and friends fell to the generic fake and the environment's call
+  counters advanced, so `cn()` answered differently); after two fixes (useRef, useId, useContext, useReducer and
+  useLayoutEffect as retained slots; the second render replays the environment's call counters while the clock
+  and the random stream stay live) 30 of 30 pass and the pair's two clock-reading components are refused. 0
+  false alarms; no true impurity among the 30. The kill signal fired and was fixed in the same day.
 - Kill: the demand-driven fakes return a fresh value per read, so every render differs; then the fake
   policy must become replay-stable by path first, a day of its own.
 
