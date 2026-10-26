@@ -23,6 +23,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   function gen(spec, depth = 0, env = null, path = 'in', leaf = false) {
     if (!spec || depth > 8) return env ? env.fake(path) : null;
     switch (spec.kind) {
+      case 'promise': return Promise.resolve(gen(spec.of, depth + 1, env, path));
       case 'number': return number();
       case 'string': { if (spool.length && rng() < 0.3) return spool[Math.floor(rng() * spool.length)]; return pick(STR_EDGE, () => `v${Math.floor(rng() * 1e6).toString(36)}`); }
       case 'boolean': return rng() < 0.5;

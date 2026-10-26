@@ -1,0 +1,451 @@
+{
+  "namedAsync": {
+    "verdict": "PASS-bounded",
+    "unit": "namedAsync",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [],
+      "strings": []
+    }
+  },
+  "spreadRace": {
+    "verdict": "WITNESS",
+    "unit": "spreadRace",
+    "witnesses": [
+      {
+        "input": 0,
+        "args": [
+          420
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 420
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 421
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      },
+      {
+        "input": 1,
+        "args": [
+          1
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 1
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 2
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      },
+      {
+        "input": 2,
+        "args": [
+          0
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 0
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 1
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      }
+    ],
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        1,
+        2,
+        0
+      ],
+      "strings": []
+    }
+  },
+  "untouched": {
+    "verdict": "PASS-bounded",
+    "unit": "untouched",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        1,
+        2,
+        0
+      ],
+      "strings": []
+    }
+  },
+  "innerCatch": {
+    "verdict": "PASS-bounded",
+    "unit": "innerCatch",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        7,
+        8,
+        6,
+        9,
+        10,
+        8
+      ],
+      "strings": []
+    }
+  },
+  "outerCatch": {
+    "verdict": "WITNESS",
+    "unit": "outerCatch",
+    "witnesses": [
+      {
+        "input": 0,
+        "args": [
+          420
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 7
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 8
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      },
+      {
+        "input": 1,
+        "args": [
+          1
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 7
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 8
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      },
+      {
+        "input": 2,
+        "args": [
+          0
+        ],
+        "parent": {
+          "outcome": {
+            "returned": 7
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "candidate": {
+          "outcome": {
+            "returned": 8
+          },
+          "mutated": [
+            null
+          ],
+          "receiver": {},
+          "trace": [],
+          "pending": []
+        },
+        "where": {
+          "field": "outcome"
+        }
+      }
+    ],
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        1,
+        2,
+        0,
+        8,
+        9,
+        7
+      ],
+      "strings": []
+    }
+  },
+  "narrowed": {
+    "verdict": "PASS-bounded",
+    "unit": "narrowed",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "value",
+          "optional": false,
+          "spec": {
+            "kind": "union",
+            "options": [
+              {
+                "kind": "record",
+                "fields": {
+                  "kind": {
+                    "spec": {
+                      "kind": "literal",
+                      "values": [
+                        "number"
+                      ]
+                    },
+                    "optional": false
+                  },
+                  "value": {
+                    "spec": {
+                      "kind": "number"
+                    },
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "kind": "record",
+                "fields": {
+                  "kind": {
+                    "spec": {
+                      "kind": "literal",
+                      "values": [
+                        "text"
+                      ]
+                    },
+                    "optional": false
+                  },
+                  "text": {
+                    "spec": {
+                      "kind": "string"
+                    },
+                    "optional": false
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [],
+      "strings": [
+        "number"
+      ]
+    }
+  },
+  "rejectCaught": {
+    "verdict": "PASS-bounded",
+    "unit": "rejectCaught",
+    "bound": {
+      "n": 30,
+      "seed": 1,
+      "ms": 2000,
+      "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+      "inputs": "from parameter types with boundary values first"
+    },
+    "spec": {
+      "params": [
+        {
+          "name": "n",
+          "optional": false,
+          "spec": {
+            "kind": "number"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "number"
+      },
+      "literals": [
+        7,
+        8,
+        6
+      ],
+      "strings": []
+    }
+  }
+}

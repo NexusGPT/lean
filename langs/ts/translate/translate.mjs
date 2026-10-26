@@ -32,6 +32,7 @@ import { createHash } from 'node:crypto';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
+import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 
@@ -112,7 +113,8 @@ export function translate(file, fnName, opts = {}) {
   else for (const u of fns.values()) collect(u);
 
   // ----- the subset gate: refuse before translating -----
-  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  const promiseReadings = new Set();
+  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
   const report = { lintedOut: [], translated: [], failed: [] }; // --tolerant: per-unit outcomes for a census
   const failedUnits = new Set();
   let gate = gate0;
@@ -1015,7 +1017,7 @@ export function translate(file, fnName, opts = {}) {
   const isLiteralish = (node) => { while (ts.isParenthesizedExpression(node)) node = node.expression; return ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node) || ts.isNumericLiteral(node) || ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node) || node.kind === K.TrueKeyword || node.kind === K.FalseKeyword; };
   function coerce(code, node, expected) {
     if (!expected) return code;
-    const nt = typeOf(node);
+    const sourceT = typeOf(node), nt = isPromiseT(sourceT) ? promiseResultType(node) : sourceT;
     const members = sums.get(dtype(expected, node));
     if (members && dtype(nt, node) !== dtype(expected, node)) {
       const matches = members.filter((m) => checker.isTypeAssignableTo(nt, m.t));
@@ -1402,10 +1404,214 @@ export function translate(file, fnName, opts = {}) {
     if (isMapT(t)) fail(e, 'spreading a map is not translated');
     return expr(e);
   }
+  const exactPromiseForm = (n) => promiseReadings.has(`${unparen(n).pos}:${unparen(n).end}`) ? promiseForm(unparen(n), checker, sf) : null;
+  // an opaque promise call evaluates its receiver and arguments, then records one outside transition
+  function promiseOutsideCall(n, form, awaited) {
+    if (!unitEffectful()) fail(n, 'an opaque promise call requires an effectful unit');
+    const R = dtype(promiseResultType(n), n), types = [], values = [], spread = n.arguments.some(ts.isSpreadElement);
+    if (form.source) {
+      const D = dtype(typeOf(form.source), form.source); let value = expr(form.source);
+      if (spread) { const saved = `pr${tempCount++}_`; pending.push(`var ${saved}: ${D} := ${value};`); value = saved; }
+      types.push(D); values.push(value);
+    }
+    if (spread) { const sequence = callSequence([...n.arguments]); types.push(sequence.type); values.push(sequence.code); }
+    else for (const a of n.arguments) {
+      types.push(dtype(typeOf(a), a));
+      values.push(ts.isArrowFunction(a) || ts.isFunctionExpression(a) ? opaqueFn(a) : expr(a));
+    }
+    // captures and same-file dependencies remain observable when a handler body is opaque
+    const free = freeVars(n, null), calls = new Set(); let usesSelf = false;
+    const scan = (x) => {
+      if (x.kind === K.ThisKeyword) usesSelf = true;
+      if (ts.isIdentifier(x) && originOf(checker, x, sf, currentUnit?.node ?? null).kind === 'unit' && fns.has(x.text)) calls.add(x.text);
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
+      ts.forEachChild(x, scan);
+    };
+    scan(n);
+    if (usesSelf) { types.push(selfType(currentUnit)); values.push(SELF); }
+    for (const v of free) { types.push(dtype(symType(v.sym, v.node), v.node)); values.push(dn(v.name)); }
+    const callees = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), ''));
+    const name = external(`${spread ? 'call_seq' : 'call_args'}_${awaited ? 'await_' : ''}promise_${form.kind}_${mangle(R)}${callees.length ? '_calls_' + callees.join('_') : ''}`, ['World', ...types], `(World, ${R})`);
+    if (calls.size) prelude.set(name, `${prelude.get(name)}\n// CALLS: ${callees.join(',')}`);
+    return hoist(`${name}(${[WORLD, ...values].join(', ')})`, R);
+  }
+  // promise reactions are continuations of the settled source, sharing the exact try fault channel
+  const promiseResultType = (n) => checker.getAwaitedType(typeOf(n)) ?? typeOf(n);
+  const promiseFailure = (R) => { const P = faultPreds(); return `${external(`throw_${mangle(R)}`, [anyType()], R)}(${P.value}(${WORLD}))`; };
+  const promisePair = (v) => `(${WORLD}, ${outerParens(v)})`;
+  const promiseGuard = (code, R) => `if ${faultPreds().faulted}(${WORLD}) then ${promisePair(promiseFailure(R))} else ${wrapLet(code)}`;
+  function promiseAbsent(rt, n) {
+    const R = dtype(rt, n);
+    if (R === 'Unit') return 'Unit';
+    const missing = checker.getUndefinedType();
+    return convert(absentValue(missing), missing, rt, n);
+  }
+  function promiseValueCode(n, rt) {
+    if (!isPromiseT(typeOf(n)) && !exactPromiseForm(n)) {
+      return expr(n, rt);
+    }
+    return convert(settledPromise(n), promiseResultType(n), rt, n);
+  }
+  function settledPromise(n) {
+    n = unparen(n);
+    const form = exactPromiseForm(n);
+    if (form) return promiseExpression(n, form);
+    if (!isPromiseT(typeOf(n))) return expr(n);
+    if (ts.isCallExpression(n)) return call(n, true);
+    const R = dtype(promiseResultType(n), n), D = dtype(typeOf(n), n);
+    const value = expr(n);
+    return hoist(`${external('await_value', ['World', D], `(World, ${R})`)}(${WORLD}, ${value})`, R);
+  }
+  function promiseStatements(list, rt, done, settlement = null) {
+    const R = dtype(rt, list[0] ?? currentUnit.node);
+    if (!list.length) return done();
+    const [s, ...rest] = list;
+    const more = () => promiseStatements(rest, rt, done, settlement);
+    const after = (lines) => `${lines}${lines ? '\n' : ''}${containsEffect(s) ? promiseGuard(more(), R) : more()}`;
+    const resolveCall = (e) => settlement && settlement(unparen(e));
+    const end = (e) => {
+      const st = e && resolveCall(e);
+      if (st?.kind === 'reject') return rejectedPromise(st.call.arguments[0], R);
+      const value = st ? st.call.arguments[0] : e;
+      return capture(() => {
+        const code = value ? promiseValueCode(value, rt) : promiseAbsent(rt, s);
+        return value && containsEffect(value) ? promiseGuard(promisePair(code), R) : promisePair(code);
+      });
+    };
+    if (ts.isBlock(s)) return promiseStatements([...s.statements, ...rest], rt, done, settlement);
+    if (ts.isEmptyStatement(s)) return more();
+    if (ts.isReturnStatement(s)) return end(s.expression);
+    if (ts.isThrowStatement(s)) return rejectedPromise(s.expression, R);
+    if (ts.isIfStatement(s)) return capture(() => {
+      const cond = truthy(s.expression);
+      const yes = promiseStatements([...flatten(s.thenStatement), ...rest], rt, done, settlement);
+      const no = promiseStatements([...(s.elseStatement ? flatten(s.elseStatement) : []), ...rest], rt, done, settlement);
+      const branch = `if ${cond} then ${wrapLet(yes)} else ${wrapLet(no)}`;
+      return containsEffect(s.expression) ? promiseGuard(branch, R) : branch;
+    });
+    if (ts.isVariableStatement(s)) {
+      const decls = [...s.declarationList.declarations];
+      const bind = (i) => {
+        if (i === decls.length) return more();
+        const d = decls[i];
+        return capture(() => {
+          const t = typeOf(d.name), D = dtype(t, d);
+          const value = d.initializer ? outerParens(expr(d.initializer, t)) : `${external(`uninit_${mangle(D)}`, [], D)}()`;
+          const line = ts.isIdentifier(d.name) ? `var ${dn(d.name.text)}: ${D} := ${value};` : destructure(d.name, value, typeOf(d.initializer)).join('\n');
+          return `${line}\n${d.initializer && containsEffect(d.initializer) ? promiseGuard(bind(i + 1), R) : bind(i + 1)}`;
+        });
+      };
+      return bind(0);
+    }
+    if (ts.isExpressionStatement(s)) {
+      if (resolveCall(s.expression)) return end(s.expression);
+      const line = capture(() => {
+        const nv = newValue(s.expression);
+        return nv ? `var ${dn(nv[0])} := ${nv[1]};` : '';
+      });
+      return after(line);
+    }
+    return fail(s, 'promise-handler: this statement has no inline continuation reading');
+  }
+  function rejectedPromise(e, R) {
+    return capture(() => {
+      const value = e ? expr(e, anyTarget()) : `${external('Any_undefined', [], anyType())}()`;
+      return `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${value});\n${promisePair(promiseFailure(R))}`;
+    });
+  }
+  function promiseHandlerBody(cb, argument, argumentD, outputT, argumentT = null) {
+    const R = dtype(outputT, cb);
+    const argumentAs = (D) => argumentT ? convertToD(argument, argumentT, D, cb) : convertD(argument, argumentD, D);
+    if (ts.isIdentifier(cb)) {
+      const sg = checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call)[0];
+      const params = sg.getParameters();
+      const args = params.map((p) => argumentAs(dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb)));
+      const u = fns.get(cb.text), origin = originOf(checker, cb, sf, currentUnit?.node ?? null);
+      const ownR = dtype(checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType(), cb);
+      return capture(() => {
+        let value;
+        if (u && origin.kind === 'unit') {
+          if (mutatedOf(u).length) fail(cb, 'promise-handler: a named handler mutates its argument');
+          const eff = effectfulUnits.has(u.name);
+          const callCode = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...args].join(', ')})`;
+          value = eff ? hoist(callCode, ownR) : callCode;
+        } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${cb.text}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
+        return promiseGuard(promisePair(convert(value, checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType(), outputT, cb)), R);
+      });
+    }
+    const bindings = cb.parameters.map((p) => `var ${dn(p.name.text)}: ${dtype(typeOf(p.name), p)} := ${argumentAs(dtype(typeOf(p.name), p))};`).join('\n');
+    const done = () => promisePair(promiseAbsent(outputT, cb));
+    const body = ts.isBlock(cb.body) ? promiseStatements([...cb.body.statements], outputT, done) : capture(() => {
+      const value = promiseValueCode(cb.body, outputT);
+      return containsEffect(cb.body) ? promiseGuard(promisePair(value), R) : promisePair(value);
+    });
+    return `${bindings}${bindings ? '\n' : ''}${body}`;
+  }
+  function opaquePromiseExecutor(n, rt) {
+    // an outside callback controls settlement and pending work; captures are arguments, never hidden constants
+    const R = dtype(rt, n), free = freeVars(n, null);
+    const types = free.map((v) => dtype(symType(v.sym, v.node), v.node));
+    let usesSelf = false; const calls = new Set();
+    const scan = (x) => {
+      if (x.kind === K.ThisKeyword) usesSelf = true;
+      if (ts.isIdentifier(x) && originOf(checker, x, sf, currentUnit?.node ?? null).kind === 'unit' && fns.has(x.text)) calls.add(x.text);
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
+      ts.forEachChild(x, scan);
+    };
+    scan(n);
+    const tag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
+    const name = external(`block_promise_${hash(n.getText(sf))}${tag ? '_calls_' + tag : ''}`, ['World', ...(usesSelf ? [selfType(currentUnit)] : []), ...types], `(World, ${R})`);
+    if (calls.size) prelude.set(name, `${prelude.get(name)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
+    return hoist(`${name}(${[WORLD, ...(usesSelf ? [SELF] : []), ...free.map((v) => dn(v.name))].join(', ')})`, R);
+  }
+  function promiseExpression(n, form) {
+    if (!promiseConsumed(n, checker, sf)) fail(n, 'promise-pending: await or return the promise directly');
+    if (!core || !unitEffectful()) fail(n, 'promise forms require an effectful core unit');
+    const rt = promiseResultType(n), R = dtype(rt, n), P = faultPreds();
+    // a chain handles its own faults before the enclosing try observes its final outcome
+    if (faultMode || completionMode) {
+      const savedFault = faultMode, savedCompletion = completionMode;
+      faultMode = false; completionMode = false;
+      let body;
+      try { body = capture(() => promisePair(promiseExpression(n, form))); }
+      finally { faultMode = savedFault; completionMode = savedCompletion; }
+      const value = hoist(`(${body})`, R);
+      if (!faultMode && completionMode) pending.push(FAULT_CHECK);
+      return value;
+    }
+    if (form.kind === 'resolve') return n.arguments[0] ? promiseValueCode(n.arguments[0], rt) : promiseAbsent(rt, n);
+    if (form.kind === 'reject') return hoist(`(${rejectedPromise(n.arguments[0], R)})`, R);
+    if (form.kind === 'executor') {
+      const shape = executorShape(n, checker, sf);
+      if (shape.rule) fail(n, `${shape.rule}: ${shape.message}`);
+      if (shape.bridge) return opaquePromiseExecutor(n, rt);
+      const body = ts.isBlock(shape.cb.body) ? [...shape.cb.body.statements] : [{ kind: K.ExpressionStatement, expression: shape.cb.body }];
+      return hoist(`(${promiseStatements(body, rt, () => fail(n, 'promise-unsettled: an executor path does not settle'), shape.settlement)})`, R);
+    }
+    if (!form.source) fail(n, 'promise-combinator: completion order is not read');
+    const sourceT = promiseResultType(form.source), source = settledPromise(form.source), D = dtype(sourceT, form.source);
+    const cb = form.handler;
+    if (form.kind === 'then') return hoist(`(${promiseGuard(promiseHandlerBody(cb, source, D, rt, sourceT), R)})`, R);
+    if (form.kind === 'catch') {
+      const caught = `err${tempCount++}_`;
+      const body = `var ${caught} := ${P.value}(${WORLD});\nvar ${WORLD} := ${P.clear}(${WORLD});\n${promiseHandlerBody(cb, caught, 'Any', rt)}`;
+      return hoist(`(if ${P.faulted}(${WORLD}) then (${body}) else ${promisePair(convert(source, sourceT, rt, n))})`, R);
+    }
+    const old = `pw${tempCount++}_`, was = `pf${tempCount++}_`, error = `pe${tempCount++}_`;
+    const sg = checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call)[0];
+    const ownT = checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType();
+    const body = promiseHandlerBody(cb, 'Unit', 'Unit', ownT);
+    return hoist(`(var ${old} := ${WORLD}; var ${was} := ${P.faulted}(${old}); var ${error} := ${P.value}(${old});\nvar ${WORLD} := if ${was} then ${P.clear}(${WORLD}) else ${WORLD};\nvar (${WORLD}, ignored${tempCount++}_) := (${body});\nif ${P.faulted}(${WORLD}) then ${promisePair(promiseFailure(R))} else (var ${WORLD} := if ${was} then ${P.raise}(${WORLD}, ${error}) else ${WORLD}; ${promisePair(convert(source, sourceT, rt, n))}))`, R);
+  }
+  // an async await exits on a fault before its following statements, just like a promise reaction
+  const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; };
+  const asyncFailure = (u) => retIn(promiseFailure(dtype(retType(u), u.node)));
   function awaitExpr(n) {
     const shape = promiseAllMapShape(n);
     if (shape) return callbackValue(n, shape);
     let inner = n.expression; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
+    const form = exactPromiseForm(inner);
+    if (form) return promiseExpression(inner, form);
     if (ts.isCallExpression(inner) && ts.isPropertyAccessExpression(inner.expression) && ts.isIdentifier(inner.expression.expression) && inner.expression.expression.text === 'Promise' && inner.expression.name.text === 'all' && inner.arguments.length === 1) {
       let arr = inner.arguments[0]; while (ts.isParenthesizedExpression(arr)) arr = arr.expression;
       if (ts.isArrayLiteralExpression(arr) && arr.elements.every((el) => !ts.isSpreadElement(el))) {
@@ -2066,6 +2272,8 @@ export function translate(file, fnName, opts = {}) {
     return `${expr(n.expression)}[${index(n.argumentExpression)}]`;
   }
   function newExpr(n) {
+    const form = exactPromiseForm(n);
+    if (form) return promiseExpression(n, form);
     const name = n.expression.getText(sf);
     const t = typeOf(n);
     if (name === 'Set') {
@@ -2256,6 +2464,10 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Array' && n.expression.name.text === 'from' && n.arguments.length === 1 && generators.pureCall(n.arguments[0]) && originOf(checker, n.expression.expression, sf, currentUnit?.node ?? null).kind === 'global') return seqOf(n.arguments[0]);
     const hook = exactReactHook(checker, n);
     if (hook) return convert(expr(hook.value), typeOf(hook.value), typeOf(n), n);
+    const form = exactPromiseForm(n);
+    if (form) return promiseExpression(n, form);
+    const outside = promiseForm(n, checker, sf);
+    if (outside) return promiseOutsideCall(n, outside, awaited);
     const f = n.expression;
     if (moduleLoader(checker, n, sf, currentUnit?.node)) {
       addPrelude('World', 'type World'); addPrelude('Ext_Module', 'type Ext_Module');
@@ -3136,7 +3348,7 @@ export function translate(file, fnName, opts = {}) {
     const [s, ...rest] = list;
     const more0 = (r = rest) => tr(r, fin, u);
     // after a statement of an exact try body that may fault: the catch path, else what follows
-    const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) return `${code}${code ? '\n' : ''}${tr(r, fin, u)}`; const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
+    const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) { const next = tr(r, fin, u); return `${code}${code ? '\n' : ''}${u.isAsync && !loopCtx.length && awaitsHere(s) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncFailure(u)} else ${wrapLet(next)}` : next}`; } const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
     const more = (r = rest) => (tryOf(s) && containsEffect(s) ? guard('', r) : more0(r));
     switch (s.kind) {
       case K.TryStatement: return exactTry(s) ? faultTry(s, () => tr(rest, fin, u), u, { ret: retIn, fault: () => retIn(faultValue(u)) }) : opaqueBlock(s, rest, fin, u);
@@ -3147,7 +3359,7 @@ export function translate(file, fnName, opts = {}) {
         const top = loopCtx[loopCtx.length - 1];
         if (top && top.forEach && top.collect) return callbackStep(s.expression, top); // a callback return supplies the next result state
         if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
-        return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & TF.Undefined ? absentValue(rt) : rt.flags & TF.Void ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return retIn(code); });
+        return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & TF.Undefined ? absentValue(rt) : rt.flags & TF.Void ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return u.isAsync && !loopCtx.length && s.expression && awaitsHere(s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${wrapLet(tryOf(s) && ts.isAwaitExpression(unparen(s.expression)) ? catchPath(tryOf(s), u) : asyncFailure(u))} else ${retIn(code)}` : retIn(code); });
       }
       case K.ThrowStatement: return capture(() => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${expr(s.expression, anyTarget())});\n${retIn(faultValue(u))}`);
       case K.VariableStatement: {
@@ -3170,7 +3382,7 @@ export function translate(file, fnName, opts = {}) {
             return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};`;
           }));
         }
-        return tryOf(s) && containsEffect(s) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
+        return (tryOf(s) && containsEffect(s)) || (u.isAsync && !loopCtx.length && awaitsHere(s)) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
       }
       case K.ExpressionStatement: {
         if (yieldState && ts.isYieldExpression(s.expression)) { const y = s.expression; const code = y.asteriskToken ? seqOf(y.expression) : `[${expr(y.expression, yieldState.element)}]`; return `var ${yieldState.name}: ${yieldState.d} := ${yieldState.name} + ${code};\n${more0()}`; }
@@ -3189,7 +3401,7 @@ export function translate(file, fnName, opts = {}) {
           if (LT) { const rt0 = e.right ? typeOf(e.right) : null; const vd = rt0 ? (isAny(rt0) ? anyType() : dtype(rt0, s)) : LT; return `var ${dn(n)}: ${LT} := ${convertD(v, vd, LT)};`; }
           return `var ${dn(n)}: ${dtype(symType(sym, s), s)} := ${v};`;
         });
-        if (tryOf(s) && containsEffect(s)) return guard(line.trim() ? line : '');
+        if ((tryOf(s) && containsEffect(s)) || (u.isAsync && !loopCtx.length && awaitsHere(s))) return guard(line.trim() ? line : '');
         return line.trim() ? `${line}\n${more0()}` : more0();
       }
       case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: flatten(s.thenStatement) }], s.elseStatement ? flatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }

@@ -54,7 +54,7 @@ export function specOf(file, unitName, opts = {}) {
       if (name === 'Map' || name === 'ReadonlyMap') { const [k, v] = checker.getTypeArguments(t); return { kind: 'map', key: spec(k, depth + 1), value: spec(v, depth + 1) }; }
       if (['AsyncIterable', 'AsyncIterableIterator', 'AsyncGenerator'].includes(name)) return { kind: 'async-iterable', of: spec(checker.getTypeArguments(t)[0], depth + 1) };
       if (name === 'Date') return { kind: 'date' };
-      if (name === 'Promise') return spec(checker.getTypeArguments(t)[0], depth + 1);
+      if (name === 'Promise') return { kind: 'promise', of: spec(checker.getTypeArguments(t)[0], depth + 1) };
       const sigs = checker.getSignaturesOfType(t, ts.SignatureKind.Call);
       if (sigs.length) return { kind: 'function', arity: sigs[0].getParameters().length, returns: spec(sigs[0].getReturnType(), depth + 1) }; // what a call of it answers
       return recordSpec(t, depth);
