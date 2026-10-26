@@ -1,30 +1,31 @@
 {
-  "scope": [
-    "named_async",
-    "spread_race",
-    "untouched",
-    "inner_catch",
-    "outer_catch",
-    "narrowed",
-    "reject_caught"
-  ],
-  "equal": {
-    "named_async": true,
-    "spread_race": false,
-    "untouched": true,
-    "inner_catch": false,
-    "outer_catch": false,
-    "narrowed": true,
-    "reject_caught": true
-  },
-  "why": "Promise continuations share the spread lane call_args naming for imported async handlers; opaque combinators preserve callSequence for spread arguments. Exact promise faults stay inside chains until final completion reaches the surrounding try; tagged continuation values retain narrowed reads. A try containing an arrow retains the exceptions lane opaqueCompletion fallback, so innerCatch is intentionally not proved despite matching execution. Direct Promise.reject under an exact catch equals a throw.",
-  "b": {
-    "namedAsync": "PASS-bounded",
-    "spreadRace": "WITNESS",
-    "untouched": "PASS-bounded",
-    "innerCatch": "PASS-bounded",
-    "outerCatch": "WITNESS",
-    "narrowed": "PASS-bounded",
-    "rejectCaught": "PASS-bounded"
-  }
+ "scope": [
+  "named_async",
+  "spread_race",
+  "untouched",
+  "inner_catch",
+  "outer_catch",
+  "narrowed",
+  "reject_caught"
+ ],
+ "equal": {
+  "named_async": "withheld",
+  "spread_race": false,
+  "untouched": true,
+  "inner_catch": false,
+  "outer_catch": false,
+  "narrowed": "withheld",
+  "reject_caught": true
+ },
+ "why": "Promise continuations share the spread lane call_args naming for imported async handlers; opaque combinators preserve callSequence for spread arguments. Exact promise faults stay inside chains until final completion reaches the surrounding try; tagged continuation values retain narrowed reads. A try containing an arrow retains the exceptions lane opaqueCompletion fallback, so innerCatch is intentionally not proved despite matching execution. Direct Promise.reject under an exact catch equals a throw.",
+ "b": {
+  "namedAsync": "PASS-bounded",
+  "spreadRace": "WITNESS",
+  "untouched": "PASS-bounded",
+  "innerCatch": "PASS-bounded",
+  "outerCatch": "WITNESS",
+  "narrowed": "PASS-bounded",
+  "rejectCaught": "PASS-bounded"
+ },
+ "why_withheld": "Units named_async, narrowed: the identity guard withholds the lemma because the value reading could not be shown to be a graph reading (the result comes from a call, an await or a generator, so its identity shape is unreadable); lane B decides (ASK:identity in the check)."
 }

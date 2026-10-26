@@ -208,6 +208,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   const callsOf = (u) => { const calls = new Set(); const w = (n) => { if (sameFileCall(n)) calls.add(n.expression.text); ts.forEachChild(n, w); }; w(u.body); return calls; };
   function plan(order, only) {
     const own = new Set(order.filter((u) => coreUnit(u) && (!only || only.includes(u.name))).map((u) => u.name));
+    // a unit named as a VALUE anywhere (`.then(bump)`, a callback argument, a stored function) keeps its layer-1 signature: out of the core
+    const asValue = new Set();
+    for (const u of order) { const w = (n) => { if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && (ts.isFunctionDeclaration(n.parent) || ts.isVariableDeclaration(n.parent)) && n.parent.name === n)) asValue.add(n.text); ts.forEachChild(n, w); }; w(u.body); }
+    for (const name of asValue) if (own.has(name)) { own.delete(name); whyNot.get(name)?.add('named as a value'); }
     const graph = new Map(order.map((u) => [u.name, callsOf(u)]));
     let changed = true;
     while (changed) {
@@ -239,7 +243,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     const ctor = (k) => { const s = shapes.get(k); return s.kind === 'arr' ? `${k}(items: seq<${valD(s.elem)}>)` : `${k}(${s.fields.map((f) => `${dn(f.name)}: ${valD(f.shape)}`).join(', ')})`; };
     const out = [];
     out.push('type Ref = nat');
-    out.push(`datatype Obj = ${keys.map(ctor).join(' | ')} | Dead`);
+    out.push(`datatype Obj = ${keys.length ? keys.map(ctor).join(' | ') + ' | ' : ''}Dead`);
     out.push('datatype HWorld = HWorld(heap: map<Ref, Obj>, next: nat)');
     for (const k of keys) out.push(`predicate Is${k}(hw: HWorld, r: Ref) { r in hw.heap && hw.heap[r].${k}? }`);
     const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items| ==> Is${keyOf(s.elem)}(hw, o.items[i]))`); } else for (const f of s.fields) if (f.shape.kind !== 'prim') conds.push(`Is${keyOf(f.shape)}(hw, o.${dn(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
