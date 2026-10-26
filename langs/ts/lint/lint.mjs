@@ -396,6 +396,15 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ParenthesizedExpression: return expr(e.expression);
       case K.AsExpression: case K.TypeAssertionExpression: case K.SatisfiesExpression: {
         const tn = e.type;
+        const sensitive = (t) => {
+          if (t.flags & TF.Union) return t.types.some(sensitive) || t.types.every((x) => isPrim(x));
+          if (isArrayLike(checker, t)) return true;
+          if (!isRecordish(t)) return false;
+          return checker.getPropertiesOfType(t).some((p) => p.declarations?.some((d) => (d.name && ts.isPrivateIdentifier(d.name)) || d.modifiers?.some((m) => m.kind === K.PrivateKeyword || m.kind === K.ProtectedKeyword)) || !!(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? e).flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral)));
+        };
+        const from = tOf(e.expression), to = tOf(e);
+        const constant = ts.isTypeReferenceNode(tn) && tn.typeName.getText(sf) === 'const';
+        if (!constant && sensitive(to) && (isAny(from) || !checker.isTypeAssignableTo(from, to))) v(e, 'type-test-cast', 'an assertion cannot establish a runtime type tag or class identity; narrow the value with a checked test');
         // `as T` is identity at run time: the translator keeps the value when the types agree and otherwise
         // passes it through an uninterpreted conversion, the same on both sides
         return expr(e.expression);
@@ -479,7 +488,22 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (nul(e.left) || nul(e.right)) { expr(e.left); return expr(e.right); } // `x == null` is the absence test
       return v(e, 'loose-equality', 'use === and !==');
     }
-    if (op === K.InKeyword || op === K.InstanceOfKeyword) { expr(e.left); if (op === K.InKeyword) expr(e.right); return; } // uninterpreted boolean tests (version 3)
+    if (op === K.InstanceOfKeyword) {
+      expr(e.left);
+      if (!ts.isIdentifier(e.right)) return v(e.right, 'instanceof-constructor', 'use a named ordinary constructor for instanceof; dynamic constructors may run effects');
+      const symbol = checker.getSymbolAtLocation(e.right);
+      const d = (symbol && symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol)?.valueDeclaration;
+      if (d && (ts.isParameter(d) || ts.isVariableDeclaration(d)) && !d.getSourceFile().isDeclarationFile) return v(e.right, 'instanceof-constructor', 'use a class declaration for instanceof; a constructor value needs a runtime identity');
+      const visited = new Set();
+      const custom = (c) => {
+        if (!c || !ts.isClassDeclaration(c) || visited.has(c)) return false;
+        visited.add(c);
+        return c.members.some((m) => m.name && ts.isComputedPropertyName(m.name) && /hasInstance/.test(m.name.getText())) || c.heritageClauses?.some((h) => h.types.some((t) => { const s = checker.getSymbolAtLocation(t.expression); return custom((s && s.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(s) : s)?.valueDeclaration); }));
+      };
+      if (custom(d)) v(e.right, 'instanceof-constructor', 'a custom Symbol.hasInstance may run effects; use an ordinary constructor');
+      return;
+    }
+    if (op === K.InKeyword) { expr(e.left); expr(e.right); return; } // required properties and dictionaries are exact; open-record absence stays uninterpreted
     if (op === K.CommaToken) return v(e, 'comma', 'the comma operator is outside the subset');
     if (!(ARITH.has(op) || CMP.has(op) || EQ.has(op) || LOGIC.has(op))) return v(e, 'bitwise', 'bitwise and shift operators are outside the subset');
     expr(e.left); expr(e.right);
@@ -496,7 +520,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const litSide = (x) => ts.isStringLiteral(x) || ts.isNumericLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword;
       // a comparison with a primitive on either side is a value comparison; only record against record (or array against array) compares references
       const mixed = (t) => { const ps = nonNull(t); return ps.some((x) => isPrim(x)) && ps.some((x) => !isPrim(x) && !isAny(x)); };
-      if (mixed(lt) || mixed(rt)) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array is opaque; narrow it before comparing');
+      if (!nul(e.left) && !nul(e.right) && (mixed(lt) || mixed(rt))) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array is opaque; narrow it before comparing');
       else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt)) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
     }
   }

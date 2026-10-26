@@ -385,12 +385,87 @@ export function translate(file, fnName, opts = {}) {
     if (f & (TF.IndexedAccess | TF.Conditional | TF.Substitution | TF.TemplateLiteral | TF.StringMapping | TF.Index | TF.ESSymbol | TF.UniqueESSymbol | TF.NonPrimitive | TF.Never)) return anyType();
     return fail(n, `type ${checker.typeToString(t)} is not translatable`);
   }
+  // disjoint runtime alternatives retain their member values instead of erasing to Any
+  const sums = new Map();
+  const literalValue = (t) => t.flags & TF.StringLiteral ? JSON.stringify(t.value) : t.flags & TF.NumberLiteral ? (real && Number.isInteger(t.value) ? `${t.value}.0` : String(t.value)) : t.flags & TF.BooleanLiteral ? t.intrinsicName : null;
+  const arrayBrand = (t) => checker.isArrayType(t) || checker.isTupleType(t) || t.symbol?.name === 'ReadonlyArray';
+  const runtimeTag = (t) => { const f = t.flags; if (f & TF.StringLike) return 'string'; if (f & TF.NumberLike) return 'number'; if (f & TF.BigIntLike) return 'bigint'; if (f & TF.BooleanLike) return 'boolean'; if (f & TF.Undefined) return 'undefined'; if (f & TF.Null) return 'object'; if (f & TF.ESSymbolLike) return 'symbol'; if (f & TF.Object) return isCallable(t) ? 'function' : 'object'; return null; };
+  function disjointTags(a, b, n) {
+    return checker.getPropertiesOfType(a).some((p) => {
+      const q = checker.getPropertyOfType(b, p.name);
+      if (!q || (p.flags | q.flags) & ts.SymbolFlags.Optional) return false;
+      const x = literalValue(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n));
+      const y = literalValue(checker.getTypeOfSymbolAtLocation(q, q.valueDeclaration ?? n));
+      return x !== null && y !== null && x !== y;
+    });
+  }
+  function sumType(parts, n, depth) {
+    const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike) ? runtimeTag(t) : null;
+    const records = parts.every(isRecordish) && parts.every((t) => checker.getPropertiesOfType(t).length && !checker.getPropertiesOfType(t).some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n))));
+    const cats = parts.map(category);
+    if (!(records && parts.every((t, i) => parts.slice(i + 1).every((u) => disjointTags(t, u, n)))) && !(cats.every(Boolean) && new Set(cats).size === cats.length)) return null;
+    const ordered = [...parts].sort((a, b) => checker.typeToString(a).localeCompare(checker.typeToString(b)));
+    const name = `Union_${hash(ordered.map((t) => checker.typeToString(t)).join('|'))}`;
+    if (sums.has(name)) return name;
+    const members = ordered.map((t, i) => ({ t, ctor: `${name}_${i}`, field: `item${i}`, d: dtype(t, n, depth + 1) }));
+    sums.set(name, members);
+    addPrelude(name, `datatype ${name} = ${members.map((m) => `${m.ctor}(${m.field}: ${m.d})`).join(' | ')}`);
+    return name;
+  }
+  function sumCases(code, members, read) {
+    const v = `u_${hash(code)}`;
+    let out = read(members[members.length - 1], v);
+    for (let i = members.length - 2; i >= 0; i--) out = `(if ${v}.${members[i].ctor}? then ${read(members[i], v)} else ${out})`;
+    return `(var ${v} := ${code}; ${out})`;
+  }
+  function sumTruth(code, members) {
+    return sumCases(code, members, (m, v) => {
+      const value = `${v}.${m.field}`;
+      if (m.t.flags & TF.BooleanLike) return value;
+      if (m.t.flags & TF.StringLike) return `|${value}| > 0`;
+      if (m.t.flags & (TF.NumberLike | TF.BigIntLike)) return `${value} != 0`;
+      return 'true';
+    });
+  }
+  function staticTest(node, decide, fallback) {
+    const t = typeOf(node), d = dtype(t, node), members = sums.get(d);
+    if (members) return sumCases(expr(node), members, (m, v) => decide(m.t) ?? fallback(`${v}.${m.field}`, m.d));
+    if (isOptional(t) && d.startsWith('Option<')) {
+      const absent = t.types.filter(isNullish).map(decide);
+      if (absent[0] !== null && absent.every((x) => x === absent[0])) {
+        const v = `test_${hash(node.getText(sf))}`, inner = innerOf(d), choices = sums.get(inner);
+        const decisions = nonNull(t).map(decide);
+        const known = decisions[0] !== null && decisions.every((x) => x === decisions[0]) ? decisions[0] : null;
+        const present = choices ? sumCases(`${v}.value`, choices, (m, u) => decide(m.t) ?? fallback(`${u}.${m.field}`, m.d)) : known ?? fallback(`${v}.value`, inner);
+        return `(var ${v} := ${expr(node)}; if ${v}.Some? then ${present} else ${absent[0]})`;
+      }
+    }
+    const decisions = t.flags & TF.Union ? t.types.map(decide) : [];
+    const decision = decisions.length && decisions[0] !== null && decisions.every((d) => d === decisions[0]) ? decisions[0] : decide(t);
+    if (decision !== null) { expr(node); return decision; }
+    return fallback(expr(node), d);
+  }
+  function nominalClass(t) {
+    const d = t.symbol?.declarations?.find(ts.isClassDeclaration);
+    if (!d) return null;
+    const nominal = checker.getPropertiesOfType(t).some((p) => p.declarations?.some((v) => (v.name && ts.isPrivateIdentifier(v.name)) || v.modifiers?.some((m) => m.kind === K.PrivateKeyword || m.kind === K.ProtectedKeyword)));
+    return nominal ? d : null;
+  }
+  function instanceDecision(t, target, n) {
+    if (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined)) return 'false';
+    if (!nominalClass(t)) return null;
+    const ancestry = (a, b) => a.symbol === b.symbol || (a.getBaseTypes?.() ?? []).some((v) => ancestry(v, b));
+    if (ancestry(t, target)) return 'true';
+    if (ancestry(target, t)) return null;
+    return disjointTags(t, target, n) ? 'false' : null;
+  }
   function unionType(parts, n, depth) {
     if (parts.every((x) => x.flags & (TF.StringLiteral | TF.StringLike))) return 'string';
     if (parts.every((x) => x.flags & (TF.NumberLiteral | TF.NumberLike))) return NUM;
     if (parts.every((x) => x.flags & TF.BooleanLike)) return 'bool';
     if (parts.some(isAny)) return anyType();
-    // a union of records (a discriminated union), or of a primitive with a record: opaque. Every read on it is an
+    const sum = sumType(parts, n, depth); if (sum) return sum;
+    // overlapping unions and unions without a runtime discriminator stay opaque. Every read on it is an
     // uninterpreted accessor, every construction an uninterpreted injection; the proof asks the same calls on both sides
     if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || isPromiseT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined | TF.Void | TF.TypeParameter | TF.IndexedAccess | TF.Conditional | TF.Index | TF.NonPrimitive | TF.Never)))) return anyType();
     return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
@@ -577,6 +652,11 @@ export function translate(file, fnName, opts = {}) {
   function coerce(code, node, expected) {
     if (!expected) return code;
     const nt = typeOf(node);
+    const members = sums.get(dtype(expected, node));
+    if (members && dtype(nt, node) !== dtype(expected, node)) {
+      const matches = members.filter((m) => checker.isTypeAssignableTo(nt, m.t));
+      if (matches.length === 1) { const m = matches[0]; return `${m.ctor}(${convertD(code, dtype(nt, node), m.d)})`; }
+    }
     if ((expected.flags & (TF.Void | TF.Undefined)) && !(expected.flags & TF.Union)) return 'Unit'; // a void slot takes Unit, whatever was written
     if (isLiteralish(node)) {
       // a literal is already built in the expected shape; only absence needs lifting
@@ -601,6 +681,8 @@ export function translate(file, fnName, opts = {}) {
   const innerOf = (d) => d.slice('Option<'.length, -1);
   function convertD(code, fd, td) {
     if (fd === td) return code;
+    const targetMembers = sums.get(td);
+    if (targetMembers) { const matches = targetMembers.filter((m) => m.d === fd); if (matches.length === 1) return `${matches[0].ctor}(${code})`; }
     if (td === 'JsxNode') {
       jsxType();
       if (fd === 'string') return `JsxText(${code})`;
@@ -631,6 +713,8 @@ export function translate(file, fnName, opts = {}) {
     if (isOptional(t)) {
       const inner = baseOf(t);
       const v = rawOperand(n);
+      const choices = sums.get(innerOf(dtype(t, n)));
+      if (choices) return `(${v}.Some? && ${sumTruth(`${v}.value`, choices)})`;
       if (inner.flags & TF.BooleanLike) return `(${v}.Some? && ${v}.value)`;
       if (inner.flags & TF.StringLike) return `(${v}.Some? && |${v}.value| > 0)`;
       if (inner.flags & TF.NumberLike) return `(${v}.Some? && ${v}.value != ${real ? '0.0' : '0'})`;
@@ -642,6 +726,8 @@ export function translate(file, fnName, opts = {}) {
       if (chained) { usesOption = true; const v = `ot_${hash(n.getText(sf)).slice(0, 4)}`; return `(var ${v} := ${expr(n)}; ${v}.Some? && ${external('truthy_Any', ['Any'], 'bool')}(${v}.value))`; }
       return `${external('truthy_Any', ['Any'], 'bool')}(${expr(n)})`;
     }
+    const members = sums.get(dtype(t, n));
+    if (members) return sumTruth(expr(n), members);
     if (t.flags & TF.BooleanLike) return expr(n);
     if (t.flags & TF.StringLike) return `(|${expr(n)}| > 0)`;
     if (t.flags & (TF.NumberLike | TF.BigIntLike)) return `(${expr(n)} != ${real ? '0.0' : '0'})`;
@@ -679,6 +765,14 @@ export function translate(file, fnName, opts = {}) {
     if (o.sym && o.sym.valueDeclaration && o.kind === 'local') {
       const dt = symType(o.sym, n);
       if (isOptional(dt) && !isOptional(typeOf(n)) && !isNullish(typeOf(n))) code += '.value';
+      const declaredD = dtype(dt, n);
+      const members = sums.get(declaredD.startsWith('Option<') ? innerOf(declaredD) : declaredD);
+      const valueD = declaredD.startsWith('Option<') && !isOptional(typeOf(n)) && !isNullish(typeOf(n)) ? innerOf(declaredD) : declaredD;
+      if (members && dtype(typeOf(n), n) !== valueD) {
+        const matches = members.filter((m) => checker.isTypeAssignableTo(m.t, typeOf(n)));
+        if (matches.length === 1) return `${code}.${matches[0].field}`;
+        return convertD(code, valueD, dtype(typeOf(n), n));
+      }
     }
     if (real && intVars.has(n.text)) return `(${code} as real)`;
     return code;
@@ -736,11 +830,13 @@ export function translate(file, fnName, opts = {}) {
       case K.RegularExpressionLiteral: { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return `${external(`regex_${hash(n.text)}`, [], 'Ext_RegExp')}()`; }
       case K.TypeOfExpression: {
         // exact when the static type decides the tag; an Option decides between its base tag and "undefined"; else uninterpreted
-        const tagOf = (t) => { const f = t.flags; if (f & TF.StringLike) return 'string'; if (f & TF.NumberLike) return 'number'; if (f & TF.BigIntLike) return 'bigint'; if (f & TF.BooleanLike) return 'boolean'; if (f & TF.Undefined) return 'undefined'; if (f & TF.Null) return 'object'; if (f & TF.ESSymbol) return 'symbol'; if (f & TF.Object) return isCallable(t) ? 'function' : 'object'; return null; };
         const t = typeOf(n.expression);
-        if (!isAny(t) && !(t.flags & TF.Union)) { const tag = tagOf(t); if (tag) { expr(n.expression); return strEsc(tag); } }
-        if (!isAny(t) && isOptional(t)) { const base = baseOf(t); const tag = (base.flags & TF.Union) ? null : tagOf(base); if (tag && !isNullish(base)) { const v = rawOperand(n.expression); return `(if ${v}.Some? then ${strEsc(tag)} else "undefined")`; } }
-        return `${external('typeof_Any', [anyType()], 'string')}(${expr(n.expression, anyTarget())})`;
+        if (isOptional(t)) {
+          const absent = t.types.filter(isNullish); const tags = new Set(absent.map(runtimeTag));
+          const base = baseOf(t); const tag = runtimeTag(base);
+          if (tags.size === 1 && tag) { const v = rawOperand(n.expression); return `(if ${v}.Some? then ${strEsc(tag)} else ${strEsc([...tags][0])})`; }
+        }
+        return staticTest(n.expression, (t) => { const tag = runtimeTag(t); return tag ? strEsc(tag) : null; }, (v, d) => `${external('typeof', [d], 'string')}(${v})`);
       }
       case K.NonNullExpression: {
         const t = typeOf(n.expression);
@@ -857,10 +953,18 @@ export function translate(file, fnName, opts = {}) {
       const o = op === K.AmpersandAmpersandToken ? '&&' : '||';
       return `(${truthy(n.left)} ${o} ${truthy(n.right)})`;
     }
-    if (op === K.InstanceOfKeyword) return `${external(`instanceof_${mangle(n.right.getText(sf))}`, [anyType()], 'bool')}(${expr(n.left, anyTarget())})`;
+    if (op === K.InstanceOfKeyword) {
+      const decl = checker.getSymbolAtLocation(n.right)?.valueDeclaration;
+      const target = decl && ts.isClassDeclaration(decl) ? checker.getTypeAtLocation(decl.name) : null;
+      return staticTest(n.left, (t) => target ? instanceDecision(t, target, n) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}`, [d], 'bool')}(${v})`);
+    }
     if (op === K.InKeyword) {
       const rt0 = typeOf(n.right); const rd = (() => { try { return isAny(rt0) ? 'Any' : dtype(rt0, n); } catch { return 'Any'; } })();
       if (rd.startsWith('map<string') && (typeOf(n.left).flags & TF.StringLike)) return `(${expr(n.left)} in ${expr(n.right)})`; // a key test on a dictionary is exact
+      if (ts.isStringLiteral(n.left)) {
+        const key = n.left.text;
+        return staticTest(n.right, (t) => { const p = checker.getPropertyOfType(t, key); return p && !(p.flags & ts.SymbolFlags.Optional) ? 'true' : null; }, (v, d) => `${external('in_record', [d, 'string'], 'bool')}(${v}, ${strEsc(key)})`);
+      }
       return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
     }
     if (op === K.PercentToken) {
@@ -1182,6 +1286,13 @@ export function translate(file, fnName, opts = {}) {
     return base;
   }
   function fieldOf(recvCode, recvT, name, n) {
+    const members = sums.get(dtype(recvT, n));
+    if (members) return sumCases(recvCode, members, (m, v) => { const ft = checker.getTypeOfPropertyOfType(m.t, name); return convertD(fieldOf(`${v}.${m.field}`, m.t, name, n), dtype(ft, n), dtype(typeOf(n), n)); });
+    const prop = checker.getPropertyOfType(recvT, name);
+    if (prop && !(prop.flags & ts.SymbolFlags.Optional)) {
+      const literal = literalValue(checker.getTypeOfSymbolAtLocation(prop, prop.valueDeclaration ?? n));
+      if (literal !== null) return literal;
+    }
     // a local narrowed by a type guard is still the value of its declared type in Dafny
     { let e = n.expression; while (e && ts.isParenthesizedExpression(e)) e = e.expression;
       if (e && ts.isIdentifier(e)) { const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (o.kind === 'local' && o.sym) { const dt = symType(o.sym, e); const bd = isOptional(dt) ? baseOf(dt) : dt; if (isRecordish(bd) && dtype(bd, n) !== dtype(recvT, n)) recvT = bd; } } }
@@ -1342,6 +1453,9 @@ export function translate(file, fnName, opts = {}) {
     }
     if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
     const recv = f.expression, name = f.name.text;
+    if (ts.isIdentifier(recv) && recv.text === 'Array' && name === 'isArray' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 1) {
+      return staticTest(n.arguments[0], (t) => arrayBrand(t) ? 'true' : t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined) ? 'false' : null, (v, d) => `${external('Array_isArray', [d], 'bool')}(${v})`);
+    }
     if ((f.questionDotToken || n.questionDotToken) && isOptional(typeOf(recv)) && recv.kind !== K.ThisKeyword) {
       // `a?.m(args)`: the call, and its transition, only when a is present; the result is an Option
       const base = baseOf(typeOf(recv));
