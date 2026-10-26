@@ -42,6 +42,7 @@ export class Environment {
   // has the same answer on both sides and in any order. A method member is a callable fake that answers its return
   // type; a service is a fake with typed members.
   typed(path, tspec, optional = false) {
+    if (tspec?.kind === 'promise') return Promise.resolve(this.typed(path, tspec.of));
     if (this.cache.has(path)) return this.cache.get(path);
     if (!tspec) return this.answer(path);
     if (tspec.kind === 'service' && tspec.awaits) return this.typed(path, tspec.awaits); // a thenable answers what awaiting it yields
@@ -140,7 +141,7 @@ export class Environment {
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
         // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
-        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); throw new Error(`fault: ${path}`); }
+        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') return Promise.reject(error); throw error; }
         // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
         if (!env.loading) {
           const cbs = [];

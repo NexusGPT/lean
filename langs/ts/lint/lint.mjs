@@ -13,6 +13,7 @@ import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits } from '../common.mjs';
 import { fileUsesReals } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit } from '../module-forms.mjs';
+import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE } from './advice.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
@@ -377,7 +378,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           expr(l.argumentExpression);
         } else if (ts.isPropertyAccessExpression(l)) {
           let root = l; while (ts.isPropertyAccessExpression(root)) root = root.expression;
-          if (root.kind === K.ThisKeyword) { if (l.expression.kind !== K.ThisKeyword) return v(l, 'receiver-mutation', 'assignment through a field of `this` changes a value the receiver holds; assign the field itself'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return; } // a field of the receiver: a world transition (the right side is checked below)
+          if (root.kind === K.ThisKeyword) { if (l.expression.kind !== K.ThisKeyword) return v(l, 'receiver-mutation', 'assignment through a field of `this` changes a value the receiver holds; assign the field itself'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return expr(e.right); } // a field of the receiver: its right side is checked before the world write
           const o = ts.isIdentifier(root) ? declOf(root) : { kind: null };
           if (!ts.isIdentifier(root) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', `\`${root.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
@@ -475,10 +476,79 @@ export function lintFile(file, ranges = null, opts = {}) {
   const isJsxNode = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x) || ts.isJsxFragment(x); };
   const isPrim = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.Undefined | TF.Null | TF.EnumLike));
 
+  // a consumed native promise has an inline continuation; pending work has no sequential reading
+  function unsafePromiseCallee(u, seen = new Set()) {
+    if (!u || seen.has(u.name)) return false;
+    seen.add(u.name); let unsafe = false;
+    const w = (x) => {
+      if (ts.isThrowStatement(x) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), seen)) unsafe = true;
+      ts.forEachChild(x, w);
+    };
+    w(u.body); return unsafe;
+  }
+  function promiseHandler(a, arity) {
+    if (ts.isIdentifier(a)) {
+      const o = declOf(a), u = units.get(a.text);
+      const sg = checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call)[0];
+      if (!sg || sg.typeParameters?.length || checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call).length !== 1 || sg.parameters.some((p) => p.valueDeclaration && ts.isParameter(p.valueDeclaration) && (p.valueDeclaration.dotDotDotToken || p.valueDeclaration.initializer || p.valueDeclaration.questionToken)) || sg.parameters.length > arity || (o.kind !== 'unit' && o.kind !== 'import' && o.kind !== 'other')) return v(a, 'promise-handler', 'use an arrow or a named same-file or imported function with at most one plain parameter');
+      if (u) {
+        if (unsafePromiseCallee(u) || u.params.some((p) => p.initializer || p.dotDotDotToken || p.questionToken || !ts.isIdentifier(p.name))) return v(a, 'promise-handler', 'inline a handler that throws or mutates so its fault and state are visible');
+      }
+      const rt = sg.getReturnType();
+      if (isAny(rt) || (!isNativePromise(rt, checker) && checker.getPropertyOfType(rt, 'then'))) return v(a, 'promise-thenable', 'give a named handler a plain or native Promise return type');
+      return checkIdent(a, true);
+    }
+    if (!ts.isArrowFunction(a) || a.typeParameters?.length || a.parameters.length > arity || a.parameters.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken)) return v(a, 'promise-handler', 'use an arrow with plain parameters');
+    promiseBody(a.body);
+    const values = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) promiseValueType(x.expression); ts.forEachChild(x, values); };
+    if (ts.isBlock(a.body)) values(a.body); else promiseValueType(a.body);
+    callback(a, null);
+  }
+  function promiseBody(body) {
+    const w = (x) => {
+      if (ts.isFunctionLike(x)) return;
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text))) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
+      if (ts.isStatement(x) && ![K.Block, K.VariableStatement, K.ExpressionStatement, K.IfStatement, K.ReturnStatement, K.ThrowStatement, K.EmptyStatement].includes(x.kind)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
+      ts.forEachChild(x, w);
+    };
+    w(body);
+  }
+  function promiseValueType(e) {
+    const t = tOf(e);
+    if (isAny(t) || (!isNativePromise(t, checker) && checker.getPropertyOfType(t, 'then'))) v(e, 'promise-thenable', 'use a plain value or a statically typed native Promise; custom thenable adoption is not read');
+  }
+  function promiseValue(e) { promiseValueType(e); expr(e); }
+  function readPromise(e, form) {
+    if (['race', 'allSettled', 'any'].includes(form.kind)) return v(e, 'promise-combinator', `Promise.${form.kind} needs completion order or per-element outcomes; use a sequential await`);
+    if (!promiseConsumed(e, checker, sf)) return v(e, 'promise-pending', 'await or return the promise directly; a dangling or stored continuation leaves observable pending work');
+    if (form.kind === 'executor') {
+      const shape = executorShape(e, checker, sf);
+      if (shape.rule) return v(e, shape.rule, shape.message);
+      promiseBody(shape.cb.body);
+      if (shape.bridge) {
+        const f = shape.bridge.expression;
+        if (ts.isIdentifier(f) && declOf(f).kind === 'unit') return v(e, 'promise-executor', 'a callback bridge must call an outside API');
+      }
+      const scan = (x) => { if (ts.isCallExpression(x)) { const st = shape.settlement(x); if (st?.kind === 'resolve' && x.arguments[0]) promiseValue(x.arguments[0]); } ts.forEachChild(x, scan); };
+      scan(shape.cb.body);
+      return callback(shape.cb, null);
+    }
+    if (form.kind === 'resolve' || form.kind === 'reject') {
+      if (e.arguments.length > 1) return v(e, 'promise-handler', 'Promise.resolve and Promise.reject take at most one value');
+      if (e.arguments[0]) return form.kind === 'resolve' ? promiseValue(e.arguments[0]) : expr(e.arguments[0]);
+      return;
+    }
+    if (e.arguments.length !== 1 || !form.handler || e.questionDotToken || e.expression.questionDotToken) return v(e, 'promise-handler', 'use one explicit handler per link; use catch for rejection');
+    expr(form.source);
+    return promiseHandler(form.handler, form.kind === 'finally' ? 0 : 1);
+  }
   function awaitExpr(e, asStatement = false) {
     const fnHere = callbackStack.length ? callbackStack[callbackStack.length - 1] : currentFn;
     if (!fnHere || !fnHere.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return v(e, 'async', '`await` outside an async function');
-    const inner = ts.isParenthesizedExpression(e.expression) ? e.expression.expression : e.expression;
+    const inner = unparen(e.expression);
+    const form = promiseForm(inner, checker, sf);
+    if (form) return readPromise(inner, form);
     if (ts.isCallExpression(inner) && ts.isPropertyAccessExpression(inner.expression) && ARRAY_METHODS.has(inner.expression.name.text) && nonNull(tOf(inner.expression.expression)).every((t) => isArrayLike(checker, t))) return call(inner);
     if (!ts.isCallExpression(inner)) return expr(inner); // awaiting a held promise: a transition of the world on that value
     // the awaited call is an external (or a local async unit): its arguments are checked, the call itself is uninterpreted
@@ -613,7 +683,8 @@ export function lintFile(file, ranges = null, opts = {}) {
         const n = e.expression.getText(sf);
         if (n === 'Set' || n === 'Map' || n === 'RegExp') return e.arguments?.forEach(expr);
         if (n === 'Function') return v(e, 'dynamic-eval', '`new Function` is outside the subset');
-        if (n === 'Promise') return v(e, 'async', '`new Promise` is outside the subset');
+        const form = promiseForm(e, checker, sf);
+        if (form) return readPromise(e, form);
         // any other constructor: an uninterpreted value built from its arguments (Error, a class, a library object)
         if (ts.isPropertyAccessExpression(e.expression)) expr(e.expression.expression);
         else if (ts.isIdentifier(e.expression) && (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined) && (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined) !== 'global-read') return v(e, (Object.hasOwn(EFFECT_GLOBALS, n) ? EFFECT_GLOBALS[n] : undefined), `\`new ${n}\` is outside the subset`);
@@ -713,6 +784,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (producer) { const shape = generators.shape(producer); if (shape.rule) v(e, shape.rule, shape.message); }
     conditionalSpreadArgs(e);
     if (['useMemo', 'useCallback', 'useEffect'].includes(reactHook(checker, e))) reactCapture(e.arguments[0]);
+    const form = promiseForm(e, checker, sf);
+    if (form) return readPromise(e, form);
     const f = e.expression;
     if (moduleLoader(checker, e, sf, current)) return argsOf(e);
     if (e.questionDotToken) v(e, 'optional-chain', 'calling an optional function value is outside the subset');
@@ -724,7 +797,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         const u = units.get(f.text);
         if (u && !e.arguments.some(ts.isSpreadElement) && !u.params.some((p) => p.dotDotDotToken)) { const req = u.params.filter((p) => !p.initializer && !p.questionToken && !p.dotDotDotToken).length; if (e.arguments.length < req || e.arguments.length > u.params.length) v(e, 'unsupported-call', `${f.text} takes ${req === u.params.length ? req : `${req} to ${u.params.length}`} arguments`); }
         if (u?.fn.asteriskToken && !u.isAsync && !immediateGeneratorConsumer(e, checker, sf)) v(e, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
-        if (u && u.isAsync && !u.fn.asteriskToken && !(e.parent && ts.isAwaitExpression(e.parent))) v(e, 'async', 'an async unit is called without await');
+        if (u && u.isAsync && !u.fn.asteriskToken && !(e.parent && ts.isAwaitExpression(e.parent)) && !promiseConsumed(e, checker, sf)) v(e, 'async', 'an async unit is called without await');
       }
       if (o.kind === 'unit') { const uRest = units.get(e.expression.text); const restOk = !!(uRest && uRest.params.some((p) => p.dotDotDotToken)); e.arguments.forEach((a, i) => { if (ts.isSpreadElement(a)) { if (restOk && i === uRest.params.length - 1 && isArrayExpr(a.expression)) expr(a.expression); else v(a, 'spread', 'a spread argument goes to a rest parameter, as the last argument'); } else if (!ts.isArrowFunction(a)) expr(a); else v(a, 'function-value', 'a same-file function takes values, not callbacks'); }); return; }
       return argsOf(e);

@@ -1,0 +1,66 @@
+7 concepts, 60 instances
+exported /Users/assem/Documents/GitHub/nexus
+exported /Users/assem/promo-app
+exported /Users/assem/Documents/GitHub/n8n
+exported /Users/assem/Documents/GitHub/driftbench
+.then/.catch chain | openingWhenHostIsThere | lint-out promise-pending /
+.then/.catch chain | TracingMapper.toGenerationSummaryDto | lint-out global-read /
+.then/.catch chain | useStarredSkills | lint-out promise-pending /
+.then/.catch chain | BurstDrain.schedule | lint-out promise-pending /
+.then/.catch chain | refill | lint-out promise /
+.then/.catch chain | useAttachments | lint-out closure-mutation /
+.then/.catch chain | keepHiddenUsageLimit | translated  3/3
+.then/.catch chain | defaultReadFile | lint-out promise /
+new Promise | AppliedSettings.until | lint-out promise /
+new Promise | AzureBotProvisioningService.sleep | lint-out promise /
+new Promise | chartToPngBlob | lint-out global-read /
+new Promise | validateCredentials | lint-out promise-executor-escape /
+new Promise | RenameNodeCommand.revert | translated  3/3
+new Promise | runDeploymentWatch | lint-out promise-pending /
+new Promise | PromptAssistantResource.pollThread | lint-out loop-form /
+new Promise | sleep | lint-out promise /
+new Promise | s3ApiRequestSOAP | lint-out this /
+new Promise | loadMaps | lint-out promise /
+Promise.resolve | GoogleSheetProcessor.delete | lint-out promise /
+Promise.resolve | ceiverAdapter.extractThreadIdFromWebhook | lint-out promise /
+.then/.catch chain | main | translated  1/3
+Promise.resolve | ClaudeSessions.report | lint-out promise /
+.then/.catch chain | CheckBalancePositive.canActivate | translated  2/3
+Promise.resolve | TeamsMessageReceiverAdapter.markAsRead | lint-out promise /
+Promise.resolve | agentAccessOn | lint-out promise-pending /
+Promise.resolve | createExtensionsHandlers | lint-out ts-strict /
+Promise.resolve | BlobStore.hasValidPath | lint-out promise /
+Promise.resolve | notFound | lint-out promise /
+Promise.resolve | wiseStringResultOutputParser.parseResult | lint-out promise /
+Promise.reject | HelperLink.keep | lint-out promise /
+Promise.resolve | OPTIONS | lint-out promise /
+Promise.reject | createPrompter | lint-out closure-mutation /
+Promise.reject | installOutboundShim | lint-out promise-pending /
+Promise.reject | GetProviderTokenUseCase.execute | lint-out promise /
+Promise.reject | liveChannel | lint-out param-mutation /
+Promise.reject | readOnly | lint-out promise /
+Promise.reject | landingDbFromPglite | lint-out async /
+Promise.reject | createMacDictation | lint-out closure-mutation /
+Promise.reject | promised | lint-out promise /
+Promise.race | withStreamIdleTimeout | lint-out generator /
+Promise.race | WaitForFirstOffers.wait | lint-out promise-combinator /
+Promise.race | withDeadline | lint-out promise-combinator /
+Promise.race | LargeFrameKeeper.flush | lint-out promise-pending /
+Promise.reject | EmailsService.getCredentials | lint-out promise /
+Promise.race | awaitReleaseWithTimeout | lint-out promise-pending /
+Promise.race | runCommandInLocalShell | lint-out promise-combinator /
+Promise.race | askLine | lint-out async /
+Promise.race | InternalHooks.onN8nStop | lint-out promise-pending /
+Promise.race | BullQueueStatsAdapter.withTimeout | lint-out promise /
+Promise.race | RunnableMap._transform | lint-out generator /
+Promise.allSettled | ActiveExecutions.shutdown | lint-out async /
+Promise.allSettled | awaitAllCallbacks | lint-out promise-combinator /
+Promise.allSettled | settled | lint-out promise-combinator /
+Promise.allSettled | atAttachmentUploadService.uploadMultiple | lint-out promise-combinator /
+Promise.allSettled | settled | lint-out promise-combinator /
+Promise.allSettled | applyEvaluators | lint-out async /
+Promise.allSettled | ShutdownService.startShutdown | lint-out promise-combinator /
+Promise.allSettled | runSession | lint-out opaque-mutation /
+Promise.allSettled | entToolConfigsService.bustWorkflowCaches | lint-out promise-combinator /
+Promise.allSettled | eploymentCacheAdapter.preLoadDeployments | lint-out promise-combinator /
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/promise-then-new-promise/results-bench/final-after.md
