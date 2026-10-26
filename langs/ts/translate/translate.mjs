@@ -648,6 +648,18 @@ export function translate(file, fnName, opts = {}) {
     if (first && ts.isSpreadAssignment(first)) recT = typeOf(first.expression);
     if (!recT || !isRecordish(recT)) recT = typeOf(n);
     const rname = dtype(recT, n);
+    if (rname.startsWith('Ext_') || rname === 'Any') {
+      const vals = [];
+      for (const p of n.properties) {
+        if (ts.isSpreadAssignment(p)) vals.push(expr(p.expression));
+        else if (ts.isShorthandPropertyAssignment(p)) vals.push(expr(p.name));
+        else if (ts.isPropertyAssignment(p)) vals.push(ts.isArrowFunction(p.initializer) ? lambda(p.initializer, p.initializer.parameters.length) : expr(p.initializer));
+        else if (ts.isMethodDeclaration(p)) fail(p, 'a method in an object literal is not translated');
+      }
+      const types = vals.map((v, i) => { const p = n.properties[i]; const t = ts.isPropertyAssignment(p) ? typeOf(p.initializer) : ts.isShorthandPropertyAssignment(p) ? typeOf(p.name) : typeOf(p.expression); try { return dtype(t, p); } catch { return anyType(); } });
+      const id = external(`lit_${mangle(rname)}_${hash(n.properties.map((p) => p.name ? p.name.getText(sf) : '...').join(','))}`, types, rname);
+      return `${id}(${vals.join(', ')})`;
+    }
     if (rname.startsWith('map<')) {
       const ix = stringIndex(recT);
       const vt = ix ? ix.type : undefined;
@@ -685,12 +697,13 @@ export function translate(file, fnName, opts = {}) {
     for (const p of checker.getPropertiesOfType(recT)) if (!given.has(p.name) && (p.flags & ts.SymbolFlags.Optional)) { usesOption = true; fields.push([p.name, 'None']); }
     return `${rname}(${fields.map(([k, v]) => `${dn(k)} := ${outerParens(v)}`).join(', ')})`;
   }
-  function lambda(cb, arity) {
+  function lambda(cb, arity, paramTypes = []) {
     if (containsEffect(cb.body)) fail(cb, 'an effect inside a callback; the order of its world transitions is not defined');
     const names = [];
     const lets = [];
     cb.parameters.forEach((p, i) => {
-      if (ts.isIdentifier(p.name)) names.push(`${dn(p.name.text)}: ${dtype(typeOf(p.name), p)}`);
+      const pt = paramTypes[i] ?? typeOf(p.name);
+      if (ts.isIdentifier(p.name)) names.push(`${dn(p.name.text)}: ${dtype(pt, p)}`);
       else { const pn = `pp${i}_`; names.push(`${pn}: ${dtype(typeOf(p.name), p)}`); lets.push(...destructure(p.name, pn)); }
     });
     for (let i = cb.parameters.length; i < arity; i++) names.push(`uu${i}_: int`);
@@ -741,9 +754,16 @@ export function translate(file, fnName, opts = {}) {
     }
     const recvT = n.expression.kind === K.ThisKeyword && classOf(currentUnit) ? checker.getTypeAtLocation(currentUnit.cls.name) : typeOf(n.expression);
     const declaredOpaque = (() => { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e)) return false; const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (!o.sym || o.kind !== 'local') return false; const dt = symType(o.sym, e); try { return dtype(isOptional(dt) ? baseOf(dt) : dt, n) === 'Any'; } catch { return false; } })();
-    if (isAny(recvT) || (isOptional(recvT) && isAny(baseOf(recvT))) || declaredOpaque) {
+    const recvD = (() => { try { return dtype(isOptional(recvT) ? baseOf(recvT) : recvT, n); } catch { return null; } })();
+    if (isAny(recvT) || (isOptional(recvT) && isAny(baseOf(recvT))) || declaredOpaque || recvD === 'Any') {
       const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
-      const rv = declaredOpaque ? rawOperand(n.expression) : expr(n.expression, anyTarget());
+      let rv;
+      if (declaredOpaque) {
+        rv = rawOperand(n.expression);
+        let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+        const o = originOf(checker, e, sf, currentUnit?.node ?? null);
+        if (o.sym && isOptional(symType(o.sym, e)) && !isOptional(typeOf(e)) && !isNullish(typeOf(e))) rv += '.value';
+      } else rv = expr(n.expression, anyTarget());
       return `${external(`Any_${name}`, [anyType()], rd)}(${rv})`;
     }
     if (n.questionDotToken) {
@@ -926,16 +946,19 @@ export function translate(file, fnName, opts = {}) {
     if (isArrayLike(checker, base)) {
       const A = () => dtype(elemType(recv), n);
       const R = expr(recv);
-      const cb = n.arguments[0];
+      const cb0 = n.arguments[0];
+      const cb = cb0;
+      const et = () => elemType(recv);
+      const lambda1 = (c, k) => lambda(c, k, [et()]);
       switch (name) {
-        case 'filter': return `${helper('Filter', [A()])}(${R}, ${lambda(cb, 1)})`;
-        case 'map': return `${helper('Map', [A(), dtype(typeOf(n), n).replace(/^seq<(.*)>$/, '$1')])}(${R}, ${lambda(cb, 1)})`;
-        case 'flatMap': { const inner = dtype(typeOf(n), n); return `${helper('Flat', [inner.replace(/^seq<(.*)>$/, '$1')])}(${helper('Map', [A(), inner])}(${R}, ${lambda(cb, 1)}))`; }
-        case 'reduce': { const U = dtype(typeOf(cb.parameters[0].name), cb); return `${helper('Fold', [A(), U])}(${R}, ${lambda(cb, 2)}, ${expr(n.arguments[1], typeOf(cb.parameters[0].name))})`; }
-        case 'some': return `(exists ii_ :: 0 <= ii_ < |${R}| && ${lambda(cb, 1)}(${R}[ii_]))`;
-        case 'every': return `(forall ii_ :: 0 <= ii_ < |${R}| ==> ${lambda(cb, 1)}(${R}[ii_]))`;
-        case 'find': return `${helper('Find', [A()])}(${R}, ${lambda(cb, 1)})`;
-        case 'findIndex': return `${helper('FindIndex', [A()])}(${R}, ${lambda(cb, 1)})`;
+        case 'filter': return `${helper('Filter', [A()])}(${R}, ${lambda1(cb, 1)})`;
+        case 'map': return `${helper('Map', [A(), dtype(typeOf(n), n).replace(/^seq<(.*)>$/, '$1')])}(${R}, ${lambda1(cb, 1)})`;
+        case 'flatMap': { const inner = dtype(typeOf(n), n); return `${helper('Flat', [inner.replace(/^seq<(.*)>$/, '$1')])}(${helper('Map', [A(), inner])}(${R}, ${lambda1(cb, 1)}))`; }
+        case 'reduce': { const U = dtype(typeOf(cb.parameters[0].name), cb); return `${helper('Fold', [A(), U])}(${R}, ${lambda(cb, 2, [typeOf(cb.parameters[0].name), et()])}, ${expr(n.arguments[1], typeOf(cb.parameters[0].name))})`; }
+        case 'some': return `(exists ii_ :: 0 <= ii_ < |${R}| && ${lambda1(cb, 1)}(${R}[ii_]))`;
+        case 'every': return `(forall ii_ :: 0 <= ii_ < |${R}| ==> ${lambda1(cb, 1)}(${R}[ii_]))`;
+        case 'find': return `${helper('Find', [A()])}(${R}, ${lambda1(cb, 1)})`;
+        case 'findIndex': return `${helper('FindIndex', [A()])}(${R}, ${lambda1(cb, 1)})`;
         case 'includes': return `(${expr(n.arguments[0], elemType(recv))} in ${R})`;
         case 'indexOf': return `${helper('IndexOf', [A()])}(${R}, ${expr(n.arguments[0], elemType(recv))})`;
         case 'slice': return `${helper('Slice', [A()])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '0'}, ${n.arguments[1] ? expr(n.arguments[1]) : `|${R}|`})`;
