@@ -103,7 +103,7 @@ one, never proved equal and never proved different (the execution lane decides i
 | `class`, `inheritance` | `super` as a value (`const f = super.m`, `super.x`); `super.m(...)` as a call is read as a transition on the receiver | `const f = super.m` |
 | `receiver-mutation` | assignment through a field of a field of `this` | `this.stats.n += 1` |
 | `global-mutation`, `global-read`, `toplevel-state`, `toplevel-effect` | module `let`/`var`, assignment to anything the function does not own, code at module level that runs on import | `counter = counter + 1` |
-| `alias-mutation` | changing a value through a local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`) | `const t = user.tags; t.push(1)` |
+| `alias-mutation` | changing a value through a local that is another name for a parameter's object (`const u = user`, `const t = user.tags`, `const x = xs[i]`); the [heap reading](design/heap-layer.md) is a design and verified toy only | `const t = user.tags; t.push(1)` |
 | `param-assign`, `param-mutation`, `property-assign`, `index-assign`, `in-place-mutation` | rebinding a parameter (`p = v`); a field or slot of what the function does not own (a module object, a cast, a value from the world); `sort`/`reverse` on a named array | `(x as any).f = 1` |
 | `closure-mutation`, `foreach` | a callback (not a loop body) changing a variable declared outside it; `forEach` with an async callback, which the function does not wait for | `xs.forEach(async (x) => { await f(x); })` |
 | `opaque-mutation` | a mutating method on an opaque value used as a value, or as a statement when a field of the same receiver is read later | `const n = list.push(x)` |
