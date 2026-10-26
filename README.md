@@ -58,6 +58,31 @@ node langs/ts/check.mjs \
 
 Class methods work too: `--unit PricingService.applyDiscount`. The whole file is read inside its project (its `tsconfig.json`, its imports, its types); nothing has to be rewritten to be checked.
 
+## What it changes in your code
+
+**Nothing, to start.** lean reads your TypeScript as it is, inside its own project: the `tsconfig.json`, the imports, the types. No annotations, no new syntax, no wrapper library, no build step. You point it at a parent file and a candidate file and name a function.
+
+**What you need.** Node 20 or newer, Python 3, and [Dafny](https://dafny.org) 4 or newer on your `PATH` (it brings Z3). Nothing is installed into your repository.
+
+**What becomes checkable.** A function gets a *proof* when it lives inside the subset: plain data (records, arrays, strings, sets, maps, optionals, literal unions), loops, early returns, `switch`, destructuring, `async` functions, class methods, recursion, and calls into the outside world. Those calls are modelled as transitions of an explicit world, so a service method that awaits a repository and logs is inside the subset. `try`/`catch` and loops without a bound are inside too, as opaque blocks named by their text.
+
+**What you can no longer do, if you want proofs.** Six things make a function uncheckable by proof, and lean names the one it hit:
+
+| you write | lean says | what to write instead |
+|---|---|---|
+| `this.count = this.count + 1` inside a method | `ASK: receiver-mutation` | return the new state, or keep the counter in a local |
+| `xs.forEach(x => { total += x })` | `ASK: closure-mutation` | `for (const x of xs) total += x`, or `reduce` |
+| `items.push(x)` where `items` is a parameter | `ASK: param-mutation` | return `[...items, x]` |
+| `a === b` on two objects or arrays | `ASK: reference-equality` | compare the fields you mean |
+| `n / 2` on numbers | `ASK: division` | `Math.floor(n / 2)` when you mean integer division |
+| `eval`, `new Function`, `Object.getPrototypeOf`, `super` | `ASK: dynamic-eval`, `prototype`, `class` | there is no mathematical reading of these; keep them out of the function you want proved |
+
+Everything else that lean cannot read (JSX, generators, callbacks to a library, an unknown constructor) is not a refusal: it becomes an uninterpreted value or call, the same on both sides, and the proof still goes through when the rest is equal.
+
+**What you can still do.** Write TypeScript the way your team writes it. A function outside the subset is not blocked: it gets lane B, a bounded execution verdict, and the exact reason the proof lane stopped. You decide what to tighten.
+
+**What changes in your workflow.** A pull request carries, per changed function, one of four words and its certificate. `WITNESS` comes with the input that shows the difference. `PASS-proved` comes with a theorem anyone can re-check. Reviewers read the scope you declared and the asks, not the diff.
+
 ## What you get
 
 **Code like mathematics.** Inside lean's subset, a TypeScript function *is* a mathematical function: the translator turns it into Dafny, and a prover reasons about every input at once. The subset is large: records, arrays, strings, sets, maps, optionals, literal unions, loops, early returns, switch, destructuring, async functions, class methods, recursion. [`langs/ts/subset.md`](langs/ts/subset.md) lists all of it.
