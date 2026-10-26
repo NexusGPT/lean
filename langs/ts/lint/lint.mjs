@@ -13,6 +13,7 @@ import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits } from '../common.mjs';
 import { fileUsesReals } from '../common.mjs';
 import { ADVICE } from './advice.mjs';
+import { reactHook, arrowOf, closureReads } from '../react.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -502,6 +503,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
 
   function call(e) {
+    if (['useMemo', 'useCallback', 'useEffect'].includes(reactHook(checker, e))) reactCapture(e.arguments[0]);
     const f = e.expression;
     if (e.questionDotToken) v(e, 'optional-chain', 'calling an optional function value is outside the subset');
     if (ts.isIdentifier(f)) {
@@ -609,6 +611,25 @@ export function lintFile(file, ranges = null, opts = {}) {
   // JSX: an element is a value (a tag, a record of attributes, a list of children). A tag names a component or an
   // intrinsic element; a handler attribute is a callback value keyed by its text; every other attribute and every child
   // expression is an ordinary expression
+  // a deferred handler captures values; a mutable render binding would need a shared cell
+  function reactCapture(e) {
+    const cb = arrowOf(checker, e);
+    if (!cb) return;
+    for (const id of closureReads(checker, cb)) {
+      const sym = checker.getSymbolAtLocation(id), d = sym?.valueDeclaration;
+      let unsafe = d && (d.pos > cb.pos || (ts.isVariableDeclaration(d) && !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)));
+      const root = (n) => { while (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isParenthesizedExpression(n)) n = n.expression; return n; };
+      const hits = (n) => { const r = root(n); return ts.isIdentifier(r) && checker.getSymbolAtLocation(r) === sym; };
+      const walk = (n) => {
+        if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && hits(n.left)) unsafe = true;
+        if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && hits(n.operand)) unsafe = true;
+        if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUT_NAMES.has(n.expression.name.text) && hits(n.expression.expression)) unsafe = true;
+        ts.forEachChild(n, walk);
+      };
+      if (currentFn?.body) walk(currentFn.body);
+      if (unsafe) v(id, 'react-handler-capture', 'a React closure captures a changing local; capture a const value or use a state setter');
+    }
+  }
   function jsx(e) {
     if (ts.isJsxFragment(e)) return e.children.forEach(jsxChild);
     const open = ts.isJsxSelfClosingElement(e) ? e : e.openingElement;
@@ -620,7 +641,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isJsxSpreadAttribute(a)) { expr(a.expression); continue; }
       const init = a.initializer;
       if (!init || ts.isStringLiteral(init)) continue;
-      if (ts.isJsxExpression(init)) { const x = init.expression; if (!x) continue; if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) { if (ts.isArrowFunction(x)) callback(x, null); else v(x, 'callback-form', 'a handler is an arrow function'); } else expr(x); continue; }
+      if (ts.isJsxExpression(init)) { const x = init.expression; if (!x) continue; reactCapture(x); if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) { if (ts.isArrowFunction(x)) callback(x, null); else v(x, 'callback-form', 'a handler is an arrow function'); } else expr(x); continue; }
       jsx(init);
     }
     if (ts.isJsxElement(e)) e.children.forEach(jsxChild);

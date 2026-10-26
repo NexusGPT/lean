@@ -65,9 +65,47 @@ function jsxValue(type, props, key) {
 const JSX_FRAGMENT = '';
 const jsxRuntime = { jsx: jsxValue, jsxs: jsxValue, jsxDEV: jsxValue, Fragment: JSX_FRAGMENT, __esModule: true };
 
+// hooks belong to React's render protocol, rather than the generic external callback fake
+function reactRuntime(env) {
+  let slot = 0;
+  const runtime = {
+    useMemo: (fn) => fn(),
+    useCallback: (fn) => fn,
+    useState: (initial) => {
+      const key = `react:state:${slot++}`;
+      const value = typeof initial === 'function' ? initial() : initial;
+      env.record('hook', key, [render(value)]);
+      let current = value;
+      const setter = (next) => { current = typeof next === 'function' ? next(current) : next; env.record('set', key, [render(current)]); };
+      return [value, setter];
+    },
+    useEffect: (fn, deps) => {
+      const key = `react:effect:${slot++}`;
+      env.pending.push({ op: key, deps: render(deps) });
+      (env.reactEffects ??= []).push(fn);
+    },
+  };
+  const proxy = new Proxy(runtime, { get(t, p) { if (p === '__esModule') return true; if (p === 'default') return proxy; return p in t ? t[p] : env.module('react')[p]; } });
+  return proxy;
+}
+// handlers are observed after render and registered effects, in tree order, on a bounded event input
+async function observeJsx(v, env) {
+  if (Array.isArray(v)) { const items = []; for (const x of v) items.push(await observeJsx(x, env)); return items; }
+  if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return v;
+  const props = { ...v.props };
+  for (const k of Object.keys(props)) if (/^on[A-Z]/.test(k) && typeof props[k] === 'function') {
+    try { props[k] = { $handler: { returned: render(await props[k](env.fake(`react:event:${k}`))) } }; }
+    catch (e) { if (e instanceof BudgetError) throw e; props[k] = { $handler: { threw: render(e) } }; }
+  }
+  const children = [];
+  for (const c of v.children) children.push(await observeJsx(c, env));
+  return { ...v, props, children };
+}
+
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
   const cache = new Map();
+  const react = reactRuntime(env);
   const fixedNow = 1700000000000;
   const FakeDate = new Proxy(Date, { construct(t, args) { return args.length ? new Date(...args) : new Date(fixedNow); }, get(t, p) { if (p === 'now') return () => fixedNow; return t[p]; }, apply() { return new Date(fixedNow).toString(); } });
   const g = {
@@ -78,7 +116,7 @@ export function sandbox(env, root) {
     clearTimeout: (id) => { env.record('call', 'global:clearTimeout', [render(id)]); }, clearInterval: (id) => { env.record('call', 'global:clearInterval', [render(id)]); }, queueMicrotask: (fn) => Promise.resolve().then(fn),
     Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
     Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect, Proxy, structuredClone,
-    globalThis: null, crypto: env.module('crypto'), performance: env.module('performance'), React: env.module('react'),
+    globalThis: null, crypto: env.module('crypto'), performance: env.module('performance'), React: react,
   };
   g.globalThis = g; g.global = g; g.window = undefined;
   const ctx = vm.createContext(g);
@@ -107,6 +145,7 @@ export function sandbox(env, root) {
         if (r && (!root || r.startsWith(root))) return load(r);
         return env.module(spec);
       }
+      if (spec === 'react') return react;
       if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntime; // an element is a value tree, by React's rules for children
       return env.module(spec); // packages, builtins, path aliases: the environment
     };
@@ -167,7 +206,11 @@ export async function observe(side, spec, args, ms) {
   try {
     const r = unit.call(args);
     const v = (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r;
-    outcome = { returned: render(v) };
+    for (const effect of env.reactEffects ?? []) {
+      try { const cleanup = await withTimeout(Promise.resolve(effect()), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); }
+      catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); }
+    }
+    outcome = { returned: render(await withTimeout(observeJsx(v, env), ms)) };
   } catch (e) {
     if (e && e.message === '__timeout__') return { harness: 'timeout' };
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };

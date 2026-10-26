@@ -30,6 +30,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals } from '../common.mjs';
 import { lintFile } from '../lint/lint.mjs';
+import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -126,17 +127,23 @@ export function translate(file, fnName, opts = {}) {
   const effectfulUnits = new Set(); // same-file units that take and return the world
   const PURE_RECEIVERS = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Buffer', 'Array', 'BigInt', 'Symbol', 'Object']); // Object.keys/values/entries/assign/fromEntries: pure functions of their arguments (the lint refuses the prototype ones)
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
+  const localEffectScan = new Set();
   function isEffectCall(n) {
     if (ts.isAwaitExpression(n)) return true;
     if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
     if (!ts.isCallExpression(n)) return false;
+    if (exactReactHook(checker, n)) return false;
     const f = n.expression;
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       if (o.kind === 'unit') return effectfulUnits.has(f.text);
       if (o.kind === 'global') return !PURE_RECEIVERS.has(f.text) && !['parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'String', 'Number', 'Boolean'].includes(f.text);
       // a local bound to an arrow literal is a pure lambda (an effect inside it is refused by lambda()); any other local function value is opaque
-      if (o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer)) return false;
+      if (o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer)) {
+        if (localEffectScan.has(o.decl)) return true;
+        localEffectScan.add(o.decl);
+        try { return containsEffect(o.decl.initializer.body); } finally { localEffectScan.delete(o.decl); }
+      }
       return true; // an import, a value from another file, a module const holding a function, a function-typed parameter
     }
     if (ts.isPropertyAccessExpression(f)) {
@@ -328,7 +335,7 @@ export function translate(file, fnName, opts = {}) {
   const stringIndex = (t) => (t.flags & TF.Object ? checker.getIndexInfoOfType(t, ts.IndexKind.String) : null);
   const anyType = () => { addPrelude('Any', 'type Any(==)'); return 'Any'; };
   // JSX: an element is a value. JsxElem(tag, props, children): the tag name, the attributes as a string-keyed map of
-  // opaque values (a handler is an opaque function value keyed by its text), the children in order. A string child is
+  // boxed values (including deferred handler values), the children in order. A string child is
   // JsxText; false, null and undefined render nothing; an array child is JsxList.
   const jsxType = () => { anyType(); addPrelude('JsxNode', 'datatype JsxNode = JsxElem(tag: string, props: map<string, Any>, children: seq<JsxNode>) | JsxText(s: string) | JsxNothing | JsxList(items: seq<JsxNode>)'); return 'JsxNode'; };
   const isElementSym = (sym) => { if (!sym) return false; const nm = sym.name; if (!['ReactElement', 'Element', 'ReactPortal', 'JSXElementConstructor'].includes(nm)) return false; if (sym.parent && sym.parent.name === 'JSX') return true; const f = sym.declarations?.[0]?.getSourceFile().fileName ?? ''; return /react|jsx/i.test(f); };
@@ -468,7 +475,7 @@ export function translate(file, fnName, opts = {}) {
     else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
     let rd = dtype(rt, n);
     if (cond && rd.startsWith('Option<')) rd = innerOf(rd); // the signature's own result; the chain adds the Option once
-    const codes = args.map((a, i) => (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
+    const codes = args.map((a, i) => (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
     if (!isEff) {
       let code;
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
@@ -612,8 +619,8 @@ export function translate(file, fnName, opts = {}) {
     }
     if (td === 'Unit') return 'Unit';
     if (td === 'Any' && code === 'None') return `${external('Any_undefined', [], 'Any')}()`; // `undefined` as an opaque value
-    if (td === 'Any') return `${external(`Any_of_${mangle(fd)}`, [fd], 'Any')}(${code})`;
-    if (fd === 'Any') return `${external(`Any_as_${mangle(td)}`, ['Any'], td)}(${code})`;
+    if (td === 'Any') return `${external(`Any_of_${fd.includes('->') ? 'fn_' : ''}${mangle(fd)}`, [fd], 'Any')}(${code})`;
+    if (fd === 'Any') return `${external(`Any_as_${td.includes('->') ? 'fn_' : ''}${mangle(td)}`, ['Any'], td)}(${code})`;
     if (td.startsWith('Option<') && !fd.startsWith('Option<')) { usesOption = true; return `Some(${convertD(code, fd, innerOf(td))})`; }
     if (td.startsWith('Option<') && fd.startsWith('Option<')) { usesOption = true; const v = `o_${hash(code).slice(0, 4)}`; return `(var ${v} := ${code}; if ${v}.Some? then Some(${convertD(`${v}.value`, innerOf(fd), innerOf(td))}) else None)`; }
     return `${external(`cast_${mangle(fd)}_${mangle(td)}`, [fd], td)}(${code})`;
@@ -720,9 +727,10 @@ export function translate(file, fnName, opts = {}) {
       }
       case K.AwaitExpression: return awaitExpr(n);
       case K.ArrowFunction: case K.FunctionExpression: {
+        if (n.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return opaqueFn(n);
         // a pure lambda when the body is in the subset without effects; otherwise an opaque value keyed by its text (a
         // handler, a thunk with calls inside): the same text on both sides is the same value, a changed one differs
-        try { return lambda(n, n.parameters.length); } catch (e) { if (!(e instanceof Unsupported)) throw e; return opaqueFn(n); }
+        try { return lambda(n, n.parameters.length); } catch (e) { if (!(e instanceof Unsupported)) throw e; return reactHandler(n) ?? opaqueFn(n); }
       }
       case K.TaggedTemplateExpression: {
         // tag`a${x}b`: an uninterpreted function of the literal parts and the holes, keyed by the tag
@@ -995,10 +1003,10 @@ export function translate(file, fnName, opts = {}) {
     const d = isAny(t) ? anyType() : dtype(t, e);
     return convertD(expr(e), d, 'JsxNode');
   }
-  // an attribute value as an opaque value: a handler by its text, anything else converted to Any
+  // an attribute boxes its value; a handler retains its lambda or deferred closure reading
   function jsxAttrValue(x) {
     while (ts.isParenthesizedExpression(x)) x = x.expression;
-    if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return `${external(`handler_${hash(x.getText(sf).replace(/\s+/g, ' '))}`, [], anyType())}()`; // a handler: an opaque value keyed by its text
+    if (ts.isArrowFunction(x)) return convertD(expr(x), dtype(typeOf(x), x), anyType());
     if (isJsxLit(x)) return convertD(jsxNode(x), 'JsxNode', 'Any');
     const t = typeOf(x);
     if (isAny(t)) return expr(x);
@@ -1050,14 +1058,94 @@ export function translate(file, fnName, opts = {}) {
     if (currentUnit) w(currentUnit.body);
     return found;
   }
+  // deferred calls are data: their callee, arguments, order and return behavior, without running the world
+  function reactHandler(cb) {
+    if (!ts.isArrowFunction(cb) || cb.parameters.length || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null;
+    let usedByReact = false;
+    const usage = (n) => {
+      if (usedByReact) return;
+      if (ts.isJsxAttribute(n) && n.initializer && ts.isJsxExpression(n.initializer) && arrowOf(checker, n.initializer.expression) === cb) usedByReact = true;
+      if (reactHook(checker, n) === 'useCallback' && arrowOf(checker, n.arguments[0]) === cb) usedByReact = true;
+      ts.forEachChild(n, usage);
+    };
+    if (currentUnit) usage(currentUnit.body);
+    if (!usedByReact) return null;
+    const steps = ts.isBlock(cb.body) ? [...cb.body.statements] : [{ kind: K.ReturnStatement, expression: cb.body }];
+    const outside = (id) => {
+      const d = checker.getSymbolAtLocation(id)?.declarations?.[0];
+      let imp = d; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent;
+      return imp ? `import:${imp.moduleSpecifier.text}:${ts.isImportSpecifier(d) ? (d.propertyName ?? d.name).text : '*'}` : `global:${id.text}`;
+    };
+    const specs = [];
+    for (const st of steps) {
+      if (!ts.isExpressionStatement(st) && !ts.isReturnStatement(st)) return null;
+      const e = st.expression;
+      if (e && ts.isCallExpression(e) && !e.questionDotToken && e.arguments.every((a) => renderPure(checker, a))) {
+        let f = e.expression, name, recv = [];
+        if (ts.isIdentifier(f)) {
+          const o = originOf(checker, f, sf, currentUnit?.node ?? null);
+          if (o.kind === 'unit') return null;
+          if (o.kind === 'local') { name = 'value'; recv = [f]; }
+          else if (o.kind === 'import' || o.kind === 'global') name = outside(f);
+          else return null;
+        } else if (ts.isPropertyAccessExpression(f) && !f.questionDotToken) {
+          name = `member:${f.name.text}`;
+          if (renderPure(checker, f.expression)) recv = [f.expression];
+          else if (ts.isIdentifier(f.expression) && ['import', 'global'].includes(originOf(checker, f.expression, sf, currentUnit?.node ?? null).kind)) name = outside(f.expression) + '.' + f.name.text;
+          else return null;
+        } else return null;
+        specs.push({ name, recv, args: [...e.arguments], returns: ts.isReturnStatement(st) });
+      } else if (ts.isReturnStatement(st) && (!e || renderPure(checker, e))) specs.push({ value: e });
+      else return null;
+    }
+    anyType();
+    addPrelude('ReactExpr', 'datatype ReactExpr = ReactAtom(atom: Any) | ReactExpr(op: string, operands: seq<ReactExpr>)');
+    addPrelude('ReactStep', 'datatype ReactStep = ReactCall(callee: string, receiver: seq<ReactExpr>, args: seq<ReactExpr>, returnsResult: bool) | ReactReturn(value: ReactExpr)');
+    addPrelude('ReactHandler', 'datatype ReactHandler = ReactHandler(steps: seq<ReactStep>)');
+    const box = (e) => {
+      if (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e)) return box(e.expression);
+      if (ts.isPropertyAccessExpression(e)) return `ReactExpr(${strEsc('get:' + e.name.text)}, [${box(e.expression)}])`;
+      if (ts.isBinaryExpression(e)) return `ReactExpr(${strEsc('binary:' + ts.tokenToString(e.operatorToken.kind))}, [${box(e.left)}, ${box(e.right)}])`;
+      if (ts.isPrefixUnaryExpression(e)) return `ReactExpr(${strEsc('unary:' + ts.tokenToString(e.operator))}, [${box(e.operand)}])`;
+      if (ts.isConditionalExpression(e)) return `ReactExpr("conditional", [${[e.condition, e.whenTrue, e.whenFalse].map(box).join(', ')}])`;
+      if (ts.isTemplateExpression(e)) return `ReactExpr(${strEsc('template:' + JSON.stringify([e.head.text, ...e.templateSpans.map((s) => s.literal.text)]))}, [${e.templateSpans.map((s) => box(s.expression)).join(', ')}])`;
+      return `ReactAtom(${expr(e, anyTarget())})`;
+    };
+    const codes = specs.map((s) => s.name !== undefined ? `ReactCall(${strEsc(s.name)}, [${s.recv.map(box).join(', ')}], [${s.args.map(box).join(', ')}], ${s.returns})` : `ReactReturn(${s.value ? box(s.value) : `ReactAtom(${convertD('Unit', 'Unit', anyType())})`})`);
+    const d = dtype(typeOf(cb), cb);
+    return `${external(`react_handler_${mangle(d)}`, ['ReactHandler'], d)}(ReactHandler([${codes.join(', ')}]))`;
+  }
   function opaqueFn(cb) {
-    const text = cb.getText(sf).replace(/\s+/g, ' ');
+    const text = cb.getText(sf);
     const t = typeOf(cb); let d;
-    try { d = dtype(t, cb); } catch { d = 'Any'; addPrelude('Any', 'type Any(==)'); }
-    return `${external(`fn_${hash(text)}`, [], d)}()`;
+    try { d = dtype(t, cb); } catch { d = anyType(); }
+    const reads = closureReads(checker, cb);
+    const calls = new Set(), imports = new Set(); let capturesThis = false;
+    const walk = (n) => {
+      if (n.kind === K.ThisKeyword) capturesThis = true;
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.expression.kind === K.ThisKeyword && currentUnit?.className) {
+        const name = `${currentUnit.className}.${n.expression.name.text}`;
+        if (fns.has(name)) calls.add(dn(snake(name.replace('.', '_'))));
+      }
+      if (ts.isIdentifier(n)) {
+        const o = originOf(checker, n, sf, currentUnit?.node ?? null);
+        if (o.kind === 'unit' && fns.has(n.text)) calls.add(dn(snake(n.text)));
+        if (o.kind === 'import') {
+          const d = checker.getSymbolAtLocation(n)?.declarations?.[0];
+          let imp = d; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent;
+          if (imp) imports.add(`${n.text}:${imp.moduleSpecifier.text}:${ts.isImportSpecifier(d) ? (d.propertyName ?? d.name).text : '*'}`);
+        }
+      }
+      ts.forEachChild(n, walk);
+    };
+    walk(cb.body);
+    if (calls.size) addPrelude(`fn_calls_${hash(text)}`, `// CALLS: ${[...calls].sort().join(',')}`);
+    const captures = reads.map((r) => expr(r, anyTarget()));
+    if (capturesThis && classOf(currentUnit)) captures.push(convertD(SELF, selfType(currentUnit), anyType()));
+    return `${external(`fn_${mangle(d)}`, ['string', 'seq<Any>'], d)}(${strEsc(Buffer.from(JSON.stringify([text, [...imports].sort()]), 'utf8').toString('hex'))}, [${captures.join(', ')}])`;
   }
   function lambda(cb, arity, paramTypes = [], opaqueOk = false) {
-    if (opaqueOk && !ts.isIdentifier(cb) && (containsEffect(cb.body) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword))) return opaqueFn(cb);
+    if (opaqueOk && !ts.isIdentifier(cb) && (containsEffect(cb.body) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword))) return reactHandler(cb) ?? opaqueFn(cb);
     if (ts.isIdentifier(cb)) {
       // a named callback: a same-file function or a local function value, applied through a lambda of the expected shape
       const o = originOf(checker, cb, sf, currentUnit?.node ?? null);
@@ -1304,6 +1392,8 @@ export function translate(file, fnName, opts = {}) {
     return out;
   }
   function call(n, awaited = false) {
+    const hook = exactReactHook(checker, n);
+    if (hook) return convert(expr(hook.value), typeOf(hook.value), typeOf(n), n);
     const f = n.expression;
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
@@ -1333,6 +1423,7 @@ export function translate(file, fnName, opts = {}) {
         return `${fname(f.text)}(${[...fuelArg(callee), ...args].join(', ')})`;
       }
       if (o.kind === 'local') {
+        if (isEffectCall(n)) return externalCall('invoke', n, [...n.arguments], ident(f), dtype(typeOf(f), f), true);
         // a function-typed parameter or local: applied as a Dafny function value
         const sig = checker.getResolvedSignature(n);
         const args = n.arguments.map((a, i) => expr(a, sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined));
