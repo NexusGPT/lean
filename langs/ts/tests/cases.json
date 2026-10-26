@@ -460,5 +460,213 @@
     0
    ]
   ]
+ },
+ {
+  "name": "loop_forms_nestedExits",
+  "file": "loop_forms.ts",
+  "fn": "nestedExits",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [],
+    0
+   ],
+   [
+    [
+     1
+    ],
+    0
+   ],
+   [
+    [
+     1,
+     2
+    ],
+    0
+   ],
+   [
+    [
+     1,
+     2
+    ],
+    1
+   ],
+   [
+    [
+     1,
+     2
+    ],
+    2
+   ],
+   [
+    [
+     1,
+     2
+    ],
+    3
+   ]
+  ]
+ },
+ {
+  "name": "loop_forms_switchControl",
+  "file": "loop_forms.ts",
+  "fn": "switchControl",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [],
+    0
+   ],
+   [
+    [
+     0,
+     1,
+     -1
+    ],
+    0
+   ],
+   [
+    [
+     0,
+     1,
+     -1
+    ],
+    1
+   ],
+   [
+    [
+     0,
+     1,
+     -1
+    ],
+    2
+   ],
+   [
+    [
+     1,
+     2
+    ],
+    9
+   ]
+  ]
+ },
+ {
+  "name": "loop_forms_finiteWhile",
+  "file": "loop_forms.ts",
+  "fn": "finiteWhile",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    0,
+    []
+   ],
+   [
+    0,
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    -2,
+    [
+     1,
+     2
+    ]
+   ],
+   [
+    5,
+    [
+     1
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "loop_forms_downwardWhile",
+  "file": "loop_forms.ts",
+  "fn": "downwardWhile",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    0
+   ],
+   [
+    1
+   ],
+   [
+    2
+   ],
+   [
+    5
+   ],
+   [
+    -2
+   ]
+  ]
+ },
+ {
+  "name": "loop_forms_labelledDo",
+  "file": "loop_forms.ts",
+  "fn": "labelledDo",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    -2
+   ],
+   [
+    0
+   ],
+   [
+    1
+   ],
+   [
+    2
+   ],
+   [
+    3
+   ]
+  ]
+ },
+ {
+  "name": "loop_forms_labelledWhile",
+  "file": "loop_forms.ts",
+  "fn": "labelledWhile",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    0,
+    [
+     1
+    ]
+   ],
+   [
+    2,
+    [
+     -1
+    ]
+   ],
+   [
+    2,
+    [
+     1,
+     2
+    ]
+   ],
+   [
+    2,
+    [
+     1,
+     -1
+    ]
+   ]
+  ]
  }
 ]

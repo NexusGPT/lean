@@ -120,11 +120,11 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | `if`, `switch` with `return`/`break` per case, `?:`, early return | 21,957, 1,076, 13,560 | exact | same | done |
-| `switch` with fall-through | | refused | exact: the clause list with the fall-through as a chain | gap (small) |
+| `switch` with fall-through | | exact for scalar discriminants: lazy first-match search, default in source position, ordered clause suffixes; reference/unknown discriminants opaque | exact: the clause list with the fall-through as a chain | partial (lane) |
 | `for..of`, counted `for`, `while` with a bound | 4,595, 1,397, 477 | exact (a recursive helper) | same | done |
-| `while` without a bound, labelled statements | 477 (some), 10 | opaque block / refused | a label is a named exit of the helper | gap (small) |
+| `while` without a bound, labelled statements | 477 (some), 10 | exact for a stable integer counter/constant or length bound, including guarded `while (true)` and `for (;;)`; other bounds opaque; loop labels thread named break/continue/return completions through nested helpers; block labels refused (`label`) | a label is a named exit of the helper | partial (lane) |
 | `for..in` | 76 | a loop over `Object.keys(o)`, a string each (dev) | same | done (dev) |
-| `do..while` | 196 | the body once, then the `while` (dev); with `// @decreases` proved, else an opaque block | same | done (dev) |
+| `do..while` | 196 | a first-step flag runs the body before testing the condition; with `// @decreases` proved, else an opaque block | same | done (dev) |
 | `break`, `continue` | 578, 1,837 | exact | same | done |
 | `&&`, `\|\|` as values of one type | 6,855 | exact | same | done |
 | `&&`, `\|\|` as values of mixed types (`a && b.c`, `x \|\| "default"` with `x: number \| undefined`) | | exact: a conditional on truthiness with both sides lifted to the result type (dev); `??` lifted the same way | same | done (dev) |
@@ -210,7 +210,7 @@ Of 316 lint-admitted units in 120 sampled nexus files, 272 translate (86.1 perce
 3. Done on dev: `&&`/`||` as mixed-type values, `??` lifting, effects in conditional branches and on the right of a logic operator.
 4. `.then` chains and `new Promise` as readings instead of transitions with opaque handlers: 1,086 + 368; `Promise.all` is done on dev.
 5. Done on dev: division and floats per file (`/` 1,399 units, float literals 1,205) and `**` as an uninterpreted power; bitwise and `NaN` remain.
-6. Done on dev: `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `**`. Left: `for..in`, labels, fall-through, bitwise on `bv32`.
+6. Done on dev: `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `**`. Loop labels, scalar fall-through and inferred counter bounds are read (lane); `for..in` is done (dev). Left: wider bounds and bitwise on `bv32`.
 7. Exceptions across same-file calls (`Result` channel) and `try`/`finally`.
 8. Generators, async iterators, iterator protocol: 488 units.
 9. The heap layer: aliases (4,620 locals bound to another name), objects from the world, `===` on objects.

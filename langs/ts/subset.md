@@ -28,8 +28,8 @@ rules per package).
 | Sets and maps | `Set<T>`, `Map<K, V>` (`has`, `get`, `size`, `keys`, `values`, `entries`, `add`/`set`/`delete` on a local) | `new Set(xs).has(x)` |
 | Optionals | single-absence unions retain `Option<T>`; unions allowing both null and undefined use `Nullish<T>`; strict tests distinguish the tags, `== null` and `??` test both; `?.` returns Undef on either absent receiver | `x: number \| null \| undefined` |
 | Declarations | `let`, `const`, `let x: T;` assigned before any read, `let x;` (an Option of its first assigned type, absent until then), destructuring patterns with defaults on object patterns, a nested `function f() {}` (a local function value) | `const { a = 1, b } = r;` |
-| Control | `if`/`else`, `switch` (each case ends in `return` or `break`), early `return`, `return` inside a loop, `break`, `continue`, `throw`, `void f()` | `switch (kind) { case "a": return 1; default: return 0; }` |
-| Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` and `do..while` with `// @decreases`; `xs.forEach((x) => body)` with a sync arrow (a `return` ends one step); `await Promise.all(xs.map((x) => body))`, collecting in input order when no observable continuation runs after suspension; async `flatMap` under `Promise.all` collects each resolved value without flattening it | `for (let i = n - 1; i >= 0; i--)` |
+| Control | `if`/`else`, `switch` on scalar values (first matching case, default in source position, fall-through), early `return`, `return` inside a loop, `break`, `continue`, `throw`, `void f()` | `switch (kind) { case "a": return 1; default: return 0; }` |
+| Loops | `for...of` over an array, string, set, map or iterable; `for (let i = a; i < b; i += k)` up or down by a constant step; `while` with an inferred stable integer counter bound or `// @decreases`; guarded `while (true)` and `for (;;)` with such a bound; `do..while` with `// @decreases`; loop labels with named break/continue across nested helpers; `for..in` over uninterpreted object keys; `xs.forEach((x) => body)` with a sync arrow (a `return` ends one step); `await Promise.all(xs.map((x) => body))`, collecting in input order when no observable continuation runs after suspension; async `flatMap` under `Promise.all` collects each resolved value without flattening it | `for (let i = n - 1; i >= 0; i--)` |
 | Operators | `+ - * %`, `Math.floor(a / b)`, `Math.trunc(a / b)`, `Math.min`, `Math.max`, `Math.abs`, unary `-`, `! && \|\| ??`, `=== !==`, `< <= > >=`, `?:`, `typeof`, `instanceof`, `in`; `&&`, `\|\|` and `??` as values of any types (both sides lifted to the result type); a transition inside a `?:` branch or on the right of `&&`/`\|\|` happens only when that side runs | `Math.floor(n / 2)` |
 | Type tests | nominal class ancestry and disjoint tagged class unions for `instanceof`; static and sum-constructor tags for `typeof`; array/primitive alternatives for `Array.isArray`; required record keys for `in`; narrowed sum payload reads | `if (r.kind === "a") return r.left` |
 | Assignment | `=`, `+=`, `-=`, `*=`, `++`, `--` on a local; `x.f = v`, `x.f += v`, `x.f++`, `xs[i] = v`, `x.f.push(v)` on a local or on a PARAMETER (a mutated parameter is an output of the function, returned beside the result; a caller that passed a name takes the new value back); `this.f = v`, `this.f += v`, `this.f++` on a field of the receiver | `user.tags.push(t);` |
@@ -105,10 +105,15 @@ other implicit library exceptions remain a gap. Lane B executes the actual JavaS
 A try containing loops, callbacks, unsafe expression sequencing or duplicate bindings retains a
 text-keyed opaque transition, including complex finally statements and object-valued completions.
 A loop containing an explicit throw or exception call uses an opaque completion too. Ordinary loops
-and callbacks keep their existing reading. A `while` without `// @decreases` remains opaque.
+and callbacks keep their existing reading. A loop without a hint or an inferred bound remains opaque.
 The transition takes the locals read and returns the locals assigned, the world and any result.
 A statement that cannot fall through has a terminal result. Changed block text cannot silently
 prove equal, and same-file callee dependency guards catch changes hidden behind the block.
+Reference/unknown switch discriminants also stay opaque, preserving reference identity.
+Bound inference accepts one integer local stepped unconditionally by a positive literal
+toward an integer constant or an unchanged array/string length. Calls, nested loops,
+continue, additional counter writes and other shapes keep the opaque reading.
+An unconditional loop without a break can only complete through its return channel.
 
 ## Module state and loaders
 
@@ -151,7 +156,7 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `reference-equality` | `===` on arrays and records | `xs === ys` |
 | `string-order` | mixed string/non-string ordering | explicitly convert both operands |
 | `string-code-unit` | astral and surrogate literal fragments | `"\u{1F600}".length` |
-| `for-in`, `label`, `loop-form` | `for..in`, a labelled statement, any other loop form (a `while` or `do..while` without `// @decreases` is an opaque block, not a refusal) | `for (const k in o)` |
+| `for-in`, `label`, `loop-form` | unsupported for-in bindings, a label on a non-loop block, other for headers; while/do/empty-header for loops without a known bound stay opaque | `exit: { break exit; }` |
 | `optional-chain` | optional calls on a function value `f?.()` | `cb?.()` |
 | `async-predicate`, `async-reduce` | promises are truthy predicates; reduce does not await its accumulator | `xs.filter(async x => svc.ok(x))` |
 | `async-callback`, `promise-all-order` | async map/flatMap without direct awaited Promise.all; multiple suspensions or observable work after suspension | `xs.map(async x => { await f(x); log(x); })` |
