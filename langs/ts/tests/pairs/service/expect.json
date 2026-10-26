@@ -9,5 +9,10 @@
   "chat_service_regenerate": false,
   "chat_service_dto": true
  },
- "why": "the candidate changes the separator in label; regenerate calls label so it differs too; dto is untouched"
+ "why": "the candidate changes the separator in label; regenerate calls label so it differs too; dto is untouched",
+ "b": {
+  "ChatService.label": "WITNESS",
+  "ChatService.regenerate": "WITNESS",
+  "ChatService.dto": "PASS-bounded"
+ }
 }

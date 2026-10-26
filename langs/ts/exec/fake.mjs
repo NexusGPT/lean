@@ -42,6 +42,26 @@ export class Environment {
     if (kind === 'string') return `s${h.readUInt16BE(4).toString(36)}`;
     return u > 0.5;
   }
+  // What a request answers: mostly another fake, sometimes a concrete empty or falsy value, so that null checks,
+  // empty lists and error branches run. The choice depends on the seed and the path only, so both sides see the same
+  // answer to the same question; a field read twice answers the same way.
+  answer(path) {
+    if (this.cache.has(path)) return this.cache.get(path);
+    const h = createHash('sha256').update(`${this.seed}:answer:${path}`).digest();
+    const u = h.readUInt32BE(0) / 4294967296;
+    const d = depthOf(path);
+    let v;
+    if (d === 0 || u < 0.55) v = this.fake(path);
+    else if (u < 0.65) v = null;
+    else if (u < 0.72) v = undefined;
+    else if (u < 0.79) v = [];
+    else if (u < 0.85) v = '';
+    else if (u < 0.90) v = 0;
+    else if (u < 0.95) v = false;
+    else v = true;
+    this.cache.set(path, v);
+    return v;
+  }
   fake(path, hint = null) {
     if (path.length > 400) throw new BudgetError('a fake path longer than 400 characters (unbounded recursion through the environment)');
     const key = path;
@@ -57,13 +77,13 @@ export class Environment {
         if (prop === Symbol.toPrimitive) return (h) => (h === 'number' ? env.primitive('number', path) : h === 'string' ? env.primitive('string', path) : env.primitive('number', path));
         if (prop === 'valueOf') return () => env.primitive('number', path);
         if (prop === 'toString') return () => env.primitive('string', path);
-        if (prop === Symbol.iterator) return function* () { const n = depthOf(path) > 8 ? 0 : 2; for (let i = 0; i < n; i++) yield env.fake(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
+        if (prop === Symbol.iterator) return function* () { const n = depthOf(path) > 8 ? 0 : 2; for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
         if (prop === 'length') { env.record('get', `${path}.length`); return depthOf(path) > 8 ? 0 : 2; }
         if (prop === 'constructor') return Object;
         if (typeof prop === 'symbol') return undefined;
         env.record('get', `${path}.${String(prop)}`);
-        return env.fake(`${path}.${String(prop)}`);
+        return env.answer(`${path}.${String(prop)}`);
       },
       set(t, prop, value) { env.record('set', `${path}.${String(prop)}`, [render(value)]); return true; },
       has(t, prop) { env.record('has', `${path}.${String(prop)}`); return false; },
@@ -73,7 +93,7 @@ export class Environment {
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // a callback argument is invoked once with fakes, so its own reads reach the trace
         for (const a of args) if (typeof a === 'function' && !a.__isFake) { try { const r = a(env.fake(`${path}#cb.arg0`), env.fake(`${path}#cb.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); } catch (e) { env.record('callback-throw', path, [String(e && e.message)]); } }
-        return env.fake(`${path}()#${k}`);
+        return env.answer(`${path}()#${k}`);
       },
       construct(t, args) { env.record('new', path, args.map((x) => render(x))); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); return env.fake(`new ${path}#${k}`); },
       getPrototypeOf() { return Object.prototype; },

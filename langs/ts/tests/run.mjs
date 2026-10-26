@@ -195,6 +195,13 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
     const proved = !!sp && !errs.some((L) => sp[0] <= L && L <= sp[1]);
     add('pair', name, `Equal_${f} ${want ? 'proved' : 'not proved'}`, proved === want, sp ? (proved ? 'proved' : 'not proved') : 'lemma missing');
   }
+  // lane B on the same pair
+  for (const [unit, want] of Object.entries(exp.b ?? {})) {
+    const r = run('node', [path.join(here, '../exec/run.mjs'), '--parent', path.join(d, 'parent.ts'), '--candidate', path.join(d, 'candidate.ts'), '--unit', unit, '--n', '30', '--no-project', '--out', path.join(tmpd, `b_${unit}.json`)]);
+    let got = 'no result';
+    try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).verdict; } catch { /* keep */ }
+    add('pair', name, `lane B ${unit} ${want}`, got === want, got);
+  }
 }
 
 // ----- escapes -----

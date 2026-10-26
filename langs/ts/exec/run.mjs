@@ -108,7 +108,7 @@ function pickUnit(exportsObj, spec, env) {
       if (typeof p === 'symbol') return t[p];
       if (p in Cls.prototype) { const v = Cls.prototype[p]; return typeof v === 'function' ? v.bind(self) : v; }
       env.record('get', `this.${String(p)}`);
-      return env.fake(`this.${String(p)}`);
+      return env.fake(`this.${String(p)}`); // a field of the receiver is a service or a value: always a handle, its own answers vary
     },
     set(t, p, v) { env.record('set', `this.${String(p)}`, [render(v)]); t[p] = v; return true; },
   });
