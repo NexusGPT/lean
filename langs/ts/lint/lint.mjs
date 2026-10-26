@@ -845,7 +845,35 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
   }
 
+  // branch results carry the world and value, but not a callee's parameter updates
+  function conditionalEffect(e) {
+    let branch = false;
+    for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
+      if ((ts.isConditionalExpression(p) && child !== p.condition) || (ts.isBinaryExpression(p) && LOGIC.has(p.operatorToken.kind) && child === p.right)) branch = true;
+    }
+    if (!branch) return;
+    const mutations = (decl, seen = new Set()) => {
+      if (!decl?.body || decl.getSourceFile() !== sf || seen.has(decl)) return new Set();
+      seen = new Set(seen).add(decl);
+      const params = decl.parameters.map((p) => ts.isIdentifier(p.name) ? p.name.text : null), changed = new Set();
+      const hit = (n) => { let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isNonNullExpression(root) || ts.isParenthesizedExpression(root)) root = root.expression; if (ts.isIdentifier(root) && params.includes(root.text)) changed.add(params.indexOf(root.text)); };
+      const walk = (n) => {
+        if (ts.isFunctionLike(n)) return;
+        if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && !ts.isIdentifier(n.left)) hit(n.left);
+        if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && !ts.isIdentifier(n.operand)) hit(n.operand);
+        if (ts.isDeleteExpression(n)) hit(n.expression);
+        if (ts.isCallExpression(n)) {
+          if (ts.isPropertyAccessExpression(n.expression) && MUT_NAMES.has(n.expression.name.text)) hit(n.expression.expression);
+          for (const i of mutations(checker.getResolvedSignature(n)?.declaration, seen)) if (n.arguments[i]) hit(n.arguments[i]);
+        }
+        ts.forEachChild(n, walk);
+      };
+      walk(decl.body); return changed;
+    };
+    if (mutations(checker.getResolvedSignature(e)?.declaration).size) v(e, 'conditional-effect', 'move a call that changes its arguments into an explicit if branch so the updated values leave the branch');
+  }
   function call(e) {
+    conditionalEffect(e);
     const generatorDecl = checker.getResolvedSignature(e)?.declaration;
     const producer = [...units.values()].find((u) => u.fn === generatorDecl && u.fn.asteriskToken);
     if (producer) { const shape = generators.shape(producer); if (shape.rule) v(e, shape.rule, shape.message); }

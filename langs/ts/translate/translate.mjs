@@ -595,6 +595,7 @@ export function translate(file, fnName, opts = {}) {
     });
   }
   function sumType(parts, n, depth) {
+    if (parts.filter((t) => t.flags & TF.BooleanLike).length > 1) parts = [...parts.filter((t) => !(t.flags & TF.BooleanLike)), checker.getBooleanType()];
     const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike) ? runtimeTag(t) : null;
     const records = parts.every(isRecordish) && parts.every((t) => checker.getPropertiesOfType(t).length && !checker.getPropertiesOfType(t).some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n))));
     const cats = parts.map(category);
@@ -1091,6 +1092,8 @@ export function translate(file, fnName, opts = {}) {
   function convertD(code, fd, td) {
     if (fd === td) return code;
     const targetMembers = sums.get(td);
+    const sourceMembers = sums.get(fd);
+    if (sourceMembers && targetMembers && sourceMembers.every((m) => targetMembers.filter((v) => v.d === m.d).length === 1)) return sumCases(code, sourceMembers, (m, v) => convertD(`${v}.${m.field}`, m.d, td));
     if (targetMembers) { const matches = targetMembers.filter((m) => m.d === fd); if (matches.length === 1) return `${matches[0].ctor}(${code})`; }
     if (fd === 'Absent' && optionalD(td)) return td.startsWith('Nullish<') ? `(if (${code}).Null? then Nullish.Null else Nullish.Undef)` : 'None';
     if (fd === 'Any' && td.startsWith('Nullish<')) return `${external(`Any_as_${mangle(td)}`, ['Any'], td)}(${code})`;
@@ -1127,7 +1130,7 @@ export function translate(file, fnName, opts = {}) {
   // JavaScript truthiness of a value used as a condition, by its static type
   function truthy(n) {
     while (ts.isParenthesizedExpression(n)) n = n.expression;
-    if (containsValueStep(n)) return valueTruth(expr(n), dtype(typeOf(n), n));
+    if (containsValueStep(n) || (containsEffect(n) && !isAny(typeOf(n)))) return valueTruth(expr(n), dtype(typeOf(n), n));
     if (ts.isBinaryExpression(n) && (n.operatorToken.kind === K.AmpersandAmpersandToken || n.operatorToken.kind === K.BarBarToken)) {
       return `(${truthy(n.left)} ${n.operatorToken.kind === K.AmpersandAmpersandToken ? '&&' : '||'} ${truthy(n.right)})`;
     }
@@ -1188,6 +1191,12 @@ export function translate(file, fnName, opts = {}) {
     if (d === 'Unit' || d === 'Absent') return 'false';
     if (d === 'Any' || unitTParams().includes(d)) return `${external(`truthy_${mangle(d)}`, [d], 'bool')}(${value})`;
     return 'true';
+  }
+  // unknown truthiness keeps the source text in its uninterpreted predicate
+  function logicalTruth(value, d, node) {
+    if (optionalD(d)) return `(${value}.Some? && ${logicalTruth(`${value}.value`, innerOf(d), node)})`;
+    if (d === 'Any' || d.startsWith('Ext_') || unitTParams().includes(d)) return `${external(`logic_truth_${hash(node.getText(sf))}`, [d], 'bool')}(${value})`;
+    return valueTruth(value, d);
   }
   function valueBranch(read) {
     const saved = valueOperands;
@@ -1741,40 +1750,21 @@ export function translate(file, fnName, opts = {}) {
     }
     if (op === K.AmpersandAmpersandToken || op === K.BarBarToken) {
       const t = typeOf(n);
-      if (valueOperands) {
-        const lt = typeOf(n.left), rt = typeOf(n.right), ld = dtype(lt, n), rd = dtype(rt, n), td = dtype(t, n);
-        const leftValue = expr(n.left), cond = valueTruth(leftValue, ld), left = convert(leftValue, lt, t, n);
-        const read = () => expr(n.right, t);
-        const and = op === K.AmpersandAmpersandToken;
-        if (!containsEffect(n.right)) return and ? `(if ${cond} then ${valueBranch(read)} else ${left})` : `(if ${cond} then ${left} else ${valueBranch(read)})`;
-        const right = branchWithWorld(read, td), value = valueName();
-        pending.push(and ? `var (${WORLD}, ${value}) := if ${cond} then ${right} else (${WORLD}, ${left});` : `var (${WORLD}, ${value}) := if ${cond} then (${WORLD}, ${left}) else ${right};`);
-        return value;
-      }
+      if (!containsEffect(n) && !valueOperands && (isNodeT(t) || isJsxLit(n.left) || isJsxLit(n.right))) return jsxChild(n);
+      const lt = typeOf(n.left), ld = dtype(lt, n), td = dtype(t, n);
+      // the deciding operand is evaluated once, before either branch is translated
+      const saved = valueName(), first = expr(n.left);
+      const and = op === K.AmpersandAmpersandToken;
+      const cond = logicalTruth(saved, ld, n);
+      const left = !and && isOptional(lt) ? convertD(`${saved}.value`, innerOf(ld), td) : convert(saved, lt, t, n);
+      const choose = (right) => and ? `if ${cond} then ${right} else ${left}` : `if ${cond} then ${left} else ${right}`;
       if (containsEffect(n.right)) {
-        // `a && await b()`: the right side's transitions happen only when a is truthy (for &&) or falsy (for ||)
-        if (!unitEffectful()) fail(n, 'internal: an effect on the right of a logic operator in a pure unit');
-        const td = isAny(t) ? anyType() : dtype(t, n); const ld = isAny(typeOf(n.left)) ? anyType() : dtype(typeOf(n.left), n); const rd = isAny(typeOf(n.right)) ? anyType() : dtype(typeOf(n.right), n);
-        const isBool = !!(t.flags & TF.BooleanLike);
-        const cond = outerParens(truthy(n.left));
-        const left = isBool ? truthy(n.left) : convert(outerParens(expr(n.left)), typeOf(n.left), t, n);
-        const right = branchWithWorld(() => (isBool ? truthy(n.right) : convert(outerParens(expr(n.right)), typeOf(n.right), t, n)), td);
-        const tv = `t${tempCount++}_`;
-        pending.push(op === K.AmpersandAmpersandToken ? `var (${WORLD}, ${tv}) := if ${cond} then ${right} else (${WORLD}, ${left});` : `var (${WORLD}, ${tv}) := if ${cond} then (${WORLD}, ${left}) else ${right};`);
-        return tv;
+        if (!unitEffectful()) fail(n, 'conditional-effect: move the effect into an explicit if statement');
+        pending.push(`var ${saved}: ${ld} := ${first};`);
+        const right = branchWithWorld(() => expr(n.right, t), td);
+        return hoist(and ? `(if ${cond} then ${right} else (${WORLD}, ${left}))` : `(if ${cond} then (${WORLD}, ${left}) else ${right})`, td);
       }
-      if (isNodeT(t) || isJsxLit(n.left) || isJsxLit(n.right)) return jsxChild(n); // `cond && <X/>`: a conditional element
-      if (!(t.flags & TF.BooleanLike)) {
-        // value-returning && / ||: a && b is b when a is truthy, else a. Translated when both sides share a Dafny type
-        const lt = typeOf(n.left), rtp = typeOf(n.right);
-        const ld = isAny(lt) ? anyType() : dtype(lt, n), rd = isAny(rtp) ? anyType() : dtype(rtp, n), td = isAny(t) ? anyType() : dtype(t, n);
-        if (ld === td && rd === td) return op === K.AmpersandAmpersandToken ? `(if ${truthy(n.left)} then ${outerParens(expr(n.right))} else ${outerParens(expr(n.left))})` : `(if ${truthy(n.left)} then ${outerParens(expr(n.left))} else ${outerParens(expr(n.right))})`;
-        // mixed types: each side is lifted to the type of the whole (an Option, an Any, a JsxNode)
-        const L = convert(outerParens(expr(n.left)), typeOf(n.left), t, n), R = convert(outerParens(expr(n.right)), typeOf(n.right), t, n);
-        return op === K.AmpersandAmpersandToken ? `(if ${truthy(n.left)} then ${R} else ${L})` : `(if ${truthy(n.left)} then ${L} else ${R})`;
-      }
-      const o = op === K.AmpersandAmpersandToken ? '&&' : '||';
-      return `(${truthy(n.left)} ${o} ${truthy(n.right)})`;
+      return `(var ${saved}: ${ld} := ${first}; ${choose(valueBranch(() => expr(n.right, t)))})`;
     }
     if (op === K.InstanceOfKeyword) {
       const decl = checker.getSymbolAtLocation(n.right)?.valueDeclaration;
