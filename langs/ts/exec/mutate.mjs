@@ -36,7 +36,10 @@ export function sitesOf(file, unitName, opts = {}) {
       if (n.elseStatement) sites.push({ kind: 'dropped-else', start: n.thenStatement.getEnd(), end: n.elseStatement.getEnd(), text: '', was: 'else ...' });
       else sites.push({ kind: 'negated-if', start: n.expression.getStart(sf), end: n.expression.getEnd(), text: `!(${n.expression.getText(sf)})`, was: n.expression.getText(sf) });
     }
-    if (ts.isCallExpression(n) && n.arguments.length >= 2 && !ts.isSpreadElement(n.arguments[0]) && !ts.isSpreadElement(n.arguments[1])) {
+    // a swap of two arguments is a mutation only where order matters: not for a commutative callee (Math.min, Math.max), nor
+    // for two arguments of identical text; such a mutant is equivalent to its parent and would count as a miss unfairly
+    const commutative = ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Math' && ['min', 'max', 'hypot'].includes(n.expression.name.text);
+    if (ts.isCallExpression(n) && n.arguments.length >= 2 && !commutative && !ts.isSpreadElement(n.arguments[0]) && !ts.isSpreadElement(n.arguments[1]) && n.arguments[0].getText(sf) !== n.arguments[1].getText(sf)) {
       const [a, b] = n.arguments;
       sites.push({ kind: 'swapped-args', start: a.getStart(sf), end: b.getEnd(), text: `${b.getText(sf)}, ${a.getText(sf)}`, was: `${a.getText(sf)}, ${b.getText(sf)}` });
     }
