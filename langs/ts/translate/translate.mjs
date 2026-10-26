@@ -50,7 +50,7 @@ const wrapLet = (s) => (/^\s*var /.test(s) ? `(\n${indentBlock(s)}\n)` : s);
 const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0; return h.toString(36); };
 
 export function translate(file, fnName, opts = {}) {
-  const { real = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [] } = opts;
+  const { real = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
   const { sf, checker } = loadProgram(file, { project });
   const fns = topLevelFunctions(sf);
@@ -62,7 +62,7 @@ export function translate(file, fnName, opts = {}) {
   const fail = (n, msg) => { throw new Unsupported(`${where(n)}: ${msg}`); };
 
   // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
-  const order = [];
+  let order = [];
   const visiting = new Set();
   const visitStack = [];
   const recursiveUnits = new Set();
@@ -96,7 +96,19 @@ export function translate(file, fnName, opts = {}) {
   else for (const u of fns.values()) collect(u);
 
   // ----- the subset gate: refuse before translating -----
-  const gate = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  const report = { lintedOut: [], translated: [], failed: [] }; // --tolerant: per-unit outcomes for a census
+  const failedUnits = new Set();
+  let gate = gate0;
+  if (tolerant) {
+    for (const u of order) {
+      const a = lineOf(sf, u.node.getStart(sf)), b = lineOf(sf, u.node.getEnd());
+      const hits = gate0.filter((g) => g.line >= a && g.line <= b);
+      if (hits.length) { report.lintedOut.push({ unit: u.name, rule: hits[0].rule, msg: String(hits[0].msg).slice(0, 140) }); failedUnits.add(u.name); }
+    }
+    order = order.filter((u) => !failedUnits.has(u.name));
+    gate = [];
+  }
   if (gate.length) {
     throw new Unsupported(`outside the subset:\n${gate.map((g) => `  ${g.file}:${g.line}:${g.col}  ${g.rule}  ${g.msg}`).join('\n')}`);
   }
@@ -1167,6 +1179,7 @@ export function translate(file, fnName, opts = {}) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       const callee = fns.get(f.text);
       if (o.kind === 'unit' && callee) {
+        if (failedUnits.has(callee.name)) fail(n, `callee ${callee.name} was not translated`);
         if (!core && kindOf.get(callee) === 'method') fail(n, `${f.text} loops, so it is a Dafny method and cannot be called inside an expression`);
         const args = unitArgs(callee, n);
         const muts = mutatedOf(callee);
@@ -1960,6 +1973,15 @@ export function translate(file, fnName, opts = {}) {
   }
   const chunks = [];
   for (const u of order) {
+    if (tolerant) {
+      const before = chunks.length; const savedPending = pending;
+      try { emitUnit(u); report.translated.push(u.name); }
+      catch (e) { if (!(e instanceof Unsupported)) throw e; chunks.length = before; pending = savedPending; failedUnits.add(u.name); report.failed.push({ unit: u.name, message: String(e.message).split('\n')[0].slice(0, 160) }); currentUnit = null; }
+      continue;
+    }
+    emitUnit(u);
+  }
+  function emitUnit(u) {
     currentUnit = u;
     loopCount = 0;
     const rt = dtype(retType(u), u.node);
@@ -2004,6 +2026,7 @@ export function translate(file, fnName, opts = {}) {
     }
     currentUnit = null;
   }
+  if (tolerant && reportOut) fs.writeFileSync(reportOut, JSON.stringify(report, null, 1));
 
   // integer division placeholders left by `/` under Math.floor are resolved in call(); a leftover is a defect
   const main = chunks.join('\n\n');
@@ -2040,6 +2063,8 @@ if (isMain) {
     else if (a === '--effectful') opts.effectful = args[++i].split(',').map((s) => s.trim()).filter(Boolean);
     else if (a === '--project') opts.project = args[++i];
     else if (a === '--no-project') opts.project = false;
+    else if (a === '--tolerant') opts.tolerant = true;
+    else if (a === '--report') opts.reportOut = args[++i];
     else if (a === '--requires') opts.requires.push(args[++i]);
     else if (a === '--ensures') opts.ensures.push(args[++i]);
     else if (a === '--invariant') {
