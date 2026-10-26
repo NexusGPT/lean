@@ -21,15 +21,15 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | integer arithmetic `+ - * %` | 30,195 binary expressions | exact (`int`) | same | done |
-| `/` division | 1,399 | exact in a real file (dev); in an integer file only under `Math.floor`/`Math.trunc` | same | done (dev) |
+| `/` division | 1,399 | finite nonzero literal divisors exact; possibly-zero divisors keep admission through whole-unit opacity, propagated to same-file callers; no zero-to-zero substitution | extended numbers for exact variable-divisor reasoning | partial (lane) |
 | float literal, IEEE double | 1,205 | a FILE with a float literal or a bare `/` is a real file: its numbers are exact reals (dev); no flag needed | the same, stated with its caveat: an algebraic rewrite is proved equal on exact reals and can differ on doubles; lane B runs on doubles and its WITNESS stands, so a PASS-proved on a real unit is a fact about exact arithmetic, never about rounding | done (dev), caveat stated |
 | `**` | 46 | an uninterpreted power of both sides (dev) | exact `Pow` on integers | partial (dev) |
-| bitwise `& \| ^ ~ << >> >>>` | 128 | refused (`bitwise`) | exact on `bv32` with the JavaScript int32 coercion | gap |
+| bitwise `& \| ^ ~ << >> >>>` | 128 | exact on finite number operands: truncate, modulo 2^32, bv32 operations, signed results except unsigned `>>>`; shift counts modulo 32 | BigInt and opaque operand coercions remain | partial (lane) |
 | `++ --` as statements | 1,223 postfix | exact | same | done |
 | `++`, assignment as a value | 116, 119 | ordered local/path/world updates; postfix yields old value, prefix and assignments yield stored value; bounded while condition steps run in the helper head | conditional local state and logical assignment values remain | partial (lane) |
 | `bigint` | 12 | exact (`int`) | same | done |
-| `NaN`, `Infinity`, `Number.isNaN` | 188 (`isNaN`) | `Number.*` uninterpreted | a real unit with the IEEE special values as an extended datatype | gap |
-| unary `+` coercion | 16 | refused (`unary-coercion`) | `ext_number_of(x)` uninterpreted | gap (small) |
+| `NaN`, `Infinity`, `Number.isNaN` | 188 (`isNaN`) | `Number.isNaN`/`isFinite` uninterpreted; admitted special-producing forms and explicit -0 use whole-unit opacity; bare globals refused (`number-special`); lane B distinguishes all specials | an extended numeric datatype including signed zero and all observers | partial (lane) |
+| unary `+` coercion | 16 | numbers identity, booleans 0/1, strings opaque with their containing observer; objects/BigInt refused (`unary-coercion`) | exact general ToNumber needs object effects and special values | partial (lane) |
 | string concatenation, template strings | 14,140 templates | exact strings and booleans; numeric literals use JavaScript spelling; other conversions uninterpreted | exact within the stated value models | partial (lane) |
 | string methods with a rule (`includes`, `slice`, `indexOf`, `startsWith`, `repeat`, `charAt`, `at`, `substring`, `concat`) | | exact within the BMP envelope; positions retained, substring clamps and swaps | same within the model; full UTF-16 remains future work | done (lane), envelope stated |
 | string methods (`trim*`, case, `split`, `pad*`, `replace`, `replaceAll`, `lastIndexOf`, `endsWith`, string-array `join`) | | exact helpers within the BMP envelope; casing exact behind an ASCII guard, non-ASCII uninterpreted; literal split without limit; literal-pattern/string replacement including dollar substitutions | full Unicode case tables, general split/replace; `localeCompare` and `normalize` remain uninterpreted | partial (lane) |
@@ -41,7 +41,7 @@ reading no value model can give; the lint says what to write instead).
 | `typeof` | 3,351 | exact static tags, represented sum alternatives, Options and Nullish; null reports `"object"`; assertion-derived values, unknown stay uninterpreted | same | partial (lane) |
 | regular expressions | 1,950 | an opaque constant per literal, externals for `test`, `match`, `replace` | the same; an exact reading of regular expressions is a project of its own | by design |
 | `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` and `new Date()` with no argument are transitions (dev 364eb1e); `new Date(x)` a pure value; methods uninterpreted | same | done (dev) |
-| `Math.*` | | `min`/`max` exact on nonempty argument sequences (lane); possibly empty spreads refused (`math-empty`); `abs`, `floor`, `trunc` exact; the rest uninterpreted; `Math.random` a transition | `ceil`, `round`, `sign`, `pow` on integers exact | gap (small) |
+| `Math.*` | | `min`/`max` exact on nonempty argument sequences (lane); possibly empty spreads refused (`math-empty`); `abs`, `floor`, `ceil`, `trunc`, `round`, `sign` exact within the finite arithmetic envelope; truncation is toward zero; real remainder exact for nonzero literal divisors; other calls uninterpreted; `Math.random` a transition | full IEEE rounding and signed-zero arithmetic | partial (lane) |
 | `JSON.stringify`, `JSON.parse` | 1,714, 699 | may-fault transitions; checkpoints inside exact try regions; stringify preserves Null/Undef tags and the static absence schema | exact serialization, order, replacers and toJSON remain outside this refinement | partial (lane) |
 | `Symbol`, `Symbol.iterator` | 37 | refused (`unsupported-syntax` on use) | a symbol is an opaque constant per declaration; iterator protocol is section 6 | gap (small) |
 | `null` and `undefined` | | `Nullish<T>` preserves both tags when the static type allows both; single-absence types retain `Option<T>`; strict tests select one tag, loose nullish tests select both | same; opaque values keep distinct uninterpreted tests | done (lane) |
@@ -209,8 +209,8 @@ Of 316 lint-admitted units in 120 sampled nexus files, 272 translate (86.1 perce
 2. Done on dev: `super.m()` as a transition on the receiver (115 units); the clock read of `new Date()`. A same-file parent read exactly remains.
 3. Done on dev: `&&`/`||` as mixed-type values, `??` lifting, effects in conditional branches and on the right of a logic operator.
 4. `.then` chains and `new Promise` as readings instead of transitions with opaque handlers: 1,086 + 368; `Promise.all` is done on dev.
-5. Done on dev: division and floats per file (`/` 1,399 units, float literals 1,205) and `**` as an uninterpreted power; bitwise and `NaN` remain.
-6. Done on dev: `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `**`. Loop labels, scalar fall-through and inferred counter bounds are read (lane); `for..in` is done (dev). Left: wider bounds and bitwise on `bv32`.
+5. Done on dev: division and floats per file (`/` 1,399 units, float literals 1,205) and `**` as an uninterpreted power; finite bitwise and unary coercions are read (lane); specials use conservative opacity or named refusal.
+6. Done on dev: `delete`, computed property names, `??=`, rest parameters and patterns, `do..while`, `**`. Loop labels, scalar fall-through and inferred counter bounds are read (lane); `for..in` is done (dev). Finite bitwise on `bv32` is read (lane). Left: wider bounds.
 7. Exceptions across same-file calls (`Result` channel) and `try`/`finally`.
 8. Generators, async iterators, iterator protocol: 488 units.
 9. The heap layer: aliases (4,620 locals bound to another name), objects from the world, `===` on objects.

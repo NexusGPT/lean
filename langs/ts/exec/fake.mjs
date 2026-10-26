@@ -178,7 +178,7 @@ export function render(v, depth = 0, seen = new Set()) {
   if (v === null) return null;
   if (v === undefined) return { $undefined: true };
   const t = typeof v;
-  if (t === 'number') return Number.isNaN(v) ? { $nan: true } : v;
+  if (t === 'number') return Number.isNaN(v) ? { $nan: true } : v === Infinity ? { $infinity: 1 } : v === -Infinity ? { $infinity: -1 } : Object.is(v, -0) ? { $negativeZero: true } : v;
   if (t === 'string' || t === 'boolean') return v;
   if (t === 'bigint') return { $bigint: v.toString() };
   if (t === 'symbol') return { $symbol: String(v) };
