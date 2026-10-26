@@ -38,7 +38,7 @@ reading no value model can give; the lint says what to write instead).
 | `==` loose equality | 398 | refused except against `null`/`undefined` | by design: the lint says `===` | by design |
 | `===` on primitives | 19,845 | exact | same | done |
 | `===` on objects and arrays | | refused (`reference-equality`) | by design in a value model; the heap layer (section 4) would give it an address reading | by design until the heap layer |
-| `typeof` | 3,351 | uninterpreted `ext_typeof_Any` | exact by the static type when it is known (`"string"` for a `string`), uninterpreted on `any` | partial |
+| `typeof` | 3,351 | exact by the static type when it decides the tag, an Option deciding between its tag and `"undefined"` (dev); uninterpreted on `any` and on unions | same | done (dev) |
 | regular expressions | 1,950 | an opaque constant per literal, externals for `test`, `match`, `replace` | the same; an exact reading of regular expressions is a project of its own | by design |
 | `Date` | 1,337 `new Date`, 591 `Date.now` | `Date.now()` and `new Date()` with no argument are transitions (dev 364eb1e); `new Date(x)` a pure value; methods uninterpreted | same | done (dev) |
 | `Math.*` | | `min`, `max`, `abs`, `floor`, `trunc` exact; the rest uninterpreted; `Math.random` a transition | `ceil`, `round`, `sign`, `pow` on integers exact | gap (small) |
@@ -67,7 +67,7 @@ reading no value model can give; the lint says what to write instead).
 | `Proxy`, `Reflect` | 41 | refused | by design | by design |
 | `Object.assign`, `Object.freeze`, `Object.fromEntries`, `structuredClone` | 390, 6, 196, 32 | pure uninterpreted functions of their arguments (dev) | exact: `assign` a record update, `freeze` identity, `fromEntries` a map literal, `structuredClone` identity | partial (dev) |
 | `instanceof` | 2,204 | uninterpreted `ext_instanceof_C(x)` | exact when the static type decides it; uninterpreted otherwise | partial |
-| `in` | 1,071 | uninterpreted | exact on a dictionary; by static type on a record | partial |
+| `in` | 1,071 | exact on a dictionary with a string key (dev); uninterpreted otherwise | by static type on a record | partial (dev) |
 | `x!` non-null | 501 | `.value` when optional | same | done |
 | optional chaining `a?.b`, `a?.m()` | 6,061, 493 | exact (Option propagation; a conditional transition for calls) | same | done |
 | `??`, `??=`, `\|\|=`, `&&=` | 7,882, 107 | exact (dev): `x ??= v` keeps x when present, `\|\|=` keeps a truthy x, `&&=` takes v when x is truthy | same | done (dev) |

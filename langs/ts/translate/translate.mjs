@@ -730,7 +730,14 @@ export function translate(file, fnName, opts = {}) {
         return `${id}(${[`[${strs.map(strEsc).join(', ')}]`, ...holes.map((h) => expr(h, anyTarget()))].join(', ')})`;
       }
       case K.RegularExpressionLiteral: { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return `${external(`regex_${hash(n.text)}`, [], 'Ext_RegExp')}()`; }
-      case K.TypeOfExpression: return `${external('typeof_Any', [anyType()], 'string')}(${expr(n.expression, anyTarget())})`;
+      case K.TypeOfExpression: {
+        // exact when the static type decides the tag; an Option decides between its base tag and "undefined"; else uninterpreted
+        const tagOf = (t) => { const f = t.flags; if (f & TF.StringLike) return 'string'; if (f & TF.NumberLike) return 'number'; if (f & TF.BigIntLike) return 'bigint'; if (f & TF.BooleanLike) return 'boolean'; if (f & TF.Undefined) return 'undefined'; if (f & TF.Null) return 'object'; if (f & TF.ESSymbol) return 'symbol'; if (f & TF.Object) return isCallable(t) ? 'function' : 'object'; return null; };
+        const t = typeOf(n.expression);
+        if (!isAny(t) && !(t.flags & TF.Union)) { const tag = tagOf(t); if (tag) { expr(n.expression); return strEsc(tag); } }
+        if (!isAny(t) && isOptional(t)) { const base = baseOf(t); const tag = (base.flags & TF.Union) ? null : tagOf(base); if (tag && !isNullish(base)) { const v = rawOperand(n.expression); return `(if ${v}.Some? then ${strEsc(tag)} else "undefined")`; } }
+        return `${external('typeof_Any', [anyType()], 'string')}(${expr(n.expression, anyTarget())})`;
+      }
       case K.NonNullExpression: {
         const t = typeOf(n.expression);
         if (!isOptional(t)) return expr(n.expression);
@@ -847,7 +854,11 @@ export function translate(file, fnName, opts = {}) {
       return `(${truthy(n.left)} ${o} ${truthy(n.right)})`;
     }
     if (op === K.InstanceOfKeyword) return `${external(`instanceof_${mangle(n.right.getText(sf))}`, [anyType()], 'bool')}(${expr(n.left, anyTarget())})`;
-    if (op === K.InKeyword) return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
+    if (op === K.InKeyword) {
+      const rt0 = typeOf(n.right); const rd = (() => { try { return isAny(rt0) ? 'Any' : dtype(rt0, n); } catch { return 'Any'; } })();
+      if (rd.startsWith('map<string') && (typeOf(n.left).flags & TF.StringLike)) return `(${expr(n.left)} in ${expr(n.right)})`; // a key test on a dictionary is exact
+      return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
+    }
     if (op === K.PercentToken) {
       if (real) return `${external('mod_real', ['real', 'real'], 'real')}(${expr(n.left)}, ${expr(n.right)})`; // JavaScript's truncated remainder on reals: an uninterpreted function of both sides
       return `${helper('JsRem', ['int'])}(${expr(n.left)}, ${expr(n.right)})`;
