@@ -279,6 +279,8 @@ Code written with the lint on is inside the subset from the first line. Code wri
 
 A pull request then carries, per changed function, one verdict and its certificate; `WITNESS` comes with the input or the click sequence, `PASS-proved` with a theorem anyone can re-check.
 
+**In CI.** [`langs/ts/ci/comment.mjs`](langs/ts/ci/) posts that table as one pull-request comment, updated on every push, and the reusable workflow [`.github/workflows/lean-pr.yml`](.github/workflows/lean-pr.yml) runs it from a caller of a few lines, blocking nothing until the caller asks ([`langs/ts/design/ci.md`](langs/ts/design/ci.md)).
+
 ### Try it on your own repository
 
 1. **Shadow run.** Take the last twenty or thirty merged pull requests and run `pr.mjs` on each (`--base <merge base> --head <merge commit>`), without scope. Nothing blocks; you read tables.
