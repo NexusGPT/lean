@@ -80,6 +80,10 @@ export function translate(file, fnName, opts = {}) {
   const classOfType = (t) => { const sym = t && t.symbol; const d = sym?.declarations?.[0]; return d && ts.isClassDeclaration(d) && d.getSourceFile() === sf && d.name ? (classDecls.get(d.name.text) ?? null) : null; };
   // accessors retain an opaque unit when their body is outside the subset
   const accessorOpaque = new Set();
+  // a static method whose body names `this` or `super` (the class the call went through, a subclass too) is one opaque
+  // unit keyed by the file's text, as a static accessor naming `this` is; arrows inherit `this`, nested functions do not
+  const staticReceiver = (u) => { let found = false; const walk = (n) => { if (ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isClassLike(n)) return; if (n.kind === K.ThisKeyword || n.kind === K.SuperKeyword) found = true; ts.forEachChild(n, walk); }; walk(u.body); return found; };
+  for (const u of fns.values()) if (u.isStatic && !u.accessor && u.params.every((p) => ts.isIdentifier(p.name)) && staticReceiver(u)) accessorOpaque.add(u.name);
   if ([...fns.values()].some((u) => u.accessor)) {
     const findings = lintFile(file, null, { project, loaded, accessorBodies: true }).filter((g) => !g.env);
     for (const u of fns.values()) if (u.accessor) { let staticThis = false; const walk = (n) => { if (u.isStatic && n.kind === K.ThisKeyword) staticThis = true; ts.forEachChild(n, walk); }; walk(u.body); if (staticThis || findings.some((g) => g.line >= lineOf(sf, u.node.getStart(sf)) && g.line <= lineOf(sf, u.node.getEnd()))) accessorOpaque.add(u.name); }
@@ -4453,7 +4457,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { body0 = moduleShape.opaque ? opaqueModuleBody(u) : u.accessor && accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
+      try { body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
       catch (e) { if (!(e instanceof Unsupported) || !moduleShape.reads || !eff || u.isCtor) throw e; pending = savedPending; coreHelpers.length = savedHelpers; usedModuleOpaque = true; body0 = opaqueModuleBody(u); }
       const cleared = exceptionUnits.has(u.name) ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
       const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : yieldState ? `var ${yieldState.name}: ${yieldState.d} := [];\n${cleared}` : cleared;

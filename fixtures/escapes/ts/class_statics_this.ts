@@ -1,14 +1,11 @@
 // expect: static-this
-// in a static method `this` is the class the call names: Sub.twice() reads Sub.base, not Base.base
+// in a static method `this` is the class the call names; with a destructured parameter there is no opaque unit to read
 export class Base {
   static base = 1;
-  static twice(): number {
-    return this.base * 2;
+  static scaled({ k }: { k: number }): number {
+    return this.base * k;
   }
 }
-export class Sub extends Base {
-  static base = 5;
-}
-export function viaSub(): number {
-  return Sub.twice();
+export function viaBase(k: number): number {
+  return Base.scaled({ k });
 }

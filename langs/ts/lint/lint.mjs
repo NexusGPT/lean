@@ -330,11 +330,12 @@ export function lintFile(file, ranges = null, opts = {}) {
     return null;
   }
   // `this` and `super` in a static method name whichever class the call went through (a subclass too), not the class
-  // that declares the method; arrows inherit them, nested functions and classes bind their own
+  // that declares the method, so the unit is read as one opaque transition keyed by the file's text; that reading names
+  // each parameter, so a destructured parameter beside them is refused. Arrows inherit them, nested functions do not
   function staticThis(body) {
     const w = (x) => {
       if (ts.isFunctionDeclaration(x) || ts.isFunctionExpression(x) || ts.isClassLike(x)) return;
-      if (x.kind === K.ThisKeyword || x.kind === K.SuperKeyword) v(x, 'static-this', `\`${x.kind === K.ThisKeyword ? 'this' : 'super'}\` in a static method is the class the call names, a subclass too; name the class itself`);
+      if (x.kind === K.ThisKeyword || x.kind === K.SuperKeyword) v(x, 'static-this', `\`${x.kind === K.ThisKeyword ? 'this' : 'super'}\` in a static method is the class the call names, a subclass too; name the class itself, or give the method plain parameter names`);
       ts.forEachChild(x, w);
     };
     w(body);
@@ -1398,7 +1399,11 @@ export function lintFile(file, ranges = null, opts = {}) {
     const obj = localMethodLiteral(tOf(e.expression));
     const method = obj?.properties.find((p) => ts.isMethodDeclaration(p) && p.name?.text === name);
     if (method && !(e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e)) return v(e, 'object-method-mutation', 'call a literal method on its object; detached methods need an explicit receiver');
-    if (e.expression.kind === K.ThisKeyword && name === 'constructor') return v(e, 'prototype', '`this.constructor` is the run-time class of the receiver; name the class to read its statics'); // a static through the receiver's class
+    if (e.expression.kind === K.ThisKeyword && name === 'constructor') { // the receiver's run-time class: its name, or a value passed on, is opaque; a member read through it is a static of an unknown class
+      let u = e; while (u.parent && (ts.isParenthesizedExpression(u.parent) || ts.isAsExpression(u.parent) || ts.isNonNullExpression(u.parent) || ts.isTypeAssertionExpression(u.parent) || ts.isSatisfiesExpression(u.parent))) u = u.parent;
+      const p = u.parent;
+      if (p && (ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === u && !(ts.isPropertyAccessExpression(p) && p.name.text === 'name')) return v(p, 'prototype', '`this.constructor` is the run-time class of the receiver, a subclass too; name the class to read its statics');
+    }
     if (e.expression.kind === K.ThisKeyword) return; // a field or method of the receiver: read through an accessor
     if (name === 'prototype' || name === '__proto__' || name === 'constructor') return v(e, 'prototype', `\`.${name}\` reaches the prototype chain`);
     { const st = sameFileStatic(e); if (st) { if (st.kind === 'field') return staticFieldRead(e); if (!(e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e)) return v(e, 'global-read', `\`${e.getText(sf)}\` is a static method used as a value; call it, or pass an arrow that calls it`); return; } } // a static of a same-file class
@@ -1521,7 +1526,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           checkType(tOf(p.name), p);
         }
         checkStringLiterals(u.node);
-        if (u.isStatic) staticThis(u.body);
+        if (u.isStatic && !u.params.every((p) => ts.isIdentifier(p.name))) staticThis(u.body); // with plain parameters the unit is one opaque transition keyed by the file
         stmts(u.body.statements);
         current = null; currentFn = null; currentClass = null; thisParam = null;
       }
