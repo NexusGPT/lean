@@ -66,4 +66,4 @@ An agent that writes code needs a judge that is not itself. The planned setting:
 - refusals as structured records;
 - a witness library: an input that once revealed a defect is replayed on every later run.
 
-The result to publish is a measured difference between the loop with the gate and without it. Built today: the lint's work list (`--agent`), `check.mjs` per function, and a `WITNESS` that carries the source line on each side with the advised rewrite, as the [README](../README.md#a-coding-agents-loop) shows.
+The result to publish is a measured difference between the loop with the gate and without it. Built today: the lint's work list (`--agent`), `check.mjs` per function, and a `WITNESS` that carries the source line on each side with the advised rewrite, as the [README](../README.md#6-a-coding-agents-loop) shows.
