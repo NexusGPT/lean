@@ -272,6 +272,13 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
     const ok = !!sc && got.verdict === want.verdict && (want.sequence === undefined || JSON.stringify(w?.sequence ?? null) === JSON.stringify(want.sequence)) && (want.timers === undefined || sc.timers === want.timers);
     add('pair', name, `schedules ${unit} ${want.verdict}${want.sequence ? ' by ' + want.sequence.join(', ') : ''}`, ok, sc ? `${sc.timers} timer(s), ${sc.paths ?? '?'} paths${w ? `; witness ${w.sequence.join(', ')} at step ${w.step}` : ''}` : 'no schedules summary');
   }
+  // the element-tree patch a front-end WITNESS carries (patch.mjs): the kinds of its ops, in order, and its summary line
+  for (const [unit, want] of Object.entries(exp.patch ?? {})) {
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    const w = got?.witnesses?.[0] ?? null; const kinds = Array.isArray(w?.patch) ? w.patch.map((o) => o.kind) : null;
+    const ok = got?.verdict === 'WITNESS' && !!kinds && JSON.stringify(kinds) === JSON.stringify(want.kinds) && (want.summary === undefined || w.patchSummary === want.summary);
+    add('pair', name, `patch ${unit} ${want.kinds.join(', ') || 'empty'}`, ok, w ? `${w.patchSummary ?? 'no summary'}; ${kinds ? kinds.join(', ') || 'no ops' : 'no patch'}` : `no witness (${got?.verdict ?? 'no result'})`);
+  }
   // the small heaps lane B enumerated for the unit (korat.mjs): at least `min` non-isomorphic graphs, reported in bound.heaps
   for (const [unit, want] of Object.entries(exp.heaps ?? {})) {
     let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).bound?.heaps ?? null; } catch { /* keep */ }
@@ -327,6 +334,12 @@ add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clo
   const r = run('node', [path.join(here, '../exec/react-trace.mjs'), '--json']);
   let summary = null; try { summary = JSON.parse(r.stdout).summary; } catch { /* no JSON: the runner crashed */ }
   add('repo', 'react-trace scenarios', 'runner', !!summary && summary.disagree.length === 0, summary ? `${summary.agree} of ${summary.scenarios} agree${summary.disagree.length ? '; ' + summary.disagree.map((d) => d.scenario).join(', ') : ''}` : (r.stderr || r.stdout).trim().slice(-160));
+}
+// ----- the element-tree patch of a front-end WITNESS on hand-built trees (langs/ts/patch.test.mjs, node:test) -----
+{
+  const r = run('node', ['--test', path.join(here, '../patch.test.mjs')]);
+  const text = (r.stdout ?? '') + (r.stderr ?? ''); const pass = text.match(/^\S+ pass (\d+)$/m), fail = text.match(/^\S+ fail (\d+)$/m);
+  add('repo', 'patch.test.mjs', 'node:test', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : text.trim().slice(-160));
 }
 if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.join(root, 'langs/ts/conformance.json'))) {
   const c = run('python3', ['-I', 'conformance/run.py', 'ts']);

@@ -19,6 +19,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { runPair } from './exec/run.mjs';
+import { formatOp } from './patch.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
@@ -91,4 +92,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);
   if (out) { fs.writeFileSync(out, text); console.log(`${res.verdict} -> ${out}`); } else console.log(text);
+  if (out && res.verdict === 'WITNESS' && Array.isArray(res.witness?.patch)) { console.log(`patch: ${res.witness.patchSummary}`); for (const op of res.witness.patch) console.log(`  ${formatOp(op)}`); } // a front-end WITNESS: the patch from the parent's tree to the candidate's, one op per line, path first (the JSON form carries it in witness.patch)
 }
