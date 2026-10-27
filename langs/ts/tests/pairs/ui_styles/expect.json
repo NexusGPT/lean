@@ -1,0 +1,15 @@
+{
+ "scope": ["badge", "card", "box", "chip", "tag", "plain"],
+ "equal": {"badge": false, "card": false, "box": false, "chip": false, "tag": true, "plain": true},
+ "why": "Resolved styles (design/ui-layers.md). The tree layer and lane A read className as text; the styles layer reads it as the declarations of its classes under the pinned Tailwind configuration. Badge's text-sm becomes text-base: another font size and line height, a WITNESS in both layers. Card reorders its classes: a tree WITNESS (the attribute's text) and equal in the styles layer (the same classes). Box writes p-4 as px-4 py-4: the same four padding declarations, equal in the styles layer. Chip changes px-2 to px-3 beside chip-primary, a class outside the pinned table: the styles layer reports it unknown, never equal and never a styles WITNESS. Tag builds the same class string through a local: proved, equal in both layers. Plain is untouched.",
+ "heap": false,
+ "b": {"Badge": "WITNESS", "Card": "WITNESS", "Box": "WITNESS", "Chip": "WITNESS", "Tag": "PASS-bounded", "Plain": "PASS-bounded"},
+ "layers": [
+  {"unit": "Badge", "verdict": "WITNESS", "tree": "WITNESS", "styles": "WITNESS"},
+  {"unit": "Card", "verdict": "WITNESS", "tree": "WITNESS", "styles": "PASS-bounded"},
+  {"unit": "Box", "verdict": "WITNESS", "tree": "WITNESS", "styles": "PASS-bounded"},
+  {"unit": "Chip", "verdict": "WITNESS", "tree": "WITNESS", "styles": "unknown", "unsupported": ["chip-primary"]},
+  {"unit": "Tag", "verdict": "PASS-proved", "tree": "PASS-bounded", "styles": "PASS-bounded"},
+  {"unit": "Plain", "verdict": "PASS-proved", "tree": "PASS-bounded", "styles": "PASS-bounded"}
+ ]
+}

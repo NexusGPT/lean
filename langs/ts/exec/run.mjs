@@ -32,6 +32,8 @@ import { witnessPatch } from '../patch.mjs';
 import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
 import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
+import { stylesLayer } from './styles.mjs';
+import { contextRow } from '../hooks.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -105,28 +107,72 @@ function jsxChildren(c) {
   add(c);
   return out;
 }
-const deepMode = { on: false }; // --deep: a same-package function component is rendered one level down (moonshot 7); off, a component tag is its name and props (a tree of names)
+const deepMode = { depth: 0 }; // --deep[=k]: same-package function components rendered k levels down (moonshot 7, design/ui-layers.md); 0, a component tag is its name and props (a tree of names)
 function jsxValue(type, props, key, env = null) {
-  const tag = typeof type === 'string' ? type : type && type.__isFake ? { $fake: type.__fakePath } : typeof type === 'function' ? { $component: type.name || 'anonymous' } : type === JSX_FRAGMENT ? '' : String(type);
+  const tag = typeof type === 'string' ? type : type && type.__isFake ? { $fake: type.__fakePath } : type && type.__leanProvider ? { $provider: contextName(type.__leanProvider) } : type && type.__leanConsumer ? { $consumer: contextName(type.__leanConsumer) } : type && type.__leanContext ? { $provider: contextName(type) } : typeof type === 'function' ? { $component: type.name || 'anonymous' } : type === JSX_FRAGMENT ? '' : String(type);
   const rest = {}; let children = [];
   for (const k of Object.keys(props ?? {})) { if (k === 'children') children = jsxChildren(props[k]); else rest[k] = props[k]; }
   if (key !== undefined && key !== null) rest.key = key;
   const el = { $el: tag, props: rest, children };
-  // deep render: a same-package component (a real function the sandbox linked, never a fake) is called with its props
-  // inside the parent's render, on its own hook frame keyed by its order among the parent's component tags (React keys
-  // by position); one level only, so a component tag inside the child is a name again; no context
-  if (deepMode.on && env && env.react && typeof type === 'function' && !type.__isFake && !(env.deepDepth > 0)) {
-    const frameKey = `${type.name || 'anonymous'}#${env.deepSeq = (env.deepSeq ?? 0) + 1}`;
-    const frames = (env.childFrames ??= new Map()); if (!frames.has(frameKey)) frames.set(frameKey, { hookSlots: [], effectSlots: [] });
-    const frame = frames.get(frameKey);
-    const saved = env.react.__pushFrame(frame); env.deepDepth = (env.deepDepth ?? 0) + 1;
-    try { el.rendered = type({ ...rest, ...(children.length ? { children: children.length === 1 ? children[0] : children } : {}) }); }
-    catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop) throw e; el.rendered = { threw: render(e) }; }
-    finally { env.deepDepth -= 1; env.react.__popFrame(saved); }
-    el.deep = frameKey;
-  }
+  // the element's type, never observed: a component is rendered later, top down, where its element is placed (React's
+  // order), so a child takes its context from the providers above its place (deepExpand)
+  if (type && typeof type !== 'string') Object.defineProperty(el, '$type', { value: type, enumerable: false });
   return el;
 }
+// a context of React's own (createContext in the hook runtime): named by its displayName, else by its creation order
+const contextName = (ctx) => (typeof ctx.displayName === 'string' && ctx.displayName) || ctx.__leanContext;
+// what one run rendered deep: the components rendered with their depth, the handles left as names with why, every
+// context read (which frame read which context, from a provider element or from outside); the tree layer reads it
+const deepLog = { rendered: new Map(), handles: new Map(), contexts: new Map() };
+const logOnce = (m, k, v) => { if (!m.has(k)) m.set(k, v); };
+const harnessStop = (e) => e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop || e instanceof CallTimeout;
+// a useContext read: the value of the nearest provider element of that context above the frame in the rendered tree;
+// with none, the outside value, one fake per context, the same at every frame and every render (hooks.json, useContext)
+function readContext(env, ctx, frame) {
+  const stack = env.contextStack ?? [];
+  for (let j = stack.length - 1; j >= 0; j--) if (stack[j].ctx === ctx) { logOnce(deepLog.contexts, `${frame} ${contextName(ctx)} provider`, { frame, context: contextName(ctx), from: 'provider' }); return stack[j].value; }
+  logOnce(deepLog.contexts, `${frame} ${contextName(ctx)} outside`, { frame, context: contextName(ctx), from: 'outside' });
+  const outside = (env.outsideContexts ??= new Map()); if (!outside.has(ctx)) outside.set(ctx, env.fake(`react:context:${contextName(ctx)}`));
+  return outside.get(ctx);
+}
+// deep render: the tree the unit returned, walked top down; a same-package function component (a real function the
+// sandbox linked, never a fake) at a component depth below k is called with its props on its own hook frame, keyed by
+// its place (its owner's frame, then its order among the owner's component tags, as React keys a fiber), and its output
+// walked in turn; a provider element's value is the context of everything below it; a component at depth k, and a
+// package component (a fake), stays a handle: its name and props
+function deepExpand(env, v, level, owner, counter) {
+  if (Array.isArray(v)) return v.map((x) => deepExpand(env, x, level, owner, counter));
+  if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return v;
+  const type = v.$type; const out = { ...v };
+  if (type !== undefined) Object.defineProperty(out, '$type', { value: type, enumerable: false });
+  const inPlace = () => { out.children = v.children.map((c) => deepExpand(env, c, level, owner, counter)); return out; };
+  if (type && (type.__leanProvider || type.__leanContext)) {
+    const stack = (env.contextStack ??= []); stack.push({ ctx: type.__leanProvider ?? type, value: v.props.value });
+    try { return inPlace(); } finally { stack.pop(); }
+  }
+  if (type && type.__leanConsumer) { // a consumer's child is a function of the nearest value, called where it is placed
+    const f = v.children[0]; if (typeof f !== 'function') return inPlace();
+    let r; try { r = f(readContext(env, type.__leanConsumer, `${owner || 'unit'}:Consumer`)); } catch (e) { if (harnessStop(e)) throw e; out.rendered = { threw: render(e) }; return out; }
+    out.rendered = deepExpand(env, r, level, owner, counter); return out;
+  }
+  if (typeof type === 'function' && !type.__isFake) {
+    const name = type.name || 'anonymous';
+    if (level >= deepMode.depth) { logOnce(deepLog.handles, name, `at depth ${level + 1}, below the stated depth ${deepMode.depth}: its name and props, never its output`); return out; } // its children are props: React renders them only where it places them
+    const frameKey = `${owner}${owner ? '>' : ''}${name}#${counter.seq += 1}`;
+    const frames = (env.childFrames ??= new Map()); if (!frames.has(frameKey)) frames.set(frameKey, { hookSlots: [], effectSlots: [] });
+    const saved = env.react.__pushFrame(frames.get(frameKey)); const was = env.deepFrame; env.deepFrame = frameKey;
+    let r;
+    try { r = type({ ...v.props, ...(v.children.length ? { children: v.children.length === 1 ? v.children[0] : v.children } : {}) }); }
+    catch (e) { if (harnessStop(e)) throw e; out.rendered = { threw: render(e) }; out.deep = frameKey; return out; }
+    finally { env.deepFrame = was; env.react.__popFrame(saved); }
+    logOnce(deepLog.rendered, name, level + 1);
+    out.rendered = deepExpand(env, r, level + 1, frameKey, { seq: 0 }); out.deep = frameKey;
+    return out;
+  }
+  if (type && type.__isFake) logOnce(deepLog.handles, type.__fakePath, 'outside the package: its name and props; its children are rendered in place, as if it passed them through, and it provides no context');
+  return inPlace();
+}
+const cloneFrames = (m) => (m ? new Map([...m].map(([k, f]) => [k, { ...f, hookSlots: f.hookSlots.slice(), effectSlots: f.effectSlots.slice() }])) : undefined);
 const JSX_FRAGMENT = '';
 const jsxRuntimeFor = (env) => { const j = (type, props, key) => jsxValue(type, props, key, env); return { jsx: j, jsxs: j, jsxDEV: j, Fragment: JSX_FRAGMENT, __esModule: true }; };
 
@@ -134,7 +180,7 @@ class RenderLoop extends Error { constructor(why) { super(`render-loop: ${why}`)
 // one commit: render until a setter during render stops changing the state (React re-renders at once, up to 25 times)
 async function commitRender(env, call, ms) {
   let v, renders = 0;
-  do { env.stateDirty = false; env.react?.__beginRender?.(); renders++; const r = call(); v = (r && typeof r.then === 'function') ? await awaitUnit(env, r, ms) : r; if (env.stateDirty && renders >= 25) throw new RenderLoop('a setter during render re-rendered 25 times'); } while (env.stateDirty && env.react);
+  do { env.stateDirty = false; env.react?.__beginRender?.(); renders++; const r = call(); v = (r && typeof r.then === 'function') ? await awaitUnit(env, r, ms) : r; if (deepMode.depth > 0 && env.react && isJsxValue(v)) { const tree = v; v = guardedCall(env, () => deepExpand(env, tree, 0, '', { seq: 0 }), ms); } if (env.stateDirty && renders >= 25) throw new RenderLoop('a setter during render re-rendered 25 times'); } while (env.stateDirty && env.react);
   return v;
 }
 // after a commit: effects run (settleEffects), and an effect that set the state re-renders and settles again, bounded
@@ -174,7 +220,8 @@ function reactRuntime(env) {
     use: (x) => { if (x && typeof x.then === 'function') throw new Suspended('use(promise)'); return x; }, // a suspended render: no model of the fallback and the retry; the run ends as ASK:suspense
     useRef: (initial) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; }, // one box per slot, the same box on every render
     useId: () => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = `:r${i}:`; return slots[i]; }, // a stable id per slot
-    useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
+    createContext: (defaultValue) => { const ctx = { __leanContext: `context#${env.contextCount = (env.contextCount ?? 0) + 1}`, displayName: undefined, _defaultValue: defaultValue }; ctx.Provider = { __leanProvider: ctx }; ctx.Consumer = { __leanConsumer: ctx }; return ctx; }, // React's own context: a provider element of it gives its value to everything rendered below it; the default is never read, since the nearest provider of a unit's root is outside the unit
+    useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (ctx && ctx.__leanContext) { env.record('get', `react:context:${i}`); slots[i] = readContext(env, ctx, env.deepFrame ?? 'unit'); return slots[i]; } if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
     useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; return [slots[i], dispatch]; },
     useLayoutEffect: (fn, deps) => effectSlot(fn, deps, 'react:layout-effect'), // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
@@ -185,6 +232,9 @@ function reactRuntime(env) {
   env.react = runtime;
   return proxy;
 }
+// a rendered tree, observed to its last element: render's depth bound (six object levels) restarts at every element, so
+// an element is never cut because of where it sits; a value inside a prop keeps the bound
+const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 const isJsxValue = (v) => (Array.isArray(v) ? v.some(isJsxValue) : !!v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el'));
 // the layer a front-end verdict names (research 18, 19: every verdict names its layer and its admitted set)
 export const FRONT_END_OBSERVATION = Object.freeze({ layer: 'element tree', renders: 'one', handlers: 'each invoked once on a fake event, its result and requests recorded', effects: 'run once after the render, in registration order; cleanups recorded as pending', schedule: 'synchronous; microtasks drained after the call; timers recorded as pending, never fired' });
@@ -484,16 +534,16 @@ export async function observe(side, spec, args, ms) {
   let outcome, outcomeValue, hasOutcome = false;
   lateErrors.length = 0;
   try {
-    const slotsBefore = (env.hookSlots ?? []).slice(), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
+    const slotsBefore = (env.hookSlots ?? []).slice(), framesBefore = cloneFrames(env.childFrames), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
     const call = () => guardedCall(env, () => unit.call(args), ms);
     let v = await commitRender(env, call, ms);
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
-      env.hookSlots = slotsBefore.slice(); env.calls = new Map(callsBefore); env.demand = demandBefore;
+      const framesAfter = env.childFrames; env.hookSlots = slotsBefore.slice(); env.childFrames = cloneFrames(framesBefore); env.calls = new Map(callsBefore); env.demand = demandBefore; // a deep child's frames start the second render as they started the first
       const v2 = await commitRender(env, call, ms);
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
-      env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
+      env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.childFrames = framesAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
     }
     for (const effect of env.reactEffects ?? []) { // the mount's effects, once, in registration order (the pending records of their cleanups are part of the one-render observation)
@@ -505,7 +555,7 @@ export async function observe(side, spec, args, ms) {
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
     if (env.timers.queue.length) await runTimers(env, ms); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
-    outcome = { returned: render(outcomeValue) };
+    outcome = { returned: isJsxValue(outcomeValue) ? renderTree(outcomeValue) : render(outcomeValue) };
   } catch (e) {
     if (e && e.message === '__timeout__') return { harness: 'timeout' };
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
@@ -572,8 +622,8 @@ async function settleEffects(env, ms) {
   }
   await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r));
 }
-const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers) } : v);
-const treeHandlers = (v, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeHandlers(c, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (/^on[A-Z]/.test(k) && typeof x === 'function') out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeHandlers(c, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); return out; };
+const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers), ...(Object.hasOwn(v, 'rendered') ? { rendered: eraseHandlers(v.rendered) } : {}) } : v);
+const treeHandlers = (v, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeHandlers(c, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (/^on[A-Z]/.test(k) && typeof x === 'function') out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeHandlers(c, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); if (Object.hasOwn(v, 'rendered')) treeHandlers(v.rendered, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}>`], out); return out; }; // a deep child's output: its handlers are the page's too
 async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth, schedules = false, handlers = null }) { // schedules: the clock is a command (moonshot 9): a tick fires what is due at the next instant, ties in every order, and a handler may arrive before a timer fires
   const mount = async (name) => { // a fresh mount: the same seed gives the same fakes and the same inputs as the pair's run of this input
     const env = new Environment(seed * 7919 + inputIndex); env.shapes = spec;
@@ -639,10 +689,32 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
-export async function runPair(opts) { return annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit); }
+export async function runPair(opts) {
+  const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
+  const fe = res?.bound?.frontEnd; if (fe && fe.layers) fe.layers = { ...fe.layers, tree: { verdict: res.verdict, ...fe.layers.tree } }; // the tree layer's verdict is lane B's; the styles layer keeps its own
+  return res;
+}
+// the depth --deep states: true or a bare flag is one level; a number k is k levels; anything else is a tree of names
+export const deepDepth = (deep) => (deep === true ? 1 : Number.isInteger(Number(deep)) && Number(deep) > 0 ? Number(deep) : 0);
+const componentsText = (k) => (k > 0 ? `same-package function components rendered ${k === 1 ? 'one level down' : `${k} levels down`} on their own hook frames, top down where their elements are placed, each useContext read from the nearest provider element above it (--deep${k === 1 ? '' : '=' + k})` : 'a tree of names: a component tag is its name and props');
+// the layers of a rendered unit's certificate (design/ui-layers.md): the tree, to the stated depth with its context, and
+// the resolved styles; each with its assumptions; what neither layer observes is named
+function layersOf(styles) {
+  const layers = { styles: null, notObserved: 'pixels, layout, the committed DOM, the accessibility tree; styles beyond the pinned utilities' };
+  Object.defineProperty(layers, 'tree', { enumerable: true, get: () => ({
+    depth: deepMode.depth, components: componentsText(deepMode.depth),
+    rendered: [...deepLog.rendered].map(([name, depth]) => ({ component: name, depth })),
+    handles: [...deepLog.handles].map(([name, why]) => ({ component: name, why })),
+    contexts: [...deepLog.contexts.values()],
+    assumptions: deepMode.depth > 0 ? ['a component renders where its element is placed, after its owner returned, top down (React\'s order); its hook frame is keyed by that place', `components deeper than ${deepMode.depth} level(s) are handles: their name and props are observed, never their output`, 'a package component is a handle: its children are rendered in place, as if it passed them through, and it provides no context', `useContext: ${contextRow()?.effect ?? 'the nearest provider above the frame'}`, 'a rendered child\'s effects run once with the mount of the one-render observation; the command sequences re-run the unit\'s own effects only'] : ['a component tag is its name and props; no child is rendered', `useContext at the unit's root: ${contextRow()?.effect ?? 'the outside value'}`],
+  }) });
+  Object.defineProperty(layers, 'styles', { enumerable: true, get: () => styles.result() });
+  return layers;
+}
 async function runPairOnce(opts) {
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
-  deepMode.on = !!deep;
+  deepMode.depth = deepDepth(deep); deepLog.rendered.clear(); deepLog.handles.clear(); deepLog.contexts.clear();
+  const styles = stylesLayer(); let treeDone = false; // the styles layer reads every input both sides rendered, past the tree layer's witnesses too
   // a missing parent unit has no equality question
   if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
     return runNew(opts);
@@ -683,10 +755,13 @@ async function runPairOnce(opts) {
   for (let i = 0; i < n; i++) {
     step('lane B', i); let sides = await mountSides(i);
     if (harnessAsk) break;
-    let [oP, oC] = await observeBoth(sides, true);
-    if (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout') { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
+    let [oP, oC] = await observeBoth(sides, !treeDone);
+    if (!treeDone && (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout')) { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
       recorderRetries++; sides = await mountSides(i); if (harnessAsk) break; [oP, oC] = await observeBoth(sides, false);
     }
+    if (treeDone && (oP.harness || oC.harness || oP.impure || oC.impure)) break; // past the tree layer's witnesses the run only feeds the styles layer: a stop there ends it
+    if ((sides.parent.sawJsx || sides.candidate.sawJsx) && oP.outcome && oC.outcome && Object.hasOwn(oP.outcome, 'returned') && Object.hasOwn(oC.outcome, 'returned')) styles.add(i, oP.outcome.returned, oC.outcome.returned);
+    if (treeDone) continue;
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
     if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, args: sides.parent.inputs.map((a) => render(a)), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
     if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
@@ -701,7 +776,7 @@ async function runPairOnce(opts) {
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
       diffs.push({ input: i, args: sides.parent.inputs.map((a) => render(a)), parent: oP, candidate: oC, where: firstDifference(oP, oC) });
-      if (diffs.length >= 3) break;
+      if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } // a rendered unit keeps running for the styles layer
     }
   }
   const bound = { n, seed, ms, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
@@ -710,7 +785,8 @@ async function runPairOnce(opts) {
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
   if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };
   const handlerRun = sawJsx ? { models: { parent: descriptorsOf(parent, unit, { project }), candidate: descriptorsOf(candidate, unit, { project }) }, stats: newHandlerStats() } : null; // the descriptors of the unit's handlers, read once per side, applied at every fire of the sequences and the finite lane
-  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, components: deep ? 'same-package function components rendered one level down on their own hook frames, no context (--deep)' : 'a tree of names: a component tag is its name and props', notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
+  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, components: componentsText(deepMode.depth), notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
+  if (sawJsx) bound.frontEnd.layers = layersOf(styles); // the tree layer (depth, rendered children, handles, context reads) and the styles layer, each with its assumptions
   if (handlerRun) bound.frontEnd.handlers = Object.assign(handlerRun.stats, { observed: FRONT_END_OBSERVATION.handlers }); // how a handler is observed, and the descriptor interpreter's counts: fired, readable, interpretable, agreed, and every defect
   if (programRun) {
     const member = spec.member ?? unit.split('.')[1];
@@ -803,7 +879,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const guard = verdictGuard(opt('--out', null));
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: a.includes('--deep'), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
   const out = opt('--out', null);
   guard.settle();
   const text = JSON.stringify(res, null, 1);

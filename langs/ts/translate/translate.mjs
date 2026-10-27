@@ -32,7 +32,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, countedFor, syncLoopCallback, localProcedure } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
-import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
+import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite } from '../common.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
@@ -3518,6 +3518,12 @@ export function translate(file, fnName, opts = {}) {
       if (!unitEffectful()) fail(n, `hook ${h.name} is a world transition in a unit not marked effectful`);
       const args = n.arguments.map((a) => expr(a, anyTarget())); const pts = n.arguments.map(() => anyType());
       return hoist(`${external(`hook_${h.name}`, ['World', ...pts], `(World, ${dt.name})`)}(${[WORLD, ...args].join(', ')})`, dt.name);
+    } }
+    { const h = valueHook(checker, n); if (h) { // a value row of the hook table (useContext): a world read keyed by its argument, one function per result type, since the provider of a unit's root is outside the unit
+      addPrelude('World', 'type World');
+      if (!unitEffectful()) fail(n, `hook ${h.name} is a world transition in a unit not marked effectful`);
+      const rt = dtype(typeOf(n), n); const args = n.arguments.map((a) => expr(a, anyTarget())); const pts = n.arguments.map(() => anyType());
+      return hoist(`${external(`hook_${h.name}_${rt.replace(/[^A-Za-z0-9]+/g, '_')}`, ['World', ...pts], `(World, ${rt})`)}(${[WORLD, ...args].join(', ')})`, rt);
     } }
     { const md = metadataCall(checker, n, sf); if (md) return metadataApi(n, md); } // a metadata API of the decorator table: a cell of the world keyed by (key, target)
     { const ok = ownKeyTest(checker, n, sf); if (ok) { // the own-key test, exact on a dictionary (its key set) and on a record of required fields (its declared keys)
