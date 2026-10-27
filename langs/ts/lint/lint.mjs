@@ -316,6 +316,74 @@ export function lintFile(file, ranges = null, opts = {}) {
 
   // ---------- statements ----------
   const isParam = (decl) => !!decl && ts.isParameter(decl);
+  // param-rebind: a parameter the unit reassigns in its own body is a local that starts as the argument (modules are
+  // strict, so no `arguments` slot aliases it, and the lint refuses `arguments`). Each read sees the latest write before
+  // it, as for a `let`. Refused by name (param-assign): a write inside a callback or a local function, the own parameter
+  // of a callback or a local function, a rest parameter, a parameter of a generator, a parameter the unit also changes
+  // in place (an output: the caller would take back the rebound object), and one a closure reads before a later write
+  // or inside a loop that writes it (the closure would keep the old value).
+  const PARAM_MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
+  let mutatedParamSets = null; // unit name -> names of its parameters it changes in place, same-file calls followed (the translator's outputs)
+  const paramRootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const mutatedParams = (name) => {
+    if (!mutatedParamSets) {
+      const all = [...units.values()].filter((u) => u.body);
+      const namesOf = (u) => new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
+      mutatedParamSets = new Map(all.map((u) => {
+        const ps = namesOf(u), out = new Set();
+        const hit = (x) => { const r = paramRootOf(x); if (ts.isIdentifier(r) && ps.has(r.text) && r !== x) out.add(r.text); };
+        const w = (n) => {
+          if (ts.isFunctionLike(n) && n !== u.fn) return;
+          if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) hit(n.left);
+          if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) hit(n.operand);
+          if (ts.isDeleteExpression(n)) hit(n.expression);
+          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && PARAM_MUTATORS.has(n.expression.name.text)) { const r = paramRootOf(n.expression.expression); if (ts.isIdentifier(r) && ps.has(r.text)) out.add(r.text); }
+          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'assign' && n.arguments[0]) { const r = paramRootOf(n.arguments[0]); if (ts.isIdentifier(r) && ps.has(r.text)) out.add(r.text); }
+          ts.forEachChild(n, w);
+        };
+        w(u.body);
+        return [u.name, out];
+      }));
+      for (let changed = true; changed;) {
+        changed = false;
+        for (const u of all) {
+          const ps = namesOf(u), mine = mutatedParamSets.get(u.name);
+          const w = (n) => {
+            if (ts.isFunctionLike(n) && n !== u.fn) return;
+            if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && mutatedParamSets.has(n.expression.text)) {
+              const callee = units.get(n.expression.text), cm = mutatedParamSets.get(callee.name);
+              callee.params.forEach((cp, i) => { const a = n.arguments[i] && paramRootOf(n.arguments[i]); if (ts.isIdentifier(cp.name) && cm.has(cp.name.text) && a && ts.isIdentifier(a) && ps.has(a.text) && !mine.has(a.text)) { mine.add(a.text); changed = true; } });
+            }
+            ts.forEachChild(n, w);
+          };
+          w(u.body);
+        }
+      }
+    }
+    return mutatedParamSets.get(name) ?? new Set();
+  };
+  const paramRebindRefusal = (decl) => {
+    const name = decl.name.getText(sf);
+    if (decl.parent !== currentFn) return `\`${name}\` is a parameter of a callback or a local function; copy it to a local first`;
+    if (callbackStack.length || objectMethod || forEachDepth) return `parameter \`${name}\` is assigned inside a callback or a local function; a callback cannot change it`;
+    if (decl.dotDotDotToken) return `\`${name}\` is a rest parameter; copy it to a local first`;
+    if (currentFn.asteriskToken) return `parameter \`${name}\` of a generator is assigned; copy it to a local first`;
+    const u = [...units.values()].find((x) => x.fn === currentFn);
+    if (!u || mutatedParams(u.name).has(name)) return `parameter \`${name}\` is rebound and also changed in place, which hands the change back to the caller; copy it to a local first`;
+    const sym = checker.getSymbolAtLocation(decl.name);
+    const symOf = (id) => (id.parent && ts.isShorthandPropertyAssignment(id.parent) && id.parent.name === id ? checker.getShorthandAssignmentValueSymbol(id.parent) : checker.getSymbolAtLocation(id));
+    const isTarget = (id) => { let x = id; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; return !!p && ((ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator))); };
+    const writes = [], closures = [];
+    const w = (n) => {
+      if (ts.isFunctionLike(n) && n !== currentFn) { let reads = false; const r = (x) => { if (reads) return; if (ts.isIdentifier(x) && symOf(x) === sym) reads = true; ts.forEachChild(x, r); }; r(n); if (reads) closures.push(n); return; }
+      if (ts.isIdentifier(n) && symOf(n) === sym && isTarget(n)) writes.push(n);
+      ts.forEachChild(n, w);
+    };
+    w(currentFn.body);
+    const loopHolding = (a, b) => { for (let p = a.parent; p && p !== currentFn; p = p.parent) if (ts.isIterationStatement(p, false) && b.pos >= p.pos && b.end <= p.end) return true; return false; };
+    for (const c of closures) for (const x of writes) if (c.getStart(sf) < x.getStart(sf) || loopHolding(c, x)) return `a closure reads parameter \`${name}\` and a later write rebinds it; copy it to a local first`;
+    return null;
+  };
   const declOf = (id) => originOf(checker, id, sf, current);
 
   function stmts(list) { for (const s of list) stmt(s); }
@@ -462,7 +530,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (moduleState(checker, l, sf)) checkIdent(l);
           if (o.kind !== 'local' && !moduleState(checker, l, sf)) v(l, 'global-mutation', `assignment to \`${l.text}\`, which this function does not own`);
           else if (o.kind !== 'local' && ownedHere(o.decl) && unitUsesHooks()) v(l, 'render-impure', `a render function writes \`${l.text}\`, a variable outside it; move the write into an event handler or an effect`);
-          else if (isParam(o.decl)) v(l, 'param-assign', `parameter \`${l.text}\` is assigned; copy it to a local first`);
+          else if (isParam(o.decl)) { const why = paramRebindRefusal(o.decl); if (why) v(l, 'param-assign', why); }
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `\`${l.text}\` is declared outside this callback; a callback cannot change it`);
         } else if (ts.isElementAccessExpression(l) && ts.isIdentifier(l.expression) && (isArrayExpr(l.expression) || nonNull(tOf(l.expression)).every(hasStringIndex))) {
           // an element of a local array, or a key of a local dictionary (a record with a string index): the local is rebuilt
@@ -509,7 +577,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
       if (o.kind !== 'local' && !moduleState(checker, e.operand, sf)) v(e, 'global-mutation', `update of \`${e.operand.text}\`, which this function does not own`);
       else if (o.kind !== 'local' && ownedHere(o.decl) && unitUsesHooks()) v(e, 'render-impure', `a render function updates \`${e.operand.text}\`, a variable outside it; move the write into an event handler or an effect`);
-      else if (isParam(o.decl)) v(e, 'param-assign', 'parameter is assigned; copy it to a local first');
+      else if (isParam(o.decl)) { const why = paramRebindRefusal(o.decl); if (why) v(e, 'param-assign', why); }
       else if (!ownedHere(o.decl)) v(e, 'closure-mutation', 'a callback cannot change an outer variable');
       return;
     }
