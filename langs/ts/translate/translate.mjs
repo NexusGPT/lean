@@ -32,7 +32,7 @@ import { createHash } from 'node:crypto';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
-import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
+import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
@@ -398,7 +398,10 @@ export function translate(file, fnName, opts = {}) {
     const ids = defs.map(([name, ps, ret, body]) => { const id = external(name, ps, ret); if (!prelude.get(id).includes('{')) prelude.set(id, `${prelude.get(id)} { ${body} }`); return id; });
     return { faulted: ids[0], value: ids[1], clear: ids[2], raise: ids[3] };
   };
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  // a lib or runtime global read as a value (not a callee, not the receiver of a called method, not a type): a world read
+  const libValueRead = (x) => { if (!ts.isIdentifier(x) || !x.parent || ts.isTypeNode(x.parent) || ts.isQualifiedName(x.parent)) return false; const p = x.parent; if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && p.expression === x) return false; if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return false; if (ts.isBinaryExpression(p) && p.right === x && p.operatorToken.kind === K.InstanceOfKeyword) return false; return libGlobalRoot(checker, x, sf, currentUnit?.node ?? null); };
+  const libWorldRead = (n) => { if (!n || !(ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n))) return false; let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root) || ts.isAsExpression(root) || ts.isNonNullExpression(root)) root = root.expression; return libGlobalRoot(checker, root, sf, currentUnit?.node ?? null); };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -485,7 +488,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function globalRead(n) {
     const recv = n.expression;
-    const root = outsideRoot(checker, recv, sf, currentUnit?.node);
+    const root = outsideRoot(checker, recv, sf, currentUnit?.node) || libGlobalRoot(checker, recv, sf, currentUnit?.node ?? null);
     const rd = dtype(typeOf(n), n);
     const rt = root ? anyType() : dtype(typeOf(recv), recv);
     const value = root ? `${external(`global_handle_${recv.text}`, [], rt)}()` : expr(recv);
@@ -1436,6 +1439,7 @@ export function translate(file, fnName, opts = {}) {
       return isOptional(dt) && !isOptional(typeOf(n)) && !isNullish(typeOf(n)) ? `${code}.value` : code;
     }
     if (outsideRoot(checker, n, sf, currentUnit?.node) && n.text !== 'require') { const d = dtype(typeOf(n), n); addPrelude('World', 'type World'); return hoist(`${external(`global_read_${n.text}`, ['World'], `(World, ${d})`)}(${WORLD})`, d); }
+    if (libGlobalRoot(checker, n, sf, currentUnit?.node ?? null)) { if (isCallable(typeOf(n))) fail(n, `${n.text} is a function value; call it`); const d = dtype(typeOf(n), n); addPrelude('World', 'type World'); return hoist(`${external(`global_read_${n.text}`, ['World'], `(World, ${d})`)}(${WORLD})`, d); } // a lib or runtime global: a world read
     if (o.kind === 'module' && o.decl?.initializer && (ts.isLiteralExpression(o.decl.initializer) || [K.TrueKeyword, K.FalseKeyword].includes(o.decl.initializer.kind) || (ts.isPrefixUnaryExpression(o.decl.initializer) && o.decl.initializer.operator === K.MinusToken && ts.isNumericLiteral(o.decl.initializer.operand))) && !(typeOf(n).flags & TF.Object)) return expr(o.decl.initializer);
     if (o.kind === 'module' && o.decl?.initializer && !isCallable(typeOf(n))) return `${external(`${n.text}_${hash(o.decl.getText(sf))}`, [], dtype(typeOf(n), n))}()`;
     if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return externalValue(n);
@@ -1517,6 +1521,7 @@ export function translate(file, fnName, opts = {}) {
       }
       case K.RegularExpressionLiteral: { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return `${external(`regex_${hash(n.text)}`, [], 'Ext_RegExp')}()`; }
       case K.TypeOfExpression: {
+        { let g = n.expression; while (ts.isParenthesizedExpression(g)) g = g.expression; if (libGlobalRoot(checker, g, sf, currentUnit?.node ?? null)) { addPrelude('World', 'type World'); return hoist(`${external(`global_typeof_${g.text}`, ['World'], '(World, string)')}(${WORLD})`, 'string'); } } // whether a lib global exists is a fact of the world, never of its declaration
         // represented alternatives decide the tag; assertion-derived values stay uninterpreted
         return staticTest(n.expression, (t) => { const tag = runtimeTag(t); return tag ? strEsc(tag) : null; }, (v, d) => `${external('typeof', [d], 'string')}(${v})`);
       }
@@ -2366,6 +2371,7 @@ export function translate(file, fnName, opts = {}) {
   function propAccess(n, keepOption = false) {
     { const rb = hookBinding(n.expression); if (rb && !rb.field && Object.hasOwn(rb.row.result, n.name.text) && !rb.row.result['*']) return `${expr(n.expression)}.${n.name.text}`; } // a field of a hook result: the table's datatype
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
+    if (libWorldRead(n)) return globalRead(n); // a path rooted at a lib or runtime global: a world read
     const name = n.name.text;
     if (objectData && n.expression.kind === K.ThisKeyword && objectData.has(name)) return objectData.get(name).code;
     const literal = literalGetter(n);
@@ -2485,6 +2491,7 @@ export function translate(file, fnName, opts = {}) {
   function elemAccess(n) {
     const q = argumentsParam(n); if (q) return dn(q.name.text); // `arguments[k]`: the k-th parameter itself
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
+    if (libWorldRead(n)) return globalRead(n);
     const recvT = typeOf(n.expression);
     if (checker.isTupleType(recvT) && !dtype(recvT, n).startsWith('seq<')) {
       if (!ts.isNumericLiteral(n.argumentExpression)) fail(n, 'tuple index must be a literal');
