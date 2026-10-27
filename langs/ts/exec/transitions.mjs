@@ -10,6 +10,7 @@ const ids = new WeakMap(); let nextId = 1;
 const idOf = (x) => { if (x === null || (typeof x !== 'object' && typeof x !== 'function')) return null; if (!ids.has(x)) ids.set(x, nextId++); return ids.get(x); };
 const seen = (x) => x !== null && (typeof x === 'object' || typeof x === 'function') && ids.has(x);
 const isObj = (x) => x !== null && (typeof x === 'object' || typeof x === 'function');
+const MAX_PER_OP = 256; // records kept per operation per run; the calls beyond it are counted (summary.calls), never snapshotted
 const snap = (x) => { // the contents of a receiver or argument: primitives by value, objects by id
   if (Array.isArray(x)) { const out = []; let accessor = false; for (let i = 0; i < x.length; i++) { const dsc = Object.getOwnPropertyDescriptor(x, i); if (dsc && (dsc.get || dsc.set)) accessor = true; out[i] = i in x ? (isObj(x[i]) ? { id: idOf(x[i]) } : x[i]) : { hole: true }; } return accessor ? { kind: 'array', items: out, accessor: true } : { kind: 'array', items: out }; }
   if (isMapLike(x)) { const out = []; for (const [k, v] of Object.getPrototypeOf(x).entries.call(x)) out[out.length] = [isObj(k) ? { id: idOf(k) } : k, isObj(v) ? { id: idOf(v) } : v]; return { kind: 'map', entries: out }; }
@@ -54,6 +55,8 @@ function patchRealm(realm, records, keep) { // realm: the constructors whose pro
       if (inside) return Reflect.apply(original, this, args);
       inside = true; let kept = true; try { if (keep) kept = !!keep(callerFile(wrapper)); } finally { inside = false; }
       if (!kept) return Reflect.apply(original, this, args); // the harness's own call: not a record
+      const calls = records.calls ?? (records.calls = {}); calls[op] = (calls[op] ?? 0) + 1; // every call from the unit's files is counted; past the cap the call runs unrecorded: a record is one check of the row on real data, the first MAX_PER_OP of an operation are the run's sample, and an unbounded loop would otherwise fill the run with ever larger snapshots (measured: 20,370 push records of a growing array, 38 minutes to check)
+      if (calls[op] > MAX_PER_OP) return Reflect.apply(original, this, args);
       const receiver = receiverIsFirstArg ? args[0] : this;
       const argList = []; for (let i = receiverIsFirstArg ? 1 : 0; i < args.length; i++) argList[argList.length] = args[i]; // no array method here: they are patched
       inside = true; let before, beforeArgs, argIds, receiverId, knownBefore;
@@ -94,7 +97,8 @@ export function summarizeRecords(records, table) {
   const ops = {}; for (const r of records) ops[r.op] = (ops[r.op] ?? 0) + 1;
   const distinct = new Map(); // one entry per (operation, contradiction), with the first record and how many records showed it
   for (const d of defects) { const k = `${d.op}|${d.why}|${d.expected}`; const e = distinct.get(k); if (e) e.count++; else distinct.set(k, { op: d.op, why: d.why, expected: d.expected, count: 1, record: { before: d.record.before, after: d.record.after, args: d.record.beforeArgs, resultKind: d.record.resultKind, resultValue: d.record.resultValue } }); }
-  return { records: records.length, ops, outOfModel: defects.outOfModel, callbackEffects: defects.callbackEffects, defectRecords: defects.length, defects: [...distinct.values()] };
+  const calls = records.calls ?? {}; const sampled = Object.keys(calls).filter((op) => calls[op] > (ops[op] ?? 0)); // an operation called more often than it was recorded
+  return { records: records.length, ops, calls, sampled, outOfModel: defects.outOfModel, callbackEffects: defects.callbackEffects, defectRecords: defects.length, defects: [...distinct.values()] };
 }
 
 // ----- the check: every record against its row -----

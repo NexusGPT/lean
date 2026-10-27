@@ -1,4 +1,4 @@
 // expect: loose-equality
-export function same(a: number, b: number): boolean {
+export function same(a: { k: number } | string, b: string): boolean {
   return a == b;
 }

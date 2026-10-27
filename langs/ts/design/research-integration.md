@@ -66,7 +66,7 @@ with my ruling where it differs from the dossier.
 
 | Element | Dossier | Verdict | Where in lean | How, in one line | Cost (CLAIM) |
 |---|---|---|---|---|---|
-| Korat heap enumeration | 13 §28 | PORT | `exec/gen.mjs` `enumerateHeaps(spec, k)` | enumerate non-isomorphic small heaps per shape (null, existing or fresh per reference field, cycles), deduplicated by `graph.mjs` naming | 3 d |
+| Korat heap enumeration | 13 §28 | BUILT 2026-10-27 | `exec/korat.mjs` `enumerateHeaps(spec, k)`, `run.mjs` (the first inputs), `bound.heaps` | a pool of k=2 objects per record shape; every assignment of reference fields, record arguments and record lists over the pool (null where admitted); one input per non-isomorphic graph by `graph.mjs` naming; a builder per heap so each side gets its own copy; pair `heap_enumerated` | done |
 | CMC heap canonicalisation | 13 §32 | BUILT 2026-10-27 | `translate/heap.mjs` prelude `// CANON`, `spec/theorem.py` `EqualCanon_<f>_*`, `check.mjs` `lanes.A.reading` | five part lemmas beside `Equal_<f>`: initial cells, named fresh cells, roots, no unnamed reference, primitive result; garbage and allocation order stop mattering; `design/canonical-heap.md` | done |
 | `Object.assign` transition | 13 §37, 16 table | PORT | `translate/library.json` → `heap.mjs` `Assign_<shape>` | copy own enumerable keys of each source into the target in order through `Set_`; getters, setters, proxies and target-is-source refused | 4 d |
 | Steensgaard may-alias, HotSpot escape | 13 §25, §26 | REFERENCE (dossier said PORT) | `heap.mjs` `identitySkeleton` | the skeleton already treats every input path as a may-alias and every fresh node used twice as shared; a separate unification pass adds nothing the guard needs | 0 |
@@ -74,7 +74,7 @@ with my ruling where it differs from the dossier.
 | W-method suite | 14 §22 | folded into the finite-state lane | `exec/finite.mjs` | the declared finite domain is the fault domain, so the product exploration is complete without a separate W | 0 |
 | Retained-state command runner | 14 design (a) | PORT | `exec/run.mjs`: one Environment per side per program, `commandSequence(spec, seed, i, len)` in `gen.mjs`, greedy delete shrinking | the counter pair gives a two-command WITNESS; clean runs stay PASS-bounded with the command count in the certificate | 6 d |
 | Finite-state product | 14 design (b) | PORT | new `exec/finite.mjs` | breadth-first over (parent state, candidate state) pairs when every cell and argument is a literal union, boolean or enum read from the types; PASS-decided with the pair count and visited-set hash | 6 d |
-| State-completeness audit | 14 design (c) | PORT | `translate/translate.mjs` before `emitUnit` | list every persistent cell a unit touches (`moduleState`, `isWorldField`, captured declarations, `outsideRoot`); a cell without a transition model is an obligation written to the certificate | 5 d |
+| State-completeness audit | 14 design (c) | BUILT 2026-10-27 | `translate/translate.mjs` `cellsOf` (`// CELLS <unit>` header), `check.mjs` `lanes.A.cells`, `ASK:obligation` | every persistent cell a unit touches (module cells, fields of this, outside roots), read or written or changed through a mutator, each matched to the transition the emitted Dafny names; a touched cell with no transition is an obligation and lane A says ASK:obligation; what the stateful pairs report: section 2 | done |
 | fast-check model-based commands | 15 §26 | DEPENDENCY | vendored under `langs/ts/vendor/fast-check` (MIT, 4.10.2), new `exec/program.mjs` | one command class per legal operation (`call`, `retain`, `invoke`, `tick`, `settle`, `fire`, `next`, `throw`, `return`); `fc.commands` shrinks and `replayPath` replays | 8 to 12 d |
 | Virtual clock (Jest, Node MockTimers semantics) | 15 §27, §28 | PORT | `exec/fake.mjs` `clock` beside `pending`; `run.mjs:117-120` | `tick(ms)` fires due timers in arm order, intervals re-arm, `clearTimeout` removes the entry, `setTime` moves without firing, `runAll` has a count limit (ASK when hit) | 3 to 5 d |
 | Callable records `Fn(code, env)` | 15 §34 | PORT | `translate.mjs:2112` (`opaqueFn`), the prelude | a function value is its code identity plus captured cells; equal when both agree; a body outside the file's list is ASK (defunctionalisation, 15 §35) | 10 to 15 d |
@@ -92,6 +92,22 @@ Everything judged REFERENCE settles a design choice and takes no code (the dossi
 judged IRRELEVANT is a wrong input language, a missing or restrictive licence, a learned model, or a different
 property (concurrency, probability, hardware). Licences the dossiers could not read (Hypothesis, mCRL2, SymDiff,
 Koka's page, SES, Alloy 6, JPF) block any dependency until a LICENSE file is read.
+
+**The state-completeness audit (built 2026-10-27).** The translator writes, per unit, `// CELLS <unit>: {cells, obligations}`:
+each module cell (a module-level `let`, or an object-valued const), each field of `this` in a class method, each outside
+root (globalThis, process, window), with read, write and mutator flags, and whether the emitted Dafny names a transition
+for that use (`Module_file_get_/set_`, the class's `_get_`/`_set_` world accessors or a handle field, the heap core's
+`Get_`/`Set_`, `global_handle_`/`global_get_`, or the one block transition of an opaque unit); a readonly field with a
+literal initializer is a constant the translator folds, not a cell. A touched cell with no transition is an obligation;
+`check.mjs` then answers `ASK:obligation` naming it, even over a proved lemma. What the four stateful pairs report
+(candidate side): counter: bump reads and mutates `this.seen`, reads and writes `this.count`; flush reads and writes
+`this.count`, reads the handle `this.store`; label reads `this.count`; all modelled. service: regenerate reads the handles
+`this.repo` and `this.audit` (`this.tag` is a folded constant); modelled. module_forms: bump, cached, store (a mutator on
+the module Map), alias_across_write, read_initial read module cells; environment, computed_environment,
+conditional_environment, global_read, optional_global read outside roots (optional_global through its opaque block);
+all modelled. component: no persistent cell (hook slots are the component's own state, carried by the slot reading).
+No obligation is open on the suite today: every cell the lint admits has a transition; the path exists for the next
+admission.
 
 ## 3. Shared objects (brief 13)
 
@@ -143,6 +159,17 @@ while a row is contradicted and lane B's own verdict stands. Pair `builtin_trans
 admits (pop and Object.assign are not admitted as statements yet); the suite also runs the unit against a deliberately
 wrong table (`tests/fixtures/library-wrong.json`) and checks the refutation and the refusal. Cost measured on the finite
 explorer: 0.6 s without the recorder, 0.7 s with the narrowed window (4.5 s with a window over the whole run).
+
+**Measured (concept bench, 2026-10-27).** Whole bench: 54ef742 witnessed 1,504 of 2,037 planted mutants (838 inside,
+770 translated); a11fb78 (the library table, the recorder, the signature check) 1,503 of 2,037, two domains below the
+baseline: `for (;;)` 16 to 15 of 18 (setParameter, lane B past the bench's 600 s limit) and `Math.sin` 11 to 9 of 12
+(logGamma, a stack overflow read as a harness failure). Both causes were the recorder's: a stack overflow classified
+by realm (the host's RangeError only when the deepest frame was a patched intrinsic), and 20,370 push records of a
+growing receiver in an aliased unbounded loop (2,299 s for 60 inputs). With the realm-free classification (a one-sided
+overflow is a witness on the outcome), a cap of 256 records per operation per run and the retry without the recorder:
+`for (;;)` 16 of 18, `Math.sin` 11 of 12, the baseline levels, 13.65 s for the five inputs that took more than 16
+minutes (lean-v3 `results/concept-bench-{54ef742,a11fb78}.json`, `results/cb-two-heap-cap.json`). The two misses
+left (drawLevels string, clusterPoints boundary) are PASS-bounded on every tree.
 
 **Boundary.** Getters, setters, proxies, species constructors, effectful comparators, Date string parsing and time
 zones: obligations unmet; `structuredClone` of unsupported values: refused by name. `Object.freeze` needs a
@@ -267,6 +294,14 @@ the coercion table); refusals by name for `Proxy`, `Reflect` traps, `eval`, `new
 escape, and (finding 3) the `Object` prototype functions; rewrites labelled `proved` / `conditional` / `migration`
 with the ESLint preconditions where ESLint has one and a stricter one where it has none; the refusal-economics
 script over the corpus's changed functions.
+
+**Built (2026-10-27).** The receiver operand (a declared `this` parameter; `call`/`apply` on a same-file function;
+`bind` refused as `bound-function`, lane B calls with the receiver), `arguments[k]` as the k-th parameter (any-typed
+arithmetic over typed operands re-typed by its operator; the rest refused as `arguments`), the loose-equality
+coercion table between primitives member by member on unions, `Object.create(null)` as a dictionary, the dictionary
+read's missing-key default: pairs `operands_receiver`, `operands_arguments`, `operands_coercion`, `operands_proto`,
+`operands_dict`, four escapes. Not built: a `proto` field on records (every prototype operation but the null
+creation stays refused by name), `Reflect`, `Proxy`, `eval`, the refusal-economics script.
 
 ## 10. Front-end (briefs 18 and 19)
 

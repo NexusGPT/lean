@@ -1,7 +1,9 @@
 // What to write instead, per rule: one source for the command line, the ESLint rule and the agent report.
 export const ADVICE = {
   'division': 'JavaScript `/` is real division. Write `Math.floor(a / b)` for integer division, or `a * (1 / b)` is still real: say which you mean.',
-  'loose-equality': 'Use `===` / `!==`; `==` coerces.',
+  'loose-equality': 'Between primitives `==` follows the coercion table; with an object, bigint or symbol operand use `===` / `!==`.',
+  'arguments': '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter.',
+  'bound-function': '`bind` fixes a receiver for a later call; call the function with its receiver (`f.call(o, a)`) instead.',
   'assign-target': 'As a statement on a plain record the function owns or was handed (`Object.assign(t, s)`), the target is rebuilt with the sources\' declared fields and a parameter target becomes an output. Anywhere else, copy into a fresh object: `Object.assign({}, a, b)` or `{ ...a, ...b }`.',
   'freeze': 'A later write to a frozen object throws in strict code, and the proof lane has no fault for it. Keep the object unfrozen inside the function, or freeze a copy you never write.',
   'hook-order': 'Call every hook at the top of the render, unconditionally; put the condition inside the hook or split the component.',

@@ -220,6 +220,10 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         gp, gc = g['parent'], g['candidate']
         if not gp.get('exposed') and not gc.get('exposed'):
             continue
+        aliasable = gp.get('aliasable') or gc.get('aliasable')
+        if aliasable:  # two input positions of one shape may be one object, and the unit writes through one: the value reading says nothing
+            unguarded[f] = 'aliasable input: ' + aliasable[:220]
+            continue
         if not (gp.get('determinate') and gc.get('determinate')):
             unguarded[f] = 'identity shape unreadable on ' + ', '.join(s for s in ('parent', 'candidate') if not g[s].get('determinate')) + '; exposed by: ' + '; '.join(sorted(set(gp.get('exposed', []) + gc.get('exposed', []))))
         elif gp.get('sites') != gc.get('sites') or gp.get('writes') != gc.get('writes'):
