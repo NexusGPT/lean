@@ -669,7 +669,9 @@ export function translate(file, fnName, opts = {}) {
     return { callee, args: thisParamOf(callee) ? args : args.slice(1) };
   }
   // the final value of a unit: the result, with the world first when effectful, and the mutated parameters after it
+  let callbackBody = 0; // while a pure callback's block body is read
   function wrapRet(code) {
+    if (callbackBody) return code; // a callback's return is its own value: the unit's world, mutated parameters and slots stay outside it, read by the closure as they are when the callback runs
     const outs = currentUnit ? mutatedOf(currentUnit).map(dn) : [];
     const parts = [...(unitEffectful() ? [WORLD] : []), outerParens(code), ...outs, ...(currentSlots ? [`${currentSlots.T}(${Array.from({ length: currentSlots.n }, (_, i) => `init${i}_`).join(', ')})`] : [])];
     return parts.length === 1 ? code : `(${parts.join(', ')})`;
@@ -2812,8 +2814,9 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isBlock(cb.body)) {
       // a callback body is its own function: its returns are its own, not the enclosing loop's
       const saved = loopCtx.splice(0, loopCtx.length);
+      callbackBody++;
       try { body = tr([...cb.body.statements], () => fail(cb, 'callback path ends without a return'), { fn: cb, node: cb, name: 'callback', params: cb.parameters, body: cb.body }); }
-      finally { loopCtx.push(...saved); }
+      finally { loopCtx.push(...saved); callbackBody--; }
     } else body = outerParens(capture(() => expr(cb.body)));
     return `((${names.join(', ')}) => ${lets.length ? `(${lets.join(' ')} ${body})` : body})`;
   }
