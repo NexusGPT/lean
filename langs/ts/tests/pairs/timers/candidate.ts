@@ -7,3 +7,4 @@ export function ordered(port: Port): number { setTimeout(() => port.send("a"), 1
 export function everyTick(port: Port): number { setInterval(() => port.send("t"), 20); return 1; }
 export function chain(port: Port): number { setTimeout(() => { setTimeout(() => port.send("deep"), 1); }, 1); return 1; }
 export function frame(port: Port): number { requestIdleCallback(() => port.send("f")); return 1; }
+export function clearForeign(port: Port, h: number): number { port.send("cleared"); return 1; }
