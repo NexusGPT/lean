@@ -29,7 +29,7 @@ const provable = {
         const src = context.sourceCode ?? context.getSourceCode();
         for (const f of findings) {
           const loc = { start: { line: f.line, column: f.col - 1 }, end: { line: f.endLine, column: f.endCol - 1 } };
-          const advice = ADVICE[f.rule] ?? '';
+          const advice = f.advice ?? ''; // the rewrite with its label in front: [proved], [conditional: <precondition>] or [migration]
           const suggest = [];
           const range = [src.getIndexFromLoc(loc.start), src.getIndexFromLoc(loc.end)];
           if (f.rule === 'division' && f.text) suggest.push({ desc: 'integer division: wrap in Math.floor(...)', fix: (fixer) => fixer.replaceTextRange(range, `Math.floor(${f.text})`) });
