@@ -1,12 +1,11 @@
 # Lib globals: a name the lib or an @types package declares is a world read
 
 The construct: a global name the program does not declare, outside the tables the lint already reads (`console`,
-`Math`, `JSON`, `Date`, `process`, `window`, `document` and the rest of `EFFECT_WORLD` and `PURE_GLOBALS`):
-`navigator.language`, `location.href`, `getComputedStyle(el)`, `AbortSignal.timeout(ms)`, `btoa(s)`, `confirm(m)`,
-`__dirname`, `Uint8Array.BYTES_PER_ELEMENT`. JavaScript resolves the name on the global object of the realm the code
-runs in: its value is whatever the host put there at that moment. A browser, a worker, Node and a test runner put
-different things there, or nothing (`typeof navigator` is `"undefined"` in a Node without a navigator global), and a property such as
-`navigator.onLine` or `location.href` changes while the program runs.
+`Math`, `process`, `window`, `document`, the rest of `EFFECT_WORLD` and `PURE_GLOBALS`): `navigator.language`,
+`location.href`, `getComputedStyle(el)`, `AbortSignal.timeout(ms)`, `btoa(s)`, `__dirname`. JavaScript resolves the
+name on the global object of the running realm, whatever the host put there at that moment: a browser, Node and a
+test runner differ, or hold nothing (`typeof navigator` is `"undefined"` in a Node without a navigator global), and
+`navigator.onLine` or `location.href` change while the program runs.
 
 ## The reading
 
