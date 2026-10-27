@@ -7,8 +7,7 @@ or `unknown` in a checked unit, written or inferred (`JSON.parse`, `let x;`, an 
 - the uses: `exec/usage.mjs`'s tree for a unit parameter and a `this` field (chains through aliases, destructuring,
   callbacks, one level of same-file callees; compared literals; `.length`, indexing, calls, truthiness, arithmetic);
   for a local or a nested parameter, a reader writing the same tree over its references;
-- what flows in: same-file callers' argument types, assigned and initial values, returned values;
-- what flows out: the parameter type of a same-file callee the value is passed to.
+- what flows in (same-file callers' arguments, assigned, initial and returned values) and out (a same-file callee's parameter).
 
 A usage node gives `string`/`number`/`boolean` from operators and compared literals (`true` only: `x || d` records
 `false`), `T[]` from indexing, iteration or array methods (`.length` alone: `unknown[]`), a record of the fields read
@@ -41,14 +40,12 @@ counts, and each proposal carries its evidence as a precondition a reader can ch
 
 A proposed type is a claim about intent, never `proved`. The rule changes no verdict: the translator's gate, `check.mjs`,
 the census and the pull-request table call `lintFile` without `anyType`, and the default command line is unchanged.
-`check.mjs` on three pairs at the lane base 704d572 and at the head: Counter.bump WITNESS, Counter.label PASS-proved,
-block WITNESS, clampLimit PASS-proved, opaque PASS-bounded, untouched PASS-proved, on both.
+`check.mjs` at 704d572 and 4f0d081: Counter.bump WITNESS, Counter.label, clampLimit, untouched PASS-proved, block WITNESS, opaque PASS-bounded.
 
 ## Measurement
 
-At e944b79, read only, each file in its project (W = `.../unreviewable-throughput/legit/round7/lean-v3`):
-`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/design/any-type-count.mjs <root> --out <counts.json>`
-(nutshell 2,266 files, Nexus export 12,733, none unreadable, no rule failure; unresolved-module findings 2,978 and 17,270).
+At e944b79, read only, in each project: `node langs/ts/design/any-type-count.mjs <root> --out <counts.json>` (nutshell
+2,266 files, Nexus export 12,733; none unreadable, no rule failure; unresolved-module findings 2,978 and 17,270).
 
 | Root | any-type | proposal | typeof-tested | no evidence | conflict |
 |---|---|---|---|---|---|
