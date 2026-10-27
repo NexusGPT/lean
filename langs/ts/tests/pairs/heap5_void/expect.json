@@ -1,0 +1,7 @@
+{
+ "scope": ["add", "discount", "clear", "add_twice"],
+ "equal": {"add": true, "discount": false, "clear": true, "add_twice": true},
+ "why": "a procedure returns the unit value and the heap it leaves: add is untouched (it writes three fields of the cart, one push); discount moves its bound to >= (unproved, WITNESS at a total of 100); clear returns early on an empty cart where the candidate tests the other way and falls through (proved: the same writes on each path); addTwice ends with a bare return (proved).",
+ "b": {"add": "PASS-bounded", "discount": "WITNESS", "clear": "PASS-bounded", "addTwice": "PASS-bounded"},
+ "heap": true
+}

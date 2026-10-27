@@ -159,7 +159,7 @@ export function translate(file, fnName, opts = {}) {
     throw new Unsupported(`outside the subset:\n${gate.map((g) => `  ${g.file}:${g.line}:${g.col}  ${g.rule}  ${g.msg}`).join('\n')}`);
   }
   // ----- references, layer 2: the heap core (heap.mjs) is planned over the final order; its units are emitted there -----
-  const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
+  const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
   const heapHyps = [];
   const cellLines = []; // `// CELLS <unit>: <json>`: the persistent cells the unit touches (module cells, fields of this, outside roots), each read or written, each matched against the transition the emitted text carries; a touched cell with no transition is an obligation, and lane A says ASK:obligation
   // the state-completeness audit (research 14 design (c)): what a unit reads and writes outside its own frame. A module
@@ -1866,11 +1866,7 @@ export function translate(file, fnName, opts = {}) {
       case K.PrefixUnaryExpression:
         if (n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
         if (n.operator === K.PlusToken) return numberOf(n.operand);
-        if (n.operator === K.TildeToken) {
-          let inner = n.operand; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
-          if (ts.isPrefixUnaryExpression(inner) && inner.operator === K.TildeToken) return `${helper('JsInt32', [NUM])}(${expr(inner.operand)})`;
-          return `${helper('JsBitNot', [NUM])}(${expr(n.operand)})`;
-        }
+        if (n.operator === K.TildeToken) return bitwiseOf(n, expr);
         return `(-${expr(n.operand)})`;
       case K.CommaListExpression: { let value; for (const e of n.elements) value = expr(e); return value; }
       case K.BinaryExpression: return binary(n);
@@ -2136,17 +2132,23 @@ export function translate(file, fnName, opts = {}) {
     }
     return call(inner, true);
   }
+  // the bitwise reading both lanes share (the heap core receives it): `x | 0` and `~~x` are ToInt32, a literal shift
+  // count is reduced to its low five bits, the rest the helper of its operator; `ex` writes an operand
+  function bitwiseOf(n, ex) {
+    if (ts.isPrefixUnaryExpression(n)) { let inner = n.operand; while (ts.isParenthesizedExpression(inner)) inner = inner.expression; if (ts.isPrefixUnaryExpression(inner) && inner.operator === K.TildeToken) return `${helper('JsInt32', [NUM])}(${ex(inner.operand)})`; return `${helper('JsBitNot', [NUM])}(${ex(n.operand)})`; }
+    const op = n.operatorToken.kind;
+    const bit = { [K.AmpersandToken]: 'JsBitAnd', [K.BarToken]: 'JsBitOr', [K.CaretToken]: 'JsBitXor', [K.LessThanLessThanToken]: 'JsShl', [K.GreaterThanGreaterThanToken]: 'JsShr', [K.GreaterThanGreaterThanGreaterThanToken]: 'JsUshr' }[op];
+    if (op === K.BarToken && ts.isNumericLiteral(n.right) && Number(n.right.text) === 0) return `${helper('JsInt32', [NUM])}(${ex(n.left)})`;
+    const left = ex(n.left), count = finiteLiteral(n.right);
+    const right = ['JsShl', 'JsShr', 'JsUshr'].includes(bit) && count !== null && Number.isFinite(count) ? numLit(String((count >>> 0) & 31), n.right) : ex(n.right);
+    return `${helper(bit, [NUM])}(${left}, ${right})`;
+  }
   function binary(n) {
     const op = n.operatorToken.kind;
     if (op === K.CommaToken) { expr(n.left); return expr(n.right); }
     { const po = plainObjectTest(checker, n, sf); if (po) { if (po.refuse) fail(n, po.refuse); return po.value ? 'true' : 'false'; } } // the plain-object test on a record value: a record is a plain object (lean's record invariant), so its prototype is Object.prototype
     const bit = { [K.AmpersandToken]: 'JsBitAnd', [K.BarToken]: 'JsBitOr', [K.CaretToken]: 'JsBitXor', [K.LessThanLessThanToken]: 'JsShl', [K.GreaterThanGreaterThanToken]: 'JsShr', [K.GreaterThanGreaterThanGreaterThanToken]: 'JsUshr' }[op];
-    if (bit) {
-      if (op === K.BarToken && ts.isNumericLiteral(n.right) && Number(n.right.text) === 0) return `${helper('JsInt32', [NUM])}(${expr(n.left)})`;
-      const left = expr(n.left), count = finiteLiteral(n.right);
-      const right = ['JsShl', 'JsShr', 'JsUshr'].includes(bit) && count !== null && Number.isFinite(count) ? numLit(String((count >>> 0) & 31), n.right) : expr(n.right);
-      return `${helper(bit, [NUM])}(${left}, ${right})`;
-    }
+    if (bit) return bitwiseOf(n, expr);
     if (op === K.AsteriskAsteriskToken) return `${external('pow', [NUM, NUM], NUM)}(${expr(n.left)}, ${expr(n.right)})`; // a power: uninterpreted, the same on both sides
     const isNul = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e.kind === K.NullKeyword || (ts.isIdentifier(e) && e.text === 'undefined'); };
     const eqOps = new Set([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken]);

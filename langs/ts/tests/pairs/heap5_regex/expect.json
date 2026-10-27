@@ -1,0 +1,7 @@
+{
+ "scope": ["is_code", "squash", "parts", "clean"],
+ "equal": {"is_code": false, "squash": true, "parts": true, "clean": true},
+ "why": "a regular expression literal in a call is a bodiless function of the literal's text and the operands: isCode tests two capitals for three (another pattern: unproved, WITNESS); squash calls replaceAll with the same global pattern, the same operation as replace (proved); parts is untouched, a split by a pattern allocating its pieces; clean reads the field inline for a local (proved).",
+ "b": {"isCode": "WITNESS", "squash": "PASS-bounded", "parts": "PASS-bounded", "clean": "PASS-bounded"},
+ "heap": true
+}

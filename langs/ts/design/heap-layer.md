@@ -258,3 +258,12 @@ numbers above are what it costs.
 array element access, loops over arrays, optional fields, literal unions, dictionaries on the ordered map model, and the
 method calls `replace`, `trim`, `join`, `filter`, `map`. The invariants above hold for every row; each section states its
 reading, its soundness argument, what stays out, and its re-measured reach.
+
+
+## Stage 5 (2026-10-27): the full core order
+
+`design/heap-stage5.md`, one section per step in the order of lane heap-reach (`lean-v3/architecture/heap-reach/
+curve.md` section 2), after a step 0 that fixes two measurement defects (a recursive type walked forever by the
+census's reason, and a callback's return counted as its unit's result by `layer1Risk`). The invariants above hold
+for every step; each section states its reading, its Dafny shape, its soundness argument, what stays out, and the
+strict-graph count the census measured after it beside the count `curve.md` expected.

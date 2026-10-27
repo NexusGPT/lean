@@ -1,0 +1,7 @@
+{
+ "scope": ["card", "badge", "plain"],
+ "equal": {"card": true, "badge": false, "plain": true},
+ "why": "a destructured parameter's field is the input path arg.field and its rest a fresh node of the input's members, so the identity guard reads the shape of a component that forwards its rest: Card names its title before rendering, the same tree over the same forwarded members (proved; the lemma was withheld as an unreadable identity shape); Badge forwards a changed tone (unproved, WITNESS); Plain is untouched.",
+ "b": {"Card": "PASS-bounded", "Badge": "WITNESS", "Plain": "PASS-bounded"},
+ "heap": true
+}
