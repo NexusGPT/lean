@@ -90,7 +90,7 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
   // the reads of one declared name in its scope, in the tree usage.mjs writes, plus where it is passed and assigned
   function readsOf(sym, scope, declName) {
     const tree = newNode(); const passes = []; const assigns = []; let refs = 0;
-    const field = (n, k) => (n.fields[k] ??= newNode());
+    const field = (n, k) => (Object.hasOwn(n.fields, k) ? n.fields[k] : k === '__proto__' ? newNode() : (n.fields[k] = newNode())); // `constructor` is a field name like any other
     const elemOf = (n) => { n.array = true; return (n.elem ??= newNode()); };
     const litOf = (e) => {
       while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression;

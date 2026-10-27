@@ -1484,7 +1484,10 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
   // any-type, when asked (opts.anyType): every value typed any or unknown in a checked unit, with a type proposed from
   // its uses; an advisory finding beside the refusals, so the gate, the census and the pull-request table never ask for it
-  if (opts.anyType) { out.push(...anyTypeFindings(sf, checker, { file, ranges, unitSpans })); out.sort((a, b) => a.line - b.line || a.col - b.col); }
+  if (opts.anyType) {
+    try { out.push(...anyTypeFindings(sf, checker, { file, ranges, unitSpans })); } catch (e) { out.push({ file, line: 1, col: 1, endLine: 1, endCol: 1, rule: 'any-type', msg: `any-type could not read this file: ${String(e.message).slice(0, 160)}`, text: '', unit: null, label: 'migration', labelDecided: true, advice: null }); }
+    out.sort((a, b) => a.line - b.line || a.col - b.col);
+  }
   return out;
 }
 
