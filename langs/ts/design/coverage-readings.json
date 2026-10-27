@@ -77,7 +77,7 @@
   "faithful": "same, with pending reactions on the ledger"
  },
  "Parameter": {
-  "today": "exact; rest parameters and defaults by the param-form rule",
+  "today": "exact; rest parameters and defaults by the param-form rule; a parameter the unit reassigns in its own body is a local that starts as the argument (param-rebind), refused inside a callback, as an output or under an earlier closure (param-assign)",
   "faithful": "same, rest parameters admitted"
  },
  "ConditionalExpression": {
