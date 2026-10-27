@@ -242,7 +242,12 @@ users.ts:7:58  reference-equality  === on arrays and records compares references
 2 violation(s)
 ```
 
-The ESLint plugin ([`langs/ts/eslint`](langs/ts/eslint)) ships one rule, `lean/provable`, with the same findings as suggestions (a rewrite that keeps your meaning is offered where one exists: `===` for `==`, `let` for `var`, `Math.floor` around a division). Its `anyType` option adds a proposal for each value typed `any`, derived from how the function reads it, offered as an annotation to accept or not; a proposed type is a claim about intent, never proved.
+The ESLint plugin ([`langs/ts/eslint`](langs/ts/eslint)) ships one rule, `lean/provable`, with the same findings as suggestions (a rewrite that keeps your meaning is offered where one exists: `===` for `==`, `let` for `var`, `Math.floor` around a division). Its `anyType` option, and `--any-type` on the command line, name every `any` at its declaration (a parameter, a local, a field, a bound name, a field of an interface) with the type its uses and its same-file callers need, offered as an annotation to accept or not; a proposed type is a claim about intent, never proved, so it is labelled `conditional` on its evidence, `migration` when the evidence conflicts, or `flag-only` when there is none:
+
+```
+$ node langs/ts/lint/lint.mjs users.ts --any-type
+users.ts:1:43  any-type  `plan` is any (written); its uses say { tier: string; seats: number }
+```
 
 `--agent` prints the same findings as a work list a coding agent acts on item by item, with the order that pays (mutations first, then equality and arithmetic), and `--json` carries each finding's `label`, `precondition` and `advice` as fields:
 
@@ -442,7 +447,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 |---|---|
 | the two lanes, the finite lane, the certificate, the pull-request table, the lint and its editor rule, the CI comment and block flag | built; the suite pins every reading with a pair test |
 | the readings in the table above, the heap core, the library table with its engine validation, the virtual clock, hook slots, deep children | built |
-| the lint's labelled advice (`proved`, `conditional`, `migration`) and the `any` type proposals in the editor | built; the proposals are being widened to every `any` declaration from the unit's reads and its same-file callers |
+| the lint's labelled advice (`proved`, `conditional`, `migration`) and a proposal, a flag or a named owner for every `any` declaration | built; `any` inside a type (`any[]`, `Record<string, any>`) is not reported yet |
 | the CI workflow on a GitHub runner | built, validated offline, not yet exercised on a runner |
 | the front-end layers: a tree to a stated depth with context from the nearest provider, resolved styles against the pinned Tailwind table | built; a project's own Tailwind theme is not read yet |
 | a row per changed unit in the pull-request table, including the refused and skipped ones, with the reason | planned |
