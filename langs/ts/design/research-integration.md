@@ -125,6 +125,40 @@ validation; their wiring around `unit.call` in lane B follows the heap merge.
 zones: obligations unmet; `structuredClone` of unsupported values: refused by name. `Object.freeze` needs a
 `frozen` set in the heap world, a schema change, so it comes after the table.
 
+### 4.1 Built, 2026-10-27: the array rows generated into the prelude
+
+- `heap.mjs` reads `library.json` and instantiates, per array shape, the forms of push, unshift, pop, shift, splice,
+  reverse, slice and concat (`<K>` the shape key, `<E>` the element type, `.items` the shape's own destructor), with
+  the helpers `Clamp` and `Rev_<K>`; the core admits `shift()`, `reverse()` and `splice(start, count, ...items)`
+  as statements and `slice(a?, b?)`, `concat(q)`, `reverse()`, `splice(...)` as expressions; the lint admits the
+  three statements on an owned array as it admits push; the ordinary translation reads them as sequence rebuilds.
+- Two destructor collisions fixed on the way: a record field named `items` met the array constructor's `items`,
+  and two array shapes with different element types shared it; every record field is now `<name>_f` and every
+  array shape has `items_<K>`.
+- Pair `tests/pairs/library_ops`: flip, dropFirstCopy and count proved; head and joined refuted; dropFirst (shift
+  for splice(0, 1)) and dropTwo (two splices for one) leave the same reachable graph but a different heap, since
+  splice allocates the removed part: unproved under whole-heap equality, PASS-bounded in lane B. They are the
+  first concrete cases for the canonical-heap certificate of section 3.
+- Not yet from the table: sort (its comparator), map and filter (a lambda in the core emitter), Map and Set cells
+  (new shape kinds), Object.assign, and the three drafts (freeze, structuredClone, Date).
+
+### 4.2 Built, 2026-10-27: Map and Set cells, map and filter
+
+- Shapes `M_<k>_<v>` (a Map cell: an insertion-ordered entry list, primitive keys) and `S_<e>` (a Set cell of
+  primitives) join the heap; the prelude instantiates the table's MapSet_, MapGet_, MapHas_, MapDelete_, SetAdd_,
+  SetHas_, SetDelete_ with their helpers (SetEntry_, Lookup_, RemoveKey_, RemoveItem_), plus MapSize_ and SetSize_;
+  `new Map()` and `new Set()` allocate an empty cell. The core admits `set`, `add`, `delete` as statements, `has`
+  and `size` as expressions; `get` stays out (its Option result needs the nullish reading of the ordinary lane).
+- `map` and `filter` with a one-parameter pure arrow (an expression body, no allocation inside) are the table's
+  Map_<K>_<K2> and Filter_<K> (Keep_<K>); each map instance is generated for its (source, result) shape pair.
+- Pair `tests/pairs/library_cells`: a renamed callback parameter proved; a changed filter bound and a skipped delete
+  refuted (the delete only by lane A: lane B's generated keys never meet a generated entry, a generator gap); three
+  idempotent double writes (set twice, add twice) unproved: the second write is a no-op update of the heap map and
+  the prover does not reach `m[r := m[r]] == m` without a lemma body, which theorem.py never writes. The idempotence
+  of cell writes is the next proof obligation; a fuel attribute does not reach it (tried).
+- Still out of the table: sort (its comparator), Object.assign (the lint's assign-target refusal stands until the
+  ordinary lane also writes the target), the drafts (freeze, structuredClone, Date).
+
 ## 5. State over time (brief 14)
 
 **Settled.** A one-step proof over the complete state composes by induction; the hole is a cell omitted, reset or
@@ -223,6 +257,16 @@ and say: keep it, label it "tree, one render". The census holds 2,041 `.tsx` fil
   38 tests run against lane B's fake runtime in `exec/react-trace.mjs`, as Test262 validates the library
   table. The repository is opened at that row; if its tests are not JavaScript, the 18 scenarios are ported
   by hand and the port is said.
+
+### 10.2b Built, 2026-10-27: the three-rung certificate
+
+- Rung 1, lane A over hook slots (`translate.mjs`, hook_slots pair): a proof for every state when the handlers are
+  readable descriptors. Rung 2, `exec/finite.mjs`: a component whose slots and props are finite by their types is
+  explored over every click order from every prop assignment, effects and timers inside each step; PASS-decided with
+  the state pairs. Rung 3, the sequence runner in `run.mjs`: bounded. `check.mjs` reports the strongest rung that
+  holds: PASS-proved, PASS-decided, PASS-bounded. Purity (the double render) gates every rung.
+- Setter calls inside one handler are React's batching, not an observation: lane B records the slots a handler
+  leaves, never the order of its sets.
 
 ### 10.3 The checks lean adds without a browser
 
