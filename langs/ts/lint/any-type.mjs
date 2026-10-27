@@ -293,8 +293,19 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
   }
   // what a proposal is, for the count and the fixtures: a record, a primitive (string, number, boolean or a union of
   // them, with or without null and undefined), or another type (an array, a function, a named type, a mixed union)
+  const topParts = (p) => { // the members of a union at its top level, never inside braces, brackets or parentheses
+    const parts = []; let depth = 0, from = 0;
+    for (let i = 0; i < p.length; i++) {
+      const c = p[i];
+      if (c === '{' || c === '[' || c === '(' || c === '<') depth++;
+      else if (c === '}' || c === ']' || c === ')' || (c === '>' && p[i - 1] !== '=')) depth--;
+      else if (depth === 0 && p.startsWith(' | ', i)) { parts.push(p.slice(from, i)); from = i + 3; i += 2; }
+    }
+    parts.push(p.slice(from));
+    return parts;
+  };
   const proposalKind = (p) => {
-    const parts = p.split(' | ').filter((x) => x !== 'null' && x !== 'undefined');
+    const parts = topParts(p).filter((x) => x !== 'null' && x !== 'undefined');
     if (parts.length && parts.every((x) => x === 'string' || x === 'number' || x === 'boolean')) return 'primitive';
     if (parts.length === 1 && /^\{ .* \}$/.test(parts[0])) return 'record';
     return 'other';
