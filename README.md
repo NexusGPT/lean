@@ -81,7 +81,7 @@ TypeScript today; each language fills its own table. A function is inside the su
 
 The full table, construct by construct, with its reading and an example, is [`langs/ts/subset.md`](langs/ts/subset.md). The coverage matrix over every concept of the language, with the unit count each one holds in 39 real repositories, is [`langs/ts/COVERAGE.md`](langs/ts/COVERAGE.md).
 
-What is refused, by name, because no value model keeps the axiom true: `eval` and `new Function`, the prototype chain (`Proxy`, `Reflect`, `Object.create`, `defineProperty`, `setPrototypeOf`), `super` as a value, `===` on two objects, mutation through an alias of a parameter, a callback that writes an outer variable, a Date setter, an `Object.assign` into an argument. Each refusal names the line and what to write instead.
+What is refused, by name, because no value model keeps the axiom true: `eval` and `new Function`, the prototype chain (`Proxy`, `Reflect` beyond the metadata reads and writes of the decorator table, `Object.create`, `defineProperty`, `setPrototypeOf`), `super` as a value, `===` on two objects, mutation through an alias of a parameter, a callback that writes an outer variable, a Date setter, an `Object.assign` into an argument; the plain-object test on a record (`Object.getPrototypeOf(x) === Object.prototype`) and the own-key test on a record or a dictionary (`Object.prototype.hasOwnProperty.call(o, k)`) are read exactly instead. Each refusal names the line and what to write instead.
 
 ## Examples
 

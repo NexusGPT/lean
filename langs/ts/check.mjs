@@ -22,6 +22,7 @@ import { runPair, crumb, crumbText, verdictGuard } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 import { ts, loadProgram, topLevelFunctions } from './common.mjs';
+import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
@@ -119,6 +120,10 @@ export async function check(opts) {
   if (cert.lanes.A.cells && cert.lanes.A.cells.obligations.length && m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:obligation'; return finish('ASK', cert, { reason: `obligation: ${cert.lanes.A.cells.obligations.join('; ')}` }); } // a cell the unit touches without a transition: the lemma proves nothing about it
   const lib = b.bound?.library; // lane B's record of the unit's built-in calls against the library table: a defect is a wrong row, and the proof read that row
   if (lib && lib.defects.length) { cert.lanes.A.libraryDefects = lib.defects; if (m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:library-model'; return finish('ASK', cert, { reason: `library-model: the engine contradicts the table on ${lib.defects.map((x) => `${x.op} (${x.why}; expected ${x.expected})`).join('; ')}; the proof lane refuses the operation until the row is corrected` }); } }
+  const decoUsed = [...new Set(['parent', 'candidate'].flatMap((x) => { const p = path.join(tmp, `${x}.dfy`); return fs.existsSync(p) ? [...fs.readFileSync(p, 'utf8').matchAll(/^\/\/ DECORATORS \S+: (.*)$/gm)].flatMap((mm) => mm[1].split(',')) : []; }))].sort(); // the decorator-table rows the readings used (translate/decorators.json): each is trusted for its framework version only
+  if (decoUsed.length) cert.lanes.A.decorators = decoUsed.map((id) => ({ id, version: rowById(id)?.version ?? null, fixture: rowStatus(id) }));
+  const decoDefects = decoUsed.filter(rowContradicted); // a row the real framework contradicts (its fixture disagrees) is a defect of the table, and the proof read that row
+  if (decoDefects.length && m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:decorator-model'; return finish('ASK', cert, { reason: `decorator-model: the framework contradicts the decorator table on ${decoDefects.join('; ')}; the proof lane withholds the reading until the row is corrected` }); }
   const hd = b.bound?.frontEnd?.handlers; // lane B's interpreter applied each readable handler descriptor at every fire: a defect is a descriptor the engine contradicts, and the proof read that descriptor
   if (hd && typeof hd === 'object' && hd.defects?.length) { cert.lanes.A.handlerDefects = hd.defects; if (m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:handler-model'; return finish('ASK', cert, { reason: `handler-model: the engine contradicts the descriptor on ${[...new Set(hd.defects.map((x) => x.handler))].join('; ')}; the proof lane refuses the reading until it is corrected` }); } }
   if (unguarded && unguarded.startsWith('interface')) return finish('ASK', cert, { reason: `interface: ${unguarded.replace(/^interface differs: /, '').slice(0, 600)}` }); // a changed decorator, a changed type: never a proof, and the bounded run drew its inputs from one side's types

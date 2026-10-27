@@ -17,6 +17,7 @@ import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise }
 import { ADVICE, labelTag } from './advice.mjs';
 import { anyTypeFindings } from './any-type.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
+import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 
 const K = ts.SyntaxKind;
@@ -901,6 +902,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   let floorDepth = 0;
   function binary(e) {
     const op = e.operatorToken.kind;
+    { const po = plainObjectTest(checker, e, sf); if (po) { if (po.refuse) return v(e, 'prototype', po.refuse); return expr(po.subject); } } // the plain-object test on a record value
     if (op === K.EqualsToken || (op >= K.FirstAssignment && op <= K.LastAssignment)) return operatorValue(e);
     if (op === K.SlashToken) {
       const lt = tOf(e.left), rt = tOf(e.right);
@@ -1038,6 +1040,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (form && !opaquePromiseDepth) { if (readPromise(e, form)) return; return opaquePromise(() => call(e)); }
     const f = e.expression;
     if (moduleLoader(checker, e, sf, current)) return argsOf(e);
+    { const md = metadataCall(checker, e, sf); if (md) { if (!(ts.isIdentifier(f.expression) && f.expression.text === 'Reflect')) expr(f.expression); return e.arguments.forEach((a) => expr(a)); } } // a metadata API of the decorator table (translate/decorators.json): the one admitted use of Reflect, a cell of the world
+    { const ok = ownKeyTest(checker, e, sf); if (ok) { if (ok.refuse) return v(e, 'prototype', ok.refuse); expr(ok.obj); return expr(ok.key); } } // the own-key test on a dictionary or a record of required fields
     if (e.questionDotToken) { const why = optionalCallRefusal(e); if (why) v(e, 'optional-chain', why); }
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);

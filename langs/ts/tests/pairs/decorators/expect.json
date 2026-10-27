@@ -1,0 +1,33 @@
+{
+ "scope": [
+  "admin_read",
+  "admin_by_id",
+  "admin_total",
+  "admin_list",
+  "admin_health",
+  "allows",
+  "is_plain",
+  "has_key"
+ ],
+ "equal": {
+  "admin_read": "withheld",
+  "admin_by_id": "withheld",
+  "admin_total": true,
+  "admin_list": "withheld",
+  "admin_health": true,
+  "allows": false,
+  "is_plain": true,
+  "has_key": true
+ },
+ "why": "The decorator contract table (translate/decorators.json). Admin.read: the candidate drops @UseGuards; the route no longer runs the guard; the signature differs, so the lemma is withheld, and lane B, which runs the guard before the parent's body, sees the guard's request and its denial: WITNESS. Admin.byId: the pipe on the parameter changed; withheld; lane B passes the argument through each side's pipe: WITNESS. Admin.total: the same guard on both sides, a refactor of the body under it: the route reads as the guard's verdict gating the body and is proved. Admin.list: the metadata writer, @SetMetadata(ROLE, ...) with another value; withheld as an interface change; its own body is unchanged (PASS-bounded). allows: the reader, the same text on both sides, reads the cell (ROLE, handler) through Reflect.getMetadata, a transition of the world and of the file's decoration: the decoration differs (the writer changed), so the lemma is not proved, and lane B, whose handler stands for a handler the framework hands in, reads the written cell: WITNESS. isPlain: the plain-object test on a record value is true on both sides: proved. hasKey: the own-key test on a dictionary is its key test: proved. Admin.health: untouched, proved.",
+ "b": {
+  "Admin.read": "WITNESS",
+  "Admin.byId": "WITNESS",
+  "Admin.total": "PASS-bounded",
+  "Admin.list": "PASS-bounded",
+  "Admin.health": "PASS-bounded",
+  "allows": "WITNESS",
+  "isPlain": "PASS-bounded",
+  "hasKey": "PASS-bounded"
+ }
+}
