@@ -5,7 +5,11 @@
 // An unchanged caller of a changed function gets a row too when lane B finds a WITNESS through that callee.
 //
 //   node pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--out report.md] [--json report.json]
-//               [--n 100] [--dafny-seconds 30] [--project <tsconfig>|--no-project]
+//               [--n 100] [--dafny-seconds 30] [--project <tsconfig>|--no-project] [--adapters scope.json]
+//
+// A changed signature proves only through an adapter the developer declares: the scope door (`--adapters`, a scope
+// file whose "adapters" maps a Dafny function name to {from, to, map}) or the comment door (`// lean-adapter {...}`
+// just above the candidate function, read by check.mjs from the head file). Without one it stays ASK:interface.
 //
 // How it reads the two versions without a second checkout: the head version is the file in the checkout (or the
 // head ref's content written beside it); the base version is `git show base:path` written beside the file under a
@@ -51,7 +55,7 @@ function changedUnits(file, ranges, project) {
 }
 
 export async function prReport(opts) {
-  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set(), filesRoot = null, maxUnits = null } = opts;
+  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set(), filesRoot = null, maxUnits = null, adapters = null } = opts;
   // filesRoot: a tree that mirrors the checkout (an export of it); the temporary files are written there, so a checkout
   // that must stay untouched is only read through git
   const files = changedRanges(repo, base, head);
@@ -78,10 +82,10 @@ export async function prReport(opts) {
           continue;
         }
         let res; runs++;
-        try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds }); }
+        try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds, adapters }); }
         catch (e) { res = { verdict: 'ASK', certificate: { lanes: { A: { verdict: 'ASK', detail: String(e.message).slice(0, 300) } } } }; }
         const lanes = res.certificate?.lanes ?? {};
-        const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [] };
+        const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}) };
         if (res.verdict !== 'PASS-proved' && res.verdict !== 'WITNESS') {
           try { const f = lintFile(headFile, [[u.start, u.end]], { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
         }
@@ -152,7 +156,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
   if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--out report.md] [--json report.json]'); process.exit(2); }
   const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
-  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, filesRoot: opt('--files-root', null) });
+  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, filesRoot: opt('--files-root', null), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
   const md = markdown(rows, base, head);
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(rows, null, 1));
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);

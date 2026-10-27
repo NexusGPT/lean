@@ -1,0 +1,6 @@
+{
+  "scope": ["block", "provider_code", "truncate", "clamp_limit", "label_"],
+  "equal": { "block": false, "provider_code": false, "truncate": false, "clamp_limit": true, "label_": true },
+  "why": "Lane B draws a parameter whose type names no fields (a dictionary, any, unknown, an unresolved import) with the fields both versions read off it, and every leaf the unit compares against a literal with that literal and its neighbours first (exec/usage.mjs, exec/spec.mjs, exec/gen.mjs). block: attrs is a dictionary, so its keys come from the reads; the parent drops a block whose attrs.isActive === false, the candidate does not: WITNESS on { type: 'collection-mention', attrs: { isActive: false } } with no tool map. providerCode: the candidate compares against 'open-ai'; 'openai' is drawn first from the parent's text. truncate: `<=` against `<` on MAX_REASON_CHARS; a reason of exactly 300 characters is drawn first. clampLimit: the two branches as one conditional expression, the same comparisons in the same order, proved and PASS-bounded. label: untouched.",
+  "b": { "block": "WITNESS", "providerCode": "WITNESS", "truncate": "WITNESS", "clampLimit": "PASS-bounded", "label": "PASS-bounded" }
+}

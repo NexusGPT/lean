@@ -1436,7 +1436,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (u) {
       if (!inScope) continue;
       checkedDiagSpans.push(st);
-      current = st; currentFn = u.fn;
+      current = st; currentFn = u.fn; thisParam = (u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this') ? u.params[0] : null; // a free function's declared `this` parameter is its receiver operand
       if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(st, shape.rule, shape.message); }
       if (!u.body) v(st, 'unsupported-syntax', 'function without a body');
       const sig = checker.getSignatureFromDeclaration(u.fn);
@@ -1473,7 +1473,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (!overlaps(sf, u.node, ranges)) continue;
         if (u.accessor && !opts.accessorBodies) continue; // unreadable accessor bodies retain their opaque unit reading
         checkedDiagSpans.push(u.node);
-        current = u.node; currentFn = u.fn; currentClass = st; thisParam = (!st && u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this') ? u.params[0] : null;
+        current = u.node; currentFn = u.fn; currentClass = st; thisParam = null; // a method's receiver is its class
         if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(u.node, shape.rule, shape.message); }
         const sig = checker.getSignatureFromDeclaration(u.fn);
         const rt = sig.getReturnType();
