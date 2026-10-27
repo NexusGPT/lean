@@ -82,3 +82,17 @@ compound write to an optional, a narrowed field read inside a callback, the trut
 Pair `heap_optional`: `display` (`??` as a presence test, proved), `greeting` (another default, WITNESS), `pad`
 (`by?` tested first, proved), `forget`, `visit` (proved).
 Reach: 95 -> 103; `parameter type` rises 12,257 -> 12,450 since an absent reference is now named, not read as present.
+
+## 5. Literal unions
+
+Reading: `'a' | 'b'` (strings) or `1 | 2` (non-negative integers), and either with `undefined`, is its primitive with
+its `values`: the JavaScript string or number itself, so comparison, concatenation and assignment stay exact. The
+values enter the HYP for a parameter and for each field of a reference parameter or of `this`.
+Chosen over a sum datatype: no conversion functions at every use, and the same proving power (the hypothesis states
+the domain). The shape key is the primitive's, so `{state: 'open' | 'done'}` and `{state: string}` are one
+constructor: one object may be seen through both types, and the lemma ranges over that sharing.
+Soundness: the hypothesis is the typed program's guarantee on entry, one level deep (a field reached through an
+array or a second record carries no domain: the lemma ranges over more heaps, never fewer).
+Out: a union of records, of mixed literal kinds, negative or fractional number literals, enum literals.
+Pair `heap_unions`: `toggle`, `mark` (the other value tested first, proved only through the domain), `weight` (WITNESS).
+Reach: 103 -> 126 (units 53,866 -> 53,859: the census roots include live clones).

@@ -50,10 +50,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (t.flags & TF.BooleanLike) return { kind: 'prim', d: 'bool' }; // `boolean` is the union true | false: one shape
     if (t.flags & TF.Union) { // a primitive that may be absent: `T | undefined` (an optional field or parameter) or `T | null`, never both
       const absent = t.types.filter((x) => x.flags & (TF.Undefined | TF.Null | TF.Void));
+      if (!absent.length) { const l = literals(t.types); if (l) return l; }
       if (absent.length) {
         const kinds = new Set(absent.map((x) => (x.flags & TF.Null ? 'n' : 'u'))); if (kinds.size !== 1) return null;
         const rest = t.types.filter((x) => !absent.includes(x));
-        const inner = rest.length && rest.every((x) => x.flags & TF.BooleanLiteral) ? { kind: 'prim', d: 'bool' } : rest.length === 1 ? shapeOf(rest[0], depth) : null;
+        const inner = rest.length && rest.every((x) => x.flags & TF.BooleanLiteral) ? { kind: 'prim', d: 'bool' } : rest.length === 1 ? shapeOf(rest[0], depth) : literals(rest);
         if (!inner || inner.kind !== 'prim') return null; // an absent reference is not read here
         const a = [...kinds][0]; return { kind: 'opt', inner, absent: a, key: `O${a}_${inner.d}` };
       }
@@ -87,6 +88,14 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       fields.sort((a, b) => (a.name < b.name ? -1 : 1));
       return { kind: 'rec', fields, key: `R_${hash(fields.map((f) => `${f.name}:${keyOf(f.shape)}`).join(','))}` };
     }
+    return null;
+  }
+  // `'a' | 'b'` or `1 | 2`: the primitive with its values (`values`); the shape key is the primitive's, so a field of a
+  // literal union and a field of its primitive are one constructor (one object may be seen through both types)
+  function literals(types) {
+    if (types.length < 2 || types.some((x) => x.flags & TF.EnumLiteral)) return null;
+    if (types.every((x) => x.flags & TF.StringLiteral)) return { kind: 'prim', d: 'string', values: types.map((x) => x.value).sort() };
+    if (types.every((x) => x.flags & TF.NumberLiteral) && types.every((x) => Number.isInteger(x.value) && x.value >= 0)) return { kind: 'prim', d: NUM, values: types.map((x) => x.value).sort((a, b) => a - b) }; // non-negative integers: the int reading writes them as they are
     return null;
   }
   // a class of this file read as a record: its instance fields (declared, or constructor parameter properties), each
@@ -766,7 +775,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const body = stmts([...u.body.statements]);
     const self = u.cls ? instanceShape(u.cls, 0) : null; // an instance method's receiver: a reference to the record of its fields
     const params = [...(self ? [`${dn('this')}: Ref`] : []), ...u.params.map((p) => `${dn(p.name.text)}: ${valD(shapeOf(typeOf(p.name)))}`)];
-    const hyp = [`WF(${HW})`, ...(self ? [`Is${self.key}(${HW}, ${dn('this')})`] : []), ...u.params.map((p) => { const s = shapeOf(typeOf(p.name)); return !isRefShape(s) ? null : `Is${s.key}(${HW}, ${dn(p.name.text)})`; }).filter(Boolean)].join(' && ');
+    const lit = (v, sh) => (sh.d === 'string' ? strEsc(v) : isReal ? `${v}.0` : String(v));
+    const member = (code, sh) => { if (sh.kind === 'opt') return sh.inner.values ? `((${code}).None? || ${member(`OptOr(${code}, ${dflt(sh.inner)})`, sh.inner)})` : null; return sh.kind === 'prim' && sh.values ? `(${sh.values.map((v) => `${code} == ${lit(v, sh)}`).join(' || ')})` : null; };
+    const fieldsIn = (s, r) => (s.kind === 'rec' ? s.fields.map((f) => member(f.shape.kind === 'opt' && f.shape.absent === 'u' ? `PresOpt(Get_${s.key}_${dn(f.name)}(${HW}, ${r}))` : `Get_${s.key}_${dn(f.name)}(${HW}, ${r})`, f.shape)).filter(Boolean) : []); // a literal-union field of a reference parameter: one level, the parameter's own fields
+    const hyp = [`WF(${HW})`, ...(self ? [`Is${self.key}(${HW}, ${dn('this')})`, ...fieldsIn(self, dn('this'))] : []), ...u.params.flatMap((p) => { const s = shapeOf(typeOf(p.name)); const x = dn(p.name.text); return !isRefShape(s) ? [member(x, s)].filter(Boolean) : [`Is${s.key}(${HW}, ${x})`, ...fieldsIn(s, x)]; })].join(' && ');
     const text = [...helpers.map((h) => `${h}\n`), `function ${fname(u.name)}(${[`${HW}: HWorld`, ...params].join(', ')}): (HWorld, ${valD(rt)})`, '{', indent(body), '}'].join('\n');
     return { text, hyp };
   }
