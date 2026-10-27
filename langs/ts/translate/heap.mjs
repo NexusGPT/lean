@@ -70,9 +70,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (t.flags & TF.BooleanLike) return { kind: 'prim', d: 'bool' };
     if (checker.isArrayType(t)) { const e = shapeOf(checker.getTypeArguments(t)[0], depth + 1); return e && e.kind !== 'opt' ? { kind: 'arr', elem: e, key: `A_${keyOf(e)}` } : null; }
     const symName = t.symbol?.name;
-    if (symName === 'Map' && checker.getTypeArguments(t).length === 2) { const [kt, vt] = checker.getTypeArguments(t); const k = shapeOf(kt, depth + 1), v = shapeOf(vt, depth + 1); return k && k.kind === 'prim' && v && v.kind !== 'opt' ? { kind: 'map', k, v, key: `M_${keyOf(k)}_${keyOf(v)}` } : null; } // a Map cell: insertion-ordered entries, keys primitive (SameValueZero on primitives is ==)
+    if (symName === 'Map' && checker.getTypeArguments(t).length === 2) { const [kt, vt] = checker.getTypeArguments(t); const k = shapeOf(kt, depth + 1), v = shapeOf(vt, depth + 1); return k && k.kind !== 'opt' && k.kind !== 'union' && v && v.kind !== 'opt' ? { kind: 'map', k, v, key: `M_${keyOf(k)}_${keyOf(v)}` } : null; } // a Map cell: insertion-ordered entries; SameValueZero is == on primitives and identity on references, which Ref equality is
     if (symName === 'Date') return { kind: 'date', key: 'D' }; // a Date cell: its time value; getTime and the UTC getters read it, a setter keeps the unit out of the core (it reads the host's time zone)
-    if (symName === 'Set' && checker.getTypeArguments(t).length === 1) { const e = shapeOf(checker.getTypeArguments(t)[0], depth + 1); return e && e.kind === 'prim' ? { kind: 'set', elem: e, key: `S_${keyOf(e)}` } : null; } // a Set cell of primitives
+    if (symName === 'Set' && checker.getTypeArguments(t).length === 1) { const e = shapeOf(checker.getTypeArguments(t)[0], depth + 1); return e && e.kind !== 'opt' && e.kind !== 'union' ? { kind: 'set', elem: e, key: `S_${keyOf(e)}` } : null; } // a Set cell: its items in insertion order, references by identity
     const cd = classDeclOf(t); if (cd) return instanceShape(cd, depth); // an instance of a class of this file: the record of its fields
     if ((t.flags & TF.Object) && !t.getCallSignatures().length && checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getIndexInfoOfType(t, ts.IndexKind.Number) && !checker.getPropertiesOfType(t).length) { const v = shapeOf(checker.getIndexInfoOfType(t, ts.IndexKind.String).type, depth + 1); return v && v.kind === 'prim' ? { kind: 'dict', v, key: `Dk_${v.d}` } : null; } // a dictionary `Record<string, T>` of primitives: insertion-ordered keys beside a map, and whether its prototype is Object.prototype
     if (t.flags & TF.Object) {
@@ -177,7 +177,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const dflt = (s) => (s.kind === 'prim' ? (s.d === 'string' ? '""' : s.d === 'bool' ? 'false' : isReal ? '0.0' : '0') : s.kind === 'opt' ? `Option<${s.inner.d}>.None` : '0');
   const fieldDflt = (s) => (s.kind === 'opt' && s.absent === 'u' ? `Pres<${s.inner.d}>.PMissing` : dflt(s));
   const unions = new Map(); // the unions a core unit reads: a predicate and the common-field reads in the prelude
-  function register(s) { if (!s || s.kind === 'prim') return; if (s.kind === 'opt') { optUsed = true; return; } if (s.kind === 'union') { if (!unions.has(s.key)) { unions.set(s.key, s); for (const a of s.alts) register(a.shape); } return; } if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map') register(s.v); else if (s.kind === 'rec') for (const f of s.fields) register(f.shape); } }
+  function register(s) { if (!s || s.kind === 'prim') return; if (s.kind === 'opt') { optUsed = true; return; } if (s.kind === 'union') { if (!unions.has(s.key)) { unions.set(s.key, s); for (const a of s.alts) register(a.shape); } return; } if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map') { register(s.k); register(s.v); } else if (s.kind === 'rec') for (const f of s.fields) register(f.shape); } }
   const dateGetters = new Set(); // the UTC getters a core unit reads: each a bodiless function of the time value in the prelude
   const mapInstances = new Set(); // 'K|K2' pairs of Array.prototype.map seen in the core, each its own Map_K_K2
   const typeOf = typeOfIn ?? ((n) => checker.getTypeAtLocation(n)); // the translator's reading of a node's type (its explicit-operand overrides included)
@@ -353,6 +353,21 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const ds = as.map(valD), rd = valD(rs);
     return { key: `Call_${ik.slice(4)}_${hash(ds.join(',') + '>' + rd + '#' + codeKey())}`, ds, rd, rs };
   }
+  // the copy forms: `new Set(xs)` of an array (its items, the first of equal ones kept), `new Set(s)` of a set and
+  // `new Map(m)` of a map (the same entries in the same order), `Array.from(x)` of an array or a set (its items): each a
+  // fresh cell. The source's shape must match the result's (a set of numbers from an array of numbers).
+  const copyForm = (e) => {
+    const isNew = ts.isNewExpression(e) && ts.isIdentifier(e.expression) && ['Map', 'Set'].includes(e.expression.text) && (e.arguments ?? []).length === 1 && originOf(checker, e.expression, sf, null).kind === 'global';
+    const isFrom = ts.isCallExpression(e) && !e.questionDotToken && ts.isPropertyAccessExpression(e.expression) && isGlobalName(e.expression.expression, 'Array') && e.expression.name.text === 'from' && e.arguments.length === 1;
+    if (!isNew && !isFrom) return null;
+    const src = e.arguments[0]; if (ts.isSpreadElement(src)) return null; const ss = shapeOf(typeOf(src)), rs = shapeOf(typeOf(e)); if (!ss || !rs) return null;
+    if (rs.kind === 'set' && ss.kind === 'arr' && keyOf(ss.elem) === keyOf(rs.elem)) return { src, from: 'arr', to: rs, ss };
+    if (rs.kind === 'set' && ss.kind === 'set' && ss.key === rs.key) return { src, from: 'set', to: rs, ss };
+    if (rs.kind === 'map' && ss.kind === 'map' && ss.key === rs.key) return { src, from: 'map', to: rs, ss };
+    if (rs.kind === 'arr' && isFrom && (ss.kind === 'arr' || ss.kind === 'set') && keyOf(ss.elem) === keyOf(rs.elem)) return { src, from: ss.kind, to: rs, ss };
+    return null;
+  };
+  const dedupUsed = new Set(); // set keys whose Dedup_ the prelude writes
   const impUsed = new Map(); // key -> Dafny type of each imported constant a core unit reads
   const strUsed = new Set();
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
@@ -420,6 +435,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (s.kind === 'rec' && fieldOf(s, e.name.text).shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') usesIndex = true; // a narrowed read: its lemma shows the value is there
         return checkExpr(e.expression);
       }
+      if (copyForm(e)) { if (lambdaDepth) return no('allocation inside a callback'); return checkExpr(copyForm(e).src); } // a fresh cell with the source's contents
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && !e.questionDotToken && e.expression.name.text === 'get' && e.arguments.length === 1 && shapeOf(typeOf(e.expression.expression))?.kind === 'map') { const s = shapeOf(typeOf(e.expression.expression)); if (s.v.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'opt') return no('get of a reference value (an absent reference is not read)'); checkExpr(e.expression.expression); return checkExpr(e.arguments[0]); } // a value or absent
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && (e.expression.text === 'Map' || e.expression.text === 'Set') && !(e.arguments ?? []).length) { if (!shapeOf(typeOf(e))) return no(`new ${e.expression.text} type: ${shapeWhy(typeOf(e))}`); return; } // an empty cell
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'has' && e.arguments.length === 1) { const s = shapeOf(typeOf(e.expression.expression)); if (!s || (s.kind !== 'map' && s.kind !== 'set')) return no('has on a non-cell'); checkExpr(e.expression.expression); return checkExpr(e.arguments[0]); }
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'Date') { if ((e.arguments ?? []).length !== 1 || !(typeOf(e.arguments[0]).flags & TF.NumberLike)) return no('new Date form (one time value; no argument is the clock, a string is parsing)'); if (!shapeOf(typeOf(e))) return no('new Date type'); return checkExpr(e.arguments[0]); }
@@ -686,7 +703,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       for (const p of u.params) register(shapeOf(typeOf(p.name)));
       if (u.cls) register(instanceShape(u.cls, 0));
       register(shapeOf(checker.getSignatureFromDeclaration(u.fn).getReturnType()));
-      const w = (n) => { if (strMethod(n) === 'split' || reCall(n)?.m === 'split') register(shapeOf(typeOf(n))); if (ts.isCallExpression(n) || ts.isConditionalExpression(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind === K.QuestionQuestionToken)) register(shapeOf(typeOf(n))); if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
+      const w = (n) => { if (strMethod(n) === 'split' || reCall(n)?.m === 'split') register(shapeOf(typeOf(n))); if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isConditionalExpression(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind === K.QuestionQuestionToken)) register(shapeOf(typeOf(n))); if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
       w(u.body);
     }
     return core;
@@ -739,7 +756,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (strUsed.has('re_search')) out.push(`function ReSearch(re: string, s: string): ${NUM}`); // the index of the first match, or -1
     for (const d of ['int', 'real']) if (strUsed.has(`numstr_${d}`)) out.push(`function NumStr_${d}(n: ${d}): string`); // Number::toString: a function of the number alone, bodiless
     if (keys.some((k) => shapes.get(k).kind === 'dict')) out.push(`const ObjectProtoNames: set<string> := {${OBJECT_PROTO.map((x) => JSON.stringify(x)).join(', ')}}`); // Object.getOwnPropertyNames(Object.prototype)
-    const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'set' || s.kind === 'date' || s.kind === 'dict') { /* primitive contents */ } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); } else for (const f of s.fields) if (isRefShape(f.shape)) conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
+    const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'date' || s.kind === 'dict') { /* primitive contents */ } else if (s.kind === 'set') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); if (s.k.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Keys ==> Is${keyOf(s.k)}(hw, x))`); } else for (const f of s.fields) if (isRefShape(f.shape)) conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
     out.push(`predicate WFCell(hw: HWorld, o: Obj) { match o ${keys.map((k) => `case ${k}(${(shapes.get(k).kind === 'rec' ? shapes.get(k).fields.map(() => '_') : shapes.get(k).kind === 'map' ? ['_', '_'] : shapes.get(k).kind === 'dict' ? ['_', '_', '_'] : ['_']).join(', ')}) => ${cellOk(k)}`).join(' ')} case Dead => false }`);
     out.push('predicate WF(hw: HWorld) { !hw.oob && (forall r :: r in hw.heap ==> r < hw.next) && (forall r :: r in hw.heap ==> WFCell(hw, hw.heap[r])) }');
     if (!isReal && keys.some((k) => shapes.get(k).kind === 'arr')) out.push(LIBRARY.helpers.Clamp); // the index clamp of slice and splice
@@ -771,6 +788,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         out.push(`function MapSize_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].keys_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
       } else if (s.kind === 'set') {
         const E = valD(s.elem);
+        if (dedupUsed.has(k)) out.push(`function Dedup_${k}(xs: seq<${E}>, acc: seq<${E}>): seq<${E}> decreases |xs| { if |xs| == 0 then acc else Dedup_${k}(xs[1..], if xs[0] in acc then acc else acc + [xs[0]]) }`); // new Set(xs): the first of equal items kept, in order
         out.push(instantiate(LIBRARY.helpers['RemoveItem_<K>'], k, E));
         for (const op of ['Set.prototype.add', 'Set.prototype.has', 'Set.prototype.delete']) out.push(instantiate(LIB_ROW[op].dafny, k, E));
         out.push(`function SetSize_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].items_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
@@ -811,6 +829,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const canonObj = (k) => { const s = shapes.get(k); const nm = (x) => `CanonName(next0, order, ${x})`; if (s.kind === 'dict') return `C${k}(p0, p1, p2)`; if (s.kind === 'rec') return `C${k}(${s.fields.map((f, i) => (!isRefShape(f.shape) ? `p${i}` : nm(`p${i}`))).join(', ')})`; if (s.kind === 'arr') return `C${k}(${s.elem.kind === 'prim' ? 'p0' : 'CanonNames(next0, order, p0)'})`; if (s.kind === 'map') return `C${k}(p0, ${s.v.kind === 'prim' ? 'p1' : 'map kk | kk in p1 :: CanonName(next0, order, p1[kk])'})`; return `C${k}(p0)`; };
     const recs = keys.filter((k) => shapes.get(k).kind === 'rec');
     const mapRefs = keys.filter((k) => shapes.get(k).kind === 'map' && shapes.get(k).v.kind !== 'prim');
+    // a set of references or a map keyed by references holds edges the naming walk does not follow: no canonical
+    // certificate (only the whole-heap one) when the file has one
+    if (keys.some((k) => { const sh = shapes.get(k); return (sh.kind === 'set' && sh.elem.kind !== 'prim') || (sh.kind === 'map' && sh.k.kind !== 'prim'); })) return out;
     out.push(`// CANON fuel=${['CanonOrder', 'CanonRootEdges', 'CanonCells', 'CanonIndex', 'CanonNames', ...mapRefs.map((k) => `MapEdges_${k}`)].join(',')}`); // the recursive functions the part lemmas unfold (fuel 20: a walk of twenty steps; a three-cell unit needs ten)
     out.push(`datatype CObj = ${keys.length ? keys.map(cctor).join(' | ') + ' | ' : ''}CDead`);
     for (const k of mapRefs) out.push(`function MapEdges_${k}(keys: seq<${valD(shapes.get(k).k)}>, m: map<${valD(shapes.get(k).k)}, Ref>): seq<Ref> decreases |keys| { if |keys| == 0 then [] else (if keys[0] in m then [m[keys[0]]] else []) + MapEdges_${k}(keys[1..], m) }`);
@@ -908,6 +929,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.InKeyword) { const key = expr(e.left); const s = shapeExpr(e.right); return `DictIn_${s.key}(${HW}, ${expr(e.right)}, ${key})`; }
       if (ts.isObjectLiteralExpression(e) && litShape(e)?.kind === 'dict') { const s = litShape(e); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, [], map[], true);`); return r; }
       if (ts.isElementAccessExpression(e)) { const [s, r, i] = element(e); if (!safeIndex.has(e)) lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; } // the receiver, then the index, once each; an index loop's own a[i] is in range by its guard
+      if (copyForm(e)) { const c = copyForm(e); const r = bind(expr(c.src), 'o'); const out = fresh('r'); const items = c.from === 'map' ? null : `(if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].items_${c.ss.key} else [])`;
+        if (c.from === 'map') lines.push(`var (${HW}, ${out}) := Alloc_${c.to.key}(${HW}, (if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].keys_${c.ss.key} else []), (if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].m_${c.ss.key} else map[]));`);
+        else if (c.to.kind === 'set' && c.from === 'arr') { dedupUsed.add(c.to.key); lines.push(`var (${HW}, ${out}) := Alloc_${c.to.key}(${HW}, Dedup_${c.to.key}(${items}, []));`); }
+        else lines.push(`var (${HW}, ${out}) := Alloc_${c.to.key}(${HW}, ${items});`);
+        return out; }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'get' && e.arguments.length === 1 && shapeExpr(e.expression.expression)?.kind === 'map') { const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); return `MapGet_${s.key}(${HW}, ${r}, ${expr(e.arguments[0])})`; }
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && (e.expression.text === 'Map' || e.expression.text === 'Set')) { const s = shapeExpr(e); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${s.kind === 'map' ? '[], map[]' : '[]'});`); return r; }
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'Date') { const s = shapeExpr(e); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${expr(e.arguments[0])});`); return r; }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && shapeExpr(e.expression.expression)?.kind === 'date') { const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const g = e.expression.name.text; if (g === 'getTime' || g === 'valueOf') return `Get_${s.key}_tv(${HW}, ${r})`; dateGetters.add(g); return `DateUTC_${g}(Get_${s.key}_tv(${HW}, ${r}))`; }

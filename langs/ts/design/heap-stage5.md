@@ -308,3 +308,25 @@ Census (resolved, 39 roots), strict graph 790 -> 876, own syntax 1994 -> 2159; `
 ```text
 {"files":23359,"units":53918,"core":876,"heapOwnFit":2159,"mirrorMismatch":2017,"planErrorCount":0,"seconds":330}
 ```
+
+## 16. Map and Set with record keys or items, the copy forms
+
+Reading: a Map's keys and a Set's items may be references (`Set<Tag>`, `Map<Tag, number>`): the table's rows already
+compare by Dafny equality, which on `Ref` is identity, SameValueZero's meaning on objects; the well-formedness states
+every key or item is a cell of its shape. `m.get(k)` of a primitive value is an option (`MapGet_`). The copy forms
+allocate a fresh cell of the source's contents: `new Set(xs)` of an array (the first of equal items kept, in order,
+`Dedup_`), `new Set(s)`, `new Map(m)`, and `Array.from(x)` of an array or a set. (Date cells, their UTC getters and the
+one-level `structuredClone` were already read.)
+Soundness: identity is what SameValueZero compares on objects, and two records with equal fields are two keys, as in
+JavaScript. A set of references or a map keyed by references holds edges the canonical naming walk does not follow
+(its items and keys are not in `CanonEdges`), so a file with one carries only the whole-heap certificate (no
+`// CANON` block): a fresh key cell unreached by the walk can never pass unnamed.
+Out: `get` of a reference value (an absent reference), iteration (`forEach`, `keys`, `values`, `entries`, spread), a Map
+or Set of optional values, a copy between different shapes.
+Pair `heap5_cells`: `mark` (untouched, an add of a record), `isSeen` (WITNESS), `countOf` (the get named before `??`:
+proved), `unique` (untouched, `new Set(ids).size`), `copyIds` (a spread literal for `Array.from`: proved). Lint:
+unchanged.
+Census (resolved, 39 roots), strict graph 876 -> 886, own syntax 2159 -> 2182; `curve.md` expects 2146 after its step 16:
+```text
+{"files":23359,"units":53918,"core":886,"heapOwnFit":2182,"mirrorMismatch":2040,"planErrorCount":0,"seconds":330}
+```
