@@ -6,7 +6,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 
 | kind | units | share | lint | reading today | faithful reading |
 |---|---:|---:|---|---|---|
-| Identifier | 59378 | 94.8% | admitted | exact: a parameter, a local, a same-file unit; an outside name is a world read or refused (global-read) | same; module and captured cells as ledger cells (research note section 1) |
+| Identifier | 59378 | 94.8% | admitted | exact: a parameter, a local, a same-file unit; an outside name is a world read (a global the lib or an @types package declares: lib-globals, done (lane)) or refused (global-read: unresolved, module state, a global only the project declares) | same; module and captured cells as ledger cells (research note section 1) |
 | Block | 59338 | 94.7% | admitted | exact | same |
 | PropertyAccessExpression | 50650 | 80.8% | admitted | exact on records and arrays by shape; this.x a world read; a getter a callable unit; an unknown member refused (unsupported-member) | heap read on the ledger for every reference-typed receiver |
 | CallExpression | 50125 | 80% | admitted | exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; an optional call `f?.(x)` on a local, a record path or this: the call and its arguments on the present branch only (optional-call, done (lane)); refused for unsupported calls and .call/.apply | same, plus the library table as transitions and callable records for escaped functions |
