@@ -368,3 +368,22 @@ export function handlerDifference(a, b, at = '') {
   for (let i = 0; i < Math.min(ca.length, cb.length); i++) { const d = handlerDifference(ca[i], cb[i], `${here}[${i}]`); if (d) return d; }
   return null;
 }
+
+// heldTextOnly(a, b) -> the escapes, when the two observations differ only in held functions lean cannot read (a text
+// key on either side), else null: such a difference is not one lean can show on a run, so lane B says ASK naming the
+// escape (exec/run.mjs), unless another rung finds a WITNESS. Each side keeps its own key order, so any other difference
+// still counts.
+export function heldTextOnly(a, b) {
+  const found = [];
+  const mask = (x, y) => {
+    if (Array.isArray(x) && Array.isArray(y)) { if (x.length !== y.length) return [x, y]; const r = x.map((v, i) => mask(v, y[i])); return [r.map((p) => p[0]), r.map((p) => p[1])]; }
+    if (!x || !y || typeof x !== 'object' || typeof y !== 'object' || Array.isArray(x) || Array.isArray(y)) return [x, y];
+    if (Object.hasOwn(x, '$fn') && Object.hasOwn(y, '$fn') && (x.escape || y.escape) && JSON.stringify(x) !== JSON.stringify(y)) { found.push({ parent: x.escape ?? 'read', candidate: y.escape ?? 'read' }); return [{ $fn: 'unread' }, { $fn: 'unread' }]; }
+    const ox = {}, oy = {};
+    for (const k of Object.keys(x)) ox[k] = Object.hasOwn(y, k) ? mask(x[k], y[k])[0] : x[k];
+    for (const k of Object.keys(y)) oy[k] = Object.hasOwn(x, k) ? mask(x[k], y[k])[1] : y[k];
+    return [ox, oy];
+  };
+  const [mx, my] = mask(a, b);
+  return found.length && JSON.stringify(mx) === JSON.stringify(my) ? [...new Set(found.map((f) => JSON.stringify(f)))].map((f) => JSON.parse(f)) : null; // one entry per escape pair (a key shows in the tree and in the heap)
+}

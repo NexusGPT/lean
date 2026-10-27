@@ -45,7 +45,9 @@ differing step, e.g. `step 1: the candidate also sets slot 1 to 0`, or `keyed by
 `handler-argument-not-pure`. The key adds `handler-not-an-attribute-value`, `handler-outside-the-unit` (a child's own
 attribute under `--deep`, which closes over the child's frame), and `handler-capture: <why>` (a capture the evaluator
 does not read, a call of a local function value, a draw from a fake). Such a function keeps `{ $fn, src }` plus its
-`escape`. Its text is now the function's own text: the loader's marks are left out of the hash (`compileWithSites`),
+`escape`. When the two observations differ only in such held functions (a text key on either side), lane B says
+ASK naming the escape (`held-handler: ... (parent: handler-statement:IfStatement, ...)`, `heldTextOnly`, `runPair`), unless
+another rung finds a WITNESS: a text difference is not a difference lean can show on a run. Its text is now the function's own text: the loader's marks are left out of the hash (`compileWithSites`),
 since their positions move with the lines above.
 
 ## Soundness
@@ -66,15 +68,13 @@ renders the same steps in order, so the reordered TwoSlots stays unproved).
 Picker: the held `select` hoisted into `const choose` with a local, PASS-proved (lane B PASS-bounded: the child is a
 handle at depth 0, nothing fires, the keys agree on 30 inputs; lane A proves the descriptors equal). PickerSetter:
 WITNESS, `step 1: the candidate also sets slot 1 to 0`. PickerProp: WITNESS, `props.count` for `props.id`.
-PickerBranch: braces around an `if` body, WITNESS keyed by text, `handler-statement:IfStatement`. TwoSlots: two sets
+PickerBranch: braces around an `if` body, ASK naming `handler-statement:IfStatement` (it was a WITNESS by text before). TwoSlots: two sets
 swapped before the request, PASS-bounded (lane A ASK:unproved). Row and Caption untouched, PASS-proved.
 
 ## Measured (`count-held.mjs`, the lane's scratch script: JSX attribute values whose arrow `arrowOf` finds, per unit)
 
-pyka `src` (120 .tsx): 261 fired `on[A-Z]`, 22 held, 11 held readable; escapes of the other 11: handler-expression 6,
-handler-local-not-pure 3, handler-async 1, handler-argument-not-pure 1. Readable held instances: views/compare/Compare.tsx:424
-`edit` and `next`, :428 `nameOf`, :433 `subOf`, views/map/FilterBar.tsx:63 `setOpen`. The nexus bench tree (2,650
-.tsx): 4,019 fired, 486 held, 126 held readable; escapes: handler-argument-not-pure 183, handler-statement 57,
-handler-local-not-pure 35, handler-async 31, handler-expression 28, handler-parameter-pattern 26. Readable held
-instances: apps/embed/src/components/EmbedChatView.tsx:237 `addFiles`, apps/frontend/src/common/components/Chat/
-ChatMessage/RenderChatMessage.tsx:226 `deleteMessage`, .../SchemaInput/index.tsx:120 `setSelected`.
+pyka `src` (120 .tsx): 261 fired, 22 held, 11 held readable (escapes: handler-expression 6, handler-local-not-pure 3,
+handler-async 1, handler-argument-not-pure 1); readable: views/compare/Compare.tsx:424 `edit`, `next`, :433 `subOf`,
+views/map/FilterBar.tsx:63 `setOpen`. Nexus bench tree (2,650 .tsx): 4,019 fired, 486 held, 126 held readable
+(handler-argument-not-pure 183, handler-statement 57, handler-local-not-pure 35, handler-async 31, handler-expression 28,
+handler-parameter-pattern 26); readable: apps/embed/src/components/EmbedChatView.tsx:237 `addFiles`.

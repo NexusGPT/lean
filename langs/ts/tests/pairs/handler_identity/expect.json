@@ -17,13 +17,13 @@
   "two_slots": false,
   "caption": true
  },
- "why": "a function the tree holds and lane B never fires is keyed by its descriptor: a handler hoisted into a const with a local is the same handler, one more setter call or a different prop read is a different one, two sets between the same requests in another order are one key (lane A keeps the order, so it does not prove it), and a handler with a branch keeps its text key and names its escape",
+ "why": "a function the tree holds and lane B never fires is keyed by its descriptor: a handler hoisted into a const with a local is the same handler, one more setter call or a different prop read is a different one, two sets between the same requests in another order are one key (lane A keeps the order, so it does not prove it), and a handler with a branch keeps its text key: a text difference lean cannot read is ASK naming its escape, never a WITNESS",
  "b": {
   "Row": "PASS-bounded",
   "Picker": "PASS-bounded",
   "PickerSetter": "WITNESS",
   "PickerProp": "WITNESS",
-  "PickerBranch": "WITNESS",
+  "PickerBranch": "ASK",
   "TwoSlots": "PASS-bounded",
   "Caption": "PASS-bounded"
  }
