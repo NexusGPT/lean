@@ -18,7 +18,7 @@
 
 **lean is a differential equivalence checker.** Give it the old version and the new version of a function, and the scope of what was meant to change. It decides whether the two behave the same everywhere else: by proof when it can, by exhaustive exploration when the state is finite, by execution when it must, and it says which.
 
-TypeScript is the first language. The core (the theorem, the checker, the certificate, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`, and merges when it passes the same conformance run. More languages are coming; Python is next.
+TypeScript is the first language. The core (the theorem, the checker, the certificate, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`, and merges when it passes the same conformance run. Python is at milestone 1: typed functions, dataclasses and plain classes over ints, strings, lists, tuples, dicts and optionals, with calls into the outside as transitions of the world and raised exceptions as faults ([`langs/py/subset.md`](langs/py/subset.md)).
 
 Every change to a program is a claim: *I changed this, and nothing else.* Tests sample that claim. Review guesses at it. lean checks it.
 
@@ -336,7 +336,11 @@ spec/theorem.py           the theorem: equal outside S; identity aliasing; prelu
 conformance/              one command runs every language against every fixture
 fixtures/                 shared behaviours, escapes the subset must refuse, clean changes it must pass
 examples/booking/         a pricing core and a quote service written in lean style
-langs/py/, langs/_template  the next languages
+langs/py/lint/            Python: the subset gate, the same rule names as TypeScript where the construct is the same
+langs/py/translate/       Python → Dafny, the same core conventions: the world, faults, loops as measured helpers
+langs/py/exec/            Python lane B: both sides in one process, recording stubs, typed inputs from the hints
+langs/py/subset.md        the Python subset; langs/py/SEMANTICS.md, where Python's meaning differs
+langs/_template/          how to add a language
 ```
 
 ## Contributing

@@ -393,7 +393,11 @@ def main(argv):
     def finish(res):
         res.setdefault('assumptions', ['inputs from the type hints, boundary values first, then seeded draws',
                                        'every import that leaves the file is a recording stub; a fake answers from the seed and the call position, the same on both sides',
-                                       'one input in three runs with fake faults (rate 0.5)', f'each call is cut after {CALL_SECONDS} s'])
+                                       'one input in three runs with fake faults (rate 0.5)', f'each call is cut after {CALL_SECONDS} s',
+                                       'the arguments of the unit are not reachable from the world (fakes keep no reference)',
+                                       'a method of a plain class runs on an instance of that exact class',
+                                       'a module-level literal constant is its value',
+                                       'recursion depth is bounded only by the interpreter (a RecursionError is an outcome here)'])
         text = json.dumps(res, indent=1, default=str)
         if a.out:
             open(a.out, 'w').write(text + '\n')
