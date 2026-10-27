@@ -71,6 +71,7 @@ export const ADVICE = {
   'inheritance': { label: 'migration', text: 'A class that extends another is outside the subset in this version.' },
   'effect': { label: 'migration', text: 'This global is an effect; pass what you need as an argument.' },
   'non-null': { label: 'migration', text: '`x!` is translated as an uninterpreted value when absent; prefer an explicit check.' },
+  'implicit-this': { label: 'conditional', precondition: 'the declared type covers every receiver the function is called with', text: 'Declare the receiver as the first parameter, `function f(this: T, ...)`: a type annotation, the emitted JavaScript is the same, and a declared receiver is read as the function\'s first operand.' },
 };
 
 // the label in one bracket, as the --json advice, the agent report and the ESLint message print it

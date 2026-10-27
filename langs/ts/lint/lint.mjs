@@ -1539,8 +1539,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (d.code === 7029) continue; // switch fall-through is an ordered clause continuation
     if (IMPLICIT_ANY.has(d.code)) continue; // implicit any: opaque, admitted
     if (d.code === 18046 && !ownUnknown(d)) continue; // an unknown the unit did not write: opaque, admitted
-    if (d.code === 2683 || d.code === 7041) { // an implicit receiver: an input the function does not declare, the construct the this rule names
-      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'this', msg: '`this` outside a class method; a free function declares its receiver as a `this` parameter', text: sf.text.slice(d.start, d.start + (d.length ?? 4)) });
+    if (d.code === 2683 || d.code === 7041) { // an implicit receiver: an input the function does not declare, which the translator refuses
+      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: sf.text.slice(d.start, d.start + (d.length ?? 4)) });
       continue;
     }
     if (d.code === 2339 || d.code === 2551) {
