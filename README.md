@@ -246,7 +246,12 @@ $ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDisc
 stop: { reason: "unit-budget", reached: 2, total: 9 }      formatCents … QuoteService.missingFor: skipped:budget, "stop at unit 3 of 9"
 ```
 
-Planned for the table (status in [Built and planned](#what-is-built-and-what-is-planned)): a run identity and verdict reuse (`reused`), so a one-line follow-up commit re-checks only the units whose inputs changed.
+**A push re-checks only what changed.** The report carries a run identity (the two commits, the unit set, lean's own commit, the library and advice tables, the Dafny version), and each unit a key over its two texts, its same-file callees, the file outside its functions, the files it imports and the tsconfig; a certificate under `.lean/cache/<key>.json` is reused when the key matches, with the row marked `reused`, and `--fresh` reads no cache. On the booking pull request the second run reuses all six rows:
+
+```
+$ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDiscount --cache-dir .lean/cache     (twice)
+first run:  6 function(s), 20 s        second run:  6 function(s), 7 s, every row reused, the same identity
+```
 
 ### 3. In the editor
 
@@ -445,7 +450,7 @@ Everything else is yours: `async`/`await`, `try`/`catch`, `switch`, destructurin
 | | command |
 |---|---|
 | one function, both lanes, one verdict with its certificate | `node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit applyDiscount` (`--unit PricingService.applyDiscount` for a method; `--scope scope.json`; `--n`, `--seed`, `--dafny-seconds`, `--deep[=k]`, `--out verdict.json`) |
-| a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m,file.ts:f] [--preview] [--time-budget <s>] [--unit-budget <n>] [--out report.md] [--json report.json]` |
+| a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m,file.ts:f] [--preview] [--time-budget <s>] [--unit-budget <n>] [--fresh] [--cache-dir <dir>] [--out report.md] [--json report.json]` |
 | lane B alone, in seconds | `node langs/ts/exec/run.mjs --parent old.ts --candidate new.ts --unit f [--sequence-depth 2 --sequence-breadth 4 --deep]` |
 | the finite lane alone | `node langs/ts/exec/finite.mjs --parent old.tsx --candidate new.tsx --unit Panel [--max 500]` |
 | the lint, in the terminal or an agent's loop | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--any-type] [--changed ranges.json]` |
@@ -468,7 +473,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 | the CI workflow on a GitHub runner | built, validated offline, not yet exercised on a runner |
 | the front-end layers: a tree to a stated depth with context from the nearest provider, resolved styles against the pinned Tailwind table | built; a project's own Tailwind theme is not read yet |
 | a row per changed unit in the pull-request table, including the refused and skipped ones, with the reason; `--preview` | built |
-| a run identity and verdict reuse across pushes | planned |
+| a run identity and verdict reuse across pushes (`reused`, `--fresh`, `--cache-dir`) | built; the key stops at one import level and does not see module initialization order |
 | a `WITNESS` that names the source line of the first differing effect on each side, with the advised rewrite | planned |
 | run-level budgets with a named stop (`--time-budget`, `--unit-budget`, `skipped:budget`, the comment blocks on a stop) | built |
 | the mechanical rules of code review as labelled advice entries, each with a proof where the rewrite is a theorem | planned |
