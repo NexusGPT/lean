@@ -30,6 +30,7 @@ import { Graph } from './graph.mjs';
 import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
 import { witnessPatch } from '../patch.mjs';
 import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
+import { annotateWitness } from './callees.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -498,7 +499,10 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
 }
 
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
-export async function runPair(opts) {
+// a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
+// `where.cause = 'callee'` when the unit's own text is equal on both sides
+export async function runPair(opts) { return annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit); }
+async function runPairOnce(opts) {
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
   deepMode.on = !!deep;
   // a missing parent unit has no equality question
