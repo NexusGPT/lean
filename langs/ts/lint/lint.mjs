@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { fileUsesReals } from '../common.mjs';
-import { moduleState, moduleLoader, inertModuleInit } from '../module-forms.mjs';
+import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
@@ -444,6 +444,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name)) return callback(d.initializer, null); // a local function value: a pure lambda, called by name or passed as a callback
     expr(d.initializer);
   }
+  const outsideWriteStatement = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; return !!x.parent && ts.isExpressionStatement(x.parent); };
   function exprStmt(e) {
     if (ts.isYieldExpression(e)) return expr(e);
     while (ts.isParenthesizedExpression(e)) e = e.expression;
@@ -478,6 +479,15 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (root.kind === K.ThisKeyword && !thisParam) { if (objectMethod) return v(l, 'object-method-mutation', 'literal methods keep immutable data fields; use a class for mutable receiver state'); if (l.expression.kind !== K.ThisKeyword && !receiverRecordPath(checker, l)) return v(l, 'receiver-mutation', 'a receiver path needs nonoptional data records; assign a field itself for class or opaque handles'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return expr(e.right); } // a receiver write checks its right side, including exact promise forms
           const o = root.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(root) ? declOf(root) : { kind: null };
           if (localMethodLiteral(tOf(root))) return v(l, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
+          // a field of `process` (`process.exitCode = 1`, `process.env.K = v`): a write to the world, one transition after the
+          // receiver and the value, as a read of that path is one; a plain `=` of a data value as a statement. Lane B records
+          // these writes on its process fake; the other outside roots (globalThis, window) keep property-assign
+          if (ts.isIdentifier(root) && root.text === 'process' && outsideRoot(checker, root, sf, current)) {
+            if (op !== K.EqualsToken || !outsideWriteStatement(e)) { v(l, 'property-assign', `a field of \`${root.text}\` is written by a plain \`=\` statement; read the old value into a local first`); return expr(e.right); }
+            if (nonNull(tOf(e.right)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length)) { v(l, 'property-assign', `a function installed into \`${root.text}\` is called by the outside later; no transition reads that call`); return expr(e.right); }
+            if (l.expression !== root) expr(l.expression);
+            return expr(e.right);
+          }
           if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', `\`${root.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');

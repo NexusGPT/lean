@@ -493,6 +493,20 @@ export function translate(file, fnName, opts = {}) {
     addPrelude('World', 'type World');
     return hoist(`${external(`global_get_${mangle(rd)}`, ['World', rt, kt], `(World, ${rd})`)}(${WORLD}, ${value}, ${key})`, rd);
   }
+  // `process.exitCode = v`: a write to a field of `process` is a transition of the world, after the receiver (a world
+  // read for a deeper path) and the value, in that order; the same handle and key a read of the path names
+  function globalWrite(e) {
+    const n = e.left, recv = n.expression;
+    const root = outsideRoot(checker, recv, sf, currentUnit?.node);
+    const rt = root ? anyType() : dtype(typeOf(recv), recv);
+    const handle = root ? `${external(`global_handle_${recv.text}`, [], rt)}()` : expr(recv);
+    const target = typeOf(n);
+    if (nonNull(typeOf(e.right)).some((t) => isCallable(t))) fail(e, 'property-assign: a function value installed into the outside is not read');
+    let d; try { d = isAny(target) ? anyType() : dtype(target, n); } catch (x) { if (!(x instanceof Unsupported)) throw x; d = anyType(); }
+    const value = outerParens(d === 'Any' ? expr(e.right, anyTarget()) : expr(e.right, target));
+    addPrelude('World', 'type World');
+    hoist(`${external(`global_set_${mangle(d)}`, ['World', rt, 'string', d], '(World, Unit)')}(${WORLD}, ${handle}, ${strEsc(n.name.text)}, ${value})`, 'Unit');
+  }
   function hoist(code, rd) {
     // the call text already takes the world first; bind the next world and the result, return the result name
     const t = valueOperands ? valueName() : `t${tempCount++}_`;
@@ -3156,6 +3170,7 @@ export function translate(file, fnName, opts = {}) {
     if (node.__collect) names.push(node.__collect); // the callback's result state
     const note = (id) => {
       if (moduleState(checker, id, sf)) return; // module writes travel through the world
+      if (outsideRoot(checker, id, sf, currentUnit?.node) && id.text !== 'require') return; // so do writes to a field of an outside root
       if (names.some((m) => m.name === id.text)) return;
       const sym = checker.getSymbolAtLocation(id);
       const d = sym?.valueDeclaration;
@@ -3387,6 +3402,7 @@ export function translate(file, fnName, opts = {}) {
       else { const before = propAccess(assigned); const right = expr(e.right, pt); const op = e.operatorToken.kind === K.PlusEqualsToken ? '+' : e.operatorToken.kind === K.MinusEqualsToken ? '-' : '*'; value = `${before} ${op} ${right}`; }
       accessorCall(setter, assigned, [value]); return null;
     }
+    if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.EqualsToken && ts.isPropertyAccessExpression(e.left) && pathRoot(e.left).kind === K.Identifier && pathRoot(e.left).text === 'process' && worldRead(checker, e.left, sf, currentUnit?.node)) { if (!unitEffectful()) fail(e, 'internal: an outside write in a pure unit'); globalWrite(e); return null; }
     if ((ts.isBinaryExpression(e) && (isWorldField(e.left) || isInstanceWorldField(e.left))) || (isUpdate(e) && (isWorldField(e.operand) || isInstanceWorldField(e.operand)))) {
       // a write to a world field (of this, or of an instance of a same-file class): one transition, its result unused
       const target = ts.isBinaryExpression(e) ? e.left : e.operand;

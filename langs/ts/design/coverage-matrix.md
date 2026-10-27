@@ -17,7 +17,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | VariableStatement | 32918 | 52.5% | admitted | exact | same |
 | ObjectLiteralExpression | 28851 | 46% | admitted | exact as a fresh record; in the heap core a fresh node; literal methods as function fields; getters and setters by name only | fresh heap node with a proto edge |
 | PropertyAssignment | 26056 | 41.6% | no case (refused by default, or reached through its parent) | exact | same |
-| ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; anything else refused (unsupported-syntax) | same |
+| ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; a `=` into a field of `process` a world transition (process-write, done (lane)); anything else refused (unsupported-syntax) | same |
 | IfStatement | 23894 | 38.1% | admitted | exact | same |
 | NumericLiteral | 18802 | 30% | admitted | exact as int or real by file; -0 witnessed in lane B, refused from the heap core | same |
 | ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
