@@ -165,6 +165,136 @@ def lemma_names(skeleton_text):
     return re.findall(r'^lemma\s+(?:\{[^}]*\}\s+)*([A-Za-z0-9_]+)', skeleton_text, flags=re.M)
 
 
+ADAPTER_DOOR = 'no adapter declared: declare one in the scope file ("adapters": {"<f>": {"from": [...], "to": [...], "map": [...]}}) or as a // lean-adapter comment on the candidate function'
+ADAPTED_PART = re.compile(r'^parameter (count \d+ became|\d+ (type|optional|rest|default) )')
+
+
+def _subst(text, by):
+    """`text` with every free identifier named in `by` replaced (a name after a dot is a field, a name before `:=` a
+    binding: both stay as written)."""
+    if not by:
+        return text
+    pat = re.compile(r"(?<![.\w'?])(" + '|'.join(re.escape(n) for n in sorted(by, key=len, reverse=True)) + r")(?![\w'?])(?!\s*:=)")
+    return pat.sub(lambda m: by[m.group(1)], text)
+
+
+def read_adapters(scope, funcs, pf, cf):
+    """The scope's adapters: {f: {"from": parent parameter names, "to": candidate parameter names, "map": one Dafny
+    expression over the parent's parameters per name in "to"}}. A parameter named in neither list is threaded: the
+    same name and type on both sides (the world, the fuel, the receiver), passed as it is. Returns {f: {"to": {name:
+    expr}, "show": text, "door": "scope"|"comment"}}."""
+    raw = scope.get('adapters') or {}
+    if not isinstance(raw, dict):
+        raise Refusal('scope: "adapters" must be an object')
+    out = {}
+    for f, ad in raw.items():
+        if f not in funcs:
+            raise Refusal(f'scope: an adapter for {f}, which the scope does not list')
+        if not isinstance(ad, dict) or not isinstance(ad.get('from'), list) or not isinstance(ad.get('to'), list):
+            raise Refusal(f'scope: the adapter for {f} needs "from" and "to" lists of parameter names')
+        mp = ad.get('map')
+        mp = [mp] if isinstance(mp, str) else mp
+        if not isinstance(mp, list) or len(mp) != len(ad['to']) or not all(isinstance(x, str) and x.strip() for x in mp):
+            raise Refusal(f'scope: the adapter for {f} needs "map": one Dafny expression per name in "to"')
+        pn, cn = [n for n, _ in pf[f]['params']], [n for n, _ in cf[f]['params']]
+        pt, ct = dict(pf[f]['params']), dict(cf[f]['params'])
+        if sorted(ad['from']) != sorted(set(ad['from'])) or not set(ad['from']) <= set(pn):
+            raise Refusal(f'scope: the adapter for {f} names in "from" a parameter the parent does not have (parent: {", ".join(pn)})')
+        if sorted(ad['to']) != sorted(set(ad['to'])) or not set(ad['to']) <= set(cn):
+            raise Refusal(f'scope: the adapter for {f} names in "to" a parameter the candidate does not have (candidate: {", ".join(cn)})')
+        for n in cn:
+            if n not in ad['to'] and (n not in pt or n in ad['from'] or pt[n] != ct[n]):
+                raise Refusal(f'scope: the adapter for {f} gives no value to the candidate parameter {n}')
+        for n in pn:
+            if n not in ad['from'] and (n not in ct or ct[n] != pt[n]):
+                raise Refusal(f'scope: the adapter for {f} does not account for the parent parameter {n}')
+        for x in mp:
+            check_forbidden(x, f'adapter for {f}')
+            if re.search(r'_(parent|candidate)\s*\(|[;{}]|\b(lemma|function|method|var)\b', strip_comments(x)):
+                raise Refusal(f'scope: the adapter for {f} maps with "{x[:80]}", which is not one expression over the parameters')
+        to = dict(zip(ad['to'], [x.strip() for x in mp]))
+        out[f] = {'to': to, 'door': ad.get('door', 'scope') if ad.get('door') in ('scope', 'comment') else 'scope',
+                  'show': f'{f}_candidate({", ".join(to.get(n, n) for n in cn)}) == {f}_parent({", ".join(pn)})'}
+    return out
+
+
+def adapted_args(f, names, adapters, cf):
+    """The candidate's arguments for the parent's parameter `names`: by position, or through the adapter."""
+    if f not in adapters:
+        return ', '.join(names)
+    return ', '.join(adapters[f]['to'].get(n, n) for n, _ in cf[f]['params'])
+
+
+def _owner(base, funcs):
+    return next((f for f in sorted(funcs, key=len, reverse=True) if base == f or base.startswith(f + '_')), None)
+
+
+def _calls(parsed, funcs, suffix):
+    """{f: the scoped functions f calls, from f's own body and its helpers' (<f>_<x>)}."""
+    out = {f: set() for f in funcs}
+    for base, fn in parsed.items():
+        own = _owner(base, funcs)
+        if own is None:
+            continue
+        out[own] |= {x for x in re.findall(r'\b([A-Za-z_][A-Za-z0-9_]*)_' + suffix + r'\s*\(', strip_comments(fn['body'])) if x in funcs}
+    return out
+
+
+def summaries_of(funcs, pf, cf, aliased, unguarded, hyps, adapters):
+    """The relational summaries each Equal_<f> rests on. For a scoped callee g that both sides of f call, changed (not
+    aliased) and with its own lemma, the proof of Equal_<f> first states R_g for every input outside g's scope by
+    calling Equal_<g> (a lemma call, never an assumption): at aligned call sites the prover uses R_g instead of the two
+    bodies. A callee on f's own recursive cycle is the induction premise: the call is admitted only on a smaller fuel,
+    and Equal_<f> decreases its fuel. A cycle without a fuel parameter gets no premise (its measure is not read).
+    Heap-core units (a hypothesis) and generic callees keep the bodies. Returns {f: {rests, lines, induction}}."""
+    cp, cc = _calls(pf, funcs, 'parent'), _calls(cf, funcs, 'candidate')
+    graph = {f: cp[f] | cc[f] for f in funcs}
+
+    def reach(a):
+        seen, todo = set(), [a]
+        while todo:
+            for y in graph[todo.pop()]:
+                if y not in seen:
+                    seen.add(y); todo.append(y)
+        return seen
+    reaches = {f: reach(f) for f in funcs}
+    has_lemma = lambda g: g not in aliased and g not in unguarded and g not in hyps and not pf[g].get('tparams')
+    fuel_of = lambda g: pf[g]['params'][0][0] if pf[g]['params'] and pf[g]['params'][0][1] == 'nat' and pf[g]['params'][0][0] == 'fuel' and cf[g]['params'] and cf[g]['params'][0] == pf[g]['params'][0] else None
+    out = {}
+    for f in funcs:
+        if not has_lemma(f):
+            continue
+        rests, lines, cycle = [], [], []
+        for g in sorted(cp[f] & cc[f]):
+            if not has_lemma(g):
+                continue
+            on_cycle = f in reaches[g]
+            if on_cycle and not (fuel_of(f) and fuel_of(g)):
+                continue
+            gp = pf[g]['params']
+            taken = {n for n, _ in pf[f]['params']} | {n for n, _ in gp}
+            bound = []
+            for i, (n, t) in enumerate(gp):
+                b = f'r{i}_{g}'
+                while b in taken:
+                    b += '_'
+                bound.append((b, t))
+            by = {n: b for (n, _), (b, _) in zip(gp, bound)}
+            names = ', '.join(b for b, _ in bound)
+            guard = f'!InScope_{g}({names})' + (f' && {bound[0][0]} < {fuel_of(f)}' if on_cycle else '')
+            cargs = _subst(adapted_args(g, [n for n, _ in gp], adapters, cf), by)
+            lines.append(f'forall {", ".join(f"{b}: {t}" for b, t in bound)} | {guard}')
+            lines.append(f'  ensures {g}_parent({names}) == {g}_candidate({cargs})')
+            lines.append(f'{{ Equal_{g}({names}); }}')
+            rests.append(g)
+            if on_cycle:
+                cycle.append(g)
+        if rests:
+            out[f] = {'rests': rests, 'lines': lines,
+                      'induction': {'measure': fuel_of(f), 'component': sorted(set(cycle) | {f})} if cycle else None}
+    return out
+
+
 def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_name=None):
     check_forbidden(parent_text, 'parent')
     check_forbidden(cand_text, 'candidate')
@@ -184,6 +314,10 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     if unscoped:
         raise Refusal('candidate defines functions that the scope does not list: ' + ', '.join(unscoped))
     slot_layout_differs = set()
+    # an adapter (scope "adapters"): the developer's declared mapping from the parent's parameters to the candidate's,
+    # for a function whose signature changed; the theorem then states f_candidate(A(x)) == f_parent(x)
+    adapters = read_adapters(scope, funcs, pf, cf)
+    dafny_sig_withheld = {}
     for f in funcs:
         if f not in pf:
             raise Refusal(f'scope lists {f}, which the parent does not define')
@@ -195,11 +329,17 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             if 'Slots_' in str(pf[f]['params']) + str(cf[f]['params']) + str(pf[f]['ret']) + str(cf[f]['ret']):
                 slot_layout_differs.add(f)  # a component whose hook slots changed: nothing to compare slot by slot; its lemma is withheld
                 continue
+            if f in adapters:  # the adapter states the relation between the two parameter lists; the result types must agree
+                if pf[f]['ret'] != cf[f]['ret']:
+                    dafny_sig_withheld[f] = f"interface differs: return type {pf[f]['ret']} became {cf[f]['ret']}; an adapter maps the parameters only"
+                continue
             pt, ct = [t for _, t in pf[f]['params']], [t for _, t in cf[f]['params']]
             what = [f'parameter count {len(pt)} became {len(ct)}'] if len(pt) != len(ct) else []
             what += [f'parameter {k} type {a} became {b}' for k, (a, b) in enumerate(zip(pt, ct), 1) if a != b]
             what += [f"return type {pf[f]['ret']} became {cf[f]['ret']}"] if pf[f]['ret'] != cf[f]['ret'] else []
-            raise Refusal(f'{f}: signature of candidate differs from parent (Dafny: ' + '; '.join(what) + ')')
+            # a changed signature without an adapter: no lemma for this function (the two sides take different inputs),
+            # the rest of the file keeps its theorem
+            dafny_sig_withheld[f] = 'interface differs: Dafny ' + '; '.join(what) + '; ' + ADAPTER_DOOR
     extra_edits = sorted(set(edit) - set(funcs))
     if extra_edits:
         raise Refusal('edit lists functions that the scope does not: ' + ', '.join(extra_edits))
@@ -221,7 +361,7 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             sigs.setdefault(name[: -len(suffix)], {})[label] = m.group(2).strip()
     sig_diff = {f: sig_difference(s_['parent'], s_['candidate']) for f, s_ in sigs.items() if 'parent' in s_ and 'candidate' in s_}
     sig_differs = {f for f, d in sig_diff.items() if d}
-    cand_text, aliased = alias_identical(parent_text, cand_text, pf, cf, sig_differs)
+    cand_text, aliased = alias_identical(parent_text, cand_text, pf, cf, sig_differs | set(adapters) | set(dafny_sig_withheld))
     # a heap-core unit carries the hypothesis its inputs satisfy in the typed program (`// HYP <name>: <expr>`, written
     # by the translator); the lemma assumes it. Both sides must state the same hypothesis, or there is no one theorem.
     hyps = {}
@@ -260,9 +400,19 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             except ValueError:
                 raise Refusal(f'{label}: guard for {name} is not JSON')
     unguarded = {f: 'slot layout differs: the hook slots of parent and candidate are not the same list' for f in slot_layout_differs}
+    unguarded.update(dafny_sig_withheld)
     for f, s in sigs.items():
-        if f in funcs and f not in aliased and sig_diff.get(f):
-            unguarded[f] = f"interface differs: {sig_diff[f][:300]}"
+        if f in funcs and f not in aliased and f not in dafny_sig_withheld and sig_diff.get(f):
+            if f in adapters:  # the adapter accounts for the parameters; a changed decorator, receiver or return type it does not
+                rest = [x for x in sig_diff[f].split('; ') if not ADAPTED_PART.match(x)]
+                if rest:
+                    unguarded[f] = f"interface differs: {'; '.join(rest)[:300]}; an adapter maps the parameters only"
+                continue
+            door = ADAPTER_DOOR if all(ADAPTED_PART.match(x) for x in sig_diff[f].split('; ')) else 'an adapter maps the parameters only, so no adapter states this change'
+            unguarded[f] = f"interface differs: {sig_diff[f][:300]}; {door}"
+    for f in adapters:
+        if f in hyps and f not in unguarded:
+            unguarded[f] = 'interface differs: an adapter on a heap-core unit is not read'
     for f, g in guards.items():
         if f not in funcs or f in aliased or 'parent' not in g or 'candidate' not in g:
             continue
@@ -307,6 +457,7 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     # initial cells agree (literally or after renaming), the named fresh cells agree, the roots' names agree, no fresh
     # reference is unnamed, and a primitive result agrees. Every body is empty: the parts are what the prover must show;
     # check.mjs reads the unit as proved when Equal_<f> holds or every EqualCanon_<f>_* part holds.
+    summaries = summaries_of(funcs, pf, cf, aliased, unguarded, hyps, adapters) if scope.get('summaries') is True else {}
     canon_fuel = None
     if prelude_text:
         mm = re.search(r'^// CANON fuel=([A-Za-z0-9_,]+)$', prelude_text, flags=re.M)
@@ -338,18 +489,38 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         out.append(f'predicate InScope_{f}{tp}({params}) {{ {ins.strip()} }}')
         if f in unguarded:
             out.append(f'// UNGUARDED Equal_{f}: {unguarded[f]}')
-            if ins.strip() == 'false':
+            if ins.strip() == 'false' or f in dafny_sig_withheld:
                 continue
+        if f in adapters and ins.strip() != 'false':
+            raise Refusal(f'scope: the adapter for {f} needs "in_scope": "false" (an adapted function is compared whole)')
+        sm = summaries.get(f, {})
+        if f in adapters:
+            out.append(f'// ADAPTER Equal_{f}: {adapters[f]["show"]} (door {adapters[f]["door"]})')
+        if sm.get('rests'):
+            out.append(f'// RESTS Equal_{f}: ' + ','.join('Equal_' + g for g in sm['rests']))
+        if sm.get('induction'):
+            ind = sm['induction']
+            out.append(f'// INDUCTION Equal_{f}: decreases {ind["measure"]} over {",".join(ind["component"])}; termination: each side\'s own definition decreases its fuel, and running out is the same uninterpreted value on both sides, so equality includes running out at the same depth')
         out.append(f'lemma Equal_{f}{tp}({params})')
         out.append(f'  requires !InScope_{f}({names})')
         if f in hyps:
             out.append(f'  requires {hyps[f]["parent"]}')
+        adapted = adapted_args(f, [n for n, _ in sig["params"]], adapters, cf)
         if f in inrange and f in hyps and f not in aliased:
-            out.append(f'  ensures !{f}_parent({names}).0.oob && !{f}_candidate({names}).0.oob')
-        out.append(f'  ensures {f}_parent({names}) == {f}_candidate({names})')
+            out.append(f'  ensures !{f}_parent({names}).0.oob && !{f}_candidate({adapted}).0.oob')
+        out.append(f'  ensures {f}_parent({names}) == {f}_candidate({adapted})')
+        if sm.get('induction'):
+            out.append(f'  decreases {sm["induction"]["measure"]}')
         out.append('{ // PROOF Equal_' + f)
+        out.extend('  ' + ln for ln in sm.get('lines', []))
         out.append('} // END Equal_' + f)
-        if canon_fuel and f in hyps and f not in aliased and f not in unguarded and sig['params'] and sig['params'][0][1] == 'HWorld' and sig['ret'].replace(' ', '').startswith('(HWorld,'):
+        if sm.get('rests'):  # the same statement proved from the bodies alone: a function the bodies prove needs no summary
+            out.append(f'lemma EqualDirect_{f}{tp}({params})')
+            out.append(f'  requires !InScope_{f}({names})')
+            out.append(f'  ensures {f}_parent({names}) == {f}_candidate({adapted_args(f, [n for n, _ in sig["params"]], adapters, cf)})')
+            out.append('{ // PROOF EqualDirect_' + f)
+            out.append('} // END EqualDirect_' + f)
+        if canon_fuel and f in hyps and f not in aliased and f not in unguarded and f not in adapters and sig['params'] and sig['params'][0][1] == 'HWorld' and sig['ret'].replace(' ', '').startswith('(HWorld,'):
             hw = sig['params'][0][0]
             refs = [n for n, t in sig['params'][1:] if t == 'Ref']
             ret_ref = sig['ret'].replace(' ', '') == '(HWorld,Ref)'
