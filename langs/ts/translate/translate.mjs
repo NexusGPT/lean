@@ -346,12 +346,14 @@ export function translate(file, fnName, opts = {}) {
     const proc = procOf(checker.getSymbolAtLocation(e.expression)?.valueDeclaration);
     if (!proc) return null;
     const binds = proc.fn.parameters.map((p, i) => { const st = ts.setTextRange(ts.factory.createVariableStatement(undefined, ts.factory.createVariableDeclarationList([ts.factory.createVariableDeclaration(p.name, undefined, undefined, e.arguments[i])], ts.NodeFlags.Const)), e.arguments[i]); st.parent = s; return st; });
-    return [...binds, ...proc.fn.body.statements];
+    // the call is a new environment: a parameter or a body declaration named like a unit binding ends with the call
+    const saves = scopeFor(s, [...proc.fn.parameters.map((p) => p.name), ...topDecls(proc.fn.body.statements)], s, s.end);
+    return saves ? [scopeMark('save', saves, s), ...binds, ...proc.fn.body.statements, scopeMark('restore', saves, s)] : [...binds, ...proc.fn.body.statements];
   };
   const procDecl = (s) => (ts.isVariableStatement(s) && s.declarationList.declarations.length === 1 && procOf(s.declarationList.declarations[0])) || (ts.isFunctionDeclaration(s) && procOf(s));
   const procCall = (x) => (ts.isCallExpression(x) && ts.isIdentifier(x.expression) ? procOf(checker.getSymbolAtLocation(x.expression)?.valueDeclaration) : null);
   // a declaration inside a local procedure's body (its parameters, its locals): the body's own, never a loop's state nor a free variable
-  const insideProc = (d) => { for (let q = d?.parent; q; q = q.parent) { if (ts.isFunctionLike(q)) { if (q === currentUnit?.node) return false; const decl = ts.isFunctionDeclaration(q) ? q : (ts.isArrowFunction(q) && q.parent && ts.isVariableDeclaration(q.parent) ? q.parent : null); return !!(decl && procOf(decl)); } } return false; };
+  const insideProc = (d, node = null) => { for (let q = d?.parent; q; q = q.parent) { if (ts.isFunctionLike(q)) { if (q === currentUnit?.node) return false; const decl = ts.isFunctionDeclaration(q) ? q : (ts.isArrowFunction(q) && q.parent && ts.isVariableDeclaration(q.parent) ? q.parent : null); return !!(decl && procOf(decl)) && !(node && node.pos >= q.pos && node.end <= q.end); } } return false; }; // a loop inside the procedure reads its parameters and locals as any loop reads the unit's
   const initDecls = (s) => new Set(generalFor(s) && s.initializer && ts.isVariableDeclarationList(s.initializer) ? s.initializer.declarations : []);
   const boundCache = new WeakMap();
   // a bound is derived only when every next iteration moves one integer local toward a stable limit
@@ -3983,7 +3985,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (names.some((m) => m.name === id.text)) return;
       const sym = checker.getSymbolAtLocation(id);
       const d = sym?.valueDeclaration;
-      if (!d || (insideNode(d, node) && !hoisted?.has(d)) || insideProc(d)) return;
+      if (!d || (insideNode(d, node) && !hoisted?.has(d)) || insideProc(d, node)) return;
       names.push({ name: id.text, sym, node: id });
     };
     const walk = (x) => {
@@ -4563,7 +4565,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         if (!isName) {
           const o = originOf(checker, x, sf, currentUnit?.node ?? null);
           const d = o.decl;
-          if (o.kind === 'local' && d && (!insideNode(d, node) || hoisted?.has(d)) && !insideProc(d) && !out.some((q) => q.name === x.text)) out.push({ name: x.text, sym: o.sym, node: x });
+          if (o.kind === 'local' && d && (!insideNode(d, node) || hoisted?.has(d)) && !insideProc(d, node) && !out.some((q) => q.name === x.text)) out.push({ name: x.text, sym: o.sym, node: x });
         }
       }
       ts.forEachChild(x, walk);

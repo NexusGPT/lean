@@ -635,22 +635,6 @@ export function localProcedure(decl, checker, unitFn) {
   };
   refs(unitFn);
   if (bad || !calls) return null;
-  // a name the body declares that the unit also declares outside it would shadow the unit's after the splice: refused,
-  // except a parameter the body never assigns that every call passes under that same name (`keep(x)` in `for (const x of xs)`)
-  const inside = new Map(), outside = new Set();
-  const declNames = (n, add, skip) => { if (n === skip) return; if ((ts.isParameter(n) || ts.isVariableDeclaration(n) || ts.isBindingElement(n) || ts.isFunctionDeclaration(n)) && n.name && ts.isIdentifier(n.name)) add(n.name.text, n); ts.forEachChild(n, (c) => declNames(c, add, skip)); };
-  declNames(fn, (k, n) => inside.set(k, n), null);
-  declNames(unitFn, (k) => outside.add(k), fn);
-  outside.delete(name.text);
-  const assigned = new Set();
-  const writes = (n) => { if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(n.left)) assigned.add(n.left.text); if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && ts.isIdentifier(n.operand)) assigned.add(n.operand.text); ts.forEachChild(n, writes); };
-  writes(fn.body);
-  const callArgs = []; const collect = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression !== name && checker.getSymbolAtLocation(n.expression) === sym) callArgs.push(n.arguments); ts.forEachChild(n, collect); }; collect(unitFn);
-  for (const [k, n] of inside) {
-    if (!outside.has(k)) continue;
-    const i = ts.isParameter(n) ? fn.parameters.indexOf(n) : -1;
-    if (i < 0 || assigned.has(k) || !callArgs.every((as) => ts.isIdentifier(as[i]) && as[i].text === k)) return null;
-  }
   return { decl, fn, name: name.text, sym };
 }
 
