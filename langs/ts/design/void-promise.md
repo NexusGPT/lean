@@ -78,3 +78,34 @@ each before and after. An untranslated (linted-out) handle unit that is awaited 
 - `apps/frontend/src/modules/UltimateCue/session/conversation-identity.ts:143` an async IIFE in a field: stays out.
 - `apps/backend/src/documents/utils/rate-limiter.ts:25` RateLimiter.waitIfNeeded, `await this.sleep(ms)` on a
   `new Promise` unit: the callee is linted out, so the await keeps its earlier reading.
+
+## 2026-10-27: lane B names the promise object
+
+**The gap.** Lane B rendered every promise as `{ $promise: true }` and awaited a returned promise down to its value.
+The outside could receive a different object, and the run still matched. On the base, `track`, `absent` and the four
+units below were PASS-bounded.
+
+**The reading** (`exec/fake.mjs` `namePromise`, `promiseName`, `render`). The world can answer a promise in three
+ways: a typed call or field, a faulted call (rejected), or an input of a promise type (`exec/gen.mjs`). Each such
+promise is named `promise#N from <path>`. N is the order in which its path first made a promise in this run. The path
+is the fake's own, call counter included. The rendering carries the name beside the settled value, or beside the
+rejection. A world promise the unit returns as it is adds the name to the outcome as `promise` (`exec/run.mjs`
+`observe`, `exec/program.mjs` `step`). The name never comes from a memory address. A second render, which restores
+the call counters, makes the same names, so one side's runs stay deterministic. A promise the unit makes itself stays
+anonymous: an async result, a `.then` product or a `new Promise`.
+
+**Soundness.** A WITNESS here is a real difference. Two names differ only when the paths differ. Two paths differ
+only when the two promises came from two calls, two fields or two inputs, so they are two objects. One path read twice
+gives one name. This can only lose a witness, never invent one. An await is not a request, so lane B still does not
+observe which promise a unit awaits. It sees the await order only through the seeded rejections (`order`).
+
+**Pair void_promise, added units** (both sides are inside the subset):
+- `handout`: a held void promise returned in a record, `{ done: a }` against `{ done: b }`.
+- `swap`: `both(a, b)` against `both(b, a)`.
+- `stash`: a `Promise<undefined>` passed as the second argument of an outside call. A field store is left out: lane A
+  reads `this.last = a` into a `Promise<undefined> | null` field as the absent constant (reported to the lead).
+- `gate`: a `Promise<null>` passed to an outside call.
+
+All four are changed units. On the base, lane B read each one PASS-bounded. With the reading, each is a WITNESS at
+input 0. `track` and `absent` move from PASS-bounded to WITNESS. A bare `return a` against `return b` is a WITNESS
+through the outcome name, but the lint refuses it (`promise`).

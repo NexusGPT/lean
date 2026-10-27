@@ -51,7 +51,7 @@ export class Environment {
   // has the same answer on both sides and in any order. A method member is a callable fake that answers its return
   // type; a service is a fake with typed members.
   typed(path, tspec, optional = false) {
-    if (tspec?.kind === 'promise') { const v = Promise.resolve(this.typed(path, tspec.of)); return this.scheduler ? this.scheduler.hold(v, path) : v; } // under the race explorer a promise the world answers is held until the scheduler releases it; otherwise it resolves at once, in call order
+    if (tspec?.kind === 'promise') { const value = this.typed(path, tspec.of); const v = Promise.resolve(value); const held = this.scheduler ? this.scheduler.hold(v, path) : v; return namePromise(this, held, path, { value }); } // under the race explorer a promise the world answers is held until the scheduler releases it; otherwise it resolves at once, in call order
     if (this.cache.has(path)) return this.cache.get(path);
     if (!tspec) return this.answer(path);
     if (tspec.kind === 'service' && tspec.awaits) return this.typed(path, tspec.awaits); // a thenable answers what awaiting it yields
@@ -165,7 +165,7 @@ export class Environment {
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
         // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
-        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r; } throw error; }
+        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return namePromise(env, env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r, `${path}()#${k}`, { reason: error }); } throw error; }
         // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
         if (!env.loading) {
           const cbs = [];
@@ -199,6 +199,23 @@ export class Environment {
   module(name) { return this.fake(`module:${name}`, this.shapes?.imports?.[name] ?? null); }
 }
 
+// A promise object the world answers (a typed call or field, a faulted call) or the input holds is named by its
+// creation: `promise#N from <path>`, N the order in which its path first made a promise in this run, the path the
+// fake's own (call counter included). Two runs that hand the outside, or return, a different promise object at the
+// same position differ, even when both settle to the same value; the name never depends on a memory address, so one
+// side's runs are deterministic. A promise the unit makes itself (an async function's result, a `.then` product, a
+// `new Promise`) stays anonymous.
+const promiseNames = new WeakMap(); // promise -> { label, value } or { label, reason }
+export function namePromise(env, p, path, settled) {
+  if (!p || typeof p !== 'object' || promiseNames.has(p)) return p;
+  let label = `promise from ${path}`;
+  if (env) { const seq = (env.promiseSeq ??= new Map()); if (!seq.has(path)) seq.set(path, seq.size + 1); label = `promise#${seq.get(path)} from ${path}`; }
+  promiseNames.set(p, { label, ...settled });
+  return p;
+}
+// the name of a promise the world or the input made, or null (not a promise, or one the unit made)
+export const promiseName = (v) => (v && (typeof v === 'object' || typeof v === 'function') && typeof v.then === 'function' ? promiseNames.get(v)?.label ?? null : null);
+
 // A rendering of a value for the trace and for outcome comparison: fakes by path, objects structurally, functions by name.
 export function render(v, depth = 0, seen = new Set()) {
   if (v === null) return null;
@@ -219,7 +236,7 @@ export function render(v, depth = 0, seen = new Set()) {
   if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen)) };
   if (v instanceof Error) return { $error: v.constructor.name, message: v.message };
   if (v instanceof RegExp) return { $regex: String(v) };
-  if (typeof v.then === 'function') return { $promise: true };
+  if (typeof v.then === 'function') { const n = promiseNames.get(v); return n ? { $promise: n.label, settled: Object.hasOwn(n, 'reason') ? { rejected: render(n.reason, depth + 1, seen) } : render(n.value, depth + 1, seen) } : { $promise: true }; } // a promise the world or the input made is named by its creation; one the unit made is anonymous
   const out = {};
   for (const k of Object.keys(v).sort()) out[k] = render(v[k], depth + 1, seen);
   return out;
