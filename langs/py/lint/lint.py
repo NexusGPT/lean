@@ -59,6 +59,22 @@ def lint_rules(path, text=None):
             continue
         v(st, 'toplevel-effect', 'a statement at module level runs on import: move it into a function')
 
+    bound = {}
+    for st in mod.tree.body:
+        names = []
+        if isinstance(st, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names = [st.name]
+        elif isinstance(st, ast.Assign):
+            names = [t.id for t in st.targets if isinstance(t, ast.Name)]
+        elif isinstance(st, ast.AnnAssign) and isinstance(st.target, ast.Name):
+            names = [st.target.id]
+        elif isinstance(st, (ast.Import, ast.ImportFrom)):
+            names = [a.asname or a.name.split('.')[0] for a in st.names]
+        for nm in names:
+            if nm in bound:
+                v(st, 'toplevel-state', f'{nm} is bound twice at module level (line {bound[nm]}): the later binding wins at run time')
+            bound[nm] = st.lineno
+
     for st in mod.tree.body:
         if isinstance(st, ast.ClassDef):
             for k in st.keywords:

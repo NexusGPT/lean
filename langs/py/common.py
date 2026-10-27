@@ -267,9 +267,9 @@ class Module:
         if isinstance(ann, ast.BinOp) and isinstance(ann.op, ast.BitOr):
             l, r = self.hint(ann.left), self.hint(ann.right)
             if r == ('none',) and l != ('none',):
-                return ('opt', l)
+                return opt(l)
             if l == ('none',) and r != ('none',):
-                return ('opt', r)
+                return opt(r)
             return ('unknown', ast.unparse(ann))
         if isinstance(ann, ast.Subscript):
             head = ann.value.id if isinstance(ann.value, ast.Name) else (ann.value.attr if isinstance(ann.value, ast.Attribute) else '?')
@@ -283,17 +283,64 @@ class Module:
             if head in ('dict', 'Dict', 'Mapping'):
                 return ('dict', self.hint(args[0]), self.hint(args[1]))
             if head == 'Optional':
-                return ('opt', self.hint(args[0]))
+                return opt(self.hint(args[0]))
             if head == 'Union':
                 hs = [self.hint(a) for a in args]
                 rest = [h for h in hs if h != ('none',)]
                 if len(rest) == 1 and len(hs) == 2:
-                    return ('opt', rest[0])
+                    return opt(rest[0])
                 return ('unknown', ast.unparse(ann))
             if head == 'Callable':
                 return ('callable',)
             return ('unknown', ast.unparse(ann))
         return ('unknown', ast.unparse(ann))
+
+
+def opt(t):
+    """Optional[T]: Python has one absence, so Optional[Optional[T]] is Optional[T]."""
+    return t if t[0] == 'opt' else ('opt', t)
+
+
+DATACLASS_HOOKS = {'__post_init__', '__init__', '__new__', '__eq__', '__ne__', '__hash__', '__setattr__', '__delattr__',
+                   '__getattr__', '__getattribute__', '__init_subclass__'}
+
+
+def dataclass_hook(node):
+    """A dataclass that runs code of its own on construction, comparison or field access: (node, name) or None."""
+    for b in node.body:
+        if isinstance(b, (ast.FunctionDef, ast.AsyncFunctionDef)) and b.name in DATACLASS_HOOKS:
+            return b, b.name
+        if isinstance(b, ast.AnnAssign):
+            a = b.annotation
+            head = a.value if isinstance(a, ast.Subscript) else a
+            name = head.id if isinstance(head, ast.Name) else (head.attr if isinstance(head, ast.Attribute) else '')
+            if name in ('ClassVar', 'InitVar'):
+                return b, name
+            if isinstance(b.value, ast.Call):
+                return b, 'field()'
+    return None
+
+
+def immutable(t, mod, seen=None):
+    """A value no one can change once made: int, str, bool, None, tuples, optionals and frozen dataclasses of these,
+    and references to outside objects (whose state lives in the world)."""
+    seen = set() if seen is None else seen
+    k = t[0]
+    if k in ('int', 'bool', 'str', 'none', 'nonelit', 'ext', 'tvar', 'exc'):
+        return True
+    if k == 'opt':
+        return immutable(t[1], mod, seen)
+    if k == 'tuple':
+        return all(immutable(x, mod, seen) for x in t[1])
+    if k == 'data':
+        if t[1] in seen:
+            return True
+        ci = mod.class_named(t[1])
+        if ci is None or not ci.frozen:
+            return False
+        seen.add(t[1])
+        return all(immutable(ci.module.hint(a), ci.module, seen) for _, a, _ in ci.fields)
+    return False
 
 
 def bad_type(t):

@@ -17,7 +17,7 @@ import ast, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
-from common import Module, dn, dafny_name, snake, bad_type, tstr, decreases_hint, BUILTIN_EXC, LANGUAGE_MODULES  # noqa: E402
+from common import Module, dn, dafny_name, snake, bad_type, tstr, decreases_hint, BUILTIN_EXC, LANGUAGE_MODULES, opt, immutable, dataclass_hook  # noqa: E402
 
 
 class Unsupported(Exception):
@@ -46,6 +46,7 @@ MUTATORS = {'append', 'extend', 'insert', 'pop', 'remove', 'clear', 'sort', 'rev
 STR_EXACT = {'startswith', 'endswith', 'join'}
 STR_UNINTERP = {'upper', 'lower', 'strip', 'lstrip', 'rstrip', 'title', 'capitalize', 'casefold'}
 FAULTING_BUILTINS = {'int'}
+OPS = {'Add': '+', 'Sub': '-', 'Mult': '*', 'FloorDiv': '//', 'Mod': '%', 'Pow': '**', 'BitOr': '|', 'BitAnd': '&'}
 
 
 def indent(s, n=1):
@@ -229,6 +230,8 @@ class Translator:
         if k == 'tuple':
             return '(' + ', '.join(self.dtype(x) for x in t[1]) + ')'
         if k == 'dict':
+            if not self.exact_eq(t[1]):
+                raise Unsupported(None, 'value-equality', f'a dict keyed by {tstr(t[1])} finds keys by __eq__ and __hash__: key it by a plain value')
             return f'map<{self.dtype(t[1])}, {self.dtype(t[2])}>'
         if k == 'opt':
             self.need_option()
@@ -247,6 +250,9 @@ class Translator:
         if ('dt_' + name) in self.prelude:
             return
         ci = self.mod.class_named(name)
+        hook = dataclass_hook(ci.node)
+        if hook:
+            fail(hook[0], 'dataclass-hook', f'{name} defines {hook[1]}: a dataclass that runs its own code on construction, comparison or field access is outside milestone 1')
         self.prelude['dt_' + name] = None  # reserve: a recursive field refers back to the type
         parts = []
         for f, ann, _ in ci.fields:
@@ -284,9 +290,9 @@ class Translator:
         if b == NONELIT and a[0] == 'opt':
             return a
         if a == NONELIT:
-            return ('opt', b)
+            return opt(b)
         if b == NONELIT:
-            return ('opt', a)
+            return opt(a)
         if a[0] == 'opt' and a[1] == b:
             return a
         if b[0] == 'opt' and b[1] == a:
@@ -506,6 +512,8 @@ class Translator:
         self.loop_depth = 1
         self.helpers = []
         self.cur = u
+        a = u.node.args
+        self.local_names = {p.arg for p in a.args + a.posonlyargs + a.kwonlyargs} | ({a.vararg.arg} if a.vararg else set()) | self.assigned(u.node.body)
         world = self.is_world(u.name)
         ps, rt, rest = self.unit_sig(u)
         st = self.self_type(u)
@@ -642,6 +650,8 @@ class Translator:
 
     def assign(self, s, env, ctx, R):
         if isinstance(s, ast.AugAssign):
+            if isinstance(s.target, ast.Name) and s.target.id in env.types and env.types[s.target.id][0] in ('list', 'dict'):
+                fail(s, 'collection-mutation', f'`{s.target.id} {OPS.get(type(s.op).__name__, "?")}=` changes the {tstr(env.types[s.target.id])} in place (every alias sees it): write `{s.target.id} = {s.target.id} + ...`')
             target, ann = s.target, None
             value = ast.BinOp(left=ast.Name(id=target.id, ctx=ast.Load()) if isinstance(target, ast.Name) else target, op=s.op, right=s.value)
             ast.copy_location(value, s)
@@ -660,6 +670,8 @@ class Translator:
             if not ctx.world:
                 raise NeedsWorld()
             ft = self.check_type(self.class_fields(self.cur.cls).get(target.attr, ('unknown', 'self.' + target.attr)), target)
+            if not immutable(ft, self.mod):
+                fail(target, 'mutable-field', f'self.{target.attr} holds a {tstr(ft)}: a field lives in the world, and a mutable value there can change under the method; store an immutable value')
             steps, v, t = self.ex(value, env, ctx, expected=ft)
             v = self.coerce(v, t, ft, value)
             setter = self.external(f'ext_{self.cur.cls.name}_set_{target.attr}', ['World', 'Ext_' + self.cur.cls.name, self.dtype(ft)], 'World')
@@ -821,7 +833,7 @@ class Translator:
         for n in join:
             after.types[n] = types.get(n, env.types.get(n))
         text = f'var {tup(J)} := if {c} then\n{indent(wrap(th))}\nelse\n{indent(wrap(el))};\n'
-        if ctx.world and self.may_fault(s.body + s.orelse):
+        if ctx.world:
             text += f'if ext_faulted_World(wld) then\n{indent(wrap(ctx.fault(after)))}\nelse\n{indent(wrap(self.tr(rest, after, ctx, k)))}'
         else:
             text += self.tr(rest, after, ctx, k)
@@ -996,6 +1008,8 @@ class Translator:
             decreases = None
             self._hint_node = hnode
         # what the loop carries: names it assigns that exist before it; what it reads: names defined before it
+        if isinstance(s, ast.For) and s.target.id in self.assigned(s.body):
+            fail(s, 'loop-var-assign', f'the body assigns the loop variable {s.target.id}: use another name')
         assigned = self.assigned(s.body) - ({s.target.id} if isinstance(s, ast.For) else set())
         M = sorted(n for n in assigned if n in env.types)
         scanned = list(s.body) + ([s.test] if isinstance(s, ast.While) else [])
@@ -1191,6 +1205,8 @@ class Translator:
             return [], dn(name), t
         if name in ('True', 'False'):
             return [], name.lower(), BOOL
+        if name in self.local_names:
+            fail(n, 'uninitialised', f'{name} is not assigned on every path to this read: assign it first')
         if name in self.mod.consts:
             return self.ex_Constant(self.mod.consts[name], env, ctx, expected)
         if name in self.units or name in self.mod.functions:
@@ -1470,7 +1486,7 @@ class Translator:
         e, et = self.pure(n.elt, inner, ctx)
         if not (isinstance(n.elt, ast.Name) and n.elt.id == x):
             text = f'{self.helper("PyMap")}({text}, {lam(e)})'
-        elif cur is not None:
+        elif cur is not None and {m.id for m in ast.walk(g.ifs[0]) if isinstance(m, ast.Name)} <= {x}:
             self._last_filter = (n, (x, cur))
         return s, text, ('list', et)
 
@@ -1652,6 +1668,8 @@ class Translator:
         f = n.func
         if isinstance(f, ast.Name):
             name = f.id
+            if name in self.local_names:
+                fail(n, 'shadowed-name', f'{name} is a local name of this function: the call would call the local value')
             if name in self.units and self.units[name].cls is None:
                 return self.call_unit(n, name, None, env, ctx)
             if name in ('eval', 'exec', 'compile', '__import__'):
@@ -1745,6 +1763,7 @@ class Translator:
         for p in ps:
             self.check_type(p[1], n)
         rt = self.check_type(ci.module.hint(md.returns), n) if md.returns is not None else NONE
+        self.crossing(n, ps, rt, ci.module, f'{cname}.{m}')
         steps, vals = self.bind_args(n, ps, None, {}, env, ctx, f'{cname}.{m}')
         if not ctx.world:
             raise NeedsWorld()
@@ -1781,6 +1800,7 @@ class Translator:
             if p[1][0] == 'data':
                 self.datatype_from(sib, p[1][1])
         rt = self.check_type(sib.hint(fd.returns), n) if fd.returns is not None else NONE
+        self.crossing(n, ps, rt, sib, label)
         steps, vals = self.bind_args(n, ps, None, {}, env, ctx, label)
         if not ctx.world:
             raise NeedsWorld()
@@ -1788,6 +1808,15 @@ class Translator:
         fn = self.external(f'ext_call_{mangle(mod)}_{label}', ['World'] + [self.dtype(p[1]) for p in ps], f'(World, {rd})')
         t = self.tmp()
         return steps + [('let', f'(wld, {t})', f'{fn}({", ".join(["wld"] + vals)})'), self.check_step(ctx, env)], t, rt
+
+    def crossing(self, n, ps, rt, mod, label):
+        """A value handed to the outside, or received from it, is shared with the world: only values no one can
+        change cross at milestone 1 (the heap reading of shared mutable values is milestone 2)."""
+        for name, t, _ in ps:
+            if not immutable(t, mod):
+                fail(n, 'mutable-argument', f'{label} receives {name}: {tstr(t)}, a value the outside can change after the call: pass an immutable value (a tuple, a frozen dataclass)')
+        if not immutable(rt, mod):
+            fail(n, 'mutable-result', f'{label} returns a {tstr(rt)} the outside may keep and change: return an immutable value')
 
     def datatype_from(self, sib, name):
         if self.mod.class_named(name) is None:
