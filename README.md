@@ -218,18 +218,27 @@ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDiscou
 
 > 4 changed function(s); 5 unchanged caller(s) checked through lane B, 2 with a WITNESS through a changed callee: **1 in scope · 3 WITNESS · 1 PASS-proved · 0 PASS-decided · 1 PASS-bounded · 0 ASK · 0 REFUSE · 0 NEW**
 
-| file | function | verdict | lane B | lane A | note |
-|---|---|---|---|---|---|
-| pricing.ts | `unitDiscount` | **IN-SCOPE** | PASS-bounded | | declared in scope but no difference found within the bound |
-| pricing.ts | `deliveryFee` | **WITNESS** | WITNESS | | input 11: outcome |
-| pricing.ts | `formatCents` | **PASS-proved** | PASS-bounded | PASS-proved | the refactor is a theorem |
-| pricing.ts | `quoteShop` | **WITNESS** | WITNESS | | input 0: through `deliveryFee` (changed; its own row is WITNESS), `unitDiscount` (changed; its own row is IN-SCOPE); this function's text is unchanged |
-| pricing.ts | `quoteAll` | **WITNESS** | WITNESS | | input 52: through `deliveryFee`, `unitDiscount`; this function's text is unchanged |
-| service.ts | `cleanCart` | **PASS-bounded** | PASS-bounded | ASK:identity | the loop was reshaped; the result may share an input, so the value proof is withheld |
+| file | function | verdict | coverage | lane B | lane A | note |
+|---|---|---|---|---|---|---|
+| pricing.ts | `unitDiscount` | **IN-SCOPE** | checked | PASS-bounded | | declared in scope but no difference found within the bound |
+| pricing.ts | `deliveryFee` | **WITNESS** | checked | WITNESS | | input 11: outcome |
+| pricing.ts | `formatCents` | **PASS-proved** | checked | PASS-bounded | PASS-proved | the refactor is a theorem |
+| pricing.ts | `quoteShop` | **WITNESS** | checked | WITNESS | | input 0: through `deliveryFee` (changed; its own row is WITNESS), `unitDiscount` (changed; its own row is IN-SCOPE); this function's text is unchanged |
+| pricing.ts | `quoteAll` | **WITNESS** | checked | WITNESS | | input 52: through `deliveryFee`, `unitDiscount`; this function's text is unchanged |
+| service.ts | `cleanCart` | **PASS-bounded** | checked | PASS-bounded | ASK:identity | the loop was reshaped; the result may share an input, so the value proof is withheld |
 
 Reviewers read the declared scope and the asks, not the diff. A function nobody touched is still in the table when a function it calls changed, with the callee named. **Scope is optional and declared, never inferred:** without it every difference is a `WITNESS`; with it a function named as meant to change reports `IN-SCOPE` with its lane B result, information rather than a finding. The producer of a change is never consulted.
 
-Planned for the table (status in [Built and planned](#what-is-built-and-what-is-planned)): one row for every changed unit, including the ones lean did not check, with the reason (`refused:<rule>`, `failed:<class>`, `skipped:<reason>`); a run identity and verdict reuse, so a one-line follow-up commit re-checks only the units whose inputs changed; run-level budgets with a named stop, so a long pull request ends with a partial table and the rows it did not reach, never a silent kill.
+**Every changed unit has a row, checked or not.** The `coverage` column says what lean did with it: `checked` (a verdict exists), `refused:<rule>` (the lint's first rule; lane B's verdict is kept in the row), `failed:loader`, `failed:timeout`, `failed:translation-defect` or `failed:harness` (no usable verdict), `skipped:not-typescript`, `skipped:binary` or `skipped:secret-path` (never read: `.env`, keys, certificates). The intake is one pure function, `selectUnits`, used by the run and by `--preview`, which prints the intake table and runs no lane:
+
+```
+$ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --preview
+| file                        | unit         | coverage | decision | reason                 |
+| `examples/booking/pricing.ts` | unitDiscount | pending  | check    | selected for checking  |
+| `examples/booking/pricing.ts` | deliveryFee  | pending  | check    | selected for checking  |
+```
+
+Planned for the table (status in [Built and planned](#what-is-built-and-what-is-planned)): a run identity and verdict reuse (`reused`), so a one-line follow-up commit re-checks only the units whose inputs changed; run-level budgets with a named stop (`skipped:budget`), so a long pull request ends with a partial table and the rows it did not reach, never a silent kill.
 
 ### 3. In the editor
 
@@ -428,7 +437,7 @@ Everything else is yours: `async`/`await`, `try`/`catch`, `switch`, destructurin
 | | command |
 |---|---|
 | one function, both lanes, one verdict with its certificate | `node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit applyDiscount` (`--unit PricingService.applyDiscount` for a method; `--scope scope.json`; `--n`, `--seed`, `--dafny-seconds`, `--deep[=k]`, `--out verdict.json`) |
-| a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m,file.ts:f] [--out report.md] [--json report.json]` |
+| a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]` |
 | lane B alone, in seconds | `node langs/ts/exec/run.mjs --parent old.ts --candidate new.ts --unit f [--sequence-depth 2 --sequence-breadth 4 --deep]` |
 | the finite lane alone | `node langs/ts/exec/finite.mjs --parent old.tsx --candidate new.tsx --unit Panel [--max 500]` |
 | the lint, in the terminal or an agent's loop | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--any-type] [--changed ranges.json]` |
@@ -450,7 +459,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 | the lint's labelled advice (`proved`, `conditional`, `migration`) and a proposal, a flag or a named owner for every `any` declaration | built; `any` inside a type (`any[]`, `Record<string, any>`) is not reported yet |
 | the CI workflow on a GitHub runner | built, validated offline, not yet exercised on a runner |
 | the front-end layers: a tree to a stated depth with context from the nearest provider, resolved styles against the pinned Tailwind table | built; a project's own Tailwind theme is not read yet |
-| a row per changed unit in the pull-request table, including the refused and skipped ones, with the reason | planned |
+| a row per changed unit in the pull-request table, including the refused and skipped ones, with the reason; `--preview` | built |
 | a run identity and verdict reuse across pushes | planned |
 | a `WITNESS` that names the source line of the first differing effect on each side, with the advised rewrite | planned |
 | run-level budgets with a named stop | planned |
