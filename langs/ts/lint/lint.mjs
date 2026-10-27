@@ -1367,8 +1367,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length) return v(e, 'unsupported-member', `property .${name} is not declared on ${checker.typeToString(t)}`);
     }
   }
-  // an open key (a string, a number, an unknown) on a plain record of data fields reads as one uninterpreted lookup of the
-  // record value and the key; a key call, a method, a getter, a class instance, a symbol or an indexed receiver stays out
+  // an open key (a string, a number, an unknown) on a plain record of data fields, or a number-keyed dictionary, reads as one
+  // uninterpreted lookup of the value and the key; a key call, a method, a getter, a class instance or a symbol stays out
   function openKeyRefusal(e, t, at) {
     let keyCall = false;
     const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); };
@@ -1376,7 +1376,9 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (keyCall) return 'bind the computed key before reading the record; a key call may mutate its receiver';
     if (nonNull(at).some((x) => x.flags & (TF.ESSymbolLike | TF.UniqueESSymbol))) return 'read a symbol-keyed member by a declared string key; a symbol key is outside the open-key reading';
     const props = checker.getPropertiesOfType(t);
-    if (!props.length || checker.getIndexInfoOfType(t, ts.IndexKind.Number) || !(t.flags & TF.Object)) return 'use a finite union of declared string keys, or a Record<string, T> dictionary';
+    if (!(t.flags & TF.Object) || (!props.length && !checker.getIndexInfoOfType(t, ts.IndexKind.Number))) return 'use a finite union of declared string keys, or a Record<string, T> dictionary';
+    const rt = tOf(e); // an absent key reads undefined: the read's type must hold it (any, unknown, or a union with undefined)
+    if (!isAny(rt) && !(rt.flags & TF.Unknown) && !(rt.flags & TF.Union ? rt.types : [rt]).some((x) => x.flags & TF.Undefined)) return 'an absent key reads undefined, which this value type leaves out; type the values `T | undefined`, or read a declared key';
     if (t.symbol && (t.symbol.flags & ts.SymbolFlags.Class)) return 'an open key on a class instance may select a prototype member; read a declared field by name';
     if (props.some((p) => nonNull(checker.getTypeOfSymbolAtLocation(p, e)).some((x) => checker.getSignaturesOfType(x, ts.SignatureKind.Call).length))) return 'an open key may select a method; call a method by its declared name, and index records of data fields';
     if (props.some((p) => p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)))) return 'an open key may run a getter; read an accessor by its declared property name';

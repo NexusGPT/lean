@@ -2488,6 +2488,7 @@ export function translate(file, fnName, opts = {}) {
     const D = dtype(base, n);
     const anyKey = isAny(at), K = anyKey ? anyType() : dtype(at, n);
     const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
+    if (rd !== 'Any' && !optionalD(rd)) fail(n, 'an absent key reads undefined, which this value type leaves out');
     const receiver = expr(n.expression);
     const key = anyKey ? expr(n.argumentExpression, anyTarget()) : expr(n.argumentExpression);
     return `${external(`open_key_read_to_${rd}`, [D, K], rd)}(${receiver}, ${key})`;
