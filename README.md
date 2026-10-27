@@ -264,6 +264,8 @@ users.ts:7:58  reference-equality  === on arrays and records compares references
 2 violation(s)
 ```
 
+`node langs/ts/convert.mjs <folder>` applies those rewrites itself as syntax-tree transforms, a proved one at every site it matches, a conditional one where its precondition is decided and a migration only in a narrowed shape whose guard keeps behaviour, and keeps a file only when `pr.mjs` finds no WITNESS on a function it changed.
+
 The ESLint plugin ([`langs/ts/eslint`](langs/ts/eslint)) ships one rule, `lean/provable`, with the same findings as suggestions (a rewrite that keeps your meaning is offered where one exists: `===` for `==`, `let` for `var`, `Math.floor` around a division). Its `anyType` option, and `--any-type` on the command line, name every `any` at its declaration (a parameter, a local, a field, a bound name, a field of an interface) with the type its uses and its same-file callers need, offered as an annotation to accept or not; a proposed type is a claim about intent, never proved, so it is labelled `conditional` on its evidence, `migration` when the evidence conflicts, or `flag-only` when there is none:
 
 ```
