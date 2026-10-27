@@ -22,7 +22,7 @@ export function useScale(n: number): number {
   return scale(n) + 1;
 }
 
-// changed only at one input, which generated inputs do not reach
+// changed only at one input, the compared literal lane B draws first (a WITNESS the shaped inputs reach)
 export function rare(x: number): number {
   if (x === 7919) return 0;
   return x + 1;
