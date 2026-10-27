@@ -375,3 +375,25 @@ Census (resolved, 39 roots), strict graph 901 -> 917, own syntax 2216 -> 2269; `
 ```text
 {"files":23359,"units":53918,"core":917,"heapOwnFit":2269,"mirrorMismatch":2127,"planErrorCount":0,"seconds":305}
 ```
+
+## 20. Decorators read as metadata
+
+Reading: a decorated class is read like any other: a method's body is its text whatever a decorator wraps around it.
+Two places where a decorator may have replaced what it decorates are not read through its text: a call `this.m()` in
+a decorated class, or of a decorated method, is a transition (step 18's, keyed by the class, the method and the file's
+method code, decorators included), and a decorated field keeps the class out (a decorator may install an accessor
+there). An abstract class stays out.
+Soundness: a decorator runs once, when the class is defined, and may return a replacement class or method descriptor;
+reading `this.m()` as the transition never assumes the prototype's m is the declared text. A class decorator returning
+a subclass that replaces a field by an accessor is the case of a subclass in another file, which the ordinary lane and
+row 1 already assume away for fields; it is named here as the reading's assumption. The transition's key carries the
+file's method code, so a changed method (decorated or not) is never the same transition: pair `heap5_decorators`
+`clear` calls the changed decorated `reset` (lane B: WITNESS; lane A: unproved).
+Out: decorated fields and accessors, abstract classes, a decorator expression the class reads back.
+Pair `heap5_decorators` (a sibling module `meta.ts` holds the decorators): `Counter.bump` (`+ 0` on its result:
+proved), `Counter.reset` (WITNESS), `Counter.twice` (untouched, unproved: its calls of bump are transitions over the
+changed method code), `Counter.clear` (WITNESS, unproved). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 917 -> 920, own syntax 2269 -> 2272; `curve.md` expects 3673 after its step 20:
+```text
+{"files":23359,"units":53918,"core":920,"heapOwnFit":2272,"mirrorMismatch":2130,"planErrorCount":0,"seconds":304}
+```
