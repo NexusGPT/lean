@@ -74,6 +74,7 @@ export async function runEnvironmentPrograms({ files, roots, spec, seed, ms, rt,
 // only while it takes at most `b` releases out of arm order; each side's orders give a SET of observations, and two
 // sets that differ are a race the other version does not have.
 export const RACE_BOUND = 'complete only within the stated bound and event model: two live calls of the unit, at most b releases taken out of arm order, the events being the first call\'s start, the second call\'s arrival and the release of each promise the world answers, microtasks run to quiescence between two events, timers never fire; never a claim about true parallelism or the outside\'s own ordering';
+const orderKey = (order) => order.join('|');
 const parentOf = (label) => (label.includes('/') ? label.slice(0, label.lastIndexOf('/')) : '');
 const harnessStop = (e) => e instanceof BudgetError || e?.message === '__timeout__';
 // module state the receiver proxy cannot see: a top-level `let`/`var`, a top-level constant holding a container, a
@@ -145,27 +146,49 @@ export async function exploreRaces({ mount, programs = 2, seed, ms, rt, b = 2, m
       }
     }
     const set = new Map(); for (const r of runs) if (!set.has(r.key)) set.set(r.key, r);
-    return { runs, set, pairs, cut, truncated, infeasible, complete: !truncated && cut === 0 && infeasible === 0 };
+    const byOrder = new Map(); for (const r of runs) byOrder.set(orderKey(r.order), r); // the observation this side reached under each order it ran
+    return { runs, set, byOrder, pairs, cut, truncated, infeasible, complete: !truncated && cut === 0 && infeasible === 0 };
   };
-  const draws = drawn > 0 ? fc.sample(fc.scheduler(), { seed, numRuns: drawn }) : [];
-  const stats = { programs: 0, orders: { parent: 0, candidate: 0 }, drawn: 0, dependentPairs: 0, cut: { parent: 0, candidate: 0 }, complete: true };
+  // the drawn orders of one side, drawn afresh from the seed: a drawn scheduler's clone shares its source's random
+  // stream (the vendored SchedulerImplem hands every clone the same task selector), so a scheduler cloned once per
+  // side would give the candidate the orders that follow the parent's; one sample per side gives both the same draws
+  const drawsOf = () => (drawn > 0 ? fc.sample(fc.scheduler(), { seed, numRuns: drawn }) : []);
+  const stats = { programs: 0, orders: { parent: 0, candidate: 0 }, drawn: 0, paired: 0, dependentPairs: 0, cut: { parent: 0, candidate: 0 }, complete: true };
   for (let p = 0; p < programs; p++) {
     const res = {};
     for (const name of ['parent', 'candidate']) {
       const S = await side(name, p);
-      for (const d of draws) { // drawn orders beside the conflict-bounded set: on a complete side, an observation outside the set is a defect of the reduction
-        const ex = await execute(name, p, { drawn: d[cloneMethodOf(fc)]() }); stats.drawn++;
+      for (const d of drawsOf()) { // drawn orders beside the conflict-bounded set: on a complete side, an observation outside the set is a defect of the reduction
+        const ex = await execute(name, p, { drawn: d }); stats.drawn++;
+        S.byOrder.set(orderKey(ex.order), ex);
         if (!S.set.has(ex.key)) { if (S.complete) return { verdict: 'ASK', reason: `races: a drawn order (${ex.order.join(', ')}) reached a ${name} observation the conflict-bounded order set did not; the dependency relation missed a conflict`, stats, undecided: true }; S.set.set(ex.key, ex); }
       }
       res[name] = S; stats.orders[name] += S.runs.length; stats.cut[name] += S.cut; stats.dependentPairs += S.pairs.size; if (!S.complete) stats.complete = false;
     }
     stats.programs++;
     const P = res.parent, C = res.candidate;
-    const onlyC = [...C.set.values()].filter((r) => !P.set.has(r.key)), onlyP = [...P.set.values()].filter((r) => !C.set.has(r.key));
+    const unmatched = () => [[...C.set.values()].filter((r) => !P.set.has(r.key)), [...P.set.values()].filter((r) => !C.set.has(r.key))];
+    let [onlyC, onlyP] = unmatched();
+    // the explored orders compared pairwise: an observation one side reached under an order the other side never ran
+    // (a drawn order, or a prefix the bound cut on one side only) is not yet a difference; the other side runs that
+    // same order, and the same observation there is a match. Only an execution enters a set, so a set only grows by
+    // what that side really reaches, and a difference that stays is one the same order shows on both sides
+    for (const [from, to, toName] of [[onlyC, P, 'parent'], [onlyP, C, 'candidate']]) for (const r of from) {
+      if (to.byOrder.has(orderKey(r.order))) continue;
+      const ex = await execute(toName, p, { prefix: r.order }); stats.paired++;
+      if (ex.infeasible !== undefined) continue;
+      to.byOrder.set(orderKey(ex.order), ex); if (!to.set.has(ex.key)) to.set.set(ex.key, ex);
+    }
+    [onlyC, onlyP] = unmatched();
     if (!onlyC.length && !onlyP.length) continue;
-    const [who, run, mine, other] = onlyC.length ? ['candidate', onlyC[0], C, P] : ['parent', onlyP[0], P, C];
-    if (!other.complete) return { verdict: 'ASK', reason: `races: program ${p}: the ${who} reached an observation the ${who === 'candidate' ? 'parent' : 'candidate'} did not, but its order set was cut by the bound (${other.cut} prefixes over b = ${b}${other.truncated ? `, more than ${maxOrders} orders` : ''}), so the difference may lie outside it`, stats, undecided: true };
+    const [who, mine, other, otherName] = onlyC.length ? ['candidate', C, P, 'parent'] : ['parent', P, C, 'candidate'];
+    const only = onlyC.length ? onlyC : onlyP;
+    const run = only.find((r) => other.byOrder.has(orderKey(r.order))) ?? only[0]; // a schedule both sides ran, when there is one
     const def = mine.runs[0];
+    if (!other.complete) { // a real second schedule: one interleaving per side, the other side's under the same order when it runs it, else its arm order
+      const atSame = other.byOrder.get(orderKey(run.order)), second = atSame ?? other.runs[0];
+      return { verdict: 'ASK', reason: `races: program ${p}: the ${who} under the order ${run.order.join(', ')} reached an observation the ${otherName} reached in no order it ran; the ${otherName} under ${atSame ? 'that same order' : `its arm order ${second.order.join(', ')} (the ${who}'s order is not feasible on it)`} reached another; the ${otherName}'s order set was cut by the bound (${other.cut} prefixes over b = ${b}${other.truncated ? `, more than ${maxOrders} orders` : ''}), so an order outside it may reach the ${who}'s`, stats, undecided: true, schedules: { [who]: run.order, [otherName]: second.order, sameOrder: !!atSame } };
+    }
     let i = 0; while (i < run.order.length && run.order[i] === def.order[i]) i++;
     const moved = run.order[i] ?? null, before = def.order[i] ?? null;
     const ms1 = run.steps[i], ms2 = run.steps.find((x) => x.label === before) ?? def.steps[i];
@@ -175,7 +198,6 @@ export async function exploreRaces({ mount, programs = 2, seed, ms, rt, b = 2, m
   }
   return { verdict: 'PASS-bounded', stats };
 }
-const cloneMethodOf = (fc) => fc.cloneMethod;
 // the races of a free function: two calls of it, each on its own copy of the p-th inputs, against one loaded module
 export async function runFreeRaces({ files, roots, spec, seed, ms, rt, project }) {
   if (!spec.isAsync) return null;
