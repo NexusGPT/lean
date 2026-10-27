@@ -537,10 +537,32 @@ export function prototypeMaker(checker, sf) {
     if (ts.isBinaryExpression(n) && n.operatorToken.kind === K.EqualsToken) {
       const l = n.left;
       if ((ts.isPropertyAccessExpression(l) && l.name.text === '__proto__') || (ts.isElementAccessExpression(l) && ts.isStringLiteral(l.argumentExpression) && l.argumentExpression.text === '__proto__')) { found = n; return; }
+      if (ts.isElementAccessExpression(l) && protoKeyWrite(checker, l.argumentExpression, n.right) === 'prototype') { found = n; return; } // a key that may be '__proto__' with an object or null value
     }
     ts.forEachChild(n, walk);
   };
   walk(sf);
   prototypeMakers.set(sf, found);
   return found;
+}
+// A write `o[k] = v` through a key that may be '__proto__'. ECMA-262 10.1.9 OrdinarySet finds no own key of that name
+// on a plain object and reaches the accessor of Object.prototype (B.2.2.1.2); its setter replaces the prototype when v
+// is an object or null and ignores a primitive, so no key is made either way. The answer, shared by the lint and the
+// translator: 'free' when the key is never '__proto__' (a number, a string literal type other than '__proto__', a
+// template whose fixed head or tail rules it out); 'primitive' when every value the type admits is a primitive (the
+// write is skipped on that key); 'prototype' when the value may be an object or null (no reading of a dictionary
+// holds a prototype, so the write is refused).
+const PROTO_KEY = '__proto__';
+export function protoKeyWrite(checker, key, value) {
+  const TF = ts.TypeFlags;
+  let k = key; while (ts.isParenthesizedExpression(k)) k = k.expression;
+  const partFree = (t) => (t.flags & TF.StringLiteral ? t.value !== PROTO_KEY : !!(t.flags & TF.NumberLike) || (!!(t.flags & TF.TemplateLiteral) && (!PROTO_KEY.startsWith(t.texts[0]) || !PROTO_KEY.endsWith(t.texts[t.texts.length - 1]))));
+  const kt = checker.getTypeAtLocation(k);
+  const free = (ts.isTemplateExpression(k) && (!PROTO_KEY.startsWith(k.head.text) || !PROTO_KEY.endsWith(k.templateSpans[k.templateSpans.length - 1].literal.text)))
+    || (ts.isStringLiteralLike(k) && k.text !== PROTO_KEY)
+    || (kt.flags & TF.Union ? kt.types : [kt]).every(partFree);
+  if (free) return 'free';
+  const vt = checker.getTypeAtLocation(value);
+  const primitive = (t) => !!(t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.EnumLike | TF.ESSymbolLike | TF.Undefined | TF.Void | TF.Never));
+  return (vt.flags & TF.Union ? vt.types : [vt]).every(primitive) ? 'primitive' : 'prototype';
 }

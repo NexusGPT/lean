@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember, thisParamPath } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -805,6 +805,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `a callback cannot change an outer ${dict ? 'dictionary' : 'array'}`);
           else if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
           else if (dict && !nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
+          else if (dict && protoKeyWrite(checker, l.argumentExpression, e.right) === 'prototype') v(l, 'prototype', 'a key that may be \'__proto__\' with an object or null value replaces the dictionary\'s prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map');
           expr(l.argumentExpression);
         } else if (ts.isPropertyAccessExpression(l) && sameFileStatic(l)?.kind === 'field') {
           // a write of a static field of a same-file class: the field is a world cell, written as a module \`let\` is

@@ -1,0 +1,6 @@
+{
+ "scope": ["own", "mark", "tally", "named", "keep"],
+ "equal": {"own": false, "mark": false, "tally": true, "named": true, "keep": true},
+ "why": "A dictionary write `d[k] = v` with k = '__proto__' finds no own key and reaches the setter of Object.prototype (ECMA-262 10.1.9 OrdinarySet, B.2.2.1.2): an object or null replaces the prototype, a primitive is ignored, no key is made. own: the parent writes its object only under another key, the candidate's computed literal key makes an own key on every key (unproved; lane B WITNESS on '__proto__'). mark: a primitive written under '__proto__' makes no key, the candidate answers as if it did (unproved; WITNESS on '__proto__'; proved equal before this reading). tally: two writes against one through another name, both skipped on '__proto__' (proved). named: an object under a literal key through a const of literal type (proved). keep untouched. A dynamic key with an object value is refused, rule prototype (escapes proto_write_object.ts, proto_write_null.ts).",
+ "b": {"own": "WITNESS", "mark": "WITNESS", "tally": "PASS-bounded", "named": "PASS-bounded", "keep": "PASS-bounded"}
+}
