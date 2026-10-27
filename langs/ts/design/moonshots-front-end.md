@@ -148,6 +148,26 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `preventDefault`, a local declaration, a branch keep a handler opaque today). Part b (the interpreter) waits
   on the hook-slot runtime.
 - Kill: under 20% readable.
+- Measured (part b, 2026-10-27, `harness/handler_count.mjs`, `translate.mjs --core --tolerant --report` per file): the
+  selection is the first 200 `.tsx` files in sorted path order under the census clones whose syntax carries a JSX
+  attribute named `on[A-Z]` (the 2026-10-26 selection is not recoverable, so the baseline is re-run on the same 200).
+  A boxed function-valued prop is a prop map entry `:= ext_Any_of_fn_...(value)`; other is a named function or a local.
+
+  | lean | files | handler attributes | units | translated | linted out | failed | boxed props | descriptor | opaque | lambda | other |
+  |---|---|---|---|---|---|---|---|---|---|---|---|
+  | 4a5bdec | 200 | 1,731 | 817 | 476 | 331 | 10 | 247 | 54 (21.9%) | 103 (41.7%) | 1 | 89 |
+  | df025b9 | 200 | 1,731 | 817 | 476 | 331 | 10 | 247 | 97 (39.3%) | 60 (24.3%) | 1 | 89 |
+
+  The reader now admits event parameters, calls on them such as `preventDefault`, and `const` locals: descriptors go
+  from 54 to 97 of 247 boxed props, with the same unit counts translated, linted out and failed; of the 158 boxed
+  props that are a function body (descriptor, opaque or lambda), 97 are descriptors. By the part (a) measure (39.3%
+  of boxed props) the 40% bar is not reached; the other boxed props are named functions and locals passed through
+  (`onChange={onChange}`), which no body reader changes.
+
+  The interpreter (lane B, `exec/handlers-interp.mjs`) applies each readable descriptor at every fire of the command
+  sequences and the finite lane and agrees with the real invocation on every interpretable fire of
+  `tests/pairs/jsx_handlers` (17 units) and `tests/pairs/jsx_handlers_symbolic` (7 units); a disagreement is
+  `ASK:handler-model`. Design: `design/handler-descriptors.md`.
 
 ## 7. Deep render: a page as one unit
 
