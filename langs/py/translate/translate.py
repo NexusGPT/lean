@@ -43,9 +43,7 @@ INT, BOOL, STR, NONE = ('int',), ('bool',), ('str',), ('none',)
 NONELIT = ('nonelit',)
 MUTATORS = {'append', 'extend', 'insert', 'pop', 'remove', 'clear', 'sort', 'reverse', 'update', 'setdefault',
             'popitem', 'add', 'discard', '__setitem__'}
-STR_EXACT = {'startswith', 'endswith', 'join'}
 STR_UNINTERP = {'upper', 'lower', 'strip', 'lstrip', 'rstrip', 'title', 'capitalize', 'casefold'}
-FAULTING_BUILTINS = {'int'}
 OPS = {'Add': '+', 'Sub': '-', 'Mult': '*', 'FloorDiv': '//', 'Mod': '%', 'Pow': '**', 'BitOr': '|', 'BitAnd': '&'}
 
 
@@ -842,18 +840,6 @@ class Translator:
     def read_name(self, dname, env):
         """The Dafny text of a join variable at the end of a branch (by its Dafny name)."""
         return dname
-
-    def may_fault(self, stmts):
-        """Conservative: any call, subscript, division, raise or try may set the fault."""
-        for s in stmts:
-            for n in ast.walk(s):
-                if isinstance(n, (ast.Call, ast.Subscript, ast.Raise, ast.Try)):
-                    return True
-                if isinstance(n, ast.BinOp) and isinstance(n.op, (ast.FloorDiv, ast.Mod)):
-                    return True
-                if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == 'self':
-                    return True
-        return False
 
     # ----- raise and try -----
     def raise_stmt(self, s, env, ctx):
