@@ -43,7 +43,11 @@ A statement the proof lane does not model (try/catch, a `while` without a bound)
 
 ## Recursion
 
-A function on a recursive cycle (alone or with others) takes a fuel. Every call on the cycle passes one less; at zero the function yields an uninterpreted out-of-fuel value. A caller outside the cycle passes an uninterpreted starting fuel. The theorem quantifies over the fuel: equal for every fuel. A function whose text is identical on both sides but whose recursive sibling changed is not aliased, and its proof needs an induction the theorem does not yet write: ASK.
+A function on a recursive cycle (alone or with others) takes a fuel. Every call on the cycle passes one less; at zero the function yields an uninterpreted out-of-fuel value. A caller outside the cycle passes an uninterpreted starting fuel. The theorem quantifies over the fuel: equal for every fuel. A function whose text is identical on both sides but whose recursive sibling changed is not aliased; it is proved by induction on the fuel, as below.
+
+## Callers through callees
+
+A changed function is compared through the relations its changed same-file callees keep. For each scoped callee that both sides call, the callee's own lemma (equal for every input outside its scope, or equal through its declared adapter) is stated inside the caller's proof by a lemma call, and the prover uses it at the call sites instead of the two bodies. The caller is proved only when every lemma it rests on is proved, each by the same rule; else it is unproved through those callees, and the certificate lists them (`restsOn`, each with its verdict). On a recursive cycle the callee lemma is the induction premise, admitted only on a smaller fuel; running out of fuel is the same uninterpreted value on both sides, so the equality includes both sides recursing to the same depth (the termination side condition). A changed signature compares the candidate on the adapted inputs with the parent on the original ones, `f_candidate(A(x)) == f_parent(x)`, the world threaded through both, only when the developer declares `A`; otherwise it is `ASK:interface`.
 
 ## Lane B (bounded execution)
 
