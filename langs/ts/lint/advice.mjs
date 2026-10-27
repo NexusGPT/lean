@@ -26,7 +26,7 @@ export const ADVICE = {
   'property-assign': { label: 'migration', text: 'Records that are not yours are immutable here. Build a new one with a spread.' },
   'index-assign': { label: 'migration', text: 'Only a local array changes by index. Return a new array otherwise.' },
   'global-mutation': { label: 'migration', text: 'Module state cannot be assigned from a proved function. Pass it in and return it.' },
-  'global-read': { label: 'migration', text: 'This name cannot be resolved in the project; a proof needs its type.' },
+  'global-read': { label: 'migration', text: 'This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument.' },
   'this': { label: 'migration', text: '`this` outside a class method has no receiver.' },
   'class': { label: 'migration', text: '`super` and inheritance of members are outside the subset; call the parent explicitly or keep the logic in the method.' },
   'dynamic-eval': { label: 'migration', text: 'Code built from strings has no mathematical reading. Keep it out of the function you want proved.' },
