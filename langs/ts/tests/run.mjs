@@ -324,6 +324,20 @@ for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) 
   }
 }
 
+// ----- advice labels: the label of the rewrite the lint advises, as --json reports it (first line `// expect: <rule> <label>`) -----
+const advDir = path.join(here, 'fixtures/advice');
+for (const f of fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.endsWith('.ts')).sort() : []) {
+  const src = fs.readFileSync(path.join(advDir, f), 'utf8');
+  const [, rule, label] = src.match(/^\/\/ expect:\s*(\S+)\s+(proved|conditional|migration)\b/m) ?? [];
+  const name = f.replace(/\.ts$/, '');
+  if (!rule) { add('advice', name, 'expect line', false, 'missing `// expect: <rule> <label>`'); continue; }
+  const l = run('node', [lint, path.join(advDir, f), '--json']);
+  let found = []; try { found = JSON.parse(l.stdout).filter((x) => x.rule === rule); } catch { /* not JSON: fails below */ }
+  const tag = label === 'conditional' ? '[conditional: ' : `[${label}]`;
+  const ok = l.status === 1 && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition));
+  add('advice', name, `${rule} ${label}`, ok, found.length ? found.map((x) => `${x.label}${x.labelDecided ? ' (decided at the site)' : ''}`).join(', ') : `no ${rule} finding (exit ${l.status})`);
+}
+
 // seeded clock values retain their native shapes and ordered observations
 const clocks = run('node', [path.join(here, 'clock-read.mjs')]);
 add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clocks.stdout + clocks.stderr).trim());

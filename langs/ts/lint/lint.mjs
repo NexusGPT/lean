@@ -14,7 +14,7 @@ import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, i
 import { fileUsesReals } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
-import { ADVICE } from './advice.mjs';
+import { ADVICE, labelTag } from './advice.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 
@@ -172,9 +172,62 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (name === 'assign' && !(e.arguments[0] && ts.isObjectLiteralExpression(unparenX(e.arguments[0])))) return v(e, 'assign-target', '`Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources into a new object');
     return null;
   };
-  const v = (node, rule, msg) => {
+  // site: the label of the advised rewrite as decided at this site ({ label, precondition }), for the rules that decide it
+  const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
-    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200) });
+    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
+  };
+  // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
+  // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
+  // undefined: the coercion table's identity row, where the translator writes == and === alike
+  const litKind = (x) => { x = unparenX(x); if (ts.isPrefixUnaryExpression(x) && x.operator === K.MinusToken) x = x.operand; return ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) ? 'string' : ts.isNumericLiteral(x) ? 'number' : (x.kind === K.TrueKeyword || x.kind === K.FalseKeyword) ? 'boolean' : null; };
+  const eqKind = (t) => {
+    const c = t.flags & TF.TypeParameter ? checker.getBaseConstraintOfType(t) : t;
+    if (!c) return null;
+    const kinds = new Set((c.flags & TF.Union ? c.types : [c]).map((x) => (x.flags & (TF.BigIntLike | TF.Null | TF.Undefined | TF.Void | TF.Any | TF.Unknown)) ? null : x.flags & TF.NumberLike ? 'number' : x.flags & TF.StringLike ? 'string' : x.flags & TF.BooleanLike ? 'boolean' : null));
+    return kinds.size === 1 && !kinds.has(null) ? [...kinds][0] : null;
+  };
+  const eqeqeqSite = (e) => {
+    const l = unparenX(e.left), r = unparenX(e.right);
+    const typeofLit = (a, b) => ts.isTypeOfExpression(a) && litKind(b) === 'string';
+    const proved = typeofLit(l, r) || typeofLit(r, l) || (!!litKind(l) && litKind(l) === litKind(r)) || (!!eqKind(tOf(l)) && eqKind(tOf(l)) === eqKind(tOf(r)));
+    return proved ? { label: 'proved' } : { label: 'conditional', precondition: ADVICE['loose-equality'].precondition };
+  };
+  // no-useless-call: `f.bind(r, a)(b)` is `f(a, b)` when f is a same-file function with no `this` token (its parameters
+  // included) and r is undefined, null or this; a bound value that is held, not called at once, differs from any
+  // rewrite in identity, name, length and `new`
+  const uselessCallSite = (e, u) => {
+    let hasThis = false;
+    const w = (x) => { if (hasThis) return; if (x.kind === K.ThisKeyword || (ts.isParameter(x) && ts.isIdentifier(x.name) && x.name.text === 'this')) { hasThis = true; return; } ts.forEachChild(x, w); };
+    if (u?.fn) w(u.fn);
+    const r = e.arguments[0] && unparenX(e.arguments[0]);
+    const unused = !r || r.kind === K.NullKeyword || r.kind === K.ThisKeyword || (ts.isIdentifier(r) && r.text === 'undefined' && declOf(r).kind === 'global');
+    let use = e; while (use.parent && ts.isParenthesizedExpression(use.parent)) use = use.parent;
+    const calledAtOnce = !!use.parent && ts.isCallExpression(use.parent) && use.parent.expression === use;
+    return { label: u?.fn && !hasThis && unused && calledAtOnce ? 'proved' : 'migration' };
+  };
+  // prefer-rest-params: `arguments` becomes `...args` when every use in its function (arrows inside included) is
+  // `arguments.length` or `arguments[<integer literal>]` read as a value, and no parameter is reassigned (a sloppy-mode
+  // `arguments` slot aliases its parameter; a rest array never does)
+  const restParamsSite = (id) => {
+    let fn = id.parent; while (fn && !(ts.isFunctionLike(fn) && !ts.isArrowFunction(fn))) fn = fn.parent;
+    if (!fn?.body) return { label: 'migration' };
+    const params = new Set(fn.parameters.flatMap((p) => ts.isIdentifier(p.name) ? [p.name.text] : []));
+    const target = (x) => { const p = x.parent; return (ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator)) || ts.isDeleteExpression(p); };
+    let ok = true;
+    const w = (x) => {
+      if (!ok || (ts.isFunctionLike(x) && !ts.isArrowFunction(x))) return;
+      if (ts.isIdentifier(x) && x.text === 'arguments' && !(x.parent && ts.isPropertyAccessExpression(x.parent) && x.parent.name === x)) {
+        const p = x.parent;
+        const length = ts.isPropertyAccessExpression(p) && p.expression === x && p.name.text === 'length';
+        const index = ts.isElementAccessExpression(p) && p.expression === x && ts.isNumericLiteral(p.argumentExpression) && Number.isInteger(Number(p.argumentExpression.text));
+        if (!(length || index) || target(p)) ok = false;
+      }
+      if (ts.isIdentifier(x) && params.has(x.text) && target(x)) ok = false;
+      ts.forEachChild(x, w);
+    };
+    w(fn.body);
+    return { label: ok ? 'proved' : 'migration' };
   };
   const tOf = (n) => checker.getTypeAtLocation(n);
   const localMethodLiteral = (t) => { const obj = methodLiteralOf(checker, t); return obj?.getSourceFile() === sf ? obj : null; };
@@ -242,7 +295,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   function checkIdent(id, asCallee = false) {
     const name = id.text;
     if (name === 'undefined') return;
-    if (name === 'arguments' && originOf(checker, id, sf, current).kind === 'global') return v(id, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter');
+    if (name === 'arguments' && originOf(checker, id, sf, current).kind === 'global') return v(id, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter', restParamsSite(id));
     const o = originOf(checker, id, sf, current);
     if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id)) return v(id, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
     if (o.kind === 'unit' && units.get(name)?.fn.asteriskToken && !asyncGenerator(units.get(name)) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.expression === id)) return v(id, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
@@ -853,7 +906,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (nul(e.left) || nul(e.right)) { expr(e.left); return expr(e.right); } // loose nullish equality tests both tags; strict equality tests only its own tag
       const prim = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.Null | TF.Undefined)) && !(x.flags & TF.BigIntLike));
       if (prim(tOf(e.left)) && prim(tOf(e.right))) { expr(e.left); return expr(e.right); } // between primitives == follows the coercion table (number, string, boolean, null, undefined), member by member on a union
-      return v(e, 'loose-equality', 'use === and !== with an object, bigint or symbol operand; between primitives == follows the coercion table');
+      return v(e, 'loose-equality', 'use === and !== with an object, bigint or symbol operand; between primitives == follows the coercion table', eqeqeqSite(e));
     }
     if (op === K.InstanceOfKeyword) {
       expr(e.left);
@@ -951,7 +1004,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const rt = tOf(recv);
       if (recv.kind === K.ThisKeyword) { if (!currentClass && !objectMethod && !thisParam) return v(e, 'this', '`this` outside a class method'); return argsOf(e); }
       if (ts.isIdentifier(recv) && (name === 'call' || name === 'apply' || name === 'bind') && declOf(recv).kind === 'unit') { // `h.call(o, a)` / `h.apply(o, [a])` on a same-file function: the receiver is its first operand (the declared `this` parameter, else ignored); `bind` fixes a receiver for a later call, outside the subset
-        if (name === 'bind') return v(e, 'bound-function', '`bind` fixes a receiver for a later call; call the function with its receiver instead');
+        if (name === 'bind') return v(e, 'bound-function', '`bind` fixes a receiver for a later call; call the function with its receiver instead', uselessCallSite(e, units.get(recv.text)));
         if (!e.arguments.length) return v(e, 'unsupported-call', '`call` and `apply` take the receiver first');
         if (name === 'apply' && (e.arguments.length > 2 || (e.arguments[1] && !(ts.isArrayLiteralExpression(unparenX(e.arguments[1])) && !unparenX(e.arguments[1]).elements.some(ts.isSpreadElement))))) return v(e, 'unsupported-call', '`apply` takes its arguments as one array literal');
         return argsOf(e);
@@ -1047,6 +1100,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       return v(e, 'unsupported-call', `method .${name}() on ${checker.typeToString(rt)} is outside the subset`);
     }
     if (e.expression.kind === K.SuperKeyword && currentClass && currentFn && ts.isConstructorDeclaration(currentFn)) return argsOf(e); // `super(args)` in a constructor: the parent's constructor on this handle, a transition
+    { const b = unparenX(f); if (ts.isCallExpression(b) && ts.isPropertyAccessExpression(b.expression) && b.expression.name.text === 'bind' && ts.isIdentifier(b.expression.expression) && declOf(b.expression.expression).kind === 'unit') return call(b); } // `f.bind(r, a)(b)` on a same-file function: the bind is the refusal, and its site decides the label
     return v(e, 'unsupported-call', 'calls through computed callees are outside the subset');
   }
   // `.map(cb)` directly under an awaited `Promise.all(...)`: the callback is a loop body (its returns are collected values)
@@ -1266,7 +1320,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const k = ts.isNumericLiteral(e.argumentExpression) ? Number(e.argumentExpression.text) : NaN;
       const q = ps[k];
       if (Number.isInteger(k) && q && ts.isIdentifier(q.name) && !q.dotDotDotToken && !q.questionToken && !q.initializer && !ps.slice(0, k).some((x) => x.dotDotDotToken)) return;
-      return v(e, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter');
+      return v(e, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter', restParamsSite(e.expression));
     }
     expr(e.expression); expr(e.argumentExpression);
     const rt = tOf(e.expression), at = tOf(e.argumentExpression);
@@ -1418,7 +1472,15 @@ export function lintFile(file, ranges = null, opts = {}) {
   // the unit each finding sits in, and the advice for its rule
   const unitSpans = [...units.values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
   for (const st of sf.statements) for (const m of classMethodUnits(st)) unitSpans.push([m.name, lineOf(sf, m.node.getStart(sf)), lineOf(sf, m.node.getEnd())]);
-  for (const f of out) { const u = unitSpans.find(([, a, b]) => a <= f.line && f.line <= b); f.unit = u ? u[0] : null; f.advice = ADVICE[f.rule] ?? null; }
+  // the label of the advised rewrite: decided at the site for the three deciding rules (labelDecided), else the rule's own;
+  // a rule with no advice entry suggests nothing, so its label is migration
+  for (const f of out) {
+    const u = unitSpans.find(([, a, b]) => a <= f.line && f.line <= b); f.unit = u ? u[0] : null;
+    const a = ADVICE[f.rule], site = f.site; delete f.site;
+    f.label = site?.label ?? a?.label ?? 'migration'; f.labelDecided = !!site;
+    if (f.label === 'conditional') f.precondition = site?.precondition ?? a.precondition;
+    f.advice = a ? `${labelTag(f.label, f.precondition)} ${a.text}` : null;
+  }
   return out;
 }
 
