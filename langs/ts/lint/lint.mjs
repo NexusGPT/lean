@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -2017,6 +2017,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (parts.some(isAny)) return; // a read on an opaque value: uninterpreted accessor
     if (name === 'length' && parts.every((t) => isArrayLike(checker, t) || isStr(t))) return;
     if (name === 'size' && parts.every((t) => isSetT(t) || isMapT(t))) return;
+    if (execMatchMember(e, checker)) return; // `m.index` / `m.input` of a match of a non-global regular expression literal (common.mjs)
     for (const t of parts) {
       if (t.flags & TF.Never) continue; // stage 5 rank 17: a read on never is unreachable; any reading is sound
       if (t.flags & TF.IndexedAccess) continue; // an indexed this type (`this["options"]`): an opaque value, read through an uninterpreted accessor (the translator types it Any)

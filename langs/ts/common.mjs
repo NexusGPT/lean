@@ -472,6 +472,41 @@ export function syncLoopCallback(n, checker) {
   return syncLoopCall(n.parent, checker);
 }
 
+// The index and input of a match (ECMA-262 22.2.7.2 RegExpBuiltinExec): for a regular expression literal without the g
+// and y flags, `re.exec(s)` and `s.match(re)` start at 0 and leave lastIndex alone, so the match, its `index` and its
+// `input` are functions of the pattern and s. `m.index` and `m.input`, where m is a const bound to such a call and s is a
+// literal or a name (a field path on one) the unit never writes, read as `regex_index(re, s)` (one uninterpreted function
+// of the pattern and the string, the same on both sides) and s itself. Returns { regex, arg, name } or null. An index
+// read through the array alone would be unsound: two matches with equal items may sit at different places.
+export function execMatchMember(e, checker) {
+  if (!e || !ts.isPropertyAccessExpression(e) || e.questionDotToken || !['index', 'input'].includes(e.name.text)) return null;
+  let r = e.expression; while (ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r)) r = r.expression;
+  if (!ts.isIdentifier(r)) return null;
+  const sym = checker.getSymbolAtLocation(r), d = sym?.valueDeclaration;
+  if (!d || !ts.isVariableDeclaration(d) || !(d.parent.flags & ts.NodeFlags.Const) || !d.initializer) return null;
+  let c = d.initializer; while (ts.isParenthesizedExpression(c)) c = c.expression;
+  if (!ts.isCallExpression(c) || c.arguments.length !== 1 || !ts.isPropertyAccessExpression(c.expression) || c.expression.questionDotToken) return null;
+  const unp = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const m = c.expression.name.text;
+  const regex = m === 'exec' ? unp(c.expression.expression) : m === 'match' ? unp(c.arguments[0]) : null;
+  const arg = m === 'exec' ? unp(c.arguments[0]) : m === 'match' ? unp(c.expression.expression) : null;
+  if (!regex || !ts.isRegularExpressionLiteral(regex) || /[gy]/.test(regex.text.slice(regex.text.lastIndexOf('/') + 1))) return null;
+  if (!(checker.getTypeAtLocation(arg).flags & ts.TypeFlags.StringLike)) return null;
+  // the string: a literal, or a name or a field path on one the unit never writes, in scope at the read as at the call
+  let root = arg; while (ts.isPropertyAccessExpression(root) && !root.questionDotToken) root = unp(root.expression);
+  if (!ts.isStringLiteral(arg) && !ts.isNoSubstitutionTemplateLiteral(arg)) {
+    if (!ts.isIdentifier(root)) return null;
+    const rs = checker.getSymbolAtLocation(root), rd = rs?.valueDeclaration;
+    if (!rd || checker.getSymbolsInScope(e, ts.SymbolFlags.Value).find((x) => x.name === root.text) !== rs) return null;
+    let fn = rd.parent; while (fn && !ts.isFunctionLike(fn) && !ts.isSourceFile(fn)) fn = fn.parent;
+    let written = false;
+    const w = (y) => { if ((ts.isBinaryExpression(y) && y.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && y.operatorToken.kind <= ts.SyntaxKind.LastAssignment && (() => { let l = unp(y.left); while (ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l)) l = unp(l.expression); return ts.isIdentifier(l) && checker.getSymbolAtLocation(l) === rs; })()) || ((ts.isPrefixUnaryExpression(y) || ts.isPostfixUnaryExpression(y)) && ts.isIdentifier(unp(y.operand)) && checker.getSymbolAtLocation(unp(y.operand)) === rs)) written = true; ts.forEachChild(y, w); };
+    if (fn) w(fn);
+    if (written) return null;
+  }
+  return { regex, arg, name: e.name.text };
+}
+
 // A bucket map: `const m = new Map<K, T[]>()` declared in the unit, never rebound, whose arrays no other live name holds
 // when a push through the map changes one. Its arrays are written by `m.get(k)?.push(a)` as a statement (ECMA-262
 // 13.3.9: the push runs only when the key is present; the arguments carry no call), or through a bucket local, `const l =
