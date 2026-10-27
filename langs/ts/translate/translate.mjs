@@ -38,6 +38,7 @@ import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '..
 import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
+import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText } from '../library-rows.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -270,6 +271,8 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
       { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag; an inherited method is a transition
       const t = baseOf(typeOf(recv));
+      if (f.name.text === 'toString' && !n.arguments.length && primitiveText(typeOf(recv))) return false; // ToString of a primitive (design/library-rows.md)
+      if (LOCALE_READS.has(f.name.text) && (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike))) return true; // the host's locale data decides the text: a world read (design/library-rows.md)
       if (isArrayLike(checker, t) || (t.flags & TF.StringLike) || isSetT(t) || isMapT(t) || (t.flags & (TF.NumberLike | TF.BooleanLike))) return false;
       return true; // opaque, record method, imported object, any
     }
@@ -1081,6 +1084,11 @@ export function translate(file, fnName, opts = {}) {
       case 'StrSubstring': text = `function ${name}(s: string, a: int, b: int): string
 { var lo := ${helper('StrClamp', ['int'])}(a, |s|); var hi := ${helper('StrClamp', ['int'])}(b, |s|);
   if lo <= hi then s[lo..hi] else s[hi..lo] }`; break;
+      case 'StrSubstr': text = `function ${name}(s: string, a: int, len: int): string
+{ var lo := if a < 0 then (if |s| + a < 0 then 0 else |s| + a) else (if a > |s| then |s| else a);
+  var l := if len < 0 then 0 else if len > |s| then |s| else len;
+  var hi := if lo + l > |s| then |s| else lo + l;
+  s[lo..hi] }`; break;
       case 'StrCharAt': text = `function ${name}(s: string, p: int): string
 { if 0 <= p < |s| then [s[p]] else "" }`; break;
       case 'StrAt': usesOption = true; text = `function ${name}(s: string, p: int): Option<string>
@@ -1464,6 +1472,12 @@ export function translate(file, fnName, opts = {}) {
     return real ? `(${expr(arg)}).Floor` : outerParens(expr(arg));
   }
   const lenOf = (s) => (real ? `(|${s}| as real)` : `|${s}|`);
+  // ToString of a primitive value given as Dafny text: what stringOf reads, for a value already bound (an optional call's present receiver)
+  function textOf(code, t, node) {
+    if ((t.flags & TF.StringLike) || ((t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike))) return code;
+    if (t.flags & TF.BooleanLike) return `(if ${code} then "true" else "false")`;
+    return `${external('to_string', [dtype(t, node)], 'string')}(${code})`;
+  }
   function stringOf(e) {
     const t = typeOf(e);
     if ((t.flags & TF.StringLike) || ((t.flags & TF.Union) && t.types.length > 0 && t.types.every((x) => x.flags & TF.StringLike))) return expr(e);
@@ -2583,6 +2597,44 @@ export function translate(file, fnName, opts = {}) {
       return '';
     });
   }
+  // pop, shift and splice used as values (the library rows; design/library-rows.md): the removed element (absent on an
+  // empty array) or the removed run; on a local the function owns, the receiver's new contents are bound before the
+  // statement, as the statement forms bind them (the lint admits that form only where the call runs on every path and the
+  // statement reads the receiver nowhere else)
+  function mutatorValue(n, name, recv, R, A) {
+    const fresh = freshArray(checker, recv, (id) => originOf(checker, id, sf, currentUnit?.node ?? null).kind === 'global');
+    let id = recv; while (ts.isParenthesizedExpression(id) || ts.isNonNullExpression(id) || ts.isAsExpression(id)) id = id.expression;
+    if (!fresh && !ts.isIdentifier(id)) fail(n, `.${name}() as a value needs a local array or a fresh one`);
+    const toInt = (c) => (real ? `${helper('JsTrunc', ['real'])}(${c})` : c);
+    const v = `lx${tempCount++}_`, lets = [`var ${v} := ${R};`];
+    let value, cell;
+    if (name === 'splice') { // 23.1.3.31: a start counted from the end when negative, a count clamped to the rest
+      addPrelude('SeqClamp', 'function SeqClamp(i: int, lo: int, hi: int): int { if i < lo then lo else if i > hi then hi else i }');
+      const [a0, a1] = n.arguments, s = `ls${tempCount++}_`, d = `ld${tempCount++}_`, r0 = `lr${tempCount++}_`;
+      lets.push(a0 ? `var ${s} := (var ${r0} := ${toInt(expr(a0))}; SeqClamp(if ${r0} < 0 then |${v}| + ${r0} else ${r0}, 0, |${v}|));` : `var ${s} := 0;`);
+      lets.push(`var ${d} := ${!a0 ? '0' : !a1 ? `|${v}| - ${s}` : `SeqClamp(${toInt(expr(a1))}, 0, |${v}| - ${s})`};`);
+      const items = n.arguments.length > 2 ? callSequence(n.arguments.slice(2), A).code : '[]';
+      value = `${v}[${s}..${s} + ${d}]`; cell = `${v}[..${s}] + ${items} + ${v}[${s} + ${d}..]`;
+    } else { // 23.1.3.22, 23.1.3.27: the last or first element, absent on an empty array; an empty array stays
+      value = foundValue(`${helper('At', [A])}(${v}, ${name === 'pop' ? '-1' : '0'})`, elemType(recv), typeOf(n), n);
+      cell = name === 'pop' ? `(if |${v}| > 0 then ${v}[..|${v}| - 1] else ${v})` : `(if |${v}| > 0 then ${v}[1..] else ${v})`;
+    }
+    if (fresh) return `(${lets.join(' ')} ${value})`;
+    pending.push(...lets);
+    const t = valueOperands ? valueName() : `t${tempCount++}_`;
+    pending.push(`var ${t}: ${dtype(typeOf(n), n)} := ${value};`);
+    pending.push(`var ${dn(id.text)}: ${dtype(typeOf(id), id)} := ${cell};`);
+    return t;
+  }
+  // fill on a fresh array (23.1.3.7): the value in [start, end), both counted from the end when negative
+  function fillValue(n, R, A) {
+    addPrelude('SeqClamp', 'function SeqClamp(i: int, lo: int, hi: int): int { if i < lo then lo else if i > hi then hi else i }');
+    const toInt = (c) => (real ? `${helper('JsTrunc', ['real'])}(${c})` : c);
+    const v = `lx${tempCount++}_`, x = `lv${tempCount++}_`, lo = `ll${tempCount++}_`, hi = `lh${tempCount++}_`;
+    const bound = (a, dflt) => { if (!a) return dflt; const r = `lr${tempCount++}_`; return `(var ${r} := ${toInt(expr(a))}; SeqClamp(if ${r} < 0 then |${v}| + ${r} else ${r}, 0, |${v}|))`; };
+    const recv = n.expression.expression;
+    return `(var ${v} := ${R}; var ${x}: ${A} := ${expr(n.arguments[0], elemType(recv))}; var ${lo} := ${bound(n.arguments[1], '0')}; var ${hi} := ${bound(n.arguments[2], `|${v}|`)}; seq(|${v}|, (i: int) requires 0 <= i < |${v}| => if ${lo} <= i < ${hi} then ${x} else ${v}[i]))`;
+  }
   function foundValue(code, element, result, n) {
     if (!isOptional(element) && !isNullish(element)) return code;
     const v = `nf${tempCount++}_`, D = dtype(result, n);
@@ -2797,7 +2849,8 @@ export function translate(file, fnName, opts = {}) {
         // a data record's field read is a value, so the call is the ordinary method-call reading of `r.m(x)`; an opaque
         // receiver's fields are read through the outside, so the call applies the value read once, with its receiver
         const data = !T.startsWith('Ext_') && T !== 'Any' && !sums.has(T);
-        present = () => data || !absentField
+        const toText = name === 'toString' && !n.arguments.length && primitiveText(recvT); // ToString of the present primitive, the template literal's function (design/library-rows.md)
+        present = () => toText ? textOf(rc, checker.getNonNullableType(recvT), n) : data || !absentField
           ? externalCall(`${awaited ? 'await_' : ''}${T}_${name}`, n, [...n.arguments], rc, T)
           : externalCall('invoke_bound', n, [...n.arguments], `(${fieldCode()}.value, ${rc})`, `(${dtype(calleeT, f)}, ${T})`, true);
       }
@@ -2909,6 +2962,11 @@ export function translate(file, fnName, opts = {}) {
       { const m = checker.getPropertyOfType(base, name), sg = m ? checker.getSignaturesOfType(checker.getTypeOfSymbolAtLocation(m, f), ts.SignatureKind.Call) : []; if (sg.length === 1 && !sg[0].typeParameters?.length) n.__plainReturn = sg[0].getReturnType(); } // the method's own result: the chain's absence is added once, by the branch, so `a.m()` and `a?.m()` share one transition
       const v = `oc${tempCount++}_`;
       pending.push(`var ${v} := ${rawOperand(recv)};`);
+      { // the stage 5 library rows on a present primitive (design/library-rows.md): ToString of the value, or a locale read
+        const pt = checker.getNonNullableType(typeOf(recv));
+        if (name === 'toString' && !n.arguments.length && primitiveText(pt)) { usesOption = true; return `(if ${v}.Some? then ${convert(textOf(`${v}.value`, pt, n), checker.getStringType(), typeOf(n), n)} else ${absentIn(typeOf(n), n)})`; }
+        if (LOCALE_READS.has(name) && (pt.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike))) { const P = dtype(pt, n); return externalCall(`${pt.flags & TF.BigIntLike ? 'bigint' : pt.flags & TF.StringLike ? 'str' : P}_${name}`, n, [...n.arguments], `${v}.value`, P, true, `${v}.Some?`); }
+      }
       const Td = isAny(base) ? anyType() : dtype(base, n);
       return externalCall(`${awaited ? 'await_' : ''}${isAny(base) ? 'Any' : Td}_${name}`, n, [...n.arguments], `${v}.value`, Td, null, `${v}.Some?`);
     }
@@ -3049,6 +3107,19 @@ export function translate(file, fnName, opts = {}) {
         case 'at': return foundValue(`${helper('At', [A()])}(${R}, ${expr(n.arguments[0])})`, et(), typeOf(n), n);
         case 'sort': return cb ? `${external(`sort_${mangle(A())}`, [`seq<${A()}>`, `(${A()}, ${A()}) -> ${NUM}`], `seq<${A()}>`)}(${R}, ${lambda(cb, 2)})` : `${external(`sort_default_${mangle(A())}`, [`seq<${A()}>`], `seq<${A()}>`)}(${R})`;
         case 'reverse': return `${helper('Reverse', [A()])}(${R})`;
+        // the stage 5 library rows (translate/library.json, `lane: ordinary`; design/library-rows.md)
+        case 'pop': case 'shift': case 'splice': return mutatorValue(n, name, recv, R, A());
+        case 'fill': return fillValue(n, R, A());
+        case 'toSorted': return cb ? `${external(`sort_${mangle(A())}`, [`seq<${A()}>`, `(${A()}, ${A()}) -> ${NUM}`], `seq<${A()}>`)}(${R}, ${lambda(cb, 2)})` : `${external(`sort_default_${mangle(A())}`, [`seq<${A()}>`], `seq<${A()}>`)}(${R})`; // 23.1.3.34: the sort of a copy, the same function as [...xs].sort
+        case 'toReversed': return `${helper('Reverse', [A()])}(${R})`; // 23.1.3.33
+        case 'findLast': return foundValue(`${helper('Find', [A()])}(${helper('Reverse', [A()])}(${R}), ${lambda1(cb, 1)})`, et(), typeOf(n), n); // 23.1.3.11: the first match from the end
+        case 'findLastIndex': case 'lastIndexOf': { // 23.1.3.12, 23.1.3.20: the index of the first match from the end, counted from the start
+          const v = `lx${tempCount++}_`, k = `lk${tempCount++}_`;
+          const hit = name === 'findLastIndex' ? `${helper('FindIndex', [A()])}(${helper('Reverse', [A()])}(${v}), ${lambda1(cb, 1)})` : `${helper('IndexOf', [A()])}(${helper('Reverse', [A()])}(${v}), ${expr(n.arguments[0], elemType(recv))})`;
+          const r = `(var ${v} := ${R}; var ${k} := ${hit}; if ${k} < 0 then -1 else |${v}| - 1 - ${k})`;
+          return real ? `(${r} as real)` : r;
+        }
+        case 'toString': return A() === 'string' ? `${helper('Join', ['string'])}(${R}, ",")` : externalCall('array_join', n, [], R, dtype(base, recv)); // 23.1.3.36: this.join()
         default: return fail(n, `array method .${name}() is not translated`);
       }
     }
@@ -3093,6 +3164,10 @@ export function translate(file, fnName, opts = {}) {
           return `${helper(name === 'at' ? 'StrAt' : 'StrCharAt', ['string'])}(${S}, ${pos(0, '0')})`;
         case 'concat': return `(${[S, ...n.arguments.map(stringOf)].join(' + ')})`;
         case 'repeat': return `${helper('Repeat', ['string'])}(${S}, ${a0()})`;
+        case 'toString': return n.arguments.length ? fallback() : S; // 22.1.3.29: the string itself
+        case 'substr': // B.2.2.1: a start counted from the end when negative, a length clamped to the rest
+          if (!numeric(0) || !numeric(1) || n.arguments.length > 2) return fallback();
+          return `${helper('StrSubstr', ['string'])}(${S}, ${pos(0, '0')}, ${pos(1, `|${S}|`)})`;
         default: return fallback();
       }
     }
@@ -3114,6 +3189,10 @@ export function translate(file, fnName, opts = {}) {
       if (name === 'entries') return `${external('map_entries', [`map<${Kd}, ${Vd}>`], `seq<(${Kd}, ${Vd})>`)}(${M})`;
       return fail(n, `Map.${name}() is not translated as an expression`);
     }
+    // the stage 5 library rows on primitives (design/library-rows.md): toString() is ToString of the value, the same
+    // function a template literal reads; a locale read is a transition of the world
+    if (name === 'toString' && !n.arguments.length && primitiveText(recvT)) return stringOf(recv);
+    if (LOCALE_READS.has(name) && (base.flags & (TF.NumberLike | TF.BigIntLike))) { const T = dtype(base, n); return externalCall(`${base.flags & TF.BigIntLike ? 'bigint' : T}_${name}`, n, [...n.arguments], expr(recv), T, true); }
     // a method on a record or an opaque value: uninterpreted, keyed by the receiver type
     const T = dtype(base, n);
     return externalCall(`${awaited ? 'await_' : ''}${T}_${name}`, n, [...n.arguments], expr(recv), T);
@@ -3465,10 +3544,10 @@ export function translate(file, fnName, opts = {}) {
         if (m === 'reverse') { addPrelude('SeqRev', 'function SeqRev<T>(xs: seq<T>): seq<T> decreases |xs| { if |xs| == 0 then [] else SeqRev(xs[1..]) + [xs[0]] }'); return `SeqRev(${cur})`; } // 23.1.3.26
         if (m === 'splice') { // 23.1.3.31: start and count clamped as ToIntegerOrInfinity does; the removed run is replaced by the items
           addPrelude('SeqClamp', 'function SeqClamp(i: int, lo: int, hi: int): int { if i < lo then lo else if i > hi then hi else i }');
-          const E = dtype(checker.getTypeArguments(t)[0], r); const toInt = (c) => (isReal ? `(${c}).Floor` : c);
+          const E = dtype(checker.getTypeArguments(t)[0], r); const toInt = (c) => (real ? `${helper('JsTrunc', ['real'])}(${c})` : c); // ToIntegerOrInfinity truncates toward zero (the name `isReal` this line read was never bound: every statement splice threw)
           const start = toInt(expr(e.arguments[0])), count = toInt(expr(e.arguments[1]));
-          const items = e.arguments.length > 2 ? callSequence(e.arguments.slice(2), E).code : `([] : seq<${E}>)`;
-          return `(var xs_ := ${cur}; var s_ := SeqClamp(${start}, 0, |xs_|); var d_ := SeqClamp(${count}, 0, |xs_| - s_); xs_[..s_] + ${items} + xs_[s_ + d_..])`;
+          const items = e.arguments.length > 2 ? callSequence(e.arguments.slice(2), E).code : '[]'; // Dafny has no type ascription: the empty run is `[]`
+          return `(var xs_ := ${cur}; var r_ := ${start}; var s_ := SeqClamp(if r_ < 0 then |xs_| + r_ else r_, 0, |xs_|); var d_ := SeqClamp(${count}, 0, |xs_| - s_); xs_[..s_] + ${items} + xs_[s_ + d_..])`; // a negative start counts from the end
         }
         if (isSetT(t)) { const A = checker.getTypeArguments(t)[0]; return m === 'add' ? `${cur} + {${expr(e.arguments[0], A)}}` : `${cur} - {${expr(e.arguments[0], A)}}`; }
         if (isMapT(t)) { const [kt, vt] = checker.getTypeArguments(t); return m === 'set' ? `${cur}[${expr(e.arguments[0], kt)} := ${expr(e.arguments[1], vt)}]` : `${cur} - {${expr(e.arguments[0], kt)}}`; }
