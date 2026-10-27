@@ -481,7 +481,17 @@ export function sandbox(env, root) {
       if (spec === 'react') return react;
       if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
       const alias = aliasTarget(abs, spec); // the project's own `paths` alias to a file of this package is code, loaded like a relative import
-      if (alias && (!root || alias.startsWith(root + path.sep))) return load(alias);
+      if (alias && (!root || alias.startsWith(root + path.sep))) {
+        // an aliased module whose top level cannot run in the sandbox (a bundler's import.meta.env, a host global, a
+        // require.resolve, a file TypeScript cannot emit alone) is the environment's module, as every alias was before
+        // aliases were loaded: the same fake on both sides; the files its failed load cached are dropped with it
+        const before = new Set(cache.keys()), seen = new Set(loadedFiles);
+        try { return load(alias); }
+        catch (e) {
+          if (harnessStop(e)) throw e;
+          for (const k of [...cache.keys()]) if (!before.has(k)) { cache.delete(k); delete env.siteState.files[k]; if (!seen.has(k)) loadedFiles.delete(k); }
+        }
+      }
       return decoratedModule(env, spec) ?? env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment (a package of the decorator table answers its listed exports by their rows)
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names

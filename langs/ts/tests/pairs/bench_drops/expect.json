@@ -1,0 +1,6 @@
+{
+ "scope": ["warn", "label_", "twice"],
+ "equal": { "warn": false, "label_": true, "twice": true },
+ "why": "An aliased module of the package whose top level cannot run in the sandbox is the environment's module (exec/run.mjs, the loader's alias branch; design/bench-drops.md). settings.ts is reached through the project's own `@/` alias and reads a host global the sandbox does not give at load, as a bundler's import.meta.env, a browser's localStorage or require.resolve do in real repositories. Before, loading it failed and every unit of the file was ASK (parent: load failed); now the alias is a fake, the same on both sides, as every alias was before aliases were loaded for real. warn moves its threshold from > 3 to >= 3: notify('high') against notify('low') at code 3, WITNESS, and lane A does not prove it. label is the same choice written as an if statement: proved, PASS-bounded. twice is untouched: proved, PASS-bounded.",
+ "b": { "warn": "WITNESS", "label": "PASS-bounded", "twice": "PASS-bounded" }
+}
