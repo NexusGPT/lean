@@ -601,9 +601,12 @@ export function bucketMaps(unitFn, checker) {
 
 // Stage 5 rank 21. A local procedure: a function declared inside a unit (a const arrow with a block body, or a nested
 // function declaration) whose name is used only as the callee of plain calls of its arity, whose body never returns a
-// value, throws, tries, awaits, yields, reads `this` or `arguments` or names itself, and whose declared names (its
-// parameters and locals) collide with no name the unit declares outside it. Each call is read as the body spliced at the
-// call site with the parameters bound to the arguments, so an outer cell the body writes threads like any statement.
+// value, throws, tries, awaits, yields, reads `this` or `arguments` or names itself. Each call is read as the body spliced
+// at the call site with the parameters bound to the arguments, so an outer cell the body writes threads like any
+// statement. The call is a new environment: a parameter or a local named like a unit binding ends with the call (the
+// translator saves the outer binding and rebinds it after the splice, translate.mjs scopeFor). A parameter may carry a
+// default: a call that leaves it out binds the default, evaluated at the call after the earlier parameters; a call that
+// passes it passes a value whose type has no undefined, so the default never applies (ECMA-262 10.2.11).
 export function localProcedure(decl, checker, unitFn) {
   const K = ts.SyntaxKind;
   let fn, name;
@@ -612,7 +615,9 @@ export function localProcedure(decl, checker, unitFn) {
   else return null;
   if (!unitFn || !(decl.pos >= unitFn.pos && decl.end <= unitFn.end) || decl === unitFn) return null;
   if (fn.modifiers?.some((m) => m.kind === K.AsyncKeyword) || fn.asteriskToken || fn.typeParameters) return null;
-  if (!fn.parameters.every((p) => ts.isIdentifier(p.name) && !p.dotDotDotToken && !p.questionToken && !p.initializer)) return null;
+  if (!fn.parameters.every((p) => ts.isIdentifier(p.name) && !p.dotDotDotToken && !p.questionToken)) return null;
+  let minArgs = fn.parameters.length; while (minArgs > 0 && fn.parameters[minArgs - 1].initializer) minArgs--; // the trailing defaulted parameters a call may leave out
+  const mayBeUndefined = (a) => { const t = checker.getTypeAtLocation(a); return !!(t.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void | ts.TypeFlags.Any | ts.TypeFlags.Unknown)) || (!!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => !!(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void | ts.TypeFlags.Any | ts.TypeFlags.Unknown)))); };
   const sym = checker.getSymbolAtLocation(name);
   if (!sym) return null;
   let bad = false, calls = 0;
@@ -628,7 +633,8 @@ export function localProcedure(decl, checker, unitFn) {
     if (bad || n === decl) return;
     if (ts.isIdentifier(n) && n !== name && checker.getSymbolAtLocation(n) === sym) {
       const p = n.parent;
-      if (!(p && ts.isCallExpression(p) && p.expression === n && !p.questionDotToken && p.arguments.length === fn.parameters.length && !p.arguments.some(ts.isSpreadElement) && p.parent && ts.isExpressionStatement(p.parent))) { bad = true; return; }
+      if (!(p && ts.isCallExpression(p) && p.expression === n && !p.questionDotToken && p.arguments.length >= minArgs && p.arguments.length <= fn.parameters.length && !p.arguments.some(ts.isSpreadElement) && p.parent && ts.isExpressionStatement(p.parent))) { bad = true; return; }
+      if (p.arguments.some((a, i) => fn.parameters[i].initializer && mayBeUndefined(a))) { bad = true; return; } // a passed value that may be undefined would take the default
       calls++;
     }
     ts.forEachChild(n, refs);

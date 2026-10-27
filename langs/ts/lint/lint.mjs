@@ -656,8 +656,10 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (s.asteriskToken) return v(s, 'generator', 'generators are outside the subset');
         if (!s.body) return;
         for (const p of s.parameters) { if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset'); checkType(tOf(p.name), p); }
-        if (localProcedure(s, checker, currentFn)) loopCallbacks.add(s); // stage 5 rank 21: a local procedure's body is the unit's own
+        const proc = localProcedure(s, checker, currentFn);
+        if (proc) loopCallbacks.add(s); // stage 5 rank 21: a local procedure's body is the unit's own
         callbackStack.push(s);
+        if (proc) for (const p of s.parameters) if (p.initializer) expr(p.initializer); // a default runs at a call that leaves its parameter out
         const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
         try { const prev = current; stmts(s.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; forEachDepth = savedEach; }
         return;
@@ -846,6 +848,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const fn = d.initializer; loopCallbacks.add(fn);
       for (const p of fn.parameters) checkType(tOf(p.name), p);
       callbackStack.push(fn);
+      for (const p of fn.parameters) if (p.initializer) expr(p.initializer); // a default runs at a call that leaves its parameter out
       const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
       try { const prev = current; stmts(fn.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; forEachDepth = savedEach; }
       return;

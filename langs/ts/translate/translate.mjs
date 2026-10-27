@@ -345,7 +345,7 @@ export function translate(file, fnName, opts = {}) {
     if (!ts.isCallExpression(e) || !ts.isIdentifier(e.expression)) return null;
     const proc = procOf(checker.getSymbolAtLocation(e.expression)?.valueDeclaration);
     if (!proc) return null;
-    const binds = proc.fn.parameters.map((p, i) => { const st = ts.setTextRange(ts.factory.createVariableStatement(undefined, ts.factory.createVariableDeclarationList([ts.factory.createVariableDeclaration(p.name, undefined, undefined, e.arguments[i])], ts.NodeFlags.Const)), e.arguments[i]); st.parent = s; return st; });
+    const binds = proc.fn.parameters.map((p, i) => { const value = i < e.arguments.length ? e.arguments[i] : p.initializer; const st = ts.setTextRange(ts.factory.createVariableStatement(undefined, ts.factory.createVariableDeclarationList([ts.factory.createVariableDeclaration(p.name, undefined, undefined, value)], ts.NodeFlags.Const)), value); st.parent = s; return st; }); // a parameter the call leaves out binds its default
     // the call is a new environment: a parameter or a body declaration named like a unit binding ends with the call
     const saves = scopeFor(s, [...proc.fn.parameters.map((p) => p.name), ...topDecls(proc.fn.body.statements)], s, s.end);
     return saves ? [scopeMark('save', saves, s), ...binds, ...proc.fn.body.statements, scopeMark('restore', saves, s)] : [...binds, ...proc.fn.body.statements];
