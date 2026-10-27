@@ -29,7 +29,7 @@ assert.equal(chk.json.certificate.lanes.B.verdict, 'ASK:harness'); assert.ok(chk
 
 const deep = lean('exec/run.mjs', 'deep', 'readSettings', []);
 assert.equal(deep.status, 2, deep.text); assert.equal(deep.json?.verdict, 'ASK');
-assert.ok(deep.json.reason.startsWith(drained), deep.json.reason);
+assert.match(deep.json.reason, /^input 0: budget: a fake path longer than 400 characters/);
 
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log('no silent exit: a drained run and an escaped harness error each end in ASK with exit 2 PASS');
