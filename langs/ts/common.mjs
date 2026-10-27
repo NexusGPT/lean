@@ -472,11 +472,207 @@ export function syncLoopCallback(n, checker) {
   return syncLoopCall(n.parent, checker);
 }
 
+// The index and input of a match (ECMA-262 22.2.7.2 RegExpBuiltinExec): for a regular expression literal without the g
+// and y flags, `re.exec(s)` and `s.match(re)` start at 0 and leave lastIndex alone, so the match, its `index` and its
+// `input` are functions of the pattern and s. `m.index` and `m.input`, where m is a const bound to such a call and s is a
+// literal or a name (a field path on one) the unit never writes, read as `regex_index(re, s)` (one uninterpreted function
+// of the pattern and the string, the same on both sides) and s itself. Returns { regex, arg, name } or null. An index
+// read through the array alone would be unsound: two matches with equal items may sit at different places.
+export function execMatchMember(e, checker) {
+  if (!e || !ts.isPropertyAccessExpression(e) || e.questionDotToken || !['index', 'input'].includes(e.name.text)) return null;
+  let r = e.expression; while (ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r)) r = r.expression;
+  if (!ts.isIdentifier(r)) return null;
+  const sym = checker.getSymbolAtLocation(r), d = sym?.valueDeclaration;
+  if (!d || !ts.isVariableDeclaration(d) || !(d.parent.flags & ts.NodeFlags.Const) || !d.initializer) return null;
+  let c = d.initializer; while (ts.isParenthesizedExpression(c)) c = c.expression;
+  if (!ts.isCallExpression(c) || c.arguments.length !== 1 || !ts.isPropertyAccessExpression(c.expression) || c.expression.questionDotToken) return null;
+  const unp = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const m = c.expression.name.text;
+  const regex = m === 'exec' ? unp(c.expression.expression) : m === 'match' ? unp(c.arguments[0]) : null;
+  const arg = m === 'exec' ? unp(c.arguments[0]) : m === 'match' ? unp(c.expression.expression) : null;
+  if (!regex || !ts.isRegularExpressionLiteral(regex) || /[gy]/.test(regex.text.slice(regex.text.lastIndexOf('/') + 1))) return null;
+  if (!(checker.getTypeAtLocation(arg).flags & ts.TypeFlags.StringLike)) return null;
+  // the string: a literal, or a name or a field path on one the unit never writes, in scope at the read as at the call
+  let root = arg; while (ts.isPropertyAccessExpression(root) && !root.questionDotToken) root = unp(root.expression);
+  if (!ts.isStringLiteral(arg) && !ts.isNoSubstitutionTemplateLiteral(arg)) {
+    if (!ts.isIdentifier(root)) return null;
+    const rs = checker.getSymbolAtLocation(root), rd = rs?.valueDeclaration;
+    if (!rd || checker.getSymbolsInScope(e, ts.SymbolFlags.Value).find((x) => x.name === root.text) !== rs) return null;
+    let fn = rd.parent; while (fn && !ts.isFunctionLike(fn) && !ts.isSourceFile(fn)) fn = fn.parent;
+    let written = false;
+    const w = (y) => { if ((ts.isBinaryExpression(y) && y.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && y.operatorToken.kind <= ts.SyntaxKind.LastAssignment && (() => { let l = unp(y.left); while (ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l)) l = unp(l.expression); return ts.isIdentifier(l) && checker.getSymbolAtLocation(l) === rs; })()) || ((ts.isPrefixUnaryExpression(y) || ts.isPostfixUnaryExpression(y)) && ts.isIdentifier(unp(y.operand)) && checker.getSymbolAtLocation(unp(y.operand)) === rs)) written = true; ts.forEachChild(y, w); };
+    if (fn) w(fn);
+    if (written) return null;
+  }
+  return { regex, arg, name: e.name.text };
+}
+
+// A bucket map: `const m = new Map<K, T[]>()` declared in the unit, never rebound, whose arrays no other live name holds
+// when a push through the map changes one. Its arrays are written by `m.get(k)?.push(a)` as a statement (ECMA-262
+// 13.3.9: the push runs only when the key is present; the arguments carry no call), or through a bucket local, `const l =
+// m.get(k)` or `const l = m.get(k) ?? [..]` with k a name or a literal, then `l.push(a)` (under `if (l)` for the first
+// form): l is the map's array when the key was present, so the push changes the map at k when k is present (no write to
+// the map runs between the binding and a use of l), and `m.set(k, l)` stores l itself. The reading writes the map: m :=
+// if k in m then m[k := m[k] + [a]] else m. Every other use of the map or of a bucket local that may hand an array to
+// another name (`return m` aside, after which nothing runs) must come after the last write, outside any loop that writes:
+// a value read from it would otherwise miss a later push. A Map of any values also takes the set-back form, `const l =
+// m.get(k) ?? <fresh>`, changes of l, then `m.set(k, l)` in the same list with no jump and no other use of the map between
+// (the model changes its copy of l and writes it back, as the shared object ends). bucketMaps returns, per unit, the
+// pushes and the bucket locals.
+const BUCKET_MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin']);
+const bucketCache = new WeakMap();
+export function bucketMaps(unitFn, checker) {
+  if (!unitFn) return { pushes: new Map(), locals: new Map() };
+  if (bucketCache.has(unitFn)) return bucketCache.get(unitFn);
+  const K = ts.SyntaxKind;
+  const out = { pushes: new Map(), locals: new Map() }; // push call -> { m, key, local? }; bucket local decl -> { m, key }
+  bucketCache.set(unitFn, out);
+  const up = (x) => { while (x.parent && (ts.isParenthesizedExpression(x.parent) || ts.isNonNullExpression(x.parent))) x = x.parent; return x; };
+  const unp = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const inScope = (at, id, sym) => checker.getSymbolsInScope(at, ts.SymbolFlags.Value).find((x) => x.name === id.text) === sym;
+  const hasCall = (x) => { let f = false; const w = (y) => { if (ts.isCallExpression(y) || ts.isNewExpression(y) || ts.isAwaitExpression(y) || ts.isYieldExpression(y) || (ts.isBinaryExpression(y) && y.operatorToken.kind >= K.FirstAssignment && y.operatorToken.kind <= K.LastAssignment) || ts.isPrefixUnaryExpression(y) && [K.PlusPlusToken, K.MinusMinusToken].includes(y.operator) || ts.isPostfixUnaryExpression(y) || ts.isFunctionLike(y)) f = true; if (!f) ts.forEachChild(y, w); }; w(x); return f; };
+  const prim = (x) => { const t = checker.getTypeAtLocation(x); const parts = t.flags & ts.TypeFlags.Union ? t.types : [t]; return parts.every((p) => !!(p.flags & (ts.TypeFlags.NumberLike | ts.TypeFlags.StringLike | ts.TypeFlags.BooleanLike | ts.TypeFlags.BigIntLike | ts.TypeFlags.Undefined | ts.TypeFlags.Null | ts.TypeFlags.Void))); };
+  const keyRoot = (k) => { k = unp(k); while (ts.isPropertyAccessExpression(k) && !k.questionDotToken) k = unp(k.expression); return k; };
+  const stableKey = (k) => { k = unp(k); if (ts.isStringLiteral(k) || ts.isNumericLiteral(k) || ts.isNoSubstitutionTemplateLiteral(k)) return true; if (ts.isPropertyAccessExpression(k)) { const r = keyRoot(k); if (!ts.isIdentifier(r)) return false; const rs = checker.getSymbolAtLocation(r); let written = false; const w = (y) => { if (ts.isBinaryExpression(y) && y.operatorToken.kind >= K.FirstAssignment && y.operatorToken.kind <= K.LastAssignment && ts.isPropertyAccessExpression(unp(y.left)) && checker.getSymbolAtLocation(keyRoot(y.left)) === rs) written = true; ts.forEachChild(y, w); }; w(unitFn); return !written && stableKey(r); } if (!ts.isIdentifier(k)) return false; const sym = checker.getSymbolAtLocation(k); const d = sym?.valueDeclaration; if (!d) return false; let assigned = false; const w = (y) => { if (ts.isIdentifier(y) && checker.getSymbolAtLocation(y) === sym) { const p = up(y).parent; if (p && ((ts.isBinaryExpression(p) && p.left === up(y) && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator)))) assigned = true; } ts.forEachChild(y, w); }; w(unitFn); return !assigned; };
+  // the loops a node sits in, inside the unit: statements and array-method callbacks
+  const loopsOf = (x) => { const ls = []; for (let q = x.parent; q && q !== unitFn; q = q.parent) if (ts.isIterationStatement(q, false) || (ts.isFunctionLike(q) && syncLoopCallback(q, checker))) ls.push(q); return ls; };
+  // a reference to the map counts only in the unit itself or in array-method callbacks (loops)
+  const plainPlace = (x) => { for (let q = x.parent; q && q !== unitFn; q = q.parent) if (ts.isFunctionLike(q) && !syncLoopCallback(q, checker)) return false; return true; };
+  const walkIds = (sym, f) => { const w = (y) => { if (ts.isIdentifier(y) && checker.getSymbolAtLocation(y) === sym && !(y.parent && (ts.isVariableDeclaration(y.parent) || ts.isParameter(y.parent) || ts.isBindingElement(y.parent)) && y.parent.name === y) && !(y.parent && ts.isPropertyAccessExpression(y.parent) && y.parent.name === y)) f(y); ts.forEachChild(y, w); }; w(unitFn.body ?? unitFn); };
+  // a use whose member is written or changed in place: `l.f = v`, `l.f++`, `delete l.f`, `l[i] = v`, `l.push(..)`, `l.add(..)`
+  const CHANGERS = new Set([...BUCKET_MUTATORS, 'add', 'set', 'delete', 'clear']);
+  const changes = (top) => {
+    const p = top.parent; if (!p) return false;
+    const target = (x) => { const q = up(x).parent; return !!q && ((ts.isBinaryExpression(q) && q.left === up(x) && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(q) || ts.isPostfixUnaryExpression(q)) && [K.PlusPlusToken, K.MinusMinusToken].includes(q.operator)) || ts.isDeleteExpression(q)); };
+    if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === top) {
+      if (target(p)) return true;
+      if (ts.isPropertyAccessExpression(p) && CHANGERS.has(p.name.text) && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return true;
+      let q = p; while (q.parent && (ts.isPropertyAccessExpression(q.parent) || ts.isElementAccessExpression(q.parent)) && q.parent.expression === q) q = q.parent; // a path below it
+      if (q !== p && (target(q) || (ts.isPropertyAccessExpression(q) && CHANGERS.has(q.name.text) && q.parent && ts.isCallExpression(q.parent) && q.parent.expression === q))) return true;
+    }
+    return false;
+  };
+  const freshValue = (v) => { v = unp(v); return ts.isArrayLiteralExpression(v) || ts.isObjectLiteralExpression(v) || (ts.isNewExpression(v) && ts.isIdentifier(v.expression) && ['Map', 'Set', 'Array'].includes(v.expression.text) && !(v.arguments ?? []).length); };
+  const maps = [];
+  const findMaps = (y) => {
+    if (ts.isVariableDeclaration(y) && ts.isIdentifier(y.name) && y.initializer && (y.parent.flags & ts.NodeFlags.Const)) {
+      const init = unp(y.initializer);
+      const t = checker.getTypeAtLocation(y.name);
+      const vt = t.symbol?.name === 'Map' && checker.getTypeArguments ? checker.getTypeArguments(t)[1] : null;
+      if (ts.isNewExpression(init) && ts.isIdentifier(init.expression) && init.expression.text === 'Map' && !(init.arguments ?? []).length && vt && plainPlace(y)) maps.push({ decl: y, arrays: checker.isArrayType(vt) });
+    }
+    ts.forEachChild(y, findMaps);
+  };
+  findMaps(unitFn.body ?? unitFn);
+  const keyText = (k) => unp(k).getText();
+  const jumpsIn = (from, to, block) => { let f = false; const w = (y) => { if (f || ts.isFunctionLike(y)) return; if (y.pos >= from && y.end <= to && (ts.isReturnStatement(y) || ts.isThrowStatement(y) || ts.isBreakStatement(y) || ts.isContinueStatement(y))) { f = true; return; } ts.forEachChild(y, w); }; w(block); return f; };
+  for (const { decl, arrays } of maps) {
+    const msym = checker.getSymbolAtLocation(decl.name);
+    const writes = [], escapes = [], pushes = new Map(), locals = new Map(), mrefs = [];
+    let ok = true;
+    walkIds(msym, (r) => {
+      if (!ok) return;
+      if (!plainPlace(r)) { ok = false; return; }
+      mrefs.push(r);
+      const top = up(r), p = top.parent;
+      if (p && ts.isReturnStatement(p)) return; // nothing runs after
+      if (!(p && ts.isPropertyAccessExpression(p) && p.expression === top)) { escapes.push(r); return; }
+      const name = p.name.text, call = p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p ? p.parent : null;
+      if (name === 'size' && !call) return;
+      if (!call) { escapes.push(r); return; }
+      const stmt = call.parent && ts.isExpressionStatement(call.parent) ? call.parent : null;
+      if (name === 'has') return;
+      if ((name === 'delete' || name === 'clear') && stmt) { writes.push(call); return; }
+      if (name === 'set' && stmt && call.arguments.length === 2) {
+        const v = unp(call.arguments[1]);
+        if (freshValue(v)) { writes.push(call); return; }
+        if (ts.isIdentifier(v)) { const ld = checker.getSymbolAtLocation(v)?.valueDeclaration; if (ld && ts.isVariableDeclaration(ld)) { writes.push(call); (call.__bucketSet ??= []).push({ ld, key: call.arguments[0] }); return; } }
+        ok = false; return;
+      }
+      if (name === 'get' && call.arguments.length === 1) {
+        const g = up(call), gp = g.parent;
+        if (gp && ts.isPropertyAccessExpression(gp) && gp.expression === g) { // a member of the value the map holds at k
+          const mc = gp.parent && ts.isCallExpression(gp.parent) && gp.parent.expression === gp ? gp.parent : null;
+          if (arrays && gp.name.text === 'push' && mc && gp.questionDotToken && mc.parent && ts.isExpressionStatement(mc.parent) && !mc.arguments.some((a) => ts.isSpreadElement(a) || hasCall(a)) && g === call) { writes.push(mc); pushes.set(mc, { m: decl, key: call.arguments[0] }); return; }
+          if (changes(g)) { ok = false; return; }
+          if (prim(mc ?? gp)) return; // `.length`, `.includes(x)`: a primitive read
+          escapes.push(r); return;
+        }
+        // `const l = m.get(k)` or `const l = m.get(k) ?? <a fresh value>`: a bucket local
+        let b = g; if (b.parent && ts.isBinaryExpression(b.parent) && b.parent.left === b && b.parent.operatorToken.kind === K.QuestionQuestionToken && freshValue(b.parent.right)) b = up(b.parent);
+        const vd = b.parent;
+        if (vd && ts.isVariableDeclaration(vd) && vd.initializer === b && ts.isIdentifier(vd.name) && (vd.parent.flags & ts.NodeFlags.Const) && stableKey(call.arguments[0])) { locals.set(vd, { m: decl, key: call.arguments[0], coalesced: b !== g }); return; }
+        escapes.push(r); return;
+      }
+      escapes.push(r);
+    });
+    if (!ok) continue;
+    // each bucket local is one of two kinds. A push local (an array map): its pushes write the map at k and nothing else
+    // changes it. A set-back local: `m.set(k, l)` stands later in the same statement list, every use of l lies between the
+    // binding and that statement, no jump leaves the stretch and the map is not named in it: whatever changes l there, the
+    // map at k ends as l (the model's copy of l, written back), as the shared object does.
+    const localUses = new Map();
+    for (const [ld, info] of locals) {
+      const lsym = checker.getSymbolAtLocation(ld.name), uses = [], changed = [], pushed = [];
+      let back = null;
+      walkIds(lsym, (r) => {
+        if (!ok) return;
+        if (!plainPlace(r) || !inScope(r, info.m.name, msym) || (ts.isIdentifier(keyRoot(info.key)) && !inScope(r, keyRoot(info.key), checker.getSymbolAtLocation(keyRoot(info.key))))) { ok = false; return; }
+        const top = up(r), p = top.parent;
+        uses.push(r);
+        if (p && ts.isCallExpression(p) && p.arguments.includes(top) && p.__bucketSet?.some((x) => x.ld === ld)) { if (keyText(p.arguments[0]) !== keyText(info.key) || back) ok = false; back = p; return; } // m.set(k, l)
+        if (changes(top)) {
+          const mc = p.parent;
+          if (arrays && ts.isPropertyAccessExpression(p) && p.name.text === 'push' && mc && ts.isCallExpression(mc) && mc.parent && ts.isExpressionStatement(mc.parent) && !mc.arguments.some((a) => ts.isSpreadElement(a) || hasCall(a))) pushed.push(mc);
+          else changed.push(r);
+          return;
+        }
+        if (p && ts.isPropertyAccessExpression(p) && p.expression === top) { const mc = p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p ? p.parent : null; if (prim(mc ?? p)) return; escapes.push(r); return; }
+        // a test of presence (`if (l)`, `!l`, `l ? a : b`, `l && x`) reads no value
+        if (p && (ts.isIfStatement(p) || ts.isConditionalExpression(p) && p.condition === top || ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken || ts.isBinaryExpression(p) && p.left === top && [K.AmpersandAmpersandToken, K.BarBarToken].includes(p.operatorToken.kind))) return;
+        if (p && ts.isReturnStatement(p)) return;
+        escapes.push(r);
+      });
+      if (!ok) break;
+      const stmtOf = (x) => { while (x && !ts.isVariableStatement(x) && !ts.isExpressionStatement(x)) x = x.parent; return x; };
+      const vs = stmtOf(ld), bs = back && stmtOf(back);
+      const setBack = !!bs && !!vs && bs.parent === vs.parent && bs.pos > vs.end && uses.every((u) => u.pos < bs.end) && !jumpsIn(vs.end, bs.pos, vs.parent) && !mrefs.some((r) => r.pos > vs.end && r.pos < bs.pos) && !loopsOf(bs).some((L) => !loopsOf(vs).includes(L));
+      if (setBack) { info.setBack = true; for (const c of [...pushed]) writes.push(c); }
+      else if (changed.length) { ok = false; break; }
+      else for (const c of pushed) { writes.push(c); pushes.set(c, { m: info.m, key: info.key, local: ld }); }
+      localUses.set(ld, uses);
+    }
+    // a set of a name that is no bucket local of this map
+    for (const w of writes) if (w.__bucketSet && !w.__bucketSet.every((x) => locals.has(x.ld))) ok = false;
+    if (!ok) continue;
+    const after = (a, b) => b.pos > a.pos || loopsOf(a).some((L) => loopsOf(b).includes(L)); // b may run after a
+    // an escape followed by a write: the escaped value misses the write
+    if (escapes.some((e) => writes.some((w) => after(e, w)))) continue;
+    // a push local used after a write that is not its own push (the local would no longer be the map's array)
+    let bad = false;
+    for (const [ld, uses] of localUses) {
+      if (locals.get(ld).setBack) continue;
+      const own = new Set([...pushes].filter(([, v]) => v.local === ld).map(([c]) => c));
+      for (const u of uses) for (const w of writes) {
+        if (own.has(w) || (w.__bucketSet?.some((x) => x.ld === ld))) continue;
+        if ((w.pos > ld.end && w.pos < u.pos) || loopsOf(u).some((L) => loopsOf(w).includes(L) && !loopsOf(ld).includes(L))) bad = true;
+      }
+    }
+    if (bad) continue;
+    for (const [c, v] of pushes) out.pushes.set(c, v);
+    for (const [ld, v] of locals) out.locals.set(ld, v);
+  }
+  return out;
+}
+
 // Stage 5 rank 21. A local procedure: a function declared inside a unit (a const arrow with a block body, or a nested
 // function declaration) whose name is used only as the callee of plain calls of its arity, whose body never returns a
-// value, throws, tries, awaits, yields, reads `this` or `arguments` or names itself, and whose declared names (its
-// parameters and locals) collide with no name the unit declares outside it. Each call is read as the body spliced at the
-// call site with the parameters bound to the arguments, so an outer cell the body writes threads like any statement.
+// value, throws, tries, awaits, yields, reads `this` or `arguments` or names itself. Each call is read as the body spliced
+// at the call site with the parameters bound to the arguments, so an outer cell the body writes threads like any
+// statement. The call is a new environment: a parameter or a local named like a unit binding ends with the call (the
+// translator saves the outer binding and rebinds it after the splice, translate.mjs scopeFor). A parameter may carry a
+// default: a call that leaves it out binds the default, evaluated at the call after the earlier parameters; a call that
+// passes it passes a value whose type has no undefined, so the default never applies (ECMA-262 10.2.11).
 export function localProcedure(decl, checker, unitFn) {
   const K = ts.SyntaxKind;
   let fn, name;
@@ -485,7 +681,9 @@ export function localProcedure(decl, checker, unitFn) {
   else return null;
   if (!unitFn || !(decl.pos >= unitFn.pos && decl.end <= unitFn.end) || decl === unitFn) return null;
   if (fn.modifiers?.some((m) => m.kind === K.AsyncKeyword) || fn.asteriskToken || fn.typeParameters) return null;
-  if (!fn.parameters.every((p) => ts.isIdentifier(p.name) && !p.dotDotDotToken && !p.questionToken && !p.initializer)) return null;
+  if (!fn.parameters.every((p) => ts.isIdentifier(p.name) && !p.dotDotDotToken && !p.questionToken)) return null;
+  let minArgs = fn.parameters.length; while (minArgs > 0 && fn.parameters[minArgs - 1].initializer) minArgs--; // the trailing defaulted parameters a call may leave out
+  const mayBeUndefined = (a) => { const t = checker.getTypeAtLocation(a); return !!(t.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void | ts.TypeFlags.Any | ts.TypeFlags.Unknown)) || (!!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => !!(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Void | ts.TypeFlags.Any | ts.TypeFlags.Unknown)))); };
   const sym = checker.getSymbolAtLocation(name);
   if (!sym) return null;
   let bad = false, calls = 0;
@@ -501,29 +699,14 @@ export function localProcedure(decl, checker, unitFn) {
     if (bad || n === decl) return;
     if (ts.isIdentifier(n) && n !== name && checker.getSymbolAtLocation(n) === sym) {
       const p = n.parent;
-      if (!(p && ts.isCallExpression(p) && p.expression === n && !p.questionDotToken && p.arguments.length === fn.parameters.length && !p.arguments.some(ts.isSpreadElement) && p.parent && ts.isExpressionStatement(p.parent))) { bad = true; return; }
+      if (!(p && ts.isCallExpression(p) && p.expression === n && !p.questionDotToken && p.arguments.length >= minArgs && p.arguments.length <= fn.parameters.length && !p.arguments.some(ts.isSpreadElement) && p.parent && ts.isExpressionStatement(p.parent))) { bad = true; return; }
+      if (p.arguments.some((a, i) => fn.parameters[i].initializer && mayBeUndefined(a))) { bad = true; return; } // a passed value that may be undefined would take the default
       calls++;
     }
     ts.forEachChild(n, refs);
   };
   refs(unitFn);
   if (bad || !calls) return null;
-  // a name the body declares that the unit also declares outside it would shadow the unit's after the splice: refused,
-  // except a parameter the body never assigns that every call passes under that same name (`keep(x)` in `for (const x of xs)`)
-  const inside = new Map(), outside = new Set();
-  const declNames = (n, add, skip) => { if (n === skip) return; if ((ts.isParameter(n) || ts.isVariableDeclaration(n) || ts.isBindingElement(n) || ts.isFunctionDeclaration(n)) && n.name && ts.isIdentifier(n.name)) add(n.name.text, n); ts.forEachChild(n, (c) => declNames(c, add, skip)); };
-  declNames(fn, (k, n) => inside.set(k, n), null);
-  declNames(unitFn, (k) => outside.add(k), fn);
-  outside.delete(name.text);
-  const assigned = new Set();
-  const writes = (n) => { if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(n.left)) assigned.add(n.left.text); if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && ts.isIdentifier(n.operand)) assigned.add(n.operand.text); ts.forEachChild(n, writes); };
-  writes(fn.body);
-  const callArgs = []; const collect = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression !== name && checker.getSymbolAtLocation(n.expression) === sym) callArgs.push(n.arguments); ts.forEachChild(n, collect); }; collect(unitFn);
-  for (const [k, n] of inside) {
-    if (!outside.has(k)) continue;
-    const i = ts.isParameter(n) ? fn.parameters.indexOf(n) : -1;
-    if (i < 0 || assigned.has(k) || !callArgs.every((as) => ts.isIdentifier(as[i]) && as[i].text === k)) return null;
-  }
   return { decl, fn, name: name.text, sym };
 }
 

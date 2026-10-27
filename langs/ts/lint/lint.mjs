@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -553,6 +553,44 @@ export function lintFile(file, ranges = null, opts = {}) {
     return null;
   };
   const declOf = (id) => originOf(checker, id, sf, current);
+  // what a value may be another name for: true (a name, a field, an element, a declared `this`), a description (the result
+  // of a call that may return an existing object), or null (a value the function built here)
+  function heldBy(x) {
+    while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression(x) || ts.isTypeAssertionExpression(x) || (ts.isAwaitExpression(x) && ts.isCallExpression(unparenX(x.expression)))) x = x.expression;
+    if (ts.isIdentifier(x) || ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || (x.kind === K.ThisKeyword && !!thisParam)) return x.kind === K.ThisKeyword || nonNull(tOf(x)).some((y) => !isPrim(y) && !isAny(y)) ? true : null; // `undefined` or a number names no object
+    if (ts.isCallExpression(x)) { const callee = sameFileCallee(x, currentClass); return (callee ? !returnsFresh(callee) : libraryFresh(x) === false) ? `the result of \`${callee ? callee.name : libraryOp(x)}\`` : null; }
+    if (ts.isBinaryExpression(x) && [K.QuestionQuestionToken, K.BarBarToken, K.AmpersandAmpersandToken].includes(x.operatorToken.kind)) return heldBy(x.left) ?? heldBy(x.right);
+    if (ts.isBinaryExpression(x) && x.operatorToken.kind === K.CommaToken) return heldBy(x.right);
+    if (ts.isConditionalExpression(x)) return heldBy(x.whenTrue) ?? heldBy(x.whenFalse);
+    return null;
+  }
+  // an alias local rebound: `let flat = merged; if (g) { flat = []; flat.push(h) }` changes the fresh array, not the
+  // value it was handed. A change at a site goes to the alias only when no earlier statement of an enclosing list rebinds
+  // the name to a fresh value (a literal, `new`, a fresh call) with nothing in between that writes it again; a rebinding
+  // outside a loop the site sits in counts only when the loop never assigns the name
+  const freshRebind = (x) => !heldBy(x);
+  const assignsName = (node, sym) => { let hit = false; const w = (x) => { if (hit) return; if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) { const l = unparenX(x.left); if ((ts.isIdentifier(l) && checker.getSymbolAtLocation(l) === sym) || ((ts.isArrayLiteralExpression(l) || ts.isObjectLiteralExpression(l)) && l.getText(sf).includes(sym.name))) hit = true; } if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && ts.isIdentifier(unparenX(x.operand)) && checker.getSymbolAtLocation(unparenX(x.operand)) === sym) hit = true; ts.forEachChild(x, w); }; w(node); return hit; };
+  const aliasAt = (decl, site) => {
+    const sym = decl && ts.isIdentifier(decl.name) ? checker.getSymbolAtLocation(decl.name) : null;
+    if (!sym || !site) return true;
+    const loops = [];
+    for (let child = site, p = site.parent; p; child = p, p = p.parent) {
+      if (p === decl || ts.isFunctionLike(p)) return true; // reached the declaration, or a function boundary: the handed value may hold
+      if (ts.isIterationStatement(p, false) && child === p.statement) loops.push(p);
+      const list = ts.isBlock(p) || ts.isCaseClause(p) || ts.isDefaultClause(p) || ts.isSourceFile(p) ? p.statements : null;
+      if (!list) { for (const c of p.getChildren(sf)) { if (c === child || c.pos >= child.pos) break; if (assignsName(c, sym)) return true; } continue; } // a write in a head before the site
+      for (let i = list.indexOf(child) - 1; i >= 0; i--) {
+        const st = list[i];
+        if (st.pos <= decl.pos && decl.end <= st.end) return true; // the declaration itself: the handed value
+        if (!assignsName(st, sym)) continue;
+        const ex = ts.isExpressionStatement(st) ? unparenX(st.expression) : null;
+        const fresh = ex && ts.isBinaryExpression(ex) && ex.operatorToken.kind === K.EqualsToken && ts.isIdentifier(unparenX(ex.left)) && checker.getSymbolAtLocation(unparenX(ex.left)) === sym && freshRebind(ex.right) && !assignsName(ex.right, sym);
+        return !fresh || loops.some((L) => assignsName(L, sym));
+      }
+    }
+    return true;
+  };
+  const aliasHere = (decl, site) => aliasLocals.has(decl) && !bucketMaps(currentFn, checker).locals.has(decl) && aliasAt(decl, site); // a bucket local's push writes its map (common.mjs bucketMaps)
 
   function stmts(list) { for (const s of list) stmt(s); }
   function stmt(s) {
@@ -618,8 +656,10 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (s.asteriskToken) return v(s, 'generator', 'generators are outside the subset');
         if (!s.body) return;
         for (const p of s.parameters) { if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset'); checkType(tOf(p.name), p); }
-        if (localProcedure(s, checker, currentFn)) loopCallbacks.add(s); // stage 5 rank 21: a local procedure's body is the unit's own
+        const proc = localProcedure(s, checker, currentFn);
+        if (proc) loopCallbacks.add(s); // stage 5 rank 21: a local procedure's body is the unit's own
         callbackStack.push(s);
+        if (proc) for (const p of s.parameters) if (p.initializer) expr(p.initializer); // a default runs at a call that leaves its parameter out
         const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
         try { const prev = current; stmts(s.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; forEachDepth = savedEach; }
         return;
@@ -796,19 +836,19 @@ export function lintFile(file, ranges = null, opts = {}) {
       checkType(t, n);
     }
     { // `const u = user`, `const t = user.tags`, `const x = xs[i]`: another name for an object the function did not build
-      let init = d.initializer; while (ts.isParenthesizedExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init) || (ts.isAwaitExpression(init) && ts.isCallExpression(unparenX(init.expression)))) init = init.expression;
-      const ref = ts.isIdentifier(init) || ts.isPropertyAccessExpression(init) || ts.isElementAccessExpression(init) || (init.kind === K.ThisKeyword && !!thisParam); // `const self = this` in a free function: another name for the receiver it was handed
-      const objish = (t) => nonNull(t).some((x) => !isPrim(x) && !isAny(x));
-      if (ref && ts.isIdentifier(d.name) && objish(tOf(d.name))) aliasLocals.add(d);
       // `const s = this.held()`, `const t = pick(user)`: the result of a same-file call may be a field, a parameter or a module
       // object under another name, unless the callee is fresh (returnsFresh); a change through it is a change of that object
-      if (!ref && ts.isCallExpression(init) && ts.isIdentifier(d.name) && objish(tOf(d.name))) { const callee = sameFileCallee(init, currentClass); if (callee ? !returnsFresh(callee) : libraryFresh(init) === false) { aliasLocals.add(d); aliasCalls.set(d, `the result of \`${callee ? callee.name : libraryOp(init)}\``); } }
       // `const t = rs.find(...)`, `m.get(k)`, `Promise.resolve(x)`: a built-in whose table row returns an existing object (libraryFresh)
+      // `m.get(k) ?? []`, `a || b`, `c ? a : b`: the value is one of the operands, so it holds what either operand holds
+      const objish = (t) => nonNull(t).some((x) => !isPrim(x) && !isAny(x));
+      const held = heldBy(d.initializer);
+      if (held && ts.isIdentifier(d.name) && objish(tOf(d.name))) { aliasLocals.add(d); if (held !== true) aliasCalls.set(d, held); }
     }
     if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name) && localProcedure(d, checker, currentFn)) { // stage 5 rank 21: a local procedure, its body spliced at each call: checked as the unit's own statements
       const fn = d.initializer; loopCallbacks.add(fn);
       for (const p of fn.parameters) checkType(tOf(p.name), p);
       callbackStack.push(fn);
+      for (const p of fn.parameters) if (p.initializer) expr(p.initializer); // a default runs at a call that leaves its parameter out
       const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
       try { const prev = current; stmts(fn.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; forEachDepth = savedEach; }
       return;
@@ -841,7 +881,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           const dict = !isArrayExpr(l.expression);
           const o = declOf(l.expression);
           if (o.kind !== 'local') v(l, 'index-assign', `index assignment into \`${l.expression.text}\`, which this function does not own`);
-          else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', aliasMsg(l.expression.text, o.decl));
+          else if (aliasHere(o.decl, l)) v(l, 'alias-mutation', aliasMsg(l.expression.text, o.decl));
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `a callback cannot change an outer ${dict ? 'dictionary' : 'array'}`);
           else if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
           else if (dict && !nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
@@ -867,7 +907,7 @@ export function lintFile(file, ranges = null, opts = {}) {
             return expr(e.right);
           }
           if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
-          else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl));
+          else if (aliasHere(o.decl, l)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl));
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
         }
@@ -882,7 +922,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(e.operand)) { let root = e.operand; while (ts.isPropertyAccessExpression(root)) root = root.expression; if ((root.kind === K.ThisKeyword && objectMethod) || methodLiteralPath(e.operand)) return v(e, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); if (root.kind === K.ThisKeyword && !thisParam && e.operand.expression.kind !== K.ThisKeyword) return receiverRecordPath(checker, e.operand) ? undefined : v(e, 'receiver-mutation', 'a receiver path needs nonoptional data records'); if (root.kind === K.ThisKeyword && thisParam && !thisParamPath(checker, e.operand)) return v(e, 'receiver-write', RECEIVER_WRITE); }
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
-      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasLocals.has(o.decl) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
+      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasHere(o.decl, e) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
       if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
@@ -897,7 +937,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const rt = tOf(r);
       if (name === 'assign' && ts.isIdentifier(r) && r.text === 'Object' && e.arguments.length >= 2) { // Object.assign(t, s…) as a statement on a record the function owns: t is rebuilt with every declared field of each source (the ordinary lane) or the Assign_ row (the heap core); a parameter target is an output
         const t0 = unparenX(e.arguments[0]);
-        const ownedTarget = ts.isIdentifier(t0) && declOf(t0).kind === 'local' && ownedHere(declOf(t0).decl) && !aliasLocals.has(declOf(t0).decl);
+        const ownedTarget = ts.isIdentifier(t0) && declOf(t0).kind === 'local' && ownedHere(declOf(t0).decl) && !aliasHere(declOf(t0).decl, e);
         const plainRecord = (x) => { const t = tOf(x); if (!isRecordish(t) || nonNull(t).length !== 1 || t.flags & (TF.Null | TF.Undefined)) return false; return checker.getPropertiesOfType(t).every((p) => !(p.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor | ts.SymbolFlags.Method))); };
         const targetProps = ownedTarget && plainRecord(t0) ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
         const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
@@ -907,8 +947,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
       // a Date setter is a method call like any other: a world transition (the Date's state lives in the world since the clock-read lane), so no refusal and no rebinding
       if (moduleState(checker, r, sf) && MUT_NAMES.has(name)) { checkIdent(r); return argsOf(e); }
-      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasLocals.has(declOf(r).decl);
-      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasLocals.has(declOf(r).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
+      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasHere(declOf(r).decl, e);
+      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
       if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
       if (nonNull(rt).some(isAny)) {
         // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
@@ -927,11 +967,12 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a path on a local or a parameter (user.tags): the owner of the root owns the path
       const pathRootOf = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
       const pr = pathRootOf(r);
-      const pathOwned = (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && ownedHere(declOf(pr).decl) && !aliasLocals.has(declOf(pr).decl)) || (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && !!thisParam && ownedHere(thisParam) && !!thisParamPath(checker, r)); // a container on a free function's data record receiver is owned as a parameter's is
+      const pathOwned = (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && ownedHere(declOf(pr).decl) && !aliasHere(declOf(pr).decl, e)) || (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && !!thisParam && ownedHere(thisParam) && !!thisParamPath(checker, r)); // a container on a free function's data record receiver is owned as a parameter's is
       if (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && thisParam && MUT_NAMES.has(name) && !thisParamPath(checker, r)) return v(e, 'receiver-write', RECEIVER_WRITE);
-      if (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && aliasLocals.has(declOf(pr).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(pr.text, declOf(pr).decl));
+      if (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && aliasHere(declOf(pr).decl, e) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(pr.text, declOf(pr).decl));
       if ((name === 'push' || name === 'unshift') && isArrayExpr(r)) {
-        if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
+        const bucket = bucketMaps(currentFn, checker).pushes.has(e); // `m.get(k)?.push(x)` on a map this unit built: a write of the map at k
+        if (!localOwned && !pathOwned && !bucket) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array${ts.isCallExpression(unparenX(r)) ? '; a push into an array a Map holds is read on a Map this function builds with `new Map()` and fills with array literals, through `m.get(k)?.push(x)`, while no other name holds its arrays' : ''}`);
         conditionalSpreadArgs(e);
         return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
       }
@@ -990,7 +1031,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     return false;
   }
   function unsafePromiseCallee(u, seen = new Set()) {
-    if (!u || seen.has(u.name)) return false;
+    if (!u || !u.body || seen.has(u.name)) return false; // a declared function without a body is refused on its own (unsupported-syntax)
     seen.add(u.name); let unsafe = false;
     const w = (x) => {
       if (ts.isThrowStatement(x) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;
@@ -1181,8 +1222,8 @@ export function lintFile(file, ranges = null, opts = {}) {
         // `delete r.f` on an optional field, `delete m[k]` on a dictionary, on a local, a parameter or a field of this
         let t = e.expression; while (ts.isParenthesizedExpression(t)) t = t.expression;
         if (!(e.parent && ts.isExpressionStatement(e.parent))) return v(e, 'delete', '`delete` is a statement, not a value');
-        if (ts.isElementAccessExpression(t)) { const r = t.expression; if (r.kind === K.ThisKeyword && thisParam) return v(e, 'receiver-write', RECEIVER_WRITE); if (r.kind === K.ThisKeyword || (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass)) { expr(t.argumentExpression); return; } let root = r; while (ts.isPropertyAccessExpression(root)) root = root.expression; const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); if (!nonNull(tOf(t.argumentExpression)).every(isStr)) return v(e, 'dynamic-key', 'a dictionary key is a string'); expr(t.argumentExpression); return; }
-        if (ts.isPropertyAccessExpression(t)) { let root = t; while (ts.isPropertyAccessExpression(root)) root = root.expression; if (root.kind === K.ThisKeyword) return v(e, 'delete', 'delete of a field of this is outside the subset; assign undefined'); const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); return; }
+        if (ts.isElementAccessExpression(t)) { const r = t.expression; if (r.kind === K.ThisKeyword && thisParam) return v(e, 'receiver-write', RECEIVER_WRITE); if (r.kind === K.ThisKeyword || (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass)) { expr(t.argumentExpression); return; } let root = r; while (ts.isPropertyAccessExpression(root)) root = root.expression; const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasHere(o.decl, e)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); if (!nonNull(tOf(t.argumentExpression)).every(isStr)) return v(e, 'dynamic-key', 'a dictionary key is a string'); expr(t.argumentExpression); return; }
+        if (ts.isPropertyAccessExpression(t)) { let root = t; while (ts.isPropertyAccessExpression(root)) root = root.expression; if (root.kind === K.ThisKeyword) return v(e, 'delete', 'delete of a field of this is outside the subset; assign undefined'); const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasHere(o.decl, e)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); return; }
         return v(e, 'delete', 'delete of this target is outside the subset');
       }
       case K.VoidExpression: return v(e, 'void', '`void` is outside the subset');
@@ -1595,7 +1636,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const o = ts.isIdentifier(r) ? declOf(r) : null;
       if (!o || o.kind !== 'local') return refuse('unsupported-call', `.${name}() as a value changes \`${recv.getText(sf).slice(0, 40)}\`; call it on a local array or on a fresh one`);
       if (isParam(o.decl)) return refuse('param-mutation', `.${name}() as a value changes the parameter \`${r.text}\`; copy it to a local first`);
-      if (aliasLocals.has(o.decl)) return refuse('alias-mutation', `\`${r.text}\` is another name for a value this function was handed; copy it first`);
+      if (aliasHere(o.decl, e)) return refuse('alias-mutation', `\`${r.text}\` is another name for a value this function was handed; copy it first`);
       if (!ownedHere(o.decl) || callbackStack.length || forEachDepth) return refuse('closure-mutation', `.${name}() as a value inside a callback changes \`${r.text}\`; use a for-of loop`);
       const site = unconditionalSite(e);
       if (!site) return refuse('mutator-value', `.${name}() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind it to a const in its own statement first`);
@@ -1890,19 +1931,66 @@ export function lintFile(file, ranges = null, opts = {}) {
     return !nonNull(tOf(r)).some((t) => isArrayLike(checker, t) || isStr(t) || isSetT(t) || isMapT(t));
   }
   // a directly enclosing conditional proves a sole array spread nonempty on the chosen branch
+  // Math.min/max over a spread is read on a nonempty list (MinSeq/MaxSeq require it): the spread's length is the length of
+  // a name (the name itself, `xs.map(f)`, `xs.slice()`, `[...xs]`), and a test that dominates the call says that length is
+  // not zero: a conditional, an if, `&&` / `||`, or an earlier `if (...) return` (or throw, break, continue) in the same
+  // statement list, in any equivalent form (`xs.length`, `> 0`, `>= 1`, `!== 0`, `0 < xs.length`, `!xs.length` and
+  // `=== 0` on the other branch); the name is not written between the test and the call
   function nonemptyMathArgs(e) {
     const filled = (a) => !ts.isSpreadElement(a) || (ts.isArrayLiteralExpression(a.expression) && a.expression.elements.some(filled));
     if (e.arguments.some(filled)) return true;
-    if (e.arguments.length !== 1 || !ts.isSpreadElement(e.arguments[0]) || !ts.isIdentifier(e.arguments[0].expression)) return false;
-    let child = e, p = e.parent;
-    while (p && ts.isParenthesizedExpression(p)) { child = p; p = p.parent; }
-    if (!p || !ts.isConditionalExpression(p) || p.condition === child) return false;
-    let c = p.condition; while (ts.isParenthesizedExpression(c)) c = c.expression;
-    if (!ts.isBinaryExpression(c) || !ts.isPropertyAccessExpression(c.left) || c.left.name.text !== 'length' || !ts.isIdentifier(c.left.expression) || !ts.isNumericLiteral(c.right)) return false;
-    if (checker.getSymbolAtLocation(c.left.expression) !== checker.getSymbolAtLocation(e.arguments[0].expression)) return false;
-    const n = Number(c.right.text), op = c.operatorToken.kind, yes = p.whenTrue === child;
-    return yes ? (op === K.GreaterThanToken && n >= 0) || (op === K.GreaterThanEqualsToken && n >= 1) || (op === K.ExclamationEqualsEqualsToken && n === 0)
-      : (op === K.LessThanEqualsToken && n >= 0) || (op === K.LessThanToken && n >= 1) || (op === K.EqualsEqualsEqualsToken && n === 0);
+    if (e.arguments.length !== 1 || !ts.isSpreadElement(e.arguments[0])) return false;
+    const lengthName = (x) => { // the name whose length the value's length is
+      x = unparenX(x);
+      if (ts.isIdentifier(x)) return isArrayExpr(x) ? checker.getSymbolAtLocation(x) : null;
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && !x.expression.questionDotToken && isArrayExpr(x.expression.expression) && ((x.expression.name.text === 'map' && x.arguments.length === 1) || (x.expression.name.text === 'slice' && !x.arguments.length))) return lengthName(x.expression.expression);
+      if (ts.isArrayLiteralExpression(x) && x.elements.length === 1 && ts.isSpreadElement(x.elements[0])) return lengthName(x.elements[0].expression);
+      return null;
+    };
+    const sym = lengthName(e.arguments[0].expression);
+    if (!sym) return false;
+    const isLen = (x) => { x = unparenX(x); return ts.isPropertyAccessExpression(x) && x.name.text === 'length' && !x.questionDotToken && ts.isIdentifier(unparenX(x.expression)) && checker.getSymbolAtLocation(unparenX(x.expression)) === sym; };
+    // the test c, known to be `truth`, says the length is above zero
+    const implies = (c, truth) => {
+      c = unparenX(c);
+      if (ts.isPrefixUnaryExpression(c) && c.operator === K.ExclamationToken) return implies(c.operand, !truth);
+      if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.AmpersandAmpersandToken) return truth && (implies(c.left, true) || implies(c.right, true));
+      if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.BarBarToken) return !truth && (implies(c.left, false) || implies(c.right, false));
+      if (isLen(c)) return truth;
+      if (!ts.isBinaryExpression(c)) return false;
+      let op = c.operatorToken.kind, lit = unparenX(c.right);
+      if (!isLen(c.left)) { if (!isLen(c.right)) return false; lit = unparenX(c.left); op = { [K.LessThanToken]: K.GreaterThanToken, [K.LessThanEqualsToken]: K.GreaterThanEqualsToken, [K.GreaterThanToken]: K.LessThanToken, [K.GreaterThanEqualsToken]: K.LessThanEqualsToken }[op] ?? op; }
+      if (!ts.isNumericLiteral(lit)) return false;
+      const n = Number(lit.text);
+      if (truth) return (op === K.GreaterThanToken && n >= 0) || (op === K.GreaterThanEqualsToken && n >= 1) || ((op === K.ExclamationEqualsEqualsToken || op === K.ExclamationEqualsToken) && n === 0);
+      return (op === K.LessThanEqualsToken && n >= 0) || (op === K.LessThanToken && n >= 1) || ((op === K.EqualsEqualsEqualsToken || op === K.EqualsEqualsToken) && n === 0);
+    };
+    const writes = (node, from, to) => { // a write of the name inside node between two positions
+      let hit = false;
+      const w = (x) => {
+        if (hit || x.end <= from || x.pos >= to) return;
+        if (ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym) {
+          let top = x; while (top.parent && (ts.isParenthesizedExpression(top.parent) || ts.isNonNullExpression(top.parent))) top = top.parent;
+          const p = top.parent;
+          if (p && ts.isBinaryExpression(p) && p.left === top && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) hit = true;
+          if (p && ts.isPropertyAccessExpression(p) && p.expression === top && (MUT_NAMES.has(p.name.text) || (p.name.text === 'length' && p.parent && ts.isBinaryExpression(p.parent) && p.parent.left === p))) hit = true;
+        }
+        ts.forEachChild(x, w);
+      };
+      w(node);
+      return hit;
+    };
+    const exits = (st) => { st = ts.isBlock(st) && st.statements.length === 1 ? st.statements[0] : st; return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
+    for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
+      if (ts.isConditionalExpression(p) && child !== p.condition && implies(p.condition, p.whenTrue === child) && !writes(p, p.condition.end, e.pos)) return true;
+      if (ts.isIfStatement(p) && child !== p.expression && implies(p.expression, p.thenStatement === child) && !writes(p, p.expression.end, e.pos)) return true;
+      if (ts.isBinaryExpression(p) && child === p.right && ((p.operatorToken.kind === K.AmpersandAmpersandToken && implies(p.left, true)) || (p.operatorToken.kind === K.BarBarToken && implies(p.left, false))) && !writes(p, p.left.end, e.pos)) return true;
+      if ((ts.isBlock(p) || ts.isSourceFile(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) && p.statements) {
+        const k = p.statements.indexOf(child);
+        for (let i = k - 1; i >= 0; i--) { const g = p.statements[i]; if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement) && implies(g.expression, false) && !writes(p, g.end, e.pos)) return true; }
+      }
+    }
+    return false;
   }
   const argsOf = (e) => (e.arguments ?? []).forEach((a) => ts.isSpreadElement(a) ? (outsideSpread(e) ? spreadArray(a) : v(a, 'spread', 'spread arguments need an outside callee or a supported sequence operation')) : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
@@ -1929,6 +2017,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (parts.some(isAny)) return; // a read on an opaque value: uninterpreted accessor
     if (name === 'length' && parts.every((t) => isArrayLike(checker, t) || isStr(t))) return;
     if (name === 'size' && parts.every((t) => isSetT(t) || isMapT(t))) return;
+    if (execMatchMember(e, checker)) return; // `m.index` / `m.input` of a match of a non-global regular expression literal (common.mjs)
     for (const t of parts) {
       if (t.flags & TF.Never) continue; // stage 5 rank 17: a read on never is unreachable; any reading is sound
       if (t.flags & TF.IndexedAccess) continue; // an indexed this type (`this["options"]`): an opaque value, read through an uninterpreted accessor (the translator types it Any)
