@@ -31,6 +31,7 @@ import { startRecording, stopRecording, addRealm, summarizeRecords } from './tra
 import { witnessPatch } from '../patch.mjs';
 import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
 import { annotateWitness } from './callees.mjs';
+import { decoratorTable } from '../decorators.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -225,6 +226,116 @@ export function verdictGuard(out, shape = (r) => r) {
   return { settle() { owed = false; process.off('beforeExit', drained); } };
 }
 
+// ----- the decorator contract table (translate/decorators.json): lane B applies each listed row in its fakes -----
+// A guard row registers its guards on the class or on the handler, and a call of the handler runs them first (class
+// guards, then method guards): a guard that answers false throws ForbiddenException before the body. A pipe row
+// registers its pipes on the parameter, and the call passes the argument through each. A metadata row writes a cell of
+// the sandbox's metadata store (keyed by the target object, then the key), which the sandbox's Reflect.getMetadata and
+// Nest's Reflector read. Every other decorator keeps the rule of the loader below: run for its reads, its result never
+// replaces the class or the member.
+class ForbiddenException extends Error { constructor() { super('Forbidden resource'); this.name = 'ForbiddenException'; } }
+const decoStore = (env) => (env.decorations ??= { guards: new Map(), pipes: new Map(), cells: new Map(), written: [] });
+const seededUnit = (env, tag) => crypto.createHash('sha256').update(`${env.seed}:${tag}`).digest().readUInt32BE(0) / 4294967296; // the same on both sides for the same question, never drawn from the shared stream
+// a stable name for a guard or a pipe: a same-file class by its name, a fake by its path with the arguments of the
+// call or construction that made it (never its call counter, which another decorator of the file would shift)
+function decoLabel(env, x) {
+  if (x && x.__isFake) {
+    const path = x.__fakePath, m = /^(new )?(.*?)(?:\(\))?#(\d+)$/.exec(path);
+    if (!m) return path;
+    let seen = 0; const op = m[1] ? 'new' : 'call';
+    for (const r of env.trace) if (r.op === op && r.path === m[2] && ++seen === Number(m[3])) return `${m[1] ?? ''}${m[2]}(${JSON.stringify(r.args)})`;
+    return `${m[1] ?? ''}${m[2]}`;
+  }
+  if (typeof x === 'function') return `class:${x.name || 'anonymous'}`;
+  if (x && typeof x === 'object') return `instance:${x.constructor?.name ?? 'Object'}`;
+  return String(x);
+}
+const metaCell = (env, target, prop) => { const s = decoStore(env); let byProp = s.cells.get(target); if (!byProp) s.cells.set(target, byProp = new Map()); const pk = prop === undefined ? '\u0000' : prop; let m = byProp.get(pk); if (!m) byProp.set(pk, m = new Map()); return m; };
+function defineMeta(env, key, value, target, prop) { metaCell(env, target, prop).set(key, value); decoStore(env).written.push({ key, target, prop }); }
+// a read walks the target's prototype chain (reflect-metadata's OrdinaryGetMetadata); a fake target stands for a
+// handler the framework hands in: it reads one of the cells written with that key, in write order, or none, chosen by
+// the seed and the fake's path, the same choice on both sides
+function getMeta(env, key, target, prop) {
+  if (target && target.__isFake) {
+    const ws = decoStore(env).written.filter((w) => w.key === key && w.prop === prop && !(w.target && w.target.__isFake));
+    const i = Math.floor(seededUnit(env, `metadata:${target.__fakePath}:${String(key)}`) * (ws.length + 1));
+    return i < ws.length ? metaCell(env, ws[i].target, prop).get(key) : undefined;
+  }
+  for (let t = target; t !== null && t !== undefined && (typeof t === 'object' || typeof t === 'function'); t = Object.getPrototypeOf(t)) {
+    const byProp = decoStore(env).cells.get(t); const m = byProp && byProp.get(prop === undefined ? '\u0000' : prop);
+    if (m && m.has(key)) return m.get(key);
+  }
+  return undefined;
+}
+function metadataReflect(env) {
+  const R = {}; for (const k of Reflect.ownKeys(Reflect)) if (typeof Reflect[k] === 'function') R[k] = Reflect[k];
+  R.getMetadata = (key, target, prop) => getMeta(env, key, target, prop);
+  R.defineMetadata = (key, value, target, prop) => { env.record('call', 'Reflect.defineMetadata', [render(key), render(value), target && target.__isFake ? target.__fakePath : decoLabel(env, target)]); defineMeta(env, key, value, target, prop); };
+  return R;
+}
+// Nest's Reflector over the same store (@nestjs/core 11: get, getAll, getAllAndOverride, getAllAndMerge)
+function metadataReflector(env) {
+  const get = (key, target) => getMeta(env, key, target);
+  const getAll = (key, targets) => (targets ?? []).map((t) => get(key, t));
+  const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+  return {
+    get, getAll,
+    getAllAndOverride: (key, targets) => { for (const t of targets ?? []) { const v = get(key, t); if (v !== undefined) return v; } return undefined; },
+    getAllAndMerge: (key, targets) => { const vs = getAll(key, targets).filter((v) => v !== undefined); if (!vs.length) return vs; if (vs.length === 1) return isObj(vs[0]) ? vs[0] : [vs[0]]; return vs.reduce((a, b) => (Array.isArray(a) ? a.concat(b) : isObj(a) && isObj(b) ? { ...a, ...b } : [a, b])); },
+  };
+}
+// the module answer for a package of the table: its guard, pipe and SetMetadata exports apply their rows; every other
+// export is the package's fake
+function decoratedModule(env, spec) {
+  const rows = [...decoratorTable().decorators, ...decoratorTable().metadata].filter((r) => r.package === spec && (r.kind === 'guard' || r.kind === 'pipe' || r.export === 'SetMetadata'));
+  if (!rows.length) return null;
+  const cache = (env.decoModules ??= new Map()); if (cache.has(spec)) return cache.get(spec);
+  const over = {};
+  for (const r of rows) {
+    if (r.kind === 'guard') over[r.export] = (...guards) => { const labels = guards.map((g) => decoLabel(env, g)); return function (target, key) { const s = decoStore(env); const k = key === undefined ? '' : String(key); let m = s.guards.get(target); if (!m) s.guards.set(target, m = new Map()); m.set(k, [...(m.get(k) ?? []), ...guards.map((g, i) => ({ guard: g, label: labels[i] }))]); }; };
+    if (r.kind === 'pipe') over[r.export] = (...args) => { const pipes = typeof args[0] === 'string' ? args.slice(1) : args; const labels = pipes.map((p) => decoLabel(env, p)); return function (target, key, index) { if (!pipes.length || typeof index !== 'number') return; const s = decoStore(env); let m = s.pipes.get(target); if (!m) s.pipes.set(target, m = new Map()); const k = String(key); let byIndex = m.get(k); if (!byIndex) m.set(k, byIndex = new Map()); byIndex.set(index, [...(byIndex.get(index) ?? []), ...pipes.map((p, i) => ({ pipe: p, label: labels[i] }))]); }; };
+    if (r.export === 'SetMetadata') over[r.export] = (key, value) => function (target, k, desc) { defineMeta(env, key, value, desc && desc.value !== undefined ? desc.value : target); };
+  }
+  const base = env.module(spec);
+  const mod = new Proxy(base, { get: (t, p) => (typeof p === 'string' && Object.hasOwn(over, p) ? over[p] : t[p]) });
+  cache.set(spec, mod);
+  return mod;
+}
+// a guard's verdict: a same-file guard class runs its own canActivate on a fake receiver and a fake context; any other
+// guard is a seeded answer, true about seven times in ten, the same on both sides for the same guard and input
+function guardVerdict(env, g) {
+  const G = g.guard;
+  if (typeof G === 'function' && !G.__isFake && G.prototype && typeof G.prototype.canActivate === 'function') return G.prototype.canActivate.call(Object.create(G.prototype), env.fake(`guard:${g.label}:context`));
+  if (G && typeof G === 'object' && !G.__isFake && typeof G.canActivate === 'function') return G.canActivate(env.fake(`guard:${g.label}:context`));
+  env.record('call', `guard:${g.label}.canActivate`, []);
+  return seededUnit(env, `guard:${g.label}`) < 0.7;
+}
+// a pipe's result: a same-file pipe runs its own transform; any other pipe answers a value of the parameter's declared
+// type, seeded by the pipe and the argument it received
+function pipeResult(env, p, raw, pspec) {
+  const P = p.pipe;
+  if (typeof P === 'function' && !P.__isFake && P.prototype && typeof P.prototype.transform === 'function') return P.prototype.transform.call(Object.create(P.prototype), raw, env.fake(`pipe:${p.label}:metadata`));
+  if (P && typeof P === 'object' && !P.__isFake && typeof P.transform === 'function') return P.transform(raw, env.fake(`pipe:${p.label}:metadata`));
+  env.record('call', `pipe:${p.label}.transform`, [render(raw)]);
+  const path = `pipe:${p.label}(${JSON.stringify(render(raw))})`;
+  return pspec ? env.typed(path, pspec) : env.answer(path);
+}
+// a call of a handler through its listed guards and pipes (Nest's order: guards, then pipes, then the handler)
+function routeCall(env, Cls, member, args, spec, run) {
+  const s = env.decorations; if (!s) return run(args);
+  const guards = [...(s.guards.get(Cls)?.get('') ?? []), ...(s.guards.get(Cls.prototype)?.get(member) ?? [])];
+  const pipes = s.pipes.get(Cls.prototype)?.get(member);
+  if (!guards.length && !pipes) return run(args);
+  const piped = () => { const a = [...args]; if (pipes) for (const [i, list] of pipes) for (const p of list) a[i] = pipeResult(env, p, a[i], spec.params[i]?.spec ?? null); return run(a); };
+  const step = (i) => {
+    if (i >= guards.length) return piped();
+    const v = guardVerdict(env, guards[i]);
+    const decide = (ok) => { if (!ok) { env.record('guard-deny', guards[i].label, []); throw new ForbiddenException(); } return step(i + 1); };
+    return v && typeof v.then === 'function' ? v.then(decide) : decide(v);
+  };
+  return step(0);
+}
+
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
   const cache = new Map();
@@ -253,7 +364,7 @@ export function sandbox(env, root) {
     requestAnimationFrame: (fn) => env.arm('frame', fn, 16), requestIdleCallback: (fn) => env.arm('idle', fn, 1),
     clearTimeout: (id) => env.clearTimer(id, 'clearTimeout'), clearInterval: (id) => env.clearTimer(id, 'clearInterval'), clearImmediate: (id) => env.clearTimer(id, 'clearImmediate'), cancelAnimationFrame: (id) => env.clearTimer(id, 'cancelAnimationFrame'), cancelIdleCallback: (id) => env.clearTimer(id, 'cancelIdleCallback'), queueMicrotask: (fn) => Promise.resolve().then(fn),
     Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
-    Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect, Proxy, structuredClone,
+    Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
   };
   g.globalThis = g; g.global = g; g.window = undefined;
@@ -293,7 +404,7 @@ export function sandbox(env, root) {
       if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
       const alias = aliasTarget(abs, spec); // the project's own `paths` alias to a file of this package is code, loaded like a relative import
       if (alias && (!root || alias.startsWith(root + path.sep))) return load(alias);
-      return env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment
+      return decoratedModule(env, spec) ?? env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment (a package of the decorator table answers its listed exports by their rows)
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
@@ -335,12 +446,13 @@ export function pickUnit(exportsObj, spec, env) {
       if (typeof p === 'symbol') return t[p];
       if (p in Cls.prototype) { const v = Reflect.get(Cls.prototype, p, self); return typeof v === 'function' ? v.bind(self) : v; }
       if (Object.prototype.hasOwnProperty.call(t, p)) return t[p]; // a field this run assigned: its value
+      if ((spec.metadataReaders ?? []).includes(p)) { env.record('get', `this.${String(p)}`); return (env.reflector ??= metadataReflector(env)); } // a field declared as Nest's Reflector reads the sandbox's metadata store (decorator table)
       env.record('get', `this.${String(p)}`);
       return env.member('this', p, spec.receiver); // a field of the receiver: typed by the class (a service handle, a value of the field's type)
     },
     set(t, p, v) { const d = Object.getOwnPropertyDescriptor(Cls.prototype, p); if (d?.set) { d.set.call(self, v); return true; } env.record('set', `this.${String(p)}`, [render(v)]); t[p] = v; return true; },
   });
-  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : method.apply(self, args), receiver: self };
+  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : routeCall(env, Cls, member, args, spec, (a) => method.apply(self, a)), receiver: self }; // a handler runs through the guards and pipes its listed decorators registered
 }
 
 // a synchronous call under the vm's watchdog: JavaScript cannot be preempted, so an unbounded loop (an input aliased

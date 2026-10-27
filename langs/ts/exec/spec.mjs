@@ -5,6 +5,7 @@
 // Usage: node spec.mjs <file.ts> --unit <name> [--project <tsconfig>|--no-project]   -> JSON on stdout
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { hookTable, hookRecordSpec } from '../hooks.mjs';
+import { decoratorTable, importOf } from '../decorators.mjs';
 
 export function specOf(file, unitName, opts = {}) {
   const { sf, checker } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
@@ -135,11 +136,21 @@ export function specOf(file, unitName, opts = {}) {
     if (Object.keys(members).length) imports[st.moduleSpecifier.text] = { kind: 'service', name: st.moduleSpecifier.text, members };
   }
   const returns = spec(rt);
+  // the receiver's fields declared as a metadata reader of the decorator table (Nest's Reflector): lane B answers them
+  // with a reader of the sandbox's metadata store, never with a fake
+  const metadataReaders = [];
+  if (u.cls) {
+    const readerOf = (typeNode) => { if (!typeNode || !ts.isTypeReferenceNode(typeNode) || !ts.isIdentifier(typeNode.typeName)) return false; const imp = importOf(checker, typeNode.typeName); return !!imp && decoratorTable().metadata.some((r) => (r.via ?? []).some((x) => x.package === imp.pkg && x.export === imp.name)); };
+    for (const m of u.cls.members) {
+      if (ts.isPropertyDeclaration(m) && m.name && ts.isIdentifier(m.name) && readerOf(m.type)) metadataReaders.push(m.name.text);
+      if (ts.isConstructorDeclaration(m)) for (const p of m.parameters) if (ts.isIdentifier(p.name) && ts.getModifiers?.(p)?.some((x) => [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.PublicKeyword, ts.SyntaxKind.ProtectedKeyword, ts.SyntaxKind.ReadonlyKeyword].includes(x.kind)) && readerOf(p.type)) metadataReaders.push(p.name.text);
+    }
+  }
   // only the shapes a `ref` points at are emitted; a shape is written inline where it first occurs
   const used = new Set(); const mark = (x) => { if (!x || typeof x !== 'object') return; if (Array.isArray(x)) return x.forEach(mark); if (x.kind === 'ref' && !used.has(x.key)) { used.add(x.key); mark(defs[x.key]); } for (const v of Object.values(x)) mark(v); };
   mark(params); mark(returns); mark(receiver); mark(imports);
   const usedDefs = {}; for (const k of used) usedDefs[k] = defs[k];
-  return { unit: unitName, isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports };
+  return { unit: unitName, isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}) };
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {
