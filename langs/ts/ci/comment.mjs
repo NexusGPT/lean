@@ -5,6 +5,7 @@
 //
 //   node comment.mjs --repo <checkout> --base <sha> --head <sha> [--out report.md] [--json rows.json]
 //                    [--paths 'src/**,lib/**'] [--max-functions 40] [--scope f,Class.m] [--n 100]
+//                    [--time-budget seconds] [--unit-budget n]
 //                    [--dafny-seconds 30] [--project <tsconfig>|--no-project]
 //                    [--post [--pr <number>]] [--block none|witness|ask]
 //
@@ -13,12 +14,12 @@
 // header and nowhere else: it is never printed, never written to a file, never part of an error.
 //
 // Exit code: 0 always unless --block is given (a failed post is a warning, not a failure). --block witness exits 1
-// when any row is WITNESS; --block ask exits 1 on WITNESS or ASK; under --block, a run that produced no table exits 1
+// when any row is WITNESS; --block ask exits 1 on WITNESS or ASK. Both block on a budget stop. A missing table exits 1
 // too, since a gate that could not look must not pass. A row declared in scope never blocks. Usage errors exit 2.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prReport, markdown, intakeMarkdown } from '../pr.mjs';
+import { prReport, markdown, intakeMarkdown, reportJSON, stopNote, budgetValue } from '../pr.mjs';
 
 export const MARKER = '<!-- lean-report -->';
 // a GitHub comment body holds at most 65,536 characters; the table is cut at a row boundary below that
@@ -42,14 +43,14 @@ export function blockingRows(rows, block = 'none') {
 }
 
 // the comment: the marker, the table, one line on what produced it; cut at a line boundary if it is too long
-export function commentBody(md, { block = 'none', capped = false, extra = [], rows = null } = {}) {
+export function commentBody(md, { block = 'none', capped = false, extra = [], rows = null, stop = rows?.stop } = {}) {
   if (rows) {
     const firstBreak = md.indexOf('\n');
     const title = firstBreak < 0 ? md : md.slice(0, firstBreak);
     const verdicts = firstBreak < 0 ? '' : md.slice(firstBreak + 1);
     md = [title, '', intakeMarkdown(rows), '', '## Verdicts', verdicts].join('\n');
   }
-  const tail = ['', `<sub>lean, blocking: ${block === 'none' ? 'off' : block}${capped ? '; the function cap was reached; the verdict table is capped and intake lists the change set' : ''}. This comment is updated on every push.</sub>`, ...extra];
+  const tail = ['', `<sub>lean, blocking: ${block === 'none' ? 'off' : block}${stopNote(stop) ? '; ' + stopNote(stop) : ''}${capped ? '; the function cap was reached; the verdict table is capped and intake lists the change set' : ''}. This comment is updated on every push.</sub>`, ...extra];
   let body = [MARKER, md, ...tail].join('\n');
   if (body.length <= MAX_BODY) return body;
   const note = '\n\n(the table is longer than one comment holds; the full report is the job artifact)';
@@ -95,7 +96,7 @@ export async function upsertComment({ api = 'https://api.github.com', repository
   return { action: 'created', id: c.id, url: c.html_url };
 }
 
-export async function main(argv, env = process.env, log = console.log, warn = console.error) {
+export async function main(argv, env = process.env, log = console.log, warn = console.error, report = prReport) {
   const opt = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
   const repo = opt('--repo'), base = opt('--base'), head = opt('--head');
   const block = opt('--block', 'none');
@@ -106,19 +107,18 @@ export async function main(argv, env = process.env, log = console.log, warn = co
   const project = argv.includes('--no-project') ? false : opt('--project', true);
   let rows = null, error = null;
   try {
-    // paths and maxUnits are passed for a prReport that filters before it checks; the rows are filtered here as well
-    rows = await prReport({ repo: path.resolve(repo), base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project, scope, paths: paths.length ? (f) => inPaths(f, paths) : null, maxUnits: maxFunctions });
-    rows = rows.filter((r) => inPaths(r.file, paths));
+    // Filter paths before checking and keep the report metadata after filtering.
+    rows = await report({ repo: path.resolve(repo), base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project, scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), paths: paths.length ? (f) => inPaths(f, paths) : null, maxUnits: maxFunctions });
+    rows = Object.assign(rows.filter((r) => inPaths(r.file, paths)), { stop: rows.stop, order: rows.order, callersChecked: rows.callersChecked });
   } catch (e) { error = String(e?.message ?? e).split('\n')[0].slice(0, 300); }
-  // the cap: a prReport that honours maxUnits stops there; one that does not has checked every function, and the
-  // table still shows the first maxFunctions only, so the comment's length is bounded either way
+  // The cap limits the verdict table. The budget limits work.
   const intakeRows = rows;
   const capped = !!(rows && maxFunctions && rows.length >= maxFunctions);
-  if (capped) rows = rows.slice(0, maxFunctions);
+  if (capped) rows = Object.assign(rows.slice(0, maxFunctions), { stop: rows.stop, order: rows.order, callersChecked: rows.callersChecked });
   const md = rows ? markdown(rows, short(base), short(head)) : `# lean report: ${short(base)} → ${short(head)}\n\nlean could not produce the table: ${error}`;
   const body = commentBody(md, { block, capped, rows: intakeRows });
   if (opt('--out')) { fs.writeFileSync(opt('--out'), body); log(`${rows ? rows.length : 0} function(s) -> ${opt('--out')}`); } else log(body);
-  if (opt('--json') && rows) fs.writeFileSync(opt('--json'), JSON.stringify(rows, null, 1));
+  if (opt('--json') && rows) fs.writeFileSync(opt('--json'), JSON.stringify(reportJSON(intakeRows), null, 1));
   if (error) warn(`::warning::lean could not produce the table: ${error}`);
   if (argv.includes('--post')) {
     try {
@@ -128,11 +128,13 @@ export async function main(argv, env = process.env, log = console.log, warn = co
   }
   if (block === 'none') return 0;
   if (!rows) return 1;
+  const stop = stopNote(rows.stop);
+  if (stop) warn(`::error::lean ${stop}`);
   const hits = blockingRows(rows, block);
   // an annotation's file is relative to the job's workspace, where the checkout may sit in a subfolder
   const prefix = env.GITHUB_WORKSPACE ? path.relative(env.GITHUB_WORKSPACE, path.resolve(repo)) : '';
   for (const r of hits) warn(`::error file=${prefix ? path.posix.join(prefix.split(path.sep).join('/'), r.file) : r.file},line=${r.lines?.[0] ?? 1}::lean ${r.verdict} on ${r.unit}`);
-  return hits.length ? 1 : 0;
+  return stop || hits.length ? 1 : 0;
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
