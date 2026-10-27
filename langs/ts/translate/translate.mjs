@@ -382,7 +382,8 @@ export function translate(file, fnName, opts = {}) {
       if (!localEffectScan.has(d)) { localEffectScan.add(d); try { effect = containsEffect(init.body); } finally { localEffectScan.delete(d); } }
       return { kind: 'local', count: Math.min(init.parameters.length, full), effect, ret: () => checker.getSignatureFromDeclaration(init).getReturnType() };
     }
-    return { kind: o.kind === 'local' ? 'local' : 'outside', count: full, effect: true, ret: null };
+    if (o.kind === 'local') return d && ts.isParameter(d) ? { kind: 'local', count: full, effect: true, ret: null } : null; // a function-typed parameter: a body read nowhere
+    return { kind: 'outside', count: full, effect: true, ret: null };
   }
   const namedCallbackShape = (e0) => {
     let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;

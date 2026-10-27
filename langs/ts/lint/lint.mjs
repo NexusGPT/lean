@@ -1187,7 +1187,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     } else if (o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer)) {
       fn = o.decl.initializer;
       if (!plain(fn.parameters)) return v(cb, 'callback-form', `a named effectful callback takes plain parameters, at most ${full} (what ${name} passes); write an inline arrow`);
-    } else if (o.kind === 'local' && o.decl && ts.isFunctionDeclaration(o.decl)) return v(cb, 'callback-form', 'a local function declaration as a callback needs an inline arrow');
+    } else if (o.kind === 'local' && !(o.decl && ts.isParameter(o.decl))) return v(cb, 'callback-form', 'an effectful array callback needs an inline arrow so its world transitions are read in array order'); // a local function value built here: its effects are not read by name
     const sig = checker.getSignaturesOfType(tOf(cb), ts.SignatureKind.Call);
     if (fn?.type && ts.isTypePredicateNode(fn.type)) return v(cb, 'callback-result', 'an effectful type-predicate callback needs an explicit for-of loop with a type guard');
     if (name === 'flatMap' && sig.length) { const parts = nonNull(sig[0].getReturnType()); if (parts.some((t) => isArrayLike(checker, t)) && !parts.every((t) => isArrayLike(checker, t))) return v(cb, 'callback-result', 'an effectful flatMap callback returns either arrays on every path or scalar values on every path; use a for-of loop for mixed results'); }
