@@ -168,6 +168,23 @@ zones: obligations unmet; `structuredClone` of unsupported values: refused by na
 - Still out of the table: sort (its comparator), Object.assign (the lint's assign-target refusal stands until the
   ordinary lane also writes the target), the drafts (freeze, structuredClone, Date).
 
+### 4.3 Built, 2026-10-27: Object.assign and sort
+
+- `Object.assign(t, s)` as a statement: the lint lifts `assign-target` when the target is a plain record the function
+  owns or was handed (no accessor, no method) and every source's declared fields are fields of the target; the
+  ordinary lane rebuilds the target with every declared field of each source in order (`t.(x := s.x, y := s.y)`) and a
+  parameter target becomes an output beside the result; the heap core reads the statement as the table's `Assign_<K>`
+  on two cells of one shape. The value form, a target of another shape, or a source with an extra field stay refused.
+- `xs.sort((a, b) => …)` as a statement: the lint admits one comparator, an arrow of two parameters checked pure; the
+  ordinary lane reads a stable reorder of `xs` by an uninterpreted sort keyed by the element type and the comparator
+  (the expression form's function); the heap core reads the table's `SortPure_<K>` with the comparator as
+  `(a, b) => cmp(a, b) < 0`. The default order (strings) is refused by name. The table's form is a bodiless function,
+  no `{:extern}`: the theorem refuses that attribute anywhere a proof can see.
+- Pair `tests/pairs/library_assign_sort`: merged (the target returned through an alias taken after the write) proved;
+  swapped (sources swapped) refuted and witnessed; sortedCopy (`slice(0)` for `slice()`, the same comparator) proved;
+  sortedDesc (the comparator reversed) unproved and witnessed; sortedInPlace proved. The lint's advice names both
+  statement forms.
+
 ## 5. State over time (brief 14)
 
 **Settled.** A one-step proof over the complete state composes by induction; the hole is a cell omitted, reset or

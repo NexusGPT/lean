@@ -85,8 +85,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   const fieldOf = (s, name) => (s.kind === 'rec' ? s.fields.find((f) => f.name === name) : null);
 
   // ----- the core, by syntax -----
-  const MUTATORS = new Set(['push', 'unshift', 'pop', 'shift', 'reverse', 'splice']); // in-place array operations of the table, as statements
-  const MUTATOR_ARITY = { push: [1, 1], unshift: [1, 1], pop: [0, 0], shift: [0, 0], reverse: [0, 0], splice: [2, Infinity] }; // splice: start, delete count, then insertions
+  const MUTATORS = new Set(['push', 'unshift', 'pop', 'shift', 'reverse', 'splice', 'sort']); // in-place array operations of the table, as statements
+  const MUTATOR_ARITY = { push: [1, 1], unshift: [1, 1], pop: [0, 0], shift: [0, 0], reverse: [0, 0], splice: [2, Infinity], sort: [1, 1] }; // splice: start, delete count, then insertions; sort: the comparator
+  const isAssignCall = (e) => ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign'; // Object.assign(t, s) as a statement: the table's Assign_ row on same-shape records
   const BINOPS = new Set([K.PlusToken, K.MinusToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken]);
   const unparen = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
   const isBoolT = (t) => !!(t.flags & ts.TypeFlags.BooleanLike); // `&&` and `||` in the core are the boolean connectives; a value on either side is the ordinary translation's mixed logic
@@ -197,7 +198,17 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
             const s2 = shapeOf(typeOf(e.expression.expression)); if (!s2 || s2.kind !== 'arr') return no('mutator on a non-array');
             const m = e.expression.name.text; const [lo, hi] = MUTATOR_ARITY[m]; if (e.arguments.length < lo || e.arguments.length > hi) return no('mutator arity');
             if (m === 'splice' && isReal) return no('splice index in a real file');
+            if (m === 'sort') { // the comparator: a pure arrow of two parameters of the element shape, a number body
+              const cb = e.arguments[0]; if (!ts.isArrowFunction(cb) || cb.parameters.length !== 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name)) || ts.isBlock(cb.body) || cb.modifiers?.length) return no('comparator form');
+              const [a, b] = cb.parameters.map((p) => p.name.text); if (a === b || names.has(a) || names.has(b) || a === HW || b === HW) return no('name reused');
+              if (!cb.parameters.every((p) => shapeOf(typeOf(p.name)))) return no('comparator parameter type'); if (!(typeOf(cb.body).flags & TF.NumberLike)) return no('comparator result type');
+              checkExpr(e.expression.expression); names.add(a); names.add(b); lambdaDepth++; checkExpr(cb.body); lambdaDepth--; names.delete(a); names.delete(b); continue;
+            }
             checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); continue;
+          }
+          if (isAssignCall(e)) { // the table's row: the target's cell takes the source's; same shape only
+            if (e.arguments.length !== 2) return no('assign arity'); const st = shapeOf(typeOf(e.arguments[0])), ss = shapeOf(typeOf(e.arguments[1]));
+            if (!st || !ss || st.kind !== 'rec' || st.key !== ss.key) return no('assign shapes'); checkExpr(e.arguments[0]); checkExpr(e.arguments[1]); continue;
           }
           if (sameFileCall(e)) { for (const a of e.arguments) checkExpr(a); continue; }
           return no(ts.isCallExpression(e) ? (ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file') : `expression statement ${K[e.kind]}`);
@@ -301,6 +312,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         out.push(`function Items_${k}(hw: HWorld, r: Ref): seq<${E}> { if Is${k}(hw, r) then hw.heap[r].items_${k} else [] }`);
         for (const op of Object.values(ARRAY_ROWS)) { const row = LIB_ROW[op]; if (!row || row.status !== 'generated') throw new Error(`library table: ${op} has no generated form`); if ((op.endsWith('.splice') || op.endsWith('.slice')) && isReal) continue; out.push(instantiate(row.dafny, k, E)); } // the table's forms, per shape
         out.push(instantiate(LIBRARY.helpers['Rev_<K>'], k, E));
+        out.push(instantiate(LIB_ROW['Array.prototype.sort'].dafny, k, E)); // the extern stable sort and SortPure_
         out.push(instantiate(LIBRARY.helpers['Keep_<K>'], k, E)); out.push(instantiate(LIB_ROW['Array.prototype.filter'].dafny, k, E));
         for (const inst of mapInstances) { const [k1, k2] = inst.split('|'); if (k1 === k && shapes.has(k2)) out.push(instantiate(LIB_ROW['Array.prototype.map'].dafny, k, E, null, k2, valD(shapes.get(k2).elem))); }
       } else if (s.kind === 'map') {
@@ -314,6 +326,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         for (const op of ['Set.prototype.add', 'Set.prototype.has', 'Set.prototype.delete']) out.push(instantiate(LIB_ROW[op].dafny, k, E));
         out.push(`function SetSize_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].items_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
       } else {
+        out.push(instantiate(LIB_ROW['Object.assign'].dafny, k, ''));
         for (const f of s.fields) {
           const F = dn(f.name), T = valD(f.shape);
           out.push(`function Get_${k}_${F}(hw: HWorld, r: Ref): ${T} { if Is${k}(hw, r) then hw.heap[r].${fld(f.name)} else ${dflt(f.shape)} }`);
@@ -438,10 +451,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) {
           const s2 = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const m = e.expression.name.text;
           if (m === 'reverse' || m === 'splice') { libCall(e, s2, r); out.push(flush()); continue; } // the result (the receiver, a fresh array) is dropped
+          if (m === 'sort') { const cb = e.arguments[0]; const [a, b] = cb.parameters.map((p) => p.name.text); const E = valD(s2.elem); const body = expr(cb.body); const d = fresh('d'); lines.push(`var (${HW}, ${d}) := SortPure_${s2.key}(${HW}, ${r}, ((${dn(a)}: ${E}, ${dn(b)}: ${E}) => ${body} < ${isReal ? '0.0' : '0'}));`); out.push(flush()); continue; } // a stable sort of the items by the comparator's order, uninterpreted
           const args = (m === 'pop' || m === 'shift') ? [HW, r] : [HW, r, expr(e.arguments[0])];
           lines.push(`var ${HW} := ${m[0].toUpperCase() + m.slice(1)}_${s2.key}(${args.join(', ')});`);
           out.push(flush()); continue;
         }
+        if (isAssignCall(e)) { const st = shapeExpr(e.arguments[0]); const t = expr(e.arguments[0]); const src = expr(e.arguments[1]); const d = fresh('d'); lines.push(`var (${HW}, ${d}) := Assign_${st.key}(${HW}, ${t}, ${src});`); out.push(flush()); continue; }
         expr(e); out.push(flush()); // a same-file call as a statement: its heap effect
       }
       throw new Error('heap: a path ends without a return');

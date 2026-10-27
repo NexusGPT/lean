@@ -450,6 +450,14 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
       const name = e.expression.name.text, r = e.expression.expression;
       const rt = tOf(r);
+      if (name === 'assign' && ts.isIdentifier(r) && r.text === 'Object' && e.arguments.length >= 2) { // Object.assign(t, s…) as a statement on a record the function owns: t is rebuilt with every declared field of each source (the ordinary lane) or the Assign_ row (the heap core); a parameter target is an output
+        const t0 = unparenX(e.arguments[0]);
+        const ownedTarget = ts.isIdentifier(t0) && declOf(t0).kind === 'local' && ownedHere(declOf(t0).decl) && !aliasLocals.has(declOf(t0).decl);
+        const plainRecord = (x) => { const t = tOf(x); if (!isRecordish(t) || nonNull(t).length !== 1 || t.flags & (TF.Null | TF.Undefined)) return false; return checker.getPropertiesOfType(t).every((p) => !(p.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor | ts.SymbolFlags.Method))); };
+        const targetProps = ownedTarget && plainRecord(t0) ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
+        const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
+        if (ownedTarget && sourcesFit) { checkIdent(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
+      }
       { const refused = objectCallRefusal(e, r, name); if (refused) return refused; }
       // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
       if (DATE_SETTERS.test(name) && nonNull(rt).some((x) => x.symbol?.name === 'Date')) return v(e, 'date-mutation', `\`${name}\` changes the Date in place; no transition models it: build a new Date from the computed time value instead`);
@@ -481,8 +489,9 @@ export function lintFile(file, ranges = null, opts = {}) {
         conditionalSpreadArgs(e);
         return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
       }
-      if ((name === 'shift' || name === 'reverse' || name === 'splice') && isArrayExpr(r)) { // the in-place rows of the library table, as statements whose result is dropped
+      if ((name === 'shift' || name === 'reverse' || name === 'splice' || name === 'sort') && isArrayExpr(r)) { // the in-place rows of the library table, as statements whose result is dropped
         if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
+        if (name === 'sort') { const cb = e.arguments[0]; if (e.arguments.length !== 1 || !ts.isArrowFunction(cb) || cb.parameters.length !== 2) return v(e, 'unsupported-call', 'sort as a statement needs one comparator, an arrow of two parameters (the default order compares strings)'); return callback(cb, 2); }
         if ((name === 'shift' || name === 'reverse') && e.arguments.length) v(e, 'unsupported-call', `${name} takes no argument`);
         if (name === 'splice' && (e.arguments.length < 2 || e.arguments.some(ts.isSpreadElement))) v(e, 'unsupported-call', 'splice as a statement needs a start, a count and plain items');
         return e.arguments.forEach((a) => expr(a));
