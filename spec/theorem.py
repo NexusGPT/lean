@@ -123,6 +123,37 @@ def split_helpers(funcs_defined, scoped, suffix, label):
     return helpers
 
 
+def sig_difference(parent_sig, cand_sig):
+    """What differs between two `// SIG` lines, in the words a caller would use, or None when a caller sees the same
+    signature. The parameter names are not compared. A line that is not JSON is compared as text."""
+    try:
+        p, c = json.loads(parent_sig), json.loads(cand_sig)
+    except ValueError:
+        return None if parent_sig == cand_sig else f'parent {parent_sig[:300]} vs candidate {cand_sig[:300]}'
+    if not isinstance(p, dict) or not isinstance(c, dict):
+        return None if p == c else f'parent {parent_sig[:300]} vs candidate {cand_sig[:300]}'
+    show = lambda x: ('yes' if x else 'no') if isinstance(x, bool) else 'none' if x is None or x == [] else ', '.join(x) if isinstance(x, list) else str(x)
+    out = []
+    if p.get('decorators') != c.get('decorators'):
+        out.append(f"method decorators {show(p.get('decorators'))} became {show(c.get('decorators'))}")
+    if p.get('this') != c.get('this') or ('this' in p) != ('this' in c):
+        out.append(f"this type {show(p.get('this'))} became {show(c.get('this'))}")
+    pp, cp = p.get('params') or [], c.get('params') or []
+    if len(pp) != len(cp):
+        out.append(f'parameter count {len(pp)} became {len(cp)}')
+    for k, (a, b) in enumerate(zip(pp, cp), 1):
+        for key, word in (('type', 'type'), ('decorators', 'decorators'), ('optional', 'optional'), ('rest', 'rest'), ('init', 'default')):
+            if a.get(key) != b.get(key):
+                out.append(f'parameter {k} {word} {show(a.get(key))} became {show(b.get(key))}')
+    if p.get('ret') != c.get('ret'):
+        out.append(f"return type {show(p.get('ret'))} became {show(c.get('ret'))}")
+    known = {'decorators', 'this', 'params', 'ret', 'names'}
+    for key in sorted((set(p) | set(c)) - known):
+        if p.get(key) != c.get(key):
+            out.append(f'{key} {p.get(key)} became {c.get(key)}')
+    return '; '.join(out) or None
+
+
 def check_forbidden(text, label):
     clean = strip_comments(text)
     for pat, name in FORBIDDEN:
@@ -158,11 +189,17 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             raise Refusal(f'scope lists {f}, which the parent does not define')
         if f not in cf:
             raise Refusal(f'scope lists {f}, which the candidate does not define')
-        if (pf[f]['params'], pf[f]['ret']) != (cf[f]['params'], cf[f]['ret']):
+        # the parameter types by position and the return type: the lemma binds the parent's names and passes them to the
+        # candidate by position, so a renamed Dafny parameter is the same signature
+        if ([t for _, t in pf[f]['params']], pf[f]['ret']) != ([t for _, t in cf[f]['params']], cf[f]['ret']):
             if 'Slots_' in str(pf[f]['params']) + str(cf[f]['params']) + str(pf[f]['ret']) + str(cf[f]['ret']):
                 slot_layout_differs.add(f)  # a component whose hook slots changed: nothing to compare slot by slot; its lemma is withheld
                 continue
-            raise Refusal(f'{f}: signature of candidate differs from parent')
+            pt, ct = [t for _, t in pf[f]['params']], [t for _, t in cf[f]['params']]
+            what = [f'parameter count {len(pt)} became {len(ct)}'] if len(pt) != len(ct) else []
+            what += [f'parameter {k} type {a} became {b}' for k, (a, b) in enumerate(zip(pt, ct), 1) if a != b]
+            what += [f"return type {pf[f]['ret']} became {cf[f]['ret']}"] if pf[f]['ret'] != cf[f]['ret'] else []
+            raise Refusal(f'{f}: signature of candidate differs from parent (Dafny: ' + '; '.join(what) + ')')
     extra_edits = sorted(set(edit) - set(funcs))
     if extra_edits:
         raise Refusal('edit lists functions that the scope does not: ' + ', '.join(extra_edits))
@@ -170,10 +207,11 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     # function. Its body becomes a call of the parent's, so the prover sees the equality without induction. The
     # comparison is on the full declaration text with comments removed and whitespace folded; any difference keeps
     # the candidate's own body.
-    # the TypeScript signature as written (`// SIG <name>: <json>`: decorators, parameter names and types, the return
-    # type). Two Dafny signatures can agree while the TypeScript ones differ (an absence read as one None, a changed
-    # parameter decorator the framework runs before the call): a differing signature withholds the lemma as an
-    # interface change, never a proof.
+    # the TypeScript signature a caller sees (`// SIG <name>: <json>`: decorators, the `this` type, per position the
+    # parameter's decorators, type, optionality, rest-ness and default, the return type). Two Dafny signatures can agree
+    # while the TypeScript ones differ (an absence read as one None, a changed parameter decorator the framework runs
+    # before the call): a differing signature withholds the lemma as an interface change, never a proof. The parameter
+    # names (`names`) are not compared: a caller passes arguments by position, so a rename alone is not a change.
     sigs = {}
     for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
         for m in re.finditer(r'^// SIG ([A-Za-z_][A-Za-z0-9_]*): (.+)$', text, flags=re.M):
@@ -181,7 +219,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             if not name.endswith(suffix):
                 raise Refusal(f'{label}: signature for {name} does not end in {suffix}')
             sigs.setdefault(name[: -len(suffix)], {})[label] = m.group(2).strip()
-    sig_differs = {f for f, s_ in sigs.items() if 'parent' in s_ and 'candidate' in s_ and s_['parent'] != s_['candidate']}
+    sig_diff = {f: sig_difference(s_['parent'], s_['candidate']) for f, s_ in sigs.items() if 'parent' in s_ and 'candidate' in s_}
+    sig_differs = {f for f, d in sig_diff.items() if d}
     cand_text, aliased = alias_identical(parent_text, cand_text, pf, cf, sig_differs)
     # a heap-core unit carries the hypothesis its inputs satisfy in the typed program (`// HYP <name>: <expr>`, written
     # by the translator); the lemma assumes it. Both sides must state the same hypothesis, or there is no one theorem.
@@ -192,8 +231,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             if not name.endswith(suffix):
                 raise Refusal(f'{label}: hypothesis for {name} does not end in {suffix}')
             hyps.setdefault(name[: -len(suffix)], {})[label] = re.sub(r'\s+', ' ', m.group(2).strip())
-    for f, h in hyps.items():
-        if f in funcs and h.get('parent') != h.get('candidate'):
+    for f, h in hyps.items():  # compared with the parameters by position: the lemma states the parent's, over the parent's names
+        if f in funcs and (h.get('parent') is None or h.get('candidate') is None or not equal_by_position(h['parent'], h['candidate'], pf[f]['params'], cf[f]['params'])):
             raise Refusal(f'{f}: hypothesis differs between parent and candidate')
     # the identity guard (references, layer 1): a unit read as a value tree carries `// GUARD <name>: {exposed, determinate,
     # sites, writes}`. Tree equality implies graph equality only when the unit is not exposed, or when both sides have one
@@ -212,8 +251,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
                 raise Refusal(f'{label}: guard for {name} is not JSON')
     unguarded = {f: 'slot layout differs: the hook slots of parent and candidate are not the same list' for f in slot_layout_differs}
     for f, s in sigs.items():
-        if f in funcs and f not in aliased and 'parent' in s and 'candidate' in s and s['parent'] != s['candidate']:
-            unguarded[f] = f"interface differs: parent {s['parent'][:300]} vs candidate {s['candidate'][:300]}"
+        if f in funcs and f not in aliased and sig_diff.get(f):
+            unguarded[f] = f"interface differs: {sig_diff[f][:300]}"
     for f, g in guards.items():
         if f not in funcs or f in aliased or 'parent' not in g or 'candidate' not in g:
             continue
@@ -400,6 +439,46 @@ def _norm(text, suffix):
     return re.sub(r'\s+', ' ', t).strip()
 
 
+def _by_position(text, params):
+    """The text with every parameter name replaced by its position. A name after a dot is a field, and a name before
+    `:=` may be a field (`r.(n := v)`, `R(n := v)`) or a new binding: both stay as written, so a text that differs there
+    stays different. Two texts equal this way say the same thing about the same arguments."""
+    names = [n for n, _ in params]
+    if not names or len(set(names)) != len(names) or '__lean_param_' in text:
+        return text
+    by = {n: f'__lean_param_{i}__' for i, n in enumerate(names)}
+    pat = re.compile(r"(?<![.\w'?])(" + '|'.join(re.escape(n) for n in sorted(by, key=len, reverse=True)) + r")(?![\w'?])(?!\s*:=)")
+    return pat.sub(lambda m: by[m.group(1)], text)
+
+
+def _occurs(text, name):
+    """Whether `name` occurs in `text` as an identifier other than a field read (a name after a dot)."""
+    return re.search(r"(?<![.\w'?])" + re.escape(name) + r"(?![\w'?])", text) is not None
+
+
+def _rebinds(text, name):
+    """Whether `text` binds `name` again (a `var`, a name before `:=` or `=>`, a quantifier or a match pattern):
+    a declaration, a field write, a nested function's parameter."""
+    n = re.escape(name)
+    stop = r"(?:(?!:=|:\||::|=>)[^;{}])*?"  # a binder list ends where the bound expression or the body starts
+    return re.search(r"(?<![.\w'?])" + n + r"(?![\w'?])\s*(?::=|=>|::)|\b(?:var|forall|exists|case)\b" + stop + r"(?<![.\w'?])" + n + r"(?![\w'?])", text) is not None
+
+
+def equal_by_position(ptext, ctext, pparams, cparams):
+    """Two texts equal up to a renaming of the parameters by position. A renamed position is admitted only when the
+    rename cannot capture: the candidate's new name does not occur in the parent text, the parent's old name does not
+    occur in the candidate text, and neither side binds its name again. Otherwise the texts must agree as written."""
+    pn, cn = [n for n, _ in pparams], [n for n, _ in cparams]
+    if len(pn) != len(cn):
+        return False
+    if pn == cn:
+        return ptext == ctext
+    for o, n in zip(pn, cn):
+        if o != n and (_occurs(ptext, n) or _occurs(ctext, o) or _rebinds(ptext, o) or _rebinds(ctext, n)):
+            return False
+    return _by_position(ptext, pparams) == _by_position(ctext, cparams)
+
+
 def _body_span(clean, start):
     """From a function's start offset in `clean`: the offset of its body's opening brace and the one after its close."""
     i = clean.find('(', start)
@@ -424,13 +503,14 @@ def _body_span(clean, start):
 
 
 def alias_identical(parent_text, cand_text, pf, cf, exclude=frozenset()):
-    """Rewrite each candidate function identical to the parent's into `{ <base>_parent(<names>) }`."""
+    """Rewrite each candidate function identical to the parent's (up to a renaming of its parameters) into
+    `{ <base>_parent(<names>) }`, the candidate's own names passed by position."""
     aliased = []
     clean = strip_comments(cand_text)
     edits = []
     # identical text is not enough: a function that calls a changed function is changed through it. Keep only the
     # functions whose text is identical AND whose same-file callees are all identical (a fixpoint).
-    same = {b for b in cf if b in pf and b not in exclude and _norm(pf[b]['body'], 'parent') == _norm(cf[b]['body'], 'candidate')} # a unit whose TypeScript signature changed is changed, whatever its Dafny text
+    same = {b for b in cf if b in pf and b not in exclude and equal_by_position(_norm(pf[b]['body'], 'parent'), _norm(cf[b]['body'], 'candidate'), pf[b]['params'], cf[b]['params'])} # a unit whose TypeScript signature changed is changed, whatever its Dafny text; parameters compared by position
     changed = True
     while changed:
         changed = False
