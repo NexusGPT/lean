@@ -62,7 +62,7 @@ export function finiteDomain(file, unit, { project = false, maxAssignments = 64 
 
 // a unit call under the context's watchdog (as run.mjs does): an endless click handler is a timeout, never a hang
 class CallTimeout extends Error { constructor() { super('__timeout__'); } }
-function guarded(env, fn, ms) { if (!env.ctx) return fn(); env.ctx.__leanCall = fn; try { return vm.runInContext('__leanCall()', env.ctx, { timeout: Math.max(1, ms) }); } catch (e) { if (e && e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') throw new CallTimeout(); throw e; } finally { delete env.ctx.__leanCall; } }
+// the watchdog call and the await of a unit promise come from the runtime (run.mjs): they open the recording window of the library table
 const erase = (v) => (Array.isArray(v) ? v.map(erase) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : erase(x)])), children: v.children.map(erase) } : v);
 
 // explore the product of parent and candidate over every click order from every prop assignment
@@ -79,6 +79,7 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
       const inputs = domain.hasProps ? [props] : [];
       return { env, u, inputs };
     };
+    const guarded = rt.guardedCall, awaitUnit = rt.awaitUnit;
     const call = (s) => () => guarded(s.env, () => s.u.call(s.inputs), ms);
     const commit = async (s) => { let v = await commitEffects(s.env, call(s), ms, await commitRender(s.env, call(s), ms)); if (s.env.timers.queue.length) { await runTimers(s.env, ms); v = await commitEffects(s.env, call(s), ms, await commitRender(s.env, call(s), ms)); } return v; };
     const stateKey = (s) => JSON.stringify([render(s.env.hookSlots ?? []), render(s.env.pending.map(({ id, ...rest }) => rest))]);
@@ -87,7 +88,7 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
       for (const label of labels) {
         const h = treeHandlers(tree).find((x) => x.label === label); if (!h) return { obs, missing: label, s, tree };
         const from = s.env.trace.length;
-        try { const r = guarded(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await r; } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout) throw e; s.env.record('handler-throw', label, [render(e)]); }
+        try { const r = guarded(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout) throw e; s.env.record('handler-throw', label, [render(e)]); }
         tree = await commit(s);
         obs.push({ command: label, tree: erase(tree), trace: s.env.trace.slice(from).filter((x) => x.op !== 'set' && x.op !== 'hook').map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }); // setter calls are state, compared through the slots; their order inside one handler is React's batching, not an observation
       }

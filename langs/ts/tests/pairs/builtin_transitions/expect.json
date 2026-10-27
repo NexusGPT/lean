@@ -1,0 +1,121 @@
+{
+ "scope": [
+  "pushed",
+  "fronted",
+  "shifted",
+  "cut",
+  "flipped",
+  "joined",
+  "doubled",
+  "evens",
+  "tallied",
+  "remembered"
+ ],
+ "equal": {
+  "pushed": true,
+  "fronted": true,
+  "shifted": true,
+  "cut": false,
+  "flipped": true,
+  "joined": true,
+  "doubled": true,
+  "evens": true,
+  "tallied": true,
+  "remembered": true
+ },
+ "why": "Every generated row of the library table called from the unit's own file. Lane B records each built-in call made from the unit's files (the host's prototypes and each sandbox context's own Array and Object intrinsics) and checks it against its row; the certificate's bound.library carries the counts per operation and every defect. cut splices two for one: witnessed and unproved; the rest are the same text on both sides: proved. The wrong-table check runs the same unit against fixtures/library-wrong.json, where push is written as leaving its receiver unchanged: the engine contradicts the row, the defect names the operation, and check.mjs refuses the proof (ASK:library-model) while lane B's own verdict stands. pop as a statement is outside the lint's subset today, so the pair has no pop unit; Test262's pop directory covers its row.",
+ "heap": true,
+ "b": {
+  "pushed": "PASS-bounded",
+  "fronted": "PASS-bounded",
+  "shifted": "PASS-bounded",
+  "cut": "WITNESS",
+  "flipped": "PASS-bounded",
+  "joined": "PASS-bounded",
+  "doubled": "PASS-bounded",
+  "evens": "PASS-bounded",
+  "tallied": "PASS-bounded",
+  "remembered": "PASS-bounded"
+ },
+ "library": {
+  "pushed": {
+   "ops": [
+    "Array.prototype.slice",
+    "Array.prototype.push"
+   ],
+   "defects": 0
+  },
+  "fronted": {
+   "ops": [
+    "Array.prototype.unshift"
+   ],
+   "defects": 0
+  },
+  "shifted": {
+   "ops": [
+    "Array.prototype.shift"
+   ],
+   "defects": 0
+  },
+  "cut": {
+   "ops": [
+    "Array.prototype.splice"
+   ],
+   "defects": 0
+  },
+  "flipped": {
+   "ops": [
+    "Array.prototype.reverse"
+   ],
+   "defects": 0
+  },
+  "joined": {
+   "ops": [
+    "Array.prototype.concat"
+   ],
+   "defects": 0
+  },
+  "doubled": {
+   "ops": [
+    "Array.prototype.map"
+   ],
+   "defects": 0
+  },
+  "evens": {
+   "ops": [
+    "Array.prototype.filter"
+   ],
+   "defects": 0
+  },
+  "tallied": {
+   "ops": [
+    "Map.prototype.has",
+    "Map.prototype.set",
+    "Map.prototype.get",
+    "Map.prototype.delete"
+   ],
+   "defects": 0
+  },
+  "remembered": {
+   "ops": [
+    "Set.prototype.has",
+    "Set.prototype.add",
+    "Set.prototype.delete"
+   ],
+   "defects": 0
+  }
+ },
+ "libraryWrong": {
+  "pushed": {
+   "table": "fixtures/library-wrong.json",
+   "op": "Array.prototype.push"
+  }
+ },
+ "libraryCheck": {
+  "pushed": {
+   "table": "fixtures/library-wrong.json",
+   "verdict": "ASK",
+   "reason": "library-model"
+  }
+ }
+}

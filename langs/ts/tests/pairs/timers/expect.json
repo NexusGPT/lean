@@ -5,7 +5,8 @@
   "ordered",
   "every_tick",
   "chain",
-  "frame"
+  "frame",
+  "clear_foreign"
  ],
  "equal": {
   "later": false,
@@ -13,9 +14,10 @@
   "ordered": false,
   "every_tick": false,
   "chain": true,
-  "frame": false
+  "frame": false,
+  "clear_foreign": false
  },
- "why": "lane B's virtual clock. later: the fired callback sends y for x, witnessed after the call. armClear: a timer armed and cleared is nothing, the candidate without it is equal (PASS-bounded; lane A sees a transition and cannot prove it). ordered: two timers armed in the other order fire in due order, the same trace. everyTick: a different interval is a different pending record, witnessed. chain: a timer arming a timer runs both, untouched and proved. frame: an idle callback for an animation frame is a different pending kind, witnessed.",
+ "why": "lane B's virtual clock. later: the fired callback sends y for x, witnessed after the call. armClear: a timer armed and cleared is nothing, the candidate without it is equal (PASS-bounded; lane A sees a transition and cannot prove it). ordered: two timers armed in the other order fire in due order, the same trace. everyTick: a different interval is a different pending record, witnessed. chain: a timer arming a timer runs both, untouched and proved. frame: an idle callback for an animation frame is a different pending kind, witnessed. clearForeign: a handle the run did not arm (an argument here, a field in real code) is cleared as a request to the world; the candidate that drops the clear is witnessed on the trace, since the outside world keeps the timer.",
  "heap": false,
  "b": {
   "later": "WITNESS",
@@ -23,6 +25,7 @@
   "ordered": "PASS-bounded",
   "everyTick": "WITNESS",
   "chain": "PASS-bounded",
-  "frame": "WITNESS"
+  "frame": "WITNESS",
+  "clearForeign": "WITNESS"
  }
 }

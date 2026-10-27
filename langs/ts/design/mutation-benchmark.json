@@ -1,6 +1,6 @@
 {
  "census": "/Users/assem/nexus/nexus-organisation/work/lean-heap/langs/ts/design/finite-components-census.json",
- "generatedAt": "2026-10-26T21:51:51.599Z",
+ "generatedAt": "2026-10-27T00:53:05.819Z",
  "components": [
   {
    "unit": "WorkingDemo",
@@ -131,55 +131,58 @@
    "PASS-bounded": 8,
    "WITNESS": 3,
    "witnessLayers": {
-    "trace": 2,
-    "pending": 1
+    "pending": 2,
+    "trace": 1
    }
   },
   "swap-setters": {
    "applicable": 9,
    "of": 30,
-   "PASS-bounded": 5,
-   "WITNESS": 4,
-   "witnessLayers": {
-    "trace": 4
-   }
-  },
-  "key-index": {
-   "applicable": 10,
-   "of": 30,
-   "PASS-bounded": 3,
-   "WITNESS": 7,
-   "witnessLayers": {
-    "outcome": 2,
-    "heap": 5
-   }
-  },
-  "remove-cleanup": {
-   "applicable": 5,
-   "of": 30,
-   "PASS-bounded": 4,
+   "PASS-bounded": 8,
    "WITNESS": 1,
    "witnessLayers": {
     "pending": 1
    }
   },
+  "key-index": {
+   "applicable": 10,
+   "of": 30,
+   "WITNESS": 9,
+   "PASS-bounded": 1,
+   "witnessLayers": {
+    "sequence": 1,
+    "outcome": 2,
+    "heap": 5,
+    "trace": 1
+   }
+  },
+  "remove-cleanup": {
+   "applicable": 5,
+   "of": 30,
+   "WITNESS": 2,
+   "PASS-bounded": 3,
+   "witnessLayers": {
+    "pending": 2
+   }
+  },
   "flip-conditional": {
    "applicable": 16,
    "of": 30,
-   "PASS-bounded": 5,
-   "WITNESS": 11,
+   "WITNESS": 14,
+   "PASS-bounded": 2,
    "witnessLayers": {
-    "outcome": 10,
+    "sequence": 1,
+    "outcome": 12,
     "heap": 1
    }
   },
   "change-text": {
    "applicable": 20,
    "of": 30,
-   "WITNESS": 14,
-   "PASS-bounded": 6,
+   "WITNESS": 15,
+   "PASS-bounded": 5,
    "witnessLayers": {
-    "outcome": 6,
+    "outcome": 7,
     "heap": 8
    }
   }
@@ -286,8 +289,8 @@
    "file": "repos/apps-ui/demo/src/sections/blocks.tsx",
    "op": "key-index",
    "applicable": true,
-   "verdict": "PASS-bounded",
-   "where": null,
+   "verdict": "WITNESS",
+   "where": "sequence",
    "reason": null,
    "edit": "i"
   },
@@ -302,8 +305,8 @@
    "file": "repos/apps-ui/demo/src/sections/blocks.tsx",
    "op": "flip-conditional",
    "applicable": true,
-   "verdict": "PASS-bounded",
-   "where": null,
+   "verdict": "WITNESS",
+   "where": "sequence",
    "reason": null,
    "edit": "s.text : (\n                    <div className=\"nxwiz-sum-chi"
   },
@@ -328,8 +331,8 @@
    "file": "repos/apps-ui/demo/src/sections/cards.tsx",
    "op": "swap-setters",
    "applicable": true,
-   "verdict": "WITNESS",
-   "where": "trace",
+   "verdict": "PASS-bounded",
+   "where": null,
    "reason": null,
    "edit": "setLog(\"Blue Fig Gelato landed — watch the settle-bounce.\");"
   },
@@ -791,7 +794,7 @@
    "op": "drop-dep",
    "applicable": true,
    "verdict": "WITNESS",
-   "where": "trace",
+   "where": "pending",
    "reason": null,
    "edit": "[]"
   },
@@ -904,8 +907,8 @@
    "file": "repos/apps-ui/src/blocks/ai/DiffTable.tsx",
    "op": "remove-cleanup",
    "applicable": true,
-   "verdict": "PASS-bounded",
-   "where": null,
+   "verdict": "WITNESS",
+   "where": "pending",
    "reason": null,
    "edit": ""
   },
@@ -972,8 +975,8 @@
    "file": "repos/apps-ui/src/blocks/ai/PromptBar.tsx",
    "op": "swap-setters",
    "applicable": true,
-   "verdict": "WITNESS",
-   "where": "trace",
+   "verdict": "PASS-bounded",
+   "where": null,
    "reason": null,
    "edit": "setEngaged(false);\nsetActive(0);"
   },
@@ -1060,8 +1063,8 @@
    "file": "repos/apps-ui/src/blocks/ai/RecommendationCard.tsx",
    "op": "swap-setters",
    "applicable": true,
-   "verdict": "WITNESS",
-   "where": "trace",
+   "verdict": "PASS-bounded",
+   "where": null,
    "reason": null,
    "edit": "setConfirmed(false);\nsetOpen(false);"
   },
@@ -1117,7 +1120,7 @@
    "op": "swap-setters",
    "applicable": true,
    "verdict": "WITNESS",
-   "where": "trace",
+   "where": "pending",
    "reason": null,
    "edit": "setPositioned(true);\nsetAnchor((cur) => (cur.x === next.x &&"
   },
@@ -1386,8 +1389,8 @@
    "file": "repos/apps-ui/src/blocks/board/BoardCanvas.tsx",
    "op": "flip-conditional",
    "applicable": true,
-   "verdict": "PASS-bounded",
-   "where": null,
+   "verdict": "WITNESS",
+   "where": "outcome",
    "reason": null,
    "edit": "!(onAddRow)"
   },
@@ -1396,8 +1399,8 @@
    "file": "repos/apps-ui/src/blocks/board/BoardCanvas.tsx",
    "op": "change-text",
    "applicable": true,
-   "verdict": "PASS-bounded",
-   "where": null,
+   "verdict": "WITNESS",
+   "where": "outcome",
    "reason": null,
    "edit": "Add a board."
   },
@@ -1522,8 +1525,8 @@
    "file": "repos/apps-ui/src/blocks/composer/PaneComposer.tsx",
    "op": "key-index",
    "applicable": true,
-   "verdict": "PASS-bounded",
-   "where": null,
+   "verdict": "WITNESS",
+   "where": "trace",
    "reason": null,
    "edit": "i"
   },
@@ -1538,8 +1541,8 @@
    "file": "repos/apps-ui/src/blocks/composer/PaneComposer.tsx",
    "op": "flip-conditional",
    "applicable": true,
-   "verdict": "PASS-bounded",
-   "where": null,
+   "verdict": "WITNESS",
+   "where": "outcome",
    "reason": null,
    "edit": "!(canDrag)"
   },

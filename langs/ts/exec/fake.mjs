@@ -83,9 +83,10 @@ export class Environment {
     this.pending.push({ op: { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[kind], ms: kind === 'immediate' ? undefined : delay, id });
     return id;
   }
-  clearTimer(id) {
-    const t = this.timers; const i = t.queue.findIndex((e) => e.id === id); if (i < 0) return;
-    t.queue.splice(i, 1); const j = this.pending.findIndex((e) => e.id === id); if (j >= 0) this.pending.splice(j, 1);
+  clearTimer(id, op = 'clearTimeout') {
+    const t = this.timers; const i = t.queue.findIndex((e) => e.id === id);
+    if (i < 0) { this.record('call', op, [typeof id === 'number' ? id : render(id)]); return; } // a handle this run did not arm (a field, an argument, a value from the world): clearing it is a request to the world, observed; a candidate that drops it differs
+    t.queue.splice(i, 1); const j = this.pending.findIndex((e) => e.id === id); if (j >= 0) this.pending.splice(j, 1); // armed and cleared in this run: nothing, as it is to the outside world
   }
   record(op, path, args) {
     this.trace.push({ op, path, args: args ?? [] });

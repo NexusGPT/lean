@@ -20,7 +20,7 @@ const translate = path.join(here, '../translate/translate.mjs');
 const theorems = JSON.parse(fs.readFileSync(path.join(here, 'theorems.json'), 'utf8'));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-ts-'));
 
-const run = (cmd, args) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
+const run = (cmd, args, env) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26, env: env ? { ...process.env, ...env } : process.env });
 const dafny = (file) => {
   const r = run('dafny', ['verify', '--verification-time-limit', '60', file]);
   const text = (r.stdout ?? '') + (r.stderr ?? '');
@@ -237,6 +237,25 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
     let got = 'no result';
     try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);
+  }
+  // the library table validated by the run: the built-in calls made from the unit's files, each checked against its row
+  const libraryOf = (unit, env, out) => { run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', out], env); try { return JSON.parse(fs.readFileSync(out, 'utf8')).bound?.library ?? null; } catch { return null; } };
+  for (const [unit, want] of Object.entries(exp.library ?? {})) {
+    const L = libraryOf(unit, undefined, path.join(tmpd, `lib_${unit}.json`));
+    const ok = !!L && (want.ops ?? []).every((op) => (L.ops[op] ?? 0) > 0) && L.defects.length === (want.defects ?? 0);
+    add('pair', name, `library ${unit} recorded`, ok, L ? `${L.records} records: ${Object.keys(L.ops).join(', ')}; ${L.defects.length} defects` : 'no library summary');
+  }
+  for (const [unit, want] of Object.entries(exp.libraryWrong ?? {})) { // a row the engine contradicts is a defect naming its operation
+    const L = libraryOf(unit, { LEAN_LIBRARY_TABLE: path.join(here, want.table) }, path.join(tmpd, `libw_${unit}.json`));
+    const hit = L ? L.defects.find((x) => x.op === want.op) : null;
+    add('pair', name, `library ${unit} wrong table refuted`, !!hit, hit ? `${hit.op}: ${hit.why} (expected ${hit.expected})` : (L ? `${L.defects.length} defects, none on ${want.op}` : 'no library summary'));
+  }
+  for (const [unit, want] of Object.entries(exp.libraryCheck ?? {})) { // the proof lane refuses the operation while the row is wrong; lane B's own verdict stands
+    const out = path.join(tmpd, `libc_${unit}.json`);
+    run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', '--out', out], { LEAN_LIBRARY_TABLE: path.join(here, want.table) });
+    let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
+    const ok = got.verdict === want.verdict && new RegExp(want.reason).test(got.reason ?? '') && got.certificate?.lanes?.A?.verdict === 'ASK:library-model';
+    add('pair', name, `library ${unit} proof refused on a wrong row`, ok, `${got.verdict ?? 'no result'}: ${(got.reason ?? '').slice(0, 120)} | A: ${got.certificate?.lanes?.A?.verdict ?? '-'} | B: ${got.certificate?.lanes?.B?.verdict ?? '-'}`);
   }
 }
 

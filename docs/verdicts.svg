@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="450" viewBox="0 0 1200 450" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1b2d"/><stop offset="1" stop-color="#1c2f4a"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="1200" height="450" fill="url(#bg)"/><rect width="1200" height="450" fill="url(#grid)"/>
+  <text x="48" y="46" font-size="22" fill="#f3efe6">One question, five answers. Each one is backed by something you can re-run.</text>
+  <text x="48" y="72" font-size="15" fill="#9fb3c8">The verdict is the strongest statement the evidence supports. A bounded pass never becomes a proof. No verdict comes from a model's opinion.</text>
+
+  <!-- staircase: strongest on the left -->
+  <g transform="translate(48,100)">
+    <!-- WITNESS -->
+    <g transform="translate(0,0)">
+      <rect x="0" y="0" width="212" height="300" fill="#0b1422" stroke="#8a4a4a" stroke-width="1.5"/>
+      <rect x="0" y="0" width="212" height="46" fill="#5a2a2a"/>
+      <text x="106" y="30" font-size="18" fill="#f3efe6" text-anchor="middle" font-weight="bold">WITNESS</text>
+      <text x="14" y="76" font-size="14" fill="#f3efe6">the two versions differ,</text>
+      <text x="14" y="96" font-size="14" fill="#f3efe6">and here is the input</text>
+      <text x="14" y="134" font-size="12" fill="#9fb3c8" letter-spacing="1">BACKED BY</text>
+      <text x="14" y="156" font-size="13" fill="#c9d4e0">the input, or the click</text>
+      <text x="14" y="174" font-size="13" fill="#c9d4e0">sequence, and both</text>
+      <text x="14" y="192" font-size="13" fill="#c9d4e0">observations side by side</text>
+    </g>
+    <!-- PASS-proved -->
+    <g transform="translate(224,24)">
+      <rect x="0" y="0" width="212" height="276" fill="#0b1422" stroke="#3d7a62" stroke-width="1.5"/>
+      <rect x="0" y="0" width="212" height="46" fill="#1f4a3a"/>
+      <text x="106" y="30" font-size="18" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-proved</text>
+      <text x="14" y="76" font-size="14" fill="#f3efe6">equal on every input,</text>
+      <text x="14" y="96" font-size="14" fill="#f3efe6">every world, every fuel</text>
+      <text x="14" y="134" font-size="12" fill="#9fb3c8" letter-spacing="1">BACKED BY</text>
+      <text x="14" y="156" font-size="13" fill="#c9d4e0">a theorem, checked by</text>
+      <text x="14" y="174" font-size="13" fill="#c9d4e0">Dafny and Z3; its hash,</text>
+      <text x="14" y="192" font-size="13" fill="#c9d4e0">the prover version, the</text>
+      <text x="14" y="210" font-size="13" fill="#c9d4e0">time limit, each lemma</text>
+    </g>
+    <!-- PASS-decided -->
+    <g transform="translate(448,48)">
+      <rect x="0" y="0" width="212" height="252" fill="#0b1422" stroke="#4f7391" stroke-width="1.5"/>
+      <rect x="0" y="0" width="212" height="46" fill="#24445c"/>
+      <text x="106" y="30" font-size="18" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-decided</text>
+      <text x="14" y="76" font-size="14" fill="#f3efe6">a finite component:</text>
+      <text x="14" y="96" font-size="14" fill="#f3efe6">equal on every click order</text>
+      <text x="14" y="134" font-size="12" fill="#9fb3c8" letter-spacing="1">BACKED BY</text>
+      <text x="14" y="156" font-size="13" fill="#c9d4e0">the whole product of both</text>
+      <text x="14" y="174" font-size="13" fill="#c9d4e0">state spaces, explored:</text>
+      <text x="14" y="192" font-size="13" fill="#c9d4e0">state pairs, assignments,</text>
+      <text x="14" y="210" font-size="13" fill="#c9d4e0">the visited-set hash</text>
+    </g>
+    <!-- PASS-bounded -->
+    <g transform="translate(672,72)">
+      <rect x="0" y="0" width="212" height="228" fill="#0b1422" stroke="#4f7391" stroke-width="1.5"/>
+      <rect x="0" y="0" width="212" height="46" fill="#2a4256"/>
+      <text x="106" y="30" font-size="18" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-bounded</text>
+      <text x="14" y="76" font-size="14" fill="#f3efe6">no difference on n inputs</text>
+      <text x="14" y="96" font-size="14" fill="#f3efe6">under a frozen world</text>
+      <text x="14" y="134" font-size="12" fill="#9fb3c8" letter-spacing="1">BACKED BY</text>
+      <text x="14" y="156" font-size="13" fill="#c9d4e0">n, the seed, the fake policy,</text>
+      <text x="14" y="174" font-size="13" fill="#c9d4e0">the sequence depth, the</text>
+      <text x="14" y="192" font-size="13" fill="#c9d4e0">time limit: the bound</text>
+    </g>
+    <!-- ASK -->
+    <g transform="translate(896,96)">
+      <rect x="0" y="0" width="208" height="204" fill="#0b1422" stroke="#8a7540" stroke-width="1.5"/>
+      <rect x="0" y="0" width="208" height="46" fill="#4a3f1f"/>
+      <text x="104" y="30" font-size="18" fill="#f3efe6" text-anchor="middle" font-weight="bold">ASK</text>
+      <text x="14" y="76" font-size="14" fill="#f3efe6">undecided, and exactly</text>
+      <text x="14" y="96" font-size="14" fill="#f3efe6">why</text>
+      <text x="14" y="134" font-size="12" fill="#9fb3c8" letter-spacing="1">BACKED BY</text>
+      <text x="14" y="156" font-size="13" fill="#c9d4e0">the construct, the lemma</text>
+      <text x="14" y="174" font-size="13" fill="#c9d4e0">that did not close, the</text>
+      <text x="14" y="192" font-size="13" fill="#c9d4e0">timeout, the changed type</text>
+    </g>
+  </g>
+  <text x="48" y="420" font-size="13" fill="#8a9bb0">WITNESS, PASS-decided and PASS-bounded come from lane B (execution); PASS-proved from lane A (proof); ASK from either, with its reason.</text>
+  <text x="48" y="440" font-size="13" fill="#8a9bb0">Outside the ordering: REFUSE (a construct with no faithful reading, named) · NEW (a unit with no parent, loaded and run, no equality claim).</text>
+</svg>
