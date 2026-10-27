@@ -140,6 +140,12 @@ function contentCheck(r) {
     case 'Array.prototype.push': { const want = items(b).concat(r.argIds.map((_, i) => argVal(i))); return same(items(a), want) && r.resultValue === want.length ? null : { why: 'push contents or length', expected: JSON.stringify(want) }; }
     case 'Array.prototype.unshift': { const want = r.argIds.map((_, i) => argVal(i)).concat(items(b)); return same(items(a), want) && r.resultValue === want.length ? null : { why: 'unshift contents or length', expected: JSON.stringify(want) }; }
     case 'Array.prototype.pop': { const bi = items(b); const want = bi.slice(0, Math.max(0, bi.length - 1)); return same(items(a), want) ? null : { why: 'pop contents', expected: JSON.stringify(want) }; }
+    case 'Array.prototype.splice': { // 23.1.3.31: a negative start counts from the end; the delete count is clamped to what remains; the removed elements are the fresh result
+      const bi = items(b); const n = bi.length; const st = argVal(0), dc = argVal(1);
+      const rel = typeof st === 'number' ? Math.trunc(st) : 0; const s0 = rel < 0 ? Math.max(n + rel, 0) : Math.min(rel, n);
+      const d = r.argIds.length < 2 ? n - s0 : Math.min(Math.max(typeof dc === 'number' ? Math.trunc(dc) : 0, 0), n - s0);
+      const ins = r.argIds.slice(2).map((_, i) => argVal(i + 2)); const want = bi.slice(0, s0).concat(ins, bi.slice(s0 + d));
+      return same(items(a), want) && r.resultKind === 'fresh' ? null : { why: 'splice contents or result', expected: JSON.stringify(want) }; }
     case 'Array.prototype.shift': { const want = items(b).slice(1); return same(items(a), want) ? null : { why: 'shift contents', expected: JSON.stringify(want) }; }
     case 'Array.prototype.reverse': { const want = items(b).slice().reverse(); return same(items(a), want) ? null : { why: 'reverse contents', expected: JSON.stringify(want) }; }
     case 'Array.prototype.concat': case 'Array.prototype.slice': case 'Array.prototype.map': case 'Array.prototype.filter': return same(b, a) ? null : { why: 'receiver changed', expected: 'unchanged' };
