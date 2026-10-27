@@ -321,6 +321,23 @@ export function lintFile(file, ranges = null, opts = {}) {
     return null;
   };
   const isArrayExpr = (e) => nonNull(tOf(e)).every((t) => isArrayLike(checker, t));
+  // a Map or Set iterator made where it is read (`m.keys()`, `m.values()`, `m.entries()`, the same on a Set)
+  const collectionIterator = (e) => { e = unparenX(e); return ts.isCallExpression(e) && !e.arguments.length && ts.isPropertyAccessExpression(e.expression) && ['keys', 'values', 'entries'].includes(e.expression.name.text) && nonNull(tOf(e.expression.expression)).length > 0 && (nonNull(tOf(e.expression.expression)).every(isSetT) || nonNull(tOf(e.expression.expression)).every(isMapT)); };
+  // the places that consume such an iterator at once, in order: a spread in an array literal, a for-of, Array.from of it
+  // alone, a Map or Set constructor; anywhere else the iterator is a value that its first read uses up
+  const iteratorConsumed = (e) => {
+    let use = e; while (use.parent && ts.isParenthesizedExpression(use.parent)) use = use.parent;
+    const p = use.parent;
+    if (!p) return false;
+    if (ts.isSpreadElement(p)) return !!p.parent && ts.isArrayLiteralExpression(p.parent);
+    if (ts.isForOfStatement(p)) return p.expression === use && !p.awaitModifier;
+    if (ts.isCallExpression(p)) return p.arguments.length === 1 && p.arguments[0] === use && ts.isPropertyAccessExpression(p.expression) && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Array' && p.expression.name.text === 'from' && declOf(p.expression.expression).kind === 'global';
+    if (ts.isNewExpression(p)) return (p.arguments ?? []).length === 1 && p.arguments[0] === use && ts.isIdentifier(p.expression) && ['Map', 'Set'].includes(p.expression.text);
+    return false;
+  };
+  // what `new Map(x)` and `new Set(x)` read in order: an array, a Map, a Set, one of their iterators, a pure generator,
+  // an opaque value (its own iteration, an uninterpreted sequence)
+  const orderedSource = (x) => isArrayExpr(x) || nonNull(tOf(x)).every((t) => isSetT(t) || isMapT(t)) || nonNull(tOf(x)).some(isAny) || collectionIterator(x) || generators.pureCall(x);
   const isLitUnion = (t) => !!(t.flags & TF.Union) && nonNull(t).every((x) => x.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral | TF.StringLike | TF.NumberLike | TF.BooleanLike));
 
   // ---------- types (as the checker resolved them; syntax matters less in v2) ----------
@@ -885,8 +902,8 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (name === 'splice' && (e.arguments.length < 2 || e.arguments.some(ts.isSpreadElement))) v(e, 'unsupported-call', 'splice as a statement needs a start, a count and plain items');
         return e.arguments.forEach((a) => expr(a));
       }
-      if ((name === 'add' || name === 'delete') && nonNull(rt).every(isSetT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'set mutation on a non-local'); return e.arguments.forEach(expr); }
-      if ((name === 'set' || name === 'delete') && nonNull(rt).every(isMapT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'map mutation on a non-local'); return e.arguments.forEach(expr); }
+      if ((name === 'add' || name === 'delete' || name === 'clear') && nonNull(rt).every(isSetT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'set mutation on a non-local'); return e.arguments.forEach(expr); }
+      if ((name === 'set' || name === 'delete' || name === 'clear') && nonNull(rt).every(isMapT)) { if (!localOwned && !pathOwned) v(e, 'param-mutation', 'map mutation on a non-local'); return e.arguments.forEach(expr); }
       return expr(e); // a method call as a statement: a world transition (or a dropped value)
     }
     if (ts.isCallExpression(e) || ts.isNewExpression(e)) return expr(e);
@@ -1138,6 +1155,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.FunctionExpression: case K.ArrowFunction: return callback(e, null); // a function value anywhere: checked as a callback value (its body in the subset; it may hold effects, then it is an opaque value by its text);
       case K.NewExpression: {
         const n = e.expression.getText(sf);
+        if ((n === 'Set' || n === 'Map') && e.arguments?.length && (e.arguments.length > 1 || ts.isSpreadElement(e.arguments[0]) || !orderedSource(e.arguments[0]))) return v(e, 'unsupported-call', `new ${n}(...) reads an array, a Map, a Set or one of their iterators; build the entries as an array first`);
         if (n === 'Set' || n === 'Map' || n === 'RegExp') return e.arguments?.forEach(expr);
         if (n === 'Function') return v(e, 'dynamic-eval', '`new Function` is outside the subset');
         const form = promiseForm(e, checker, sf);
@@ -1160,7 +1178,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ElementAccessExpression: return elemAccess(e);
       case K.ArrayLiteralExpression:
         for (const el of e.elements) {
-          if (ts.isSpreadElement(el)) { if (!isArrayExpr(el.expression) && !generators.pureCall(el.expression) && !nonNull(tOf(el.expression)).every(isSetT)) v(el, 'spread', 'spread works on arrays and sets only'); expr(el.expression); }
+          if (ts.isSpreadElement(el)) { if (!isArrayExpr(el.expression) && !generators.pureCall(el.expression) && !collectionIterator(el.expression) && !nonNull(tOf(el.expression)).every((t) => isSetT(t) || isMapT(t))) v(el, 'spread', 'spread works on arrays, sets, maps and their keys(), values() and entries()'); expr(el.expression); }
           else if (ts.isOmittedExpression(el)) v(el, 'unsupported-syntax', 'array holes are outside the subset');
           else expr(el);
         }
@@ -1505,8 +1523,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       if (parts.every(isStr) && STRING_METHODS.has(name)) { expr(recv); return argsOf(e); }
       if (parts.every((t) => !!(t.flags & TF.NumberLike)) && NUMBER_METHODS.has(name)) { expr(recv); return argsOf(e); } // a formatting of a number: pure
-      if (parts.every(isSetT) && SET_METHODS.has(name)) { if (name === 'forEach' || name === 'clear') return v(e, 'unsupported-call', `Set.${name} is outside the subset`); expr(recv); return e.arguments.forEach(expr); }
-      if (parts.every(isMapT) && MAP_METHODS.has(name)) { if (name === 'forEach' || name === 'clear') return v(e, 'unsupported-call', `Map.${name} is outside the subset`); expr(recv); return e.arguments.forEach(expr); }
+      if (parts.every(isSetT) && SET_METHODS.has(name)) { if (name === 'forEach' || name === 'clear') return v(e, 'unsupported-call', name === 'forEach' ? 'Set.forEach is outside the subset; write for (const x of s)' : 'Set.clear is a statement on a local'); if (['keys', 'values', 'entries'].includes(name) && !iteratorConsumed(e)) return v(e, 'collection-iterator', `s.${name}() is an iterator its first read uses up; spread it, loop over it with for-of or pass it to Array.from where it is made`); expr(recv); return e.arguments.forEach(expr); }
+      if (parts.every(isMapT) && MAP_METHODS.has(name)) { if (name === 'forEach' || name === 'clear') return v(e, 'unsupported-call', name === 'forEach' ? 'Map.forEach is outside the subset; write for (const [k, v] of m)' : 'Map.clear is a statement on a local'); if (['keys', 'values', 'entries'].includes(name) && !iteratorConsumed(e)) return v(e, 'collection-iterator', `m.${name}() is an iterator its first read uses up; spread it, loop over it with for-of or pass it to Array.from where it is made`); expr(recv); return e.arguments.forEach(expr); }
       if (libraryRowCall(e, recv, name, rt)) return; // the stage 5 library rows (design/library-rows.md)
       // a method call on an external value (an imported object or a record with methods): uninterpreted
       if (ts.isIdentifier(recv)) { const o = declOf(recv); if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return argsOf(e); }

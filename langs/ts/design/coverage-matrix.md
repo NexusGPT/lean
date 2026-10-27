@@ -42,14 +42,14 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | FalseKeyword | 5564 | 8.9% | admitted | exact | same |
 | ObjectBindingPattern | 5564 | 8.9% | no case (refused by default, or reached through its parent); the element of an effectful array callback (callback-patterns) | exact; the record rest of a parameter, any field types, an uninterpreted function of the source named by the excluded keys (record-rest-any, done (lane)) | same |
 | CatchClause | 5517 | 8.8% | no case (refused by default, or reached through its parent) | exact (part of TryStatement) | same |
-| ForOfStatement | 5511 | 8.8% | admitted | exact over sequences (loop forms); over an opaque iterable refused | same, plus Map and Set iteration from the library table |
+| ForOfStatement | 5511 | 8.8% | admitted | exact over sequences (loop forms); a Map, a Set and their keys(), values(), entries() in insertion order (stage 5 rank 22, ordered carriers); over an opaque iterable refused | same, plus Map and Set iteration from the library table |
 | JsxExpression | 5495 | 8.8% | admitted | exact as a child or attribute value | same |
 | SpreadAssignment | 5325 | 8.5% | no case (refused by default, or reached through its parent) | exact as a record merge in order; spread of an opaque value refused (spread) | heap copy of own keys |
 | JsxSelfClosingElement | 5080 | 8.1% | admitted | exact as a JsxElem value | same, with component instance identity under re-render sequences |
 | JsxElement | 4911 | 7.8% | admitted | exact as a JsxElem value | same |
 | JsxText | 4770 | 7.6% | no case (refused by default, or reached through its parent) | exact (JSX whitespace rule) | same |
 | ArrayBindingPattern | 3982 | 6.4% | no case (refused by default, or reached through its parent) | exact | same |
-| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; a fixed tuple spread into an outside call is its elements in order (stage 5 rank 18); otherwise refused (spread); a Map or Map iterator spread stays refused until the Map reading keeps insertion order (spread-map, measured) | same |
+| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; a fixed tuple spread into an outside call is its elements in order (stage 5 rank 18); otherwise refused (spread); a Map, a Set and their iterators spread in insertion order since stage 5 rank 22 (ordered-collections); a string or opaque spread stays refused | same |
 | TypeOfExpression | 3649 | 5.8% | admitted | exact (type tests) | same |
 | RegularExpressionLiteral | 2457 | 3.9% | admitted | exact for the supported regex forms (strings reading); otherwise opaque | same |
 | ContinueStatement | 2049 | 3.3% | admitted | exact (loop forms) | same |

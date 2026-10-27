@@ -12,7 +12,8 @@
 //               a type with methods becomes an opaque type with accessor externals.
 //   strings     seq<char>: concat, length, index, slice, includes, startsWith, endsWith, indexOf,
 //               template literals; trim, case changes, split, replace stay externals.
-//   sets, maps  set<T> and map<K,V>, with add/delete/set on locals as functional updates.
+//   sets, maps  ordered carriers OSet<T>(items) and OMap<K,V>(keys, m): insertion order is a fact of the value;
+//               add/delete/set/clear on locals as functional updates.
 //   arrays      includes, some, every, find, findIndex, indexOf, slice, concat, join, flat, flatMap, at.
 //   division    Math.floor(a / b) and a % b on integers through JavaScript-faithful helpers.
 //   switch      an if/else chain; destructuring becomes field reads; literal unions become their base type.
@@ -857,6 +858,49 @@ export function translate(file, fnName, opts = {}) {
   const isSetT = (t) => !!t.symbol && (t.symbol.name === 'Set' || t.symbol.name === 'ReadonlySet');
   const isMapT = (t) => !!t.symbol && (t.symbol.name === 'Map' || t.symbol.name === 'ReadonlyMap');
   const isPromiseT = (t) => !!t.symbol && t.symbol.name === 'Promise';
+  // a Map and a Set are ordered collections (ECMA-262 24.1, 24.2): a Map is its keys in insertion order beside its
+  // entries, a Set its items in insertion order. `set` appends a new key and keeps the place of an old one, `delete`
+  // removes it from both, `new Map(es)` and `new Set(xs)` fold `set` and `add` over the sequence. Two collections that
+  // received the same entries in another order are two values, as JavaScript observes them.
+  const orderedCarrier = (kind) => {
+    addPrelude('SeqRemove', 'function SeqRemove<T(==)>(s: seq<T>, x: T): seq<T> decreases |s| { if |s| == 0 then [] else (if s[0] == x then [] else [s[0]]) + SeqRemove(s[1..], x) }');
+    if (kind === 'map') addPrelude('OMap', [
+      'datatype OMap<K(==), V> = OMap(keys: seq<K>, m: map<K, V>)',
+      'function OMapPut<K(==), V>(o: OMap<K, V>, k: K, v: V): OMap<K, V> { if k in o.m then OMap(o.keys, o.m[k := v]) else OMap(o.keys + [k], o.m[k := v]) }',
+      'function OMapDel<K(==), V>(o: OMap<K, V>, k: K): OMap<K, V> { if k in o.m then OMap(SeqRemove(o.keys, k), o.m - {k}) else o }',
+      'function {:fuel 3} OMapVals<K(==), V>(ks: seq<K>, m: map<K, V>): seq<V> decreases |ks| { if |ks| == 0 then [] else (if ks[0] in m then [m[ks[0]]] else []) + OMapVals(ks[1..], m) }',
+      'function {:fuel 3} OMapEnts<K(==), V>(ks: seq<K>, m: map<K, V>): seq<(K, V)> decreases |ks| { if |ks| == 0 then [] else (if ks[0] in m then [(ks[0], m[ks[0]])] else []) + OMapEnts(ks[1..], m) }',
+      'function OMapValues<K(==), V>(o: OMap<K, V>): seq<V> { OMapVals(o.keys, o.m) }',
+      'function OMapEntries<K(==), V>(o: OMap<K, V>): seq<(K, V)> { OMapEnts(o.keys, o.m) }',
+      'function {:fuel 3} OMapFrom<K(==), V>(o: OMap<K, V>, es: seq<(K, V)>): OMap<K, V> decreases |es| { if |es| == 0 then o else OMapFrom(OMapPut(o, es[0].0, es[0].1), es[1..]) }',
+    ].join('\n'));
+    else addPrelude('OSet', [
+      'datatype OSet<T(==)> = OSet(items: seq<T>)',
+      'function OSetAdd<T(==)>(s: OSet<T>, x: T): OSet<T> { if x in s.items then s else OSet(s.items + [x]) }',
+      'function OSetDel<T(==)>(s: OSet<T>, x: T): OSet<T> { OSet(SeqRemove(s.items, x)) }',
+      'function {:fuel 3} OSetFrom<T(==)>(s: OSet<T>, xs: seq<T>): OSet<T> decreases |xs| { if |xs| == 0 then s else OSetFrom(OSetAdd(s, xs[0]), xs[1..]) }',
+      'function {:fuel 3} OSetPairs<T>(xs: seq<T>): seq<(T, T)> decreases |xs| { if |xs| == 0 then [] else [(xs[0], xs[0])] + OSetPairs(xs[1..]) }',
+    ].join('\n'));
+  };
+  // a Map key or a Set item the value reading compares as JavaScript does: a primitive, a literal union or an enum of
+  // them, absent, or a type parameter (the proof is generic in it); an object is compared by reference (SameValueZero)
+  const keyByValue = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.EnumLike | TF.Undefined | TF.Null | TF.TypeParameter)));
+  const omapT = (Kd, Vd) => { orderedCarrier('map'); return `OMap<${Kd}, ${Vd}>`; };
+  const osetT = (A) => { orderedCarrier('set'); return `OSet<${A}>`; };
+  const member = (code, field) => `${/^[\w.']+$/.test(code) ? code : `(${code})`}.${field}`; // a destructor read on a carrier value
+  const emptyMap = (Kd, Vd) => `(var m0: ${omapT(Kd, Vd)} := OMap([], map[]); m0)`;
+  const emptySet = (A) => `(var s0: ${osetT(A)} := OSet([]); s0)`;
+  // a Map or Set iterator read where it is made (`m.keys()`, `m.values()`, `m.entries()`, the same on a Set): the
+  // carrier's sequence in insertion order; the lint admits it only where it is consumed at once (a spread, a for-of,
+  // Array.from, a Map or Set constructor), since an iterator held in a name is used up by its first read
+  const collectionIterator = (e) => {
+    while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isCallExpression(e) || e.arguments.length || !ts.isPropertyAccessExpression(e.expression) || !['keys', 'values', 'entries'].includes(e.expression.name.text)) return null;
+    const t = baseOf(typeOf(e.expression.expression));
+    if (isMapT(t)) { const [kt, vt] = checker.getTypeArguments(t); dtype(t, e); return { kind: 'map', method: e.expression.name.text, elem: (n) => e.expression.name.text === 'keys' ? dtype(kt, n) : e.expression.name.text === 'values' ? dtype(vt, n) : `(${dtype(kt, n)}, ${dtype(vt, n)})` }; }
+    if (isSetT(t)) { const at = checker.getTypeArguments(t)[0]; dtype(t, e); return { kind: 'set', method: e.expression.name.text, elem: (n) => e.expression.name.text === 'entries' ? `(${dtype(at, n)}, ${dtype(at, n)})` : dtype(at, n) }; }
+    return null;
+  };
   const nonNull = (t) => (t.flags & TF.Union ? t.types.filter((x) => !(x.flags & (TF.Undefined | TF.Null))) : [t]);
   const nonUndefined = (t) => { const parts = nonNull(t); return parts.length === 1 ? parts[0] : t; }; // the type with undefined and null removed, when that leaves one
   const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
@@ -933,8 +977,9 @@ export function translate(file, fnName, opts = {}) {
         return `(${ds.join(', ')})`;
       }
       if (isArrayLike(checker, t)) { const et = checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); if (!et) fail(n, `array-like type ${checker.typeToString(t)} has no element type`); return `seq<${dtype(et, n, depth + 1)}>`; } // arrays, tuples and interfaces that extend an array (a match result)
-      if (isSetT(t)) return `set<${dtype(checker.getTypeArguments(t)[0], n, depth + 1)}>`;
-      if (isMapT(t)) { const [k, vv] = checker.getTypeArguments(t); return `map<${dtype(k, n, depth + 1)}, ${dtype(vv, n, depth + 1)}>`; }
+      if ((isSetT(t) || isMapT(t)) && checker.getTypeArguments(t)[0] && !keyByValue(checker.getTypeArguments(t)[0])) fail(n, `reference-key: a ${isMapT(t) ? 'Map keyed' : 'Set'} by ${checker.typeToString(checker.getTypeArguments(t)[0])} compares by reference (SameValueZero); the value reading would equate two objects with the same fields (the heap core reads it by identity)`);
+      if (isSetT(t)) return osetT(dtype(checker.getTypeArguments(t)[0], n, depth + 1));
+      if (isMapT(t)) { const [k, vv] = checker.getTypeArguments(t); return omapT(dtype(k, n, depth + 1), dtype(vv, n, depth + 1)); }
       if (isPromiseT(t)) return dtype(checker.getTypeArguments(t)[0], n, depth + 1);
       if (isCallable(t)) {
         const sg = checker.getSignaturesOfType(t, ts.SignatureKind.Call)[0];
@@ -1503,7 +1548,6 @@ export function translate(file, fnName, opts = {}) {
       case 'Min': text = `function ${name}(a: ${A}, b: ${A}): ${A} { if a < b then a else b }`; break;
       case 'Max': text = `function ${name}(a: ${A}, b: ${A}): ${A} { if a > b then a else b }`; break;
       case 'Abs': text = `function ${name}(a: ${A}): ${A} { if a < ${A === 'real' ? '0.0' : '0'} then -a else a }`; break;
-      case 'SetOf': text = `function ${name}(s: seq<${A}>): set<${A}> { set x | x in s }`; break;
       case 'Repeat': text = `function ${name}(s: string, n: int): string decreases n { if n <= 0 then "" else s + ${name}(s, n - 1) }`; break;
       case 'Reverse': text = `function ${name}(s: seq<${A}>): seq<${A}> decreases |s| { if |s| == 0 then [] else ${name}(s[1..]) + [s[0]] }`; break;
       case 'ObjectProtoNames': text = `const ${name}: set<string> := {${OBJECT_PROTO_NAMES.map((x) => JSON.stringify(x)).join(', ')}}`; break; // Object.getOwnPropertyNames(Object.prototype): the names \`in\` finds on every plain object
@@ -1534,7 +1578,7 @@ export function translate(file, fnName, opts = {}) {
     if (!s.startsWith('(') || !s.endsWith(')')) return s;
     let d = 0;
     for (let i = 0; i < s.length; i++) { if (s[i] === '(') d++; else if (s[i] === ')') d--; else if (s[i] === ',' && d === 1) return s; if (d === 0 && i < s.length - 1) return s; } // a top-level comma: a tuple, whose parentheses are its own
-    if (/^\(map\[\] : /.test(s) || /^\(var \w+: set</.test(s)) return s; // a typed empty literal keeps its parentheses
+    if (/^\(map\[\] : /.test(s) || /^\(var \w+: (set|OSet|OMap)</.test(s)) return s; // a typed empty literal keeps its parentheses
     return s.slice(1, -1);
   };
   const isLiteralish = (node) => { while (ts.isParenthesizedExpression(node)) node = node.expression; return ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node) || ts.isNumericLiteral(node) || ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node) || node.kind === K.TrueKeyword || node.kind === K.FalseKeyword; };
@@ -1966,12 +2010,13 @@ export function translate(file, fnName, opts = {}) {
       default: return fail(n, `expression ${ts.SyntaxKind[n.kind]} is not translated`);
     }
   }
-  // an iterable as a sequence (arrays stay; sets go through an external order)
+  // an iterable as a sequence: an array stays; a Set is its items and a Map its entries, in insertion order; a Map or
+  // Set iterator is already the sequence it yields
   function seqOf(e) {
     const t = baseOf(typeOf(e));
     if (isAny(t)) return `${external('Any_to_seq', [anyType()], 'seq<Any>')}(${expr(e, anyTarget())})`;
-    if (isSetT(t)) { const A = dtype(checker.getTypeArguments(t)[0], e); return `${external('set_to_seq', [`set<${A}>`], `seq<${A}>`)}(${expr(e)})`; }
-    if (isMapT(t)) fail(e, 'spreading a map is not translated');
+    if (isSetT(t)) { dtype(t, e); return member(expr(e), 'items'); }
+    if (isMapT(t)) { dtype(t, e); return `OMapEntries(${outerParens(expr(e))})`; }
     return expr(e);
   }
   const exactPromiseForm = (n) => promiseReadings.has(`${unparen(n).pos}:${unparen(n).end}`) ? promiseForm(unparen(n), checker, sf) : null;
@@ -2909,8 +2954,8 @@ export function translate(file, fnName, opts = {}) {
       return `(var ${r} := ${receiver}; if ${r}.Some? then ${convert(fieldCode, pt, fieldT, n)} else ${missingD(D)})`;
     }
     if (name === 'length' && (isArrayLike(checker, recvT) || recvT.flags & TF.StringLike)) return lenOf(expr(n.expression));
-    if (name === 'size' && (isSetT(recvT) || isMapT(recvT))) return lenOf(expr(n.expression));
-    if ((name === 'length' || name === 'size') && isOptional(recvT) && (isArrayLike(checker, baseOf(recvT)) || baseOf(recvT).flags & TF.StringLike || isSetT(baseOf(recvT)) || isMapT(baseOf(recvT)))) { usesOption = true; const v = `ol_${hash(n.getText(sf)).slice(0, 4)}`; return `(var ${v} := ${rawOperand(n.expression)}; if ${v}.Some? then Some(|${v}.value|) else None)`; } // `a?.b.length`: the length when the chain holds
+    if (name === 'size' && (isSetT(recvT) || isMapT(recvT)) && dtype(recvT, n)) return lenOf(member(expr(n.expression), isMapT(recvT) ? 'keys' : 'items')); // the size is the number of keys or items
+    if ((name === 'length' || name === 'size') && isOptional(recvT) && (isArrayLike(checker, baseOf(recvT)) || baseOf(recvT).flags & TF.StringLike || isSetT(baseOf(recvT)) || isMapT(baseOf(recvT)))) { usesOption = true; const v = `ol_${hash(n.getText(sf)).slice(0, 4)}`; const sel = isMapT(baseOf(recvT)) ? '.keys' : isSetT(baseOf(recvT)) ? '.items' : ''; return `(var ${v} := ${rawOperand(n.expression)}; if ${v}.Some? then Some(|${v}.value${sel}|) else None)`; } // `a?.b.length`: the length when the chain holds
     if (keepOption) n.__keepOption = true;
     const base = fieldOf(expr(n.expression), recvT, name, n);
     n.__keepOption = false;
@@ -3036,18 +3081,19 @@ export function translate(file, fnName, opts = {}) {
     if (form) return promiseExpression(n, form);
     const name = n.expression.getText(sf);
     const t = typeOf(n);
-    if (name === 'Set') {
+    if (name === 'Set') { // 24.2.1.1: an empty Set, then `add` of each item in order
+      dtype(t, n); // the carrier, or the reference-key refusal
       const A = dtype(checker.getTypeArguments(t)[0], n);
-      if (!n.arguments?.length) return `(var s0: set<${A}> := {}; s0)`;
-      return `${helper('SetOf', [A])}(${seqOf(n.arguments[0])})`;
+      if (!n.arguments?.length) return emptySet(A);
+      return `OSetFrom(${emptySet(A)}, ${seqOf(n.arguments[0])})`;
     }
     if (name === 'RegExp') { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return externalCall('RegExp_new', n, [...(n.arguments ?? [])]); }
     if (name === 'Map') {
       const [kt, vt] = checker.getTypeArguments(t);
+      dtype(t, n); // the carrier, or the reference-key refusal
       const Kd = dtype(kt, n), Vd = dtype(vt, n);
-      if (!n.arguments?.length) return `map[]`;
-      const id = external('map_of_pairs', [`seq<(${Kd}, ${Vd})>`], `map<${Kd}, ${Vd}>`);
-      return `${id}(${seqOf(n.arguments[0])})`;
+      if (!n.arguments?.length) return emptyMap(Kd, Vd);
+      return `OMapFrom(${emptyMap(Kd, Vd)}, ${seqOf(n.arguments[0])})`; // 24.1.1.1: an empty Map, then `set` of each entry in order
     }
     const cls = classRef(n.expression);
     if (cls) {
@@ -3373,6 +3419,7 @@ export function translate(file, fnName, opts = {}) {
       }
     }
     if (ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Array' && n.expression.name.text === 'from' && n.arguments.length === 1 && generators.pureCall(n.arguments[0]) && originOf(checker, n.expression.expression, sf, currentUnit?.node ?? null).kind === 'global') return seqOf(n.arguments[0]);
+    if (ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Array' && n.expression.name.text === 'from' && n.arguments.length === 1 && !ts.isSpreadElement(n.arguments[0]) && originOf(checker, n.expression.expression, sf, currentUnit?.node ?? null).kind === 'global' && (collectionIterator(n.arguments[0]) || isSetT(baseOf(typeOf(n.arguments[0]))) || isMapT(baseOf(typeOf(n.arguments[0]))))) return seqOf(n.arguments[0]); // 23.1.2.1: Array.from of a Map, a Set or their iterator copies what it yields, in order
     if (currentSlots && slotOfCall.has(n) && slotOfCall.get(n).unit === currentUnit?.name) { // useState in a slot unit: (slots.s_i, setter_i), and the initial value bound for the returned slots
       const { index } = slotOfCall.get(n); const D = currentSlots.types[index];
       const a0 = n.arguments[0];
@@ -3670,19 +3717,23 @@ export function translate(file, fnName, opts = {}) {
     if (isSetT(base)) {
       const S = expr(recv);
       const A = dtype(checker.getTypeArguments(base)[0], n);
-      if (name === 'has') return `(${expr(n.arguments[0], checker.getTypeArguments(base)[0])} in ${S})`;
-      if (name === 'values' || name === 'keys') return `${external('set_to_seq', [`set<${A}>`], `seq<${A}>`)}(${S})`;
+      dtype(base, n);
+      if (name === 'has') return `(${expr(n.arguments[0], checker.getTypeArguments(base)[0])} in ${member(S, 'items')})`;
+      if (name === 'values' || name === 'keys') return member(S, 'items'); // 24.2.3.10, 24.2.3.8: the items in insertion order
+      if (name === 'entries') return `OSetPairs(${member(S, 'items')})`; // 24.2.3.5: each item twice
       return fail(n, `Set.${name}() is not translated as an expression`);
     }
     if (isMapT(base)) {
       const M = expr(recv);
       const [kt, vt] = checker.getTypeArguments(base);
       const Kd = dtype(kt, n), Vd = dtype(vt, n);
-      if (name === 'has') return `(${expr(n.arguments[0], kt)} in ${M})`;
-      if (name === 'get') { usesOption = true; const k = expr(n.arguments[0], kt); return foundValue(`(if ${k} in ${M} then Some(${M}[${k}]) else None)`, vt, typeOf(n), n); }
-      if (name === 'keys') return `${external('map_keys', [`map<${Kd}, ${Vd}>`], `seq<${Kd}>`)}(${M})`;
-      if (name === 'values') return `${external('map_values', [`map<${Kd}, ${Vd}>`], `seq<${Vd}>`)}(${M})`;
-      if (name === 'entries') return `${external('map_entries', [`map<${Kd}, ${Vd}>`], `seq<(${Kd}, ${Vd})>`)}(${M})`;
+      dtype(base, n);
+      const E_ = member(M, 'm');
+      if (name === 'has') return `(${expr(n.arguments[0], kt)} in ${E_})`;
+      if (name === 'get') { usesOption = true; const k = expr(n.arguments[0], kt); return foundValue(`(if ${k} in ${E_} then Some(${E_}[${k}]) else None)`, vt, typeOf(n), n); }
+      if (name === 'keys') return member(M, 'keys'); // 24.1.3.8: the keys in insertion order
+      if (name === 'values') return `OMapValues(${outerParens(M)})`; // 24.1.3.11: the value of each key, in key order
+      if (name === 'entries') return `OMapEntries(${outerParens(M)})`; // 24.1.3.4
       return fail(n, `Map.${name}() is not translated as an expression`);
     }
     // the stage 5 library rows on primitives (design/library-rows.md): toString() is ToString of the value, the same
@@ -3707,7 +3758,7 @@ export function translate(file, fnName, opts = {}) {
   };
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;
   const isUpdate = (x) => (ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken);
-  const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set', 'shift', 'reverse', 'splice', 'sort', 'pop']);
+  const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set', 'shift', 'reverse', 'splice', 'sort', 'pop', 'clear']);
   const isAssignStmt = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && ts.isIdentifier(x.expression.expression) && x.expression.expression.text === 'Object' && x.expression.name.text === 'assign' && x.arguments.length >= 2 && ts.isIdentifier(pathRoot(x.arguments[0])); // Object.assign(t, s…) as a statement: the lint admits it on an owned record
   const pathRoot = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
   const isMutCall = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT.has(x.expression.name.text) && (ts.isIdentifier(pathRoot(x.expression.expression)) || (!!thisParamOf(currentUnit) && ts.isPropertyAccessExpression(x.expression.expression) && pathRoot(x.expression.expression).kind === K.ThisKeyword)) && !isWorldField(x.expression.expression) && !(ts.isPropertyAccessExpression(x.expression.expression) && pathRoot(x.expression.expression).kind === K.ThisKeyword && !thisParamOf(currentUnit)); // a container on a free function's declared receiver is changed as a parameter's is
@@ -3954,9 +4005,9 @@ export function translate(file, fnName, opts = {}) {
       if (exact) {
         const d = dtype(t, recv), cur = expr(recv), args = checker.getTypeArguments(t);
         let value;
-        if (method === 'clear') value = isMapT(t) ? 'map[]' : '{}';
-        else if (isMapT(t)) { const key = expr(e.arguments[0], args[0]); value = method === 'set' ? `${cur}[${key} := ${expr(e.arguments[1], args[1])}]` : `${cur} - {${key}}`; }
-        else if (isSetT(t)) value = `${cur} ${method === 'add' ? '+' : '-'} {${expr(e.arguments[0], args[0])}}`;
+        if (method === 'clear') value = isMapT(t) ? 'OMap([], map[])' : 'OSet([])';
+        else if (isMapT(t)) { const key = expr(e.arguments[0], args[0]); value = method === 'set' ? `OMapPut(${cur}, ${key}, ${expr(e.arguments[1], args[1])})` : `OMapDel(${cur}, ${key})`; }
+        else if (isSetT(t)) value = `${method === 'add' ? 'OSetAdd' : 'OSetDel'}(${cur}, ${expr(e.arguments[0], args[0])})`;
         else { const values = callSequence([...e.arguments], dtype(args[0], recv)).code; value = method === 'push' ? `${cur} + ${values}` : `${values} + ${cur}`; }
         hoist(`${moduleAccessor(recv, 'set', d)}(${WORLD}, ${value})`, 'Unit');
         return null;
@@ -4091,8 +4142,8 @@ export function translate(file, fnName, opts = {}) {
           const items = e.arguments.length > 2 ? callSequence(e.arguments.slice(2), E).code : '[]'; // Dafny has no type ascription: the empty run is `[]`
           return `(var xs_ := ${cur}; var r_ := ${start}; var s_ := SeqClamp(if r_ < 0 then |xs_| + r_ else r_, 0, |xs_|); var d_ := SeqClamp(${count}, 0, |xs_| - s_); xs_[..s_] + ${items} + xs_[s_ + d_..])`; // a negative start counts from the end
         }
-        if (isSetT(t)) { const A = checker.getTypeArguments(t)[0]; return m === 'add' ? `${cur} + {${expr(e.arguments[0], A)}}` : `${cur} - {${expr(e.arguments[0], A)}}`; }
-        if (isMapT(t)) { const [kt, vt] = checker.getTypeArguments(t); return m === 'set' ? `${cur}[${expr(e.arguments[0], kt)} := ${expr(e.arguments[1], vt)}]` : `${cur} - {${expr(e.arguments[0], kt)}}`; }
+        if (isSetT(t)) { const A = checker.getTypeArguments(t)[0]; dtype(t, e); if (m === 'clear') return 'OSet([])'; return `${m === 'add' ? 'OSetAdd' : 'OSetDel'}(${cur}, ${expr(e.arguments[0], A)})`; } // 24.2.3.1: a new item goes last; 24.2.3.4: delete removes it
+        if (isMapT(t)) { const [kt, vt] = checker.getTypeArguments(t); dtype(t, e); if (m === 'clear') return 'OMap([], map[])'; return m === 'set' ? `OMapPut(${cur}, ${expr(e.arguments[0], kt)}, ${expr(e.arguments[1], vt)})` : `OMapDel(${cur}, ${expr(e.arguments[0], kt)})`; } // 24.1.3.9: a new key goes last, an old one keeps its place; 24.1.3.3
         return fail(e, `.${m}() is not translated here`);
       });
     }
@@ -4728,10 +4779,11 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       let T, src;
       if (isIn) { const D = isAny(itT) ? anyType() : dtype(itT, s); T = 'string'; src = `${external('Object_keys', [D], 'seq<string>')}(${expr(s.expression)})`; } // the keys of the object, an uninterpreted sequence of the value (JavaScript's insertion order is a fact of the value)
       else if (isAny(itT)) { T = anyType(); src = seqOf(s.expression); }
+      else if (collectionIterator(s.expression)) { T = collectionIterator(s.expression).elem(s); src = seqOf(s.expression); } // `for (const k of m.keys())`: the carrier's sequence
       else if (isRecordish(itT)) { T = dtype(typeOf(x), x); const IT = dtype(itT, s); src = `${external(`${mangle(IT)}_to_seq`, [IT], `seq<${T}>`)}(${expr(s.expression)})`; }
       else if (itT.flags & TF.StringLike) { T = 'string'; src = `${helper('Map', ['char', 'string'])}(${expr(s.expression)}, ((c: char) => [c]))`; }
       else if (isSetT(itT)) { T = dtype(checker.getTypeArguments(itT)[0], s); src = seqOf(s.expression); }
-      else if (isMapT(itT)) { const [kt, vt] = checker.getTypeArguments(itT); const Kd = dtype(kt, s), Vd = dtype(vt, s); T = `(${Kd}, ${Vd})`; src = `${external('map_entries', [`map<${Kd}, ${Vd}>`], `seq<(${Kd}, ${Vd})>`)}(${expr(s.expression)})`; }
+      else if (isMapT(itT)) { const [kt, vt] = checker.getTypeArguments(itT); const Kd = dtype(kt, s), Vd = dtype(vt, s); T = `(${Kd}, ${Vd})`; src = seqOf(s.expression); } // 24.1.3.12: a Map iterates its entries in insertion order
       else { T = x.__type ? dtype(x.__type, s.expression) : dtype(typeOf(x), x); src = s.__source ?? outerParens(expr(s.expression)); }
       const sq = `seq${id}`, ix = `idx${id}`;
       lead = [`${sq}: seq<${T}>`, `${ix}: int`];

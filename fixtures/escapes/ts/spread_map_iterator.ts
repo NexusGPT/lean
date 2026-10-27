@@ -1,3 +1,4 @@
 // expect: spread
-// a spread of a Map's keys follows insertion order, which the Map value (a Dafny map) does not carry
-export function keysOf(m: Map<string, number>): string[] { return [...m.keys()]; }
+// a Map's keys spread into an outside call's arguments: a spread argument needs an ordinary array or a fixed tuple
+// (a spread inside an array literal reads the keys in insertion order, design/ordered-collections.md)
+export function keysOf(m: Map<string, number>): void { console.log(...m.keys()); }

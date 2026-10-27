@@ -845,10 +845,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         out.push(`function MapSize_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].keys_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
       } else if (s.kind === 'set') {
         const E = valD(s.elem);
-        if (dedupUsed.has(k)) out.push(`function Dedup_${k}(xs: seq<${E}>, acc: seq<${E}>): seq<${E}> decreases |xs| { if |xs| == 0 then acc else Dedup_${k}(xs[1..], if xs[0] in acc then acc else acc + [xs[0]]) }`); // new Set(xs): the first of equal items kept, in order
+        if (dedupUsed.has(k)) out.push(`function {:fuel 3} Dedup_${k}(xs: seq<${E}>, acc: seq<${E}>): seq<${E}> decreases |xs| { if |xs| == 0 then acc else Dedup_${k}(xs[1..], if xs[0] in acc then acc else acc + [xs[0]]) }`); // new Set(xs): the first of equal items kept, in order
         out.push(instantiate(LIBRARY.helpers['RemoveItem_<K>'], k, E));
         for (const op of ['Set.prototype.add', 'Set.prototype.has', 'Set.prototype.delete']) out.push(instantiate(LIB_ROW[op].dafny, k, E));
         out.push(`function SetSize_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].items_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
+        out.push(`function Items_${k}(hw: HWorld, r: Ref): seq<${E}> { if Is${k}(hw, r) then hw.heap[r].items_${k} else [] }`); // a spread of a Set cell: its items in insertion order
       } else if (s.kind === 'dict') { // JavaScript's own-key semantics over the ordered map; a key of Object.prototype is read through the prototype bit
         const V = s.v.d;
         out.push(`predicate DictOwn_${k}(hw: HWorld, r: Ref, key: string) { Is${k}(hw, r) && key in hw.heap[r].m_${k} }`);
@@ -1299,6 +1300,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isConditionalExpression(e)) return fresh(e.whenTrue) && fresh(e.whenFalse);
       if (ts.isTemplateExpression(e) || ts.isStringLiteral(e) || ts.isNumericLiteral(e)) return true;
       if (freshPrimArrayCall(e)) return true; // map, filter, slice, concat, flat, toSorted, toReversed over primitives: a fresh array holding no reference (the library table's result fact)
+      if (ts.isCallExpression(e) && e.arguments.length === 1 && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Array' && e.expression.name.text === 'from' && orderedYieldsNoRef(e.arguments[0])) return true; // Array.from of a Map, a Set or their iterator over primitives: a fresh array
       if (ts.isIdentifier(e)) { // a const of the unit holding a fresh value, of a shape no reference can live in: nothing stored into it since can carry one
         const d = checker.getSymbolAtLocation(e)?.valueDeclaration;
         if (d && ts.isVariableDeclaration(d) && ts.isIdentifier(d.name) && d.initializer && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end && (d.parent.flags & ts.NodeFlags.Const) && holdsNoRef(shapeOf(typeOf(d.name))) && fresh(d.initializer)) return true;
@@ -1307,6 +1309,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     };
     const holdsNoRef = (s) => !!s && (s.kind === 'prim' || s.kind === 'opt' || (s.kind === 'rec' && s.fields.every((f) => holdsNoRef(f.shape))) || ((s.kind === 'arr' || s.kind === 'set') && holdsNoRef(s.elem))); // a shape no reference can live in: a primitive, an optional one, a record or an array of such
     const spreadFresh = (src) => { // spreading copies the source's reference-typed members: fresh only when it has none
+      if (orderedYield(src)) return orderedYieldsNoRef(src);
       const t = typeOf(src); const s = shapeOf(t);
       if (checker.isArrayType(nonNull(t)[0] ?? t)) { const el = checker.getTypeArguments(nonNull(t)[0])[0]; return !!el && !isRefType(el); }
       if (!s || s.kind !== 'rec') return false;
@@ -1351,6 +1354,21 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const el = checker.getTypeArguments(rt)[0]; return !!el && !isRefType(el);
   };
   const MUTATORS_ALL = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin', 'set', 'add', 'delete', 'clear']);
+  // what iterating a Map, a Set or one of their iterators (`m.keys()`, `m.values()`, `m.entries()`) yields, as types:
+  // a Set its items, a Map and entries() a fresh [key, value] pair per entry, keys() and values() the keys or the
+  // values; null for any other source (the ordinary lane's ordered carriers, design/ordered-collections.md)
+  const orderedYield = (src) => {
+    src = unparen(src);
+    let recv = src, method = null;
+    if (ts.isCallExpression(src) && !src.arguments.length && ts.isPropertyAccessExpression(src.expression) && ['keys', 'values', 'entries'].includes(src.expression.name.text)) { recv = src.expression.expression; method = src.expression.name.text; }
+    const ts0 = nonNull(typeOf(recv)); const t = ts0[0];
+    if (ts0.length !== 1 || !t) return null;
+    const nm = t.symbol?.name;
+    if (nm === 'Set' || nm === 'ReadonlySet') return [checker.getTypeArguments(t)[0]];
+    if (nm === 'Map' || nm === 'ReadonlyMap') { const [k, v] = checker.getTypeArguments(t); return method === 'keys' ? [k] : method === 'values' ? [v] : [k, v]; }
+    return null;
+  };
+  const orderedYieldsNoRef = (src) => { const ys = orderedYield(src); return !!ys && ys.every((y) => !!y && !isRefType(y)); };
 
   // ----- identity skeletons: where tree equality would imply graph equality -----
   // For a unit with no nested write through an input, the graph of its result is fixed by the identity of every
@@ -1417,6 +1435,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const spreadFreshOrPath = (src, s) => { // spreading copies members: fine when they are primitive, or when the source is an input path (its members are that path's members)
       const t = typeOf(src);
       const arrT = nonNull(t)[0] ?? t;
+      if (orderedYieldsNoRef(src)) return true; // a Map, a Set or their iterator over primitives yields primitives and fresh [key, value] pairs
       if (checker.isArrayType(arrT)) { const el = checker.getTypeArguments(arrT)[0]; if (el && !isRefType(el)) return true; return path(src) !== null; }
       const sh = s ?? shapeOf(t);
       if (sh && sh.kind === 'rec' && sh.fields.every((f) => f.shape.kind === 'prim')) return true;
