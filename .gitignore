@@ -3,3 +3,4 @@ node_modules/
 __pycache__/
 results-bench/
 harness-copy/
+.lean/cache/

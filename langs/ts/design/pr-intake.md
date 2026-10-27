@@ -79,3 +79,9 @@ Both witness and ask block on a stop. None exits zero.
 Filtering and the verdict table cap preserve the stop and spending order.
 The comment JSON keeps all intake rows, including rows beyond the display cap.
 The cap limits display only. Use the unit budget to limit work.
+
+## Run identity
+
+Run reports now carry identity alongside rows, order and stop.
+The earlier reserved reused value is now emitted for a cache hit.
+See [Run identity and reuse](run-identity.md) for keys, flags and evidence.
