@@ -56,5 +56,25 @@ so the emitted JavaScript is the same, and a wrong proposal shows up as a type e
 
 ## Measurement
 
-See the lane report for the counts over the two census roots (`node langs/ts/design/any-type-count.mjs <root>`, last
-line: declarations reported, proposals by kind against flags by label, owned elsewhere, gaps).
+At d980cb2, `node langs/ts/design/any-type-count.mjs <root> --out <json>`, each file in its project, last line pasted:
+
+| Root | reported | proposals: record / primitive / other | flags: flag-only / migration | owned elsewhere | gaps |
+|---|---|---|---|---|---|
+| Nexus export (12,733 files) | 7,246 | 2,169: 1,391 / 262 / 516 | 5,077: 3,715 / 1,362 | 41,058 | 0 |
+| langchainjs (1,486 files) | 1,951 | 647: 296 / 164 / 187 | 1,304: 997 / 307 | 4,692 | 0 |
+
+Owned elsewhere, Nexus: environment 36,995, catch 3,716, rejection 347 (the bench tree resolves few packages). A gap is a
+declaration typed any found by the count's own walk with neither a finding nor an owner. The langchainjs row is from
+the run before the parenthesis fix, which changes no count. The census is unchanged: the gate never asks for the rule.
+
+## Instances
+
+- Nexus `_common/providers/adobe/document-generation.service.ts:100`, `const { uploadUri, assetID }` from an any:
+  conditional record `{ uploadUri: unknown; assetID: unknown }` (a pattern; before, no finding).
+- Nexus `_common/domain/result.ts:106`, `error: unknown` in a signature: flag-only (before, no finding).
+- Nexus `_common/folders/generic-folders.service.ts:248`, local `itemId`: conditional primitive `string`.
+- Nexus `ai-tasks/executor/providers/schema/to-gemini-schema.ts:23`, `prop`: migration, a caller passes `{} | null`.
+- langchainjs `libs/langchain-core/src/tools/types.ts:420`, `tool`: a record reading `tool.constructor.lc_name`
+  (before, the rule failed on the file: a `constructor` field merged with `Object`).
+- langchainjs `libs/langchain/src/tools/headless.ts:95`, `const { interrupt } = await import("@langchain/langgraph")`
+  with the package absent: environment, left to the checkout.

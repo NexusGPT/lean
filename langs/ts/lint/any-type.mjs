@@ -220,7 +220,7 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     if (parts.length > 1 && parts.some((p) => p.includes('=>'))) text = parts.map((p) => (p.includes('=>') ? `(${p})` : p)).join(' | ');
     if (text !== 'unknown') {
       const absent = n.compares.includes(null) || n.compares.some(isUndef) || (n.truthy && !ks.has('boolean'));
-      if (absent && parts.length === 1 && text.includes('=>')) text = `(${text})`; // `(() => T) | undefined`, never `() => T | undefined`
+      if (absent && parts.length === 1 && ks.has('function')) text = `(${text})`; // `(() => T) | undefined`, never `() => T | undefined`
       if (n.compares.includes(null)) text += ' | null';
       if (n.compares.some(isUndef) || (n.truthy && !ks.has('boolean'))) text += ' | undefined';
     }
