@@ -71,7 +71,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'dict': { const o = {}; for (let i = 0, n = Math.floor(rng() * 4); i < n; i++) o[`k${i}`] = gen(spec.value, depth + 1, env, `${path}.k${i}`); return o; }
       // a record: a field leading to a compared leaf stays present while walking, unless the unit tests its key with `in`
       case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3 && !((spec.refined || f.shaped) && walking && !f.presence)) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); } return o; }
-      case 'union': { const j = Math.floor(rng() * spec.options.length); return gen(spec.options[spec.prefer != null && walking ? spec.prefer : j], depth + 1, env, path); }
+      case 'union': { const j = Math.floor(rng() * spec.options.length); return gen(spec.options[spec.prefer != null && walking && brng() >= 1 / 3 ? spec.prefer : j], depth + 1, env, path); } // while walking, the option leading to a compared leaf two times in three; the declared draw stays reachable
       case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
       case 'function': return env ? env.fake(`${path}#fn`, spec.returns ? { kind: 'method', returns: spec.returns } : null) : () => undefined;

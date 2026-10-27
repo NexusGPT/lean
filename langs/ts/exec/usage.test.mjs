@@ -83,3 +83,11 @@ test('a method: `this` fields, a same-file callee one level down, and the union 
   assert.deepEqual(at(m.this, 'limit', 'mode').compares, ['on']);
   assert.deepEqual(at(m.params[0].node, 'age').compares, [30]);
 });
+
+test('a key written, assigned or deleted is not a read', () => {
+  const u = of(`export function both(d: Record<string, number>, o: any) {
+    d["x"] = 1; d.y = 2; delete d.z; o.seen = o.count;
+    return 2; }`, 'both');
+  assert.deepEqual(Object.keys(u.params[0].node.fields), []);
+  assert.deepEqual(Object.keys(u.params[1].node.fields), ['count']);
+});

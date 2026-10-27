@@ -105,6 +105,14 @@ export function usage(sf, unitName, checker, opts = {}) {
   function walk(node, env, depth) {
     // declarations bind their names first, so later reads of the alias reach the chain
     if (ts.isVariableDeclaration(node) && node.initializer) { walk(node.initializer, env, depth); bind(env, node.name, nodeOf(node.initializer, env)); return; }
+    // a write through a key (`d.k = v`, `d[k] = v`, `delete d.k`) is no read: it names no field of the input, only its
+    // receiver is read
+    const target = ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken ? strip(node.left) : ts.isDeleteExpression(node) ? strip(node.expression) : null;
+    if (target && (ts.isPropertyAccessExpression(target) || ts.isElementAccessExpression(target))) {
+      walk(target.expression, env, depth); if (ts.isElementAccessExpression(target)) walk(target.argumentExpression, env, depth);
+      if (ts.isBinaryExpression(node)) walk(node.right, env, depth);
+      return;
+    }
     if (ts.isForOfStatement(node)) {
       walk(node.expression, env, depth);
       const n = nodeOf(node.expression, env);
