@@ -43,7 +43,7 @@ export function blockingRows(rows, block = 'none') {
 
 // the comment: the marker, the table, one line on what produced it; cut at a line boundary if it is too long
 export function commentBody(md, { block = 'none', capped = false, extra = [] } = {}) {
-  const tail = ['', `<sub>lean, blocking: ${block === 'none' ? 'off' : block}${capped ? '; the function cap was reached, later functions were not checked' : ''}. This comment is updated on every push.</sub>`, ...extra];
+  const tail = ['', `<sub>lean, blocking: ${block === 'none' ? 'off' : block}${capped ? '; the function cap was reached, any later function is not in this table' : ''}. This comment is updated on every push.</sub>`, ...extra];
   let body = [MARKER, md, ...tail].join('\n');
   if (body.length <= MAX_BODY) return body;
   const note = '\n\n(the table is longer than one comment holds; the full report is the job artifact)';
@@ -104,7 +104,10 @@ export async function main(argv, env = process.env, log = console.log, warn = co
     rows = await prReport({ repo: path.resolve(repo), base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project, scope, paths: paths.length ? (f) => inPaths(f, paths) : null, maxUnits: maxFunctions });
     rows = rows.filter((r) => inPaths(r.file, paths));
   } catch (e) { error = String(e?.message ?? e).split('\n')[0].slice(0, 300); }
+  // the cap: a prReport that honours maxUnits stops there; one that does not has checked every function, and the
+  // table still shows the first maxFunctions only, so the comment's length is bounded either way
   const capped = !!(rows && maxFunctions && rows.length >= maxFunctions);
+  if (capped) rows = rows.slice(0, maxFunctions);
   const md = rows ? markdown(rows, short(base), short(head)) : `# lean report: ${short(base)} → ${short(head)}\n\nlean could not produce the table: ${error}`;
   const body = commentBody(md, { block, capped });
   if (opt('--out')) { fs.writeFileSync(opt('--out'), body); log(`${rows ? rows.length : 0} function(s) -> ${opt('--out')}`); } else log(body);

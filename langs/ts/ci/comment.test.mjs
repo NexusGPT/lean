@@ -91,6 +91,8 @@ try {
   ok(r.code === 0 && fs.readFileSync(md1, 'utf8').includes('3 in scope'), 'rows in scope never block');
   r = await run([...base, '--out', md1, '--paths', 'callbacks/**']);
   ok(r.code === 0 && !fs.readFileSync(md1, 'utf8').includes('counter/index.ts') && fs.readFileSync(md1, 'utf8').includes('callbacks/index.ts'), 'paths keep only matching files');
+  r = await run([...base, '--out', md1, '--max-functions', '1']);
+  ok(r.code === 0 && (fs.readFileSync(md1, 'utf8').match(/^\| (counter|callbacks)\//gm) ?? []).length === 1 && fs.readFileSync(md1, 'utf8').includes('cap was reached'), 'the cap bounds the table');
   r = await run([...base, '--out', md1, '--block', 'witness'], { GITHUB_WORKSPACE: tmp });
   ok(r.err.includes('::error file=pairs/counter/index.ts'), 'annotation path is relative to the workspace');
 
