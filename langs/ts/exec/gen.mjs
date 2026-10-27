@@ -1,5 +1,5 @@
 // Lane B input generation from a spec (spec.mjs), seeded. Boundary values come first, then random ones.
-import { makeRng } from './fake.mjs';
+import { makeRng, namePromise } from './fake.mjs';
 import { sampleRegex } from './regex-sample.mjs';
 
 const STR_EDGE = ['', 'a', 'abc', ' ', 'x y', '0', '-1', 'ÄÖü', '日本', 'a'.repeat(64), 'twelve-chars', 'Hello, World! 2024-01-31 10:30', 'abcdefghijklmnopqrstuvwxyz'.repeat(8), 'line one\nline two', 'null', 'undefined', '  padded  ', 'a,b,c', '/path/to/file.txt', 'user@example.com'];
@@ -45,7 +45,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   function gen0(spec, depth = 0, env = null, path = 'in', leaf = false) {
     if (!spec || depth > 8) return env ? env.fake(path) : null;
     switch (spec.kind) {
-      case 'promise': return Promise.resolve(gen(spec.of, depth + 1, env, path));
+      case 'promise': { const value = gen(spec.of, depth + 1, env, path); return namePromise(env, Promise.resolve(value), path, { value }); } // an input promise is named by its position
       case 'number': return number();
       case 'string': { if (spool.length && rng() < 0.3) return spool[Math.floor(rng() * spool.length)]; return pick(STR_EDGE, () => `v${Math.floor(rng() * 1e6).toString(36)}`); }
       case 'boolean': return rng() < 0.5;

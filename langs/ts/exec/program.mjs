@@ -7,7 +7,7 @@
 // command runs on both sides and compares the two observations, and the first failing program is shrunk to a minimal
 // one. The certificate carries the program, the seed and the replay path, and the replay is run once more before the
 // WITNESS is reported. A clean run states the program and command counts (bound.environmentPrograms); never a proof.
-import { Environment, render, BudgetError } from './fake.mjs';
+import { Environment, render, BudgetError, promiseName } from './fake.mjs';
 import { inputsFor } from './gen.mjs';
 import { ts, loadProgram } from '../common.mjs';
 
@@ -25,9 +25,9 @@ export async function runEnvironmentPrograms({ files, roots, spec, seed, ms, rt,
   const startFrom = async (sides) => { await drain(); for (const s of sides) { s.env.trace.length = 0; s.env.pending.length = 0; s.env.calls.clear(); } };
   // one command on one side: the thrown or returned value, what was asked of the environment since the last command
   const step = async (s, fn) => {
-    const mark = s.env.trace.length; let outcome;
-    try { const thunk = fn(s); let v = rt.guardedCall(s.env, thunk, ms); if (v && typeof v.then === 'function') v = await rt.awaitUnit(s.env, v, ms); outcome = { returned: render(v) }; if (retainable(v)) { s.retained.push(v); outcome.retained = s.retained.length - 1; } }
-    catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; outcome = { threw: render(e) }; }
+    const mark = s.env.trace.length; let outcome, named = null;
+    try { const thunk = fn(s); let v = rt.guardedCall(s.env, thunk, ms); named = promiseName(v); if (v && typeof v.then === 'function') v = await rt.awaitUnit(s.env, v, ms); outcome = { returned: render(v) }; if (named) outcome.promise = named; if (retainable(v)) { s.retained.push(v); outcome.retained = s.retained.length - 1; } }
+    catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; outcome = { threw: render(e) }; if (named) outcome.promise = named; } // a returned world promise is named beside its settlement
     await new Promise((r) => setImmediate(r));
     return { outcome, trace: s.env.trace.slice(mark), pending: s.env.pending.length };
   };

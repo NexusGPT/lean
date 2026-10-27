@@ -1,5 +1,6 @@
-export interface Jobs { start(id: string): Promise<void>; stop(id: string): Promise<void>; track(p: Promise<void>): void; note(text: string): void; }
-export interface Slots { open(id: string): Promise<undefined>; close(id: string): Promise<undefined>; keep(p: Promise<undefined>): void; }
+export interface Jobs { start(id: string): Promise<void>; stop(id: string): Promise<void>; track(p: Promise<void>): void; both(p: Promise<void>, q: Promise<void>): void; note(text: string): void; }
+export interface Slots { open(id: string): Promise<undefined>; close(id: string): Promise<undefined>; keep(p: Promise<undefined>): void; last: Promise<undefined> | null; }
+export interface Gates { lift(id: string): Promise<null>; drop(id: string): Promise<null>; hold(p: Promise<null>): void; }
 // changed: the candidate awaits the two handles in the other order, so a double rejection throws the other error
 export async function order(jobs: Jobs, id: string): Promise<void> {
   const a = jobs.start(id);
@@ -18,6 +19,30 @@ export function absent(slots: Slots, id: string): void {
   const a = slots.open(id);
   const b = slots.close(id);
   slots.keep(b);
+}
+// changed: the candidate returns the other void promise, held in a record, without awaiting it
+export function handout(jobs: Jobs, id: string): { done: Promise<void> } {
+  const a = jobs.start(id);
+  const b = jobs.stop(id);
+  return { done: b };
+}
+// changed: the candidate hands the outside the two void promises in the other order
+export function swap(jobs: Jobs, id: string): void {
+  const a = jobs.start(id);
+  const b = jobs.stop(id);
+  jobs.both(b, a);
+}
+// changed: the candidate stores the other promise of undefined on the outside object
+export function stash(slots: Slots, id: string): void {
+  const a = slots.open(id);
+  const b = slots.close(id);
+  slots.last = b;
+}
+// changed: the candidate hands the outside the other promise of null
+export function gate(gates: Gates, id: string): void {
+  const a = gates.lift(id);
+  const b = gates.drop(id);
+  gates.hold(b);
 }
 // refactor: the held handle renamed and the label inlined, the same transitions in the same order
 export async function held(jobs: Jobs, id: string): Promise<void> {
