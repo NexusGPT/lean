@@ -371,12 +371,14 @@ export async function observe(side, spec, args, ms) {
 // interval re-arms after its run and stays pending; a timer that arms another runs it too, up to the limit (then a
 // budget: ASK). The observation holds the fired order (a 'fire' record per timer) and what each callback asked of
 // the environment.
-async function runTimers(env, ms, limit = 50) {
+const PERMS = { 1: [[0]], 2: [[0, 1], [1, 0]], 3: [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] }; // the firing orders of up to three timers due at one instant
+async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0 } = {}) { // until: fire what is due up to this instant (the schedule explorer advances the clock step by step); perm: which order the timers due at one instant fire in (the event loop fixes none for equal instants)
   const t = env.timers; let fired = 0;
   for (;;) {
-    const due = t.queue.filter((e) => e.fired === 0).sort((a, b) => a.due - b.due || a.order - b.order);
+    const due = t.queue.filter((e) => e.fired === 0 && e.due <= until).sort((a, b) => a.due - b.due || a.order - b.order);
     if (!due.length) break;
-    const e = due[0]; if (e.due > t.now) t.now = e.due;
+    const ties = due.filter((x) => x.due === due[0].due); const pick = perm && PERMS[ties.length] ? ties[PERMS[ties.length][perm % PERMS[ties.length].length][0]] : due[0];
+    const e = pick; if (e.due > t.now) t.now = e.due;
     const i = t.queue.indexOf(e); t.queue.splice(i, 1); const j = env.pending.findIndex((x) => x.id === e.id); if (j >= 0) env.pending.splice(j, 1);
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
     env.record('fire', { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[e.kind], [e.due]); // the instant, never the id: an id is an arm counter nobody outside sees
@@ -407,7 +409,7 @@ async function settleEffects(env, ms) {
 }
 const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers) } : v);
 const treeHandlers = (v, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeHandlers(c, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (/^on[A-Z]/.test(k) && typeof x === 'function') out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeHandlers(c, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); return out; };
-async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth }) {
+async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth, schedules = false }) { // schedules: the clock is a command (moonshot 9): a tick fires what is due at the next instant, ties in every order, and a handler may arrive before a timer fires
   const mount = async (name) => { // a fresh mount: the same seed gives the same fakes and the same inputs as the pair's run of this input
     const env = new Environment(seed * 7919 + inputIndex); env.shapes = spec;
     const exportsObj = sandbox(env, roots[name]).load(files[name]); const u = pickUnit(exportsObj, spec, env); if (!u) throw new Error(`${name}: unit ${unit} not exported`);
@@ -422,39 +424,49 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
   const runPath = async (name, labels) => {
     const s = await mount(name); const obs = [];
     const harness = (e) => e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop || e instanceof CallTimeout; // the harness's own stops end the sequence run as ASK; anything else a render throws is an observation
-    const settle = async () => { let t = await commit(s); if (s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and the timers they armed
+    const settle = async () => { let t = await commit(s); if (!schedules && s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and (outside the schedule explorer) the timers they armed
+    const tick = async (perm) => { const q = s.env.timers.queue.filter((e) => e.fired === 0); if (!q.length) return null; const next = Math.min(...q.map((e) => e.due)); await runTimers(s.env, ms, 50, { until: next, perm }); return commit(s); }; // the clock advances to the next due instant; the timers due there fire in the chosen order
     let tree;
     try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: 'mount', threw: render(e), trace: s.env.trace.map((x) => render(x)) }); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
     for (const label of labels) {
       const from = s.env.trace.length;
+      if (label.startsWith('tick@')) { // a clock step: the instant it reaches and what fired are the observation
+        const perm = Number(label.slice(5)) || 0; const before = s.env.timers.now;
+        try { const t2 = await tick(perm); if (t2 !== null) tree = t2; } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; }
+        obs.push({ command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
+        continue;
+      }
       const h = treeHandlers(tree).find((x) => x.label === label);
       if (!h) { obs.push({ command: label, missing: true, handlers: treeHandlers(tree).map((x) => x.label) }); return { obs, s }; }
       try { const r = guardedCall(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (harness(e)) throw e; s.env.record('handler-throw', label, [render(e)]); }
       try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
       obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
     }
+    const pendingTimers = s.env.timers.queue.filter((e) => e.fired === 0); const ties = pendingTimers.length ? pendingTimers.filter((e) => e.due === Math.min(...pendingTimers.map((x) => x.due))).length : 0; // read before the unmount clears them: the clock steps the next level may take
+    const ticks = schedules && pendingTimers.length && pendingTimers.length <= 3 ? Array.from({ length: Math.min(PERMS[ties]?.length ?? 1, 6) }, (_, k) => `tick@${k}`) : [];
     // unmount: every cleanup, in slot order
     const from = s.env.trace.length;
     for (const es of s.env.effectSlots ?? []) if (es && es.cleanup) { s.env.record('call', `${es.key}.cleanup`, []); try { await awaitUnit(s.env, Promise.resolve(callUnit(s.env, es.cleanup)), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
     obs.push({ command: 'unmount', trace: s.env.trace.slice(from).map((x) => render(x)) });
-    return { obs, s, handlers: treeHandlers(tree).map((x) => x.label) };
+    return { obs, s, handlers: treeHandlers(tree).map((x) => x.label), ticks, timers: pendingTimers.length };
   };
-  let paths = 0; let frontier = [[]]; const done = new Set();
+  let paths = 0; let frontier = [[]]; const done = new Set(); let maxTimers = 0;
   for (let level = 0; level <= depth; level++) {
     const next = [];
     for (const labels of frontier) {
       const key = labels.join('>'); if (done.has(key)) continue; done.add(key); paths++;
       let P, C;
       try { P = await runPath('parent', labels); C = await runPath('candidate', labels); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop) return { ask: `sequence ${JSON.stringify(labels)}: ${e.message}` }; throw e; }
+      maxTimers = Math.max(maxTimers, P.timers ?? 0);
       for (let k = 0; k < Math.max(P.obs.length, C.obs.length); k++) {
         const a = JSON.stringify(P.obs[k] ?? null), b = JSON.stringify(C.obs[k] ?? null);
-        if (a !== b) return { witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null } };
+        if (a !== b) return { timers: maxTimers, witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null } };
       }
-      if (level < depth) for (const label of (P.handlers ?? []).slice(0, breadth)) next.push([...labels, label]);
+      if (level < depth) for (const label of [...(P.handlers ?? []).slice(0, breadth), ...(P.ticks ?? [])]) next.push([...labels, label]);
     }
     frontier = next;
   }
-  return { paths };
+  return { paths, timers: maxTimers };
 }
 
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
@@ -566,6 +578,11 @@ export async function runPair(opts) {
     let paths = 0;
     for (let i = 0; i < Math.min(sequenceInputs, n); i++) {
       const r = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth }));
+      if (r.ask === undefined && !r.witness) { // the schedule explorer (moonshot 9): the same machine with the clock as a command, when the mount armed at most three timers
+      const r2 = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, schedules: true, depth: Math.max(sequenceDepth, 2), breadth: sequenceBreadth }));
+        if (r2.witness) return { verdict: 'WITNESS', unit, witnesses: [{ ...r2.witness, schedule: true }], bound: { ...bound, schedules: { timers: r2.timers, paths: r2.paths, orders: 'every order of the timers due at one instant, up to three' } }, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+        if (r2.ask) bound.schedulesAsk = r2.ask; else bound.schedules = { timers: r2.timers ?? 0, paths: r2.paths, orders: 'every order of the timers due at one instant, up to three' };
+      }
       if (r.ask) return { verdict: 'ASK', reason: `input ${i}: ${r.ask}`, unit, bound };
       if (r.witness) { bound.frontEnd.renders = `one, then command sequences of up to ${sequenceDepth} clicks`; return { verdict: 'WITNESS', unit, witnesses: [{ input: i, sequence: r.witness.sequence, step: r.witness.step, parent: r.witness.parent, candidate: r.witness.candidate, where: { field: 'sequence', command: r.witness.sequence[r.witness.step] ?? 'unmount' } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
       paths += r.paths ?? 0;
