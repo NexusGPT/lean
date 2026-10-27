@@ -395,6 +395,26 @@ export function receiverRecordPath(checker, target) {
   return chain;
 }
 
+// a write through the declared `this` of a free function (TypeScript's `this` parameter): the receiver and every container
+// on the path to the written field are nonoptional data records (the method rule for a receiver path), never a class, an
+// array, a dictionary, an optional or an opaque handle, so the write rebuilds the receiver value as a parameter's is rebuilt
+export function thisParamPath(checker, target) {
+  const chain = []; let root = target;
+  while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
+  if (root.kind !== ts.SyntaxKind.ThisKeyword || !chain.length) return null;
+  const accessor = (n) => checker.getSymbolAtLocation(n.name)?.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d));
+  for (let i = 0; i < chain.length; i++) {
+    const at = i === 0 ? root : chain[i - 1];
+    if (i > 0 && accessor(at)) return null;
+    const t = checker.getTypeAtLocation(at);
+    if (!(t.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection)) || (t.objectFlags & ts.ObjectFlags.Class) || t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) || ts.isClassExpression(d)) || isArrayLike(checker, t) || checker.getIndexInfosOfType(t).length) return null;
+    const ps = checker.getPropertiesOfType(t);
+    if (!ps.length || ps.some((p) => checker.getSignaturesOfType(checker.getTypeOfSymbolAtLocation(p, at), ts.SignatureKind.Call).length || p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)))) return null;
+    if (!checker.getPropertyOfType(t, chain[i].name.text)) return null;
+  }
+  return accessor(chain[chain.length - 1]) ? null : chain;
+}
+
 // Stage 5 rank 15. The counted for header `let i = e; i < limit; i++` (also <=, >, >= with i--, i += k, i -= k, k a positive
 // literal, the step in the direction of the condition) whose body never assigns the counter: the translator reads it as a
 // counted loop with the counter as the helper's lead parameter. Every other for header is read as
