@@ -57,7 +57,7 @@ function patchRealm(realm, records, keep) { // realm: the constructors whose pro
       if (!kept) return Reflect.apply(original, this, args); // the harness's own call: not a record
       const calls = records.calls ?? (records.calls = {}); calls[op] = (calls[op] ?? 0) + 1; // every call from the unit's files is counted; past the cap the call runs unrecorded: a record is one check of the row on real data, the first MAX_PER_OP of an operation are the run's sample, and an unbounded loop would otherwise fill the run with ever larger snapshots (measured: 20,370 push records of a growing array, 38 minutes to check)
       if (calls[op] > MAX_PER_OP) return Reflect.apply(original, this, args);
-      const receiver = receiverIsFirstArg ? args[0] : this;
+      const receiver = receiverIsFirstArg ? args[0] : this; // an ES module function is strict: `this` of a method called on a primitive is the primitive itself, never boxed
       const argList = []; for (let i = receiverIsFirstArg ? 1 : 0; i < args.length; i++) argList[argList.length] = args[i]; // no array method here: they are patched
       inside = true; let before, beforeArgs, argIds, receiverId, knownBefore;
       try {
@@ -70,7 +70,7 @@ function patchRealm(realm, records, keep) { // realm: the constructors whose pro
       try { result = Reflect.apply(original, this, args); } catch (e) { threw = e; }
       inside = true;
       try {
-      const resultKind = threw ? 'throw' : result === receiver ? 'receiver' : isObj(result) ? (seen(result) ? 'existing' : 'fresh') : 'primitive';
+      const resultKind = threw ? 'throw' : !isObj(result) ? 'primitive' : result === receiver ? 'receiver' : seen(result) ? 'existing' : 'fresh'; // a primitive first: a string method on a string may return the receiver's own value
       const resultId = threw || !isObj(result) ? null : idOf(result);
       const afterArgs = []; for (let i = 0; i < argList.length; i++) afterArgs[i] = snap(argList[i]);
       records[records.length] = ({ op, receiverId, argIds, before, after: snap(receiver), beforeArgs, afterArgs, resultKind, resultId, resultValue: isObj(result) ? undefined : result, threw: threw ? String(threw && threw.name) : null });
@@ -81,7 +81,12 @@ function patchRealm(realm, records, keep) { // realm: the constructors whose pro
     proto[name] = wrapper;
   };
   const already = (proto) => ORIGINALS.some((o) => o[0] === proto); // the host's realm shared by a context: patched once
-  if (realm.Array && !already(realm.Array.prototype)) for (const name of ['push', 'unshift', 'pop', 'shift', 'splice', 'reverse', 'sort', 'slice', 'concat', 'map', 'filter']) patch(realm.Array.prototype, name, `Array.prototype.${name}`);
+  if (realm.Array && !already(realm.Array.prototype)) for (const name of ['push', 'unshift', 'pop', 'shift', 'splice', 'reverse', 'sort', 'slice', 'concat', 'map', 'filter', 'fill', 'toSorted', 'toReversed', 'findLast', 'findLastIndex', 'lastIndexOf', 'toString']) if (typeof realm.Array.prototype[name] === 'function') patch(realm.Array.prototype, name, `Array.prototype.${name}`);
+  // the stage 5 rows on primitives: the receiver is the primitive itself (snap reads it by value); the wrapper's `this` is the boxed value, so the record's receiver is its primitive
+  if (realm.String && !already(realm.String.prototype)) for (const name of ['toString', 'toLocaleLowerCase', 'substr', 'search', 'matchAll']) if (typeof realm.String.prototype[name] === 'function') patch(realm.String.prototype, name, `String.prototype.${name}`);
+  if (realm.Number && !already(realm.Number.prototype)) for (const name of ['toString', 'toLocaleString']) patch(realm.Number.prototype, name, `Number.prototype.${name}`);
+  if (realm.Boolean && !already(realm.Boolean.prototype)) patch(realm.Boolean.prototype, 'toString', 'Boolean.prototype.toString');
+  if (realm.BigInt && !already(realm.BigInt.prototype)) patch(realm.BigInt.prototype, 'toString', 'BigInt.prototype.toString');
   if (realm.Map && !already(realm.Map.prototype)) for (const name of ['set', 'get', 'has', 'delete']) patch(realm.Map.prototype, name, `Map.prototype.${name}`);
   if (realm.Set && !already(realm.Set.prototype)) for (const name of ['add', 'has', 'delete']) patch(realm.Set.prototype, name, `Set.prototype.${name}`);
   if (realm.Object && !already(realm.Object)) patch(realm.Object, 'assign', 'Object.assign', { receiverIsFirstArg: true });
@@ -126,7 +131,7 @@ export function checkRecords(records, table) {
   defects.outOfModel = outOfModel.length; defects.callbackEffects = callbackEffects.length;
   return defects;
 }
-const noopAllowed = (r) => (((r.op === 'Array.prototype.push' || r.op === 'Array.prototype.unshift') && r.argIds.length === 0) || r.op === 'Set.prototype.add' || r.op === 'Map.prototype.delete' || r.op === 'Set.prototype.delete' || (r.op === 'Array.prototype.pop' && items(r.before)?.length === 0) || (r.op === 'Array.prototype.shift' && items(r.before)?.length === 0) || (r.op === 'Array.prototype.reverse' && items(r.before)?.length <= 1) || r.op === 'Array.prototype.sort' || r.op === 'Object.assign' || (r.op === 'Array.prototype.splice' && same(r.before, r.after)) || r.op === 'Map.prototype.set');
+const noopAllowed = (r) => (((r.op === 'Array.prototype.push' || r.op === 'Array.prototype.unshift') && r.argIds.length === 0) || r.op === 'Set.prototype.add' || r.op === 'Map.prototype.delete' || r.op === 'Set.prototype.delete' || (r.op === 'Array.prototype.fill') || (r.op === 'Array.prototype.reverse' && items(r.before) && same(items(r.before), items(r.before).slice().reverse())) || (r.op === 'Array.prototype.pop' && items(r.before)?.length === 0) || (r.op === 'Array.prototype.shift' && items(r.before)?.length === 0) || (r.op === 'Array.prototype.reverse' && items(r.before)?.length <= 1) || r.op === 'Array.prototype.sort' || r.op === 'Object.assign' || (r.op === 'Array.prototype.splice' && same(r.before, r.after)) || r.op === 'Map.prototype.set');
 function contentCheck(r) {
   const b = r.before, a = r.after; const prim = (s) => (s.kind === 'primitive' ? s.value : { id: null, ref: true, s });
   const argVal = (i) => (r.beforeArgs[i] && r.beforeArgs[i].kind === 'primitive' ? r.beforeArgs[i].value : r.argIds[i] !== null ? { id: r.argIds[i] } : undefined);

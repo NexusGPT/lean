@@ -612,6 +612,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const op = libraryOp(call); if (!op) return null;
     if (op === 'Promise.resolve') { const a = call.arguments[0] && unparenX(call.arguments[0]); return !!a && (ts.isArrayLiteralExpression(a) || ts.isObjectLiteralExpression(a) || ts.isNewExpression(a)) && freshShallowLiteral(a); }
     const res = LIBRARY_RESULT.get(op) ?? LIBRARY_RESULT_MORE[op] ?? (op.startsWith('String.prototype.') ? 'fresh' : null); // a string method never returns an object the caller holds
+    if (res === 'primitive') return true; // a primitive result is no object the caller could hold
     if (res !== 'fresh') return false; // an unknown built-in counts as returning an existing object
     if (op === 'structuredClone' || op === 'JSON.parse' || op === 'Object.create') return true; // a whole new graph; `Object.create(null)` (a prototype argument is refused as `prototype`) an empty object
     const t = checker.getAwaitedType?.(tOf(call)) ?? tOf(call);
