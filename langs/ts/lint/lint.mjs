@@ -1931,19 +1931,66 @@ export function lintFile(file, ranges = null, opts = {}) {
     return !nonNull(tOf(r)).some((t) => isArrayLike(checker, t) || isStr(t) || isSetT(t) || isMapT(t));
   }
   // a directly enclosing conditional proves a sole array spread nonempty on the chosen branch
+  // Math.min/max over a spread is read on a nonempty list (MinSeq/MaxSeq require it): the spread's length is the length of
+  // a name (the name itself, `xs.map(f)`, `xs.slice()`, `[...xs]`), and a test that dominates the call says that length is
+  // not zero: a conditional, an if, `&&` / `||`, or an earlier `if (...) return` (or throw, break, continue) in the same
+  // statement list, in any equivalent form (`xs.length`, `> 0`, `>= 1`, `!== 0`, `0 < xs.length`, `!xs.length` and
+  // `=== 0` on the other branch); the name is not written between the test and the call
   function nonemptyMathArgs(e) {
     const filled = (a) => !ts.isSpreadElement(a) || (ts.isArrayLiteralExpression(a.expression) && a.expression.elements.some(filled));
     if (e.arguments.some(filled)) return true;
-    if (e.arguments.length !== 1 || !ts.isSpreadElement(e.arguments[0]) || !ts.isIdentifier(e.arguments[0].expression)) return false;
-    let child = e, p = e.parent;
-    while (p && ts.isParenthesizedExpression(p)) { child = p; p = p.parent; }
-    if (!p || !ts.isConditionalExpression(p) || p.condition === child) return false;
-    let c = p.condition; while (ts.isParenthesizedExpression(c)) c = c.expression;
-    if (!ts.isBinaryExpression(c) || !ts.isPropertyAccessExpression(c.left) || c.left.name.text !== 'length' || !ts.isIdentifier(c.left.expression) || !ts.isNumericLiteral(c.right)) return false;
-    if (checker.getSymbolAtLocation(c.left.expression) !== checker.getSymbolAtLocation(e.arguments[0].expression)) return false;
-    const n = Number(c.right.text), op = c.operatorToken.kind, yes = p.whenTrue === child;
-    return yes ? (op === K.GreaterThanToken && n >= 0) || (op === K.GreaterThanEqualsToken && n >= 1) || (op === K.ExclamationEqualsEqualsToken && n === 0)
-      : (op === K.LessThanEqualsToken && n >= 0) || (op === K.LessThanToken && n >= 1) || (op === K.EqualsEqualsEqualsToken && n === 0);
+    if (e.arguments.length !== 1 || !ts.isSpreadElement(e.arguments[0])) return false;
+    const lengthName = (x) => { // the name whose length the value's length is
+      x = unparenX(x);
+      if (ts.isIdentifier(x)) return isArrayExpr(x) ? checker.getSymbolAtLocation(x) : null;
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && !x.expression.questionDotToken && isArrayExpr(x.expression.expression) && ((x.expression.name.text === 'map' && x.arguments.length === 1) || (x.expression.name.text === 'slice' && !x.arguments.length))) return lengthName(x.expression.expression);
+      if (ts.isArrayLiteralExpression(x) && x.elements.length === 1 && ts.isSpreadElement(x.elements[0])) return lengthName(x.elements[0].expression);
+      return null;
+    };
+    const sym = lengthName(e.arguments[0].expression);
+    if (!sym) return false;
+    const isLen = (x) => { x = unparenX(x); return ts.isPropertyAccessExpression(x) && x.name.text === 'length' && !x.questionDotToken && ts.isIdentifier(unparenX(x.expression)) && checker.getSymbolAtLocation(unparenX(x.expression)) === sym; };
+    // the test c, known to be `truth`, says the length is above zero
+    const implies = (c, truth) => {
+      c = unparenX(c);
+      if (ts.isPrefixUnaryExpression(c) && c.operator === K.ExclamationToken) return implies(c.operand, !truth);
+      if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.AmpersandAmpersandToken) return truth && (implies(c.left, true) || implies(c.right, true));
+      if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.BarBarToken) return !truth && (implies(c.left, false) || implies(c.right, false));
+      if (isLen(c)) return truth;
+      if (!ts.isBinaryExpression(c)) return false;
+      let op = c.operatorToken.kind, lit = unparenX(c.right);
+      if (!isLen(c.left)) { if (!isLen(c.right)) return false; lit = unparenX(c.left); op = { [K.LessThanToken]: K.GreaterThanToken, [K.LessThanEqualsToken]: K.GreaterThanEqualsToken, [K.GreaterThanToken]: K.LessThanToken, [K.GreaterThanEqualsToken]: K.LessThanEqualsToken }[op] ?? op; }
+      if (!ts.isNumericLiteral(lit)) return false;
+      const n = Number(lit.text);
+      if (truth) return (op === K.GreaterThanToken && n >= 0) || (op === K.GreaterThanEqualsToken && n >= 1) || ((op === K.ExclamationEqualsEqualsToken || op === K.ExclamationEqualsToken) && n === 0);
+      return (op === K.LessThanEqualsToken && n >= 0) || (op === K.LessThanToken && n >= 1) || ((op === K.EqualsEqualsEqualsToken || op === K.EqualsEqualsToken) && n === 0);
+    };
+    const writes = (node, from, to) => { // a write of the name inside node between two positions
+      let hit = false;
+      const w = (x) => {
+        if (hit || x.end <= from || x.pos >= to) return;
+        if (ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym) {
+          let top = x; while (top.parent && (ts.isParenthesizedExpression(top.parent) || ts.isNonNullExpression(top.parent))) top = top.parent;
+          const p = top.parent;
+          if (p && ts.isBinaryExpression(p) && p.left === top && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) hit = true;
+          if (p && ts.isPropertyAccessExpression(p) && p.expression === top && (MUT_NAMES.has(p.name.text) || (p.name.text === 'length' && p.parent && ts.isBinaryExpression(p.parent) && p.parent.left === p))) hit = true;
+        }
+        ts.forEachChild(x, w);
+      };
+      w(node);
+      return hit;
+    };
+    const exits = (st) => { st = ts.isBlock(st) && st.statements.length === 1 ? st.statements[0] : st; return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
+    for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
+      if (ts.isConditionalExpression(p) && child !== p.condition && implies(p.condition, p.whenTrue === child) && !writes(p, p.condition.end, e.pos)) return true;
+      if (ts.isIfStatement(p) && child !== p.expression && implies(p.expression, p.thenStatement === child) && !writes(p, p.expression.end, e.pos)) return true;
+      if (ts.isBinaryExpression(p) && child === p.right && ((p.operatorToken.kind === K.AmpersandAmpersandToken && implies(p.left, true)) || (p.operatorToken.kind === K.BarBarToken && implies(p.left, false))) && !writes(p, p.left.end, e.pos)) return true;
+      if ((ts.isBlock(p) || ts.isSourceFile(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) && p.statements) {
+        const k = p.statements.indexOf(child);
+        for (let i = k - 1; i >= 0; i--) { const g = p.statements[i]; if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement) && implies(g.expression, false) && !writes(p, g.end, e.pos)) return true; }
+      }
+    }
+    return false;
   }
   const argsOf = (e) => (e.arguments ?? []).forEach((a) => ts.isSpreadElement(a) ? (outsideSpread(e) ? spreadArray(a) : v(a, 'spread', 'spread arguments need an outside callee or a supported sequence operation')) : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
