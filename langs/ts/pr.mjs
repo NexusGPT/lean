@@ -2,6 +2,7 @@
 // lean pr: a whole change at once. Give it a checkout and two git refs (the base and the head of a pull request, or
 // a commit and its parent); it finds every changed function, runs both lanes on each, and prints one report:
 // a verdict per function with its certificate pointer, and for every ASK the lint's advice on what to change.
+// An unchanged caller of a changed function gets a row too when lane B finds a WITNESS through that callee.
 //
 //   node pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--out report.md] [--json report.json]
 //               [--n 100] [--dafny-seconds 30] [--project <tsconfig>|--no-project]
@@ -18,6 +19,8 @@ import { ts, loadProgram, topLevelFunctions } from './common.mjs';
 import { check } from './check.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
+import { runPair } from './exec/run.mjs';
+import { calleesOf } from './exec/callees.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const git = (repo, args) => { const r = spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8', maxBuffer: 1 << 28 }); if (r.status !== 0) throw new Error(`git ${args.join(' ')}: ${r.stderr.trim()}`); return r.stdout; };
@@ -83,6 +86,23 @@ export async function prReport(opts) {
         }
         rows.push(row);
       }
+      // an unchanged caller of a changed function: its text did not move, so the diff names it nowhere, but a difference
+      // may show through the callee on the caller's inputs. Lane B alone runs on it; it gets a row only when it is a
+      // WITNESS that came through a changed callee (where.cause 'callee')
+      const changedNames = new Set(units.map((u) => u.name));
+      if (changedNames.size) {
+        const { sf, checker } = loadProgram(headFile, { project: false });
+        for (const [name, u] of topLevelFunctions(sf)) {
+          if (changedNames.has(name) || scope.has(name) || scope.has(`${rel}:${name}`)) continue;
+          let reaches = false; try { reaches = calleesOf(sf, checker, name).some((c) => changedNames.has(c.callee)); } catch { /* unread: no row */ }
+          if (!reaches) continue;
+          let b = null; try { b = await runPair({ parent: baseFile, candidate: headFile, unit: name, n, project }); } catch { /* no row */ }
+          const w = b?.verdict === 'WITNESS' ? b.witnesses?.[0] : null;
+          if (!w || w.where?.cause !== 'callee') continue;
+          const a = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1, e = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
+          rows.push({ file: rel, unit: name, lines: [a, e], verdict: 'WITNESS', laneB: 'WITNESS', laneA: null, caller: true, witness: { input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, reason: null, advice: [] });
+        }
+      }
     }
   } finally { for (const t of temps) { try { fs.rmSync(t, { force: true }); } catch { /* gone */ } } }
   return rows;
@@ -101,7 +121,7 @@ export function calleeNote(r, rows) {
 
 export function markdown(rows, base, head) {
   const count = (v) => rows.filter((r) => r.verdict === v).length;
-  const lines = [`# lean report: ${base} → ${head}`, '', `${rows.length} changed function(s): **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const lines = [`# lean report: ${base} → ${head}`, '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.some((r) => r.caller) ? ` and ${rows.filter((r) => r.caller).length} unchanged caller(s) with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | lane B | lane A | note |', '|---|---|---|---|---|---|'];
   for (const r of rows) {
     const note = r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
