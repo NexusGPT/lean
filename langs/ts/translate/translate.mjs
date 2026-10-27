@@ -2166,14 +2166,14 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         return value && containsEffect(value) ? promiseGuard(promisePair(code), R) : promisePair(code);
       });
     };
-    if (ts.isBlock(s)) return promiseStatements([...s.statements, ...rest], rt, done, settlement);
+    if (ts.isBlock(s)) return promiseStatements([...scopedList(s, [...s.statements]), ...rest], rt, done, settlement);
     if (ts.isEmptyStatement(s)) return more();
     if (ts.isReturnStatement(s)) return end(s.expression);
     if (ts.isThrowStatement(s)) return rejectedPromise(s.expression, R);
     if (ts.isIfStatement(s)) return capture(() => {
       const cond = truthy(s.expression);
-      const yes = promiseStatements([...flatten(s.thenStatement), ...rest], rt, done, settlement);
-      const no = promiseStatements([...(s.elseStatement ? flatten(s.elseStatement) : []), ...rest], rt, done, settlement);
+      const yes = promiseStatements([...sflatten(s.thenStatement), ...rest], rt, done, settlement);
+      const no = promiseStatements([...(s.elseStatement ? sflatten(s.elseStatement) : []), ...rest], rt, done, settlement);
       const branch = `if ${cond} then ${wrapLet(yes)} else ${wrapLet(no)}`;
       return containsEffect(s.expression) ? promiseGuard(branch, R) : branch;
     });
@@ -3899,6 +3899,69 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   };
   const containsReturn = (node) => { let f = false; const w = (x) => { if (ts.isReturnStatement(x) || ts.isThrowStatement(x)) f = true; if (!f && !ts.isArrowFunction(x)) ts.forEachChild(x, w); }; w(node); return f; };
   const flatten = (s) => (ts.isBlock(s) ? [...s.statements] : [s]);
+  // a block's declarations end with the block (ECMA-262 14.2.2: a Block, a case block, a catch clause, a for header and a
+  // call each make a new declarative environment). The translator writes a statement list as one chain of `var` bindings,
+  // so a name the block declares that the unit already binds outside it would hide the outer binding for whatever follows
+  // in the same chain. scopeFor names those outer bindings; the chain saves each one before the block and rebinds it after
+  // (`var sc3_ := x; ...; var x := sc3_;`). An outer binding is saved only when it is bound here and read again: a read
+  // after the block in the same function, or any read inside an enclosing loop or function (its next step or call).
+  const refIndex = new Map();
+  const refsOf = (sym) => {
+    const root = currentUnit?.node; if (!root) return [];
+    if (!refIndex.has(root)) {
+      const idx = new Map();
+      const w = (x) => {
+        if (ts.isIdentifier(x)) {
+          const p = x.parent;
+          const declName = p && (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isBindingElement(p) || ts.isFunctionDeclaration(p)) && p.name === x;
+          const member = p && ts.isPropertyAccessExpression(p) && p.name === x;
+          const sy = p && ts.isShorthandPropertyAssignment(p) && p.name === x ? checker.getShorthandAssignmentValueSymbol(p) : checker.getSymbolAtLocation(x);
+          if (sy && !declName && !member) { if (!idx.has(sy)) idx.set(sy, []); idx.get(sy).push(x); }
+        }
+        ts.forEachChild(x, w);
+      };
+      w(root);
+      refIndex.set(root, idx);
+    }
+    return refIndex.get(root).get(sym) ?? [];
+  };
+  const topDecls = (list) => { const out = []; const names = (n) => { if (ts.isIdentifier(n)) out.push(n); else if (ts.isObjectBindingPattern(n) || ts.isArrayBindingPattern(n)) for (const el of n.elements) if (!ts.isOmittedExpression(el)) names(el.name); }; for (const st of list) { if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) names(d.name); else if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && st.name) out.push(st.name); } return out; };
+  const regionOf = (x) => { // the innermost enclosing loop or function, and the part of it a later step runs again
+    for (let q = x.parent; q; q = q.parent) {
+      if (q === currentUnit?.node) return { node: q, unit: true };
+      if (ts.isFunctionLike(q)) return { node: q, unit: false, parts: [q] };
+      if (ts.isIterationStatement(q, false)) return { node: q, unit: false, parts: [q.statement, ...(ts.isForStatement(q) ? [q.condition, q.incrementor] : ts.isWhileStatement(q) || ts.isDoStatement(q) ? [q.expression] : [])].filter(Boolean) };
+    }
+    return null;
+  };
+  function scopeFor(region, ids, loc, end) {
+    const unit = currentUnit?.node; if (!unit || !ids.length) return null;
+    const R = regionOf(region); if (!R) return null;
+    const seen = new Set(), saves = [];
+    for (const id of ids) {
+      if (seen.has(id.text)) continue; seen.add(id.text);
+      const outer = checker.getSymbolsInScope(loc, ts.SymbolFlags.Value).find((x) => x.name === id.text);
+      const d = outer?.valueDeclaration ?? outer?.declarations?.[0];
+      if (!d || d.getSourceFile() !== sf || !(d.pos >= unit.pos && d.end <= unit.end) || d === unit || d.end > region.pos) continue; // a unit binding written before the block
+      if (procOf(d) || ts.isClassDeclaration(d)) continue; // a spliced procedure binds no value
+      const refs = refsOf(outer);
+      const read = R.unit ? refs.some((r) => r.pos >= end) : refs.some((r) => R.parts.some((p) => r.pos >= p.pos && r.end <= p.end));
+      if (read) saves.push({ name: dn(id.text), tmp: `sc${tempCount++}_` });
+    }
+    return saves.length ? saves : null;
+  }
+  const scopeMark = (kind, saves, at) => { const m = ts.factory.createEmptyStatement(); ts.setTextRange(m, { pos: at.pos, end: at.pos }); m.parent = at.parent ?? at; m.__scope = { kind, saves }; return m; };
+  const scopeText = (m) => m.__scope.saves.map((x) => (m.__scope.kind === 'save' ? `var ${x.tmp} := ${x.name};` : `var ${x.name} := ${x.tmp};`)).join('\n');
+  // a statement list with its own declarations: the saves before it, the rebinds after it (none when it cannot fall through)
+  const scopedList = (region, list, loc = region.parent, extraIds = []) => {
+    if (!Object.hasOwn(region, '__saves')) region.__saves = scopeFor(region, [...extraIds, ...topDecls(list)], loc, region.end);
+    const saves = region.__saves;
+    if (!saves) return list;
+    return [scopeMark('save', saves, region), ...list, ...(list.length && terminates(list[list.length - 1]) ? [] : [scopeMark('restore', saves, region)])];
+  };
+  const sflatten = (s) => (ts.isBlock(s) ? scopedList(s, [...s.statements]) : [s]);
+  // a break, a continue (or a forEach step's return) leaves every block between it and its target: their names are rebound first
+  const jumpRestores = (s, target) => { const out = []; for (let p = s.parent; p && p !== target; p = p.parent) if (p.__saves) out.push(scopeText(scopeMark('restore', p.__saves, p))); return out.length ? `${out.join('\n')}\n` : ''; };
   const terminates = (s) => {
     if (ts.isReturnStatement(s) || ts.isContinueStatement(s) || ts.isBreakStatement(s) || ts.isThrowStatement(s)) return true;
     if (ts.isBlock(s)) return s.statements.length > 0 && terminates(s.statements[s.statements.length - 1]);
@@ -3950,6 +4013,16 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   }
   // the first matching case selects a suffix; default is used only after every case test failed
   function coreSwitch(s, rest, fin, u, ctx = null) {
+    { // the clauses share one case block: its declarations end with the switch (saved before it, rebound after it)
+      if (!s.__scoped && !Object.hasOwn(s.caseBlock, '__saves')) s.caseBlock.__saves = scopeFor(s.caseBlock, topDecls(s.caseBlock.clauses.flatMap((c) => [...c.statements])), s, s.end);
+      const saves = s.__scoped ? null : s.caseBlock.__saves;
+      if (saves) {
+        const writes = new Set(saves.map((x) => x.name)); let hit = false; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(unparen(x.left)) && writes.has(dn(unparen(x.left).text))) hit = true; ts.forEachChild(x, w); }; w(s.expression);
+        if (hit) fail(s, 'a case declaration shadows a name the switch head assigns');
+        s.__scoped = true;
+        try { return `${scopeText(scopeMark('save', saves, s))}\n${coreSwitch(s, [scopeMark('restore', saves, s), ...rest], fin, u, ctx)}`; } finally { s.__scoped = false; }
+      }
+    }
     const clauses = [...s.caseBlock.clauses];
     if (ctx && (opaqueSwitch(s) || containsEffect(s.expression) || clauses.some((c) => ts.isCaseClause(c) && containsEffect(c.expression)))) return opaqueCompletion(s, () => faultTr(rest, fin, u, ctx), u, ctx);
     const value = `switch${tempCount++}_`, start = `start${tempCount++}_`;
@@ -3993,6 +4066,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   const bodyExpr = (list, u) => {
     if (!list.length) fail(u.node, 'a path ends without a return');
     const [s, ...rest] = list;
+    if (s.__scope) return `${scopeText(s)}\n${bodyExpr(rest, u)}`;
     if (ts.isReturnStatement(s)) return s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s);
     if (ts.isVariableStatement(s)) {
       const d = s.declarationList.declarations[0];
@@ -4001,12 +4075,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return `var ${dn(d.name.text)}${hookResultOf.has(d.initializer) ? '' : `: ${dtype(t, d)}`} := ${outerParens(expr(d.initializer, t))};\n${bodyExpr(rest, u)}`;
     }
     if (ts.isIfStatement(s)) {
-      const thenL = [...flatten(s.thenStatement), ...(terminates(s.thenStatement) ? [] : rest)];
+      const thenL = [...sflatten(s.thenStatement), ...(terminates(s.thenStatement) ? [] : rest)];
       const elseS = s.elseStatement;
-      const elseL = [...(elseS ? flatten(elseS) : []), ...(elseS && terminates(elseS) ? [] : rest)];
+      const elseL = [...(elseS ? sflatten(elseS) : []), ...(elseS && terminates(elseS) ? [] : rest)];
       return `if ${outerParens(truthy(s.expression))} then\n${indentBlock(wrapLet(bodyExpr(thenL, u)))}\nelse\n${indentBlock(wrapLet(bodyExpr(elseL, u)))}`;
     }
-    if (ts.isBlock(s)) return bodyExpr([...s.statements, ...rest], u);
+    if (ts.isBlock(s)) return bodyExpr([...scopedList(s, [...s.statements]), ...rest], u);
     return fail(s, `statement ${ts.SyntaxKind[s.kind]} cannot be an expression`);
   };
   const one = () => (real ? '1.0' : '1');
@@ -4485,10 +4559,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const cc = t.catchClause;
     const lines = [];
     if (thrown) lines.push(`var ${WORLD} := ${P.raise}(${WORLD}, ${thrown});`);
+    const scoped = scopedList(cc.block, [...cc.block.statements], t.parent, cc.variableDeclaration && ts.isIdentifier(cc.variableDeclaration.name) ? [cc.variableDeclaration.name] : []); // the catch binding and the block's declarations end with the clause
+    if (scoped[0]?.__scope?.kind === 'save') lines.push(scopeText(scoped.shift()));
     if (cc.variableDeclaration && ts.isIdentifier(cc.variableDeclaration.name)) lines.push(`var ${dn(cc.variableDeclaration.name.text)}: Any := ${P.value}(${WORLD});`);
     lines.push(`var ${WORLD} := ${P.clear}(${WORLD});`);
     const cont = t.__cont;
-    const after = [...cc.block.statements, ...(t.finallyBlock ? t.finallyBlock.statements : []), ...cont.rest];
+    const after = [...scoped, ...(t.finallyBlock ? scopedList(t.finallyBlock, [...t.finallyBlock.statements]) : []), ...cont.rest];
     return `${lines.join('\n')}\n${tr(after, cont.fin, u)}`;
   }
   const unitNameOfCall = (n) => {
@@ -4517,7 +4593,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // normal, return and throw are separate continuations; finally runs before the saved completion
   function faultTry(s, next, u, ctx) {
     const P = faultPreds();
-    const cleanup = (resume) => s.finallyBlock ? faultTr([...s.finallyBlock.statements], resume, u, { ...ctx, check: true }) : resume();
+    const cleanup = (resume) => s.finallyBlock ? faultTr(scopedList(s.finallyBlock, [...s.finallyBlock.statements]), resume, u, { ...ctx, check: true }) : resume();
     const ret = (code) => {
       const saved = `return${tempCount++}_`;
       return `var ${saved} := ${code};\n${cleanup(() => ctx.ret(saved))}`;
@@ -4530,15 +4606,18 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const caught = () => {
       const cc = s.catchClause;
       if (!cc) return fault();
+      const scoped = scopedList(cc.block, [...cc.block.statements], s.parent, cc.variableDeclaration && ts.isIdentifier(cc.variableDeclaration.name) ? [cc.variableDeclaration.name] : []); // the catch binding and the block's declarations end with the clause
+      const saves = scoped[0]?.__scope?.kind === 'save' ? `${scopeText(scoped[0])}\n` : '';
       const binding = cc.variableDeclaration ? `var ${dn(cc.variableDeclaration.name.text)}: Any := ${P.value}(${WORLD});\n` : '';
-      return `${binding}var ${WORLD} := ${P.clear}(${WORLD});\n${faultTr([...cc.block.statements], done, u, { ret, fault, check: !!s.finallyBlock || !!ctx.check })}`;
+      return `${saves}${binding}var ${WORLD} := ${P.clear}(${WORLD});\n${faultTr(saves ? scoped.slice(1) : scoped, done, u, { ret, fault, check: !!s.finallyBlock || !!ctx.check })}`;
     };
-    return faultTr([...s.tryBlock.statements], done, u, { ret, fault: caught, check: true });
+    return faultTr(scopedList(s.tryBlock, [...s.tryBlock.statements]), done, u, { ret, fault: caught, check: true });
   }
   function faultTr(list, fin, u, ctx) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
     const next = () => faultTr(rest, fin, u, ctx);
+    if (s.__scope) return `${scopeText(s)}\n${next()}`;
     { const inl = inlineCall(s); if (inl) return faultTr([...inl, ...rest], fin, u, ctx); if (procDecl(s)) return next(); } // stage 5 rank 21
     if (!ts.isTryStatement(s) && opaqueExceptionTry(s, checker)) {
       let propagates = false;
@@ -4551,14 +4630,14 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return propagates ? opaqueCompletion(s, next, u, ctx) : tr([s], next, u);
     }
     switch (s.kind) {
-      case K.Block: return faultTr([...s.statements, ...rest], fin, u, ctx);
+      case K.Block: return faultTr([...scopedList(s, [...s.statements]), ...rest], fin, u, ctx);
       case K.EmptyStatement: return next();
       case K.TryStatement: return exactTry(s) ? faultTry(s, next, u, ctx) : opaqueCompletion(s, next, u, ctx);
       case K.ReturnStatement: return faultEval(() => s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s), ctx.ret, ctx);
       case K.ThrowStatement: return faultEval(() => expr(s.expression, anyTarget()), (value) => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${value});\n${ctx.fault()}`, ctx);
       case K.IfStatement: return faultEval(() => truthy(s.expression), (cond) => {
-        const yes = faultTr(flatten(s.thenStatement), next, u, ctx);
-        const no = s.elseStatement ? faultTr(flatten(s.elseStatement), next, u, ctx) : next();
+        const yes = faultTr(sflatten(s.thenStatement), next, u, ctx);
+        const no = s.elseStatement ? faultTr(sflatten(s.elseStatement), next, u, ctx) : next();
         return `if ${outerParens(cond)} then\n${indentBlock(wrapLet(yes))}\nelse\n${indentBlock(wrapLet(no))}`;
       }, ctx);
       case K.SwitchStatement: return coreSwitch(s, rest, fin, u, ctx);
@@ -4598,6 +4677,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   function tr(list, fin, u) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
+    if (s.__scope) return `${scopeText(s)}\n${tr(rest, fin, u)}`; // a block's own declarations end with it (scopedList)
     { const inl = inlineCall(s); if (inl) return tr([...inl, ...rest], fin, u); if (procDecl(s)) return tr(rest, fin, u); } // stage 5 rank 21
     const more0 = (r = rest) => tr(r, fin, u);
     // after a statement of an exact try body that may fault: the catch path, else what follows
@@ -4605,13 +4685,13 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const more = (r = rest) => (tryOf(s) && containsEffect(s) ? guard('', r) : more0(r));
     switch (s.kind) {
       case K.TryStatement: return exactTry(s) ? faultTry(s, () => tr(rest, fin, u), u, { ret: retIn, fault: () => retIn(faultValue(u)) }) : opaqueBlock(s, rest, fin, u);
-      case K.Block: return tr([...s.statements, ...rest], fin, u);
+      case K.Block: return tr([...scopedList(s, [...s.statements]), ...rest], fin, u);
       case K.EmptyStatement: return more();
       case K.ReturnStatement: {
         if (yieldState) return retIn(wrapRet(yieldState.name));
         const top = loopCtx[loopCtx.length - 1];
         if (top && top.forEach && top.collect) return callbackStep(s.expression, top); // a callback return supplies the next result state
-        if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
+        if (top && top.forEach) { let cb = s.parent; while (cb && !ts.isFunctionLike(cb)) cb = cb.parent; const pre = jumpRestores(s, cb); return pre + capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); } // a return inside forEach ends one step
         return capture(() => { const rt = retType(u); const code = !s.expression ? bareReturn(u, s) : expr(s.expression, rt); return u.isAsync && !loopCtx.length && s.expression && awaitsHere(s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${wrapLet(tryOf(s) && ts.isAwaitExpression(unparen(s.expression)) ? catchPath(tryOf(s), u) : asyncFailure(u))} else ${retIn(code)}` : retIn(code); });
       }
       case K.ThrowStatement: return capture(() => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${expr(s.expression, anyTarget())});\n${retIn(faultValue(u))}`);
@@ -4657,7 +4737,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         if ((tryOf(s) && containsEffect(s)) || (u.isAsync && !loopCtx.length && awaitsHere(s))) return guard(line.trim() ? line : '');
         return line.trim() ? `${line}\n${more0()}` : more0();
       }
-      case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: flatten(s.thenStatement) }], s.elseStatement ? flatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
+      case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: sflatten(s.thenStatement) }], s.elseStatement ? sflatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
       case K.SwitchStatement: return isOpaqueStmt(s) ? opaqueBlock(s, rest, fin, u) : coreSwitch(s, rest, fin, u);
       case K.LabeledStatement: return isOpaqueStmt(s.statement) ? opaqueBlock(s, rest, fin, u) : tr([s.statement, ...rest], fin, u);
       case K.TypeAliasDeclaration: case K.InterfaceDeclaration: return more(); // stage 5 rank 16: erased at run time
@@ -4669,16 +4749,19 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       case K.DoStatement: case K.ForInStatement: case K.ForOfStatement: case K.ForStatement: case K.WhileStatement: {
         if (isOpaqueStmt(s)) return opaqueBlock(s, rest, fin, u);
-        const init = generalFor(s) ? capture(() => tr(forInit(s), () => '', u)).trim() : ''; // a general for's init runs before the loop
-        let body; const h = capture(() => { body = coreLoop(s, rest, fin, u); return ''; }); body = h.trim() ? `${h.trim()}\n${body}` : body; return init ? `${init}\n${body}` : body;
+        const fsaves = generalFor(s) && s.initializer && ts.isVariableDeclarationList(s.initializer) ? scopeFor(s, topDecls([ts.factory.createVariableStatement(undefined, s.initializer)]), s.parent, s.end) : null; // the header's declarations end with the loop
+        const init = (fsaves ? `${scopeText(scopeMark('save', fsaves, s))}\n` : '') + (generalFor(s) ? capture(() => tr(forInit(s), () => '', u)).trim() : ''); // a general for's init runs before the loop
+        const after = fsaves ? [scopeMark('restore', fsaves, s), ...rest] : rest;
+        let body; const h = capture(() => { body = coreLoop(s, after, fin, u); return ''; }); body = h.trim() ? `${h.trim()}\n${body}` : body; return init.trim() ? `${init.trim()}\n${body}` : body;
       }
       case K.ContinueStatement: case K.BreakStatement: {
         const isBreak = ts.isBreakStatement(s);
-        if (s.label) return dispatchJump(String((isBreak ? 1 : -1) * labelId(jumpTarget(s))), [(isBreak ? 1 : -1) * labelId(jumpTarget(s))]);
+        const pre = jumpRestores(s, jumpTarget(s)); // the blocks the jump leaves end here
+        if (s.label) return pre + dispatchJump(String((isBreak ? 1 : -1) * labelId(jumpTarget(s))), [(isBreak ? 1 : -1) * labelId(jumpTarget(s))]);
         const sw = switchCtx[switchCtx.length - 1];
-        if (isBreak && sw && sw.depth === loopCtx.length) return sw.brk();
+        if (isBreak && sw && sw.depth === loopCtx.length) return pre + sw.brk();
         if (!loopCtx.length) fail(s, 'break or continue outside a loop');
-        return isBreak ? loopCtx[loopCtx.length - 1].brk() : loopCtx[loopCtx.length - 1].cont();
+        return pre + (isBreak ? loopCtx[loopCtx.length - 1].brk() : loopCtx[loopCtx.length - 1].cont());
       }
       default: return fail(s, `statement ${ts.SyntaxKind[s.kind]} is not translated`);
     }
@@ -4886,7 +4969,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const next = () => `${hn}(${iter}, ${remaining} - 1, ${names.join(', ')})`;
     loopCtx.push({ cont: next, brk: state, ret: () => fail(s, 'async iterator abrupt completion needs an opaque loop') });
     let step;
-    try { step = tr(flatten(s.statement), next, u); } finally { loopCtx.pop(); }
+    try { step = tr(sflatten(s.statement), next, u); } finally { loopCtx.pop(); }
     coreHelpers.push(`function ${hn}${tclause([...vars.map((v) => v.d), T])}(${iter}: ${IT}, ${remaining}: nat, ${vars.map((v) => `${dn(v.name)}: ${v.d}`).join(', ')}): ${result}
 ${fuelInScope() ? `  requires ${FUEL} > 0\n  decreases ${FUEL}, ${remaining}` : `  decreases ${remaining}`}
 {
@@ -5120,7 +5203,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const stepStmts = generalFor(s) && s.incrementor ? [forStep(s)] : [];
     loopCtx.push({ label: labelId(s), jump: (code) => jumps.length ? completed(code) : fail(s, 'a labelled exit lacks its completion channel'), cont: stepStmts.length ? () => tr(stepStmts, next, u) : next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ? { ...s.__collect, element: ts.isIdentifier(s.initializer.declarations[0].name) ? dn(s.initializer.declarations[0].name.text) : `seq${id}[idx${id}]`, index: `idx${id}` } : null, ret: (code) => (returns ? completed('0', `Some(${code})`) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
-    try { bodyE = tr(derivedBound(s)?.body ?? [...flatten(s.statement), ...stepStmts], s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next, u); } finally { loopCtx.pop(); } // the step is the body's last statement; only `continue` runs it through loopCtx.cont
+    try { bodyE = tr(derivedBound(s)?.body ? (ts.isBlock(s.statement) ? scopedList(s.statement, derivedBound(s).body) : derivedBound(s).body) : [...sflatten(s.statement), ...stepStmts], s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next, u); } finally { loopCtx.pop(); } // the step is the body's last statement; only `continue` runs it through loopCtx.cont
     const params = [...lead, ...constParams, ...stateParams];
     const selfArgs = [...lead.map((p) => p.split(':')[0]), ...constArgs, ...mNames];
     const callS = `${hn}(${selfArgs.join(', ')})`;
