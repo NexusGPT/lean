@@ -154,3 +154,17 @@ Census (resolved, 39 roots), strict graph 564 -> 572, own syntax 1449 -> 1471; `
 ```text
 {"files":23359,"units":53918,"core":572,"heapOwnFit":1471,"mirrorMismatch":1329,"planErrorCount":0,"seconds":1246}
 ```
+
+## 8b. Two corrections of the stage 4 core
+
+Found by checking every other pair against the widened core. `a === b` between a value that may be `null` and one that
+may be `undefined` read both absences as one Option's `None`, so `a === b` with `a = null`, `b = undefined` was `true`
+where JavaScript says `false` (pair `null_undefined`'s `crossOption` became a false proof once step 3 let its candidate
+in); such a comparison now stays out. An order `<` of two strings was emitted as a Dafny order of sequences, a type
+error (nothing proved); it is now the ordinary lane's `StrLt` (the order of code units), and an order of anything but two
+numbers or two strings stays out. Pair `heap5_absences`: `crossNull` (WITNESS, unproved), `later` (`b > a` for `a < b`:
+proved), `before` (untouched). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 572 -> 572, own syntax 1471 -> 1471:
+```text
+{"files":23359,"units":53918,"core":572,"heapOwnFit":1471,"mirrorMismatch":1329,"planErrorCount":0,"seconds":427}
+```
