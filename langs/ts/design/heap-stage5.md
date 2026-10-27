@@ -237,3 +237,25 @@ Census (resolved, 39 roots), strict graph 672 -> 706, own syntax 1675 -> 1759; `
 ```text
 {"files":23359,"units":53918,"core":706,"heapOwnFit":1759,"mirrorMismatch":1617,"planErrorCount":0,"seconds":377}
 ```
+
+## 13. Arithmetic
+
+Reading: `*` is exact; `%` is the truncated remainder (the dividend's sign), `RemT_int`, and in a real file `/` is
+`DivT_real`: each total, a zero divisor marking the world (`ZeroMark_int(hw_, d)`, `oob := true`), so a unit that divides
+carries `// INRANGE` and its lemma shows neither side divides by zero. The bitwise operators (`& | ^ << >> >>>`, `~`)
+read through the ordinary lane's helpers (ToInt32 and ToUint32 of the operands, `bv32`). Unary minus and plus on a
+number; `x++` and `x--` as statements are `x += 1` and `x -= 1` (a loop carries a local an update writes); `*=` joins
+`+=` and `-=` (the compound writes the lint admits).
+Soundness: JavaScript answers `NaN` or an infinity for a zero divisor, which neither the int nor the real reading
+holds: the mark makes the lemma's conclusion fail there, never a default value read as the answer. A negative zero is
+equal to zero under `===`, prints as `"0"`, and every division by it marks the world; `Object.is` stays out.
+Out: `**`, `/` in an int file (it makes the file real, outside `Math.floor` and `Math.trunc`: step 14), a division
+inside a callback (its mark has nowhere to go), an update used as a value (`a[i++]`), the compound writes the lint
+refuses (`%=`, `/=`, the bitwise ones).
+Pair `heap5_arith`: `total` (WITNESS), `evenQty` (a negated opposite test: proved), `bump` (`++` as `+= 1`, `|` with
+its operands swapped: proved), `share` (the divisor named first: equal in JavaScript and unproved, since the lemma
+must show no zero divisor), `debt` (untouched negation). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 706 -> 735, own syntax 1759 -> 1853; `curve.md` expects 1485 after its step 13:
+```text
+{"files":23359,"units":53918,"core":735,"heapOwnFit":1853,"mirrorMismatch":1711,"planErrorCount":0,"seconds":330}
+```

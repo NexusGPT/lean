@@ -192,6 +192,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const MUTATOR_ARITY = { push: [1, 1], unshift: [1, 1], pop: [0, 0], shift: [0, 0], reverse: [0, 0], splice: [2, Infinity], sort: [1, 1] }; // splice: start, delete count, then insertions; sort: the comparator
   const isAssignCall = (e) => ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign'; // Object.assign(t, s) as a statement: the table's Assign_ row on same-shape records
   const BINOPS = new Set([K.PlusToken, K.MinusToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken]);
+  // arithmetic beyond + and -: `*`; `%` (a truncated remainder, the dividend's sign) and, in a real file, `/`, each total
+  // with a zero divisor marking the world (JavaScript answers NaN or an infinity, which no int or real models); the
+  // bitwise operators through the ordinary lane's total helpers (ToInt32 and ToUint32 of the operands)
+  const ARITH = { [K.AsteriskToken]: '*', [K.PercentToken]: '%', [K.SlashToken]: '/', [K.AmpersandToken]: 'JsBitAnd', [K.BarToken]: 'JsBitOr', [K.CaretToken]: 'JsBitXor', [K.LessThanLessThanToken]: 'JsShl', [K.GreaterThanGreaterThanToken]: 'JsShr', [K.GreaterThanGreaterThanGreaterThanToken]: 'JsUshr' };
+  const COMPOUND = { [K.PlusEqualsToken]: K.PlusToken, [K.MinusEqualsToken]: K.MinusToken, [K.AsteriskEqualsToken]: K.AsteriskToken }; // the compound writes the lint admits
+  let divUsed = false; // RemT_, DivT_ and ZeroMark_ in the prelude
   const unparen = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
   // `xs.forEach((x) => body)` as a statement is the loop `for (const x of xs) body` (the length read once, an
   // index visited while it is below the current length; nothing in a core loop body grows an array, so the two visit
@@ -283,6 +289,18 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (ts.isBinaryExpression(x)) { const k = x.operatorToken.kind; if (!BINOPS.has(k)) return false; if ((k === K.AmpersandAmpersandToken || k === K.BarBarToken) && !(isBoolT(typeOf(x.left)) && isBoolT(typeOf(x.right)))) return false; if (k === K.PlusToken && !((typeOf(x.left).flags & TF.NumberLike) && (typeOf(x.right).flags & TF.NumberLike)) && !((typeOf(x.left).flags & TF.StringLike) && (typeOf(x.right).flags & TF.StringLike))) return false; return constExpr(x.left, depth) && constExpr(x.right, depth); }
     return false;
   }
+  // a negative zero: `-x` of a zero, `a * b` of a zero and a negative, a remainder or a quotient of zero with a negative
+  // operand, a real rounded up to zero from below. JavaScript tells it from zero (Object.is, a division by it; lane B's
+  // observation names it) and the int or real reading does not, so where it may escape the world is marked; a
+  // comparison, a truthiness test or a conversion to a string absorbs it (-0 === 0, "0"), and there no mark is needed.
+  // (A negative zero handed in as an input is the reading's general gap: a number is read as its value.)
+  const absorbed = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; if (!p) return false; if (ts.isBinaryExpression(p) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(p.operatorToken.kind)) return true; if (ts.isTemplateSpan(p)) return true; if ((ts.isIfStatement(p) || ts.isConditionalExpression(p)) && p.expression === x || (ts.isConditionalExpression(p) && p.condition === x)) return true; if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true; return false; };
+  const negZeroRisk = (e) => {
+    if (absorbed(e)) return false;
+    if (ts.isPrefixUnaryExpression(e) && e.operator === K.MinusToken) { const o = unparen(e.operand); return !(ts.isNumericLiteral(o) && Number(o.text.replace(/_/g, '')) !== 0); }
+    if (ts.isBinaryExpression(e) && [K.AsteriskToken, K.PercentToken, K.SlashToken].includes(e.operatorToken.kind)) return true;
+    return false;
+  };
   const impUsed = new Map(); // key -> Dafny type of each imported constant a core unit reads
   const strUsed = new Set();
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
@@ -333,6 +351,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const checkExpr = (e0) => {
       if (!ok) return;
       const e = unparen(e0);
+      if (negZeroRisk(e)) { if (lambdaDepth) return no('a negative zero inside a callback (its mark has nowhere to go)'); usesIndex = true; } // the world is marked where it may escape
       if (isAbsent(e)) return absentOk(e) ? undefined : no('undefined or null outside an optional place');
       if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!declaredInside(e)) { if (!outsideValue(e)) no(`outside name ${e.text}`); } else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
       if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return;
@@ -386,8 +405,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isBinaryExpression(e) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken].includes(e.operatorToken.kind) && !(isNumT(typeOf(e.left)) && isNumT(typeOf(e.right))) && !(helper && (typeOf(e.left).flags & TF.StringLike) && (typeOf(e.right).flags & TF.StringLike))) return no('an order between values that are not both numbers or both strings'); // strings by their code units (StrLt)
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(e.operatorToken.kind)) { const a = shapeOf(typeOf(e.left)), b = shapeOf(typeOf(e.right)); if (a?.kind === 'opt' && b?.kind === 'opt' && a.absent !== b.absent) return no('=== across null and undefined (one Option would hold both absences)'); } // null !== undefined: two absences of different kinds are not one value
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.InKeyword) { if (shapeOf(typeOf(e.right))?.kind !== 'dict' || !(typeOf(e.left).flags & TF.StringLike)) return no('in on a non-dictionary'); checkExpr(e.left); return checkExpr(e.right); }
+      if (ts.isBinaryExpression(e) && Object.hasOwn(ARITH, e.operatorToken.kind)) { const k = e.operatorToken.kind; if (!isNumT(typeOf(e.left)) || !isNumT(typeOf(e.right))) return no(`operator ${e.operatorToken.getText(sf)} on a non-number`); if (k === K.SlashToken && !isReal) return no('division in an int file'); if ((k === K.SlashToken || k === K.PercentToken) && lambdaDepth) return no('division inside a callback'); if (k === K.SlashToken || k === K.PercentToken) usesIndex = true; checkExpr(e.left); return checkExpr(e.right); } // a zero divisor marks the world: the lemma shows it never does
       if (ts.isBinaryExpression(e)) { if (!BINOPS.has(e.operatorToken.kind)) return no(`operator ${e.operatorToken.getText(sf)}`); if ((e.operatorToken.kind === K.AmpersandAmpersandToken || e.operatorToken.kind === K.BarBarToken) && !(isBoolT(typeOf(e.left)) && isBoolT(typeOf(e.right)))) return no('logic on values'); if (e.operatorToken.kind === K.PlusToken && !((typeOf(e.left).flags & TF.NumberLike) && (typeOf(e.right).flags & TF.NumberLike)) && !((typeOf(e.left).flags & TF.StringLike) && (typeOf(e.right).flags & TF.StringLike))) return no('mixed + (a number joined to a string converts it)'); checkExpr(e.left); checkExpr(e.right); return; }
-      if (ts.isPrefixUnaryExpression(e)) { if (e.operator !== K.ExclamationToken) return no('prefix operator (a negation can make a negative zero the int reading does not see)'); return checkCond(e.operand); }
+      if (ts.isPrefixUnaryExpression(e) && [K.MinusToken, K.PlusToken, K.TildeToken].includes(e.operator)) { if (!isNumT(typeOf(e.operand))) return no('prefix operator on a non-number (a conversion)'); return checkExpr(e.operand); } // a negative zero is equal to zero under ===, and every division by it marks the world
+      if (ts.isPrefixUnaryExpression(e)) { if (e.operator !== K.ExclamationToken) return no('prefix operator'); return checkCond(e.operand); }
       if ((ts.isArrayLiteralExpression(e) || ts.isObjectLiteralExpression(e) || ts.isNewExpression(e)) && lambdaDepth) return no('allocation inside a callback');
       if (ts.isArrayLiteralExpression(e)) { if (!arrShape(e)) return no(`array literal type: ${shapeWhy(typeOf(e))}`); for (const x of e.elements) checkExpr(ts.isSpreadElement(x) ? x.expression : x); return; }
       if (ts.isObjectLiteralExpression(e) && litShape(e)?.kind === 'dict') return e.properties.length ? no('dictionary literal with keys') : undefined; // `{}`: an empty dictionary of Object.prototype
@@ -474,7 +495,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         }
         if (ts.isExpressionStatement(s)) {
           const e = unparen(s.expression);
-          if (ts.isBinaryExpression(e) && [K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken].includes(e.operatorToken.kind)) { if (e.operatorToken.kind !== K.EqualsToken && targetShape(e.left)?.kind === 'opt') return no('compound write of a value that may be absent'); checkTarget(e.left); checkExpr(e.right); continue; }
+          if (ts.isBinaryExpression(e) && (e.operatorToken.kind === K.EqualsToken || Object.hasOwn(COMPOUND, e.operatorToken.kind))) { const k = e.operatorToken.kind; if (k !== K.EqualsToken && targetShape(e.left)?.kind === 'opt') return no('compound write of a value that may be absent'); if (k !== K.EqualsToken && k !== K.PlusEqualsToken && (!isNumT(typeOf(e.left)) || !isNumT(typeOf(e.right)))) return no('compound write on a non-number'); if (k === K.PlusEqualsToken && !((typeOf(e.left).flags & TF.NumberLike) && (typeOf(e.right).flags & TF.NumberLike)) && !((typeOf(e.left).flags & TF.StringLike) && (typeOf(e.right).flags & TF.StringLike))) return no('mixed += (a number joined to a string converts it)'); if (k === K.AsteriskEqualsToken) usesIndex = true; checkTarget(e.left); checkExpr(e.right); continue; } // *= stores a product, which may be a negative zero
+          if ((ts.isPostfixUnaryExpression(e) || ts.isPrefixUnaryExpression(e)) && [K.PlusPlusToken, K.MinusMinusToken].includes(e.operator)) { if (targetShape(e.operand)?.kind === 'opt' || !isNumT(typeOf(e.operand))) return no('update of a non-number'); checkTarget(e.operand); continue; } // x++ as a statement is x += 1
           if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['set', 'add', 'delete'].includes(e.expression.name.text) && (() => { const sc = shapeOf(typeOf(e.expression.expression)); return sc && (sc.kind === 'map' || sc.kind === 'set'); })()) { // the table's cell rows as statements
             const sc = shapeOf(typeOf(e.expression.expression)); const m = e.expression.name.text;
             if (sc.kind === 'map' ? !((m === 'set' && e.arguments.length === 2) || (m === 'delete' && e.arguments.length === 1)) : !((m === 'add' || m === 'delete') && e.arguments.length === 1)) return no('cell mutator arity');
@@ -639,6 +661,14 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (strUsed.has('join_string')) out.push('function JoinStr(xs: seq<string>, sep: string): string decreases |xs| { if |xs| == 0 then "" else if |xs| == 1 then xs[0] else xs[0] + sep + JoinStr(xs[1..], sep) }');
     for (const d of ['int', 'real']) if (strUsed.has(`join_${d}`)) out.push(`function JoinNum_${d}(xs: seq<${d}>, sep: string): string`); // numbers are formatted first: bodiless
     for (const [key, d] of [...impUsed].sort()) out.push(`function ${key}(): ${d}`); // an imported constant: the environment's value, the same on both sides
+    if (divUsed) { // a zero divisor: JavaScript answers NaN or an infinity; the world is marked and the value is a default
+      out.push(`function ZeroMark_${NUM}(hw: HWorld, d: ${NUM}): HWorld { if d == ${isReal ? '0.0' : '0'} then hw.(oob := true) else hw }`);
+      out.push('function NegZeroMark(hw: HWorld, z: bool): HWorld { if z then hw.(oob := true) else hw }'); // a negative zero may escape: not modelled from there
+      out.push(isReal ? 'function RemT_real(a: real, b: real): real { if b == 0.0 then 0.0 else a - b * (TruncR(a / b) as real) }' : 'function RemT_int(a: int, b: int): int { if b == 0 then 0 else a - b * TruncDivI(a, b) }'); // the remainder of a truncated division: the dividend's sign
+      if (isReal) out.push('function DivT_real(a: real, b: real): real { if b == 0.0 then 0.0 else a / b }');
+      else out.push('function TruncDivI(a: int, b: int): int requires b != 0 { var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q }');
+    }
+    if (isReal && (divUsed || strUsed.has('truncr'))) out.push('function TruncR(a: real): int { if a < 0.0 then -(-a).Floor else a.Floor }'); // the truncation of a real toward zero
     if (strUsed.has('re_test')) out.push('function ReTest(re: string, s: string): bool'); // RegExp.prototype.test of a literal: a function of its text and the input
     if (strUsed.has('re_replace')) out.push('function ReReplace(re: string, s: string, r: string): string'); // replace by a literal regular expression, the replacement's $ patterns included
     if (strUsed.has('re_split')) out.push('function ReSplit(re: string, s: string): seq<string>'); // split by a literal regular expression: the pieces (captures included)
@@ -844,7 +874,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const v = expr(e.arguments[0]); const it = `Items_${s.key}(${HW}, ${r})`; const E = valD(s.elem); const m = e.expression.name.text;
         if (m === 'includes') return `(${v} in ${it})`; if (m === 'indexOf') return `${helper('IndexOf', [E])}(${it}, ${v})`; return `${helper('At', [E])}(${it}, ${v})`;
       }
-      if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!${cond(e.operand)}` : `(-(${expr(e.operand)}))`;
+      if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!${cond(e.operand)}` : e.operator === K.PlusToken ? expr(e.operand) : e.operator === K.TildeToken ? `${helper('JsBitNot', [NUM])}(${expr(e.operand)})` : negZeroRisk(e) ? (() => { divUsed = true; const x = bind(expr(e.operand), 'n'); lines.push(`var ${HW} := NegZeroMark(${HW}, ${x} == ${isReal ? '0.0' : '0'});`); return `(-(${x}))`; })() : `(-(${expr(e.operand)}))`;
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { const ls = locShape(e); const a = expr(e.left); return ls.kind === 'opt' ? `OptOrOpt(${a}, ${exprAs(e.right, ls)})` : `OptOr(${a}, ${expr(e.right)})`; }
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind) && (isAbsent(e.left) || isAbsent(e.right))) {
         const lit = isAbsent(e.left) ? unparen(e.left) : unparen(e.right), other = isAbsent(e.left) ? e.right : e.left; const sh = locShape(other); const c = expr(other);
@@ -853,6 +883,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return `(${c}).${negated ? 'Some' : 'None'}?`;
       }
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(e.operatorToken.kind) && (locShape(e.left)?.kind === 'opt' || locShape(e.right)?.kind === 'opt')) { const o = locShape(e.left)?.kind === 'opt' ? locShape(e.left) : locShape(e.right); return `(${exprAs(e.left, o)} ${e.operatorToken.kind === K.EqualsEqualsEqualsToken ? '==' : '!='} ${exprAs(e.right, o)})`; }
+      if (ts.isBinaryExpression(e) && Object.hasOwn(ARITH, e.operatorToken.kind)) { const l = expr(e.left), r = expr(e.right); return arith(e.operatorToken.kind, l, r, negZeroRisk(e)); }
       if (ts.isBinaryExpression(e) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken].includes(e.operatorToken.kind) && (typeOf(e.left).flags & TF.StringLike)) { const l = expr(e.left), r = expr(e.right); const lt = helper('StrLt', ['string']); const k = e.operatorToken.kind; return k === K.LessThanToken ? `${lt}(${l}, ${r})` : k === K.GreaterThanToken ? `${lt}(${r}, ${l})` : k === K.LessThanEqualsToken ? `!${lt}(${r}, ${l})` : `!${lt}(${l}, ${r})`; } // the order of code units (design/strings.md)
       if (ts.isBinaryExpression(e)) {
         const op = { [K.PlusToken]: '+', [K.MinusToken]: '-', [K.LessThanToken]: '<', [K.LessThanEqualsToken]: '<=', [K.GreaterThanToken]: '>', [K.GreaterThanEqualsToken]: '>=', [K.EqualsEqualsEqualsToken]: '==', [K.ExclamationEqualsEqualsToken]: '!=', [K.AmpersandAmpersandToken]: '&&', [K.BarBarToken]: '||' }[e.operatorToken.kind];
@@ -936,6 +967,15 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     }
     // an element's receiver and index, each evaluated once and bound
     const bind = (code, p) => { if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(code) || /^-?\d+(\.\d+)?$/.test(code)) return code; if (inLam) return `(${code})`; const x = fresh(p); lines.push(`var ${x} := ${code};`); return x; }; // a name or a literal is its own value; anything else is bound once (inside a callback, where nothing writes, it is written in place)
+    // a numeric operator on two evaluated operands: * exact, % and / total with a zero divisor marking the world, the
+    // bitwise operators through the ordinary lane's helpers
+    function arith(k, l, r, risk = true) { // risk: the result may escape, so a negative zero marks the world
+      const Z = isReal ? '0.0' : '0';
+      if (k === K.PlusToken) return `(${l} + ${r})`; if (k === K.MinusToken) return `(${l} - ${r})`;
+      if (k === K.AsteriskToken) { if (!risk) return `(${l} * ${r})`; divUsed = true; const a = bind(l, 'm'), b = bind(r, 'm'); lines.push(`var ${HW} := NegZeroMark(${HW}, ${a} * ${b} == ${Z} && (${a} < ${Z} || ${b} < ${Z}));`); return `(${a} * ${b})`; }
+      if (k === K.PercentToken || k === K.SlashToken) { divUsed = true; const a = bind(l, 'm'); const d = bind(r, 'd'); lines.push(`var ${HW} := ZeroMark_${NUM}(${HW}, ${d});`); const v = `${k === K.SlashToken ? 'DivT' : 'RemT'}_${NUM}(${a}, ${d})`; if (risk) lines.push(`var ${HW} := NegZeroMark(${HW}, ${v} == ${Z} && (${a} < ${Z} || ${d} < ${Z}));`); return v; }
+      return `${helper(ARITH[k], [NUM])}(${l}, ${r})`;
+    }
     function element(e) { const s = shapeExpr(e.expression); const r = bind(expr(e.expression), 'a'); const i = bind(expr(e.argumentExpression), 'i'); return [s, r, i]; }
     const dictRead = (s, r, i) => { lines.push(`var ${HW} := DictMark_${s.key}(${HW}, ${r}, ${i});`); return `DictGet_${s.key}(${HW}, ${r}, ${i})`; };
     // a write target in JavaScript order: its receiver (and index) first, then the right side, then the store
@@ -977,7 +1017,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           const op = e.operatorToken.kind;
           const tg = target(e.left);
           if (op === K.EqualsToken) { const v = tg.as(e.right); tg.write(v); }
-          else { let cur = tg.read(); if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(cur)) { const c = fresh('v'); lines.push(`var ${c} := ${cur};`); cur = c; } const v = expr(e.right); tg.write(`(${cur} ${op === K.PlusEqualsToken ? '+' : '-'} ${v})`); }
+          else { let cur = tg.read(); if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(cur)) { const c = fresh('v'); lines.push(`var ${c} := ${cur};`); cur = c; } const v = expr(e.right); tg.write(arith(COMPOUND[op], cur, v)); }
+          out.push(flush()); continue;
+        }
+        if ((ts.isPostfixUnaryExpression(e) || ts.isPrefixUnaryExpression(e)) && [K.PlusPlusToken, K.MinusMinusToken].includes(e.operator)) { // x++ is x += 1: the target read once, then written
+          const tg = target(e.operand); let cur = tg.read(); if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(cur)) { const c = fresh('v'); lines.push(`var ${c} := ${cur};`); cur = c; } tg.write(`(${cur} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${isReal ? '1.0' : '1'})`);
           out.push(flush()); continue;
         }
         if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['set', 'add', 'delete'].includes(e.expression.name.text) && ['map', 'set'].includes(shapeExpr(e.expression.expression)?.kind)) { // cell statements
@@ -1019,6 +1063,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (n.kind === K.ThisKeyword) usesThis = true;
         if (ts.isIdentifier(n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && ts.isPropertyAssignment(n.parent) && n.parent.name === n)) { const d = declaredIn(n); if (d && d.pos >= u.fn.pos && d.end <= u.fn.end && !inner(d) && (ts.isVariableDeclaration(d) || ts.isParameter(d))) read.set(n.text, d); }
         if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(unparen(n.left))) assigned.add(unparen(n.left).text);
+        if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && ts.isIdentifier(unparen(n.operand))) assigned.add(unparen(n.operand).text); // an update is an assignment: the local is carried
         ts.forEachChild(n, w);
       };
       w(s.statement); if (!forOf) w(s.condition);
