@@ -1,0 +1,13 @@
+{
+ "scope": ["banner", "panel", "pill", "plain"],
+ "equal": {"banner": false, "panel": false, "pill": false, "plain": true},
+ "why": "Resolved styles under the project's own Tailwind v3 configuration (tailwind.config.js in this folder, read as a literal by exec/styles.mjs, its theme.extend adding brand-500, brand-600 and the spacing step 18). Banner's bg-brand-500 becomes bg-brand-600: another background colour, a WITNESS in both layers, the styles witness carrying both declarations. Panel writes text-brand-500 p-18 as px-18 py-18 text-[#1f6feb]: the token's value and the four padding longhands, equal in the styles layer (v3 writes a configured colour's value), a tree WITNESS (the attribute's text). Pill changes px-2 to px-3 beside bg-brand-900, a shade the configuration does not define: unknown, never equal and never a styles WITNESS. Plain is untouched.",
+ "heap": false,
+ "b": {"Banner": "WITNESS", "Panel": "WITNESS", "Pill": "WITNESS", "Plain": "PASS-bounded"},
+ "layers": [
+  {"unit": "Banner", "verdict": "WITNESS", "tree": "WITNESS", "styles": "WITNESS"},
+  {"unit": "Panel", "verdict": "WITNESS", "tree": "WITNESS", "styles": "PASS-bounded"},
+  {"unit": "Pill", "verdict": "WITNESS", "tree": "WITNESS", "styles": "unknown", "unsupported": ["bg-brand-900"]},
+  {"unit": "Plain", "verdict": "PASS-proved", "tree": "PASS-bounded", "styles": "PASS-bounded"}
+ ]
+}

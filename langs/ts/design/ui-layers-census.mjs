@@ -4,21 +4,25 @@
 // A front-end unit is a top-level function or arrow const of a .tsx file whose body holds JSX. Per root it counts the
 // units the tree layer reaches (a component tag declared in the same file or imported by a relative or `@/` path, which
 // --deep renders; a useContext call; a provider element), and the units the styles layer reads (a className given as a
-// string literal), with every class token of those literals resolved against the pinned table (exec/styles.mjs).
+// string literal), with every class token of those literals resolved against the pinned table with the file's project
+// configuration layered over it (exec/styles.mjs projectConfig: the nearest tailwind.config.* or CSS entry importing
+// tailwindcss); `--pinned` resolves against the pinned table alone (the measure before the project read).
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts } from '../common.mjs';
-import { resolveClasses } from '../exec/styles.mjs';
+import { resolveClasses, projectConfig } from '../exec/styles.mjs';
 
 const SKIP = new Set(['node_modules', 'dist', 'build', '.next', 'out', '.git', 'coverage']);
 function* files(dir) { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { if (SKIP.has(e.name)) continue; const p = path.join(dir, e.name); if (e.isDirectory()) yield* files(p); else if (e.isFile() && p.endsWith('.tsx') && !p.endsWith('.d.tsx')) yield p; } }
 const hasJsx = (n) => { let f = false; const w = (x) => { if (f) return; if (ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x) || ts.isJsxFragment(x)) { f = true; return; } ts.forEachChild(x, w); }; w(n); return f; };
 
 function census(root) {
-  const c = { root, files: 0, units: 0, deepReach: 0, contextReaders: 0, providers: 0, styled: 0, literalClassNames: 0, tokens: 0, tokensResolved: 0, literalsResolved: 0, unknownTop: {} };
+  const c = { root, files: 0, units: 0, deepReach: 0, contextReaders: 0, providers: 0, styled: 0, literalClassNames: 0, tokens: 0, tokensResolved: 0, literalsResolved: 0, unknownTop: {}, configs: {} };
   for (const file of files(root)) {
     c.files++;
     const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const cfg = pinnedOnly ? null : projectConfig(file); // the project's Tailwind configuration of this file
+    if (cfg) { const k = typeof cfg.project === 'string' ? cfg.project.replace(/ \(.*$|:.*$/, '') : `${cfg.project.form} ${path.relative(root, cfg.project.path)}`; c.configs[k] = (c.configs[k] ?? 0) + 1; }
     const local = new Set(); const relative = new Set();
     for (const st of sf.statements) {
       if (ts.isFunctionDeclaration(st) && st.name) local.add(st.name.text);
@@ -43,7 +47,7 @@ function census(root) {
             const lit = ts.isStringLiteral(a.initializer) ? a.initializer : ts.isJsxExpression(a.initializer) && a.initializer.expression && (ts.isStringLiteral(a.initializer.expression) || ts.isNoSubstitutionTemplateLiteral(a.initializer.expression)) ? a.initializer.expression : null;
             if (!lit) continue;
             styled = true; c.literalClassNames++;
-            const r = resolveClasses(lit.text); const toks = lit.text.split(/\s+/).filter(Boolean);
+            const r = resolveClasses(lit.text, cfg?.table); const toks = lit.text.split(/\s+/).filter(Boolean);
             c.tokens += toks.length; c.tokensResolved += toks.length - r.unknown.length;
             if (!r.unknown.length && !r.conflicts.length) c.literalsResolved++;
             for (const t of r.unknown) { const k = t.replace(/-[^-:]+$/, '-*'); c.unknownTop[k] = (c.unknownTop[k] ?? 0) + 1; }
@@ -60,8 +64,8 @@ function census(root) {
   return c;
 }
 
-const a = process.argv.slice(2); const out = a.includes('--out') ? a[a.indexOf('--out') + 1] : null;
+const a = process.argv.slice(2); const out = a.includes('--out') ? a[a.indexOf('--out') + 1] : null; const pinnedOnly = a.includes('--pinned');
 const roots = a.filter((x, i) => !x.startsWith('--') && a[i - 1] !== '--out');
 const res = roots.map(census);
-for (const c of res) console.log(`${c.root}: ${c.files} .tsx files, ${c.units} front-end units; tree layer: ${c.deepReach} render a same-package component, ${c.contextReaders} call useContext, ${c.providers} render a provider; styles layer: ${c.styled} units with ${c.literalClassNames} literal classNames, ${c.tokensResolved} of ${c.tokens} class tokens resolved, ${c.literalsResolved} literals fully resolved`);
+for (const c of res) console.log(`${c.root}: ${c.files} .tsx files, ${c.units} front-end units; tree layer: ${c.deepReach} render a same-package component, ${c.contextReaders} call useContext, ${c.providers} render a provider; styles layer: ${c.styled} units with ${c.literalClassNames} literal classNames, ${c.tokensResolved} of ${c.tokens} class tokens resolved, ${c.literalsResolved} literals fully resolved${pinnedOnly ? ' (pinned table only)' : `; files per configuration: ${Object.entries(c.configs).map(([k, n]) => `${k} ${n}`).join(', ')}`}`);
 if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
