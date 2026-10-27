@@ -3121,6 +3121,15 @@ export function translate(file, fnName, opts = {}) {
 
   // ----- shared statement analysis -----
   const retType = (u) => { if (u.fn.asteriskToken && !u.isAsync) return checker.createArrayType(generators.shape(u).element); let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
+  // `return;` yields `undefined`, the value a path without a return yields: Unit in a constructor (`new` yields the receiver) or a void unit, the absent value where the result admits undefined
+  const bareReturn = (u, s) => {
+    if (u.isCtor) return 'Unit';
+    const rt = retType(u), U = checker.getUndefinedType();
+    if ((rt.flags & TF.Void) && !(rt.flags & TF.Union)) return 'Unit';
+    if (rt.flags & TF.Undefined) return absentValue(rt);
+    if ((rt.flags & TF.Union) && rt.types.some((x) => x.flags & (TF.Undefined | TF.Void))) { const d = dtype(rt, s); return optionalD(d) ? missingD(d, 'Undef') : convertToD(absentValue(U), U, d, s); }
+    return fail(s, 'bare return');
+  };
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;
   const isUpdate = (x) => (ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken);
   const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set', 'shift', 'reverse', 'splice', 'sort', 'pop']);
@@ -3219,7 +3228,7 @@ export function translate(file, fnName, opts = {}) {
   const bodyExpr = (list, u) => {
     if (!list.length) fail(u.node, 'a path ends without a return');
     const [s, ...rest] = list;
-    if (ts.isReturnStatement(s)) return expr(s.expression, retType(u));
+    if (ts.isReturnStatement(s)) return s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s);
     if (ts.isVariableStatement(s)) {
       const d = s.declarationList.declarations[0];
       if (!ts.isIdentifier(d.name)) return `${destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n')}\n${bodyExpr(rest, u)}`;
@@ -3251,7 +3260,7 @@ export function translate(file, fnName, opts = {}) {
       }
       case K.ExpressionStatement: return emit(assignText(s.expression));
       case K.ThrowStatement: return fail(s, 'throw is translated in --core mode only');
-      case K.ReturnStatement: return emit(`return ${outerParens(expr(s.expression, retType(u)))};`);
+      case K.ReturnStatement: return emit(`return ${outerParens(s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s))};`);
       case K.IfStatement: {
         emit(`if ${outerParens(truthy(s.expression))} {`);
         stmts(flatten(s.thenStatement), ind + 1, u, out);
@@ -3715,7 +3724,7 @@ export function translate(file, fnName, opts = {}) {
       case K.Block: return faultTr([...s.statements, ...rest], fin, u, ctx);
       case K.EmptyStatement: return next();
       case K.TryStatement: return exactTry(s) ? faultTry(s, next, u, ctx) : opaqueCompletion(s, next, u, ctx);
-      case K.ReturnStatement: return faultEval(() => s.expression ? expr(s.expression, retType(u)) : retType(u).flags & TF.Undefined ? absentValue(retType(u)) : 'Unit', ctx.ret, ctx);
+      case K.ReturnStatement: return faultEval(() => s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s), ctx.ret, ctx);
       case K.ThrowStatement: return faultEval(() => expr(s.expression, anyTarget()), (value) => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${value});\n${ctx.fault()}`, ctx);
       case K.IfStatement: return faultEval(() => truthy(s.expression), (cond) => {
         const yes = faultTr(flatten(s.thenStatement), next, u, ctx);
@@ -3772,7 +3781,7 @@ export function translate(file, fnName, opts = {}) {
         const top = loopCtx[loopCtx.length - 1];
         if (top && top.forEach && top.collect) return callbackStep(s.expression, top); // a callback return supplies the next result state
         if (top && top.forEach) return capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); // a return inside forEach ends one step
-        return capture(() => { const rt = retType(u); const code = !s.expression ? (rt.flags & TF.Undefined ? absentValue(rt) : rt.flags & TF.Void ? 'Unit' : fail(s, 'bare return')) : expr(s.expression, rt); return u.isAsync && !loopCtx.length && s.expression && awaitsHere(s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${wrapLet(tryOf(s) && ts.isAwaitExpression(unparen(s.expression)) ? catchPath(tryOf(s), u) : asyncFailure(u))} else ${retIn(code)}` : retIn(code); });
+        return capture(() => { const rt = retType(u); const code = !s.expression ? bareReturn(u, s) : expr(s.expression, rt); return u.isAsync && !loopCtx.length && s.expression && awaitsHere(s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${wrapLet(tryOf(s) && ts.isAwaitExpression(unparen(s.expression)) ? catchPath(tryOf(s), u) : asyncFailure(u))} else ${retIn(code)}` : retIn(code); });
       }
       case K.ThrowStatement: return capture(() => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${expr(s.expression, anyTarget())});\n${retIn(faultValue(u))}`);
       case K.VariableStatement: {
