@@ -22,6 +22,7 @@ import { runPair, crumb, crumbText, verdictGuard, deepDepth } from './exec/run.m
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 import { ts, loadProgram, topLevelFunctions, dn } from './common.mjs';
+import { lintFile } from './lint/lint.mjs';
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -46,6 +47,15 @@ export async function check(opts) {
   const cert = { tool: 'lean-ts v3', unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {} };
   // ---- lane B ----
   const b = await runPair({ parent, candidate, unit, n, seed, project, deep });
+  if (b.witnesses?.some((w) => w.where?.lines?.candidate)) {
+    const findings = lintFile(candidate, null, { project });
+    for (const w of b.witnesses) {
+      const site = w.where?.lines?.candidate;
+      if (!site || path.resolve(site.file) !== path.resolve(candidate)) continue;
+      const finding = findings.find((f) => f.advice && f.line <= site.start && (f.endLine ?? f.line) >= site.end);
+      if (finding) w.where.advice = { rule: finding.rule, label: finding.label, advice: finding.advice };
+    }
+  }
   crumb.phase = 'lane A'; crumb.input = null;
   cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where, ...(w.through ? { through: w.through } : {}) })) : null };
   try { cert.unitTextEqual = b.unitTextEqual ?? unitTextEqual(parent, candidate, unit); } catch { cert.unitTextEqual = null; } // the unit's own text, comments and whitespace dropped, equal on both sides or not: beside the file hashes, it says whether a difference came through this function's text or through what it calls

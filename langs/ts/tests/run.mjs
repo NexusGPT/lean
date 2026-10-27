@@ -564,6 +564,51 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
   }
 }
 
+
+// A witness names the statement that returned or requested the differing value.
+{
+  const listed = [
+    ['proto_write', 'own', 'hasOwnProperty'],
+    ['dict_order', 'keyList', 'Object.keys'],
+    ['witness_args', 'scaled', '+ 1'],
+    ['map_block', 'sizes', 's + 2'],
+    ['callback_patterns', 'above', 'sink.note(id)'],
+    ['branch_types', 'isFive', 'y === 5'],
+    ['void_promise', 'handout', 'done: b'],
+    ['operands_coercion', 'absent', '=== undefined'],
+    ['numbers_bits', 'flags', '| 8'],
+    ['optional_calls', 'labelOf', '": "'],
+  ];
+  const { topLevelFunctions } = await import('../common.mjs');
+  for (const [name, unit, token] of listed) {
+    if (onlyPairs && !onlyPairs.has(name)) continue;
+    const d = path.join(pairsDir, name), candidate = pairFile(d, 'candidate');
+    const result = path.join(tmp, `pair_${name}`, `b_${unit}.json`);
+    if (!fs.existsSync(result)) {
+      fs.mkdirSync(path.dirname(result), { recursive: true });
+      run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', candidate, '--unit', unit, '--n', '30', '--no-project', '--out', result]);
+    }
+    let got = null; try { got = JSON.parse(fs.readFileSync(result, 'utf8')); } catch { /* A missing result fails. */ }
+    const sf = ts.createSourceFile(candidate, fs.readFileSync(candidate, 'utf8'), ts.ScriptTarget.Latest, true);
+    const u = topLevelFunctions(sf).get(unit);
+    const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
+    const end = sf.getLineAndCharacterOfPosition(u.node.end - 1).line + 1;
+    const site = got?.witnesses?.[0]?.where?.lines?.candidate;
+    const parentSite = got?.witnesses?.[0]?.where?.lines?.parent;
+    const ok = got?.verdict === 'WITNESS' && site && parentSite && path.resolve(site.file) === path.resolve(candidate)
+      && start <= site.start && site.start <= site.end && site.end <= end && site.text.includes(token)
+      && !/^export\s/.test(site.text);
+    add('witness-lines', name, `${unit} contains ${token}`, !!ok, site ? `${site.file}:${site.start} ${JSON.stringify(site.text)}` : 'no statement site');
+  }
+  const fixture = path.join(here, 'fixtures/witness-lines');
+  const result = path.join(tmp, 'witness-lines-advice.json');
+  const r = run('node', [path.join(here, '../check.mjs'), '--parent', path.join(fixture, 'parent.ts'), '--candidate', path.join(fixture, 'candidate.ts'), '--unit', 'frozen', '--n', '3', '--no-project', '--out', result]);
+  let got = null; try { got = JSON.parse(fs.readFileSync(result, 'utf8')); } catch { /* A missing certificate fails. */ }
+  const advice = got?.witness?.where?.advice;
+  const expected = '[migration] A later write to a frozen object throws in strict code, and the proof lane has no fault for it. Keep the object unfrozen inside the function, or freeze a copy you never write.';
+  add('witness-lines', 'advice', 'the site supplies the lint rewrite', r.status === 0 && got?.verdict === 'WITNESS' && advice?.rule === 'freeze' && advice?.label === 'migration' && advice?.advice === expected, JSON.stringify(advice) ?? 'no advice');
+}
+
 // ----- table -----
 const w = (k, s) => Math.max(s.length, ...rows.map((r) => String(r[k]).length));
 const cols = ['kind', 'name', 'check'];

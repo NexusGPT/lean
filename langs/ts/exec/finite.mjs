@@ -94,7 +94,7 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
         try { const r = guarded(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
         if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // the descriptor applied to the slots before the handler must give the slots the handler left
         tree = await commit(s);
-        obs.push({ command: label, tree: erase(tree), trace: s.env.trace.slice(from).filter((x) => x.op !== 'set' && x.op !== 'hook').map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }); // setter calls are state, compared through the slots; their order inside one handler is React's batching, not an observation
+        obs.push({ command: label, tree: erase(tree), trace: rt.traceWithSites(s.env.trace.slice(from).filter((x) => x.op !== 'set' && x.op !== 'hook')), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }); // setter calls are state, compared through the slots; their order inside one handler is React's batching, not an observation
       }
       return { obs, s, tree, handlers: treeHandlers(tree).map((x) => x.label) };
     };

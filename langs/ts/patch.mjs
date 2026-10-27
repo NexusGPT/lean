@@ -179,3 +179,103 @@ export function formatOp(op) {
   if (op.kind === 'move') return `${at} move key ${short(op.key, 40)} from index ${op.before} to index ${op.after}`;
   return `${at} ${op.kind}`;
 }
+
+// Each function keeps its own statement frame. The sandbox reads the active frame.
+// Sites are metadata. They never enter an observation or a function identity.
+export function statementMarks(ts, file, sites, stateName = '__lean_site') {
+  return (context) => {
+    const f = context.factory;
+    const state = () => f.createIdentifier(stateName);
+    const prop = (o, k) => f.createPropertyAccessExpression(o, k);
+    const assign = (a, b) => f.createBinaryExpression(a, ts.SyntaxKind.EqualsToken, b);
+    const stmt = (e) => f.createExpressionStatement(e);
+    const nil = () => f.createNull();
+    const table = f.createUniqueName('__lean_sites');
+    let sf, frame = null;
+    const site = (node, end = false) => {
+      const pos = end ? node.end - 1 : node.getStart(sf);
+      const value = { file, start: sf.getLineAndCharacterOfPosition(pos).line + 1, end: sf.getLineAndCharacterOfPosition(node.end - 1).line + 1 };
+      Object.defineProperty(value, 'text', { value: sf.text.slice(pos, node.end).slice(0, 200) });
+      const i = sites.length; sites.push(value);
+      return f.createElementAccessExpression(table, i);
+    };
+    const mark = (at) => [
+      stmt(assign(prop(state(), 'current'), frame)),
+      stmt(assign(prop(frame, 'site'), at)),
+    ];
+    const returnAt = (expression, at) => f.createReturnStatement(f.createParenthesizedExpression(f.createCommaListExpression([
+      assign(prop(frame, 'value'), expression ?? f.createVoidZero()),
+      assign(prop(frame, 'returned'), at),
+      prop(frame, 'value'),
+    ])));
+    const capture = (error) => f.createIfStatement(f.createBinaryExpression(f.createPrefixUnaryExpression(ts.SyntaxKind.ExclamationToken, prop(state(), 'fault')), ts.SyntaxKind.BarBarToken, f.createBinaryExpression(prop(prop(state(), 'fault'), 'value'), ts.SyntaxKind.ExclamationEqualsEqualsToken, error)),
+      stmt(assign(prop(state(), 'fault'), f.createObjectLiteralExpression([f.createPropertyAssignment('value', error), f.createPropertyAssignment('site', prop(frame, 'site'))]))));
+    const declaration = (name, value) => f.createVariableStatement(undefined, f.createVariableDeclarationList([f.createVariableDeclaration(name, undefined, undefined, value)], ts.NodeFlags.Const));
+    const visit = (node) => {
+      if (ts.isFunctionLike(node) && node.body) {
+        const outer = frame;
+        frame = f.createUniqueName('__lean_frame');
+        const own = frame, saved = f.createUniqueName('__lean_saved'), error = f.createUniqueName('__lean_error');
+        const body = node.body, end = site(body, ts.isBlock(body));
+        const start = [
+          declaration(saved, prop(state(), 'current')),
+          declaration(own, f.createObjectLiteralExpression([f.createPropertyAssignment('site', end), f.createPropertyAssignment('savedFault', prop(state(), 'fault'))])),
+        ];
+        let statements;
+        if (ts.isBlock(body)) statements = body.statements.flatMap(instrument);
+        else statements = [...mark(site(body)), returnAt(ts.visitNode(body, visit), site(body))];
+        const fault = prop(state(), 'fault');
+        const caught = f.createCatchClause(f.createVariableDeclaration(error), f.createBlock([
+          capture(error),
+          stmt(assign(prop(own, 'failed'), f.createTrue())),
+          f.createThrowStatement(error),
+        ], true));
+        const finish = f.createBlock([
+          stmt(assign(prop(state(), 'completed'), f.createConditionalExpression(prop(own, 'failed'), undefined, prop(fault, 'site'), undefined, f.createBinaryExpression(prop(own, 'returned'), ts.SyntaxKind.QuestionQuestionToken, prop(own, 'site'))))),
+          stmt(assign(fault, f.createConditionalExpression(prop(own, 'failed'), undefined, fault, undefined, prop(own, 'savedFault')))),
+          stmt(assign(prop(state(), 'current'), saved)),
+        ], true);
+        const wrapped = f.createBlock([...start, f.createTryStatement(f.createBlock([...statements, ...mark(end), stmt(assign(prop(own, 'returned'), nil()))], true), caught, finish)], true);
+        // Visit parameters and names too. Their nested functions have their own frames.
+        const updated = ts.visitEachChild(node, (child) => child === body ? wrapped : ts.visitNode(child, visit), context);
+        frame = outer;
+        return updated;
+      }
+      if (frame && ts.isReturnStatement(node)) return returnAt(ts.visitNode(node.expression, visit), site(node));
+      if (frame && ts.isCatchClause(node)) {
+        const block = ts.visitNode(node.block, visit);
+        return f.updateCatchClause(node, node.variableDeclaration, f.updateBlock(block, [stmt(assign(prop(state(), 'fault'), nil())), ...block.statements]));
+      }
+      if (frame && ts.isTryStatement(node)) {
+        const updated = ts.visitEachChild(node, visit, context);
+        const error = f.createUniqueName('__lean_error');
+        const caught = f.createCatchClause(f.createVariableDeclaration(error), f.createBlock([capture(error), f.createThrowStatement(error)], true));
+        return f.updateTryStatement(updated, f.createBlock([f.createTryStatement(updated.tryBlock, caught, undefined)], true), updated.catchClause, updated.finallyBlock);
+      }
+      if (frame && ts.isAwaitExpression(node)) {
+        return f.createParenthesizedExpression(f.createCommaListExpression([
+          assign(prop(frame, 'value'), f.updateAwaitExpression(node, ts.visitNode(node.expression, visit))),
+          assign(prop(state(), 'current'), frame),
+          prop(frame, 'value'),
+        ]));
+      }
+      if (frame && ts.isBlock(node)) return f.updateBlock(node, node.statements.flatMap(instrument));
+      if (frame && ts.isCaseClause(node)) return f.updateCaseClause(node, ts.visitNode(node.expression, visit), node.statements.flatMap(instrument));
+      if (frame && ts.isDefaultClause(node)) return f.updateDefaultClause(node, node.statements.flatMap(instrument));
+      // A single branch body needs a block so its marker follows the branch.
+      return ts.visitEachChild(node, (child) => frame && !ts.isLabeledStatement(node) && ts.isStatement(child) && !ts.isBlock(child) && !ts.isFunctionDeclaration(child)
+        ? f.createBlock(instrument(child), true) : ts.visitNode(child, visit), context);
+    };
+    const instrument = (node) => {
+      if (ts.isFunctionDeclaration(node) || ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) return [ts.visitNode(node, visit)];
+      // Keep directive prologues intact.
+      if (ts.isExpressionStatement(node) && ts.isStringLiteral(node.expression)) return [node];
+      return [...mark(site(node)), ts.visitNode(node, visit)];
+    };
+    return (source) => {
+      sf = source;
+      const out = ts.visitNode(source, visit);
+      return f.updateSourceFile(out, [declaration(table, f.createElementAccessExpression(prop(state(), 'files'), f.createStringLiteral(file))), ...out.statements]);
+    };
+  };
+}

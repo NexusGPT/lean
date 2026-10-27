@@ -21,14 +21,14 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
-import { Environment, render, renderDrawn, BudgetError, promiseName } from './fake.mjs';
+import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor, aliasInputs } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
 import { Graph } from './graph.mjs';
 import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
-import { witnessPatch } from '../patch.mjs';
+import { witnessPatch, statementMarks } from '../patch.mjs';
 import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
 import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
@@ -43,9 +43,10 @@ const require = createRequire(import.meta.url);
 const loadedFiles = new Set(); // every file a sandbox loaded: a built-in call is the unit's when its caller's file is one of them
 let libraryTable = null;
 const libraryTableOf = () => libraryTable ??= JSON.parse(fs.readFileSync(process.env.LEAN_LIBRARY_TABLE || path.join(path.dirname(new URL(import.meta.url).pathname), '../translate/library.json'), 'utf8'));
+let activeSiteState = null;
 let activeRecords = null, windowDepth = 0; // a run's record set, and the window: the prototypes are patched only while unit code runs (guardedCall, an effect, a cleanup, the await of a promise the unit returned), so the harness's own work between calls costs nothing
 const recording = async (records, fn) => { const prev = activeRecords; activeRecords = records; try { return await fn(); } finally { activeRecords = prev; } };
-const openWindow = (env) => { if (!activeRecords) return false; if (windowDepth++ === 0) { startRecording(activeRecords, undefined, { keep: (f) => loadedFiles.has(f) }); } if (env && env.realm) addRealm(env.realm); return true; };
+const openWindow = (env) => { activeSiteState = env?.siteState ?? null; if (!activeRecords) return false; if (windowDepth++ === 0) { startRecording(activeRecords, undefined, { keep: (f) => loadedFiles.has(f), site: () => activeSiteState?.current?.site ?? null }); } if (env && env.realm) addRealm(env.realm); return true; };
 const closeWindow = (opened) => { if (!opened) return; if (--windowDepth === 0) stopRecording(); };
 const awaitUnit = async (env, p, ms) => { const w = openWindow(env); try { return await withTimeout(p, ms); } finally { closeWindow(w); } }; // a promise the unit returned: its continuations are unit code
 const libraryCases = (summary) => {
@@ -75,6 +76,30 @@ const leanMarks = (file) => (context) => {
   };
   return (sf) => ts.visitNode(sf, visit);
 };
+
+// A file is compiled once per source text. Each sandbox receives its own marker.
+const siteCompiles = new Map();
+function compileWithSites(src, tsName, abs) {
+  const old = siteCompiles.get(abs);
+  if (old?.src === src) return old;
+  const sites = [];
+  let stateName = '__lean_site';
+  while (src.includes(stateName)) stateName += '_';
+  const emit = (before) => ts.transpileModule(src, { compilerOptions: COMPILE, fileName: tsName, transformers: { before } }).outputText;
+  const original = emit([leanMarks(abs)]);
+  const marked = emit([statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
+  const functions = (text) => {
+    const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
+    const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
+    walk(sf); return out;
+  };
+  const a = functions(original), b = functions(marked);
+  if (a.length !== b.length) throw new Error('statement markers changed the function count');
+  b.forEach((text, i) => rememberFunctionSource(text, a[i]));
+  const compiled = { src, sites, stateName, js: marked + unitShim(src, tsName) };
+  siteCompiles.set(abs, compiled);
+  return compiled;
+}
 
 // every top-level function and class of the file, exported or not, reachable for the harness
 function unitShim(src, abs) {
@@ -389,6 +414,7 @@ function routeCall(env, Cls, member, args, spec, run) {
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
   const cache = new Map();
+  env.siteState = { current: null, completed: null, fault: null, files: Object.create(null) };
   const react = reactRuntime(env);
   const epoch = 1700000000000;
   const dateNow = (...args) => epoch + env.clock('Date.now', args);
@@ -434,7 +460,9 @@ export function sandbox(env, root) {
     const src = fs.readFileSync(abs, 'utf8');
     const tsName = /\.(mjs|cjs|js)$/.test(abs) ? abs.replace(/\.(mjs|cjs|js)$/, '.ts') : abs; // a script file is read as TypeScript so its imports become requires
     const src2 = src.replace(/\bimport\.meta\.url\b/g, JSON.stringify('file://' + abs)).replace(/\bimport\.meta\b/g, '({})'); // a script's import.meta under CommonJS
-    let js = ts.transpileModule(src2, { compilerOptions: COMPILE, fileName: tsName, transformers: { before: [leanMarks(abs)] } }).outputText + unitShim(src2, tsName);
+    const compiled = compileWithSites(src2, tsName, abs);
+    env.siteState.files[abs] = compiled.sites;
+    let js = compiled.js;
     // a decorator is run (so its reads and calls are recorded) but its result never replaces the class or the member:
     // the decorated code stays the code under test, whatever the fake decorator returned
     js = js.replace(/var __decorate = \(this && this\.__decorate\) \|\| function \(decorators, target, key, desc\) \{[\s\S]*?\n\};/,
@@ -459,9 +487,9 @@ export function sandbox(env, root) {
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
     let wrapper;
-    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname'], { parsingContext: ctx, filename: abs }); }
+    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName], { parsingContext: ctx, filename: abs }); }
     catch (e) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); } // the file that failed to compile is named
-    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs));
+    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState);
     return mod.exports;
   }
   return { load, ctx, react, jsxRuntime: jsxRuntimeFor(env) };
@@ -531,12 +559,15 @@ export async function observe(side, spec, args, ms) {
   // the heap layer, stage 1: the object graph reachable from the arguments is named before the call (graph.mjs)
   let graph;
   try { graph = new Graph().before(args); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
+  let outcomeSite = null;
+  if (env.siteState) { env.siteState.completed = null; env.siteState.fault = null; }
   let outcome, outcomeValue, hasOutcome = false, returnedPromise = null;
   lateErrors.length = 0;
   try {
     const slotsBefore = (env.hookSlots ?? []).slice(), framesBefore = cloneFrames(env.childFrames), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
     const call = () => { const r = guardedCall(env, () => unit.call(args), ms); returnedPromise = promiseName(r); return r; }; // a promise the world made and the unit returned as it is: its name joins the outcome
     let v = await commitRender(env, call, ms);
+    outcomeSite = env.siteState?.completed ?? null;
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
@@ -564,6 +595,7 @@ export async function observe(side, spec, args, ms) {
     if (e instanceof RenderLoop) return { harness: e.message }; // ASK:render-loop: React would throw or never settle
     if (e instanceof CallTimeout) return { harness: 'timeout' };
     if (e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message))) return { harness: 'stack overflow' }; // whichever realm threw it: the host's (a fake, a patched intrinsic) or the sandbox's (the unit's own recursion)
+    outcomeSite = env.siteState?.completed ?? env.siteState?.current?.site ?? null;
     outcome = { threw: render(e) };
     if (returnedPromise) outcome.promise = returnedPromise;
   }
@@ -580,7 +612,7 @@ export async function observe(side, spec, args, ms) {
   // object; a fresh object is named by its first sight, so two runs equal up to a renaming serialise the same
   let heap;
   try { heap = graph.after(args, own, outcomeValue, hasOutcome); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
-  return { outcome, heap, receiver, trace: env.trace, pending: env.pending.map(({ id, ...rest }) => rest) }; // a timer id is an arm counter, not an observation
+  return Object.defineProperty({ outcome, heap, receiver, trace: env.trace, pending: env.pending.map(({ id, ...rest }, i) => withSite(rest, env.pending[i].site)) }, 'site', { value: outcomeSite }); // a timer id is an arm counter, not an observation
 }
 
 // ----- the virtual clock: armed timers fire in due order -----
@@ -600,7 +632,7 @@ async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0 } = {
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
     env.record('fire', { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[e.kind], [e.due]); // the instant, never the id: an id is an arm counter nobody outside sees
     try { const r = guardedCall(env, () => e.fn(...e.args), ms); if (r && typeof r.then === 'function') await awaitUnit(env, r, ms); } catch (x) { if (x instanceof BudgetError || x?.message === '__timeout__') throw x; env.record('timer-throw', e.kind, [render(x)]); }
-    if (e.interval) { e.fired = 1; e.due = t.now + e.interval; e.order = t.nextId++; t.queue.push(e); env.pending.push({ op: 'setInterval', ms: e.interval, id: e.id }); } // once per run: the interval stays pending for the next tick
+    if (e.interval) { e.fired = 1; e.due = t.now + e.interval; e.order = t.nextId++; t.queue.push(e); env.pending.push(withSite({ op: 'setInterval', ms: e.interval, id: e.id }, e.site)); } // once per run: the interval stays pending for the next tick
     await new Promise((r) => setImmediate(r));
   }
   for (const e of t.queue) e.fired = 0; // the next run may fire the intervals again
@@ -644,13 +676,13 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
     const settle = async () => { let t = await commit(s); if (!schedules && s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and (outside the schedule explorer) the timers they armed
     const tick = async (perm) => { const q = s.env.timers.queue.filter((e) => e.fired === 0); if (!q.length) return null; const next = Math.min(...q.map((e) => e.due)); await runTimers(s.env, ms, 50, { until: next, perm }); return commit(s); }; // the clock advances to the next due instant; the timers due there fire in the chosen order
     let tree;
-    try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: 'mount', threw: render(e), trace: s.env.trace.map((x) => render(x)) }); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
+    try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: 'mount', threw: render(e), trace: traceWithSites(s.env.trace) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
     for (const label of labels) {
       const from = s.env.trace.length;
       if (label.startsWith('tick@')) { // a clock step: the instant it reaches and what fired are the observation
         const perm = Number(label.slice(5)) || 0; const before = s.env.timers.now;
-        try { const t2 = await tick(perm); if (t2 !== null) tree = t2; } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; }
-        obs.push({ command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
+        try { const t2 = await tick(perm); if (t2 !== null) tree = t2; } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; }
+        obs.push({ command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
         continue;
       }
       const h = treeHandlers(tree).find((x) => x.label === label);
@@ -658,15 +690,15 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
       const event = s.env.fake(`react:event:${label}`), slotsBefore = (s.env.hookSlots ?? []).slice(); let threw = false;
       try { const r = guardedCall(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (harness(e)) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
       if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // a readable descriptor applied to the slots before the handler must give the slots the handler left
-      try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
-      obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
+      try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
+      obs.push({ command: label, tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
     }
     const pendingTimers = s.env.timers.queue.filter((e) => e.fired === 0); const ties = pendingTimers.length ? pendingTimers.filter((e) => e.due === Math.min(...pendingTimers.map((x) => x.due))).length : 0; // read before the unmount clears them: the clock steps the next level may take
     const ticks = schedules && pendingTimers.length && pendingTimers.length <= 3 ? Array.from({ length: Math.min(PERMS[ties]?.length ?? 1, 6) }, (_, k) => `tick@${k}`) : [];
     // unmount: every cleanup, in slot order
     const from = s.env.trace.length;
     for (const es of s.env.effectSlots ?? []) if (es && es.cleanup) { s.env.record('call', `${es.key}.cleanup`, []); try { await awaitUnit(s.env, Promise.resolve(callUnit(s.env, es.cleanup)), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
-    obs.push({ command: 'unmount', trace: s.env.trace.slice(from).map((x) => render(x)) });
+    obs.push({ command: 'unmount', trace: traceWithSites(s.env.trace.slice(from)) });
     return { obs, s, handlers: treeHandlers(tree).map((x) => x.label), ticks, timers: pendingTimers.length };
   };
   let paths = 0; let frontier = [[]]; const done = new Set(); let maxTimers = 0;
@@ -688,11 +720,23 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
   return { paths, timers: maxTimers };
 }
 
+export const traceWithSites = (records) => records.map((r) => withSite(render(r), r.site));
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
 export async function runPair(opts) {
   const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
+  for (const witness of res.witnesses ?? []) {
+    if (witness.where?.lines || !witness.parent || !witness.candidate) continue;
+    const a = witness.parent, b = witness.candidate;
+    if (JSON.stringify(a.threw) !== JSON.stringify(b.threw) && (a.site || b.site)) {
+      witness.where.lines = { kind: 'completion', parent: siteLines(a.site), candidate: siteLines(b.site) };
+      continue;
+    }
+    if (a.trace && b.trace && JSON.stringify(a.trace) !== JSON.stringify(b.trace)) {
+      witness.where.lines = firstDifference({ trace: a.trace }, { trace: b.trace }).lines;
+    }
+  }
   const fe = res?.bound?.frontEnd; if (fe && fe.layers) fe.layers = { ...fe.layers, tree: { verdict: res.verdict, ...fe.layers.tree } }; // the tree layer's verdict is lane B's; the styles layer keeps its own
   return res;
 }
@@ -836,7 +880,7 @@ async function runPairOnce(opts) {
   }
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
   if (sawJsx) { // the one-render check found no difference: a finite component is decided over every click order (rung 2); the rest runs re-render sequences (rung 3)
-    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); step('finite'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
+    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); step('finite'); const rt = { traceWithSites, sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
     let domain = null; try { domain = finiteDomain(candidate, unit, { project }); } catch (e) { domain = { why: `finiteness: ${String(e && e.message).slice(0, 120)}` }; }
     if (domain && !domain.why) {
       const r = await recording(records, () => exploreFinite({ files: { parent, candidate }, roots, spec, unit, domain, seed, ms, rt, handlers: handlerRun }));
@@ -869,11 +913,29 @@ async function runPairOnce(opts) {
   return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
 }
 
+function siteLines(site) {
+  if (!site) return null;
+  return { file: site.file, start: site.start, end: site.end, text: site.text ?? '' };
+}
 function firstDifference(a, b) {
+  const where = differenceField(a, b);
+  if (!where) return null;
+  const trace = where.field === 'trace';
+  let parentSite = trace ? a.trace[where.index]?.site : a.site;
+  let candidateSite = trace ? b.trace[where.index]?.site : b.site;
+  let kind = trace ? (!a.trace[where.index] ? 'effect; parent record absent' : !b.trace[where.index] ? 'effect; candidate record absent' : 'effect') : where.field === 'outcome' ? 'completion' : 'completion fallback';
+  if (where.field === 'pending') {
+    let i = 0; while (i < Math.max(a.pending.length, b.pending.length) && JSON.stringify(a.pending[i]) === JSON.stringify(b.pending[i])) i++;
+    if (a.pending[i]?.site && b.pending[i]?.site) { parentSite = a.pending[i].site; candidateSite = b.pending[i].site; kind = 'pending arm'; }
+  }
+  where.lines = { kind, parent: siteLines(parentSite), candidate: siteLines(candidateSite) };
+  return where;
+}
+function differenceField(a, b) {
   for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending']) {
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
-      if (k === 'trace') { const i = a.trace.findIndex((e, j) => JSON.stringify(e) !== JSON.stringify(b.trace[j])); return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }
+      if (k === 'trace') { let i = 0; while (i < Math.max(a.trace.length, b.trace.length) && JSON.stringify(a.trace[i]) === JSON.stringify(b.trace[i])) i++; return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }
       if (k === 'heap') { const h = a.heap ?? {}, g = b.heap ?? {}; for (const part of ['roots', 'outcome', 'own']) if (JSON.stringify(h[part]) !== JSON.stringify(g[part])) return { field: 'heap', part }; const n = Math.max((h.heap ?? []).length, (g.heap ?? []).length); for (let j = 0; j < n; j++) if (JSON.stringify((h.heap ?? [])[j]) !== JSON.stringify((g.heap ?? [])[j])) return { field: 'heap', object: j, anchor: j < (h.anchors ?? 0), parent: (h.heap ?? [])[j] ?? null, candidate: (g.heap ?? [])[j] ?? null }; return { field: 'heap' }; }
       return { field: k };
     }
