@@ -15,6 +15,8 @@ import json, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PY = os.path.dirname(HERE)
+sys.path.insert(0, PY)
+from common import Module, dafny_name  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(PY))
 LINT = os.path.join(PY, 'lint', 'lint.py')
 TRANSLATE = os.path.join(PY, 'translate', 'translate.py')
@@ -85,6 +87,7 @@ def pair(name, tmp, lane_b=True):
     clean = finished and not outside
     add('pair', name, 'translation verifies', clean, 'no error outside the lemmas' if clean else
         ('errors outside the lemmas at lines ' + ', '.join(map(str, outside[:6])) if finished else text.strip().split('\n')[-1][:200]))
+    proved_units = []
     for f, want in exp['equal'].items():
         sp = spans.get(f'Equal_{f}')
         withheld = next((l for l in lines if l.startswith(f'// UNGUARDED Equal_{f}: ')), None)
@@ -92,17 +95,32 @@ def pair(name, tmp, lane_b=True):
         got = ('proved' if proved else 'not proved') if sp else (f'withheld: {withheld[:100]}' if withheld else 'lemma missing')
         ok = (proved == want) and sp is not None
         add('pair', name, f'Equal_{f} {"proved" if want else "not proved"}', ok, got)
+        if proved:
+            proved_units.append(f)
     if not lane_b:
         return
-    for unit, want in exp.get('b', {}).items():
+    verdicts = {}
+
+    def lane_b(unit):
         out = os.path.join(t, f'b_{unit}.json')
         rc, txt = run([sys.executable, '-I', RUN_B, '--parent', os.path.join(d, 'parent.py'), '--candidate',
                        os.path.join(d, 'candidate.py'), '--unit', unit, '--n', '30', '--out', out])
         try:
-            got = json.load(open(out))['verdict']
+            verdicts[unit] = json.load(open(out))['verdict']
         except (OSError, ValueError, KeyError):
-            got = 'no result: ' + txt.strip()[-160:]
+            verdicts[unit] = 'no result: ' + txt.strip()[-160:]
+        return verdicts[unit]
+    for unit, want in exp.get('b', {}).items():
+        got = lane_b(unit)
         add('pair', name, f'lane B {unit} {want}', got == want, got)
+    # a proof the bounded run contradicts is a false proof: every proved unit runs through lane B too
+    by_dafny = {dafny_name(u.name): u.name for u in Module(os.path.join(d, 'parent.py')).units()}
+    for f in proved_units:
+        unit = by_dafny.get(f)
+        if unit is None:
+            continue
+        got = verdicts.get(unit) or lane_b(unit)
+        add('pair', name, f'proved {f}: lane B agrees', got != 'WITNESS', got)
 
 
 def escapes(tmp):
