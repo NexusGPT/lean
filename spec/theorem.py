@@ -382,6 +382,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
                 raise Refusal(f'{label}: in-range mark for {name} does not end in {suffix}')
             inrange.add(name[: -len(suffix)])
     for f, h in hyps.items():  # compared with the parameters by position: the lemma states the parent's, over the parent's names
+        if f in adapters and h.get('parent') is not None and h.get('candidate') is not None:
+            continue  # an adapted heap-core unit: the lemma assumes the parent's hypothesis over the parent's inputs; the candidate runs on A(x)
         if f in funcs and (h.get('parent') is None or h.get('candidate') is None or not equal_by_position(h['parent'], h['candidate'], pf[f]['params'], cf[f]['params'])):
             raise Refusal(f'{f}: hypothesis differs between parent and candidate')
     # the identity guard (references, layer 1): a unit read as a value tree carries `// GUARD <name>: {exposed, determinate,
@@ -410,9 +412,18 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
                 continue
             door = ADAPTER_DOOR if all(ADAPTED_PART.match(x) for x in sig_diff[f].split('; ')) else 'an adapter maps the parameters only, so no adapter states this change'
             unguarded[f] = f"interface differs: {sig_diff[f][:300]}; {door}"
+    # an adapter on a heap-core unit is read through the core's own encoding: the heap world is threaded (the same name
+    # and type on both sides), the lemma assumes the parent's hypothesis, and the map is over the core's value types
+    # (number | null is the core's Option, so Some(x)). A candidate parameter that is a heap reference is a cell the core
+    # allocates; an expression over values cannot make one, so that shape is refused by name unless the map passes a
+    # parent reference of the same type through
     for f in adapters:
         if f in hyps and f not in unguarded:
-            unguarded[f] = 'interface differs: an adapter on a heap-core unit is not read'
+            pt_, ct_ = dict(pf[f]['params']), dict(cf[f]['params'])
+            for n, expr in adapters[f]['to'].items():
+                if re.search(r'\b(Ref|HWorld)\b', ct_[n]) and not (expr in pt_ and pt_[expr] == ct_[n]):
+                    unguarded[f] = f"interface differs: the adapter for {f} maps {expr[:60]} to the candidate's {n}: {ct_[n]}, a reference the heap core allocates; an adapter is an expression over values, so the core does not read this shape"
+                    break
     for f, g in guards.items():
         if f not in funcs or f in aliased or 'parent' not in g or 'candidate' not in g:
             continue
