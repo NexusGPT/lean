@@ -355,6 +355,15 @@ for (const f of fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.e
 const clocks = run('node', [path.join(here, 'clock-read.mjs')]);
 add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clocks.stdout + clocks.stderr).trim());
 
+// a self-pair never witnesses: a file compared against itself through lane B is PASS-bounded (a module that starts
+// asynchronous work while it loads is the case that broke it: that work is the starting state of both sides)
+for (const f of fs.readdirSync(path.join(here, 'fixtures/self-pair')).filter((x) => /\.tsx?$/.test(x)).sort()) {
+  const file = path.join(here, 'fixtures/self-pair', f), unit = (fs.readFileSync(file, 'utf8').match(/^export function (\w+)/m) ?? [])[1];
+  const r = run('node', [path.join(here, '../exec/run.mjs'), '--parent', file, '--candidate', file, '--unit', unit, '--n', '30', '--no-project']);
+  let verdict = null, detail = (r.stdout + r.stderr).trim().slice(-200); try { const o = JSON.parse(r.stdout); verdict = o.verdict; detail = verdict === 'WITNESS' ? `WITNESS at ${JSON.stringify(o.witnesses[0].where)}` : verdict; } catch { /* not JSON: fails below */ }
+  add('runtime', 'self-pair', `${f}: ${unit} against itself is PASS-bounded`, verdict === 'PASS-bounded', detail);
+}
+
 // a project's `paths` alias without a baseUrl resolves from its tsconfig's folder, a workspace package to its source, a declared baseUrl is kept
 {
   const { loadProgram, RESOLUTION_CODES } = await import('../common.mjs');
