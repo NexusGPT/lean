@@ -71,6 +71,7 @@ export const ADVICE = {
   'inheritance': { label: 'migration', text: 'A class that extends another is outside the subset in this version.' },
   'effect': { label: 'migration', text: 'This global is an effect; pass what you need as an argument.' },
   'non-null': { label: 'migration', text: '`x!` is translated as an uninterpreted value when absent; prefer an explicit check.' },
+  'record-rest': { label: 'migration', text: 'Take the rest in a parameter of a plain record or of an untyped value, with written keys (`function Card({ title, ...rest }: CardProps)`), or copy the fields you need by name; a copy by name drops the properties the type does not declare, which the rest keeps.' },
 };
 
 // the label in one bracket, as the --json advice, the agent report and the ESLint message print it
