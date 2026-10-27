@@ -1,0 +1,7 @@
+{
+ "scope": ["pick", "use_pick", "pad", "shift", "twice"],
+ "adapters": "scope.json",
+ "equal": {"pick": true, "use_pick": true, "pad": true, "shift": "withheld", "twice": true},
+ "why": "pick swaps its two parameters; the scope file declares the adapter (flag, x) to (x, flag) and the theorem proves pick_candidate(x, flag) == pick_parent(flag, x). usePick passes its arguments in the new order and is proved resting on the summary of pick under that adapter. pad widens its parameter to number | null; the comment door on the candidate declares the adapter Some(x) and the theorem proves pad_candidate(Some(x)) == pad_parent(x). shift swaps its parameters with no adapter: withheld as an interface change whose reason names the adapter door. twice is untouched and aliased. Lane B runs both sides on the same raw inputs, so for an adapted function its verdict is no answer to the adapted claim: pick and shift witness on swapped arguments, and pad witnesses on null, an input of the candidate's wider type the parent never received; check.mjs records that verdict and lets lane A answer the adapted claim.",
+ "b": {"pick": "WITNESS", "usePick": "PASS-bounded", "pad": "WITNESS", "shift": "WITNESS", "twice": "PASS-bounded"}
+}
