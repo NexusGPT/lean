@@ -56,16 +56,16 @@ so the emitted JavaScript is the same, and a wrong proposal shows up as a type e
 
 ## Measurement
 
-At d980cb2, `node langs/ts/design/any-type-count.mjs <root> --out <json>`, each file in its project, last line pasted:
+At 7a64c1f, `node langs/ts/design/any-type-count.mjs <root> --out <json>`, each file in its project, last line pasted:
 
 | Root | reported | proposals: record / primitive / other | flags: flag-only / migration | owned elsewhere | gaps |
 |---|---|---|---|---|---|
-| Nexus export (12,733 files) | 7,246 | 2,169: 1,391 / 262 / 516 | 5,077: 3,715 / 1,362 | 41,058 | 0 |
-| langchainjs (1,486 files) | 1,951 | 647: 296 / 164 / 187 | 1,304: 997 / 307 | 4,692 | 0 |
+| Nexus export (12,733 files) | 7,246 | 2,169: 1,541 / 262 / 366 | 5,077: 3,715 / 1,362 | 41,058 | 0 |
+| langchainjs (1,486 files) | 1,951 | 647: 316 / 164 / 167 | 1,304: 997 / 307 | 4,692 | 0 |
 
 Owned elsewhere, Nexus: environment 36,995, catch 3,716, rejection 347 (the bench tree resolves few packages). A gap is a
-declaration typed any found by the count's own walk with neither a finding nor an owner. The langchainjs row is from
-the run before the parenthesis fix, which changes no count. The census is unchanged: the gate never asks for the rule.
+declaration typed any found by the count's own walk with neither a finding nor an owner. The census is unchanged at
+the base and here (Nexus 23,854 of 26,520 inside, langchainjs 3,575 of 4,871): the gate never asks for the rule.
 
 ## Instances
 
