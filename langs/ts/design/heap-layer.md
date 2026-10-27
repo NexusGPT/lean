@@ -251,3 +251,10 @@ every input that reaches it, so a false PASS-proved needs the differing path unr
 claims for exposed units (a caveated proof, a refusal, an identity-skeleton check on both sides, or a wider core) is the owner's; the
 numbers above are what it costs.
 
+
+## Stage 4 (2026-10-27): the core widened to real code
+
+`design/heap-stage4.md`, one section per row in the order of the stage-2 first reasons: methods with `this` fields,
+array element access, loops over arrays, optional fields, literal unions, dictionaries on the ordered map model, and the
+method calls `replace`, `trim`, `join`, `filter`, `map`. The invariants above hold for every row; each section states its
+reading, its soundness argument, what stays out, and its re-measured reach.

@@ -196,6 +196,8 @@ WITNESS   input 1   args: [{ items: [{ id: 347, tags: ["vhn02", "vk85x"] }], nam
 
 A `shift()` for a `splice(0, 1)` leaves the same reachable graph: `PASS-bounded` in lane B, and unproved under whole-heap equality because `splice` allocates the part it removed. That gap is named, and the canonical-heap certificate that closes it is on the list below.
 
+The heap core reads real code: a method of a class takes `this` as a reference to the record of its fields, so a write to `this.count` is a step on the same heap. An element access `a[i]` is proved only where the code keeps its index in range, since JavaScript reads `undefined` outside it. A loop over an array is a recursive step on the heap, and a refactor around an unchanged loop body proves. A field that may be missing keeps apart a missing key and a key holding `undefined`, and a value read after a presence test is proved present. A literal union such as `'open' | 'done'` states its values in the proof's hypothesis, so testing the other value first is a refactor. A dictionary keeps its keys in insertion order, so two writes swapped are a different object. `filter`, `map`, `join`, `trim` and `replace` read as steps of the library table, so a filter kept under a name before its map proves.
+
 ### 7. An exception that crosses a call
 
 ```ts

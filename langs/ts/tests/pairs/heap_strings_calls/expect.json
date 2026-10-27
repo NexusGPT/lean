@@ -1,0 +1,22 @@
+{
+ "scope": [
+  "ids",
+  "busy",
+  "clean",
+  "line"
+ ],
+ "equal": {
+  "ids": true,
+  "busy": false,
+  "clean": true,
+  "line": true
+ },
+ "why": "filter and map allocate their arrays through the table's rows (Filter_, Map_), in the same order on both sides: ids names the filtered array and writes the map's callback as a block that returns (proved); busy changes the predicate (unproved, WITNESS on a count of one); clean names the trimmed string (StrTrim and StrReplace are pure, bodiless, the same on both sides: proved); line drops join's comma, its default (JoinStr is the exact fold: proved).",
+ "b": {
+  "ids": "PASS-bounded",
+  "busy": "WITNESS",
+  "clean": "PASS-bounded",
+  "line": "PASS-bounded"
+ },
+ "heap": true
+}
