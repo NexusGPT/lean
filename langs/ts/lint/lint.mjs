@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -83,11 +83,12 @@ export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
   for (const u of units.values()) {
     if (!u.body) continue;
     const walk = (n) => {
-      if (ts.isFunctionLike(n)) return;
+      if (ts.isFunctionLike(n) && !syncLoopCallback(n, checker)) return; // a synchronous array-method callback throws for its unit (stage 5 rank 20)
       if (ts.isThrowStatement(n) || ts.isTryStatement(n) || mayFaultPure(n, checker, sf)) out.add(u.name);
       if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
         const callee = byDecl.get(checker.getResolvedSignature(n)?.declaration);
         if (callee) edges.get(callee).add(u.name);
+        if (syncLoopCall(n, checker)) for (const a of n.arguments) if (ts.isIdentifier(a)) { const d = checker.getSymbolAtLocation(a)?.valueDeclaration; const named = d && byDecl.get(d); if (named) edges.get(named).add(u.name); } // stage 5 rank 20: a throwing unit handed to an array method runs here, so its throw is this unit's
       }
       if (ts.isPropertyAccessExpression(n)) {
         const parent = n.parent;
@@ -173,7 +174,9 @@ export function lintFile(file, ranges = null, opts = {}) {
   const aliasCalls = new Map(); // alias declarations bound to a call's result or a loop element -> what they hold, for the message
   const aliasMsg = (name, decl, tail = true) => aliasCalls.has(decl) ? `\`${name}\` holds ${aliasCalls.get(decl)}, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name` : `\`${name}\` is another name for a value this function was handed${tail ? '; change it through that name, or copy it first' : ''}`;
   const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
-  const ownedHere = (decl) => { const cb = callbackStack[callbackStack.length - 1]; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
+  const handedCallbacks = new Set(); // stage 5 rank 20: arrows handed to an outside call (opaque values)
+  const loopCallbacks = new Set(); // stage 5 rank 19: an array-method callback read as a loop body (the array method runs it once per element, in order, before returning): a cell declared outside it is the loop's state, owned by the enclosing function
+  const ownedHere = (decl) => { let i = callbackStack.length - 1; while (i >= 0 && loopCallbacks.has(callbackStack[i])) i--; const cb = i >= 0 ? callbackStack[i] : null; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
   // the Rules of React, as refusals: a unit that calls a hook is a render function (a component or a custom hook)
   const unitUsesHooks = () => { if (!currentFn?.body) return false; let found = false; const w = (n) => { if (found) return; if (ts.isCallExpression(n) && reactHook(checker, n)) { found = true; return; } ts.forEachChild(n, w); }; w(currentFn.body); return found; };
   const hasReturn = (n) => { let found = false; const w = (x) => { if (found) return; if (ts.isReturnStatement(x)) { found = true; return; } if (ts.isFunctionLike(x)) return; ts.forEachChild(x, w); }; w(n); return found; };
@@ -369,7 +372,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (name === 'undefined') return;
     if (name === 'arguments' && originOf(checker, id, sf, current).kind === 'global') return v(id, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter', restParamsSite(id));
     const o = originOf(checker, id, sf, current);
-    if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id)) return v(id, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
+    if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id))) return v(id, 'exception-callback', 'call the throwing unit directly, or pass it to a call; a stored function value has no fault channel'); // stage 5 rank 20: as a call argument it is an opaque value (outside) or a loop body (array method)
     if (o.kind === 'unit' && units.get(name)?.fn.asteriskToken && !asyncGenerator(units.get(name)) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.expression === id)) return v(id, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
     if (o.kind === 'local' && localMethodLiteral(tOf(id)) && id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id)) return v(id, 'object-method-mutation', 'pass a fresh literal handler or keep calls on the local object; sharing a named method object needs a heap');
     if (o.kind === 'local' || o.kind === 'unit') return;
@@ -499,6 +502,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     switch (s.kind) {
       case K.Block: return stmts(s.statements);
       case K.EmptyStatement: return;
+      case K.TypeAliasDeclaration: case K.InterfaceDeclaration: return; // stage 5 rank 16: erased at run time; every use is read through the checker
       case K.VariableStatement: {
         const list = s.declarationList;
         if (!(list.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const))) v(s, 'var', '`var` is outside the subset; use let or const');
@@ -538,7 +542,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
       case K.ContinueStatement: if (loopDepth > 0) return; return v(s, 'break-continue', 'continue outside a loop');
       case K.ThrowStatement:
-        if (callbackStack.length && !promiseCallbacks.has(callbackStack[callbackStack.length - 1]) && !callbackStack.at(-1).modifiers?.some((m) => m.kind === K.AsyncKeyword) && !enclosingOpaqueTry(s)) return v(s, 'exception-callback', 'move the throw to a same-file unit and call it directly');
+        if (callbackStack.length && !promiseCallbacks.has(callbackStack[callbackStack.length - 1]) && !loopCallbacks.has(callbackStack.at(-1)) && !handedCallbacks.has(callbackStack.at(-1)) && !callbackStack.at(-1).modifiers?.some((m) => m.kind === K.AsyncKeyword) && !enclosingOpaqueTry(s)) return v(s, 'exception-callback', 'move the throw to a same-file unit and call it directly'); // stage 5 rank 20: a loop callback's throw is the unit's (an opaque block); a handed callback's is the outside's
         return expr(s.expression);
       case K.TryStatement: {
         // an opaque block (version 3): its text names it; what it reads and writes are its inputs and outputs
@@ -1135,6 +1139,12 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.BinaryExpression: return binary(e);
       case K.CallExpression: return call(e);
       case K.PropertyAccessExpression: return propAccess(e);
+      case K.MetaProperty: { // stage 5 rank 16: `import.meta` is a fact of the world (a world read); `import.meta.env` is build-injected and `new.target` reads how the function was called
+        if (e.keywordToken !== K.ImportKeyword) return v(e, 'unsupported-syntax', '`new.target` reads how the function was called; it is outside the subset');
+        let top = e; while (top.parent && ((ts.isParenthesizedExpression(top.parent) || ts.isAsExpression(top.parent) || ts.isNonNullExpression(top.parent) || ts.isTypeAssertionExpression(top.parent)) && top.parent.expression === top)) top = top.parent; // the access may go through a cast: `(import.meta as { url: string }).url`
+        if (top.parent && ts.isPropertyAccessExpression(top.parent) && top.parent.expression === top && top.parent.name.text === 'env') return v(top.parent, 'unsupported-syntax', '`import.meta.env` is injected at build time; read it outside the subset');
+        return;
+      }
       case K.ElementAccessExpression: return elemAccess(e);
       case K.ArrayLiteralExpression:
         for (const el of e.elements) {
@@ -1409,7 +1419,7 @@ export function lintFile(file, ranges = null, opts = {}) {
             if (cb.type && ts.isTypePredicateNode(cb.type) && callbackNeedsLoop(cb)) return v(cb, 'callback-result', 'an effectful type-predicate callback needs an explicit for-of loop with a type guard');
             if (sig.getReturnType().symbol?.name === 'PromiseLike') return v(cb, 'callback-result', 'a thenable callback needs an async arrow with an explicit await');
             if (name === 'flatMap' && !asyncCb && callbackNeedsLoop(cb)) { const parts = nonNull(sig.getReturnType()); if (parts.some((t) => isArrayLike(checker, t)) && !parts.every((t) => isArrayLike(checker, t))) return v(cb, 'callback-result', 'an effectful flatMap callback returns either arrays on every path or scalar values on every path; use a for-of loop for mixed results'); }
-            if (callbackNeedsLoop(cb)) { // stage 5 rank 13: the element may be a destructured pattern (no rest) or carry a default the element type never takes; the index and the accumulator stay plain names
+            if (callbackNeedsLoop(cb)) { loopCallbacks.add(cb); // stage 5 rank 19: its body is a loop body (outer cells are its state); stage 5 rank 13: the element may be a destructured pattern (no rest) or carry a default the element type never takes; the index and the accumulator stay plain names
               const elemAt = name === 'reduce' ? 1 : 0; const nParams = cb.parameters.length;
               if (nParams < elemAt + 1 || nParams > 2) return v(cb, 'callback-form', 'an effectful array callback takes the element (and an index), or the accumulator and the element; an extra parameter is outside the subset');
               const bad = cb.parameters.map((p, i) => effectfulParamWhy(p, i === elemAt, name)).find(Boolean);
@@ -1559,7 +1569,6 @@ export function lintFile(file, ranges = null, opts = {}) {
       return expr(recv);
     }
     checkIdent(cb, true);
-    if (o.kind === 'unit' && exceptionUnits.has(cb.text) && !enclosingOpaqueTry(cb)) return v(cb, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
     if (asyncCb) return v(cb, 'async-callback', `Promise.all over the named async function \`${cb.text}\` needs an inline async arrow so its awaits are read in order`);
     const full = name === 'reduce' ? 4 : 3;
     const plain = (ps) => ps.length <= full && ps.every((p) => ts.isIdentifier(p.name) && p.name.text !== 'this' && !p.initializer && !p.dotDotDotToken && !p.questionToken);
@@ -1603,9 +1612,26 @@ export function lintFile(file, ranges = null, opts = {}) {
     return found;
   }
   // named effectful callbacks must enter the loop reading through an inline arrow
+  // stage 5 rank 19: a callback that assigns, updates or mutates (push, set, delete, ...) a local, an array or a record declared
+  // outside it (in the enclosing function) is a loop body threading that cell: the lint reads it as the effectful form
+  const writesOuterCell = (cb) => {
+    if (!cb || !ts.isArrowFunction(cb) || !currentFn) return false;
+    let found = false;
+    const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+    const outer = (id) => { const o = declOf(id); const d = o.decl; return o.kind === 'local' && d && !(d.pos >= cb.pos && d.end <= cb.end) && d.pos >= currentFn.pos && d.end <= currentFn.end && !isParam(d); };
+    const w = (x) => {
+      if (found) return;
+      if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) { const r = rootOf(x.left); if (ts.isIdentifier(r) && outer(r)) { found = true; return; } }
+      if ((ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken)) { const r = rootOf(x.operand); if (ts.isIdentifier(r) && outer(r)) { found = true; return; } }
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text)) { const r = rootOf(x.expression.expression); if (ts.isIdentifier(r) && outer(r)) { found = true; return; } }
+      ts.forEachChild(x, w);
+    };
+    w(cb.body); return found;
+  };
   function callbackNeedsLoop(cb, seen = new Set()) {
     if (seen.has(cb)) return false;
     seen.add(cb);
+    if (ts.isArrowFunction(cb) && writesOuterCell(cb)) return true; // stage 5 rank 19
     if (ts.isIdentifier(cb)) {
       const d = declOf(cb).decl;
       if (d && ts.isVariableDeclaration(d) && d.initializer) return callbackNeedsLoop(d.initializer, seen);
@@ -1677,14 +1703,13 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (enclosingOpaqueTry(cb)) return; // the enclosing try owns this completion as one opaque transition
     const w = (n, depth = 0) => {
       if (ts.isFunctionLike(n)) return;
-      if (ts.isTryStatement(n) || ts.isThrowStatement(n) || (ts.isReturnStatement(n) && depth > 0)) v(n, 'callback-control', 'try, throw or a return from an inner loop in a callback needs an explicit for-of loop');
+      if (ts.isTryStatement(n) || (ts.isThrowStatement(n) && !syncLoopCallback(cb, checker)) || (ts.isReturnStatement(n) && depth > 0)) v(n, 'callback-control', 'try, throw or a return from an inner loop in a callback needs an explicit for-of loop'); // stage 5 rank 20: a throw in a synchronous array callback is the unit's throw (an opaque block)
       const next = depth + (ts.isIterationStatement(n, false) ? 1 : 0);
       ts.forEachChild(n, (c) => w(c, next));
     };
     w(cb.body);
   }
   function callback(a, arity) {
-    if (ts.isIdentifier(a) && exceptionUnits.has(a.text) && !enclosingOpaqueTry(a)) return v(a, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
     if (ts.isIdentifier(a)) {
       // a named callback: a same-file function (not async, not a method) or a local function value
       const o = declOf(a); checkIdent(a, true);
@@ -1697,6 +1722,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (arity !== null && a.modifiers?.some((m) => m.kind === K.AsyncKeyword)) v(a, 'async', 'async callbacks are outside the subset');
     if (arity !== null && (a.parameters.length > arity || a.parameters.some((p) => (p.initializer && typeAdmitsUndefined(tOf(p.name))) || p.dotDotDotToken || p.questionToken))) v(a, 'callback-form', `the callback takes at most ${arity} plain parameter(s); a default is read only where the parameter's type never holds undefined`); // stage 5 rank 13: a default the type never takes is not read
     for (const p of a.parameters) { const names = []; bindingNames(p.name, names); checkType(tOf(p.name), p); }
+    if (arity === null) handedCallbacks.add(a); // stage 5 rank 20: an opaque value keyed by its text; a throw inside it happens inside the outside's transition
     callbackStack.push(a);
     const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
     try {
@@ -1748,7 +1774,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     jsx(c);
   }
   // an argument list of an external, a local function value, a record method or an opaque receiver: values, or callbacks
-  const spreadArray = (a) => { if (ts.isArrayLiteralExpression(a.expression)) return a.expression.elements.forEach((el) => ts.isSpreadElement(el) ? spreadArray(el) : expr(el)); if (!checker.isArrayType(tOf(a.expression))) v(a, 'spread', 'spread arguments need an ordinary array; tuples and custom iterables are outside the subset'); expr(a.expression); };
+  const spreadArray = (a) => { if (ts.isArrayLiteralExpression(a.expression)) return a.expression.elements.forEach((el) => ts.isSpreadElement(el) ? spreadArray(el) : expr(el)); const st = tOf(a.expression); if (!checker.isArrayType(st) && !(checker.isTupleType(st) && !st.target?.hasRestElement && st.target?.minLength === st.target?.fixedLength && checker.getTypeArguments(st).length > 0)) v(a, 'spread', 'spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outside the subset'); expr(a.expression); }; // stage 5 rank 18: a fixed tuple spreads as its elements in order
   // conditional expressions do not carry a same-file callee's mutated parameters out of the branch
   function conditionalSpreadArgs(e) {
     const mathSequence = ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Math' && ['min', 'max'].includes(e.expression.name.text) && e.arguments.length !== 2;
@@ -1813,6 +1839,13 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (name === 'length' && parts.every((t) => isArrayLike(checker, t) || isStr(t))) return;
     if (name === 'size' && parts.every((t) => isSetT(t) || isMapT(t))) return;
     for (const t of parts) {
+      if (t.flags & TF.Never) continue; // stage 5 rank 17: a read on never is unreachable; any reading is sound
+      if (t.flags & TF.IndexedAccess) continue; // an indexed this type (`this["options"]`): an opaque value, read through an uninterpreted accessor (the translator types it Any)
+      if (t.flags & TF.TypeParameter) { // a member of a type parameter goes through its declared constraint: one record declaring the member
+        const c = checker.getBaseConstraintOfType(t); const cs = c ? nonNull(c) : [];
+        if (cs.length === 1 && isRecordish(cs[0]) && (checker.getPropertyOfType(cs[0], name) || hasStringIndex(cs[0]))) continue;
+        return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)}: constrain the type parameter to one record declaring it`);
+      }
       if (!isRecordish(t)) return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
       if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length) return v(e, 'unsupported-member', `property .${name} is not declared on ${checker.typeToString(t)}`);
     }

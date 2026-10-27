@@ -29,7 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, countedFor } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, countedFor, syncLoopCallback } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable } from '../decorators.mjs';
@@ -555,6 +555,7 @@ export function translate(file, fnName, opts = {}) {
     if (shape.method === 'flatMap' && !isPromiseT(rt)) return null;
     return { ...shape, method: 'map', all: e };
   };
+  const cellCallback = (cb) => !!cb && assignedOutside(cb).some((m) => !m.synthetic); // stage 5 rank 19: a callback writing a local, an array or a record declared outside it is a loop body threading that cell
   const isLoopCallback = (x) => !!(x && x.parent && ts.isCallExpression(x.parent) && x.parent.arguments[0] === x && (arrayCallbackShape(x.parent) || forEachShape({ kind: K.ExpressionStatement, expression: x.parent })));
   function fakeForOf(st, fe, collect = null) {
     if (fe.named) return namedForOf(st, fe, collect);
@@ -584,7 +585,7 @@ export function translate(file, fnName, opts = {}) {
   // a lib or runtime global read as a value (not a callee, not the receiver of a called method, not a type): a world read
   const libValueRead = (x) => { if (!ts.isIdentifier(x) || !x.parent || ts.isTypeNode(x.parent) || ts.isQualifiedName(x.parent)) return false; const p = x.parent; if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && p.expression === x) return false; if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return false; if (ts.isBinaryExpression(p) && p.right === x && p.operatorToken.kind === K.InstanceOfKeyword) return false; return libGlobalRoot(checker, x, sf, currentUnit?.node ?? null); };
   const libWorldRead = (n) => { if (!n || !(ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n))) return false; let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root) || ts.isAsExpression(root) || ts.isNonNullExpression(root)) root = root.expression; return libGlobalRoot(checker, root, sf, currentUnit?.node ?? null); };
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || staticCell(x) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || staticCell(x) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isMetaProperty(x) && x.keywordToken === K.ImportKeyword) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -855,6 +856,7 @@ export function translate(file, fnName, opts = {}) {
   const isCallable = (t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length > 0;
   const isAny = (t) => !!(t.flags & (TF.Any | TF.Unknown));
   const isRecordish = (t) => !!(t.flags & (TF.Object | TF.Intersection)) && !isArrayLike(checker, t) && !isSetT(t) && !isMapT(t) && !isPromiseT(t);
+  const fixedTuple = (t) => checker.isTupleType(t) && !t.target?.hasRestElement && t.target?.minLength === t.target?.fixedLength && checker.getTypeArguments(t).length > 0; // a tuple with a fixed number of required elements
   const stringIndex = (t) => (t.flags & TF.Object ? checker.getIndexInfoOfType(t, ts.IndexKind.String) : null);
   const anyType = () => { addPrelude('Any', 'type Any(==)'); return 'Any'; };
   // JSX: an element is a value. JsxElem(tag, props, children): the tag name, the attributes as a string-keyed map of
@@ -1217,12 +1219,24 @@ export function translate(file, fnName, opts = {}) {
     const loose = !sig || (recvType === 'Any');
     const ptype = (a, i) => {
       const p = params[Math.min(i, params.length - 1)]; if (loose || !p) return undefined;
+      if (a.__tupleElem) { const t0 = checker.getTypeOfSymbolAtLocation(p, a.node); return isAny(t0) ? a.type : t0; } // an element of a spread tuple (stage 5 rank 18)
       if (ts.isObjectLiteralExpression(a)) return typeOf(a); // a literal argument is typed by its own fields, not by a generic parameter's instantiation
       let t = checker.getTypeOfSymbolAtLocation(p, a);
       const decl = p.valueDeclaration;
       if (decl && ts.isParameter(decl) && decl.dotDotDotToken && (checker.isArrayType(t) || checker.isTupleType(t))) t = checker.getTypeArguments(t)[0] ?? t; // a rest parameter: each extra argument has the element type
       return isAny(t) && !isAny(typeOf(a)) ? typeOf(a) : t;
     };
+    // stage 5 rank 18: a spread of a fixed tuple into an outside call is its elements in order, positional arguments, the tuple read once
+    if (args.some((a) => ts.isSpreadElement(a) && fixedTuple(typeOf(a.expression)))) {
+      const xargs = [];
+      for (const a of args) {
+        if (!(ts.isSpreadElement(a) && fixedTuple(typeOf(a.expression)))) { xargs.push(a); continue; }
+        const t = typeOf(a.expression), td = dtype(t, a), v = `st${tempCount++}_`;
+        pending.push(`var ${v}: ${td} := ${outerParens(expr(a.expression))};`);
+        checker.getTypeArguments(t).forEach((et, j) => xargs.push({ __tupleElem: true, type: et, code: td.startsWith('seq<') ? `${v}[${j}]` : `${v}.${j}`, node: a }));
+      }
+      args = xargs;
+    }
     const spread = args.some(ts.isSpreadElement);
     if (spread && recvCode !== null) { const v = `sr${tempCount++}_`; pending.push(`var ${v}: ${recvType} := ${recvCode};`); recvCode = v; }
     // an outside method is looked up before its arguments; a throwing argument still observes that lookup
@@ -1233,14 +1247,15 @@ export function translate(file, fnName, opts = {}) {
       hoist(cond ? `(if ${cond} then ${lookup} else (${WORLD}, Unit))` : lookup, 'Unit');
     }
     const sequence = spread ? callSequence(args) : null;
-    const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a) : dtype(typeOf(a), a); });
+    const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a.__tupleElem ? a.node : a) : dtype(a.__tupleElem ? a.type : typeOf(a), a.__tupleElem ? a.node : a); });
     let rt = n.__plainReturn ?? (sig ? sig.getReturnType() : typeOf(n)); // an optional call's present branch returns what the callee returns
     if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
     else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
     let rd = dtype(rt, n);
     const chainedType = cond ? typeOf(n) : null; // the signature result excludes absence introduced by the call chain
     calleeName = `${spread ? 'call_seq' : 'call_args'}_${calleeName}`; // disjoint call forms: f(...xs) never collides with a function named f_seq(xs)
-    const codes = spread ? [sequence.code] : args.map((a, i) => (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
+    const throwingUnitValue = (a) => ts.isIdentifier(a) && originOf(checker, a, sf, currentUnit?.node ?? null).kind === 'unit' && (exceptionUnits.has(a.text) || effectfulUnits.has(a.text)); // stage 5 rank 20: handed to an outside call, an opaque value named by its text
+    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
     if (!isEff) {
       let code;
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
@@ -1261,12 +1276,13 @@ export function translate(file, fnName, opts = {}) {
     const flatten = (a) => ts.isSpreadElement(a) && ts.isArrayLiteralExpression(a.expression) ? a.expression.elements.flatMap(flatten) : [a];
     args = args.flatMap(flatten);
     const types = args.map((a) => {
+      if (a.__tupleElem) return a.type;
       if (!ts.isSpreadElement(a)) return typeOf(a);
       const t = typeOf(a.expression);
       if (!checker.isArrayType(t)) fail(a, 'spread arguments need an ordinary array');
       return checker.getTypeArguments(t)[0];
     });
-    const ds = types.map((t, i) => dtype(t, args[i]));
+    const ds = types.map((t, i) => dtype(t, args[i].__tupleElem ? args[i].node : args[i]));
     const A = element ?? (ds.length && ds.every((d) => d === ds[0]) ? ds[0] : anyType());
     const pieces = args.map((a, i) => captureParts(() => {
       let code;
@@ -1276,7 +1292,7 @@ export function translate(file, fnName, opts = {}) {
           const v = `sa${tempCount++}_`;
           code = `(var ${v} := ${code}; seq(|${v}|, (i: int) requires 0 <= i < |${v}| => ${convertToD(`${v}[i]`, types[i], A, a)}))`;
         }
-      } else { const raw = expr(a); const value = convertToD(raw, types[i], A, a); code = `[${value}]`; }
+      } else { const raw = a.__tupleElem ? a.code : expr(a); const value = convertToD(raw, types[i], A, a.__tupleElem ? a.node : a); code = `[${value}]`; }
       return code;
     }));
     // a later argument can rebind a parameter via a same-file call; freeze earlier values first
@@ -1484,7 +1500,7 @@ export function translate(file, fnName, opts = {}) {
   const outerParens = (s) => {
     if (!s.startsWith('(') || !s.endsWith(')')) return s;
     let d = 0;
-    for (let i = 0; i < s.length; i++) { if (s[i] === '(') d++; else if (s[i] === ')') d--; if (d === 0 && i < s.length - 1) return s; }
+    for (let i = 0; i < s.length; i++) { if (s[i] === '(') d++; else if (s[i] === ')') d--; else if (s[i] === ',' && d === 1) return s; if (d === 0 && i < s.length - 1) return s; } // a top-level comma: a tuple, whose parentheses are its own
     if (/^\(map\[\] : /.test(s) || /^\(var \w+: set</.test(s)) return s; // a typed empty literal keeps its parentheses
     return s.slice(1, -1);
   };
@@ -1888,7 +1904,12 @@ export function translate(file, fnName, opts = {}) {
       case K.CommaListExpression: { let value; for (const e of n.elements) value = expr(e); return value; }
       case K.BinaryExpression: return binary(n);
       case K.JsxElement: case K.JsxSelfClosingElement: case K.JsxFragment: { const code = jsxNode(n); return isAny(typeOf(n)) ? convertD(code, 'JsxNode', 'Any') : code; }
-      case K.PropertyAccessExpression: return propAccess(n);
+      case K.PropertyAccessExpression: {
+        const metaRoot = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isNonNullExpression(x) || ts.isTypeAssertionExpression(x)) x = x.expression; return ts.isMetaProperty(x) && x.keywordToken === K.ImportKeyword; };
+        if (metaRoot(n.expression)) { const d = dtype(typeOf(n), n); addPrelude('World', 'type World'); return hoist(`${external(`global_read_import_meta_${n.name.text}`, ['World'], `(World, ${d})`)}(${WORLD})`, d); } // stage 5 rank 16: `import.meta.x` is a world read
+        return propAccess(n);
+      }
+      case K.MetaProperty: { if (n.keywordToken !== K.ImportKeyword) fail(n, 'new.target is not translated'); const d = dtype(typeOf(n), n); addPrelude('World', 'type World'); return hoist(`${external('global_read_import_meta', ['World'], `(World, ${d})`)}(${WORLD})`, d); }
       case K.ElementAccessExpression: return elemAccess(n);
       case K.ArrayLiteralExpression: {
         const ctx = expected ?? checker.getContextualType(n) ?? typeOf(n);
@@ -2663,8 +2684,12 @@ export function translate(file, fnName, opts = {}) {
     if (currentUnit) { const set = fnIdsOf.get(currentUnit.name) ?? new Set(); set.add(code); fnIdsOf.set(currentUnit.name, set); }
     return `${external(`fn_${mangle(d)}`, ['Fn'], d)}(Fn(${strEsc(code)}, [${captures.join(', ')}]))`;
   }
+  // stage 5 rank 20: a function value handed to an outside call that may throw (a throw or try inside, a call of a throwing
+  // unit) is the opaque value it already is, named by its text: its throw happens inside the outside's transition
+  const mayThrowInside = (body) => { let f = false; const w = (x) => { if (f) return; if (ts.isFunctionLike(x)) return; if (ts.isThrowStatement(x) || ts.isTryStatement(x) || ((ts.isCallExpression(x) || ts.isNewExpression(x)) && exceptionUnits.has(unitNameOfCall(x)))) { f = true; return; } ts.forEachChild(x, w); }; w(body); return f; };
   function lambda(cb, arity, paramTypes = [], opaqueOk = false) {
-    if (opaqueOk && !ts.isIdentifier(cb) && (containsEffect(cb.body) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword))) return reactHandler(cb) ?? opaqueFn(cb);
+    if (opaqueOk && ts.isIdentifier(cb)) { const o0 = originOf(checker, cb, sf, currentUnit?.node ?? null); if (o0.kind === 'unit' && (exceptionUnits.has(cb.text) || effectfulUnits.has(cb.text))) return opaqueFn(fns.get(cb.text)?.fn ?? cb); }
+    if (opaqueOk && !ts.isIdentifier(cb) && (containsEffect(cb.body) || mayThrowInside(cb.body) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword))) return reactHandler(cb) ?? opaqueFn(cb);
     if (ts.isIdentifier(cb)) {
       // a named callback: a same-file function or a local function value, applied through a lambda of the expected shape
       const o = originOf(checker, cb, sf, currentUnit?.node ?? null);
@@ -2817,6 +2842,17 @@ export function translate(file, fnName, opts = {}) {
         return `(var ${r} := ${rv}; if (${N}(${r}) || ${U}(${r})) then ${absent} else ${external(`Any_${name}`, [anyType()], rd)}(${r}))`;
       }
       return `${external(`Any_${name}`, [anyType()], rd)}(${rv})`;
+    }
+    { // stage 5 rank 17: a member of a type parameter, read through its declared constraint as one uninterpreted field read generic in the parameter
+      const tp = isOptional(recvT) ? baseOf(recvT) : recvT;
+      if (tp.flags & TF.TypeParameter) {
+        const c = checker.getBaseConstraintOfType(tp); const cs = c ? nonNull(c) : [];
+        const prop = cs.length === 1 ? checker.getPropertyOfType(cs[0], name) : null;
+        if (!prop) fail(n, `property .${name} on ${checker.typeToString(tp)}: the constraint declares no such member`);
+        const rd = dtype(checker.getTypeOfSymbolAtLocation(prop, n), n);
+        if (n.questionDotToken || isOptional(recvT)) fail(n, `?. on a type parameter is not translated`);
+        return `${external(`field_${name}`, [dtype(tp, n)], rd)}(${outerParens(expr(n.expression))})`;
+      }
     }
     if (n.questionDotToken && !isOptional(recvT) && !isAny(recvT)) return fieldOf(expr(n.expression), recvT, name, n); // ?. on a value that cannot be absent
     if (n.questionDotToken) {
@@ -3481,7 +3517,7 @@ export function translate(file, fnName, opts = {}) {
     }
     if (isArrayLike(checker, base)) {
       const shape = arrayCallbackShape(n);
-      if (shape && containsEffect(shape.cb.body)) return callbackValue(n, shape);
+      if (shape && (containsEffect(shape.cb.body) || cellCallback(shape.cb))) return callbackValue(n, shape);
       { const named = namedCallbackShape(n); if (named) return callbackValue(n, named); }
       const A = () => dtype(elemType(recv), n);
       const R = expr(recv);
@@ -3678,7 +3714,13 @@ export function translate(file, fnName, opts = {}) {
       ts.forEachChild(x, walk);
     };
     walk(node);
-    return names;
+    // the state in declaration order (the world and a generator's yield state first): a map's collected result and a
+    // for-of's pushed array then take the same position, so the two loop helpers are the same text (stage 5 rank 19)
+    const heads = names.filter((m) => m.name === WORLD || m === yieldState);
+    const rest = names.filter((m) => !heads.includes(m));
+    const posOf = (m) => m.sym?.valueDeclaration?.pos ?? m.node?.pos ?? Number.MAX_SAFE_INTEGER;
+    rest.sort((a, b) => posOf(a) - posOf(b));
+    return [...heads, ...rest];
   }
   // the first matching case selects a suffix; default is used only after every case test failed
   function coreSwitch(s, rest, fin, u, ctx = null) {
@@ -3748,6 +3790,7 @@ export function translate(file, fnName, opts = {}) {
     const emit = (line) => out.push(pad + line);
     switch (s.kind) {
       case K.Block: return stmts(s.statements, ind, u, out);
+      case K.TypeAliasDeclaration: case K.InterfaceDeclaration: return; // stage 5 rank 16: erased at run time
       case K.EmptyStatement: return;
       case K.VariableStatement: {
         const d = s.declarationList.declarations[0];
@@ -4227,10 +4270,10 @@ export function translate(file, fnName, opts = {}) {
     const next = () => faultTr(rest, fin, u, ctx);
     if (!ts.isTryStatement(s) && opaqueExceptionTry(s, checker)) {
       let propagates = false;
-      const scan = (n) => {
-        if (ts.isFunctionLike(n)) return;
-        if (ts.isThrowStatement(n) || ts.isTryStatement(n) || ((ts.isCallExpression(n) || ts.isNewExpression(n)) && exceptionUnits.has(unitNameOfCall(n)))) propagates = true;
-        ts.forEachChild(n, scan);
+      const scan = (n, inLoopCb = false) => {
+        if (ts.isFunctionLike(n)) { if (!syncLoopCallback(n, checker)) return; inLoopCb = true; } // stage 5 rank 20: a throw or try inside a synchronous array callback is this statement's; a call of a throwing unit there threads the loop helper's fault check instead
+        if (ts.isThrowStatement(n) || ts.isTryStatement(n) || (!inLoopCb && (ts.isCallExpression(n) || ts.isNewExpression(n)) && exceptionUnits.has(unitNameOfCall(n)))) propagates = true;
+        ts.forEachChild(n, (c) => scan(c, inLoopCb));
       };
       scan(s);
       return propagates ? opaqueCompletion(s, next, u, ctx) : tr([s], next, u);
@@ -4302,7 +4345,7 @@ export function translate(file, fnName, opts = {}) {
       case K.VariableStatement: {
         const d0 = s.declarationList.declarations[0];
         const pam = s.declarationList.declarations.length === 1 && ts.isIdentifier(d0.name) && d0.initializer ? (promiseAllMapShape(d0.initializer) || arrayCallbackShape(d0.initializer)) : null;
-        if (pam && !callbackShadows(pam.cb, d0.name.text) && (pam.all || containsEffect(pam.cb.body)) && dtype(typeOf(d0.name), d0) === dtype(pam.all ? checker.getAwaitedType(typeOf(pam.all)) : typeOf(pam.call), d0)) return capture(() => callbackLoop(s, pam, d0.name.text, typeOf(d0.name), rest, fin, u));
+        if (pam && !callbackShadows(pam.cb, d0.name.text) && (pam.all || containsEffect(pam.cb.body) || cellCallback(pam.cb)) && dtype(typeOf(d0.name), d0) === dtype(pam.all ? checker.getAwaitedType(typeOf(pam.all)) : typeOf(pam.call), d0)) return capture(() => callbackLoop(s, pam, d0.name.text, typeOf(d0.name), rest, fin, u));
         const out = [];
         for (const d of s.declarationList.declarations) {
           out.push(capture(() => {
@@ -4324,7 +4367,7 @@ export function translate(file, fnName, opts = {}) {
       case K.ExpressionStatement: {
         if (yieldState && ts.isYieldExpression(s.expression)) { const y = s.expression; const code = y.asteriskToken ? seqOf(y.expression) : `[${expr(y.expression, yieldState.element)}]`; return `var ${yieldState.name}: ${yieldState.d} := ${yieldState.name} + ${code};\n${more0()}`; }
         const pam0 = promiseAllMapShape(s.expression) || arrayCallbackShape(s.expression);
-        if (pam0 && (pam0.all || containsEffect(pam0.cb.body))) return capture(() => { callbackValue(s.expression, pam0); return more0(); });
+        if (pam0 && (pam0.all || containsEffect(pam0.cb.body) || cellCallback(pam0.cb))) return capture(() => { callbackValue(s.expression, pam0); return more0(); });
         const fe = forEachShape(s);
         if (fe) { const fake = fakeForOf(s, fe); let body; const h = capture(() => { body = coreLoop(fake, rest, fin, u); return ''; }); return h.trim() ? `${h.trim()}\n${body}` : body; }
         const line = capture(() => {
@@ -4344,6 +4387,7 @@ export function translate(file, fnName, opts = {}) {
       case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: flatten(s.thenStatement) }], s.elseStatement ? flatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
       case K.SwitchStatement: return isOpaqueStmt(s) ? opaqueBlock(s, rest, fin, u) : coreSwitch(s, rest, fin, u);
       case K.LabeledStatement: return isOpaqueStmt(s.statement) ? opaqueBlock(s, rest, fin, u) : tr([s.statement, ...rest], fin, u);
+      case K.TypeAliasDeclaration: case K.InterfaceDeclaration: return more(); // stage 5 rank 16: erased at run time
       case K.FunctionDeclaration: {
         // a nested `function f(...) {...}`: a local function value, like `const f = (...) => {...}`
         if (!s.name) fail(s, 'a nested function needs a name');
@@ -4412,8 +4456,12 @@ export function translate(file, fnName, opts = {}) {
     const closed = returns && !jumps.length && !hasBreak && (emptyFor(loop) || ts.isWhileStatement(loop) && loop.expression.kind === K.TrueKeyword);
     const terminal = returns && !jumps.length && (closed || alwaysLeaves(s));
     const M = assignedOutside(s).filter((m) => !m.synthetic).map((m) => ({ ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) }));
-    // inputs: every local the block reads, and every local it assigns (it may read it first)
-    const free = [...M, ...freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }))];
+    // a declaration read as an opaque block (its initializer holds a throwing loop callback, stage 5 rank 20) declares its
+    // names for what follows: they are outputs of the block too
+    const declared = new Set();
+    if (ts.isVariableStatement(s)) for (const d of s.declarationList.declarations) if (ts.isIdentifier(d.name) && !M.some((m) => m.name === d.name.text)) { const sym = checker.getSymbolAtLocation(d.name); declared.add(d.name.text); M.push({ name: d.name.text, sym, node: d.name, d: letTypeOf(sym) ?? dtype(typeOf(d.name), d) }); }
+    // inputs: every local the block reads, and every local it assigns (it may read it first); a name the block declares is an output only
+    const free = [...M.filter((m) => !declared.has(m.name)), ...freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }))];
     let usesSelf = false; const calls = new Set(), moduleBindings = new Set();
     const w = (x) => {
       const binding = moduleState(checker, x, sf);
@@ -4492,8 +4540,17 @@ export function translate(file, fnName, opts = {}) {
     if (!core) fail(node, 'effectful callbacks need --core');
     const resultType = shape.all ? checker.getAwaitedType(typeOf(shape.all)) : typeOf(shape.call);
     const name = `cb${tempCount++}_`;
-    const body = capture(() => callbackLoop(node, shape, name, resultType, [], () => `(${WORLD}, ${name})`, currentUnit));
-    return hoist(wrapLet(body), dtype(resultType, node));
+    // stage 5 rank 19: the loop's result leaves the let with every outer cell the callback wrote (a local, an array, a
+    // record declared outside it), rebound here; an effectful unit threads the world first. Before, only the collected
+    // value left the let and the cells kept their old values.
+    const eff = unitEffectful();
+    const cells = assignedOutside(shape.cb).filter((m) => !m.synthetic).map((m) => dn(m.name));
+    const tuple = (xs) => (xs.length === 1 ? xs[0] : `(${xs.join(', ')})`);
+    const body = capture(() => callbackLoop(node, shape, name, resultType, [], () => tuple([...(eff ? [WORLD] : []), name, ...cells]), currentUnit));
+    const t = valueOperands && eff ? valueName() : `t${tempCount++}_`;
+    pending.push(`var ${tuple([...(eff ? [WORLD] : []), t, ...cells])} := ${wrapLet(body)};`);
+    if (eff && faultMode) pending.push(FAULT_CHECK);
+    return t;
   }
   function opaqueCompletion(s, next, u, ctx) {
     const { line, returns, terminal, jumps, jumpName } = opaqueStep(s, u);

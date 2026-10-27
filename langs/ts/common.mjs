@@ -422,3 +422,19 @@ export function countedFor(s) {
   scan(s.statement);
   return !assigned;
 }
+
+// Stage 5 rank 20. A synchronous array-method callback (forEach, map, filter, find, findIndex, some, every, flatMap, reduce
+// on an array): the method runs it once per element before returning, so a throw inside it is the enclosing unit's throw,
+// and the lint and the translator read the statement holding it as one opaque block, as a loop statement with a throw.
+const LOOP_METHODS = new Set(['forEach', 'map', 'filter', 'find', 'findIndex', 'some', 'every', 'flatMap', 'reduce']);
+// the call `xs.m(...)` of such a method on an array
+export function syncLoopCall(n, checker) {
+  if (!n || !ts.isCallExpression(n)) return false;
+  const f = n.expression;
+  if (!ts.isPropertyAccessExpression(f) || !LOOP_METHODS.has(f.name.text)) return false;
+  return isArrayLike(checker, checker.getTypeAtLocation(f.expression));
+}
+export function syncLoopCallback(n, checker) {
+  if (!n || !ts.isArrowFunction(n) || !n.parent || n.parent.arguments?.[0] !== n || n.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword)) return false;
+  return syncLoopCall(n.parent, checker);
+}

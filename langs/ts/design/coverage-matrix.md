@@ -20,7 +20,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; a `=` into a field of `process` a world transition (process-write, done (lane)); anything else refused (unsupported-syntax) | same |
 | IfStatement | 23894 | 38.1% | admitted | exact | same |
 | NumericLiteral | 18802 | 30% | admitted | exact as int or real by file; -0 witnessed in lane B, refused from the heap core | same |
-| ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
+| ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; a synchronous array-method callback writing outer cells as a loop body (stage 5 rank 19); otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
 | ThisKeyword | 17059 | 27.2% | admitted | exact as the receiver (self) of a class unit; a field read a world read; a write a world write | the receiver as a heap node |
 | ParenthesizedExpression | 16252 | 25.9% | admitted | exact | same |
 | TemplateExpression | 16167 | 25.8% | admitted | exact (string concatenation of converted parts) | same |
@@ -36,7 +36,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | ElementAccessExpression | 8672 | 13.8% | admitted | exact for literal and typed keys; an open key on a plain record of data fields an uninterpreted lookup (open-key-read); other dynamic keys refused (dynamic-key) | heap read by key |
 | AsExpression | 8500 | 13.6% | admitted | exact (the asserted type is read) | same |
 | TrueKeyword | 7702 | 12.3% | admitted | exact | same |
-| ThrowStatement | 6263 | 10% | admitted | exact as a fault on the try channel (exceptions across calls) | same |
+| ThrowStatement | 6263 | 10% | admitted | exact as a fault on the try channel (exceptions across calls); inside a synchronous array callback the holding statement is one opaque block, inside a handed-away arrow part of the opaque value (stage 5 rank 20) | same |
 | JsxAttribute | 5979 | 9.5% | no case (refused by default, or reached through its parent) | exact as a boxed prop; a handler as a descriptor or opaque value | same |
 | TryStatement | 5893 | 9.4% | admitted | exact (try/catch/finally with the fault channel) | same |
 | FalseKeyword | 5564 | 8.9% | admitted | exact | same |
@@ -49,7 +49,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | JsxElement | 4911 | 7.8% | admitted | exact as a JsxElem value | same |
 | JsxText | 4770 | 7.6% | no case (refused by default, or reached through its parent) | exact (JSX whitespace rule) | same |
 | ArrayBindingPattern | 3982 | 6.4% | no case (refused by default, or reached through its parent) | exact | same |
-| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; otherwise refused (spread); a Map or Map iterator spread stays refused until the Map reading keeps insertion order (spread-map, measured) | same |
+| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; a fixed tuple spread into an outside call is its elements in order (stage 5 rank 18); otherwise refused (spread); a Map or Map iterator spread stays refused until the Map reading keeps insertion order (spread-map, measured) | same |
 | TypeOfExpression | 3649 | 5.8% | admitted | exact (type tests) | same |
 | RegularExpressionLiteral | 2457 | 3.9% | admitted | exact for the supported regex forms (strings reading); otherwise opaque | same |
 | ContinueStatement | 2049 | 3.3% | admitted | exact (loop forms) | same |
@@ -76,13 +76,13 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | PrivateIdentifier | 90 | 0.1% | no case (refused by default, or reached through its parent) |  |  |
 | FunctionExpression | 90 | 0.1% | admitted | as ArrowFunction; a this-capturing one refused (this) | callable record |
 | ForInStatement | 81 | 0.1% | admitted | refused unless the dynamic-record reading applies | key iteration on the ledger |
-| TypeAliasDeclaration | 60 | 0.1% | no case (refused by default, or reached through its parent) |  |  |
-| MetaProperty | 41 | 0.1% | no case (refused by default, or reached through its parent) |  |  |
+| TypeAliasDeclaration | 60 | 0.1% | admitted | erased at run time, inside a function too (stage 5 rank 16); its uses are read through the checker | none |
+| MetaProperty | 41 | 0.1% | admitted | `import.meta.x` is a world read (stage 5 rank 16); `import.meta.env` and `new.target` refused | none |
 | GetAccessor | 22 | 0% | no case (refused by default, or reached through its parent) |  |  |
 | BigIntLiteral | 20 | 0% | admitted | exact as int | same |
 | MethodSignature | 15 | 0% | no case (refused by default, or reached through its parent) |  |  |
 | LabeledStatement | 10 | 0% | admitted | refused (unsupported-syntax) | same as the loop it labels |
-| InterfaceDeclaration | 9 | 0% | no case (refused by default, or reached through its parent) |  |  |
+| InterfaceDeclaration | 9 | 0% | admitted | erased at run time, inside a function too (stage 5 rank 16) | none |
 | PropertyDeclaration | 7 | 0% | no case (refused by default, or reached through its parent) | a static field of a same-file class read as `C.K`: a constant, or a world cell when written, holding an object or reachable from outside ([class statics](class-statics.md)) |  |
 | ClassDeclaration | 7 | 0% | admitted | exact as units Class.method with a receiver; a static method called as `C.m(x)` is the unit `C.m` ([class statics](class-statics.md)); inheritance across files refused (class) | same, with a proto edge |
 | ClassExpression | 5 | 0% | admitted | refused (class) | allocation of a class value |

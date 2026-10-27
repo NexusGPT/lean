@@ -746,5 +746,101 @@
     -3
    ]
   ]
+ },
+ {
+  "name": "callback_cells_sumEach",
+  "file": "callback_cells.ts",
+  "fn": "sumEach",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     -4
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "callback_cells_collect",
+  "file": "callback_cells.ts",
+  "fn": "collect",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     5
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "callback_cells_tally",
+  "file": "callback_cells.ts",
+  "fn": "tally",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "a",
+     "",
+     "bc"
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     ""
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "callback_cells_firstBig",
+  "file": "callback_cells.ts",
+  "fn": "firstBig",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     20,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     4,
+     5
+    ]
+   ]
+  ]
  }
 ]
