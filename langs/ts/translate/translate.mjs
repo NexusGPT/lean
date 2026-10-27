@@ -32,6 +32,7 @@ import { createHash } from 'node:crypto';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
+import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable } from '../decorators.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
@@ -190,6 +191,7 @@ export function translate(file, fnName, opts = {}) {
   };
   const fnIdsOf = new Map(); // unit name -> the code ids of the function values it emits (`// FN <unit>: [...]`)
   const fnLines = [];
+  const decoLines = []; // `// DECORATORS <unit>: <row ids>`: the decorator-table rows a unit's reading used (check.mjs withholds the proof when the framework contradicts one)
   const sigLines = []; // `// SIG <unit>: <json>`: the TypeScript signature a caller sees (the method's decorators, the `this` type if declared, per position the parameter's decorators, type, optionality, rest-ness and default, the return type); the theorem compares it across the two sides before writing a lemma. Parameter names sit in `names`, which the theorem never compares: a caller passes by position
   const fold = (t) => String(t ?? '').replace(/\s+/g, ' ').trim();
   const sigOf = (u) => { const fn = u.fn; const decs = (n) => (ts.canHaveDecorators && ts.canHaveDecorators(n) ? (ts.getDecorators(n) ?? []) : []).map((d) => fold(d.getText(sf))); const isThis = (p) => ts.isIdentifier(p.name) && p.name.text === 'this'; const thisP = fn.parameters.find(isThis); const ps = fn.parameters.filter((p) => !isThis(p)); return JSON.stringify({ decorators: decs(fn), ...(thisP ? { this: thisP.type ? fold(thisP.type.getText(sf)) : null } : {}), params: ps.map((p) => ({ decorators: decs(p), type: p.type ? fold(p.type.getText(sf)) : null, optional: !!p.questionToken, rest: !!p.dotDotDotToken, init: p.initializer ? fold(p.initializer.getText(sf)) : null })), ret: fn.type ? fold(fn.type.getText(sf)) : null, names: ps.map((p) => fold(p.name.getText(sf))) }); };
@@ -234,6 +236,7 @@ export function translate(file, fnName, opts = {}) {
   const localEffectScan = new Set();
   function isEffectCall(n) {
     if (mayFaultPure(n, checker, sf)) return true;
+    if (ts.isCallExpression(n) && ownKeyTest(checker, n, sf)?.kind) return false; // the own-key test reads its operands only
     if (ts.isPropertyAccessExpression(n)) {
       const literal = literalGetter(n); if (literal) return !exactObjectMethod(literal);
       const get = accessorOf(n, 'get'), set = propertyWrite(n) && accessorOf(n, 'set');
@@ -849,6 +852,31 @@ export function translate(file, fnName, opts = {}) {
   const hookResultOf = new Map(); // call node -> row
   { const walk = (n) => { if (ts.isVariableDeclaration(n) && n.initializer) { let init = n.initializer; while (ts.isParenthesizedExpression(init) || ts.isAsExpression(init) || ts.isNonNullExpression(init)) init = init.expression; const h = libraryHook(checker, init); if (h) { hookResultOf.set(init, h.row); if (ts.isIdentifier(n.name)) { const sy = checker.getSymbolAtLocation(n.name); if (sy) hookBound.set(sy, { row: h.row, field: null }); } else if (ts.isObjectBindingPattern(n.name)) for (const el of n.name.elements) { if (!ts.isIdentifier(el.name) || el.dotDotDotToken) continue; const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text; const sy = checker.getSymbolAtLocation(el.name); if (sy && Object.hasOwn(h.row.result, prop)) hookBound.set(sy, { row: h.row, field: prop }); } } } ts.forEachChild(n, walk); }; walk(sf); }
   const hookTsType = (row, field) => { const k = fieldKind(row.result[field] ?? ''); return k === 'boolean' ? checker.getBooleanType() : k === 'string' ? checker.getStringType() : k === 'number' ? checker.getNumberType() : null; };
+  // the decorator contract table (decorators.mjs, translate/decorators.json): the rows each unit's reading used (the
+  // header's DECORATORS line, so that a row the framework contradicts withholds the proof), and the file's decoration
+  // (every decorator site and load-time statement of the file, by text and same-file closure), an argument of every
+  // metadata read: a decorator changed anywhere in the file changes what a reader of the file reads
+  const decoRows = new Map(); // unit name -> Set of row ids
+  const useRow = (id) => { if (!currentUnit) return; const s = decoRows.get(currentUnit.name) ?? new Set(); s.add(id); decoRows.set(currentUnit.name, s); };
+  let decorationLit = null;
+  const decorationOf = () => decorationLit ??= (() => { const es = decorationTable(checker, sf); return es.length ? `map[${es.map(([k, v]) => `${strEsc(k)} := ${strEsc(v)}`).join(', ')}]` : 'map[]'; })();
+  // a metadata API: a read is a transition of the world and the file's decoration returning the cell (key, target); a
+  // write is a transition of the world. No axiom links a write to a later read: a read after a write reads the world
+  // the write returned, so the same writes and reads in the same order give the same values, and nothing else is claimed
+  function metadataApi(n, md) {
+    useRow(md.row.id);
+    if (!unitEffectful()) fail(n, `${md.api} reads or writes a metadata cell of the world in a unit not marked effectful`);
+    addPrelude('World', 'type World');
+    const asAny = (x) => { const t = typeOf(x); return isAny(t) ? expr(x, anyTarget()) : convertToD(expr(x, t), t, anyType(), x); };
+    const [k, ...rest] = md.args;
+    const kString = !!(typeOf(k).flags & TF.StringLike);
+    const kt = kString ? 'string' : anyType(); const key = kString ? expr(k, typeOf(k)) : asAny(k);
+    if (md.op === 'write') { const [value, target] = rest; return hoist(`${external('md_define', ['World', kt, anyType(), anyType()], '(World, Unit)')}(${WORLD}, ${key}, ${asAny(value)}, ${asAny(target)})`, 'Unit'); }
+    const target = asAny(rest[0]);
+    const r = hoist(`${external(md.exact === false ? `md_${md.method}` : 'md_get', ['World', 'map<string, string>', kt, anyType()], '(World, Any)')}(${WORLD}, ${decorationOf()}, ${key}, ${target})`, 'Any');
+    const rt = typeOf(n); let want = 'Any'; try { want = isAny(rt) ? 'Any' : dtype(rt, n); } catch (e) { if (!(e instanceof Unsupported)) throw e; }
+    return want === 'Any' ? r : convertD(r, 'Any', want);
+  }
   const hookBinding = (n) => { if (!ts.isIdentifier(n)) return null; const sy = checker.getSymbolAtLocation(n); return sy && hookBound.get(sy) || null; };
   const hookType = (n) => { // the table's type for a name bound to a hook result, or a field read on one
     const b = hookBinding(n); if (b && b.field) return hookTsType(b.row, b.field);
@@ -1802,6 +1830,7 @@ export function translate(file, fnName, opts = {}) {
   function binary(n) {
     const op = n.operatorToken.kind;
     if (op === K.CommaToken) { expr(n.left); return expr(n.right); }
+    { const po = plainObjectTest(checker, n, sf); if (po) { if (po.refuse) fail(n, po.refuse); return po.value ? 'true' : 'false'; } } // the plain-object test on a record value: a record is a plain object (lean's record invariant), so its prototype is Object.prototype
     const bit = { [K.AmpersandToken]: 'JsBitAnd', [K.BarToken]: 'JsBitOr', [K.CaretToken]: 'JsBitXor', [K.LessThanLessThanToken]: 'JsShl', [K.GreaterThanGreaterThanToken]: 'JsShr', [K.GreaterThanGreaterThanGreaterThanToken]: 'JsUshr' }[op];
     if (bit) {
       if (op === K.BarToken && ts.isNumericLiteral(n.right) && Number(n.right.text) === 0) return `${helper('JsInt32', [NUM])}(${expr(n.left)})`;
@@ -2873,6 +2902,12 @@ export function translate(file, fnName, opts = {}) {
       if (!unitEffectful()) fail(n, `hook ${h.name} is a world transition in a unit not marked effectful`);
       const args = n.arguments.map((a) => expr(a, anyTarget())); const pts = n.arguments.map(() => anyType());
       return hoist(`${external(`hook_${h.name}`, ['World', ...pts], `(World, ${dt.name})`)}(${[WORLD, ...args].join(', ')})`, dt.name);
+    } }
+    { const md = metadataCall(checker, n, sf); if (md) return metadataApi(n, md); } // a metadata API of the decorator table: a cell of the world keyed by (key, target)
+    { const ok = ownKeyTest(checker, n, sf); if (ok) { // the own-key test, exact on a dictionary (its key set) and on a record of required fields (its declared keys)
+      if (ok.refuse) fail(n, ok.refuse);
+      const key = expr(ok.key, typeOf(ok.key));
+      return ok.kind === 'dict' ? `(${key} in ${expr(ok.obj)})` : `(${key} in {${ok.keys.map(strEsc).join(', ')}})`;
     } }
     if (isNullCreate(n) && dictionaryT(checker.getContextualType(n))) return 'map[]'; // `Object.create(null)` as a dictionary: empty, no prototype to read
     if (ts.isIdentifier(f)) {
@@ -4393,11 +4428,34 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const mutTypes = mutatedOf(u).map((m) => { const pr = u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m); return dtype(typeOf(pr.name), pr); });
       const rparts = [...(eff ? ['World'] : []), rt, ...mutTypes, ...(currentSlots ? [currentSlots.T] : [])];
       const rtype = rparts.length === 1 ? rt : `(${rparts.join(', ')})`;
+      // the route wrapper of a listed decorator (decorators.mjs routeWrapper): each pipe rebinds its parameter to the pipe's
+      // result, each guard gates the body (class guards outermost). A guard's verdict, a pipe and the denial are
+      // uninterpreted and the same on both sides, so the lemma holds for every guard and every pipe, the always-true
+      // guard and the identity pipe among them: what it proves of the route it proves of a direct call too
+      const route = routeWrapper(checker, sf, u);
+      if (route.unreadable) fail(u.node, `the route wrapper is not read: ${route.unreadable}`);
+      let routed = full;
+      if (route.guards.length || route.pipes.size) {
+        for (const id of route.rows) { const s = decoRows.get(u.name) ?? new Set(); s.add(id); decoRows.set(u.name, s); }
+        const pipeLets = [...route.pipes].map(([i, list]) => {
+          const p = u.params[i];
+          if (!ts.isIdentifier(p.name) || p.initializer || p.questionToken || p.dotDotDotToken) fail(p, 'a piped parameter is a plain required name');
+          const pd = dtype(typeOf(p.name), p), pn = dn(p.name.text);
+          return `var ${pn} := ${list.reduce((acc, x) => `${external(`pipe_${x.key}`, [pd], pd)}(${acc})`, pn)};`;
+        });
+        if (pipeLets.length) routed = `${pipeLets.join('\n')}\n${routed}`;
+        [...route.guards].reverse().forEach((g, j) => {
+          const gi = route.guards.length - 1 - j, gv = `guard${gi}_`;
+          const denied = eff ? `${external(`route_denied_${mangle(rtype)}`, ['World'], rtype)}(${WORLD})` : `${external(`route_denied_${mangle(rtype)}`, [], rtype)}()`;
+          routed = eff ? `var (${WORLD}, ${gv}) := ${external(`guard_${g.key}`, ['World'], '(World, bool)')}(${WORLD});\nif !${gv} then ${denied} else\n${indentBlock(wrapLet(routed))}` : `if !${external(`guard_${g.key}`, [], 'bool')}() then ${denied} else\n${indentBlock(wrapLet(routed))}`;
+        });
+      }
       const outOfFuel = rec ? wrapRet(`${external(`fuel_out_${mangle(rt)}`, [], rt)}()`) : null;
-      const full2 = rec ? `if ${FUEL} == 0 then ${outOfFuel} else\n${indentBlock(wrapLet(full))}` : full;
+      const full2 = rec ? `if ${FUEL} == 0 then ${outOfFuel} else\n${indentBlock(wrapLet(routed))}` : routed;
       const specs2 = rec ? [...specs, `  decreases ${FUEL}`] : specs;
       const tp = unitTParams().length ? `<${unitTParams().map((p) => `${p}(==)`).join(', ')}>` : '';
       chunks.push(...coreHelpers.splice(0), [`function ${name}${tp}(${sig}): ${rtype}`, ...specs2, '{', indentBlock(full2), '}'].join('\n'));
+      if (decoRows.has(u.name)) decoLines.push(`// DECORATORS ${name}: ${[...decoRows.get(u.name)].sort().join(',')}`); // the table rows this reading used
     } else if (kindOf.get(u) === 'function') {
       const body = bodyList ? bodyExpr(bodyList, u) : expr(u.body, retType(u));
       const full = sp.lets.length ? `${sp.lets.join('\n')}\n${body}` : body;
@@ -4431,7 +4489,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     for (const [k, text] of prelude) pre.push(qualify(text));
     for (const text of heapPre) pre.push(text);
   }
-  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
+  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${decoLines.length ? '\n' + decoLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
   if (opts.preludeOut) {
     const preludeText = `// Generated by lean-ts translate (version 2): shared declarations. Identical for parent and candidate, or the gate refuses.\n` + pre.map((t) => `// PRELUDE ${t.match(/^(?:datatype|type|function|predicate)\s+([A-Za-z0-9_]+)/)?.[1] ?? hash(t)}\n${t}\n// END PRELUDE`).join('\n') + '\n';
     return { main: `${header}\ninclude "${path.basename(opts.preludeOut)}"\n\n${main}\n`, prelude: preludeText };
