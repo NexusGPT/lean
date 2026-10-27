@@ -259,3 +259,25 @@ Census (resolved, 39 roots), strict graph 706 -> 735, own syntax 1759 -> 1853; `
 ```text
 {"files":23359,"units":53918,"core":735,"heapOwnFit":1853,"mirrorMismatch":1711,"planErrorCount":0,"seconds":330}
 ```
+
+## 14. Pure globals
+
+Reading: a global of the platform (never a name the file declares), each a function of its arguments: `Math.max` and
+`Math.min` (the ordinary lane's `Max` and `Min`, nested for more arguments), `Math.abs`, `Math.sign`, `Math.ceil`,
+`Math.round` (its helpers), `Math.floor` and `Math.trunc` (an int is its own floor; `Math.floor(a / b)` in an int file is
+`FloorDivT`, a zero divisor marking the world; a real's `.Floor`), `String(x)` of a primitive or an optional primitive
+(the template conversion of step 1), `Array.isArray` of an array (`true`) or a primitive (`false`), and `Object.keys` of a
+dictionary: a fresh array of `DictKeysJs(keys)`, a bodiless function of the insertion sequence (JavaScript puts
+integer-like keys first, ascending, then the rest in insertion order).
+Soundness: each is exact on the values the core holds or a function of exactly what decides it; `Array.isArray` of a
+record is not read (an array is a record of its type), `Object.keys` of a record is not read (an object may hold more
+keys than its type names).
+Out: `Math.random` (the world), `Number(s)` and `JSON.parse` (NaN, any), `JSON.stringify` (it walks the graph and may
+call `toJSON`), `Object.values` and `Object.entries`.
+Pair `heap5_globals`: `spread` (`Math.abs(high - low)` for max minus min: proved), `half` (WITNESS), `title` (a template
+for `String(count)` and `+`: proved), `distance` (untouched), `listed` (`true` for `Array.isArray` of an array field:
+proved), `noteCount` (untouched, `Object.keys` of a dictionary). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 735 -> 790, own syntax 1853 -> 1994; `curve.md` expects 1669 after its step 14:
+```text
+{"files":23359,"units":53918,"core":790,"heapOwnFit":1994,"mirrorMismatch":1852,"planErrorCount":0,"seconds":330}
+```

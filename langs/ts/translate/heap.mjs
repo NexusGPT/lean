@@ -27,6 +27,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { originOf } from '../common.mjs';
 // the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
 // design/library-ops.dfy and against the engine by exec/transitions.mjs on Test262); the prelude instantiates a row's
 // form per shape by substituting <K> (the shape key) and <E> (its element type)
@@ -289,18 +290,44 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (ts.isBinaryExpression(x)) { const k = x.operatorToken.kind; if (!BINOPS.has(k)) return false; if ((k === K.AmpersandAmpersandToken || k === K.BarBarToken) && !(isBoolT(typeOf(x.left)) && isBoolT(typeOf(x.right)))) return false; if (k === K.PlusToken && !((typeOf(x.left).flags & TF.NumberLike) && (typeOf(x.right).flags & TF.NumberLike)) && !((typeOf(x.left).flags & TF.StringLike) && (typeOf(x.right).flags & TF.StringLike))) return false; return constExpr(x.left, depth) && constExpr(x.right, depth); }
     return false;
   }
+  // the pure globals: Math.max and Math.min (exact, the ordinary lane's Max and Min), Math.abs, Math.sign, Math.ceil,
+  // Math.round (its JsAbs-style helpers), Math.floor and Math.trunc (an int is its own floor; `Math.floor(a / b)` in an
+  // int file is the floor division, a zero divisor marking the world), String(x) of a primitive (the template
+  // conversion), Array.isArray of an array or a primitive (true, false), Object.keys of a dictionary (a fresh array of
+  // its keys in JavaScript's order, a bodiless function of the insertion sequence). Each a global of the platform, never
+  // a name the file declares. Out: Math.random (the world), Number and JSON (a parse may be NaN or any), Object.keys of
+  // a record (an object of a record type may hold more keys than its type names).
+  const isGlobalName = (id, name) => ts.isIdentifier(id) && id.text === name && originOf(checker, id, sf, null).kind === 'global';
+  const globalCall = (e) => {
+    if (!ts.isCallExpression(e) || e.questionDotToken || e.arguments.some((a) => ts.isSpreadElement(a))) return null;
+    const c = e.expression, a = e.arguments; const num = (x) => isNumT(typeOf(x));
+    if (isGlobalName(c, 'String') && a.length === 1) { const sh = shapeOf(typeOf(a[0])); return sh && (sh.kind === 'prim' || sh.kind === 'opt') ? 'String' : null; }
+    if (!ts.isPropertyAccessExpression(c) || c.questionDotToken) return null;
+    const m = c.name.text;
+    if (isGlobalName(c.expression, 'Math')) {
+      if ((m === 'max' || m === 'min') && a.length >= 1 && a.every(num)) return `Math.${m}`;
+      if (['abs', 'sign', 'ceil', 'round', 'floor', 'trunc'].includes(m) && a.length === 1 && (num(a[0]) || (['floor', 'trunc'].includes(m) && !isReal && ts.isBinaryExpression(unparen(a[0])) && unparen(a[0]).operatorToken.kind === K.SlashToken && num(unparen(a[0]).left) && num(unparen(a[0]).right)))) return `Math.${m}`;
+      return null;
+    }
+    if (isGlobalName(c.expression, 'Array') && m === 'isArray' && a.length === 1) { const sh = shapeOf(typeOf(a[0])); return sh && (sh.kind === 'arr' || sh.kind === 'prim' || sh.kind === 'opt') ? 'Array.isArray' : null; }
+    if (isGlobalName(c.expression, 'Object') && m === 'keys' && a.length === 1 && shapeOf(typeOf(a[0]))?.kind === 'dict' && shapeOf(typeOf(e))?.kind === 'arr') return 'Object.keys';
+    return null;
+  };
   // a negative zero: `-x` of a zero, `a * b` of a zero and a negative, a remainder or a quotient of zero with a negative
   // operand, a real rounded up to zero from below. JavaScript tells it from zero (Object.is, a division by it; lane B's
   // observation names it) and the int or real reading does not, so where it may escape the world is marked; a
   // comparison, a truthiness test or a conversion to a string absorbs it (-0 === 0, "0"), and there no mark is needed.
   // (A negative zero handed in as an input is the reading's general gap: a number is read as its value.)
-  const absorbed = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; if (!p) return false; if (ts.isBinaryExpression(p) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(p.operatorToken.kind)) return true; if (ts.isTemplateSpan(p)) return true; if ((ts.isIfStatement(p) || ts.isConditionalExpression(p)) && p.expression === x || (ts.isConditionalExpression(p) && p.condition === x)) return true; if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true; return false; };
+  const absorbed = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; if (!p) return false; if (ts.isBinaryExpression(p) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(p.operatorToken.kind)) return true; if (ts.isTemplateSpan(p)) return true; if ((ts.isIfStatement(p) || ts.isConditionalExpression(p)) && p.expression === x || (ts.isConditionalExpression(p) && p.condition === x)) return true; if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true; if (ts.isCallExpression(p) && isGlobalName(p.expression, 'String')) return true; return false; };
   const negZeroRisk = (e) => {
     if (absorbed(e)) return false;
     if (ts.isPrefixUnaryExpression(e) && e.operator === K.MinusToken) { const o = unparen(e.operand); return !(ts.isNumericLiteral(o) && Number(o.text.replace(/_/g, '')) !== 0); }
     if (ts.isBinaryExpression(e) && [K.AsteriskToken, K.PercentToken, K.SlashToken].includes(e.operatorToken.kind)) return true;
+    const g = globalCall(e); if (g === 'Math.floor' || g === 'Math.trunc') return !!floorDiv(e) || (isReal && g === 'Math.trunc');
+    if (g === 'Math.round' || g === 'Math.ceil') return isReal;
     return false;
   };
+  const floorDiv = (e) => { const a = unparen(e.arguments[0]); return !isReal && ts.isBinaryExpression(a) && a.operatorToken.kind === K.SlashToken ? a : null; }; // Math.floor(x / y) of an int file
   const impUsed = new Map(); // key -> Dafny type of each imported constant a core unit reads
   const strUsed = new Set();
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
@@ -425,6 +452,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return;
       }
       if (calleeOf(e, u)) { for (const a of e.arguments) checkExpr(a); return; }
+      if (globalCall(e)) { const g = globalCall(e); if (g === 'Object.keys' && lambdaDepth) return no('allocation inside a callback'); const fd = (g === 'Math.floor' || g === 'Math.trunc') ? floorDiv(e) : null; if (fd) { if (lambdaDepth) return no('division inside a callback'); usesIndex = true; checkExpr(fd.left); return checkExpr(fd.right); } for (const a of e.arguments) checkExpr(a); return; } // a pure global
       if (reCall(e)) { const rc = reCall(e); if (rc.m === 'split' && lambdaDepth) return no('allocation inside a callback'); if (isReal && rc.m === 'search') return no('search in a real file'); checkExpr(rc.s); if (rc.r) checkExpr(rc.r); return; } // a regular expression literal: uninterpreted
       if (strMethod(e)) { if (strMethod(e) === 'split' && lambdaDepth) return no('allocation inside a callback'); checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); return; } // a string method of the ordinary lane's exact readings
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['slice', 'concat', 'reverse', 'splice'].includes(e.expression.name.text)) { // the table's rows that yield a reference: a fresh array (slice, concat, splice) or the receiver (reverse)
@@ -666,9 +694,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       out.push('function NegZeroMark(hw: HWorld, z: bool): HWorld { if z then hw.(oob := true) else hw }'); // a negative zero may escape: not modelled from there
       out.push(isReal ? 'function RemT_real(a: real, b: real): real { if b == 0.0 then 0.0 else a - b * (TruncR(a / b) as real) }' : 'function RemT_int(a: int, b: int): int { if b == 0 then 0 else a - b * TruncDivI(a, b) }'); // the remainder of a truncated division: the dividend's sign
       if (isReal) out.push('function DivT_real(a: real, b: real): real { if b == 0.0 then 0.0 else a / b }');
-      else out.push('function TruncDivI(a: int, b: int): int requires b != 0 { var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q }');
+      else { out.push('function TruncDivI(a: int, b: int): int requires b != 0 { var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q }'); out.push('function TruncDivT(a: int, b: int): int { if b == 0 then 0 else TruncDivI(a, b) }'); out.push('function FloorDivT(a: int, b: int): int { if b == 0 then 0 else var q := TruncDivI(a, b); if a - b * q != 0 && (a < 0) != (b < 0) then q - 1 else q }'); } // Math.trunc and Math.floor of an int division
     }
     if (isReal && (divUsed || strUsed.has('truncr'))) out.push('function TruncR(a: real): int { if a < 0.0 then -(-a).Floor else a.Floor }'); // the truncation of a real toward zero
+    if (strUsed.has('dictkeys')) out.push('function DictKeysJs(keys: seq<string>): seq<string>'); // Object.keys of a dictionary: integer-like keys first, ascending, then the rest in insertion order: a function of the insertion sequence
     if (strUsed.has('re_test')) out.push('function ReTest(re: string, s: string): bool'); // RegExp.prototype.test of a literal: a function of its text and the input
     if (strUsed.has('re_replace')) out.push('function ReReplace(re: string, s: string, r: string): string'); // replace by a literal regular expression, the replacement's $ patterns included
     if (strUsed.has('re_split')) out.push('function ReSplit(re: string, s: string): seq<string>'); // split by a literal regular expression: the pieces (captures included)
@@ -910,6 +939,19 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const callee = calleeOf(e, u); const recv = sameFileCall(e) ? [] : [dn('this')]; // a method takes its receiver first
         const ps = fns.get(callee).params; const args = ps.map((p, j) => { const sh = shapeOf(typeOf(p.name)); return e.arguments[j] ? exprAs(e.arguments[j], sh) : `Option<${sh.inner.d}>.None`; }); // an argument not passed is undefined
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(callee)}(${[HW, ...recv, ...args].join(', ')});`); return r;
+      }
+      if (globalCall(e)) { // a pure global: its arguments in order, then the operation
+        const g = globalCall(e); const a = e.arguments;
+        if (g === 'String') return toStr(a[0]);
+        if (g === 'Array.isArray') { expr(a[0]); return shapeOf(typeOf(a[0])).kind === 'arr' ? 'true' : 'false'; } // the argument is read (a pure read) and its shape decides
+        if (g === 'Object.keys') { const s = shapeOf(typeOf(a[0])); const r = bind(expr(a[0]), 'o'); const rs = shapeOf(typeOf(e)); strUsed.add('dictkeys'); const out = fresh('r'); lines.push(`var (${HW}, ${out}) := Alloc_${rs.key}(${HW}, DictKeysJs(if Is${s.key}(${HW}, ${r}) then ${HW}.heap[${r}].keys_${s.key} else []));`); return out; }
+        if (g === 'Math.max' || g === 'Math.min') { const vs = a.map((x) => expr(x)); const h = helper(g === 'Math.max' ? 'Max' : 'Min', [NUM]); return vs.reduceRight((acc, v) => (acc === null ? v : `${h}(${v}, ${acc})`), null); }
+        if (g === 'Math.abs') return `${helper('Abs', [NUM])}(${expr(a[0])})`;
+        if (g === 'Math.sign' || g === 'Math.ceil' || g === 'Math.round') return `${helper({ 'Math.sign': 'JsSign', 'Math.ceil': 'JsCeil', 'Math.round': 'JsRound' }[g], [NUM])}(${expr(a[0])})`;
+        const fd = floorDiv(e); if (fd) { divUsed = true; const l = bind(expr(fd.left), 'm'); const d = bind(expr(fd.right), 'd'); lines.push(`var ${HW} := ZeroMark_${NUM}(${HW}, ${d});`); const v = `${g === 'Math.floor' ? 'FloorDivT' : 'TruncDivT'}(${l}, ${d})`; if (negZeroRisk(e)) lines.push(`var ${HW} := NegZeroMark(${HW}, ${v} == 0 && (${l} < 0 || ${d} < 0));`); return v; }
+        if (isReal && negZeroRisk(e) && ['Math.round', 'Math.ceil', 'Math.trunc'].includes(g)) { divUsed = true; const x = bind(expr(a[0]), 'n'); const v = g === 'Math.trunc' ? (strUsed.add('truncr'), `(TruncR(${x}) as real)`) : `${helper(g === 'Math.round' ? 'JsRound' : 'JsCeil', [NUM])}(${x})`; lines.push(`var ${HW} := NegZeroMark(${HW}, ${v} == 0.0 && ${x} < 0.0);`); return v; } // a real rounded up to zero from below is a negative zero
+        if (!isReal) return expr(a[0]); // an int is its own floor and its own truncation
+        if (g === 'Math.trunc') strUsed.add('truncr'); return g === 'Math.floor' ? `((${expr(a[0])}).Floor as real)` : `(TruncR(${expr(a[0])}) as real)`;
       }
       if (reCall(e)) { // the operands in source order: the receiver string (or the tested string), then the replacement
         const rc = reCall(e); const src = strEsc(rc.re.text); const sv = bind(expr(rc.s), 's'); strUsed.add(`re_${rc.m}`);
