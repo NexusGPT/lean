@@ -177,16 +177,50 @@ export function translate(file, fnName, opts = {}) {
       ts.forEachChild(n, walk);
     };
     walk(u.body ?? u.fn);
+    // a local bound to a same-file call's result is another name for the cells the callee returns (`return this.items`,
+    // `return cache`, through further same-file calls); a change through the local is a write of those cells, modelled
+    // only where the unit reads one heap (the heap core: the change reaches the cell); elsewhere it is an obligation
+    const strip = (x) => { while (x && (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isNonNullExpression(x) || ts.isAwaitExpression(x) || ts.isSatisfiesExpression(x))) x = x.expression; return x; };
+    const calleeOf = (call, cls) => { const f = strip(call.expression); if (ts.isPropertyAccessExpression(f) && f.expression.kind === K.ThisKeyword && cls?.name) return fns.get(`${cls.name.text}.${f.name.text}`) ?? null; if (ts.isIdentifier(f)) { const d = checker.getSymbolAtLocation(f)?.valueDeclaration; return [...fns.values()].find((x) => !x.cls && d && (x.node === d || x.fn === d || (ts.isVariableDeclaration(d) && d.initializer === x.fn))) ?? null; } return null; };
+    const returnedCells = (callee, seen = new Set()) => {
+      if (seen.has(callee)) return []; seen.add(callee);
+      const out = [];
+      const of = (e) => {
+        e = strip(e); if (!e) return;
+        if (ts.isConditionalExpression(e)) { of(e.whenTrue); of(e.whenFalse); return; }
+        if (ts.isBinaryExpression(e) && [K.QuestionQuestionToken, K.BarBarToken, K.AmpersandAmpersandToken].includes(e.operatorToken.kind)) { of(e.left); of(e.right); return; }
+        let r = e; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isNonNullExpression(r)) { if ((ts.isPropertyAccessExpression(r)) && r.expression.kind === K.ThisKeyword && callee.cls) { out.push(['this', r.name.text]); return; } r = r.expression; }
+        if (ts.isIdentifier(r) && moduleState(checker, r, sf)) { out.push(['module', r.text]); return; }
+        if (ts.isCallExpression(e)) { const c = calleeOf(e, callee.cls); if (c) out.push(...returnedCells(c, seen)); }
+      };
+      const body = callee.body ?? callee.fn?.body;
+      if (body && !ts.isBlock(body)) of(body);
+      else if (body) { const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) of(x.expression); ts.forEachChild(x, w); }; ts.forEachChild(body, w); }
+      return out;
+    };
+    const aliasWalk = (n) => {
+      if (ts.isFunctionLike(n) && n !== u.fn) return;
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && ts.isCallExpression(strip(n.initializer))) {
+        const callee = calleeOf(strip(n.initializer), u.cls);
+        const sym = callee && checker.getSymbolAtLocation(n.name);
+        let changed = false;
+        const uses = (x) => { if (changed) return; if (ts.isIdentifier(x) && x !== n.name && checker.getSymbolAtLocation(x) === sym) { let top = x; while (top.parent && (ts.isPropertyAccessExpression(top.parent) || ts.isElementAccessExpression(top.parent)) && top.parent.expression === top) top = top.parent; if (isMutated(x) || (top !== x && isWrite(top)) || (top !== x && top.parent && ts.isCallExpression(top.parent) && top.parent.expression === top && ts.isPropertyAccessExpression(top) && MUTATOR_NAMES.has(top.name.text))) changed = true; } ts.forEachChild(x, uses); };
+        if (callee && sym) { uses(u.body ?? u.fn); if (changed) for (const [kind, name] of returnedCells(callee)) touch(kind, name, 'alias'); }
+      }
+      ts.forEachChild(n, aliasWalk);
+    };
+    aliasWalk(u.body ?? u.fn);
     const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const has = (re) => re.test(text);
     const modelled = (c) => {
+      if (c.alias && !/\bHWorld\b/.test(text)) return false; // a change through a call result reaches the cell only in the heap core
       if (/_block_/.test(text)) return true; // an opaque unit: one uninterpreted transition of the world, every cell inside it rides in that transition
       if (c.kind === 'module') return (!c.read || has(new RegExp(`Module_file_get_${esc(c.name)}_`))) && (!c.write || has(new RegExp(`Module_file_set_${esc(c.name)}_`))) && (!c.mutator || /\bWorld\b/.test(text));
       if (c.kind === 'this') return (!c.read || has(new RegExp(`(_get_${esc(c.name)}(_|\\()|Get_\\w+_${esc(c.name)}\\(|\\.${esc(c.name)}_f\\b|_${esc(c.name)}_Ext_\\w+\\(self\\))`))) && (!c.write || has(new RegExp(`(_set_${esc(c.name)}(_|\\()|Set_\\w+_${esc(c.name)}\\(|${esc(c.name)}_f :=)`))) && (!c.mutator || /\bH?World\b/.test(text)); // a heap-core method's mutator is a heap write of its HWorld
       return (!c.read || has(/(global_handle_|global_get_|module_require|module_import)/)) && !c.write;
     };
     const list = [...cells.values()].map((c) => ({ ...c, modelled: modelled(c) }));
-    return { cells: list, obligations: list.filter((c) => !c.modelled).map((c) => `${c.kind} ${c.name}: ${[c.read && 'read', c.write && 'write', c.mutator && 'mutator'].filter(Boolean).join('+')} without a transition`) };
+    return { cells: list, obligations: list.filter((c) => !c.modelled).map((c) => `${c.kind} ${c.name}: ${[c.read && 'read', c.write && 'write', c.mutator && 'mutator', c.alias && 'changed through a call result'].filter(Boolean).join('+')} without a transition`) };
   };
   const fnIdsOf = new Map(); // unit name -> the code ids of the function values it emits (`// FN <unit>: [...]`)
   const fnLines = [];
