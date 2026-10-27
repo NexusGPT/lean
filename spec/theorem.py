@@ -170,7 +170,19 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     # function. Its body becomes a call of the parent's, so the prover sees the equality without induction. The
     # comparison is on the full declaration text with comments removed and whitespace folded; any difference keeps
     # the candidate's own body.
-    cand_text, aliased = alias_identical(parent_text, cand_text, pf, cf)
+    # the TypeScript signature as written (`// SIG <name>: <json>`: decorators, parameter names and types, the return
+    # type). Two Dafny signatures can agree while the TypeScript ones differ (an absence read as one None, a changed
+    # parameter decorator the framework runs before the call): a differing signature withholds the lemma as an
+    # interface change, never a proof.
+    sigs = {}
+    for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
+        for m in re.finditer(r'^// SIG ([A-Za-z_][A-Za-z0-9_]*): (.+)$', text, flags=re.M):
+            name = m.group(1)
+            if not name.endswith(suffix):
+                raise Refusal(f'{label}: signature for {name} does not end in {suffix}')
+            sigs.setdefault(name[: -len(suffix)], {})[label] = m.group(2).strip()
+    sig_differs = {f for f, s_ in sigs.items() if 'parent' in s_ and 'candidate' in s_ and s_['parent'] != s_['candidate']}
+    cand_text, aliased = alias_identical(parent_text, cand_text, pf, cf, sig_differs)
     # a heap-core unit carries the hypothesis its inputs satisfy in the typed program (`// HYP <name>: <expr>`, written
     # by the translator); the lemma assumes it. Both sides must state the same hypothesis, or there is no one theorem.
     hyps = {}
@@ -199,6 +211,9 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             except ValueError:
                 raise Refusal(f'{label}: guard for {name} is not JSON')
     unguarded = {f: 'slot layout differs: the hook slots of parent and candidate are not the same list' for f in slot_layout_differs}
+    for f, s in sigs.items():
+        if f in funcs and f not in aliased and 'parent' in s and 'candidate' in s and s['parent'] != s['candidate']:
+            unguarded[f] = f"interface differs: parent {s['parent'][:300]} vs candidate {s['candidate'][:300]}"
     for f, g in guards.items():
         if f not in funcs or f in aliased or 'parent' not in g or 'candidate' not in g:
             continue
@@ -351,14 +366,14 @@ def _body_span(clean, start):
     raise Refusal('function without a body')
 
 
-def alias_identical(parent_text, cand_text, pf, cf):
+def alias_identical(parent_text, cand_text, pf, cf, exclude=frozenset()):
     """Rewrite each candidate function identical to the parent's into `{ <base>_parent(<names>) }`."""
     aliased = []
     clean = strip_comments(cand_text)
     edits = []
     # identical text is not enough: a function that calls a changed function is changed through it. Keep only the
     # functions whose text is identical AND whose same-file callees are all identical (a fixpoint).
-    same = {b for b in cf if b in pf and _norm(pf[b]['body'], 'parent') == _norm(cf[b]['body'], 'candidate')}
+    same = {b for b in cf if b in pf and b not in exclude and _norm(pf[b]['body'], 'parent') == _norm(cf[b]['body'], 'candidate')} # a unit whose TypeScript signature changed is changed, whatever its Dafny text
     changed = True
     while changed:
         changed = False

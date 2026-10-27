@@ -22,7 +22,7 @@ export const COMPILER_OPTIONS = {
   noEmit: true,
   skipLibCheck: true,
   allowJs: true,
-  checkJs: true, jsx: ts.JsxEmit.ReactJSX };
+  checkJs: true, jsx: ts.JsxEmit.ReactJSX, experimentalDecorators: true }; // a file read without its project keeps its legacy decorators (a project's own tsconfig decides otherwise)
 
 // Diagnostics that only say "this file's neighbours are not here". With a project they do not occur; alone
 // they would hide the real verdict behind missing modules, so they are reported under their own rule.

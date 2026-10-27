@@ -26,7 +26,13 @@ measurement. The owner's standing rule: no overfitting to a bug; every mechanism
 4. **A cleared timer still shows as pending** (dossier 15, special depth b): `run.mjs:120` records `clearTimeout`
    in the trace and leaves the pending entry. A candidate that arms and clears a timer differs from the parent only
    through the trace. Fix with the virtual clock (section 4).
-5. **Corrections to the research results themselves** (dossier 16): `setFullYear` on an invalid Date sets the time
+5. **A changed signature the Dafny types merge was proved** (the audit of the 27 changed units proved equal at master
+   `03ec3bc`, 2026-10-27, `lean-v3/results/proof-audit-03ec3bc.md`): 27 of 27 proofs hold, but 7 units had a changed
+   parameter decorator (a framework pipe that runs before the call) and 1 a parameter type `| undefined` made `| null`,
+   both invisible to the Dafny signature. Fix: the translator writes each unit's TypeScript signature as written
+   (`// SIG`: decorators, parameter names and types, the return type) and the theorem withholds the lemma as
+   `ASK:interface` when the two sides differ, before identity aliasing; pair `signature_change`.
+6. **Corrections to the research results themselves** (dossier 16): `setFullYear` on an invalid Date sets the time
    value to +0, it does not return NaN; JEST's 27 are specification bugs, not engine bugs; Map and Set keys use
    SameValue after canonicalising -0, which equals SameValueZero.
 

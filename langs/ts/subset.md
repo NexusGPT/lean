@@ -25,7 +25,7 @@ rules per package).
 | `PASS-proved` | paired observations are equal under the proof's stated model |
 | `PASS-decided` | a finite component (state and props declared finite by its types) agreed on every event sequence; the product of both state spaces was explored to the end |
 | `PASS-bounded` | paired observations agreed on the drawn inputs |
-| `ASK` | the requested check remains undecided |
+| `ASK` | the requested check remains undecided; `ASK:interface` when the TypeScript signature as written (parameter types, decorators, the return type) differs between the two sides, whatever the Dafny signature says |
 | `REFUSE` | a local source link failed; `kind: load` names the file and real loader error |
 | `NEW` | the candidate-only unit loaded and ran; input count, seed, fakes, faults and trace shapes are recorded |
 
