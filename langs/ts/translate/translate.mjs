@@ -774,6 +774,49 @@ export function translate(file, fnName, opts = {}) {
     if (decision !== null) { expr(node); return decision; }
     return fallback(expr(node), d);
   }
+  // a literal operand of ===: its primitive kind and value (a negated number literal included)
+  function eqLiteral(x) {
+    while (ts.isParenthesizedExpression(x)) x = x.expression;
+    let sign = 1;
+    if (ts.isPrefixUnaryExpression(x) && x.operator === K.MinusToken && ts.isNumericLiteral(x.operand)) { sign = -1; x = x.operand; }
+    if (ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x)) return { kind: 'string', value: x.text };
+    if (ts.isNumericLiteral(x)) return { kind: 'number', value: sign * Number(x.text) };
+    if (x.kind === K.TrueKeyword || x.kind === K.FalseKeyword) return { kind: 'boolean', value: x.kind === K.TrueKeyword };
+    return null;
+  }
+  // a union that is sometimes a primitive and sometimes a record, array or function (the lint's mixed-types)
+  const primMember = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.Undefined | TF.Null | TF.EnumLike));
+  const mixedUnion = (t) => { const ps = nonNull(t); return ps.some(primMember) && ps.some((x) => !primMember(x) && !isAny(x)); };
+  // a mixed union against a literal: === is true only on the primitive arm of the literal's kind holding the literal's
+  // value; a record, array, function, null or undefined arm is false (strict equality never coerces). A represented arm is
+  // compared exactly, an opaque value through its typeof tag and its conversion, an asserted sum through one
+  // uninterpreted predicate of the value and the literal
+  function mixedVsLiteral(other, litNode) {
+    const lit = eqLiteral(litNode), code = outerParens(expr(litNode));
+    const kd = lit.kind === 'string' ? 'string' : lit.kind === 'number' ? NUM : 'bool';
+    const kindOf = (t) => t.flags & TF.StringLike ? 'string' : t.flags & TF.NumberLike ? 'number' : t.flags & TF.BooleanLike ? 'boolean' : null;
+    const decide = (t) => {
+      const k = kindOf(t);
+      if (!k) return t.flags & (TF.Object | TF.NonPrimitive | TF.Null | TF.Undefined | TF.Void | TF.BigIntLike | TF.ESSymbolLike) ? 'false' : null;
+      if (k !== lit.kind) return 'false';
+      if (t.flags & TF.BooleanLiteral) return (t.intrinsicName === 'true') === lit.value ? 'true' : 'false';
+      if (t.flags & TF.StringLiteral) return t.value === lit.value ? 'true' : 'false';
+      if (t.flags & TF.NumberLiteral && Number.isFinite(lit.value)) return t.value === lit.value ? 'true' : 'false';
+      return null;
+    };
+    const compare = (v, d) => {
+      if (d === kd) return `(${v} == ${code})`;
+      if (d === 'Any') return `(${external('typeof', ['Any'], 'string')}(${v}) == ${strEsc(lit.kind)} && ${convertD(v, 'Any', kd)} == ${code})`;
+      return `${external(`strict_eq_${mangle(d)}_${mangle(kd)}`, [d, kd], 'bool')}(${v}, ${code})`;
+    };
+    if (mixedUnion(typeOf(other))) return staticTest(other, decide, compare);
+    // a read a guard narrowed to a primitive: the stored value compared, the same predicate a guard and its branch share
+    const stored = dtype(storedType(other), other), raw = rawOperand(other);
+    const test = (v, d) => { const members = sums.get(d); return members && !assertionDerived(other) ? sumCases(v, members, (m, u) => decide(m.t) ?? compare(`${u}.${m.field}`, m.d)) : compare(v, d); };
+    if (!optionalD(stored)) return test(raw, stored);
+    const v = `ml${tempCount++}_`;
+    return `(var ${v} := ${raw}; ${v}.Some? && ${test(`${v}.value`, innerOf(stored))})`;
+  }
   function nominalClass(t) {
     const d = t.symbol?.declarations?.find(ts.isClassDeclaration);
     if (!d) return null;
@@ -1910,6 +1953,11 @@ export function translate(file, fnName, opts = {}) {
       if (real) return `(${expr(n.left)} / ${expr(n.right)})`;
       // reached only under Math.floor / Math.trunc (the lint refuses bare `/` on numbers)
       return `__DIV__(${expr(n.left)}, ${expr(n.right)})`;
+    }
+    const mixedOperand = (x) => mixedUnion(typeOf(x)) || mixedUnion(storedType(x));
+    if ((op === K.EqualsEqualsEqualsToken || op === K.ExclamationEqualsEqualsToken) && ((eqLiteral(n.left) && mixedOperand(n.right)) || (eqLiteral(n.right) && mixedOperand(n.left)))) {
+      const test = eqLiteral(n.left) ? mixedVsLiteral(n.right, n.left) : mixedVsLiteral(n.left, n.right);
+      return op === K.ExclamationEqualsEqualsToken ? `!${test}` : test;
     }
     const map = { [K.EqualsEqualsEqualsToken]: '==', [K.ExclamationEqualsEqualsToken]: '!=', [K.EqualsEqualsToken]: '==', [K.ExclamationEqualsToken]: '!=' };
     const o = map[op] ?? n.operatorToken.getText(sf);
