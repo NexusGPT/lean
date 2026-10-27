@@ -51,7 +51,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (t.flags & TF.BooleanLike) return { kind: 'prim', d: 'bool' }; // `boolean` is the union true | false: one shape
     if (t.flags & TF.Union) { // a primitive that may be absent: `T | undefined` (an optional field or parameter) or `T | null`, never both
       const absent = t.types.filter((x) => x.flags & (TF.Undefined | TF.Null | TF.Void));
-      if (!absent.length) { const l = literals(t.types); if (l) return l; }
+      if (!absent.length) { const l = literals(t.types); if (l) return l; const ru = recUnion(t, depth); if (ru) return ru; }
       if (absent.length) {
         const kinds = new Set(absent.map((x) => (x.flags & TF.Null ? 'n' : 'u'))); if (kinds.size !== 1) return null;
         const rest = t.types.filter((x) => !absent.includes(x));
@@ -92,6 +92,30 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     }
     return null;
   }
+  // a discriminated union of records `A | B`: every alternative a record, and one field every alternative declares as
+  // literals, the alternatives' literal sets pairwise disjoint (`kind: 'circle'` against `kind: 'square'`). The value is
+  // a reference whose cell is one of the alternatives' constructors holding one of its discriminant values; a read of
+  // the discriminant reads the cell's field (shapes are views: two alternatives may be one constructor, told apart by
+  // the value). TypeScript narrows on the discriminant, and the core never writes a discriminant of an alternative's
+  // constructor (plan), so a narrowed reference reads the alternative it holds.
+  const unionsSeen = new Map(); // key -> union shape met while reading the file's types
+  const litValues = (ft) => { const xs = ft.flags & TF.Union ? ft.types : [ft]; if (xs.every((x) => x.flags & TF.StringLiteral)) return xs.map((x) => x.value); if (xs.every((x) => (x.flags & TF.NumberLiteral) && Number.isInteger(x.value) && x.value >= 0)) return xs.map((x) => x.value); return null; };
+  function recUnion(t, depth) {
+    if (t.types.length < 2 || t.types.some((x) => !(x.flags & TF.Object))) return null;
+    const alts = t.types.map((x) => shapeOf(x, depth + 1)); if (alts.some((a) => !a || a.kind !== 'rec')) return null;
+    for (const f of alts[0].fields) {
+      if (!alts.every((a) => { const g = fieldOf(a, f.name); return g && g.shape.kind === 'prim' && g.shape.d === f.shape.d; })) continue;
+      const vals = t.types.map((x) => { const p = x.getProperty(f.name); return p ? litValues(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? sf)) : null; });
+      if (vals.some((v) => !v)) continue;
+      const all = vals.flat().map(String); if (new Set(all).size !== all.length) continue;
+      const parts = alts.map((a, i) => ({ shape: a, values: vals[i] })).sort((x, y) => (`${x.shape.key}:${x.values.join('|')}` < `${y.shape.key}:${y.values.join('|')}` ? -1 : 1));
+      const key = `U_${hash(parts.map((x) => `${x.shape.key}:${x.values.join('|')}`).join(',') + '/' + f.name)}`;
+      const u = { kind: 'union', alts: parts, disc: f.name, d: f.shape.d, key }; unionsSeen.set(key, u); return u;
+    }
+    return null;
+  }
+  // a field every alternative of a union declares the same way: read through whichever constructor the cell holds
+  const unionField = (s, name) => { const fs = s.alts.map((a) => fieldOf(a.shape, name)); return fs.every((g) => g && fieldD(g.shape) === fieldD(fs[0].shape) && keyOf(g.shape) === keyOf(fs[0].shape)) ? fs[0] : null; };
   // `'a' | 'b'` or `1 | 2`: the primitive with its values (`values`); the shape key is the primitive's, so a field of a
   // literal union and a field of its primitive are one constructor (one object may be seen through both types)
   function literals(types) {
@@ -151,7 +175,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   let optUsed = false; // the Option and Pres helpers are written when a core unit or a shape needs them
   const dflt = (s) => (s.kind === 'prim' ? (s.d === 'string' ? '""' : s.d === 'bool' ? 'false' : isReal ? '0.0' : '0') : s.kind === 'opt' ? `Option<${s.inner.d}>.None` : '0');
   const fieldDflt = (s) => (s.kind === 'opt' && s.absent === 'u' ? `Pres<${s.inner.d}>.PMissing` : dflt(s));
-  function register(s) { if (!s || s.kind === 'prim') return; if (s.kind === 'opt') { optUsed = true; return; } if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map') register(s.v); else if (s.kind === 'rec') for (const f of s.fields) register(f.shape); } }
+  const unions = new Map(); // the unions a core unit reads: a predicate and the common-field reads in the prelude
+  function register(s) { if (!s || s.kind === 'prim') return; if (s.kind === 'opt') { optUsed = true; return; } if (s.kind === 'union') { if (!unions.has(s.key)) { unions.set(s.key, s); for (const a of s.alts) register(a.shape); } return; } if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map') register(s.v); else if (s.kind === 'rec') for (const f of s.fields) register(f.shape); } }
   const dateGetters = new Set(); // the UTC getters a core unit reads: each a bodiless function of the time value in the prelude
   const mapInstances = new Set(); // 'K|K2' pairs of Array.prototype.map seen in the core, each its own Map_K_K2
   const typeOf = typeOfIn ?? ((n) => checker.getTypeAtLocation(n)); // the translator's reading of a node's type (its explicit-operand overrides included)
@@ -319,6 +344,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isPropertyAccessExpression(e)) {
         const s = shapeOf(typeOf(e.expression)); if (!s) return no(`receiver type: ${shapeWhy(typeOf(e.expression))}`);
         if (s.kind === 'prim' && s.d === 'string' && e.name.text === 'length' && helper) return checkExpr(e.expression); // a string's length: its code units (the BMP envelope)
+        if (s.kind === 'union') { const f = unionField(s, e.name.text); if (!f) return no(`property ${e.name.text} of a union`); if (f.shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') usesIndex = true; return checkExpr(e.expression); } // a field every alternative declares
         if (s.kind === 'arr' ? e.name.text !== 'length' : (s.kind === 'map' || s.kind === 'set') ? e.name.text !== 'size' : !fieldOf(s, e.name.text)) return no(`property ${e.name.text}`);
         if (s.kind === 'rec' && fieldOf(s, e.name.text).shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') usesIndex = true; // a narrowed read: its lemma shows the value is there
         return checkExpr(e.expression);
@@ -545,6 +571,14 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const asValue = new Set();
     for (const u of order) { const w = (n) => { if (ts.isPropertyAccessExpression(n) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression))[0]); const name = cd && `${cd.name.text}.${n.name.text}`; if (name && fns.has(name)) asValue.add(name); } if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && (ts.isFunctionDeclaration(n.parent) || ts.isVariableDeclaration(n.parent)) && n.parent.name === n)) asValue.add(n.text); ts.forEachChild(n, w); }; w(u.body); }
     for (const name of asValue) if (own.has(name)) { own.delete(name); whyNot.get(name)?.add('named as a value'); }
+    // a write to the discriminant of a union alternative's constructor (a field write, an update, Object.assign onto it)
+    // would let a narrowed reference read another alternative's cell: a unit that may write one stays out
+    const discPairs = new Set(), altKeys = new Set(); for (const un of unionsSeen.values()) for (const a of un.alts) { discPairs.add(`${a.shape.key}.${un.disc}`); altKeys.add(a.shape.key); }
+    if (discPairs.size) for (const u of order) {
+      if (!own.has(u.name)) continue; let hit = false;
+      const w = (n) => { if (hit) return; let t = null; if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) t = unparen(n.left); if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) t = unparen(n.operand); if (t && ts.isPropertyAccessExpression(t) && discPairs.has(`${shapeOf(typeOf(t.expression))?.key}.${t.name.text}`)) hit = true; if (isAssignCall(n) && n.arguments[0] && altKeys.has(shapeOf(typeOf(n.arguments[0]))?.key)) hit = true; ts.forEachChild(n, w); };
+      w(u.body); if (hit) { own.delete(u.name); whyNot.get(u.name)?.add('writes the discriminant of a union alternative'); }
+    }
     const graph = new Map(order.map((u) => [u.name, callsOf(u)]));
     const grows = new Set(order.filter(growsOwn).map((u) => u.name));
     for (let more = true; more;) { more = false; for (const u of order) if (!grows.has(u.name) && [...graph.get(u.name)].some((c) => grows.has(c))) { grows.add(u.name); more = true; } }
@@ -595,6 +629,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       out.push('function OptMark<T>(hw: HWorld, o: Option<T>): HWorld { if o.Some? then hw else hw.(oob := true) }'); // a narrowed read that finds no value: the program left what the model reads
     }
     for (const k of keys) out.push(`predicate Is${k}(hw: HWorld, r: Ref) { r in hw.heap && hw.heap[r].${k}? }`);
+    const dq = (v, d) => (d === 'string' ? '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"' : isReal ? `${v}.0` : String(v));
+    for (const [uk, u] of [...unions].sort()) { // a union: the cell is one of the alternatives' constructors with one of its discriminant values
+      out.push(`predicate Is${uk}(hw: HWorld, r: Ref) { ${u.alts.map((a) => `(Is${a.shape.key}(hw, r) && (${a.values.map((v) => `Get_${a.shape.key}_${dn(u.disc)}(hw, r) == ${dq(v, u.d)}`).join(' || ')}))`).join(' || ')} }`);
+      for (const f of u.alts[0].shape.fields) { if (!unionField(u, f.name)) continue; const T = fieldD(f.shape); out.push(`function GetU_${uk}_${dn(f.name)}(hw: HWorld, r: Ref): ${T} { ${u.alts.map((a) => `if Is${a.shape.key}(hw, r) then Get_${a.shape.key}_${dn(f.name)}(hw, r) else `).join('')}${fieldDflt(f.shape)} }`); }
+    }
     if (strUsed.has('trim')) out.push('function StrTrim(s: string): string'); // String.prototype.trim: a function of the string alone
     if (strUsed.has('replace')) out.push('function StrReplace(s: string, a: string, b: string): string'); // replace with a string pattern: the first match, the replacement's $ patterns included, a function of the three
     if (strUsed.has('join_string')) out.push('function JoinStr(xs: seq<string>, sep: string): string decreases |xs| { if |xs| == 0 then "" else if |xs| == 1 then xs[0] else xs[0] + sep + JoinStr(xs[1..], sep) }');
@@ -765,7 +804,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (s.kind === 'arr') return `Len_${s.key}(${HW}, ${r})`;
         if (s.kind === 'map') return `MapSize_${s.key}(${HW}, ${r})`;
         if (s.kind === 'set') return `SetSize_${s.key}(${HW}, ${r})`;
-        const raw = `Get_${s.key}_${dn(e.name.text)}(${HW}, ${r})`; const f = fieldOf(s, e.name.text);
+        const raw = `${s.kind === 'union' ? 'GetU' : 'Get'}_${s.key}_${dn(e.name.text)}(${HW}, ${r})`; const f = s.kind === 'union' ? unionField(s, e.name.text) : fieldOf(s, e.name.text);
         if (f.shape.kind !== 'opt') return raw;
         const o = f.shape.absent === 'u' ? `PresOpt(${raw})` : raw; const ls = locShape(e);
         if (ls && ls.kind !== 'opt') { const v = bind(o, 'p'); lines.push(`var ${HW} := OptMark(${HW}, ${v});`); return `OptOr(${v}, ${dflt(ls)})`; }

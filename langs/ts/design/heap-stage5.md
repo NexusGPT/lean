@@ -212,3 +212,28 @@ Census (resolved, 39 roots), strict graph 647 -> 672, own syntax 1609 -> 1675; `
 ```text
 {"files":23359,"units":53918,"core":672,"heapOwnFit":1675,"mirrorMismatch":1533,"planErrorCount":0,"seconds":377}
 ```
+
+## 12. Discriminated unions of records
+
+Reading: a union of records `A | B` where every alternative declares one field as literals and the alternatives'
+literal sets are disjoint (`kind: "circle"` against `kind: "square"`) is a reference whose cell is one of the
+alternatives' constructors holding one of its values: `predicate IsU_<k>(hw, r) { (IsR_a(hw, r) && Get_R_a_kind(hw, r)
+== "circle") || (IsR_b(hw, r) && Get_R_b_kind(hw, r) == "square") }`, the parameter's hypothesis (and a field's
+well-formedness). A field every alternative declares the same way is read through whichever constructor the cell
+holds (`GetU_<k>_<f>`); after a test of the discriminant TypeScript narrows the reference and the alternative's own
+reads apply. Two alternatives with the same fields are one constructor, told apart by the value.
+Soundness: shapes are views, so the discriminant's value, never the constructor alone, tells the alternatives apart.
+A narrowed reference reads the alternative it holds because nothing in a core execution writes a discriminant of an
+alternative's constructor: a unit that writes one (a field write, an update, `Object.assign` onto it) stays out (probe:
+`q.kind = "square"` through a record of the circle's fields, then a narrowed read of `s`: the unit is out), and so does
+a unit that calls outside the file in a file with a union (step 15: a transition could rewrite a discriminant).
+Out: a union without such a field (narrowing by `in`, `typeof` or `instanceof`: an object may hold more keys than its
+type names, and `instanceof` reads a prototype), a write through the union itself, a union of records and primitives.
+Pair `heap5_unions`: `size` (WITNESS), `isRound` (`!== "square"` for `=== "circle"`: proved only through the
+hypothesis), `grow` (untouched, narrowed writes), `describe` (the other alternative tested first: proved). Lane B:
+`curve.md` section 5 notes korat's enumerator draws no union of records; the generated inputs reached the WITNESS.
+Lint: unchanged.
+Census (resolved, 39 roots), strict graph 672 -> 706, own syntax 1675 -> 1759; `curve.md` expects 1415 after its step 12:
+```text
+{"files":23359,"units":53918,"core":706,"heapOwnFit":1759,"mirrorMismatch":1617,"planErrorCount":0,"seconds":377}
+```
