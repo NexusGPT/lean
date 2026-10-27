@@ -1647,7 +1647,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   const isLiteralish = (node) => { while (ts.isParenthesizedExpression(node)) node = node.expression; return ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node) || ts.isNumericLiteral(node) || ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node) || node.kind === K.TrueKeyword || node.kind === K.FalseKeyword; };
   function coerce(code, node, expected) {
     if (!expected) return code;
-    const sourceT = typeOf(node), nt = isPromiseT(sourceT) && !(isHandleT(sourceT) && isPromiseT(expected)) ? promiseResultType(node) : sourceT; // a handle into a promise slot stays the handle
+    const sourceT = typeOf(node), nt = isPromiseT(sourceT) && !(isHandleT(sourceT) && isPromiseT(baseOf(expected))) ? promiseResultType(node) : sourceT; // a handle into a promise slot stays the handle, and so does a handle into its optional slot (`Promise<X> | null`): Some(handle), never the absent constant its settled value would read as
+    if (nt === sourceT && isPromiseT(sourceT) && isHandleT(sourceT)) { // a call of a same-file async unit reads its settled value, so no term names the promise it made: a handle slot cannot hold it
+      let c = node; while (ts.isParenthesizedExpression(c)) c = c.expression;
+      const d = ts.isCallExpression(c) ? checker.getResolvedSignature(c)?.declaration : null, u = d && [...fns.values()].find((x) => x.fn === d);
+      if (u && u.isAsync) fail(node, 'a promise a same-file async unit returns, stored as a handle: the call reads its settled value, so no term names that promise; hold a promise an outside call returns, or await it');
+    }
     const members = sums.get(dtype(expected, node));
     if (members && dtype(nt, node) !== dtype(expected, node)) {
       const matches = members.filter((m) => checker.isTypeAssignableTo(nt, m.t));
@@ -4106,10 +4111,17 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         if (!isRecordish(recvT) || !checker.getPropertyOfType(recvT, fname_)) fail(pa, `field ${fname_} is not a declared field of a record`);
         const p = checker.getPropertyOfType(recvT, fname_);
         const ft = checker.getTypeOfSymbolAtLocation(p, pa);
-        const cur = `${recvCode}.${dn(fname_)}`;
+        // a field of an opaque record (an interface with methods: no datatype holds its fields) is read by an uninterpreted
+        // accessor and written by an uninterpreted update of the record, the same on both sides, so two different values
+        // stored make two different records and a read after the write is never assumed to be the stored value
+        const RD = dtype(recvT, pa), opaqueRec = RD.startsWith('Ext_');
+        let FD = opaqueRec ? (isAny(ft) ? anyType() : dtype(ft, pa)) : null;
+        if (opaqueRec && (p.flags & ts.SymbolFlags.Optional) && !optionalD(FD)) { usesOption = true; FD = `Option<${FD}>`; }
+        const cur = opaqueRec ? `${external(`${RD}_${fname_}`, [RD], FD)}(${recvCode})` : `${recvCode}.${dn(fname_)}`;
         let inner;
         if (i === chain.length - 1) inner = leaf(cur, p, ft);
         else { if (isOptional(ft)) fail(pa, 'assignment through an optional field is not translated'); inner = build(i + 1, cur, ft); }
+        if (opaqueRec) return `${external(`${RD}_set_${fname_}`, [RD, FD], RD)}(${recvCode}, ${inner})`;
         return `${recvCode}.(${dn(fname_)} := ${inner})`;
       };
       const value = build(0, rootCode, rootT);
