@@ -9,6 +9,7 @@ import path from 'node:path';
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { reactHook } from '../react.mjs';
 import { Environment, render, BudgetError } from './fake.mjs';
+import { interpretFire } from './handlers-interp.mjs';
 // the runtime helpers (sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop) come from
 // run.mjs through the `rt` argument: run.mjs imports this file, so a static import back would be a cycle
 
@@ -66,7 +67,7 @@ class CallTimeout extends Error { constructor() { super('__timeout__'); } }
 const erase = (v) => (Array.isArray(v) ? v.map(erase) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : erase(x)])), children: v.children.map(erase) } : v);
 
 // explore the product of parent and candidate over every click order from every prop assignment
-export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1, ms = 2000, maxPairs = 500, rt }) {
+export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1, ms = 2000, maxPairs = 500, rt, handlers = null }) {
   const { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop } = rt;
   let pairs = 0, pathsRun = 0;
   for (const [ai, assignment] of domain.assignments.entries()) {
@@ -88,7 +89,9 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
       for (const label of labels) {
         const h = treeHandlers(tree).find((x) => x.label === label); if (!h) return { obs, missing: label, s, tree };
         const from = s.env.trace.length;
-        try { const r = guarded(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout) throw e; s.env.record('handler-throw', label, [render(e)]); }
+        const event = s.env.fake(`react:event:${label}`), slotsBefore = (s.env.hookSlots ?? []).slice(); let threw = false;
+        try { const r = guarded(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
+        if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // the descriptor applied to the slots before the handler must give the slots the handler left
         tree = await commit(s);
         obs.push({ command: label, tree: erase(tree), trace: s.env.trace.slice(from).filter((x) => x.op !== 'set' && x.op !== 'hook').map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }); // setter calls are state, compared through the slots; their order inside one handler is React's batching, not an observation
       }
