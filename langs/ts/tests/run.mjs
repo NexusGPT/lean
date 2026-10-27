@@ -188,7 +188,9 @@ for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(c
 
 // ----- pairs: parent against candidate through the theorem and Dafny -----
 const pairsDir = path.join(here, 'pairs');
-for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : []) {
+// LEAN_PAIRS=a,b runs these pairs only (a merge smoke); the full suite is the gate, this is never it
+const onlyPairs = process.env.LEAN_PAIRS ? new Set(process.env.LEAN_PAIRS.split(',').map((x) => x.trim()).filter(Boolean)) : null;
+for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().filter((n) => !onlyPairs || onlyPairs.has(n)) : []) {
   const d = path.join(pairsDir, name);
   const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
   const tmpd = path.join(tmp, `pair_${name}`); fs.mkdirSync(tmpd, { recursive: true });
