@@ -34,7 +34,7 @@ import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitO
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
-import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember } from '../common.mjs';
+import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite } from '../common.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
@@ -4107,7 +4107,15 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isBinaryExpression(e) && ts.isElementAccessExpression(e.left) && ts.isIdentifier(e.left.expression)) {
       const arr = e.left.expression; const t = baseOf(typeOf(arr));
       const ix = !isArrayLike(checker, t) ? stringIndex(t) : null;
-      if (ix) return [arr.text, `${dn(arr.text)}[${outerParens(expr(e.left.argumentExpression))} := ${outerParens(expr(e.right, ix.type))}]`, arr]; // a local dictionary: the map gains or replaces a key
+      if (ix) { // a local dictionary: the map gains or replaces a key
+        const pw = protoKeyWrite(checker, e.left.argumentExpression, e.right);
+        if (pw === 'prototype') fail(e, 'prototype: a key that may be \'__proto__\' with an object or null value replaces the prototype');
+        const key = outerParens(expr(e.left.argumentExpression)), val = outerParens(expr(e.right, ix.type)), m = dn(arr.text);
+        if (pw === 'free') return [arr.text, `${m}[${key} := ${val}]`, arr];
+        // a primitive written to '__proto__' of a dictionary without that own key reaches the setter of Object.prototype, which ignores it
+        const pk = `pk${tempCount++}_`;
+        return [arr.text, `(var ${pk} := ${key}; if ${pk} == ${strEsc('__proto__')} && ${pk} !in ${m} then ${m} else ${m}[${pk} := ${val}])`, arr];
+      }
       if (!isArrayLike(checker, t)) fail(e, 'index assignment on a non-array');
       return [arr.text, `${dn(arr.text)}[${index(e.left.argumentExpression)} := ${outerParens(expr(e.right, checker.getTypeArguments(t)[0]))}]`, arr];
     }
