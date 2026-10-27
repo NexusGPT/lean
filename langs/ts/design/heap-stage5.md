@@ -439,3 +439,17 @@ the input's members and its own identity is fresh; the guard compares the two ve
 Pair `heap5_rest` (`.tsx`): `Card` (the title named first, the same tree over the same forwarded members: proved, where
 the lemma was withheld), `Badge` (a changed member forwarded: the shapes differ, withheld, WITNESS), `Plain`
 (untouched). Lint: unchanged.
+
+## 21b. Three readings shared with the ordinary lane
+
+Found by checking the suite's other pairs against the widened core, decided by the lead: the core never loses a proof
+the ordinary lane had soundly. (1) The bitwise operators read through the translator's own `bitwiseOf` (shared, passed
+to `makeHeap` as `bitwise`): `x | 0` and `~~x` are `JsInt32`, a literal shift count keeps its low five bits (pair
+`numbers_bits` `coerce`, `unsigned`: proved again). (2) A loop helper whose body never rebinds the world carries
+`ensures r_.0 == hw_`, proved by its own recursion, so a mark after the loop (a division's zero divisor or negative
+zero) reads the world before it (`numbers` `average`: proved again). (3) A for-of loop in a real-number file keeps its
+counter and length integers (`|Items_|`) and reads its item through a total `ItemAt_` (it was a Dafny type error).
+`numbers` `vat` and `discounted` stay unproved: a negative zero really escapes there (JavaScript: `vat(0, -200)` is `-0`
+on the parent, `0` on the candidate), and the ordinary lane's proof of them is its signed-zero gap.
+Pair `heap5_reach`: `mean` (untouched, a pure loop then a guarded division: proved), `whole` (`~~x` for `x | 0`:
+proved), `half` (WITNESS). At the previous commit the pair's Dafny had seven resolution errors (the real-file loop).

@@ -39,7 +39,7 @@ const instantiate = (form, k, E, KT = null, k2 = null, E2 = null) => form.replac
 export const HW = 'hw_';
 const OBJECT_PROTO = Object.getOwnPropertyNames(Object.prototype).sort(); // the keys `in` finds on an ordinary object it does not own
 
-export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null }) {
+export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null }) {
   const TF = ts.TypeFlags, K = ts.SyntaxKind;
   const NUM = isReal ? 'real' : 'int';
   const shapes = new Map(); // key -> shape
@@ -825,6 +825,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const E = valD(s.elem);
         out.push(`function Len_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].items_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
         out.push(`function Items_${k}(hw: HWorld, r: Ref): seq<${E}> { if Is${k}(hw, r) then hw.heap[r].items_${k} else [] }`);
+        if (isReal) out.push(`function ItemAt_${k}(hw: HWorld, r: Ref, i: int): ${E} { if Is${k}(hw, r) && 0 <= i < |hw.heap[r].items_${k}| then hw.heap[r].items_${k}[i] else ${dflt(s.elem)} }`); // a for-of loop's item in a real file, read under its guard
         if (!isReal) { // element access: in range reads or replaces the item; out of range marks the world and leaves the heap as it is
           out.push(`predicate InRange_${k}(hw: HWorld, r: Ref, i: int) { Is${k}(hw, r) && 0 <= i < |hw.heap[r].items_${k}| }`);
           out.push(`function Oob_${k}(hw: HWorld, r: Ref, i: int): HWorld { if InRange_${k}(hw, r, i) then hw else hw.(oob := true) }`);
@@ -1026,7 +1027,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const v = expr(e.arguments[0]); const it = `Items_${s.key}(${HW}, ${r})`; const E = valD(s.elem); const m = e.expression.name.text;
         if (m === 'includes') return `(${v} in ${it})`; if (m === 'indexOf') return `${helper('IndexOf', [E])}(${it}, ${v})`; return `${helper('At', [E])}(${it}, ${v})`;
       }
-      if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!${cond(e.operand)}` : e.operator === K.PlusToken ? expr(e.operand) : e.operator === K.TildeToken ? `${helper('JsBitNot', [NUM])}(${expr(e.operand)})` : negZeroRisk(e) ? (() => { divUsed = true; const x = bind(expr(e.operand), 'n'); lines.push(`var ${HW} := NegZeroMark(${HW}, ${x} == ${isReal ? '0.0' : '0'});`); return `(-(${x}))`; })() : `(-(${expr(e.operand)}))`;
+      if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!${cond(e.operand)}` : e.operator === K.PlusToken ? expr(e.operand) : e.operator === K.TildeToken ? (bitwise ? bitwiseCode(e) : `${helper('JsBitNot', [NUM])}(${expr(e.operand)})`) : negZeroRisk(e) ? (() => { divUsed = true; const x = bind(expr(e.operand), 'n'); lines.push(`var ${HW} := NegZeroMark(${HW}, ${x} == ${isReal ? '0.0' : '0'});`); return `(-(${x}))`; })() : `(-(${expr(e.operand)}))`;
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { const ls = locShape(e); const a = expr(e.left); return ls.kind === 'opt' ? `OptOrOpt(${a}, ${exprAs(e.right, ls)})` : `OptOr(${a}, ${expr(e.right)})`; }
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind) && (isAbsent(e.left) || isAbsent(e.right))) {
         const lit = isAbsent(e.left) ? unparen(e.left) : unparen(e.right), other = isAbsent(e.left) ? e.right : e.left; const sh = locShape(other); const c = expr(other);
@@ -1035,7 +1036,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return `(${c}).${negated ? 'Some' : 'None'}?`;
       }
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(e.operatorToken.kind) && (locShape(e.left)?.kind === 'opt' || locShape(e.right)?.kind === 'opt')) { const o = locShape(e.left)?.kind === 'opt' ? locShape(e.left) : locShape(e.right); return `(${exprAs(e.left, o)} ${e.operatorToken.kind === K.EqualsEqualsEqualsToken ? '==' : '!='} ${exprAs(e.right, o)})`; }
-      if (ts.isBinaryExpression(e) && Object.hasOwn(ARITH, e.operatorToken.kind)) { const l = expr(e.left), r = expr(e.right); return arith(e.operatorToken.kind, l, r, negZeroRisk(e)); }
+      if (ts.isBinaryExpression(e) && Object.hasOwn(ARITH, e.operatorToken.kind)) { if (bitwise && ARITH[e.operatorToken.kind].startsWith('Js')) return bitwiseCode(e); const l = expr(e.left), r = expr(e.right); return arith(e.operatorToken.kind, l, r, negZeroRisk(e)); }
       if (ts.isBinaryExpression(e) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken].includes(e.operatorToken.kind) && (typeOf(e.left).flags & TF.StringLike)) { const l = expr(e.left), r = expr(e.right); const lt = helper('StrLt', ['string']); const k = e.operatorToken.kind; return k === K.LessThanToken ? `${lt}(${l}, ${r})` : k === K.GreaterThanToken ? `${lt}(${r}, ${l})` : k === K.LessThanEqualsToken ? `!${lt}(${r}, ${l})` : `!${lt}(${l}, ${r})`; } // the order of code units (design/strings.md)
       if (ts.isBinaryExpression(e)) {
         const op = { [K.PlusToken]: '+', [K.MinusToken]: '-', [K.LessThanToken]: '<', [K.LessThanEqualsToken]: '<=', [K.GreaterThanToken]: '>', [K.GreaterThanEqualsToken]: '>=', [K.EqualsEqualsEqualsToken]: '==', [K.ExclamationEqualsEqualsToken]: '!=', [K.AmpersandAmpersandToken]: '&&', [K.BarBarToken]: '||' }[e.operatorToken.kind];
@@ -1143,6 +1144,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (k === K.PercentToken || k === K.SlashToken) { divUsed = true; const a = bind(l, 'm'); const d = bind(r, 'd'); lines.push(`var ${HW} := ZeroMark_${NUM}(${HW}, ${d});`); const v = `${k === K.SlashToken ? 'DivT' : 'RemT'}_${NUM}(${a}, ${d})`; if (risk) lines.push(`var ${HW} := NegZeroMark(${HW}, ${v} == ${Z} && (${a} < ${Z} || ${d} < ${Z}));`); return v; }
       return `${helper(ARITH[k], [NUM])}(${l}, ${r})`;
     }
+    // a bitwise operator through the translator's own reading (shared with the ordinary lane), its operands this core's
+    const bitwiseCode = (e) => (bitwise ? bitwise(e, (x) => expr(x)) : null);
     function element(e) { const s = shapeExpr(e.expression); const r = bind(expr(e.expression), 'a'); const i = bind(expr(e.argumentExpression), 'i'); return [s, r, i]; }
     const dictRead = (s, r, i) => { lines.push(`var ${HW} := DictMark_${s.key}(${HW}, ${r}, ${i});`); return `DictGet_${s.key}(${HW}, ${r}, ${i})`; };
     // a write target in JavaScript order: its receiver (and index) first, then the right side, then the store
@@ -1245,11 +1248,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const ret = carried.length ? `(HWorld, ${carried.map((c) => c.d).join(', ')})` : 'HWorld';
       const done = carried.length ? `(${HW}, ${carried.map((c) => dn(c.x)).join(', ')})` : HW;
       const saved = lines.splice(0);
-      const head = forOf ? `var ${dn(s.initializer.declarations[0].name.text)} := Idx_${sh.key}(${HW}, ${A}, ${ctr});` : '';
+      const head = forOf ? `var ${dn(s.initializer.declarations[0].name.text)} := ${isReal ? 'ItemAt' : 'Idx'}_${sh.key}(${HW}, ${A}, ${ctr});` : ''; // in a real file the counter and the length stay integers (|Items_|) and the item is read totally
+      const lenI = (r) => (isReal ? `|Items_${sh.key}(${HW}, ${r})|` : `Len_${sh.key}(${HW}, ${r})`);
       const bodyText = stmts(block(s.statement), () => `${name}(${args(`${ctr} + 1`, false)})`);
-      helpers.push([`function ${name}(${params.join(', ')}): ${ret}`, `  decreases ${n} - ${ctr}`, '{', `  if !(${ctr} < ${n} && ${ctr} < Len_${sh.key}(${HW}, ${A})) then ${done}`, '  else', indent(indent([head, bodyText].filter(Boolean).join('\n'))), '}'].join('\n'));
+      const still = !/var\s+\(?\s*hw_\b/.test([head, bodyText].join('\n')); // a body that never rebinds the world: the helper returns the world it was given (proved by its own recursion), so a mark after the loop reads the world before it
+      helpers.push([`function ${name}(${params.join(', ')}): ${still ? `(r_: ${ret})` : ret}`, ...(still ? [`  ensures ${carried.length ? 'r_.0' : 'r_'} == ${HW}`] : []), `  decreases ${n} - ${ctr}`, '{', `  if !(${ctr} < ${n} && ${ctr} < ${lenI(A)}) then ${done}`, '  else', indent(indent([head, bodyText].filter(Boolean).join('\n'))), '}'].join('\n'));
       lines.push(...saved);
-      const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', `Len_${sh.key}(${HW}, ${arr})`, ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
+      const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', lenI(arr), ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
       lines.push(carried.length ? `var (${HW}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${HW} := ${call};`);
     }
     if (u.isCtor) { const sh = instanceShape(u.cls, 0); const me = dn('this'); lines.push(`var (${HW}, ${me}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => fieldDflt(f.shape)).join(', ')});`); for (const p of paramProps(u.cls)) lines.push(`var ${HW} := Set_${sh.key}_${dn(p.name.text)}(${HW}, ${me}, ${dn(p.name.text)});`); for (const m of fieldInits(u.cls)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${me}, ${exprField(m.initializer, f.shape)});`); } } // the instance first, then the parameter properties and the initializers
