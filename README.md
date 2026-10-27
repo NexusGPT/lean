@@ -372,14 +372,21 @@ WITNESS   layers.tree: { verdict: "WITNESS", depth: 1, rendered: [{ component: "
 patch:    C[0]/rendered/button[0] text "1" to "2"
 ```
 
-The styles layer reads a `className` as the declarations of its classes under a pinned Tailwind table, so `text-sm` to `text-base` is a styles `WITNESS` (another font size and line height), a reordering of the same classes is equal in the styles layer while the tree layer still reports the attribute's text, and a class outside the table is reported `unknown`, never equal and never a witness:
+The styles layer reads a `className` as the declarations of its classes under a pinned Tailwind table and the project's own theme, so `text-sm` to `text-base` is a styles `WITNESS` (another font size and line height), a reordering of the same classes is equal in the styles layer while the tree layer still reports the attribute's text, and a class outside the table is reported `unknown`, never equal and never a witness:
 
 ```
 Badge   layers.styles: WITNESS       parent: { "font-size": "0.875rem", "line-height": "1.25rem", … }   candidate: text-base
 Card    layers.styles: PASS-bounded  inputs: 30, elementsCompared: 60   (the tree layer: WITNESS, the attribute's text changed)
 ```
 
-The project's own Tailwind theme is not read yet, so its theme classes are `unknown`. Pixels, layout and the accessibility tree need a browser; no proof exists for them in any field we read, so lean never claims one.
+Each side's own Tailwind theme is read over the pinned table: a v3 `tailwind.config` (parsed as a literal, never run) or a v4 `@theme` block in the CSS the entry imports, and the certificate names the configuration it read with its path and hash; a theme token changed to another is a styles `WITNESS` with both declarations, and a theme key lean does not read, or a config whose top level runs code, leaves its classes `unknown` and says why:
+
+```
+Banner  layers.styles: WITNESS   bg-brand-500 → bg-brand-600   parent: { "background-color": "#1f6feb", … }   candidate: { "background-color": "#1158c7", … }
+        config: { form: "v3-config", path: ".../tailwind.config.js", sha256: "86a2d889fa46906f", tokens: 3 }
+```
+
+Pixels, layout and the accessibility tree need a browser; no proof exists for them in any field we read, so lean never claims one.
 
 ### 6. A coding agent's loop
 
@@ -478,7 +485,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 | the readings in the table above, the heap core, the library table with its engine validation, the virtual clock, hook slots, deep children | built |
 | the lint's labelled advice (`proved`, `conditional`, `migration`) and a proposal, a flag or a named owner for every `any` declaration | built; `any` inside a type (`any[]`, `Record<string, any>`) is not reported yet |
 | the CI workflow on a GitHub runner | built, validated offline, not yet exercised on a runner |
-| the front-end layers: a tree to a stated depth with context from the nearest provider, resolved styles against the pinned Tailwind table | built; a project's own Tailwind theme is not read yet |
+| the front-end layers: a tree to a stated depth with context from the nearest provider, resolved styles against the pinned Tailwind table and the project's own theme (v3 config or v4 theme block) | built |
 | a row per changed unit in the pull-request table, including the refused and skipped ones, with the reason; `--preview` | built |
 | a run identity and verdict reuse across pushes (`reused`, `--fresh`, `--cache-dir`) | built; the key stops at one import level and does not see module initialization order |
 | a `WITNESS` that names the source line of the first differing effect or the return on each side, with the advised rewrite | built |
