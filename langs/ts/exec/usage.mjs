@@ -48,7 +48,8 @@ export function usage(sf, unitName, checker, opts = {}) {
     return null;
   }
   const strip = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || (ts.isSatisfiesExpression && ts.isSatisfiesExpression(e)) || ts.isTypeAssertionExpression(e))) e = e.expression; return e; };
-  const field = (n, name) => (n.fields[name] ??= newNode());
+  // an own field only: a read of `x.constructor` or `x.__proto__` must not answer with Object.prototype's member
+  const field = (n, name) => (Object.hasOwn(n.fields, name) ? n.fields[name] : name === '__proto__' ? newNode() : (n.fields[name] = newNode()));
   const elemOf = (n) => { n.array = true; return (n.elem ??= newNode()); };
   const symOf = (id) => { try { return checker.getSymbolAtLocation(id) ?? null; } catch { return null; } };
 
@@ -187,9 +188,15 @@ export function usage(sf, unitName, checker, opts = {}) {
 
   const env = new Map();
   u.params.forEach((p, i) => bind(env, p.name, roots[i]));
+  // a caller may name local identifiers of the unit (a parsed value, a `let` without a type) as extra roots, read like parameters
+  const extraRoots = (opts.roots ?? []).filter((id) => id && ts.isIdentifier(id));
+  const localNodes = extraRoots.map(() => newNode());
+  extraRoots.forEach((id, i) => bind(env, id, localNodes[i]));
   if (thisNode) env.set('this', thisNode);
   if (u.body) walk(u.body, env, 0);
-  return { unit: unitName, params: u.params.map((p, i) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), node: roots[i] })), this: thisNode };
+  const out = { unit: unitName, params: u.params.map((p, i) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), node: roots[i] })), this: thisNode };
+  if (extraRoots.length) out.locals = extraRoots.map((id, i) => ({ name: id.text, node: localNodes[i] }));
+  return out;
 }
 
 // the union of two usage trees of one unit (the parent's and the candidate's): a field either side reads, a literal
@@ -207,7 +214,9 @@ export function mergeNodes(a, b) {
 export function mergeUsage(a, b) {
   if (!a) return b; if (!b) return a;
   const byName = new Map(b.params.map((p) => [p.name, p.node]));
-  return { unit: a.unit, params: a.params.map((p, i) => ({ name: p.name, node: mergeNodes(p.node, byName.get(p.name) ?? b.params[i]?.node ?? null) })), this: mergeNodes(a.this, b.this) };
+  const out = { unit: a.unit, params: a.params.map((p, i) => ({ name: p.name, node: mergeNodes(p.node, byName.get(p.name) ?? b.params[i]?.node ?? null) })), this: mergeNodes(a.this, b.this) };
+  if (a.locals || b.locals) { const bl = new Map((b.locals ?? []).map((l) => [l.name, l.node])); const names = [...new Set([...(a.locals ?? []).map((l) => l.name), ...bl.keys()])]; const al = new Map((a.locals ?? []).map((l) => [l.name, l.node])); out.locals = names.map((name) => ({ name, node: mergeNodes(al.get(name) ?? null, bl.get(name) ?? null) })); }
+  return out;
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { loadProgram } from '../common.mjs';
+import { loadProgram, ts } from '../common.mjs';
 import { usage, mergeUsage } from './usage.mjs';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-usage-'));
@@ -82,4 +82,36 @@ test('a method: `this` fields, a same-file callee one level down, and the union 
   assert.deepEqual(at(m.this, 'limit', 'max').compares, [5]);
   assert.deepEqual(at(m.this, 'limit', 'mode').compares, ['on']);
   assert.deepEqual(at(m.params[0].node, 'age').compares, [30]);
+});
+
+test('a read of `constructor` or `__proto__` is an own field of the tree, never a member of Object.prototype', () => {
+  const u = of(`export function tag(x: any, y: any) {
+    const c = x.constructor; const q = y.__proto__;
+    if (x.kind === "k") return 1;
+    return c && q ? 2 : 3; }`, 'tag');
+  const ctor = at(u.params[0].node, 'constructor');
+  assert.ok(Array.isArray(ctor.compares), 'the constructor read is a usage node');
+  assert.deepEqual(at(u.params[0].node, 'kind').compares, ['k']);
+  assert.equal(Object.hasOwn(u.params[1].node.fields, '__proto__'), false);
+  assert.equal(Object.getPrototypeOf(u.params[1].node.fields), Object.prototype, 'the fields object keeps its prototype');
+});
+
+test('a local named as an extra root is read like a parameter, and merges by name', () => {
+  const f = path.join(dir, `u${k++}.ts`);
+  fs.writeFileSync(f, `export function parse(raw: string) {
+    const v: any = JSON.parse(raw);
+    if (v.kind === "a" || v.items.length > 2) return 1;
+    return 0; }`);
+  const { sf, checker } = loadProgram(f, { project: false });
+  let v = null; const fn = sf.statements.find((s) => ts.isFunctionDeclaration(s));
+  for (const st of fn.body.statements) if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (d.name.text === 'v') v = d.name;
+  const u = usage(sf, 'parse', checker, { roots: [v] });
+  assert.equal(u.locals.length, 1);
+  assert.equal(u.locals[0].name, 'v');
+  assert.deepEqual(at(u.locals[0].node, 'kind').compares, ['a']);
+  assert.deepEqual(at(u.locals[0].node, 'items', 'length').compares, [2]);
+  const m = mergeUsage(u, u);
+  assert.equal(m.locals.length, 1);
+  assert.deepEqual(at(m.locals[0].node, 'kind').compares, ['a']);
+  assert.equal(usage(sf, 'parse', checker).locals, undefined);
 });

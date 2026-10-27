@@ -78,3 +78,10 @@ a refactor of two branches into one conditional, and an untouched unit.
 Unchanged. One finding for the translator's owners: `attrs?: Record<string, any>` read as `node.attrs?.isNotFound ===
 true` translates to a Dafny comparison of `Option<Any>` with `Any` that does not resolve, so the pair uses
 `Record<string, string | boolean>`.
+
+## Extra roots (2026-10-27)
+
+`usage(sf, unit, checker, { roots })` also reads local identifiers a caller names (a parsed value, a `let` without a
+type) as roots, like parameters; they come back under `locals` and `mergeUsage` merges them by name. The any-type
+proposal is the caller. A read of `constructor` or `__proto__` is an own field of the usage tree, never a member of
+`Object.prototype` (the earlier `??=` answered a `.constructor` read with the prototype's function).
