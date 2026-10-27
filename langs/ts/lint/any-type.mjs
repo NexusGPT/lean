@@ -351,7 +351,7 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
   const inRange = (n) => overlaps(sf, n, ranges);
   const seenDecl = new Set();
   for (const u of units.values()) {
-    if (!inRange(u.node) || !u.fn) continue;
+    if (!inRange(u.node) || !u.fn || !u.body) continue; // a declaration without a body has no uses
     const scope = u.fn;
     // parameters of the unit: usage.mjs's tree, callers' arguments, callees' parameters
     u.params.forEach((p, i) => {
@@ -399,9 +399,9 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
         const w = (n) => { if (ts.isFunctionLike(n) && n !== u.fn) return; if (ts.isReturnStatement(n) && n.expression) rets.push(n.expression); ts.forEachChild(n, w); };
         if (u.body && ts.isBlock(u.body)) w(u.body); else if (u.body) rets.push(u.body);
         if (!rets.some((e) => mentionsEnv(e))) {
-          const evidence = [], texts = [];
+          const evidence = [], texts = []; // an async unit returns the awaited value
           let opaque = 0;
-          for (const e of rets) { const et = tOf(e); if (nonAny(et)) { const s = typeText(et, u.fn); if (!texts.includes(s)) texts.push(s); evidence.push(`returns ${short(s, 50)} at line ${lineOf(sf, e.getStart(sf))}`); } else opaque++; }
+          for (const e of rets) { const et0 = tOf(e); const et = u.isAsync && et0 ? (checker.getAwaitedType(et0) ?? et0) : et0; if (nonAny(et)) { const s = typeText(et, u.fn); if (!texts.includes(s)) texts.push(s); evidence.push(`returns ${short(s, 50)} at line ${lineOf(sf, e.getStart(sf))}`); } else opaque++; }
           if (opaque && texts.length) evidence.push(`${opaque} return(s) typed any`);
           const proposal = texts.length && !opaque ? texts.join(' | ') : null;
           const wrap = (p) => (u.isAsync && !(u.fn.type && !(u.fn.type.getText(sf).startsWith('Promise')))) ? `Promise<${p}>` : p;
