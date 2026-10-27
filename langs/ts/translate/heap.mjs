@@ -197,6 +197,23 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (m === 'padStart' || m === 'padEnd') return num(a[0]) && (!a[1] || str(a[1])) && !isReal ? m : null;
     return a.length === 0 ? m : null;
   };
+  // a regular expression literal in a call: `/p/f.test(s)`, `s.replace(/p/f, r)` (and `replaceAll` with the g flag,
+  // the same operation), `s.split(/p/f)`, `s.search(/p/f)`. Each is a bodiless function of the literal's text (pattern
+  // and flags) and the operands, the same on both sides: equal on equal operands, nothing assumed of what it computes.
+  // A literal is a fresh RegExp each time it is evaluated, so its lastIndex starts at 0 and nothing carries between
+  // calls. Out: a regular expression held in a name (a global or sticky one keeps lastIndex), match and exec (they
+  // return an array with index and groups), a function replacement.
+  const reCall = (e) => {
+    if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.questionDotToken || e.expression.questionDotToken) return null;
+    const m = e.expression.name.text, recv = unparen(e.expression.expression), a = e.arguments;
+    const isRe = (x) => !!x && ts.isRegularExpressionLiteral(unparen(x)); const strT = (x) => shapeOf(typeOf(x))?.kind === 'prim' && shapeOf(typeOf(x)).d === 'string';
+    if (m === 'test' && isRe(recv) && a.length === 1 && strT(a[0])) return { m, re: unparen(recv), s: a[0] };
+    if (!strT(recv) || !a.length || !isRe(a[0])) return null;
+    const re = unparen(a[0]); const flags = re.text.slice(re.text.lastIndexOf('/') + 1);
+    if ((m === 'replace' || (m === 'replaceAll' && flags.includes('g'))) && a.length === 2 && strT(a[1])) return { m: 'replace', re, s: recv, r: a[1] };
+    if ((m === 'split' || m === 'search') && a.length === 1) return { m, re, s: recv };
+    return null;
+  };
   const strUsed = new Set();
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
   // an expression with no call, allocation or element access: it reads the heap and nothing else, so reading it eagerly is exact
@@ -294,6 +311,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return;
       }
       if (calleeOf(e, u)) { for (const a of e.arguments) checkExpr(a); return; }
+      if (reCall(e)) { const rc = reCall(e); if (rc.m === 'split' && lambdaDepth) return no('allocation inside a callback'); if (isReal && rc.m === 'search') return no('search in a real file'); checkExpr(rc.s); if (rc.r) checkExpr(rc.r); return; } // a regular expression literal: uninterpreted
       if (strMethod(e)) { if (strMethod(e) === 'split' && lambdaDepth) return no('allocation inside a callback'); checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); return; } // a string method of the ordinary lane's exact readings
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['slice', 'concat', 'reverse', 'splice'].includes(e.expression.name.text)) { // the table's rows that yield a reference: a fresh array (slice, concat, splice) or the receiver (reverse)
         const m = e.expression.name.text; const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${m} of a non-array`);
@@ -481,7 +499,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       for (const p of u.params) register(shapeOf(typeOf(p.name)));
       if (u.cls) register(instanceShape(u.cls, 0));
       register(shapeOf(checker.getSignatureFromDeclaration(u.fn).getReturnType()));
-      const w = (n) => { if (strMethod(n) === 'split') register(shapeOf(typeOf(n))); if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
+      const w = (n) => { if (strMethod(n) === 'split' || reCall(n)?.m === 'split') register(shapeOf(typeOf(n))); if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
       w(u.body);
     }
     return core;
@@ -512,6 +530,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (strUsed.has('replace')) out.push('function StrReplace(s: string, a: string, b: string): string'); // replace with a string pattern: the first match, the replacement's $ patterns included, a function of the three
     if (strUsed.has('join_string')) out.push('function JoinStr(xs: seq<string>, sep: string): string decreases |xs| { if |xs| == 0 then "" else if |xs| == 1 then xs[0] else xs[0] + sep + JoinStr(xs[1..], sep) }');
     for (const d of ['int', 'real']) if (strUsed.has(`join_${d}`)) out.push(`function JoinNum_${d}(xs: seq<${d}>, sep: string): string`); // numbers are formatted first: bodiless
+    if (strUsed.has('re_test')) out.push('function ReTest(re: string, s: string): bool'); // RegExp.prototype.test of a literal: a function of its text and the input
+    if (strUsed.has('re_replace')) out.push('function ReReplace(re: string, s: string, r: string): string'); // replace by a literal regular expression, the replacement's $ patterns included
+    if (strUsed.has('re_split')) out.push('function ReSplit(re: string, s: string): seq<string>'); // split by a literal regular expression: the pieces (captures included)
+    if (strUsed.has('re_search')) out.push(`function ReSearch(re: string, s: string): ${NUM}`); // the index of the first match, or -1
     for (const d of ['int', 'real']) if (strUsed.has(`numstr_${d}`)) out.push(`function NumStr_${d}(n: ${d}): string`); // Number::toString: a function of the number alone, bodiless
     if (keys.some((k) => shapes.get(k).kind === 'dict')) out.push(`const ObjectProtoNames: set<string> := {${OBJECT_PROTO.map((x) => JSON.stringify(x)).join(', ')}}`); // Object.getOwnPropertyNames(Object.prototype)
     const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'set' || s.kind === 'date' || s.kind === 'dict') { /* primitive contents */ } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); } else for (const f of s.fields) if (isRefShape(f.shape)) conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
@@ -731,6 +753,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const callee = calleeOf(e, u); const recv = sameFileCall(e) ? [] : [dn('this')]; // a method takes its receiver first
         const ps = fns.get(callee).params; const args = ps.map((p, j) => { const sh = shapeOf(typeOf(p.name)); return e.arguments[j] ? exprAs(e.arguments[j], sh) : `Option<${sh.inner.d}>.None`; }); // an argument not passed is undefined
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(callee)}(${[HW, ...recv, ...args].join(', ')});`); return r;
+      }
+      if (reCall(e)) { // the operands in source order: the receiver string (or the tested string), then the replacement
+        const rc = reCall(e); const src = strEsc(rc.re.text); const sv = bind(expr(rc.s), 's'); strUsed.add(`re_${rc.m}`);
+        if (rc.m === 'test') return `ReTest(${src}, ${sv})`;
+        if (rc.m === 'search') return `ReSearch(${src}, ${sv})`;
+        if (rc.m === 'replace') return `ReReplace(${src}, ${sv}, ${expr(rc.r)})`;
+        const sh = shapeOf(typeOf(e)); const out = fresh('r'); lines.push(`var (${HW}, ${out}) := Alloc_${sh.key}(${HW}, ReSplit(${src}, ${sv}));`); return out;
       }
       if (strMethod(e)) return strEmit(e);
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['slice', 'concat', 'reverse', 'splice'].includes(e.expression.name.text)) {

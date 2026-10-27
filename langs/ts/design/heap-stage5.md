@@ -123,3 +123,20 @@ Census (resolved, 39 roots), strict graph 418 -> 487, own syntax 970 -> 1177; `c
 ```text
 {"files":23359,"units":53918,"core":487,"heapOwnFit":1177,"mirrorMismatch":1035,"planErrorCount":0,"seconds":1263}
 ```
+
+## 6. Regular expressions
+
+Reading: a regular expression literal in a call is a bodiless function of the literal's text (pattern and flags) and
+its operands: `/p/f.test(s)` is `ReTest("/p/f", s)`, `s.replace(/p/f, r)` (and `replaceAll` with the `g` flag, the same
+operation) `ReReplace("/p/f", s, r)`, `s.search(/p/f)` `ReSearch`, `s.split(/p/f)` a fresh array of `ReSplit`.
+Soundness: a literal is a fresh RegExp each time it is evaluated, so its `lastIndex` starts at 0 and nothing
+carries from one call to the next; the same text with the same operands is the same result, and nothing is assumed
+of what it computes, so two different patterns are never equal.
+Out: a regular expression held in a name (a global or sticky one carries `lastIndex` between calls), `match` and `exec`
+(an array with `index` and `groups`), a function replacement, `search` in a real file.
+Pair `heap5_regex`: `isCode` (another pattern: WITNESS), `squash` (`replaceAll` for `replace` with the same global
+pattern: proved), `parts` (untouched, a split by a pattern), `clean` (proved). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 487 -> 564, own syntax 1177 -> 1449; `curve.md` expects 522 after its step 6:
+```text
+{"files":23359,"units":53918,"core":564,"heapOwnFit":1449,"mirrorMismatch":1307,"planErrorCount":0,"seconds":1239}
+```
