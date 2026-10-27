@@ -224,6 +224,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (isAbsent(e)) return absentOk(e) ? undefined : no('undefined or null outside an optional place');
       if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!declaredInside(e)) no(`outside name ${e.text}`); else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
       if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return;
+      if (ts.isConditionalExpression(e)) { if (!shapeOf(typeOf(e))) return no(`conditional type: ${shapeWhy(typeOf(e))}`); checkCond(e.condition); checkExpr(e.whenTrue); return checkExpr(e.whenFalse); } // c ? a : b: only the selected operand is evaluated
       if (ts.isTemplateExpression(e)) { for (const sp of e.templateSpans) { const sh = shapeOf(typeOf(sp.expression)); if (!sh || isRefShape(sh)) return no('template hole of a reference (it reads the object through toString)'); checkExpr(sp.expression); } return; } // a string concatenation, each hole by ToString
       if (e.kind === K.ThisKeyword) return u.cls && !u.isStatic ? undefined : no('this');
       if ((ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e) || ts.isCallExpression(e)) && e.questionDotToken) return no('optional chaining');
@@ -633,6 +634,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isTemplateExpression(e)) { const parts = e.head.text ? [strEsc(e.head.text)] : []; for (const sp of e.templateSpans) { parts.push(toStr(sp.expression)); if (sp.literal.text) parts.push(strEsc(sp.literal.text)); } return `(${parts.join(' + ')})`; } // an empty literal part is left out: "" + s is s, which the prover reads only through extensionality
       if (e.kind === K.TrueKeyword) return 'true';
       if (e.kind === K.FalseKeyword) return 'false';
+      if (ts.isConditionalExpression(e)) { // the condition, then the selected operand only: an operand's allocations and marks stay inside its branch
+        const sh = locShape(e); const c = cond(e.condition); const saved = lines.splice(0);
+        const a = exprAs(e.whenTrue, sh); const la = lines.splice(0); const b = exprAs(e.whenFalse, sh); const lb = lines.splice(0); lines.push(...saved);
+        if (!la.length && !lb.length) return `(if ${c} then ${a} else ${b})`;
+        const q = fresh('q'); const arm = (ls, v) => `(${[...ls, `(${HW}, ${v})`].join(' ')})`;
+        lines.push(`var (${HW}, ${q}) := if ${c} then ${arm(la, a)} else ${arm(lb, b)};`); return q;
+      }
       if (ts.isPropertyAccessExpression(e)) {
         const s = shapeExpr(e.expression);
         const r = expr(e.expression);

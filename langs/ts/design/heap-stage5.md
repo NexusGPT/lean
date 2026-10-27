@@ -84,3 +84,19 @@ Census (resolved, 39 roots), strict graph 283 -> 339, own syntax 632 -> 794; `cu
 ```text
 {"files":23359,"units":53918,"core":339,"heapOwnFit":794,"mirrorMismatch":652,"planErrorCount":0,"seconds":492}
 ```
+
+## 3. Conditional expressions
+
+Reading: `c ? a : b` reads the condition by its truthiness, then the selected operand only. When neither operand
+allocates or marks the world it is `(if c then a else b)`; otherwise each operand's bindings stay inside its branch:
+`var (hw_, q) := if c then (var (hw_, r) := Alloc_..(hw_, ..); (hw_, r)) else (..)`.
+Soundness: JavaScript evaluates the condition, then one operand, so an allocation or a narrowed read of
+the other operand never happens: the heap world threads through the branch taken only. TypeScript narrows a name
+inside a branch; a narrowed optional field read marks the world (stage 4's `OptMark`) inside its own branch.
+Out: a condition on a reference (truthiness of an object), a conditional of two shapes (a union of records).
+Pair `heap5_conditional`: `size` (WITNESS), `caption` (`n !== undefined ? n : name` for `??`: proved), `pick` (an
+allocation in each branch against an `if` that returns: proved), `count` (untouched). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 339 -> 418, own syntax 794 -> 970; `curve.md` expects 315 after its step 3:
+```text
+{"files":23359,"units":53918,"core":418,"heapOwnFit":970,"mirrorMismatch":828,"planErrorCount":0,"seconds":1269}
+```
