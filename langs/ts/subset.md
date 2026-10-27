@@ -66,6 +66,7 @@ are carried by every candidate-only result. See [the design](design/new-units.md
 | Strings (BMP model envelope) | `trim`, `trimStart`, `trimEnd`, ASCII-guarded case conversion, literal `split` without limit, `padStart`/`padEnd`, literal-pattern `replace`/`replaceAll` with string replacement, `lastIndexOf`, lexicographic `< <= > >=`; literals, template literals, `+` (a non-string side is converted), `===`, `.length`, `s[i]`, `includes`, `startsWith`, `endsWith`, `indexOf`, `slice`, `substring`, `charAt`, `at`, `concat`, `repeat` | `` `${name}: ${n}` `` |
 | Finite numeric operations | number bitwise `& \| ^ ~ << >> >>>`, with ToInt32/ToUint32 and masked shifts; `Math.ceil/round/sign`, corrected real `Math.trunc`; real remainder with a nonzero literal divisor; `Number.MAX_SAFE_INTEGER`; numeric and boolean `Number` and unary `+` | `x >>> 0`, `~~x` |
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number; `a ** b` as an uninterpreted power of both sides | `n.toFixed(2)` |
+| Library rows (stage 5) | rows of `translate/library.json` marked `lane: ordinary` (design/library-rows.md): `pop`, `shift`, `splice` used as values (on a fresh array the removed element or run; on an owned local array, where the call runs on every path of its statement and the statement reads the array nowhere else, the array is rebound before the statement); `fill` on a fresh array; `toReversed`; `findLast`, `findLastIndex` with a pure one-parameter callback; `lastIndexOf` on primitives; `toString()` on an array (its `join()`), and on a string, boolean, bigint or a union of those and numbers (ToString, the template literal's function, also under `?.`); `substr` | `path.split("/").pop() ?? ""` |
 | Record rest | `{ a, ...rest } = r` builds a datatype of remaining fields; fixed scalar records, static keys, no defaults, nonempty remainder | `const { a: ignored, ...rest } = r` |
 | Numeric spread | `Math.min`/`Math.max` fold every argument; nonemptiness follows from a scalar argument, literal element, or a sole array identifier spread in a direct `?:` length guard | `xs.length > 0 ? Math.max(...xs) : 0` |
 | Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with a finite union of declared data-field string keys (including `keyof`), or a string on a dictionary; `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
@@ -89,6 +90,7 @@ transition the parent did not make, or makes it with another argument or in anot
 
 | Part | Example | Modelled as |
 |---|---|---|
+| Locale reads (stage 5 library rows) | `n.toLocaleString()`, `s.toLocaleLowerCase()` | a transition `<T>_toLocaleString(world, x, args)` (`bigint_…`, `str_…`): the host's locale data decides the text (ECMA-402); outside callbacks only |
 | Async iteration | `for await (const x of it)` | iterator open and next transitions, with consumer work between next calls; fuel exhaustion has a source-sensitive opaque continuation; abrupt consumers are opaque whole loops |
 | Async generators | scalar inputs or scalar async iterator handles, scalar yields | a source-and-dependency-sensitive suspended program handle in World; its body runs through next transitions, not at creation |
 | React state and effects | `useState(initial)`, `useEffect(body, deps)` | a state read returns current state and a setter value; a setter call is a transition; an effect registers deferred work with an opaque body and its captures |
@@ -118,6 +120,7 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | `any`, `unknown`, overlapping or unclassified unions, `never`, `object`, symbols | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
 | Library calls with no exact rule: non-ASCII case conversion, split with limit or dynamic separator, regex/callback replacement, `localeCompare`, `normalize`, `JSON`, general numeric `String`, `Buffer`, non-string-array `join` | `s.normalize()` | a pure function of all arguments |
 | Regular expressions, `new RegExp`, `.test`, `.replace(re, …)` | `/a+/.test(s)` | an opaque constant per literal, externals for the operations |
+| Library rows (stage 5), uninterpreted | `xs.toSorted(cmp)`, `s.search(re)`, `s.matchAll(/a/g)` | `toSorted` is the same `sort_<E>` (or `sort_default_<E>`) as `[...xs].sort(...)`; `search` a function of the string and the pattern (lastIndex is restored); `matchAll` with a `g` literal or a string pattern a function of both, its for-of the iterator's `to_seq`; a named pattern stays out (its lastIndex may have moved) |
 | A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its exact text and captured values; same-file callees are checked dependencies |
 | A callback with an effect inside | `xs.map(async (x) => await f(x))` | a symbolic deferred sequence for supported zero-argument arrows, otherwise an opaque value with its captures |
 | Effectful callbacks handed to an outside library | `register(x => svc.log(x))` | an opaque function value by its text |
@@ -173,6 +176,7 @@ fallback. No initializer is executed or assumed by the proof lane.
 
 | Rule | Refused | Example that is refused |
 |---|---|---|
+| `mutator-value` | `pop`, `shift`, `splice` used as a value on an owned local under a condition, a short circuit, an optional chain or a loop header, or in a statement that reads the array again (advice: conditional) | `` const n = `${xs.shift()}:${xs.length}` `` |
 | `dynamic-key` | record keys that are unrestricted strings, numbers, missing fields, method values or calls inside the key; optional/union receivers must first be narrowed | `r[k]` with `k: string` and `r: { a: number }` |
 | `index-assign` | dynamic writes to records | `r[k] = v` with `k: "a" \| "b"` |
 | `instanceof-constructor` | dynamic constructor expressions, constructor values and custom `Symbol.hasInstance` hooks | `x instanceof chooseConstructor()` |
