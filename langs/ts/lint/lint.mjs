@@ -1882,13 +1882,48 @@ export function lintFile(file, ranges = null, opts = {}) {
     ts.forEachChild(n, finallyGate);
   };
   finallyGate(sf);
+  // the implicit-any policy: the codes only the forced strict flags produce for a value TypeScript would otherwise type
+  // `any`. Such a value is opaque (an uninterpreted accessor, the same on both sides, never a type the proof relies on),
+  // so the code is admitted and the any-type finding proposes the value's type
+  const IMPLICIT_ANY = new Set([7005, 7006, 7008, 7010, 7011, 7015, 7018, 7019, 7022, 7023, 7024, 7031, 7034, 7053]);
+  const identAt = (pos) => { let hit = null; const w = (n) => { if (pos >= n.getStart(sf) && pos < n.getEnd()) { if (ts.isIdentifier(n)) hit = n; ts.forEachChild(n, w); } }; w(sf); return hit; };
+  // a read of an `unknown` value (TS18046) is the unit's own type error when the unit wrote the keyword `unknown` on the
+  // binding and nothing in its function tests the binding with a guard the checkout cannot resolve (an `instanceof` or a
+  // call whose callee is typed any): TypeScript without strict reports that read too (TS2339). A catch binding is
+  // unknown only under strict; a value typed unknown by its source (a call, a field, a callback, a named type) or
+  // narrowed by an unresolved guard is the environment's, and opaque
+  const ownUnknown = (d) => {
+    const id = identAt(d.start), named = /'([^']+)' is of type 'unknown'/.exec(ts.flattenDiagnosticMessageText(d.messageText, ' '))?.[1];
+    if (!id || id.text !== named) return false; // a field path (`r.value`): the unknown comes from the field's source
+    const sym = checker.getSymbolAtLocation(id), decl = sym?.valueDeclaration;
+    if (!decl || (ts.isVariableDeclaration(decl) && decl.parent && ts.isCatchClause(decl.parent))) return false;
+    let written = decl.type; while (written && ts.isParenthesizedTypeNode(written)) written = written.type;
+    if (!written || written.kind !== K.UnknownKeyword) return false; // a named type that resolves to unknown is its source's
+    let scope = decl.parent; while (scope && !ts.isFunctionLike(scope)) scope = scope.parent;
+    const anyT = (x) => !!(checker.getTypeAtLocation(x).flags & TF.Any);
+    const same = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym; };
+    let guarded = false;
+    const w = (n) => {
+      if (guarded) return;
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind === K.InstanceOfKeyword && same(n.left) && anyT(n.right)) guarded = true;
+      else if (ts.isCallExpression(n) && n.arguments.some(same) && anyT(n.expression)) guarded = true;
+      ts.forEachChild(n, w);
+    };
+    w(scope ?? sf);
+    return !guarded;
+  };
   // compiler diagnostics (strict mode) that fall inside a checked region; unresolved-module codes get their own rule
   for (const d of diagnostics) {
     if (d.file !== sf || d.start === undefined) continue;
     const hit = !ranges || checkedDiagSpans.some((n) => d.start >= n.getStart(sf) && d.start <= n.getEnd());
     if (!hit) continue;
     if (d.code === 7029) continue; // switch fall-through is an ordered clause continuation
-    if (d.code === 7006 || d.code === 7031 || d.code === 7053) continue; // implicit any: opaque, admitted
+    if (IMPLICIT_ANY.has(d.code)) continue; // implicit any: opaque, admitted
+    if (d.code === 18046 && !ownUnknown(d)) continue; // an unknown the unit did not write: opaque, admitted
+    if (d.code === 2683 || d.code === 7041) { // an implicit receiver: an input the function does not declare, which the translator refuses
+      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: sf.text.slice(d.start, d.start + (d.length ?? 4)) });
+      continue;
+    }
     if (d.code === 2339 || d.code === 2551) {
       // a property missing on a type that lives in node_modules: the dependency's version may differ from the commit's; the read is opaque
       const at = (function find(n) { if (d.start >= n.getStart(sf) && d.start < n.getEnd()) { let hit = n; ts.forEachChild(n, (c) => { const r = find(c); if (r) hit = r; }); return hit; } return null; })(sf);
