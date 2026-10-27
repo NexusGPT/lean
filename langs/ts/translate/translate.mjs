@@ -34,7 +34,7 @@ import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitO
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
-import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite } from '../common.mjs';
+import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
@@ -2357,8 +2357,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         else if (isNullish(vt)) hit = loose || hasAbsence(vt, kind === 'Null' ? TF.Null : TF.Undefined) ? 'true' : 'false';
         else if (bothAbsent(vt)) hit = loose ? `!${value}.Some?` : `${value}.${kind}?`;
         else if (isOptional(vt) && (loose || hasAbsence(vt, kind === 'Null' ? TF.Null : TF.Undefined))) hit = `${value}.None?`;
-        // a key the dictionary does not own reads through Object.prototype: a name of it is a function (or the prototype itself for __proto__), neither undefined nor null; a file that makes another prototype keeps the own-key reading
-        const inherited = !prototypeMaker(checker, sf) && (loose || kind === 'Undef') ? ` && !(${dict.key} in ${helper('ObjectProtoNames', [])})` : '';
+        // a key the dictionary does not own reads through Object.prototype: a name of it is a function (or the prototype itself for __proto__), neither undefined nor null; a unit a made prototype reaches keeps the own-key reading
+        const inherited = !inPrototypeReach(checker, sf, n) && (loose || kind === 'Undef') ? ` && !(${dict.key} in ${helper('ObjectProtoNames', [])})` : '';
         test = `(if ${present} then ${hit} else ${loose || kind === 'Undef'}${inherited})`;
       } else if (isAny(t) || isAny(dt)) {
         let o = other; while (ts.isParenthesizedExpression(o)) o = o.expression;
@@ -2427,7 +2427,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return staticTest(n.left, (t) => target ? instanceDecision(t, target, n) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}`, [d], 'bool')}(${v})`);
     }
     if (op === K.InKeyword) {
-      { const pm = prototypeMaker(checker, sf); if (pm) fail(n, `prototype: this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pm.getStart(sf))}), and \`in\` reads the prototype; test an own key with Object.prototype.hasOwnProperty.call(o, k)`); }
+      { const pr = inPrototypeReach(checker, sf, n); if (pr) fail(n, `prototype: this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pr.maker.getStart(sf))}), and ${pr.why}; \`in\` reads the prototype; test an own key with Object.prototype.hasOwnProperty.call(o, k)`); }
       const rt0 = typeOf(n.right); const rd = (() => { try { return isAny(rt0) ? 'Any' : dtype(rt0, n); } catch { return 'Any'; } })();
       if (assertionDerived(n.left) || assertionDerived(n.right)) return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
       if ((rd.startsWith('map<string') || (isDictD(rd) && isDictionary(checker, baseOf(rt0)))) && (typeOf(n.left).flags & TF.StringLike)) {
