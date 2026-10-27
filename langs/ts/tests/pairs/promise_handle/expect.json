@@ -1,0 +1,26 @@
+{
+  "scope": ["load", "held", "pick", "delegate", "cached", "persist", "wrapped", "repo_constructor", "repo_find"],
+  "equal": {
+    "load": false,
+    "held": true,
+    "pick": true,
+    "delegate": true,
+    "cached": true,
+    "persist": true,
+    "wrapped": "withheld",
+    "repo_constructor": true,
+    "repo_find": true
+  },
+  "why": "a non-async unit returning a promise it did not build: the handle is the outside transition's value, never settled inside the unit; a held name, a conditional, a same-file handle unit and a field's call keep that one transition; a chain is another transition; an async rewrite carries no handle in its signature",
+  "why_withheld": "Unit wrapped: the candidate is async, so its signature has no handle and its result is the adopted value; the theorem withholds the lemma (its identity guard overwrites the interface reason, so check.mjs says ASK:identity) and lane B decides.",
+  "b": {
+    "load": "WITNESS",
+    "held": "PASS-bounded",
+    "pick": "PASS-bounded",
+    "delegate": "PASS-bounded",
+    "cached": "PASS-bounded",
+    "persist": "PASS-bounded",
+    "wrapped": "PASS-bounded",
+    "Repo.find": "PASS-bounded"
+  }
+}

@@ -17,7 +17,7 @@
   "faithful": "same, plus the library table as transitions and callable records for escaped functions"
  },
  "ReturnStatement": {
-  "today": "exact; a bare return in a value unit refused (bare-return)",
+  "today": "exact; a bare return in a value unit refused (bare-return); in a non-async Promise-returning unit, a returned outside call, Promise static, chain, held name or conditional of these is the handle the call returned, unsettled (promise-handle, partial (lane))",
   "faithful": "same"
  },
  "StringLiteral": {
