@@ -44,9 +44,9 @@ In the heap core a local holds a `Ref`: `var (hw_, c0_) := box_held(hw_, this_);
 `SetAdd_S_string(hw_, s, "x")` writes the one heap cell `this.items` names, so the change is seen through every
 name, and the lemma compares the whole final heap. The core's reading is the JavaScript meaning; the ordinary lane's
 value reading is only right for a sole name. The cells audit counts the change as modelled when the unit's text is a
-heap unit. The lint does not know the core (the translator plans the core after its lint gate), so a core unit that
-changes a call result is refused too, as a core unit that changes a local alias of a field already is.
-Lane B runs the real code: the add reaches `this.items`, `mark` and `bump` are WITNESS. No change.
+heap unit. What stays out: the lint runs before the core is planned, so a core unit that changes a call result is
+refused too (sound in both lanes; 0 units on nutshell). When the core's reach makes that cost units, a row reorders
+the gate so a unit the core reads keeps its reading. Lane B runs the real code and needs no change.
 ## Measured reach (census root `nutshell`, `node langs/ts/census.mjs <root>`, base 67b8201 then this lint)
 Before: "2266 files, 6565 units, 5254 inside the subset (80 percent)". After: "5222 inside the subset (79.5 percent)".
 29 units move out (13 by call results alone), all by `alias-mutation`; 0 are in the heap core (the base translator
