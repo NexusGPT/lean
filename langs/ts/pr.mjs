@@ -29,7 +29,9 @@ import { runPair } from './exec/run.mjs';
 import { callersOf, calleesOf } from './exec/callees.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const git = (repo, args) => { const r = spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8', maxBuffer: 1 << 28 }); if (r.status !== 0) throw new Error(`git ${args.join(' ')}: ${r.stderr.trim()}`); return r.stdout; };
+// every git runs in the C locale, so a message never depends on the machine's language
+const GIT_ENV = { ...process.env, LC_ALL: 'C' };
+const git = (repo, args) => { const r = spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8', maxBuffer: 1 << 28, env: GIT_ENV }); if (r.status !== 0) throw new Error(`git ${args.join(' ')}: ${r.stderr.trim()}`); return r.stdout; };
 const CODE = /\.(ts|tsx|mts|cts)$/;
 const JS = /\.(js|jsx|mjs|cjs)$/;
 
@@ -163,10 +165,11 @@ function changedFiles(opts, temps) {
     if (secretPath(rel) || entry.binary || (!CODE.test(rel) && !JS.test(rel))) return entry;
     const abs = path.join(filesRoot ?? repo, rel);
     const readRef = (ref) => {
-      const r = spawnSync('git', ['-C', repo, 'show', `${ref}:${rel}`], { maxBuffer: 1 << 28 });
-      if (r.status === 0) return r.stdout;
-      if (!/does not exist|exists on disk, but not in/.test(String(r.stderr))) throw new Error(String(r.stderr));
-      return null;
+      // existence is the exit code of cat-file (the refs already passed git diff), never a parsed message
+      if (spawnSync('git', ['-C', repo, 'cat-file', '-e', `${ref}:${rel}`], { env: GIT_ENV }).status !== 0) return null;
+      const r = spawnSync('git', ['-C', repo, 'show', `${ref}:${rel}`], { maxBuffer: 1 << 28, env: GIT_ENV });
+      if (r.status !== 0) throw new Error(String(r.stderr));
+      return r.stdout;
     };
     try {
       const original = readRef(base);
