@@ -53,10 +53,23 @@ calls the record's `valueOf` or `toString`, user code. That is why `==` stays ou
 Lane B runs the JavaScript on typed inputs drawn per union member. On the pair it witnesses both changed literals
 (`flag` on the input `true`, `code` on `"1"`) and finds no difference on the six kept units (`exec/run.mjs --n 30`).
 
+## Measured (census, base 67b8201 against this lane)
+
+    NODE_OPTIONS=--max-old-space-size=12288 node <lean>/langs/ts/census.mjs <root> --out <side>-<repo>.json
+
+| root | units | inside before | inside after | share | mixed-types units before / after |
+|---|---:|---:|---:|---|---:|
+| n8n | 6337 | 3488 | 3543 | 55 to 55.9 | 268 / 38 |
+| langchainjs | 4871 | 3269 | 3301 | 67.1 to 67.8 | 60 / 5 |
+
 ## Instances (`units.jsonl`, census `mixed-types@vs-literal`)
 
-- langchainjs `libs/langchain-classic/src/agents/executor.ts:624` (`handleParsingErrors === true`)
-- n8n `packages/nodes-base/nodes/TheHiveProject/helpers/utils.ts:67`
-- nutshell `modules/chat/src/drawing/assemble-turn-drawings-events.ts:264` (`self.conversation?.status === 'working'`)
-- nexus `apps/backend/src/external/sync-sandbox/sync-sandbox-writer.service.ts:95` (`result === "ok"`)
-- n8n `packages/@n8n/nodes-langchain/nodes/trigger/ChatTrigger/ChatTrigger.node.ts:323`
+- langchainjs `libs/langchain-classic/src/agents/executor.ts:624` `_takeNextStep`: the comparison is admitted; the unit
+  still has an unresolved import at line 630 (environment), so it does not enter yet.
+- n8n `packages/nodes-base/nodes/TheHiveProject/helpers/utils.ts:67` `constructFilter`: no construct finding left; the
+  file's unresolved imports (environment) remain.
+- nutshell `modules/chat/src/drawing/assemble-turn-drawings-events.ts:264` `applyStatusChanged`: enters (no finding).
+- nexus `apps/backend/src/external/sync-sandbox/sync-sandbox-writer.service.ts:95` `SyncSandboxWriter.delete`: enters
+  (no finding).
+- n8n `packages/@n8n/nodes-langchain/nodes/trigger/ChatTrigger/ChatTrigger.node.ts:323` `ChatTrigger.webhook`: no
+  construct finding left; the file's unresolved imports (environment) remain.
