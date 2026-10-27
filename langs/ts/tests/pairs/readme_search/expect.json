@@ -1,0 +1,16 @@
+{
+ "scope": [
+  "search",
+  "panel"
+ ],
+ "equal": {
+  "search": false,
+  "panel": false
+ },
+ "why": "README example, front end. Search debounces a filter through a timer in an effect and shows the hits behind a toggle; the candidate keeps one hit too many (slice(0, limit + 1)), visible only after the show click and the timer firing: WITNESS at the element tree. Panel is finite by its types (a two-literal prop, a two-literal slot and a boolean slot); the candidate reorders two setter calls that read the same closure: every click order from every prop assignment decided equal, PASS-decided. Lane A reads neither handler (a branch inside), so both stay lane B's.",
+ "heap": false,
+ "b": {
+  "Search": "WITNESS",
+  "Panel": "PASS-decided"
+ }
+}
