@@ -23,8 +23,8 @@
   "cached": true,
   "handler": false,
   "environment": false,
-  "sync_handler": "withheld",
-  "dynamic_require": "withheld",
+  "sync_handler": true,
+  "dynamic_require": true,
   "store": true,
   "untouched": true,
   "alias_across_write": false,
@@ -35,7 +35,7 @@
   "default_counter": false,
   "conditional_environment": false
  },
- "why": "module state is shared across units; a cache snapshot has one world read on both sides; loaders and environment members retain their identity",
+ "why": "module state is shared across units; a cache snapshot has one world read on both sides; loaders and environment members retain their identity syncHandler and dynamicRequire are the same text on both sides and prove by identity: until the translator numbered temporaries per unit, a changed earlier unit shifted theirs, the texts differed, and the identity guard withheld them (the old expectation recorded that defect).",
  "b": {
   "bump": "WITNESS",
   "twice": "WITNESS",
