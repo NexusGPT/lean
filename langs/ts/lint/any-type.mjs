@@ -255,7 +255,7 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
       adviceText = `keep the test and the ${tt}, or write the union of the types ${name} may hold`;
     } else if (kind === 'return') {
       label = 'migration';
-      const why = ev.refs ? 'no returned value has a type' : 'nothing is returned';
+      const why = ev.partial ? `${ev.partial} returned value(s) typed any beside typed ones` : ev.refs ? 'no returned value has a type' : 'nothing is returned';
       msg = `\`${name}\` is ${tt} (${how}); no evidence: ${why}`;
       adviceText = `no evidence: ${why}; write the type its callers mean`;
     } else {
@@ -408,7 +408,7 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
           const close = u.fn.getChildren(sf).find((c) => c.kind === K.CloseParenToken);
           const fix = u.fn.type ? { start: u.fn.type.getStart(sf), end: u.fn.type.getEnd(), text: (p) => wrap(p) } : close ? { start: close.getEnd(), end: close.getEnd(), text: (p) => `: ${wrap(p)}` } : null;
           const at = u.fn.name ?? (ts.isVariableStatement(u.node) ? u.node.declarationList.declarations[0].name : u.fn);
-          report(at, 'return', `the return of ${u.name}`, inner, !!u.fn.type, u.name, { proposal: proposal && wrap(proposal), conflicts: [], evidence, refs: rets.length, fix: fix && { ...fix, text: () => fix.text(proposal) } });
+          report(at, 'return', `the return of ${u.name}`, inner, !!u.fn.type, u.name, { proposal: proposal && wrap(proposal), conflicts: [], evidence, refs: rets.length, partial: texts.length ? opaque : 0, fix: fix && { ...fix, text: () => fix.text(proposal) } });
         }
       }
     }
