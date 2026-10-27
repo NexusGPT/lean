@@ -62,3 +62,23 @@ loop element, an index loop in a real file. Names ending in an underscore leave 
 Pair `heap_loops`: `total` (another body, WITNESS), `raise` (its step `1 + k` for `k + 1`, proved), `positives`
 (`n += 1` for `n = n + 1`, proved), `weight` (proved).
 Reach: 95 -> 95; the first reason `statement` falls 309 -> 164 and own-syntax fits kept out by the call graph rise 90 -> 95: a loop was rarely a unit's only blocker.
+
+## 4. Optional fields
+
+Reading: a primitive that may be absent (`T | undefined`, `f?: T`, `x?: T`, or `T | null`; never both) is an `opt`
+shape. As a value (parameter, local, result) it is `Option<T>`; as a stored field holding `undefined` it is
+`Pres<T>` = `PMissing | PUndef | PVal(v)`. `p.f ?? d` is `OptOr(PresOpt(Get_..), d)` (`d` pure, so reading it eagerly
+is exact); `x === undefined` is `.None?` (`===` across null and undefined is constant, `==` tests both); `if (x)` is
+truthiness (`0`, `""`, `false`, absent). A literal omitting `f?` stores `PMissing`, `f = undefined` stores `PUndef`.
+A name TypeScript narrows unwraps with `OptOr` (only its own unit writes it); a narrowed FIELD read `p.f` marks the
+world through `OptMark` when absent, so its lemma (INRANGE) shows the test still holds: another name of the same
+record, or a call, may have cleared it in between (probe: `v.nick = undefined` between `u`'s test and read, unproved).
+Soundness: a missing key and a key holding undefined differ in the reachable graph (key presence); `Pres` keeps them
+apart (probe: `{name, visits: undefined}` against the same with `nick: undefined`, unproved). Before this row a
+nullable type was read as its inner type (`nonNull`), which a `x + ""` on a null could prove wrong; now absence is
+either modelled or out. A literal takes the shape of the place it is written to, so its omitted fields are known.
+Out: absent references (`R | undefined`), `T | null | undefined`, optional chaining, arrays or maps of optionals, a
+compound write to an optional, a narrowed field read inside a callback, the truthiness of a real.
+Pair `heap_optional`: `display` (`??` as a presence test, proved), `greeting` (another default, WITNESS), `pad`
+(`by?` tested first, proved), `forget`, `visit` (proved).
+Reach: 95 -> 103; `parameter type` rises 12,257 -> 12,450 since an absent reference is now named, not read as present.
