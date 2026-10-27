@@ -258,6 +258,16 @@ and say: keep it, label it "tree, one render". The census holds 2,041 `.tsx` fil
   table. The repository is opened at that row; if its tests are not JavaScript, the 18 scenarios are ported
   by hand and the port is said.
 
+### 10.2b Built, 2026-10-27: the three-rung certificate
+
+- Rung 1, lane A over hook slots (`translate.mjs`, hook_slots pair): a proof for every state when the handlers are
+  readable descriptors. Rung 2, `exec/finite.mjs`: a component whose slots and props are finite by their types is
+  explored over every click order from every prop assignment, effects and timers inside each step; PASS-decided with
+  the state pairs. Rung 3, the sequence runner in `run.mjs`: bounded. `check.mjs` reports the strongest rung that
+  holds: PASS-proved, PASS-decided, PASS-bounded. Purity (the double render) gates every rung.
+- Setter calls inside one handler are React's batching, not an observation: lane B records the slots a handler
+  leaves, never the order of its sets.
+
 ### 10.3 The checks lean adds without a browser
 
 - **Layer in the certificate**: `check.mjs:29` and `run.mjs:303` carry `observation: {layer: 'tree', renders:

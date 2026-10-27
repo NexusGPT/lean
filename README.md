@@ -24,6 +24,7 @@ Every change to a program is a claim: *I changed this, and nothing else.* Tests 
 |---|---|---|
 | **`WITNESS`** | here is an input on which the two versions behave differently | the input and both observations |
 | **`PASS-proved`** | equal on **every** input outside the change you declared | a theorem, checked by [Dafny](https://dafny.org) |
+| **`PASS-decided`** | a component whose state and props are finite by its types: equal on **every** event sequence, explored to the end | the state pairs visited, the prop assignments, the hash of the visited set |
 | **`PASS-bounded`** | no difference found on *n* generated inputs under a frozen environment | the inputs, the seed, the bound |
 | **`ASK`** | undecided, and here is exactly why | the construct, the timeout, the changed interface |
 | **`REFUSE`** | a local source import cannot resolve or a local named export is absent | kind `load`, file and loader error |

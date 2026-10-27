@@ -23,6 +23,7 @@ rules per package).
 |---|---|
 | `WITNESS` | a paired execution differs on a recorded input |
 | `PASS-proved` | paired observations are equal under the proof's stated model |
+| `PASS-decided` | a finite component (state and props declared finite by its types) agreed on every event sequence; the product of both state spaces was explored to the end |
 | `PASS-bounded` | paired observations agreed on the drawn inputs |
 | `ASK` | the requested check remains undecided |
 | `REFUSE` | a local source link failed; `kind: load` names the file and real loader error |

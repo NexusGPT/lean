@@ -105,7 +105,7 @@ function reactRuntime(env) {
       const slots = (env.hookSlots ??= []);
       if (!(i in slots)) { slots[i] = typeof initial === 'function' ? initial() : initial; env.record('hook', key, [render(slots[i])]); }
       const value = slots[i];
-      const setter = (next) => { const v = typeof next === 'function' ? next(slots[i]) : next; if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; env.record('set', key, [render(slots[i])]); };
+      const setter = (next) => { const v = typeof next === 'function' ? next(slots[i]) : next; if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; // no trace record: the slots after the handler are the observation (observeJsx), so the order of setter calls inside one handler, React's batching, is not
       return [value, setter];
     },
     useEffect: (fn, deps) => effectSlot(fn, deps, 'react:effect'),
@@ -113,7 +113,7 @@ function reactRuntime(env) {
     useRef: (initial) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; }, // one box per slot, the same box on every render
     useId: () => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = `:r${i}:`; return slots[i]; }, // a stable id per slot
     useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
-    useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; env.record('set', key, [render(slots[i])]); }; return [slots[i], dispatch]; },
+    useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; return [slots[i], dispatch]; },
     useLayoutEffect: (fn, deps) => effectSlot(fn, deps, 'react:layout-effect'), // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
   runtime.__beginRender = () => { slot = 0; }; // a render starts at slot 0 (React's call-order keying)
@@ -130,8 +130,8 @@ async function observeJsx(v, env) {
   if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return v;
   const props = { ...v.props };
   for (const k of Object.keys(props)) if (/^on[A-Z]/.test(k) && typeof props[k] === 'function') {
-    try { props[k] = { $handler: { returned: render(await props[k](env.fake(`react:event:${k}`))) } }; }
-    catch (e) { if (e instanceof BudgetError) throw e; props[k] = { $handler: { threw: render(e) } }; }
+    try { const returned = render(await props[k](env.fake(`react:event:${k}`))); props[k] = { $handler: { returned, slots: render(env.hookSlots ?? []) } }; } // the state the handler leaves, whatever the order of its setter calls
+    catch (e) { if (e instanceof BudgetError) throw e; props[k] = { $handler: { threw: render(e), slots: render(env.hookSlots ?? []) } }; }
   }
   const children = [];
   for (const c of v.children) children.push(await observeJsx(c, env));
@@ -458,7 +458,21 @@ export async function runPair(opts) {
   if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
-  if (sawJsx && sequenceDepth > 0) { // the one-render check found no difference: re-render sequences from a fresh mount, on the first inputs
+  if (sawJsx) { // the one-render check found no difference: a finite component is decided over every click order (rung 2); the rest runs re-render sequences (rung 3)
+    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop };
+    let domain = null; try { domain = finiteDomain(candidate, unit, { project }); } catch (e) { domain = { why: `finiteness: ${String(e && e.message).slice(0, 120)}` }; }
+    if (domain && !domain.why) {
+      const r = await exploreFinite({ files: { parent, candidate }, roots, spec, unit, domain, seed, ms, rt });
+      bound.frontEnd.finite = { slots: domain.slots.map((x) => x.values.length), props: domain.props.map((p) => `${p.name}:${p.opaque ? p.opaque : p.values.length}`), assignments: domain.assignments.length };
+      if (r.verdict === 'ASK') return { verdict: 'ASK', reason: `finite exploration: ${r.reason}`, unit, bound };
+      if (r.verdict === 'WITNESS') { bound.frontEnd.renders = 'every click order from every prop assignment, explored'; return { verdict: 'WITNESS', unit, witnesses: [{ input: r.witness.props, sequence: r.witness.clicks, step: r.witness.step ?? null, parent: r.witness.parent ?? null, candidate: r.witness.candidate ?? null, reason: r.witness.reason ?? null, where: { field: 'sequence', command: (r.witness.clicks ?? [])[r.witness.step ?? 0] ?? null } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
+      bound.frontEnd.renders = `every click order from every prop assignment, decided: ${r.pairs} state pairs over ${r.assignments} assignment(s); effects and armed timers inside each step; a function or element prop is one opaque input`;
+      bound.frontEnd.notObserved = 'committed DOM, computed styles, layout, pixels, accessibility tree; other values of opaque props';
+      return { verdict: 'PASS-decided', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+    }
+    bound.frontEnd.finite = { why: domain ? domain.why : 'no domain' };
+  }
+  if (sawJsx && sequenceDepth > 0) { // not finite: re-render sequences from a fresh mount, on the first inputs
     let paths = 0;
     for (let i = 0; i < Math.min(sequenceInputs, n); i++) {
       const r = await runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth });

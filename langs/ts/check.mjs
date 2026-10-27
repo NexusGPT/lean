@@ -6,7 +6,8 @@
 //
 // Order: lane B (bounded execution) first; a WITNESS ends the question. Then lane A (proof): lint, translate both
 // sides (the effect set shared), theorem, Dafny. The verdict is the strongest statement the evidence supports:
-//   WITNESS       > PASS-proved > PASS-bounded > ASK
+//   WITNESS       > PASS-proved > PASS-decided > PASS-bounded > ASK
+//   PASS-decided: a component whose state and props are finite by its types, the product of both state spaces explored to the end.
 //   NEW and REFUSE(load) are candidate-only observations, outside the equality ordering.
 // A PASS-bounded never becomes a proof; a proof lemma that fails is ASK:unproved (not a refutation).
 // The certificate lists what was checked: file hashes, the unit, the bound, the theorem and prelude hashes, the
@@ -33,6 +34,7 @@ export async function check(opts) {
   cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
   if (b.verdict === 'NEW' || b.verdict === 'REFUSE' || b.candidateOnly) { cert.lanes.B = b; return finish(b.verdict, cert, b); }
   if (b.verdict === 'WITNESS') return finish('WITNESS', cert, { witness: b.witnesses[0] });
+  const bounded = b.verdict === 'PASS-decided' ? 'PASS-decided' : 'PASS-bounded'; // the rung lane B reached: decided (a finite component over every click order) outranks bounded
   // ---- lane A ----
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-check-'));
   // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature
@@ -41,9 +43,9 @@ export async function check(opts) {
   const effOf = (suffix) => headerOf(suffix, 'EFFECTFUL');
   const heapOf = (suffix) => headerOf(suffix, 'HEAP');
   const p1 = tr(parent, 'parent', '', undefined);
-  if (p1.status !== 0) { cert.lanes.A = { verdict: 'ASK', stage: 'translate-parent', detail: p1.out.trim().slice(-600) }; return finish(b.verdict === 'PASS-bounded' ? 'PASS-bounded' : 'ASK', cert, {}); }
+  if (p1.status !== 0) { cert.lanes.A = { verdict: 'ASK', stage: 'translate-parent', detail: p1.out.trim().slice(-600) }; return finish((b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK', cert, {}); }
   const c1 = tr(candidate, 'candidate', effOf('parent'), heapOf('parent'));
-  if (c1.status !== 0) { cert.lanes.A = { verdict: 'ASK', stage: 'translate-candidate', detail: c1.out.trim().slice(-600) }; return finish(b.verdict === 'PASS-bounded' ? 'PASS-bounded' : 'ASK', cert, {}); }
+  if (c1.status !== 0) { cert.lanes.A = { verdict: 'ASK', stage: 'translate-candidate', detail: c1.out.trim().slice(-600) }; return finish((b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK', cert, {}); }
   if (effOf('candidate') !== effOf('parent') || heapOf('candidate') !== heapOf('parent')) tr(parent, 'parent', effOf('candidate'), heapOf('candidate'));
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
   const names = [...new Set([...cand.matchAll(/\bfunction\s+([A-Za-z0-9_]+)_candidate\s*\(/g)].map((m) => m[1]))].filter((x) => !/_loop\d+$/.test(x));
@@ -54,7 +56,7 @@ export async function check(opts) {
     const why = th.out.trim().slice(-400);
     const iface = /differs|does not define|opaque block calls/.test(why);
     cert.lanes.A = { verdict: iface ? 'ASK:interface' : 'ASK:theorem', detail: why };
-    return finish(iface ? 'ASK' : (b.verdict === 'PASS-bounded' ? 'PASS-bounded' : 'ASK'), cert, {});
+    return finish(iface ? 'ASK' : ((b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK'), cert, {});
   }
   const v = run('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), path.join(tmp, 'theorem.dfy')], (dafnySeconds + 60) * 1000 * Math.max(1, names.length));
   const text = v.out;
@@ -68,7 +70,7 @@ export async function check(opts) {
   const unguarded = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED ${main}: (.*)$`, 'm')) || [])[1] ?? null; // the identity guard withheld the lemma: the value reading could not be shown to be a graph reading
   cert.lanes.A = { verdict: unguarded ? 'ASK:identity' : m ? (lemmas[main] ? 'PASS-proved' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), identity: unguarded, lemmas, heapCore: heapOf('candidate').split(',').filter(Boolean), dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnySeconds, dir: tmp };
   if (m && lemmas[main] && !unguarded) return finish('PASS-proved', cert, {});
-  return finish(b.verdict === 'PASS-bounded' ? 'PASS-bounded' : 'ASK', cert, {});
+  return finish((b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK', cert, {});
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
 

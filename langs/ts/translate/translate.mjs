@@ -2628,8 +2628,9 @@ export function translate(file, fnName, opts = {}) {
       const initCode = !a0 ? `${external(`uninit_${mangle(D)}`, [], D)}()` : ts.isArrowFunction(a0) && a0.parameters.length === 0 ? outerParens(expr(ts.isBlock(a0.body) ? (a0.body.statements.length === 1 && ts.isReturnStatement(a0.body.statements[0]) ? a0.body.statements[0].expression : fail(a0, 'a lazy initializer with more than a return is not read')) : a0.body, checker.getTypeArguments(typeOf(n))[0])) : outerParens(expr(a0, checker.getTypeArguments(typeOf(n))[0]));
       pending.push(`var init${index}_: ${D} := ${initCode};`);
       const decl = n.parent; if (ts.isVariableDeclaration(decl) && ts.isArrayBindingPattern(decl.name)) { const el = decl.name.elements[1]; if (el && ts.isBindingElement(el) && ts.isIdentifier(el.name)) { const sym = checker.getSymbolAtLocation(el.name); if (sym) setterSlot.set(sym, index); } }
-      const setter = external(`setter_${currentUnit.name}_${index}`, [], `(${D}) -> Unit`);
-      pending.push(`var hook${index}_: (${D}, (${D}) -> Unit) := (slots.s${index}, ${setter}());`); // a named tuple: the destructuring reads .0 and .1
+      const setterT = checker.getTypeArguments(typeOf(n))[1]; const setterD = setterT ? dtype(setterT, n) : `(${D}) -> Unit`; // the setter's own type (an updater union reads as Any -> Unit), so a capture boxes it as the ordinary lane does
+      const setter = external(`setter_${currentUnit.name}_${index}`, [], setterD);
+      pending.push(`var hook${index}_: (${D}, ${setterD}) := (slots.s${index}, ${setter}());`); // a named tuple: the destructuring reads .0 and .1
       return `hook${index}_`;
     }
     const hook = exactReactHook(checker, n);

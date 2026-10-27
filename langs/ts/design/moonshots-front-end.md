@@ -36,6 +36,14 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   (`setPinned(true)` for `setPinned(!pinned)`) a WITNESS of 2 clicks (`open`, then `pin`) in 0.3 s. The pass bar
   holds. What the prototype leaves out: effects, the clock, finiteness read from the types (the census says who
   qualifies), the certificate line; that is the finite-state row.
+- Built (2026-10-27, `langs/ts/exec/finite.mjs`, wired as rung 2 of the certificate): finiteness read from the
+  types (useState type arguments or the widened initialiser; the props record's fields finite or opaque), the
+  product of parent and candidate explored over every click order from every prop assignment, effects and armed
+  timers inside each step, a fresh mount per path; PASS-decided with the state pairs and assignments in the
+  certificate, a 500-pair bound (ASK). Pair `tests/pairs/finite_components`: Toggle (a reordered handler lane A
+  cannot read) PASS-decided, Tabs PASS-decided, Mutant a 2-click WITNESS, Named (a string slot) left to the
+  bounded rung. The ladder in check.mjs: PASS-proved, then PASS-decided, then PASS-bounded. 69 lane B expectations
+  of the React, timer and clock pairs unchanged.
 - Kill: under 5% of components fully finite.
 
 ## 2. The induction proof: re-render equivalence with no renderer
