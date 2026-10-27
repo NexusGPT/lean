@@ -68,7 +68,7 @@ export function usage(sf, unitName, checker, opts = {}) {
       const key = el.propertyName ? (ts.isIdentifier(el.propertyName) || ts.isStringLiteral(el.propertyName) ? el.propertyName.text : null) : (ts.isIdentifier(el.name) ? el.name.text : null);
       if (key == null) continue;
       const child = field(node, key);
-      if (el.initializer) { const l = litOf(el.initializer); if (l) addLit(child.compares, l.v); }
+      if (el.initializer) { addLit(child.compares, UNDEF); const l = litOf(el.initializer); if (l) addLit(child.compares, l.v); } // a default separates at undefined
       bind(env, el.name, child);
     }
     else if (ts.isArrayBindingPattern(name)) for (const el of name.elements) if (ts.isBindingElement(el) && !el.dotDotDotToken) bind(env, el.name, elemOf(node));
@@ -108,6 +108,14 @@ export function usage(sf, unitName, checker, opts = {}) {
   function walk(node, env, depth) {
     // declarations bind their names first, so later reads of the alias reach the chain
     if (ts.isVariableDeclaration(node) && node.initializer) { walk(node.initializer, env, depth); bind(env, node.name, nodeOf(node.initializer, env)); return; }
+    // a write through a key (`d.k = v`, `d[k] = v`, `delete d.k`) is no read: it names no field of the input, only its
+    // receiver is read
+    const target = ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken ? strip(node.left) : ts.isDeleteExpression(node) ? strip(node.expression) : null;
+    if (target && (ts.isPropertyAccessExpression(target) || ts.isElementAccessExpression(target))) {
+      walk(target.expression, env, depth); if (ts.isElementAccessExpression(target)) walk(target.argumentExpression, env, depth);
+      if (ts.isBinaryExpression(node)) walk(node.right, env, depth);
+      return;
+    }
     if (ts.isForOfStatement(node)) {
       walk(node.expression, env, depth);
       const n = nodeOf(node.expression, env);
@@ -189,7 +197,7 @@ export function usage(sf, unitName, checker, opts = {}) {
   }
 
   const env = new Map();
-  u.params.forEach((p, i) => bind(env, p.name, roots[i]));
+  u.params.forEach((p, i) => { bind(env, p.name, roots[i]); if (p.initializer) addLit(roots[i].compares, UNDEF); }); // a parameter default separates at undefined
   // a caller may name local identifiers of the unit (a parsed value, a `let` without a type) as extra roots, read like parameters
   const extraRoots = (opts.roots ?? []).filter((id) => id && ts.isIdentifier(id));
   const localNodes = extraRoots.map(() => newNode());

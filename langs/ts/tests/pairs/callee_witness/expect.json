@@ -1,7 +1,7 @@
 {
  "scope": ["helper", "padded", "caller", "total", "double"],
  "equal": {"helper": false, "padded": false, "caller": false, "total": false, "double": true},
- "why": "Caller and Total keep their text; each calls a same-file helper that changed. helper differs on its own inputs (WITNESS); padded differs only on arrays longer than eight, which its own generated inputs never reach (PASS-bounded) but Total builds one of ten. Each caller's WITNESS names the callee it came through (through, where.cause 'callee'); helper's own WITNESS names none; lane A aliases only double, since a caller of a changed callee is not identical by the theorem's fixpoint.",
- "b": {"Caller": "WITNESS", "Total": "WITNESS", "helper": "WITNESS", "padded": "PASS-bounded", "double": "PASS-bounded"},
+ "why": "Caller and Total keep their text; each calls a same-file helper that changed. helper differs on its own inputs (WITNESS); padded differs only on arrays longer than eight: it compares the length against 8, so lane B draws an array of nine first (WITNESS), and Total builds one of ten. Each caller's WITNESS names the callee it came through (through, where.cause 'callee'); helper's own WITNESS names none; lane A aliases only double, since a caller of a changed callee is not identical by the theorem's fixpoint.",
+ "b": {"Caller": "WITNESS", "Total": "WITNESS", "helper": "WITNESS", "padded": "WITNESS", "double": "PASS-bounded"},
  "through": {"Caller": ["helper"], "Total": ["padded"], "helper": []}
 }

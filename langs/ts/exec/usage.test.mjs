@@ -115,3 +115,17 @@ test('a local named as an extra root is read like a parameter, and merges by nam
   assert.deepEqual(at(m.locals[0].node, 'kind').compares, ['a']);
   assert.equal(usage(sf, 'parse', checker).locals, undefined);
 });
+
+test('a key written, assigned or deleted is not a read', () => {
+  const u = of(`export function both(d: Record<string, number>, o: any) {
+    d["x"] = 1; d.y = 2; delete d.z; o.seen = o.count;
+    return 2; }`, 'both');
+  assert.deepEqual(Object.keys(u.params[0].node.fields), []);
+  assert.deepEqual(Object.keys(u.params[1].node.fields), ['count']);
+});
+
+test('a default, in a destructuring or on a parameter, is a comparison against undefined', () => {
+  const u = of(`export function sized({ size = 1, ...rest }: any, n = 3) { return [size, rest, n]; }`, 'sized');
+  assert.deepEqual(at(u.params[0].node, 'size').compares, [{ undefined: true }, 1]);
+  assert.deepEqual(u.params[1].node.compares, [{ undefined: true }]);
+});

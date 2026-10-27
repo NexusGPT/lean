@@ -13,7 +13,6 @@ and a declared leaf the unit compares against a literal or a constant: `name ===
 `reason.length <= MAX_REASON_CHARS`, `x !== null && typeof x === "object"`.
 
 ## What lane B drew before
-
 An `any` input was a fake whose field reads answer fakes or falsy values, never `"collection-mention"`; a dictionary
 drew the keys `k0..k3`, never `isActive`; a declared string met a compared literal only by a pool draw. The spec came
 from the candidate alone, so a field only the parent reads was never named.
@@ -62,8 +61,7 @@ The refinement is general: it reads comparisons, chains and lengths, never a nam
 - A Map or a Set the unit reads by `has`/`get`: no key is drawn equal to a string drawn elsewhere in the same input
   (928's voice mode needs a tool map holding the block's `collectionId`).
 - Chains two calls deep, values a fake service answers (`this.repo.find(...)` results), keys computed at run time.
-- The receiver's fields are refined, but they are drawn through the fake's typed answers, which mix the boundary in at
-  random and do not walk it.
+- The receiver's fields are refined but drawn through the fake's typed answers: the boundary is mixed in, not walked.
 
 ## What lane B sees
 
@@ -71,10 +69,12 @@ The refinement is general: it reads comparisons, chains and lengths, never a nam
 a block `{ type: "collection-mention", attrs: { isActive: false, ... } }` with no tool map, where the parent returns
 `null` and the candidate the mention text. The pair `tests/pairs/read_shaped_inputs` holds the dictionary shape, a
 string compared against a literal the candidate changes, a `<=` against `<` on a length bound by a module constant,
-a refactor of two branches into one conditional, and an untouched unit.
+a refactor of two branches into one conditional, and an untouched unit. It also reaches `callee_witness` padded (a length
+compared against 8 draws nine) and `mutual_summaries` rare and useRare (7919 drawn first). A write through a key names
+no field, the declared draw keeps one turn in three of the walk (`heap_dicts` both), and a default (`{ k = d }`, `x = d`)
+separates at undefined (`record_rest_any` Sized).
 
 ## Lane A
-
 Unchanged. One finding for the translator's owners: `attrs?: Record<string, any>` read as `node.attrs?.isNotFound ===
 true` translates to a Dafny comparison of `Option<Any>` with `Any` that does not resolve, so the pair uses
 `Record<string, string | boolean>`.
