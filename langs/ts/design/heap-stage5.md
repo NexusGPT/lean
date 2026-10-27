@@ -140,3 +140,17 @@ Census (resolved, 39 roots), strict graph 487 -> 564, own syntax 1177 -> 1449; `
 ```text
 {"files":23359,"units":53918,"core":564,"heapOwnFit":1449,"mirrorMismatch":1307,"planErrorCount":0,"seconds":1239}
 ```
+
+## 8. Void results
+
+Reading: a unit whose result is `void` is a procedure: it returns the unit value, `(HWorld, ())`. Its body may fall
+off its end, an `if` may fall through to the rest (the rest is carried into both branches, as in a loop body), and a
+bare `return;` ends it. An expression body of a procedure is a same-file call.
+Soundness: the result is `undefined` on both sides, so the observation is the final heap (and the world): a procedure
+is compared on everything it wrote. A procedure returning a value (`return x;`) stays out.
+Pair `heap5_void`: `add` (untouched, three writes and a push), `discount` (WITNESS), `clear` (an early return against
+the opposite test falling through: proved), `addTwice` (a bare return added: proved). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 564 -> 572, own syntax 1449 -> 1471; `curve.md` expects 706 after its step 8:
+```text
+{"files":23359,"units":53918,"core":572,"heapOwnFit":1471,"mirrorMismatch":1329,"planErrorCount":0,"seconds":1246}
+```

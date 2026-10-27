@@ -145,7 +145,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // a value: a primitive, a reference, or Option<primitive> (None is the type's one absent value); a record field that
   // may be undefined is a Pres<primitive>: PMissing (no key), PUndef (the key holds undefined) or PVal(v), since a key's
   // presence is observed (`in`, spread, the reachable graph) and a missing key is not a key holding undefined
-  const valD = (s) => (s.kind === 'prim' ? s.d : s.kind === 'opt' ? `Option<${s.inner.d}>` : 'Ref');
+  const valD = (s) => (s.kind === 'prim' ? s.d : s.kind === 'opt' ? `Option<${s.inner.d}>` : s.kind === 'void' ? '()' : 'Ref'); // void: a procedure's result, the unit value
   const fieldD = (s) => (s.kind === 'opt' && s.absent === 'u' ? `Pres<${s.inner.d}>` : valD(s));
   const isRefShape = (s) => s.kind !== 'prim' && s.kind !== 'opt'; // a field or element that is an edge of the heap graph
   let optUsed = false; // the Option and Pres helpers are written when a core unit or a shape needs them
@@ -218,6 +218,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
   // an expression with no call, allocation or element access: it reads the heap and nothing else, so reading it eagerly is exact
   const pureExpr = (x) => { x = unparen(x); if (ts.isIdentifier(x) || ts.isNumericLiteral(x) || ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || [K.TrueKeyword, K.FalseKeyword, K.ThisKeyword].includes(x.kind)) return true; if (ts.isPropertyAccessExpression(x)) return pureExpr(x.expression); if (ts.isBinaryExpression(x)) return pureExpr(x.left) && pureExpr(x.right); if (ts.isPrefixUnaryExpression(x)) return pureExpr(x.operand); return false; };
+  const isVoidT = (t) => !!t && !!(t.flags & TF.Void); // a declared or inferred `void` result
   const isBoolT = (t) => !!(t.flags & ts.TypeFlags.BooleanLike); // `&&` and `||` in the core are the boolean connectives; a value on either side is the ordinary translation's mixed logic
   const sameFileCall = (e) => ts.isCallExpression(e) && ts.isIdentifier(e.expression) && fns.has(e.expression.text) && !e.typeArguments;
   // `this.m(..)` in an instance method: the same-file method unit `<Class>.m`, called with `this` as its receiver
@@ -253,7 +254,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const elementWhy = (e) => { if (lambdaDepth) return 'element access inside a callback'; if (e.questionDotToken) return 'element access form'; const s = shapeOf(typeOf(e.expression)); if (s && s.kind === 'dict') return typeOf(e.argumentExpression).flags & TF.StringLike ? null : 'dictionary key type'; if (!s || s.kind !== 'arr') return 'element access of a non-array'; if (!(typeOf(e.argumentExpression).flags & TF.NumberLike)) return 'element index type'; if (isReal) return 'element index in a real file (a non-integer index reads a property, not an element)'; const a = unparen(e.argumentExpression); if (ts.isPrefixUnaryExpression(a) && a.operator === K.MinusToken) return 'negative element index (it reads a property, not an element)'; return null; };
     for (const p of u.params) { if (ts.isIdentifier(p.name) && /_$/.test(p.name.text)) no('name ending in an underscore (the generated names do)'); else if (!ts.isIdentifier(p.name) || p.name.text === 'this' || p.initializer || p.dotDotDotToken) no('parameter form'); else if (!shapeOf(typeOf(p.name))) no(`parameter type: ${shapeWhy(typeOf(p.name))}`); else names.add(p.name.text); }
     const rt = checker.getSignatureFromDeclaration(u.fn)?.getReturnType();
-    if (!rt || !shapeOf(rt)) no(`return type: ${shapeWhy(rt)}`);
+    const proc = isVoidT(rt); // a procedure: it returns undefined, read as the unit value; its body may fall off its end
+    if (!proc && (!rt || !shapeOf(rt))) no(`return type: ${shapeWhy(rt)}`);
+    if (proc && !ts.isBlock(u.body) && !calleeOf(unparen(u.body), u)) no('expression body of a procedure (only a same-file call)');
     if (!ok) return false;
     const declaredInside = (id) => { const s = checker.getSymbolAtLocation(id); const d = s?.valueDeclaration ?? s?.declarations?.[0]; return !!d && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end; };
     const checkExpr = (e0) => {
@@ -370,7 +373,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           for (const d of s.declarationList.declarations) { if (!ts.isIdentifier(d.name) || !d.initializer) return no('binding form'); if (d.name.text === HW || names.has(d.name.text)) return no('name reused'); if (/_$/.test(d.name.text)) return no('name ending in an underscore (the generated names do)'); if (!shapeOf(typeOf(d.name))) return no(`local type: ${shapeWhy(typeOf(d.name))}`); names.add(d.name.text); checkExpr(d.initializer); }
           continue;
         }
-        if (ts.isReturnStatement(s)) { if (!s.expression) return no('bare return'); if (i !== list.length - 1) return no('statement after return'); return checkExpr(s.expression); }
+        if (ts.isReturnStatement(s)) { if (!s.expression !== proc) return no(proc ? 'a value returned from a procedure' : 'bare return'); if (i !== list.length - 1) return no('statement after return'); return s.expression ? checkExpr(s.expression) : undefined; }
+        if (proc && ts.isIfStatement(s)) { checkCond(s.expression); checkStmts(block(s.thenStatement)); if (s.elseStatement) checkStmts(block(s.elseStatement)); continue; } // a branch of a procedure may fall through to the rest
         if (ts.isIfStatement(s)) {
           checkCond(s.expression);
           const t = block(s.thenStatement); checkStmts(t); if (!endsWithReturn(t)) return no('if branch without return');
@@ -408,7 +412,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       }
     };
     if (!ts.isBlock(u.body)) checkExpr(u.body); // an expression body is the value it returns
-    else { const body = [...u.body.statements]; checkStmts(body); if (!endsWithReturn(body)) no('path without return'); }
+    else { const body = [...u.body.statements]; checkStmts(body); if (!proc && !endsWithReturn(body)) no('path without return'); }
     if (ok && usesIndex) indexUnits.add(u.name);
     if (ok && loopCalls.size) loopCallsOf.set(u.name, loopCalls);
     return ok;
@@ -639,7 +643,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const lines = []; // hoisted let lines of the region being built
     const fresh = (p) => `${p}${temp++}_`;
     const sig = checker.getSignatureFromDeclaration(u.fn);
-    const rt = shapeOf(sig.getReturnType());
+    const proc = isVoidT(sig.getReturnType()); const rt = proc ? { kind: 'void' } : shapeOf(sig.getReturnType()); // a procedure returns the unit value
     const shapeExpr = (e) => shapeOf(typeOf(e));
     const strEsc = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n') + '"';
     const num = (text) => { const t = text.replace(/_/g, ''); if (/^0[xob]/i.test(t)) return String(Number(t)) + (isReal ? '.0' : ''); return isReal && !t.includes('.') ? `${t}.0` : t; };
@@ -837,7 +841,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           return out.filter(Boolean).join('\n');
         }
         if (ts.isVariableStatement(s)) { for (const d of s.declarationList.declarations) { const v = exprAs(d.initializer, shapeOf(typeOf(d.name))); lines.push(`var ${dn(d.name.text)} := ${v};`); } out.push(flush()); continue; }
-        if (ts.isReturnStatement(s)) { const v = exprAs(s.expression, rt); const pre = flush(); out.push(`${pre ? pre + '\n' : ''}(${HW}, ${v})`); return out.filter(Boolean).join('\n'); }
+        if (ts.isReturnStatement(s)) { const v = s.expression ? exprAs(s.expression, rt) : '()'; const pre = flush(); out.push(`${pre ? pre + '\n' : ''}(${HW}, ${v})`); return out.filter(Boolean).join('\n'); }
         if (ts.isIfStatement(s)) {
           const c = cond(s.expression); const pre = flush();
           const t = stmts(block(s.thenStatement));
@@ -912,7 +916,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', `Len_${sh.key}(${HW}, ${arr})`, ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
       lines.push(carried.length ? `var (${HW}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${HW} := ${call};`);
     }
-    const body = ts.isBlock(u.body) ? stmts([...u.body.statements]) : (() => { const v = exprAs(u.body, rt); const pre = flush(); return `${pre ? pre + '\n' : ''}(${HW}, ${v})`; })(); // an expression body: `return body`
+    const body = ts.isBlock(u.body) ? stmts([...u.body.statements], proc ? () => `(${HW}, ())` : null) : (() => { const v = exprAs(u.body, rt); const pre = flush(); return `${pre ? pre + '\n' : ''}(${HW}, ${v})`; })(); // an expression body: `return body`
     const self = u.cls ? instanceShape(u.cls, 0) : null; // an instance method's receiver: a reference to the record of its fields
     const params = [...(self ? [`${dn('this')}: Ref`] : []), ...u.params.map((p) => `${dn(p.name.text)}: ${valD(shapeOf(typeOf(p.name)))}`)];
     const lit = (v, sh) => (sh.d === 'string' ? strEsc(v) : isReal ? `${v}.0` : String(v));
