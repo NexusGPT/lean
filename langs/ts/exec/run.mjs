@@ -579,10 +579,15 @@ export async function observe(side, spec, args, ms) {
     let v = await commitRender(env, call, ms);
     outcomeSite = env.siteState?.completed ?? null;
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
+      // each render's own pending continuations settle before its requests are read: work a render started (a promise
+      // chain in a hook) is that render's, never the next render's, so the two traces compare like with like
+      const settleRender = async () => { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); };
+      await settleRender();
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
       const framesAfter = env.childFrames; env.hookSlots = slotsBefore.slice(); env.childFrames = cloneFrames(framesBefore); env.calls = new Map(callsBefore); env.demand = demandBefore; // a deep child's frames start the second render as they started the first
       const v2 = await commitRender(env, call, ms);
+      await settleRender();
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
       env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.childFrames = framesAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
