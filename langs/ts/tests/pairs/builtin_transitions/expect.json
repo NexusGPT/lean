@@ -9,7 +9,8 @@
   "doubled",
   "evens",
   "tallied",
-  "remembered"
+  "remembered",
+  "cut_at"
  ],
  "equal": {
   "pushed": true,
@@ -21,9 +22,10 @@
   "doubled": true,
   "evens": true,
   "tallied": true,
-  "remembered": true
+  "remembered": true,
+  "cut_at": true
  },
- "why": "Every generated row of the library table called from the unit's own file. Lane B records each built-in call made from the unit's files (the host's prototypes and each sandbox context's own Array and Object intrinsics) and checks it against its row; the certificate's bound.library carries the counts per operation and every defect. cut splices two for one: witnessed and unproved; the rest are the same text on both sides: proved. The wrong-table check runs the same unit against fixtures/library-wrong.json, where push is written as leaving its receiver unchanged: the engine contradicts the row, the defect names the operation, and check.mjs refuses the proof (ASK:library-model) while lane B's own verdict stands. pop as a statement is outside the lint's subset today, so the pair has no pop unit; Test262's pop directory covers its row.",
+ "why": "Every generated row of the library table called from the unit's own file. Lane B records each built-in call made from the unit's files (the host's prototypes and each sandbox context's own Array and Object intrinsics) and checks it against its row; the certificate's bound.library carries the counts per operation and every defect. cut splices two for one: witnessed and unproved; the rest are the same text on both sides: proved. The wrong-table check runs the same unit against fixtures/library-wrong.json, where push is written as leaving its receiver unchanged: the engine contradicts the row, the defect names the operation, and check.mjs refuses the proof (ASK:library-model) while lane B's own verdict stands. pop as a statement is outside the lint's subset today, so the pair has no pop unit; Test262's pop directory covers its row. cutAt splices at a drawn start and count, the same text on both sides: proved; lane B draws NaN, Infinity and -Infinity for them (design/special-numbers.md), and the recorder reads each through ToIntegerOrInfinity (NaN is 0, an infinite start clamps to an end), so its splice records check with 0 defects (design/library-nan.md).",
  "heap": true,
  "b": {
   "pushed": "PASS-bounded",
@@ -35,7 +37,8 @@
   "doubled": "PASS-bounded",
   "evens": "PASS-bounded",
   "tallied": "PASS-bounded",
-  "remembered": "PASS-bounded"
+  "remembered": "PASS-bounded",
+  "cutAt": "PASS-bounded"
  },
  "library": {
   "pushed": {
@@ -101,6 +104,13 @@
     "Set.prototype.has",
     "Set.prototype.add",
     "Set.prototype.delete"
+   ],
+   "defects": 0
+  },
+  "cutAt": {
+   "ops": [
+    "Array.prototype.slice",
+    "Array.prototype.splice"
    ],
    "defects": 0
   }
