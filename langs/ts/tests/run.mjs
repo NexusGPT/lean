@@ -465,6 +465,7 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
     let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')); } catch { /* no expect: nothing listed */ }
     for (const [unit, kind] of Object.entries({ ...(listed[name] ?? {}), ...(exp.witnessArgs ?? {}) })) {
       const result = path.join(tmp, `pair_${name}`, `b_${unit}.json`);
+      if (!fs.existsSync(result)) { fs.mkdirSync(path.dirname(result), { recursive: true }); run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', result]); } // the pair's own lane B step did not run (its theorem stopped it): lane B runs here, as that step runs it
       if (!fs.existsSync(result)) { add('witness-args', name, `${unit} ${kind}`, false, 'no lane B result for the unit'); continue; }
       const r = run('node', [path.join(here, '../exec/replay-args.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--result', result, '--kind', kind]);
       let got = null; try { got = JSON.parse((r.stdout ?? '').trim().split('\n').pop()); } catch { /* no JSON fails */ }
