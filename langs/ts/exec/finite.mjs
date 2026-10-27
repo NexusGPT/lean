@@ -9,6 +9,7 @@ import path from 'node:path';
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { reactHook } from '../react.mjs';
 import { Environment, render, BudgetError } from './fake.mjs';
+import { witnessPatch } from '../patch.mjs';
 // the runtime helpers (sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop) come from
 // run.mjs through the `rt` argument: run.mjs imports this file, so a static import back would be a cycle
 
@@ -100,13 +101,13 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
       for (const labels of frontier) {
         let P, C;
         try { P = await runPath('parent', labels); C = await runPath('candidate', labels); pathsRun += 2; } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout || e instanceof RenderLoop) return { verdict: 'ASK', reason: `clicks ${JSON.stringify(labels)}: ${e.message}`, pairs, assignments: ai + 1 }; throw e; }
-        if (P.missing || C.missing) return { verdict: 'WITNESS', witness: { props: assignment, clicks: labels, reason: `handler ${P.missing ?? C.missing} present on one side only` }, pairs };
+        if (P.missing || C.missing) return { verdict: 'WITNESS', witness: { props: assignment, clicks: labels, reason: `handler ${P.missing ?? C.missing} present on one side only`, ...witnessPatch(erase(P.tree), erase(C.tree), 'a handler is present on one side only') }, pairs };
         const k = P.obs.length === 0 ? `${stateKey(P.s)}|${stateKey(C.s)}` : null;
-        for (let i = 0; i < P.obs.length; i++) { const a = JSON.stringify(P.obs[i]), b = JSON.stringify(C.obs[i]); if (a !== b) return { verdict: 'WITNESS', witness: { props: assignment, clicks: labels, step: i, parent: P.obs[i], candidate: C.obs[i] }, pairs }; }
-        const tp = JSON.stringify(erase(P.tree)), tc = JSON.stringify(erase(C.tree)); if (tp !== tc) return { verdict: 'WITNESS', witness: { props: assignment, clicks: labels, step: labels.length, parent: erase(P.tree), candidate: erase(C.tree) }, pairs };
+        for (let i = 0; i < P.obs.length; i++) { const a = JSON.stringify(P.obs[i]), b = JSON.stringify(C.obs[i]); if (a !== b) return { verdict: 'WITNESS', witness: { props: assignment, clicks: labels, step: i, parent: P.obs[i], candidate: C.obs[i], ...witnessPatch(P.obs[i], C.obs[i]) }, pairs }; }
+        const tp = JSON.stringify(erase(P.tree)), tc = JSON.stringify(erase(C.tree)); if (tp !== tc) return { verdict: 'WITNESS', witness: { props: assignment, clicks: labels, step: labels.length, parent: erase(P.tree), candidate: erase(C.tree), ...witnessPatch(erase(P.tree), erase(C.tree)) }, pairs };
         const key = k ?? `${stateKey(P.s)}|${stateKey(C.s)}`; if (seen.has(key)) continue; seen.add(key); pairs++;
         if (pairs > maxPairs) return { verdict: 'ASK', reason: `more than ${maxPairs} state pairs`, pairs };
-        if (P.handlers.join() !== C.handlers.join()) return { verdict: 'WITNESS', witness: { props: assignment, clicks: labels, reason: 'different handler sets', parent: P.handlers, candidate: C.handlers }, pairs };
+        if (P.handlers.join() !== C.handlers.join()) return { verdict: 'WITNESS', witness: { props: assignment, clicks: labels, reason: 'different handler sets', parent: P.handlers, candidate: C.handlers, ...witnessPatch(erase(P.tree), erase(C.tree), 'the handler sets differ') }, pairs };
         for (const label of P.handlers) next.push([...labels, label]);
       }
       frontier = next;

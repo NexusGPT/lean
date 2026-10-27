@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { ts, loadProgram, topLevelFunctions } from './common.mjs';
 import { check } from './check.mjs';
 import { lintFile } from './lint/lint.mjs';
+import { formatOp } from './patch.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const git = (repo, args) => { const r = spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8', maxBuffer: 1 << 28 }); if (r.status !== 0) throw new Error(`git ${args.join(' ')}: ${r.stderr.trim()}`); return r.stdout; };
@@ -76,7 +77,7 @@ export async function prReport(opts) {
         try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds }); }
         catch (e) { res = { verdict: 'ASK', certificate: { lanes: { A: { verdict: 'ASK', detail: String(e.message).slice(0, 300) } } } }; }
         const lanes = res.certificate?.lanes ?? {};
-        const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { input: res.witness.input, args: res.witness.args, where: res.witness.where } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [] };
+        const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [] };
         if (res.verdict !== 'PASS-proved' && res.verdict !== 'WITNESS') {
           try { const f = lintFile(headFile, [[u.start, u.end]], { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
         }
@@ -92,9 +93,14 @@ export function markdown(rows, base, head) {
   const lines = [`# lean report: ${base} → ${head}`, '', `${rows.length} changed function(s): **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | lane B | lane A | note |', '|---|---|---|---|---|---|'];
   for (const r of rows) {
-    const note = r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
+    const note = r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
     if (r.verdict === 'WITNESS' && r.witness?.args) r.note = note;
     lines.push(`| ${r.file} | \`${r.unit}\` (${r.lines[0]}-${r.lines[1]}) | **${r.verdict}** | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);
+  }
+  const patched = rows.filter((r) => r.verdict === 'WITNESS' && r.witness?.patch?.length); // a front-end WITNESS: the first three ops of its patch, one per line
+  if (patched.length) {
+    lines.push('', '## What changed on the page', '');
+    for (const r of patched) { lines.push(`### ${r.file} · \`${r.unit}\`: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${formatOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }
   }
   const asks = rows.filter((r) => r.advice && r.advice.length);
   if (asks.length) {
