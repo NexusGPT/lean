@@ -262,7 +262,7 @@ users.ts:1:43  any-type  `plan` is any (written); its uses say { tier: string; s
       seen through the other name in the model. Change the parameter itself, or copy first: `const u = { ...user }`.
 ```
 
-Code written with the lint on is inside the subset from the first line. Code written before it gets lane B and the rule that stopped the proof lane; `census.mjs` counts both over a whole repository.
+Code written with the lint on is inside the subset from the first line. Code written before it gets lane B and the rule that stopped the proof lane; `census.mjs` counts both over a whole repository, and `--report` writes where the subset stops, grouped by rule and then by directory with one example line each, so an owner sees which habit pays first.
 
 ### 4. In CI
 
@@ -434,7 +434,7 @@ Everything else is yours: `async`/`await`, `try`/`catch`, `switch`, destructurin
 | the lint, in the terminal or an agent's loop | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--any-type] [--changed ranges.json]` |
 | the lint, in the editor | `import lean from 'lean/langs/ts/eslint/index.mjs'`, rule `lean/provable` (options `project`, `anyType`) |
 | the pull-request comment and gate | `node langs/ts/ci/comment.mjs --repo <checkout> --base <sha> --head <sha> [--post] [--block none\|witness\|ask]` |
-| a whole repository's reach | `node langs/ts/census.mjs <repo-root> [--out census.json]` |
+| a whole repository's reach, and where the subset stops | `node langs/ts/census.mjs <repo-root> [--out census.json] [--report reach.md --depth 2]` |
 | the suite | `node langs/ts/tests/run.mjs` (`LEAN_PAIRS=a,b` runs a subset of the pairs) · `python3 -I conformance/run.py` |
 
 Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no verdict; `lint.mjs` exits 0 when clean, 1 on findings, 2 on a usage error; `comment.mjs` exits 1 under a block when a blocking row exists or no table could be made.
@@ -455,7 +455,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 | a `WITNESS` that names the source line of the first differing effect on each side, with the advised rewrite | planned |
 | run-level budgets with a named stop | planned |
 | the mechanical rules of code review as labelled advice entries, each with a proof where the rewrite is a theorem | planned |
-| a census report grouped by rule and directory | planned |
+| a census report grouped by rule and directory, with sums that match the JSON | built |
 | the gate around lean: the run record, the predicate registry, sibling relations, the producer-facing preview, the assurance case | planned |
 | the gate as tools for a coding agent, the reference loop with guards, the behavioural self-check, structured refusals, the witness library | planned |
 | a public benchmark run, and a composed reviewer named as a composition | planned |
