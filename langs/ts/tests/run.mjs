@@ -440,6 +440,88 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
   add('repo', 'conformance/run.py ts', 'runner', c.status === 0, last);
 }
 
+// Census report checks.
+{
+  const assert = (await import('node:assert/strict')).default;
+  const script = path.join(here, '../census.mjs');
+  // The census skips paths under tests or fixtures. Copy this tree outside those folders.
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-census-'));
+  fs.cpSync(path.join(here, 'fixtures/census-report'), repo, { recursive: true });
+  try {
+    const scan = (name, flags = []) => {
+      const json = path.join(tmp, `census-${name}.json`), md = path.join(tmp, `census-${name}.md`);
+      const r = run(process.execPath, [script, repo, '--out', json, '--report', md, ...flags]);
+      assert.equal(r.status, 0, (r.stdout ?? '') + (r.stderr ?? '') + (r.error ?? ''));
+      return { result: JSON.parse(fs.readFileSync(json, 'utf8')), report: fs.readFileSync(md, 'utf8') };
+    };
+    const { result: result, report } = scan('default');
+    const sections = [...report.matchAll(/^## Rule: <code>([^<]+)<\/code>\n\nUnits stopped: (\d+)\.\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)].map((m) => ({
+      rule: m[1], units: Number(m[2]),
+      directories: [...m[3].matchAll(/^\| <code>([^<]+)<\/code> \| (\d+) \| <code>(.*)<\/code> \|$/gm)].map((d) => ({ directory: d[1], units: Number(d[2]), example: d[3] })),
+    }));
+    // Rebuild the expected attribution from the file findings, independently of the report groups.
+    const expected = new Map();
+    for (const record of result.records) for (const unit of record.units ?? []) {
+      const first = record.findings.find((f) => !f.env && unit.lines[0] <= f.line && f.line <= unit.lines[1]);
+      if (first) expected.set(first.rule, (expected.get(first.rule) ?? 0) + 1);
+    }
+    const sums = sections.map((s) => ({ ...s, sum: s.directories.reduce((n, d) => n + d.units, 0) }));
+    const directoryOK = sums.length === expected.size && new Set(sums.map((s) => s.rule)).size === expected.size && sums.every((s) => s.sum === s.units && s.units === expected.get(s.rule) && s.units === result.refusalRules.find((r) => r.rule === s.rule)?.units);
+    add('census', 'report', 'directory sums equal rule totals', directoryOK, sums.map((s) => `${s.rule}: ${s.sum} = ${s.units}`).join('; '));
+    const stopped = sections.reduce((n, s) => n + s.units, 0);
+    add('census', 'report', 'rule totals equal JSON refused', stopped === result.refused && stopped === result.units - result.entered, `${sections.map((s) => s.units).join(' + ')} = ${result.refused}`);
+    const header = report.match(/Units: (\d+)\. Inside the subset: (\d+) \(([^)]+) percent\)\. Refused: (\d+)\. Files unreadable: (\d+)\./);
+    assert.ok(header, 'report header is present');
+    add('census', 'report', 'refused plus inside equal JSON units', Number(header[1]) === result.units && Number(header[2]) === result.entered && Number(header[4]) === result.refused && Number(header[4]) + Number(header[2]) === result.units, `${header[4]} + ${header[2]} = ${result.units}`);
+    assert.deepEqual([result.files, result.units, result.entered, result.failedFiles], [8, 8, 2, 0]);
+    assert.deepEqual(sections.map((s) => [s.rule, s.units]), [['alias-mutation', 2], ['reference-equality', 2], ['var', 2]]);
+    assert.equal(result.rules.find((r) => r.rule === 'reference-equality').units, 3, 'the fixture also has a unit with two rules');
+    assert.equal(header[3], String(result.share));
+    assert.equal(Number(header[5]), result.failedFiles);
+    assert.ok(report.startsWith(`# Census: <code>${path.basename(repo)}</code>\n`));
+    assert.match(result.date, /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(report.includes(`Date: ${result.date} (UTC)`));
+    assert.ok(report.includes('Each refused unit is counted once, under the first rule the lint names for it.'));
+    const top = report.split('## Top five rules by units stopped\n')[1].split('## Rule:')[0];
+    assert.deepEqual([...top.matchAll(/^\| <code>([^<]+)<\/code> \| (\d+) \|$/gm)].map((m) => [m[1], Number(m[2])]), sections.slice(0, 5).map((s) => [s.rule, s.units]));
+    for (const s of sections) {
+      assert.deepEqual(s.directories.map((d) => d.directory), ['alpha', 'alpha/beta']);
+      for (const d of s.directories) {
+        const saved = result.refusalRules.find((r) => r.rule === s.rule).directories.find((r) => r.directory === d.directory);
+        assert.equal(d.units, saved.units);
+        assert.equal(d.example, `${saved.example.file}:${saved.example.line}  ${saved.example.code}`);
+        assert.ok(saved.example.code.length <= 120);
+        const record = result.records.find((r) => r.file === saved.example.file);
+        assert.equal(saved.example.line, record.findings.find((f) => f.rule === s.rule).line);
+        assert.ok(fs.readFileSync(path.join(repo, saved.example.file), 'utf8').split('\n')[saved.example.line - 1].includes(saved.example.code));
+      }
+    }
+    add('census', 'report', 'header order examples and first rule', true, '8 files; 8 units; 25 percent; depth 2');
+    for (const depth of [0, 1]) {
+      const folded = scan(`depth${depth}`, ['--depth', String(depth)]);
+      assert.equal(folded.result.depth, depth);
+      assert.ok(folded.report.includes(`Directory depth: ${depth}.`));
+      for (const r of folded.result.refusalRules) {
+        assert.equal(r.directories.length, 1);
+        assert.equal(r.directories[0].directory, depth === 0 ? '.' : 'alpha');
+        assert.equal(r.directories[0].units, r.units);
+      }
+    }
+    const clean = scan('clean', ['--include', 'clean.ts']);
+    assert.deepEqual([clean.result.units, clean.result.entered, clean.result.refused], [1, 1, 0]);
+    assert.deepEqual(clean.result.refusalRules, []);
+    assert.ok(clean.report.includes('No units were refused.'));
+    const invalid = run(process.execPath, [script, repo, '--depth', '-1']);
+    assert.notEqual(invalid.status, 0);
+    assert.match(invalid.stderr, /depth must be a nonnegative integer/);
+    add('census', 'report', 'depth and clean report', true, 'depth 0 and 1 fold; negative depth refuses; clean report has zero refusals');
+  } catch (e) {
+    add('census', 'report', 'report assertions', false, String(e.stack ?? e));
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+}
+
 // ----- table -----
 const w = (k, s) => Math.max(s.length, ...rows.map((r) => String(r[k]).length));
 const cols = ['kind', 'name', 'check'];
