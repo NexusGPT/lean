@@ -186,6 +186,8 @@ export function translate(file, fnName, opts = {}) {
     const list = [...cells.values()].map((c) => ({ ...c, modelled: modelled(c) }));
     return { cells: list, obligations: list.filter((c) => !c.modelled).map((c) => `${c.kind} ${c.name}: ${[c.read && 'read', c.write && 'write', c.mutator && 'mutator'].filter(Boolean).join('+')} without a transition`) };
   };
+  const fnIdsOf = new Map(); // unit name -> the code ids of the function values it emits (`// FN <unit>: [...]`)
+  const fnLines = [];
   const sigLines = []; // `// SIG <unit>: <json>`: the TypeScript signature as written (decorators, parameter names and types, the return type); the theorem compares it across the two sides before writing a lemma
   const fold = (t) => String(t ?? '').replace(/\s+/g, ' ').trim();
   const sigOf = (u) => { const fn = u.fn; const decs = (n) => (ts.canHaveDecorators && ts.canHaveDecorators(n) ? (ts.getDecorators(n) ?? []) : []).map((d) => fold(d.getText(sf))); return JSON.stringify({ decorators: decs(fn), params: fn.parameters.map((p) => ({ decorators: decs(p), name: fold(p.name.getText(sf)), type: p.type ? fold(p.type.getText(sf)) : null, optional: !!p.questionToken, rest: !!p.dotDotDotToken, init: p.initializer ? fold(p.initializer.getText(sf)) : null })), ret: fn.type ? fold(fn.type.getText(sf)) : null }); };
@@ -2247,7 +2249,14 @@ export function translate(file, fnName, opts = {}) {
     const captures = reads.map((r) => expr(r, anyTarget()));
     if (capturesThis && objectData) for (const f of objectData.values()) captures.push(convertD(f.code, f.d, anyType()));
     else if (capturesThis && classOf(currentUnit)) captures.push(convertD(SELF, selfType(currentUnit), anyType()));
-    return `${external(`fn_${mangle(d)}`, ['string', 'seq<Any>'], d)}(${strEsc(Buffer.from(JSON.stringify([text, [...imports].sort(), [...accessorKeys].sort()]), 'utf8').toString('hex'))}, [${captures.join(', ')}])`;
+    // a function value is its code and its captured cells (research 15 §5, Fn(code, env)): the code id is the closure's
+    // text with the imports and accessors it reaches; two closures are equal when their code ids and captured cells
+    // agree, and nothing else makes them so. The unit's code ids are listed in its `// FN` header, which the theorem
+    // checks every Fn literal of the unit against: a body outside the file's list is refused.
+    addPrelude('Fn', 'datatype Fn = Fn(code: string, env: seq<Any>)');
+    const code = Buffer.from(JSON.stringify([text, [...imports].sort(), [...accessorKeys].sort()]), 'utf8').toString('hex');
+    if (currentUnit) { const set = fnIdsOf.get(currentUnit.name) ?? new Set(); set.add(code); fnIdsOf.set(currentUnit.name, set); }
+    return `${external(`fn_${mangle(d)}`, ['Fn'], d)}(Fn(${strEsc(code)}, [${captures.join(', ')}]))`;
   }
   function lambda(cb, arity, paramTypes = [], opaqueOk = false) {
     if (opaqueOk && !ts.isIdentifier(cb) && (containsEffect(cb.body) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword))) return reactHandler(cb) ?? opaqueFn(cb);
@@ -4175,7 +4184,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   for (const u of order) {
     if (tolerant) {
       const before = chunks.length; const savedPending = pending;
-      try { sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`); if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); } else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(heapT.guard(u))}`); } cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`); report.translated.push(u.name); }
+      try { sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`); if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); } else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(heapT.guard(u))}`); } cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`); fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`); report.translated.push(u.name); }
       catch (e) { if (!(e instanceof Unsupported)) throw e; chunks.length = before; pending = savedPending; failedUnits.add(u.name); report.failed.push({ unit: u.name, message: String(e.message).split('\n')[0].slice(0, 160) }); currentUnit = null; yieldState = null; }
       continue;
     }
@@ -4184,6 +4193,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); }
     else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(heapT.guard(u))}`); }
     cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`);
+    fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`);
   }
   function moduleUnitShape(u) {
     let reads = false, alias = false, effects = false, collection = false, outsideEffect = false, guarded = false, nestedRead = false, globalAlias = false, moduleData = false, moduleCall = false;
@@ -4320,7 +4330,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     for (const [k, text] of prelude) pre.push(qualify(text));
     for (const text of heapPre) pre.push(text);
   }
-  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}`;
+  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
   if (opts.preludeOut) {
     const preludeText = `// Generated by lean-ts translate (version 2): shared declarations. Identical for parent and candidate, or the gate refuses.\n` + pre.map((t) => `// PRELUDE ${t.match(/^(?:datatype|type|function|predicate)\s+([A-Za-z0-9_]+)/)?.[1] ?? hash(t)}\n${t}\n// END PRELUDE`).join('\n') + '\n';
     return { main: `${header}\ninclude "${path.basename(opts.preludeOut)}"\n\n${main}\n`, prelude: preludeText };

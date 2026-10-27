@@ -79,15 +79,30 @@ function jsxChildren(c) {
   add(c);
   return out;
 }
-function jsxValue(type, props, key) {
+const deepMode = { on: false }; // --deep: a same-package function component is rendered one level down (moonshot 7); off, a component tag is its name and props (a tree of names)
+function jsxValue(type, props, key, env = null) {
   const tag = typeof type === 'string' ? type : type && type.__isFake ? { $fake: type.__fakePath } : typeof type === 'function' ? { $component: type.name || 'anonymous' } : type === JSX_FRAGMENT ? '' : String(type);
   const rest = {}; let children = [];
   for (const k of Object.keys(props ?? {})) { if (k === 'children') children = jsxChildren(props[k]); else rest[k] = props[k]; }
   if (key !== undefined && key !== null) rest.key = key;
-  return { $el: tag, props: rest, children };
+  const el = { $el: tag, props: rest, children };
+  // deep render: a same-package component (a real function the sandbox linked, never a fake) is called with its props
+  // inside the parent's render, on its own hook frame keyed by its order among the parent's component tags (React keys
+  // by position); one level only, so a component tag inside the child is a name again; no context
+  if (deepMode.on && env && env.react && typeof type === 'function' && !type.__isFake && !(env.deepDepth > 0)) {
+    const frameKey = `${type.name || 'anonymous'}#${env.deepSeq = (env.deepSeq ?? 0) + 1}`;
+    const frames = (env.childFrames ??= new Map()); if (!frames.has(frameKey)) frames.set(frameKey, { hookSlots: [], effectSlots: [] });
+    const frame = frames.get(frameKey);
+    const saved = env.react.__pushFrame(frame); env.deepDepth = (env.deepDepth ?? 0) + 1;
+    try { el.rendered = type({ ...rest, ...(children.length ? { children: children.length === 1 ? children[0] : children } : {}) }); }
+    catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop) throw e; el.rendered = { threw: render(e) }; }
+    finally { env.deepDepth -= 1; env.react.__popFrame(saved); }
+    el.deep = frameKey;
+  }
+  return el;
 }
 const JSX_FRAGMENT = '';
-const jsxRuntime = { jsx: jsxValue, jsxs: jsxValue, jsxDEV: jsxValue, Fragment: JSX_FRAGMENT, __esModule: true };
+const jsxRuntimeFor = (env) => { const j = (type, props, key) => jsxValue(type, props, key, env); return { jsx: j, jsxs: j, jsxDEV: j, Fragment: JSX_FRAGMENT, __esModule: true }; };
 
 class RenderLoop extends Error { constructor(why) { super(`render-loop: ${why}`); this.name = 'RenderLoop'; } } // React's own limits: 25 re-renders from a setter during render, then it throws; effects that keep setting state re-render without end
 // one commit: render until a setter during render stops changing the state (React re-renders at once, up to 25 times)
@@ -136,7 +151,9 @@ function reactRuntime(env) {
     useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; return [slots[i], dispatch]; },
     useLayoutEffect: (fn, deps) => effectSlot(fn, deps, 'react:layout-effect'), // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
-  runtime.__beginRender = () => { slot = 0; }; // a render starts at slot 0 (React's call-order keying)
+  runtime.__beginRender = () => { slot = 0; env.deepSeq = 0; }; // a render starts at slot 0 (React's call-order keying); the deep children restart their order too
+  runtime.__pushFrame = (frame) => { const saved = { slot, hookSlots: env.hookSlots, effectSlots: env.effectSlots }; slot = 0; env.hookSlots = frame.hookSlots; env.effectSlots = frame.effectSlots; return saved; }; // a child's own hook frame
+  runtime.__popFrame = (saved) => { slot = saved.slot; env.hookSlots = saved.hookSlots; env.effectSlots = saved.effectSlots; };
   const proxy = new Proxy(runtime, { get(t, p) { if (p === '__esModule') return true; if (p === 'default') return proxy; return p in t ? t[p] : env.module('react')[p]; } });
   env.react = runtime;
   return proxy;
@@ -155,7 +172,9 @@ async function observeJsx(v, env) {
   }
   const children = [];
   for (const c of v.children) children.push(await observeJsx(c, env));
-  return { ...v, props, children };
+  const out = { ...v, props, children };
+  if (Object.hasOwn(v, 'rendered')) out.rendered = await observeJsx(v.rendered, env); // the deep child's own tree, its handlers invoked like the parent's
+  return out;
 }
 
 // one sandbox per side: a module cache, the fakes, the frozen globals
@@ -220,7 +239,7 @@ export function sandbox(env, root) {
         return env.module(spec);
       }
       if (spec === 'react') return react;
-      if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntime; // an element is a value tree, by React's rules for children
+      if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
       return env.module(spec); // packages, builtins, path aliases: the environment
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
@@ -231,7 +250,7 @@ export function sandbox(env, root) {
     wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs));
     return mod.exports;
   }
-  return { load, ctx, react, jsxRuntime };
+  return { load, ctx, react, jsxRuntime: jsxRuntimeFor(env) };
 }
 
 export function pickUnit(exportsObj, spec, env) {
@@ -440,7 +459,8 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
 
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
 export async function runPair(opts) {
-  const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2 } = opts;
+  const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
+  deepMode.on = !!deep;
   // a missing parent unit has no equality question
   if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
     return runNew(opts);
@@ -505,7 +525,7 @@ export async function runPair(opts) {
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing' };
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
   if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };
-  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
+  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, components: deep ? 'same-package function components rendered one level down on their own hook frames, no context (--deep)' : 'a tree of names: a component tag is its name and props', notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
   if (programRun) {
     const member = spec.member ?? unit.split('.')[1];
     bound.programs = { programs: programRun.programs, commands: programRun.commands, methods: programRun.methods, maxLen: 5, seed, ...(programRun.skipped ? { skipped: programRun.skipped } : {}) };
@@ -578,7 +598,7 @@ function findRoot(file) {
 if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) {
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) });
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: a.includes('--deep'), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) });
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);
   if (out) fs.writeFileSync(out, text); else console.log(text);

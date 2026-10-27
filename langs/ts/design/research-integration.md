@@ -290,6 +290,14 @@ commands, vendored) with the command set and a seeded schedule; the virtual cloc
 firing as commands with enabling rules; the certificate records the program, its hash, the seed, both observations,
 the first difference and the replay path. Pilot: the 262 return/store/compare cases of our census.
 
+**Built (2026-10-27), the value.** The prelude declares `datatype Fn = Fn(code: string, env: seq<Any>)`; an escaping
+function value is `fn_<type>(Fn(code, [captured cells]))`, the code id being the closure's text with the imports and
+accessors it reaches, so two closures are equal exactly when their code ids and captured cells agree. Each unit's
+`// FN` header lists the code ids it emits and the theorem refuses a unit whose `Fn` literal carries a code id outside
+its own list (a body outside the file's list); the prelude block `Fn` is one line, identical on both sides, and a
+differing declaration is refused by the prelude merge. The function_values and callbacks pairs keep their verdicts
+(adder, apply, handler, subscribe unproved; pick, relay proved). A pure arrow is still a Dafny lambda, not an `Fn`.
+
 **Built (2026-10-27).** The environment-program runner (`exec/program.mjs`) on fast-check's model-based commands:
 after the single calls of a free function agree, twelve programs of up to six commands run on both sides; a returned
 function or generator and every callback handed to a fake (`env.knownCallables`) are handles the program invokes,

@@ -228,6 +228,24 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             unguarded[f] = 'identity shape unreadable on ' + ', '.join(s for s in ('parent', 'candidate') if not g[s].get('determinate')) + '; exposed by: ' + '; '.join(sorted(set(gp.get('exposed', []) + gc.get('exposed', []))))
         elif gp.get('sites') != gc.get('sites') or gp.get('writes') != gc.get('writes'):
             unguarded[f] = f"identity shapes differ: parent {gp.get('sites')} {gp.get('writes')} vs candidate {gc.get('sites')} {gc.get('writes')}"
+    # a function value is Fn(code, env): every Fn literal a unit emits must carry a code id the unit's own `// FN` header
+    # lists (the file's closures); a body outside the file's list is refused, never proved
+    for label, text, suffix, parsed in (('parent', parent_text, '_parent', pf), ('candidate', cand_text, '_candidate', cf)):
+        listed = {}
+        for m in re.finditer(r'^// FN ([A-Za-z_][A-Za-z0-9_]*): (.+)$', text, flags=re.M):
+            try:
+                listed[m.group(1)] = set(json.loads(m.group(2)))
+            except ValueError:
+                raise Refusal(f'{label}: FN list for {m.group(1)} is not JSON')
+        for base, fn in parsed.items():
+            codes = set(re.findall(r'\bFn\("([0-9a-f]+)"', fn.get('body', '')))
+            if not codes:
+                continue
+            owner = next((f for f in sorted(funcs, key=len, reverse=True) if base == f or base.startswith(f + '_')), base)  # a loop or branch helper (<unit>_<x>) carries its unit's list
+            allowed = listed.get(owner + suffix, set())
+            outside = sorted(codes - allowed)
+            if outside:
+                raise Refusal(f'{label}: {base} holds a function value whose body is outside the file\'s list ({outside[0][:24]}...)')
     # an opaque block names the same-file functions it calls; if one of them is not identical on both sides the block's
     # transition is not the same transition, and the theorem cannot stand
     for m in re.finditer(r'// CALLS: ([A-Za-z0-9_,]+)', prelude_text or ''):

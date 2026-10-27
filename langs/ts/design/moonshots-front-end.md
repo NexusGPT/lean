@@ -160,6 +160,15 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   changes: the parent unit shows WITNESS only in deep mode.
 - Pass: at least 50% of tags resolvable in the app repository (the census's top tags, `DocCode` 728,
   `Button` 395, `Card` 214, are a docs site's); the probe behaves.
+- Measured (a), 2026-10-27, `lean-v3/harness/jsx_tags.mjs` over the census's largest app repository (320 `.tsx`
+  files): 2,320 component tags, 2,205 (95%) resolve to a same-package declaration, 69 to a package import, 46
+  unresolved; the top same-package tags are a motion wrapper (257), a label (191) and an icon (148). The bar is met.
+- Built (b), 2026-10-27: `run.mjs --deep` (and `check.mjs --deep`) renders a same-package function component (a real
+  function the sandbox linked, never a fake) inside the parent's render, on its own hook frame keyed by its order
+  among the parent's component tags, one level down, no context; the element keeps its name and props and gains
+  `rendered`, which `observeJsx` walks like the parent's tree (handlers included); the certificate's observation line
+  names the mode. Pair `deep_render`: only the child's text changes; `Page` is PASS-bounded as a tree of names and
+  WITNESS in deep mode. Off by default: the suite runs both modes only for `expect.deep`.
 - Kill: context providers or hooks inside children make over half the deep renders ASK.
 
 ## 8. A hook table, like the library table
