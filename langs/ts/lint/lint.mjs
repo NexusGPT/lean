@@ -1507,17 +1507,18 @@ export function lintFile(file, ranges = null, opts = {}) {
   // so the code is admitted and the any-type finding proposes the value's type
   const IMPLICIT_ANY = new Set([7005, 7006, 7008, 7010, 7011, 7015, 7018, 7019, 7022, 7023, 7024, 7031, 7034, 7053]);
   const identAt = (pos) => { let hit = null; const w = (n) => { if (pos >= n.getStart(sf) && pos < n.getEnd()) { if (ts.isIdentifier(n)) hit = n; ts.forEachChild(n, w); } }; w(sf); return hit; };
-  // a read of an `unknown` value (TS18046) is the unit's own type error when the unit wrote `unknown` on the binding and
-  // nothing in its function tests the binding with a guard the checkout cannot resolve (an `instanceof` or a call whose
-  // callee is typed any): TypeScript without strict reports that read too (TS2339). A catch binding is unknown only
-  // under strict; a value typed unknown by its source (a call, a field, a callback) or narrowed by an unresolved guard is
-  // the environment's, and opaque
+  // a read of an `unknown` value (TS18046) is the unit's own type error when the unit wrote the keyword `unknown` on the
+  // binding and nothing in its function tests the binding with a guard the checkout cannot resolve (an `instanceof` or a
+  // call whose callee is typed any): TypeScript without strict reports that read too (TS2339). A catch binding is
+  // unknown only under strict; a value typed unknown by its source (a call, a field, a callback, a named type) or
+  // narrowed by an unresolved guard is the environment's, and opaque
   const ownUnknown = (d) => {
     const id = identAt(d.start), named = /'([^']+)' is of type 'unknown'/.exec(ts.flattenDiagnosticMessageText(d.messageText, ' '))?.[1];
     if (!id || id.text !== named) return false; // a field path (`r.value`): the unknown comes from the field's source
     const sym = checker.getSymbolAtLocation(id), decl = sym?.valueDeclaration;
     if (!decl || (ts.isVariableDeclaration(decl) && decl.parent && ts.isCatchClause(decl.parent))) return false;
-    if (!decl.type || !(checker.getTypeFromTypeNode(decl.type).flags & TF.Unknown)) return false;
+    let written = decl.type; while (written && ts.isParenthesizedTypeNode(written)) written = written.type;
+    if (!written || written.kind !== K.UnknownKeyword) return false; // a named type that resolves to unknown is its source's
     let scope = decl.parent; while (scope && !ts.isFunctionLike(scope)) scope = scope.parent;
     const anyT = (x) => !!(checker.getTypeAtLocation(x).flags & TF.Any);
     const same = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym; };
