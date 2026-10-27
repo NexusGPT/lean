@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1b2d"/><stop offset="1" stop-color="#1c2f4a"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/></pattern>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fb3c8"/></marker>
+    <marker id="arrRed" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d98c8c"/></marker>
+    <marker id="arrGreen" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8fd1b0"/></marker>
+    <marker id="arrAmber" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d9c08c"/></marker>
+    <marker id="arrBlue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fc7ea"/></marker>
+    <marker id="arrPale" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c7d9ea"/></marker>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <text x="64" y="80" font-size="40" fill="#f3efe6" letter-spacing="-0.5">A coding agent’s loop, judged by something that is not itself</text>
+  <text x="66" y="120" font-size="22" fill="#9fb3c8">The agent edits; lean answers with an input, a line and a rewrite. The agent’s words never enter the verdict.</text>
+  <rect x="64" y="170" width="256" height="128" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="84" y="204" font-size="15" fill="#9fb3c8" letter-spacing="2">A DRAFT</text>
+  <text x="84" y="242" font-size="20" fill="#f3efe6">the agent writes</text>
+  <text x="84" y="270" font-size="20" fill="#f3efe6">or changes code</text>
+  <polyline points="320,234 364,234" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <rect x="368" y="170" width="256" height="128" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="388" y="204" font-size="15" fill="#9fb3c8" letter-spacing="2">THE WORK LIST</text>
+  <text x="388" y="242" font-size="20" fill="#f3efe6">lint --agent: what</text>
+  <text x="388" y="270" font-size="20" fill="#f3efe6">keeps it unproved</text>
+  <polyline points="624,234 668,234" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <rect x="672" y="170" width="256" height="128" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="692" y="204" font-size="15" fill="#9fb3c8" letter-spacing="2">AN EDIT</text>
+  <text x="692" y="242" font-size="20" fill="#f3efe6">one item at a</text>
+  <text x="692" y="270" font-size="20" fill="#f3efe6">time, in order</text>
+  <polyline points="928,234 972,234" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <rect x="976" y="170" width="256" height="128" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="996" y="204" font-size="15" fill="#9fb3c8" letter-spacing="2">ONE CHECK</text>
+  <text x="996" y="242" font-size="20" fill="#f3efe6">check.mjs on the</text>
+  <text x="996" y="270" font-size="20" fill="#f3efe6">changed function</text>
+  <rect x="1280" y="170" width="256" height="128" fill="#0b1422" stroke="#3d7a62" stroke-width="1.2"/>
+  <text x="1300" y="204" font-size="15" fill="#9fb3c8" letter-spacing="2">SUBMIT</text>
+  <text x="1300" y="242" font-size="20" fill="#f3efe6">a verdict and its</text>
+  <text x="1300" y="270" font-size="20" fill="#f3efe6">certificate</text>
+  <polyline points="1232,234 1276,234" fill="none" stroke="#8fd1b0" stroke-width="1.4" marker-end="url(#arrGreen)"/>
+  <text x="1256" y="218" font-size="15" fill="#8fd1b0" text-anchor="middle">PASS</text>
+  <path d="M 1040 298 C 1040 360, 820 360, 790 302" fill="none" stroke="#d98c8c" stroke-width="1.4" marker-end="url(#arrRed)"/>
+  <text x="915" y="384" font-size="18" fill="#d98c8c" text-anchor="middle">WITNESS: the input, the line on each side, the rewrite</text>
+  <rect x="64" y="430" width="1000" height="370" fill="#0b1422" stroke="#3c5272" stroke-width="1"/>
+  <text x="88" y="466" font-size="15" fill="#9fb3c8" letter-spacing="2">ONE ITEM OF A REAL WORK LIST</text>
+  <text x="88" y="506" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">- [ ] line 6, alias-mutation: `t` is another name for a</text>
+  <text x="88" y="536" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">      value this function was handed; change it through</text>
+  <text x="88" y="566" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">      that name, or copy it first</text>
+  <text x="88" y="596" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">      code: `t.net`</text>
+  <text x="88" y="626" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">      do: [migration] Change the parameter itself,</text>
+  <text x="88" y="656" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">      or copy first: `const u = { ...user }`.</text>
+  <text x="88" y="720" font-size="15" fill="#9fb3c8" letter-spacing="2">AFTER THE EDIT, THE SAME REFACTOR</text>
+  <text x="88" y="760" font-size="19" fill="#8fd1b0" font-family="Menlo, Consolas, monospace" xml:space="preserve">PASS-proved   Dafny: 34 verified, 0 errors</text>
+  <rect x="1100" y="430" width="436" height="370" fill="#0b1422" stroke="#3c5272" stroke-width="1" stroke-dasharray="6 5"/>
+  <text x="1124" y="466" font-size="15" fill="#9fb3c8" letter-spacing="2">PLANNED</text>
+  <text x="1124" y="506" font-size="19" fill="#c9d4e0">the gate as five tools:</text>
+  <text x="1124" y="538" font-size="19" fill="#c9d4e0">preview, check_unit,</text>
+  <text x="1124" y="570" font-size="19" fill="#c9d4e0">check_artifact, witnesses,</text>
+  <text x="1124" y="602" font-size="19" fill="#c9d4e0">submit; rounds and time</text>
+  <text x="1124" y="634" font-size="19" fill="#c9d4e0">per request, a named stop;</text>
+  <text x="1124" y="666" font-size="19" fill="#c9d4e0">a witness library that</text>
+  <text x="1124" y="698" font-size="19" fill="#c9d4e0">replays every input that</text>
+  <text x="1124" y="730" font-size="19" fill="#c9d4e0">once revealed a defect</text>
+  <line x1="64" y1="836" x2="1536" y2="836" stroke="#3c5272" stroke-width="1"/>
+  <text x="64" y="868" font-size="18" fill="#8a9bb0">Built today: the work list (lint --agent) and check.mjs per function. Planned: the same loop as five tools with fixed schemas.</text>
+</svg>
