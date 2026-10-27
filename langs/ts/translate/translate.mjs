@@ -2482,6 +2482,16 @@ export function translate(file, fnName, opts = {}) {
     if (!ix || checker.getPropertiesOfType(rt).length) return null;
     return { map: expr(e.expression), key: expr(e.argumentExpression), valueType: ix.type };
   }
+  // an open key on a plain record is an uninterpreted lookup of the record value and the key, the same function on both
+  // sides; it claims nothing about inherited members or undeclared names, so a changed record or key is never proved equal
+  function openKeyRead(n, base, at) {
+    const D = dtype(base, n);
+    const anyKey = isAny(at), K = anyKey ? anyType() : dtype(at, n);
+    const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
+    const receiver = expr(n.expression);
+    const key = anyKey ? expr(n.argumentExpression, anyTarget()) : expr(n.argumentExpression);
+    return `${external(`open_key_read_to_${rd}`, [D, K], rd)}(${receiver}, ${key})`;
+  }
   function elemAccess(n) {
     const q = argumentsParam(n); if (q) return dn(q.name.text); // `arguments[k]`: the k-th parameter itself
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
@@ -2502,7 +2512,7 @@ export function translate(file, fnName, opts = {}) {
     if (isRecordish(base)) {
       // a finite key selects a declared field; receiver and key are evaluated once, in that order
       const keyParts = at.flags & TF.Union ? at.types : [at];
-      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) fail(n, 'use a finite union of declared string keys');
+      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) return openKeyRead(n, base, at);
       const keys = keyParts.map((x) => x.value);
       const R = `rr${tempCount++}_`, Kc = `rk${tempCount++}_`;
       const receiver = expr(n.expression);

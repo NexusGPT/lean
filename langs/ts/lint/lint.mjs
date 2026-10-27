@@ -1367,6 +1367,21 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length) return v(e, 'unsupported-member', `property .${name} is not declared on ${checker.typeToString(t)}`);
     }
   }
+  // an open key (a string, a number, an unknown) on a plain record of data fields reads as one uninterpreted lookup of the
+  // record value and the key; a key call, a method, a getter, a class instance, a symbol or an indexed receiver stays out
+  function openKeyRefusal(e, t, at) {
+    let keyCall = false;
+    const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); };
+    visitKey(e.argumentExpression);
+    if (keyCall) return 'bind the computed key before reading the record; a key call may mutate its receiver';
+    if (nonNull(at).some((x) => x.flags & (TF.ESSymbolLike | TF.UniqueESSymbol))) return 'read a symbol-keyed member by a declared string key; a symbol key is outside the open-key reading';
+    const props = checker.getPropertiesOfType(t);
+    if (!props.length || checker.getIndexInfoOfType(t, ts.IndexKind.Number) || !(t.flags & TF.Object)) return 'use a finite union of declared string keys, or a Record<string, T> dictionary';
+    if (t.symbol && (t.symbol.flags & ts.SymbolFlags.Class)) return 'an open key on a class instance may select a prototype member; read a declared field by name';
+    if (props.some((p) => nonNull(checker.getTypeOfSymbolAtLocation(p, e)).some((x) => checker.getSignaturesOfType(x, ts.SignatureKind.Call).length))) return 'an open key may select a method; call a method by its declared name, and index records of data fields';
+    if (props.some((p) => p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)))) return 'an open key may run a getter; read an accessor by its declared property name';
+    return null;
+  }
   function elemAccess(e) {
     if (ts.isIdentifier(e.expression) && e.expression.text === 'arguments' && declOf(e.expression).kind === 'global') { // `arguments[k]` with a literal k below the declared parameters is that parameter; anything else of `arguments` is the actual vector, which the declaration does not fix
       const ps = (currentFn?.parameters ?? []).filter((p) => !(ts.isIdentifier(p.name) && p.name.text === 'this'));
@@ -1388,7 +1403,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (dict && (isStr(at) || isAny(at))) return;
     if (parts.every(isRecordish)) {
       if (parts.length !== 1 || parts.length !== (rt.flags & TF.Union ? rt.types.length : 1)) return v(e, 'dynamic-key', 'narrow the record receiver before indexing it');
-      if (!keys) return v(e, 'dynamic-key', 'use a finite union of declared string keys, or a Record<string, T> dictionary');
+      if (!keys) { const why = openKeyRefusal(e, parts[0], at); return why ? v(e, 'dynamic-key', why) : undefined; } // an open key: an uninterpreted lookup of the record value and the key
       let keyCall = false;
       const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); };
       visitKey(e.argumentExpression);
