@@ -452,6 +452,28 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
   add('repo', 'conformance/run.py ts', 'runner', c.status === 0, last);
 }
 
+// ----- witness args: a WITNESS's args are the input as drawn, before either side ran (langs/ts/design/witness-args.md) -----
+// every witness lane B wrote above for a listed unit is replayed (exec/replay-args.mjs): input i drawn again as the
+// parent's side drew it, the parent run on it; the args must equal the draw, the replay must give the parent's
+// observation, and every argument the parent's call wrote must show its value before the write. `witnessArgs` in a
+// pair's expect.json lists the units (`writes`: some witness has a written argument; `pure`: none has); readme_ledger
+// applyAll is listed here, its pair untouched
+{
+  const listed = { readme_ledger: { applyAll: 'writes' } };
+  for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().filter((n) => !onlyPairs || onlyPairs.has(n)) : []) {
+    const d = path.join(pairsDir, name);
+    let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')); } catch { /* no expect: nothing listed */ }
+    for (const [unit, kind] of Object.entries({ ...(listed[name] ?? {}), ...(exp.witnessArgs ?? {}) })) {
+      const result = path.join(tmp, `pair_${name}`, `b_${unit}.json`);
+      if (!fs.existsSync(result)) { add('witness-args', name, `${unit} ${kind}`, false, 'no lane B result for the unit'); continue; }
+      const r = run('node', [path.join(here, '../exec/replay-args.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--result', result, '--kind', kind]);
+      let got = null; try { got = JSON.parse((r.stdout ?? '').trim().split('\n').pop()); } catch { /* no JSON fails */ }
+      const detail = got ? (got.error ?? `${got.witnesses.map((w) => `input ${w.input}: draw ${w.sameDraw ? 'kept' : 'LOST'}, replay ${w.sameObservation ? 'agrees' : 'DIFFERS'}${w.written?.length ? `, written ${w.written.map((x) => `arg${x.position} (${x.gained.join(', ') || 'changed'}) shown ${x.shownBefore ? 'before' : 'AFTER'} the write`).join('; ')}` : ''}`).join(' | ')}${got.why ? '; ' + got.why : ''}`) : (r.stderr || r.stdout || '').trim().slice(-160);
+      add('witness-args', name, `${unit} ${kind}: args are the draw`, r.status === 0 && got?.ok === true, detail);
+    }
+  }
+}
+
 // ----- table -----
 const w = (k, s) => Math.max(s.length, ...rows.map((r) => String(r[k]).length));
 const cols = ['kind', 'name', 'check'];
