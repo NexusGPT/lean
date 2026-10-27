@@ -279,6 +279,13 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
     const ok = got?.verdict === 'WITNESS' && !!kinds && JSON.stringify(kinds) === JSON.stringify(want.kinds) && (want.summary === undefined || w.patchSummary === want.summary);
     add('pair', name, `patch ${unit} ${want.kinds.join(', ') || 'empty'}`, ok, w ? `${w.patchSummary ?? 'no summary'}; ${kinds ? kinds.join(', ') || 'no ops' : 'no patch'}` : `no witness (${got?.verdict ?? 'no result'})`);
   }
+  // the callee a WITNESS came through (exec/callees.mjs): a unit whose own text is equal on both sides names the changed same-file callees on its call path, with where.cause 'callee'; an empty list: the witness names none and keeps its own cause
+  for (const [unit, want] of Object.entries(exp.through ?? {})) {
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    const w = got?.witnesses?.[0] ?? null; const names = (w?.through ?? []).map((t) => t.callee);
+    const ok = got?.verdict === 'WITNESS' && JSON.stringify(names) === JSON.stringify(want) && (want.length ? w.where?.cause === 'callee' && got.unitTextEqual === true : w.where?.cause !== 'callee');
+    add('pair', name, `through ${unit} ${want.join(', ') || 'none'}`, ok, w ? `${names.join(', ') || 'no callee'}; cause ${w.where?.cause ?? w.where?.field ?? 'none'}; unit text ${got.unitTextEqual ? 'equal' : 'changed'}` : `no witness (${got?.verdict ?? 'no result'})`);
+  }
   // the small heaps lane B enumerated for the unit (korat.mjs): at least `min` non-isomorphic graphs, reported in bound.heaps
   for (const [unit, want] of Object.entries(exp.heaps ?? {})) {
     let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).bound?.heaps ?? null; } catch { /* keep */ }
@@ -360,6 +367,12 @@ add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clo
   const r = run('node', ['--test', path.join(here, '../patch.test.mjs')]);
   const text = (r.stdout ?? '') + (r.stderr ?? ''); const pass = text.match(/^\S+ pass (\d+)$/m), fail = text.match(/^\S+ fail (\d+)$/m);
   add('repo', 'patch.test.mjs', 'node:test', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : text.trim().slice(-160));
+}
+// ----- the same-file callees of a unit and its normalised text (langs/ts/exec/callees.test.mjs, node:test) -----
+{
+  const r = run('node', ['--test', path.join(here, '../exec/callees.test.mjs')]);
+  const text = (r.stdout ?? '') + (r.stderr ?? ''); const pass = text.match(/^\S+ pass (\d+)$/m), fail = text.match(/^\S+ fail (\d+)$/m);
+  add('repo', 'callees.test.mjs', 'node:test', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : text.trim().slice(-160));
 }
 if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.join(root, 'langs/ts/conformance.json'))) {
   const c = run('python3', ['-I', 'conformance/run.py', 'ts']);
