@@ -328,6 +328,31 @@ def component_hints(ret, lhs, rhs):
     return out
 
 
+FILTER_SAME = re.compile(r'^lemma\s+([A-Za-z_][A-Za-z0-9_]*)_same\(s: seq<(.+)>, p: \2 -> bool, q: \2 -> bool\)\s*$', re.M)
+
+
+def filter_hints(text_all, pf, cf, funcs, f):
+    """The proof hint for two filters of one sequence: a filter is a recursive function of its predicate, and two
+    predicates written differently (`!(a != b)` against `a == b`, a guard of a loop against a chain's callback) are two
+    lambdas the prover does not unfold under the recursion. For every filter helper of the translator's vocabulary that
+    carries its proved congruence lemma (`<F>_same`: predicates equal on every element keep the same elements) and that
+    both sides of f use (f's body or its own helpers), the lemma body states that congruence for all sequences and
+    predicates, each instance proved by a call of the lemma. It is a rule over the vocabulary, never over one unit; it is
+    a proved fact, so it can only help the prover reach a goal that holds."""
+    def uses(parsed, name):
+        return any(re.search(r'\b' + re.escape(name) + r'\s*\(', strip_comments(fn['body'])) for base, fn in parsed.items() if _owner(base, funcs) == f)
+    out = []
+    for name, elem in sorted(set(FILTER_SAME.findall(strip_comments(text_all)))):
+        if not re.search(r'\bfunction\s+' + re.escape(name) + r'\s*\(', strip_comments(text_all)):
+            continue
+        if not (uses(pf, name) and uses(cf, name)):
+            continue
+        out.append(f'forall fs_0: seq<{elem}>, fp_0: {elem} -> bool, fq_0: {elem} -> bool | forall fi_0 :: 0 <= fi_0 < |fs_0| ==> fp_0(fs_0[fi_0]) == fq_0(fs_0[fi_0])')
+        out.append(f'  ensures {name}(fs_0, fp_0) == {name}(fs_0, fq_0)')
+        out.append(f'{{ {name}_same(fs_0, fp_0, fq_0); }}')
+    return out
+
+
 def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_name=None):
     check_forbidden(parent_text, 'parent')
     check_forbidden(cand_text, 'candidate')
@@ -555,7 +580,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         out.append(f'  ensures {f}_parent({names}) == {f}_candidate({adapted})')
         if sm.get('induction'):
             out.append(f'  decreases {sm["induction"]["measure"]}')
-        hints = component_hints(sig['ret'], f'{f}_parent({names})', f'{f}_candidate({adapted})')  # a tuple's collections compared first
+        hints = filter_hints((prelude_text or '') + '\n' + parent_text + '\n' + cand_text, pf, cf, funcs, f)  # two filters of one sequence: predicates compared by element
+        hints += component_hints(sig['ret'], f'{f}_parent({names})', f'{f}_candidate({adapted})')  # a tuple's collections compared first
         out.append('{ // PROOF Equal_' + f)
         out.extend('  ' + ln for ln in sm.get('lines', []))
         out.extend('  ' + ln for ln in hints)

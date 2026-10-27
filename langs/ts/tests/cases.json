@@ -1188,5 +1188,89 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "loop_chain_doubledPositives",
+  "file": "loop_chain.ts",
+  "fn": "doubledPositives",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     3,
+     -1,
+     0,
+     5
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     -2,
+     -3
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "loop_chain_smallOdd",
+  "file": "loop_chain.ts",
+  "fn": "smallOdd",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3,
+     9,
+     5
+    ],
+    6
+   ],
+   [
+    [],
+    0
+   ],
+   [
+    [
+     4,
+     7
+    ],
+    10
+   ]
+  ]
+ },
+ {
+  "name": "loop_chain_shifted",
+  "file": "loop_chain.ts",
+  "fn": "shifted",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3,
+     2
+    ],
+    2
+   ],
+   [
+    [],
+    1
+   ],
+   [
+    [
+     5
+    ],
+    5
+   ]
+  ]
  }
 ]

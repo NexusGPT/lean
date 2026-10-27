@@ -1450,7 +1450,13 @@ export function translate(file, fnName, opts = {}) {
   ensures |r| <= |s|
   ensures forall i :: 0 <= i < |r| ==> p(r[i])
   decreases |s|
-{ if |s| == 0 then [] else (if p(s[0]) then [s[0]] else []) + ${name}(s[1..], p) }`; break;
+{ if |s| == 0 then [] else (if p(s[0]) then [s[0]] else []) + ${name}(s[1..], p) }
+// two predicates that agree on every element keep the same elements (the theorem states it where both sides filter)
+lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
+  requires forall i :: 0 <= i < |s| ==> p(s[i]) == q(s[i])
+  ensures ${name}(s, p) == ${name}(s, q)
+  decreases |s|
+{ if |s| > 0 { ${name}_same(s[1..], p, q); } }`; break;
       case 'MapIdx': text = `function ${name}(s: seq<${A}>, f: (${A}, int) -> ${B}, i: int): (r: seq<${B}>)
   ensures |r| == |s|
   decreases |s|
@@ -4880,8 +4886,123 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const fuel = `${external('async_iterator_fuel', [], 'nat')}()`;
     return `var ${state()} := ${hn}(${opened}, ${fuel}, ${names.join(', ')});\n${tr(rest, fin, u)}`;
   }
+  // a for-of over an array whose body is only guards (`if (c) continue;`, or `if (p) { ... }` around the rest), const
+  // declarations and one final `acc.push(v)` into a local array that nothing else in the body reads or writes is a
+  // filter and a map (ECMA-262 23.1.3.8 and 23.1.3.21 visit the elements in order, as the loop does): acc + Map(Filter
+  // (xs, p), f), the reading `xs.filter(p).map(f)` gets, so a loop and its chain take one vocabulary. Every expression is
+  // pure (no effect, no throw, nothing hoisted), and a name a guard narrows keeps its declared type at every use (the
+  // map's callback does not see the guard). Anything else keeps its loop helper. Returns the binding line, or null.
+  function guardPushLoop(s, u) {
+    if (s.kind !== K.ForOfStatement || s.awaitModifier || s.__collect || s.__named || (s.parent && ts.isLabeledStatement(s.parent))) return null;
+    const viaForEach = !!s.__forEach;
+    if (viaForEach && (!s.__callback || s.__callback.method || s.__callback.call?.expression?.name?.text !== 'forEach' || s.__callback.cb.parameters.length !== 1 || s.__callback.cb.parameters[0].initializer || s.__callback.cb.parameters[0].dotDotDotToken)) return null;
+    const list = s.initializer;
+    if (!list || !ts.isVariableDeclarationList(list) && list.kind !== K.VariableDeclarationList) return null;
+    if (!(list.flags & ts.NodeFlags.Const) || list.declarations.length !== 1) return null;
+    const x = list.declarations[0].name;
+    if (!ts.isIdentifier(x) && !ts.isObjectBindingPattern(x) && !ts.isArrayBindingPattern(x)) return null;
+    const itT = baseOf(typeOf(s.expression));
+    if (!checker.isArrayType(itT) || isAny(itT) || filterProvenance(s.expression)) return null;
+    const body = s.statement;
+    if (containsEffect(body) || mayThrowInside(body)) return null;
+    const jump = (st) => { const one = ts.isBlock(st) && st.statements.length === 1 ? st.statements[0] : st; return viaForEach ? ts.isReturnStatement(one) && !one.expression : ts.isContinueStatement(one) && !one.label; };
+    // body := (const | if (c) jump)* (push | if (p) { body })
+    const items = [];
+    const parse = (stmts) => {
+      for (let i = 0; i < stmts.length; i++) {
+        const st = stmts[i], last = i === stmts.length - 1;
+        if (ts.isVariableStatement(st)) {
+          if (!(st.declarationList.flags & ts.NodeFlags.Const) || !st.declarationList.declarations.every((d) => ts.isIdentifier(d.name) && d.initializer)) return false;
+          for (const d of st.declarationList.declarations) items.push({ kind: 'let', d });
+        } else if (ts.isIfStatement(st) && !st.elseStatement && jump(st.thenStatement)) items.push({ kind: 'cond', c: st.expression, negate: true });
+        else if (ts.isIfStatement(st) && !st.elseStatement && last) { items.push({ kind: 'cond', c: st.expression, negate: false }); if (!parse(flatten(st.thenStatement))) return false; }
+        else if (ts.isExpressionStatement(st) && last) {
+          const e = unparen(st.expression);
+          if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.expression.name.text !== 'push' || !ts.isIdentifier(e.expression.expression) || e.arguments.length !== 1 || ts.isSpreadElement(e.arguments[0])) return false;
+          items.push({ kind: 'push', acc: e.expression.expression, arg: e.arguments[0] });
+        } else return false;
+      }
+      return true;
+    };
+    if (!parse(flatten(body)) || items.filter((it) => it.kind === 'push').length !== 1 || items[items.length - 1].kind !== 'push') return null;
+    const push = items[items.length - 1];
+    const accSym = checker.getSymbolAtLocation(push.acc);
+    const accDecl = accSym?.valueDeclaration;
+    if (!accDecl || !ts.isVariableDeclaration(accDecl) || insideNode(accDecl, s) || !insideNode(accDecl, u.fn)) return null;
+    const M = assignedOutside(s);
+    if (M.length !== 1 || M[0].synthetic || M[0].sym !== accSym) return null;
+    // the accumulator is only pushed: no other read of it in the body; no element access or non-null assertion (the map's
+    // callback runs without the guard's facts, so an expression partial outside them is not read here)
+    let clean = true;
+    const scan = (n) => { if (!clean) return; if (ts.isIdentifier(n) && n !== push.acc && checker.getSymbolAtLocation(n) === accSym) clean = false; if (ts.isElementAccessExpression(n) || ts.isNonNullExpression(n) || n.questionDotToken || n.kind === K.ThisKeyword) clean = false; ts.forEachChild(n, scan); };
+    scan(body);
+    if (!clean) return null;
+    // a name a guard or a declaration mentions may be narrowed by the guards: every later use keeps its declared type
+    const mentioned = new Set();
+    const refSym = (n) => (n.parent && ts.isShorthandPropertyAssignment(n.parent) && n.parent.name === n ? checker.getShorthandAssignmentValueSymbol(n.parent) : checker.getSymbolAtLocation(n));
+    const note = (n) => { if (ts.isIdentifier(n)) { const sy = refSym(n); if (sy) mentioned.add(sy); } ts.forEachChild(n, note); };
+    for (const it of items) if (it.kind === 'cond') note(it.c); else if (it.kind === 'let') note(it.d.initializer);
+    const show = (t) => checker.typeToString(t, undefined, ts.TypeFormatFlags.NoTruncation);
+    const rootOf = (n) => { while (ts.isPropertyAccessExpression(n)) n = n.expression; return n; };
+    let unnarrowed = true;
+    const check = (n) => {
+      if (!unnarrowed) return;
+      if (ts.isPropertyAccessExpression(n)) {
+        const r = rootOf(n);
+        if (ts.isIdentifier(r) && mentioned.has(refSym(r))) {
+          const pt = checker.getTypeOfPropertyOfType(checker.getApparentType(typeOf(n.expression)), n.name.text);
+          if (!pt || show(pt) !== show(typeOf(n))) { unnarrowed = false; return; }
+        }
+        check(n.expression); return; // the property name is not a reference
+      }
+      if (ts.isIdentifier(n)) {
+        const sy = refSym(n);
+        if (sy && mentioned.has(sy) && show(checker.getTypeOfSymbolAtLocation(sy, u.fn)) !== show(typeOf(n))) unnarrowed = false;
+        return;
+      }
+      ts.forEachChild(n, check);
+    };
+    for (const it of items) check(it.kind === 'cond' ? it.c : it.kind === 'let' ? it.d.initializer : it.arg);
+    if (!unnarrowed) return null;
+    const T = ts.isIdentifier(x) && x.__type ? dtype(x.__type, s.expression) : dtype(typeOf(x), x);
+    const accT = baseOf(typeOf(push.acc));
+    if (!checker.isArrayType(accT)) return null;
+    const B = dtype(checker.getTypeArguments(accT)[0], push.acc);
+    const accD = letTypeOf(accSym) ?? dtype(symType(accSym, push.acc), push.acc);
+    if (accD !== `seq<${B}>`) return null;
+    if ([T, B].some((d) => d.startsWith('(') || d.includes('->'))) return null; // the prelude's `A -> bool` reads a tuple element as two parameters
+    const id = loopCount++; // the loop's number is taken, so a later loop's helper keeps its name
+    const parts = captureParts(() => {
+      const src = s.__source ?? outerParens(expr(s.expression));
+      const el = ts.isIdentifier(x) ? dn(x.text) : 'pp0_';
+      const binds = ts.isIdentifier(x) ? '' : `${destructure(x, el, typeOf(x)).join(' ')} `;
+      const letOf = (d) => `var ${dn(d.name.text)}: ${dtype(typeOf(d.name), d)} := ${outerParens(expr(d.initializer, typeOf(d.name)))};`;
+      // the predicate: the conditions in order, each with the declarations before it in scope
+      const predOf = (from) => {
+        const k = items.findIndex((it, j) => j >= from && it.kind === 'cond');
+        if (k < 0) return null;
+        const lets = items.slice(from, k).filter((it) => it.kind === 'let').map((it) => letOf(it.d));
+        const c = items[k].negate ? `!(${outerParens(truthy(items[k].c))})` : outerParens(truthy(items[k].c));
+        const more = predOf(k + 1);
+        const here = more ? `${c} && (${more})` : c;
+        return lets.length ? `${lets.join(' ')} ${here}` : here;
+      };
+      const pred = predOf(0);
+      const lets = items.filter((it) => it.kind === 'let').map((it) => letOf(it.d));
+      const value = convertToD(expr(push.arg), typeOf(push.arg), B, push.arg);
+      const identity = !lets.length && ts.isIdentifier(x) && value === el && T === B;
+      const lam = (b) => `((${el}: ${ts.isIdentifier(x) ? T : dtype(typeOf(x), x)}) => ${binds || lets.length ? `(${binds}${b})` : b})`;
+      let code = src;
+      if (pred) code = `${helper('Filter', [T])}(${code}, ${lam(pred)})`;
+      if (!identity) code = `${helper('Map', [T, B])}(${code}, ${lam(`${lets.length ? lets.join(' ') + ' ' : ''}${outerParens(value)}`)})`;
+      return code;
+    });
+    if (parts.lines.length) { loopCount = id; return null; } // a hoisted transition: not pure here; the helper reads it
+    return `var ${dn(push.acc.text)} := ${dn(push.acc.text)} + ${parts.text};`;
+  }
   function coreLoop(s, rest, fin, u) {
     if (s.awaitModifier) return asyncIteratorLoop(s, rest, fin, u);
+    { const gp = guardPushLoop(s, u); if (gp) return `${gp}\n${tr(rest, fin, u)}`; }
     const id = loopCount++;
     const jumps = escapingLabels(s);
     const returns = !s.__forEach && containsReturn(s); // a return inside a forEach callback ends one step, never the function

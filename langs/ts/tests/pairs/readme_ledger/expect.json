@@ -6,18 +6,19 @@
   "ledger_constructor",
   "ledger_post",
   "ledger_reset",
-  "ledger_posted"
+  "ledger_posted",
+  "ledger_constructor"
  ],
  "equal": {
   "apply_all": false,
-  "statement": false,
+  "statement": true,
   "rollback": false,
   "ledger_post": false,
   "ledger_reset": true,
   "ledger_posted": true,
   "ledger_constructor": true
  },
- "why": "README example, back end: a ledger over a Map with a port, a fault path and a class. applyAll rejects an event that lands exactly on the floor (<= for <): WITNESS on such an event. statement is reshaped from a loop with continue into a filter and a map: lane B finds no difference, lane A does not prove the reshaped loop (ASK:unproved), so the row stays PASS-bounded with its reason. rollback no longer faults on an unknown account: WITNESS, a fault against a value. Ledger.post keeps its meaning in its own text but calls the changed applyAll, so the slip reaches it: WITNESS through the callee. Ledger.reset reads the old count through a local: proved. Ledger.posted and the constructor are untouched.",
+ "why": "README example, back end: a ledger over a Map with a port, a fault path and a class. applyAll rejects an event that lands exactly on the floor (<= for <): WITNESS on such an event. statement is reshaped from a loop with continue into a filter and a map: the loop that only guards and pushes is read as that filter and map, so lane A proves it (PASS-proved) and lane B finds no difference. rollback no longer faults on an unknown account: WITNESS, a fault against a value. Ledger.post keeps its meaning in its own text but calls the changed applyAll, so the slip reaches it: WITNESS through the callee. Ledger.reset reads the old count through a local: proved. Ledger.posted and the constructor are untouched.",
  "b": {
   "applyAll": "WITNESS",
   "statement": "PASS-bounded",
