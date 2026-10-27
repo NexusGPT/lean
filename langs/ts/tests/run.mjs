@@ -347,6 +347,9 @@ for (const f of fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.e
 // seeded clock values retain their native shapes and ordered observations
 const clocks = run('node', [path.join(here, 'clock-read.mjs')]);
 add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clocks.stdout + clocks.stderr).trim());
+// a run never ends without a verdict: a drained event loop and an escaped harness error are each ASK, exit 2
+const silent = run('node', [path.join(here, 'no-silent-exit.mjs')]);
+add('runtime', 'no-silent-exit', 'ASK on a drained loop or an escaped harness error', silent.status === 0, (silent.stdout + silent.stderr).trim().split('\n').pop());
 
 // ----- the repository's own conformance run, when present -----
 // ----- lane B's hook runtime against React-tRace's scenarios (langs/ts/exec/react-trace.mjs) -----

@@ -200,6 +200,28 @@ async function observeJsx(v, env) {
   return out;
 }
 
+// the breadcrumb: the phase the harness is in, the input, and the file being loaded, so that a run whose event loop
+// drains before a verdict names what was pending
+export const crumb = { phase: 'start', input: null, loading: null };
+const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; };
+export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
+// a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
+// will settle, no timer or handle left), the run reports ASK naming what was pending, writes it to --out, and exits 2
+export function verdictGuard(out, shape = (r) => r) {
+  let owed = true;
+  const drained = () => {
+    if (!owed) return; owed = false;
+    const res = shape({ verdict: 'ASK', reason: `harness: the run ended before a verdict; ${crumbText()}` });
+    const text = JSON.stringify(res, null, 1);
+    let wrote = null; if (out) { try { fs.writeFileSync(out, text); wrote = out; } catch (e) { console.log(`--out not written: ${e.message}`); } } // the verdict is printed even when --out cannot be written
+    console.log(wrote ? `${res.verdict}: ${res.reason} -> ${wrote}` : text);
+    process.exit(2);
+  };
+  process.on('beforeExit', drained);
+  process.on('uncaughtException', (e) => { crumb.escaped = String(e && e.message || e).slice(0, 300); }); // the late-error hooks keep the process alive past an escaped error; the guard names it
+  return { settle() { owed = false; process.off('beforeExit', drained); } };
+}
+
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
   const cache = new Map();
@@ -241,8 +263,8 @@ export function sandbox(env, root) {
   function load(file) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
-    const wasLoading = env.loading; env.loading = true;
-    try { return loadInner(abs); } finally { env.loading = wasLoading; }
+    const wasLoading = env.loading, wasCrumb = crumb.loading; env.loading = true; crumb.loading = abs;
+    try { return loadInner(abs); } finally { env.loading = wasLoading; crumb.loading = wasCrumb; }
   }
   function loadInner(abs) {
     const src = fs.readFileSync(abs, 'utf8');
@@ -505,7 +527,7 @@ export async function runPair(opts) {
   if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
     return runNew(opts);
   }
-  let spec;
+  let spec; step('inputs');
   try { spec = specOf(candidate, unit, { project }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
@@ -533,11 +555,11 @@ export async function runPair(opts) {
   // retained state: for a class unit, programs of method calls on one constructed instance per side run first (programs.mjs); a divergence in a program that calls this unit is its WITNESS, one elsewhere rides in the certificate for the unit it names
   let programRun = null;
   if (spec.isMethod && !spec.isStatic && !spec.accessor && spec.unit.split('.')[1] !== 'constructor') {
-    const { runPrograms } = await import('./programs.mjs');
+    const { runPrograms } = await import('./programs.mjs'); step('programs');
     try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
   }
   for (let i = 0; i < n; i++) {
-    let sides = await mountSides(i);
+    step('lane B', i); let sides = await mountSides(i);
     if (harnessAsk) break;
     let [oP, oC] = await observeBoth(sides, true);
     if (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout') { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
@@ -581,7 +603,7 @@ export async function runPair(opts) {
   if (diffs.length && sawJsx) for (const d of diffs) Object.assign(d, witnessPatch(d.parent, d.candidate)); // a rendered unit: each witness carries the patch from the parent's tree to the candidate's
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (!spec.isMethod && !sawJsx && !harnessAsk && !diffs.length) { // environment programs with retained handles (program.mjs): what the environment may do later with what the unit handed it
-    const { runEnvironmentPrograms } = await import('./program.mjs');
+    const { runEnvironmentPrograms } = await import('./program.mjs'); step('environment programs');
     let r = null;
     try { r = await recording(records, () => runEnvironmentPrograms({ files: { parent, candidate }, roots, spec, seed, ms, rt: { sandbox, pickUnit, guardedCall, awaitUnit, runTimers } })); } catch (e) { if (e instanceof BudgetError) r = { verdict: 'ASK', reason: `budget: ${e.message}` }; else throw e; }
     if (r) {
@@ -592,7 +614,7 @@ export async function runPair(opts) {
   }
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
   if (sawJsx) { // the one-render check found no difference: a finite component is decided over every click order (rung 2); the rest runs re-render sequences (rung 3)
-    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
+    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); step('finite'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
     let domain = null; try { domain = finiteDomain(candidate, unit, { project }); } catch (e) { domain = { why: `finiteness: ${String(e && e.message).slice(0, 120)}` }; }
     if (domain && !domain.why) {
       const r = await recording(records, () => exploreFinite({ files: { parent, candidate }, roots, spec, unit, domain, seed, ms, rt, handlers: handlerRun }));
@@ -608,6 +630,7 @@ export async function runPair(opts) {
   if (sawJsx && sequenceDepth > 0) { // not finite: re-render sequences from a fresh mount, on the first inputs
     let paths = 0;
     for (let i = 0; i < Math.min(sequenceInputs, n); i++) {
+      step('sequences', i);
       const r = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth, handlers: handlerRun }));
       if (r.ask === undefined && !r.witness) { // the schedule explorer (moonshot 9): the same machine with the clock as a command, when the mount armed at most three timers
       const r2 = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, schedules: true, depth: Math.max(sequenceDepth, 2), breadth: sequenceBreadth, handlers: handlerRun }));
@@ -646,8 +669,10 @@ function findRoot(file) {
 if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) {
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
+  const guard = verdictGuard(opt('--out', null));
   const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: a.includes('--deep'), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) });
   const out = opt('--out', null);
+  guard.settle();
   const text = JSON.stringify(res, null, 1);
   if (out) fs.writeFileSync(out, text); else console.log(text);
   if (out) console.log(`${res.verdict}${res.reason ? ': ' + res.reason : ''} -> ${out}`);
