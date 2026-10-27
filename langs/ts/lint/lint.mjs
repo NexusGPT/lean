@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember, thisParamPath } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -165,6 +165,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
   let objectMethod = null;
   let thisParam = null; // the current free function's declared `this` parameter: its receiver operand, written and read like any parameter
+  const RECEIVER_WRITE = 'a write through the declared `this` of a free function rebuilds a nonoptional data record; a class, array, dictionary or optional receiver (or a container on the path) has no such value: take the value as a parameter and return the new one';
   let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
   let switchDepth = 0;
   let loopDepth = 0;
@@ -739,7 +740,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     { // `const u = user`, `const t = user.tags`, `const x = xs[i]`: another name for an object the function did not build
       let init = d.initializer; while (ts.isParenthesizedExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init) || (ts.isAwaitExpression(init) && ts.isCallExpression(unparenX(init.expression)))) init = init.expression;
-      const ref = ts.isIdentifier(init) || ts.isPropertyAccessExpression(init) || ts.isElementAccessExpression(init);
+      const ref = ts.isIdentifier(init) || ts.isPropertyAccessExpression(init) || ts.isElementAccessExpression(init) || (init.kind === K.ThisKeyword && !!thisParam); // `const self = this` in a free function: another name for the receiver it was handed
       const objish = (t) => nonNull(t).some((x) => !isPrim(x) && !isAny(x));
       if (ref && ts.isIdentifier(d.name) && objish(tOf(d.name))) aliasLocals.add(d);
       // `const s = this.held()`, `const t = pick(user)`: the result of a same-file call may be a field, a parameter or a module
@@ -795,6 +796,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         } else if (ts.isPropertyAccessExpression(l)) {
           let root = l; while (ts.isPropertyAccessExpression(root)) root = root.expression;
           if (root.kind === K.ThisKeyword && !thisParam) { if (objectMethod) return v(l, 'object-method-mutation', 'literal methods keep immutable data fields; use a class for mutable receiver state'); if (l.expression.kind !== K.ThisKeyword && !receiverRecordPath(checker, l)) return v(l, 'receiver-mutation', 'a receiver path needs nonoptional data records; assign a field itself for class or opaque handles'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return expr(e.right); } // a receiver write checks its right side, including exact promise forms
+          if (root.kind === K.ThisKeyword && thisParam && !thisParamPath(checker, l)) { v(l, 'receiver-write', RECEIVER_WRITE); return expr(e.right); } // a free function's receiver is written as a parameter is, when it is a data record
           const o = root.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(root) ? declOf(root) : { kind: null };
           if (localMethodLiteral(tOf(root))) return v(l, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
           // a field of `process` (`process.exitCode = 1`, `process.env.K = v`): a write to the world, one transition after the
@@ -819,7 +821,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (op >= K.FirstAssignment && op <= K.LastAssignment) return v(e, 'unsupported-operator', 'assignment operator is outside the subset');
     }
     if ((ts.isPostfixUnaryExpression(e) || ts.isPrefixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken)) {
-      if (ts.isPropertyAccessExpression(e.operand)) { let root = e.operand; while (ts.isPropertyAccessExpression(root)) root = root.expression; if ((root.kind === K.ThisKeyword && objectMethod) || methodLiteralPath(e.operand)) return v(e, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); if (root.kind === K.ThisKeyword && !thisParam && e.operand.expression.kind !== K.ThisKeyword) return receiverRecordPath(checker, e.operand) ? undefined : v(e, 'receiver-mutation', 'a receiver path needs nonoptional data records'); }
+      if (ts.isPropertyAccessExpression(e.operand)) { let root = e.operand; while (ts.isPropertyAccessExpression(root)) root = root.expression; if ((root.kind === K.ThisKeyword && objectMethod) || methodLiteralPath(e.operand)) return v(e, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); if (root.kind === K.ThisKeyword && !thisParam && e.operand.expression.kind !== K.ThisKeyword) return receiverRecordPath(checker, e.operand) ? undefined : v(e, 'receiver-mutation', 'a receiver path needs nonoptional data records'); if (root.kind === K.ThisKeyword && thisParam && !thisParamPath(checker, e.operand)) return v(e, 'receiver-write', RECEIVER_WRITE); }
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
       if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasLocals.has(o.decl) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
@@ -867,7 +869,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a path on a local or a parameter (user.tags): the owner of the root owns the path
       const pathRootOf = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
       const pr = pathRootOf(r);
-      const pathOwned = ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && ownedHere(declOf(pr).decl) && !aliasLocals.has(declOf(pr).decl);
+      const pathOwned = (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && ownedHere(declOf(pr).decl) && !aliasLocals.has(declOf(pr).decl)) || (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && !!thisParam && ownedHere(thisParam) && !!thisParamPath(checker, r)); // a container on a free function's data record receiver is owned as a parameter's is
+      if (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && thisParam && MUT_NAMES.has(name) && !thisParamPath(checker, r)) return v(e, 'receiver-write', RECEIVER_WRITE);
       if (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && aliasLocals.has(declOf(pr).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(pr.text, declOf(pr).decl));
       if ((name === 'push' || name === 'unshift') && isArrayExpr(r)) {
         if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
@@ -1120,7 +1123,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         // `delete r.f` on an optional field, `delete m[k]` on a dictionary, on a local, a parameter or a field of this
         let t = e.expression; while (ts.isParenthesizedExpression(t)) t = t.expression;
         if (!(e.parent && ts.isExpressionStatement(e.parent))) return v(e, 'delete', '`delete` is a statement, not a value');
-        if (ts.isElementAccessExpression(t)) { const r = t.expression; if (r.kind === K.ThisKeyword || (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass)) { expr(t.argumentExpression); return; } let root = r; while (ts.isPropertyAccessExpression(root)) root = root.expression; const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); if (!nonNull(tOf(t.argumentExpression)).every(isStr)) return v(e, 'dynamic-key', 'a dictionary key is a string'); expr(t.argumentExpression); return; }
+        if (ts.isElementAccessExpression(t)) { const r = t.expression; if (r.kind === K.ThisKeyword && thisParam) return v(e, 'receiver-write', RECEIVER_WRITE); if (r.kind === K.ThisKeyword || (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass)) { expr(t.argumentExpression); return; } let root = r; while (ts.isPropertyAccessExpression(root)) root = root.expression; const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); if (!nonNull(tOf(t.argumentExpression)).every(isStr)) return v(e, 'dynamic-key', 'a dictionary key is a string'); expr(t.argumentExpression); return; }
         if (ts.isPropertyAccessExpression(t)) { let root = t; while (ts.isPropertyAccessExpression(root)) root = root.expression; if (root.kind === K.ThisKeyword) return v(e, 'delete', 'delete of a field of this is outside the subset; assign undefined'); const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); return; }
         return v(e, 'delete', 'delete of this target is outside the subset');
       }
@@ -1282,6 +1285,19 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
   }
 
+  // `h.call(o, a)` / `h.apply(o, [a])` on a same-file function: its declaration and the argument nodes in parameter order
+  // (the receiver first when it declares `this`, else dropped), so a receiver or argument it changes is followed
+  function receiverCall(n) {
+    const f = n.expression;
+    if (!ts.isPropertyAccessExpression(f) || !ts.isIdentifier(f.expression) || (f.name.text !== 'call' && f.name.text !== 'apply')) return null;
+    const vd = checker.getSymbolAtLocation(f.expression)?.valueDeclaration;
+    const decl = vd && ts.isFunctionDeclaration(vd) ? vd : vd && ts.isVariableDeclaration(vd) && vd.initializer && (ts.isFunctionExpression(vd.initializer) || ts.isArrowFunction(vd.initializer)) ? vd.initializer : null;
+    if (!decl || decl.getSourceFile() !== sf) return null;
+    let arr = n.arguments[1]; while (arr && ts.isParenthesizedExpression(arr)) arr = arr.expression;
+    const args = f.name.text === 'call' ? [...n.arguments] : [n.arguments[0], ...(arr && ts.isArrayLiteralExpression(arr) ? arr.elements : [])];
+    const p0 = decl.parameters[0];
+    return { decl, args: p0 && ts.isIdentifier(p0.name) && p0.name.text === 'this' ? args : args.slice(1) };
+  }
   // branch results carry the world and value, but not a callee's parameter updates
   function conditionalEffect(e) {
     let branch = false;
@@ -1293,7 +1309,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (!decl?.body || decl.getSourceFile() !== sf || seen.has(decl)) return new Set();
       seen = new Set(seen).add(decl);
       const params = decl.parameters.map((p) => ts.isIdentifier(p.name) ? p.name.text : null), changed = new Set();
-      const hit = (n) => { let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isNonNullExpression(root) || ts.isParenthesizedExpression(root)) root = root.expression; if (ts.isIdentifier(root) && params.includes(root.text)) changed.add(params.indexOf(root.text)); };
+      const hit = (n) => { let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isNonNullExpression(root) || ts.isParenthesizedExpression(root)) root = root.expression; if (ts.isIdentifier(root) && params.includes(root.text)) changed.add(params.indexOf(root.text)); if (root.kind === K.ThisKeyword && params[0] === 'this') changed.add(0); }; // a write through a declared `this` changes the receiver operand
       const walk = (n) => {
         if (ts.isFunctionLike(n)) return;
         if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && !ts.isIdentifier(n.left)) hit(n.left);
@@ -1301,13 +1317,15 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (ts.isDeleteExpression(n)) hit(n.expression);
         if (ts.isCallExpression(n)) {
           if (ts.isPropertyAccessExpression(n.expression) && MUT_NAMES.has(n.expression.name.text)) hit(n.expression.expression);
-          for (const i of mutations(checker.getResolvedSignature(n)?.declaration, seen)) if (n.arguments[i]) hit(n.arguments[i]);
+          const via = receiverCall(n);
+          for (const i of mutations(via ? via.decl : checker.getResolvedSignature(n)?.declaration, seen)) { const a = via ? via.args[i] : n.arguments[i]; if (a) hit(a); }
         }
         ts.forEachChild(n, walk);
       };
       walk(decl.body); return changed;
     };
-    if (mutations(checker.getResolvedSignature(e)?.declaration).size) v(e, 'conditional-effect', 'move a call that changes its arguments into an explicit if branch so the updated values leave the branch');
+    const via = receiverCall(e);
+    if (mutations(via ? via.decl : checker.getResolvedSignature(e)?.declaration).size) v(e, 'conditional-effect', 'move a call that changes its arguments into an explicit if branch so the updated values leave the branch');
   }
   // an optional call `f?.(x)` is `if f is absent then absent else f(x)`: the arguments and the call run only when the
   // callee is present. The callee is a local function value, a function field of a record path rooted at a local (each

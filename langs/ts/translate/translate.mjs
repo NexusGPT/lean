@@ -29,7 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, countedFor, syncLoopCallback, localProcedure } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, countedFor, syncLoopCallback, localProcedure } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
@@ -315,6 +315,7 @@ export function translate(file, fnName, opts = {}) {
       const om = literalMethod(f);
       if (om) return !exactObjectMethod(om);
       if (recv.kind === K.SuperKeyword) return true; // the parent's method: a transition on the receiver
+      if (ts.isIdentifier(recv) && (f.name.text === 'call' || f.name.text === 'apply') && fns.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'unit') return effectfulUnits.has(recv.text); // `h.call(o, a)` on a same-file function is the call of h: its own unit's flag
       if (recv.kind === K.ThisKeyword && currentUnit?.cls) { const callee = fns.get(`${currentUnit.className}.${f.name.text}`); if (callee) return effectfulUnits.has(callee.name); return true; }
       if (moduleState(checker, recv, sf) && MUTATORS.has(f.name.text)) return true;
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
@@ -617,12 +618,13 @@ export function translate(file, fnName, opts = {}) {
     const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
     const out = new Set();
     const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
-    const hit = (x) => { const r = rootOf(x); if (ts.isIdentifier(r) && params.has(r.text) && r !== x) out.add(r.text); };
+    const own = (r) => ts.isIdentifier(r) ? r.text : r.kind === K.ThisKeyword && thisParamOf(u) ? 'this' : null; // a free function's declared receiver is its parameter `this`
+    const hit = (x) => { const r = rootOf(x); if (own(r) && params.has(own(r)) && r !== x) out.add(own(r)); };
     const walk = (n) => {
-      if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return; // a callback cannot mutate an outer value (lint)
+      if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !isLoopCallback(n)) return; // a callback cannot mutate an outer value (lint); a loop callback's body is the loop's, run here
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) hit(n.left);
       if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) hit(n.operand);
-      if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) { const r = rootOf(e.expression.expression); if (ts.isIdentifier(r) && params.has(r.text)) out.add(r.text); } }
+      if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) { const r = rootOf(e.expression.expression); if (own(r) && params.has(own(r))) out.add(own(r)); } }
       if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign' && e.arguments.length >= 2) { const r = rootOf(e.arguments[0]); if (ts.isIdentifier(r) && params.has(r.text)) out.add(r.text); } } // Object.assign(t, …) writes t: a parameter t is an output
       if (ts.isDeleteExpression(n)) hit(n.expression);
       ts.forEachChild(n, walk);
@@ -640,10 +642,12 @@ export function translate(file, fnName, opts = {}) {
         if (asyncGenerator(u)) continue;
         const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
         const walk = (n) => {
-          if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return;
-          if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text)) {
-            const callee = fns.get(n.expression.text); const cm = sets.get(callee.name);
-            callee.params.forEach((cp, i) => { if (ts.isIdentifier(cp.name) && cm.has(cp.name.text)) { const a = n.arguments[i]; if (a && ts.isIdentifier(a) && params.has(a.text) && !sets.get(u.name).has(a.text)) { sets.get(u.name).add(a.text); changed = true; } } });
+          if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !isLoopCallback(n)) return;
+          const via = ts.isCallExpression(n) && receiverCallArgs(n); // `h.call(o, a)` / `h.apply(o, [a])`: the callee with its arguments in parameter order
+          if (ts.isCallExpression(n) && ((ts.isIdentifier(n.expression) && fns.has(n.expression.text)) || via)) {
+            const callee = via ? via.callee : fns.get(n.expression.text); const cm = sets.get(callee.name); const argNodes = via ? via.args : n.arguments;
+            const nameOf = (a) => a && ts.isIdentifier(a) ? a.text : a && a.kind === K.ThisKeyword && thisParamOf(u) ? 'this' : null;
+            callee.params.forEach((cp, i) => { if (ts.isIdentifier(cp.name) && cm.has(cp.name.text)) { const a = nameOf(argNodes[i]); if (a && params.has(a) && !sets.get(u.name).has(a)) { sets.get(u.name).add(a); changed = true; } } });
           }
           ts.forEachChild(n, walk);
         };
@@ -653,6 +657,16 @@ export function translate(file, fnName, opts = {}) {
     for (const u of all) mutatedByUnit.set(u.name, u.params.filter((p) => ts.isIdentifier(p.name) && sets.get(u.name).has(p.name.text)).map((p) => p.name.text));
   }
   const mutatedOf = (u) => mutatedByUnit.get(u.name) ?? [];
+  // `h.call(o, a)` and `h.apply(o, [a])` on a same-file function: the callee and the argument nodes in its parameter order
+  // (the receiver first when the callee declares `this`, else dropped), as the call reading binds them
+  function receiverCallArgs(n) {
+    const f = n.expression;
+    if (!ts.isPropertyAccessExpression(f) || !ts.isIdentifier(f.expression) || (f.name.text !== 'call' && f.name.text !== 'apply') || !fns.has(f.expression.text) || originOf(checker, f.expression, sf, null).kind !== 'unit') return null;
+    const callee = fns.get(f.expression.text);
+    let arr = n.arguments[1]; while (arr && ts.isParenthesizedExpression(arr)) arr = arr.expression;
+    const args = f.name.text === 'call' ? [...n.arguments] : [n.arguments[0], ...(arr && ts.isArrayLiteralExpression(arr) ? arr.elements : [])];
+    return { callee, args: thisParamOf(callee) ? args : args.slice(1) };
+  }
   // the final value of a unit: the result, with the world first when effectful, and the mutated parameters after it
   function wrapRet(code) {
     const outs = currentUnit ? mutatedOf(currentUnit).map(dn) : [];
@@ -1695,7 +1709,7 @@ export function translate(file, fnName, opts = {}) {
     const world = isWorldField(target) || isInstanceWorldField(target);
     const setter = accessorOf(target, 'set');
     // a receiver path captures its record before the right side can make transitions
-    if (ts.isPropertyAccessExpression(target) && receiverRecordPath(checker, target)) {
+    if (ts.isPropertyAccessExpression(target) && receiverRecordPath(checker, target) && !thisParamOf(currentUnit)) {
       let field = target; while (field.expression.kind !== K.ThisKeyword) field = field.expression;
       expr(field);
     }
@@ -3247,7 +3261,7 @@ export function translate(file, fnName, opts = {}) {
         const muts = mutatedOf(callee);
         if (muts.length) {
           // the callee returns (world?, result, p1', ...): bind each new value back to the name that was passed
-          const names = muts.map((m) => { const i = callee.params.findIndex((p) => ts.isIdentifier(p.name) && p.name.text === m); let a = argNodes[i]; while (a && ts.isParenthesizedExpression(a)) a = a.expression; if (!a) return null; if (ts.isIdentifier(a)) return dn(a.text); if (ts.isArrayLiteralExpression(a) || ts.isObjectLiteralExpression(a) || ts.isNewExpression(a)) return `_`; fail(a, `the argument for \`${m}\`, which ${f.text} changes, must be a name or a fresh literal`); });
+          const names = muts.map((m) => { const i = callee.params.findIndex((p) => ts.isIdentifier(p.name) && p.name.text === m); let a = argNodes[i]; while (a && ts.isParenthesizedExpression(a)) a = a.expression; if (!a) return null; if (ts.isIdentifier(a)) return dn(a.text); if (a.kind === K.ThisKeyword && thisParamOf(currentUnit)) return dn('this'); if (ts.isArrayLiteralExpression(a) || ts.isObjectLiteralExpression(a) || ts.isNewExpression(a)) return `_`; fail(a, `the argument for \`${m}\`, which ${f.text} changes, must be a name or a fresh literal`); });
           const eff = effectfulUnits.has(f.text);
           if (eff && !unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
@@ -3696,7 +3710,7 @@ export function translate(file, fnName, opts = {}) {
   const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set', 'shift', 'reverse', 'splice', 'sort', 'pop']);
   const isAssignStmt = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && ts.isIdentifier(x.expression.expression) && x.expression.expression.text === 'Object' && x.expression.name.text === 'assign' && x.arguments.length >= 2 && ts.isIdentifier(pathRoot(x.arguments[0])); // Object.assign(t, s…) as a statement: the lint admits it on an owned record
   const pathRoot = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
-  const isMutCall = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT.has(x.expression.name.text) && ts.isIdentifier(pathRoot(x.expression.expression)) && !isWorldField(x.expression.expression) && !(ts.isPropertyAccessExpression(x.expression.expression) && pathRoot(x.expression.expression).kind === K.ThisKeyword);
+  const isMutCall = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT.has(x.expression.name.text) && (ts.isIdentifier(pathRoot(x.expression.expression)) || (!!thisParamOf(currentUnit) && ts.isPropertyAccessExpression(x.expression.expression) && pathRoot(x.expression.expression).kind === K.ThisKeyword)) && !isWorldField(x.expression.expression) && !(ts.isPropertyAccessExpression(x.expression.expression) && pathRoot(x.expression.expression).kind === K.ThisKeyword && !thisParamOf(currentUnit)); // a container on a free function's declared receiver is changed as a parameter's is
   const hasLoopOrMutation = (body) => {
     if (!ts.isBlock(body)) return false;
     let found = false;
@@ -3723,6 +3737,7 @@ export function translate(file, fnName, opts = {}) {
     if (unitEffectful() && containsEffect(node)) names.push({ name: WORLD, sym: null, node, synthetic: true, d: 'World' });
     if (node.__collect) names.push(node.__collect); // the callback's result state
     const note = (id) => {
+      if (id.kind === K.ThisKeyword) { const tp = thisParamOf(currentUnit); if (!tp) return; id = tp.name; } // a free function's declared receiver is its parameter `this`, carried by the loop as any parameter is
       if (moduleState(checker, id, sf)) return; // module writes travel through the world
       if (classRef(id)) return; // so do writes to a static field of a same-file class
       if (outsideRoot(checker, id, sf, currentUnit?.node) && id.text !== 'require') return; // so do writes to a field of an outside root
@@ -3734,12 +3749,16 @@ export function translate(file, fnName, opts = {}) {
     };
     const walk = (x) => {
       if (isAssign(x) && ts.isIdentifier(x.left)) note(x.left);
-      if (isAssign(x) && ts.isPropertyAccessExpression(x.left)) { let r = x.left; while (ts.isPropertyAccessExpression(r)) r = r.expression; if (ts.isIdentifier(r)) note(r); }
+      if (isAssign(x) && ts.isPropertyAccessExpression(x.left)) { let r = x.left; while (ts.isPropertyAccessExpression(r)) r = r.expression; if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); }
       if (isAssign(x) && ts.isElementAccessExpression(x.left) && ts.isIdentifier(x.left.expression)) note(x.left.expression);
       if (isUpdate(x) && ts.isIdentifier(x.operand)) note(x.operand);
-      if (isMutCall(x)) { const r = pathRoot(x.expression.expression); if (ts.isIdentifier(r)) note(r); }
-      if (isAssignStmt(x)) { const r = pathRoot(x.arguments[0]); if (ts.isIdentifier(r)) note(r); } // Object.assign(t, …): t is written, so a parameter t is an output
-      if (isUpdate(x) && ts.isPropertyAccessExpression(x.operand)) { const r = pathRoot(x.operand); if (ts.isIdentifier(r)) note(r); }
+      if (isMutCall(x)) { const r = pathRoot(x.expression.expression); if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); }
+      if (isAssignStmt(x)) { const r = pathRoot(x.arguments[0]); if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); } // Object.assign(t, …): t is written, so a parameter t is an output
+      if (isUpdate(x) && ts.isPropertyAccessExpression(x.operand)) { const r = pathRoot(x.operand); if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); }
+      if (ts.isCallExpression(x)) { // a same-file call that changes what was passed (directly, or through call/apply): the name passed takes the new value back, so the loop carries it
+        const via = receiverCallArgs(x); const callee = via ? via.callee : ts.isIdentifier(x.expression) && fns.has(x.expression.text) ? fns.get(x.expression.text) : null;
+        if (callee) for (const m of mutatedOf(callee)) { let a = (via ? via.args : x.arguments)[callee.params.findIndex((p) => ts.isIdentifier(p.name) && p.name.text === m)]; while (a && ts.isParenthesizedExpression(a)) a = a.expression; if (a && (ts.isIdentifier(a) || a.kind === K.ThisKeyword)) note(a); }
+      }
       { const pc = procCall(x); if (pc && !seenProcs.has(pc)) { seenProcs.add(pc); walk(pc.fn.body); } } // stage 5 rank 21: a call splices the body here
       ts.forEachChild(x, walk);
     };
@@ -3902,12 +3921,15 @@ export function translate(file, fnName, opts = {}) {
     function pathUpdate(target, leaf) {
       const chain = []; let root = target;
       while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
-      const worldPath = root.kind === K.ThisKeyword && receiverRecordPath(checker, target);
+      const ownThis = root.kind === K.ThisKeyword && thisParamOf(currentUnit); // a free function's declared receiver: its parameter `this`, rebuilt as any parameter is
+      if (ownThis && !thisParamPath(checker, target)) fail(target, 'receiver-write: a free function writes a nonoptional data record receiver');
+      const worldPath = root.kind === K.ThisKeyword && !ownThis && receiverRecordPath(checker, target);
       const field = worldPath ? chain.shift() : null;
-      if (!ts.isIdentifier(root) && !field) fail(target, 'receiver-mutation: a receiver path needs nonoptional data records');
-      const rootCode = field ? expr(field) : dn(root.text);
+      if (!ts.isIdentifier(root) && !field && !ownThis) fail(target, 'receiver-mutation: a receiver path needs nonoptional data records');
+      const rootName = ownThis ? 'this' : root.text;
+      const rootCode = field ? expr(field) : dn(rootName);
       const rootT = field ? typeOf(field) : typeOf(root);
-      if (!chain.length) return [root.text, leaf(dn(root.text), null, typeOf(root)), root];
+      if (!chain.length) return [rootName, leaf(dn(rootName), null, typeOf(root)), root];
       const build = (i, recvCode, recvT) => {
         const pa = chain[i]; const fname_ = pa.name.text;
         if (!isRecordish(recvT) || !checker.getPropertyOfType(recvT, fname_)) fail(pa, `field ${fname_} is not a declared field of a record`);
@@ -3921,7 +3943,7 @@ export function translate(file, fnName, opts = {}) {
       };
       const value = build(0, rootCode, rootT);
       if (field) { const d = dtype(rootT, field); hoist(`${worldFieldAccessor(field, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit'); return null; }
-      return [root.text, value, root];
+      return [rootName, value, root];
     }
   function newValue(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
@@ -3944,6 +3966,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isAwaitExpression(e) || (ts.isCallExpression(e) && isEffectCall(e)) || (ts.isNewExpression(e) && isEffectCall(e))) { expr(e); return null; } // the transition is hoisted
     if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && fns.has(e.expression.text) && mutatedOf(fns.get(e.expression.text)).length) { expr(e); return null; } // a call that changes what was passed: the new values are bound by the call
     if (ts.isCallExpression(e) && ts.isIdentifier(e.expression)) { expr(e); return null; }
+    if (ts.isCallExpression(e) && receiverCallArgs(e)) { expr(e); return null; } // `h.call(o, a)` as a statement: the call of h, its changed operands bound by the call
     const moduleTarget = ts.isBinaryExpression(e) ? e.left : isUpdate(e) ? e.operand : null;
     const moduleDecl = moduleState(checker, moduleTarget, sf);
     if (moduleDecl) {

@@ -912,5 +912,74 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "receiver_write_sumAll",
+  "file": "receiver_write.ts",
+  "fn": "sumAll",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     -4
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "receiver_write_twice",
+  "file": "receiver_write.ts",
+  "fn": "twice",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    2,
+    3
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    -5,
+    1
+   ]
+  ]
+ },
+ {
+  "name": "receiver_write_eachAdd",
+  "file": "receiver_write.ts",
+  "fn": "eachAdd",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     7
+    ]
+   ]
+  ]
  }
 ]
