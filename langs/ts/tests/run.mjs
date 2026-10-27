@@ -355,6 +355,23 @@ for (const f of fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.e
 const clocks = run('node', [path.join(here, 'clock-read.mjs')]);
 add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clocks.stdout + clocks.stderr).trim());
 
+// a project's `paths` alias without a baseUrl resolves from its tsconfig's folder, a workspace package to its source, a declared baseUrl is kept
+{
+  const { loadProgram, RESOLUTION_CODES } = await import('../common.mjs');
+  const web = path.join(here, 'fixtures/paths-alias/apps/web');
+  for (const [cfg, wantBase] of [['tsconfig.json', null], ['tsconfig.base-url.json', web]]) {
+    let detail, ok = false;
+    try {
+      const L = loadProgram(path.join(web, 'src/index.ts'), { project: path.join(web, cfg) });
+      const unresolved = L.diagnostics.filter((d) => RESOLUTION_CODES.has(d.code)).map((d) => `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
+      const base = L.program.getCompilerOptions().baseUrl ?? null;
+      ok = unresolved.length === 0 && L.diagnostics.length === 0 && (base && path.resolve(base)) === (wantBase && path.resolve(wantBase));
+      detail = `baseUrl ${base ? path.relative(here, base) : 'none'}; ${L.diagnostics.length} diagnostics${unresolved.length ? ': ' + unresolved.join('; ') : ''}`;
+    } catch (e) { detail = String(e.message).slice(0, 160); }
+    add('runtime', 'paths-alias', `${cfg}: @/ alias and workspace package resolve`, ok, detail);
+  }
+}
+
 // ----- the repository's own conformance run, when present -----
 // ----- lane B's hook runtime against React-tRace's scenarios (langs/ts/exec/react-trace.mjs) -----
 {
