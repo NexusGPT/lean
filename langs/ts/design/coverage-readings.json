@@ -1,7 +1,7 @@
 {
  "_note": "lean's reading today per runtime syntax kind, and the faithful reading. today: exact (a value or statement read as is) | transition (a world step with a recorded request) | opaque (a value kept by text and captures) | refused (a lint rule names it) | erased (no runtime meaning). Sources: the lint's expression and statement switches (admitted kinds; the default refuses), translate.mjs, the design notes under design/. The faithful column is the target (CLAIM). 'uninterpreted' in the row's acceptance is the world read or transition without a model (named 'transition' here); 'absent' is a kind with no lint case.",
  "Identifier": {
-  "today": "exact: a parameter, a local, a same-file unit; an outside name is a world read or refused (global-read)",
+  "today": "exact: a parameter, a local, a same-file unit; an outside name is a world read (a global the lib or an @types package declares: lib-globals, done (lane)) or refused (global-read: unresolved, module state, a global only the project declares)",
   "faithful": "same; module and captured cells as ledger cells (research note section 1)"
  },
  "Block": {

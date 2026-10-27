@@ -51,6 +51,19 @@ export function mayFaultPure(n, checker, sf) {
   return ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && f.expression.text === 'JSON' && ['parse', 'stringify'].includes(f.name.text) && originOf(checker, f.expression, sf, null).kind === 'global';
 }
 
+// a lib or runtime global: a name every declaration of which lives in a default lib file or an @types package (navigator,
+// getComputedStyle, AbortSignal, btoa, __dirname); its reads are world reads, its calls transitions. The names with their
+// own reading (the tables above), `require` (a module loader) and a name only the project declares stay out.
+const LIB_FILE = /[\\/](typescript[\\/]lib[\\/]lib\.[\w.-]+\.d\.ts|node_modules[\\/]@types[\\/].+\.d\.ts)$/;
+const globalScope = (c) => !!c && (ts.isSourceFile(c) || (ts.isModuleBlock(c) && ts.isModuleDeclaration(c.parent) && !!(c.parent.flags & ts.NodeFlags.GlobalAugmentation)));
+const globalDecl = (d) => globalScope(ts.isVariableDeclaration(d) ? d.parent?.parent?.parent : d.parent) && (ts.isVariableDeclaration(d) || ts.isFunctionDeclaration(d) || ts.isInterfaceDeclaration(d) || ts.isModuleDeclaration(d) || ts.isClassDeclaration(d) || ts.isTypeAliasDeclaration(d));
+export function libGlobalRoot(checker, n, sf, current) {
+  if (!n || !ts.isIdentifier(n) || ['require', 'undefined', 'arguments', 'NaN', 'Infinity'].includes(n.text) || PURE_GLOBALS.has(n.text) || Object.hasOwn(EFFECT_GLOBALS, n.text)) return false;
+  const o = originOf(checker, n, sf, current);
+  const decls = o.sym?.declarations ?? [];
+  return o.kind === 'global' && decls.some((d) => ts.isVariableDeclaration(d) || ts.isFunctionDeclaration(d) || ts.isModuleDeclaration(d) || ts.isClassDeclaration(d)) && decls.every((d) => LIB_FILE.test(d.getSourceFile().fileName) && globalDecl(d));
+}
+
 // throwing units and their callers share the outcome channel; ordinary callees keep their reading
 export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
   const out = new Set();
@@ -312,6 +325,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (o.kind === 'global' && ['NaN', 'Infinity'].includes(name)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
     if ((Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined)) return v(id, (Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined), `\`${name}\` is outside the subset`);
     if (PURE_GLOBALS.has(name)) return;
+    if (libGlobalRoot(checker, id, sf, current)) return; // a lib or runtime global: a world read
     if (o.kind === 'global') return v(id, 'global-read', `global \`${name}\` is outside the subset`);
     return v(id, 'global-read', `\`${name}\` cannot be resolved`);
   }

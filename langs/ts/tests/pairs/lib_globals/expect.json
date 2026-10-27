@@ -1,0 +1,6 @@
+{
+  "scope": ["byte_width", "encode_name", "language", "guarded_language", "visit", "language_count", "untouched"],
+  "equal": { "byte_width": false, "encode_name": true, "language": true, "guarded_language": false, "visit": false, "language_count": true, "untouched": true },
+  "why": "a name the lib declares is read from the world: a path rooted at it is a global_get_ transition on its handle, typeof of it is a world read, a call to it is a transition; the same reads and calls in the same order prove, another global, a dropped presence test or another order does not",
+  "b": { "byteWidth": "WITNESS", "encodeName": "PASS-bounded", "language": "PASS-bounded", "guardedLanguage": "WITNESS", "visit": "WITNESS", "languageCount": "PASS-bounded", "untouched": "PASS-bounded" }
+}
