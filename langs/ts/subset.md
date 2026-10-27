@@ -116,6 +116,7 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | Numeric predicates | `Number.isNaN`, `Number.isFinite`, global `isNaN/isFinite` | pure uninterpreted predicates; no blanket finite answer |
 | Module constants, enum members | `LIMITS.max` | `ext_LIMITS_max()` |
 | `any`, `unknown`, overlapping or unclassified unions, `never`, `object`, symbols | `node.type`, `x === y` | the opaque type `Any`; accessor and operator externals; `==` on `Any` |
+| A value only strict mode types `any` or `unknown` (the implicit-any policy: TS7005, 7006, 7008, 7010, 7011, 7015, 7018, 7019, 7022, 7023, 7024, 7031, 7034, 7053; TS18046 on a catch binding, on a value typed unknown by its source, or under a guard the checkout cannot resolve) | `catch (e) { return e.message; }`, `function f(...xs)` | the opaque type `Any`, as above; the code is admitted, never refused, and `--any-type` proposes the value's type ([design](design/implicit-any-policy.md)) |
 | Library calls with no exact rule: non-ASCII case conversion, split with limit or dynamic separator, regex/callback replacement, `localeCompare`, `normalize`, `JSON`, general numeric `String`, `Buffer`, non-string-array `join` | `s.normalize()` | a pure function of all arguments |
 | Regular expressions, `new RegExp`, `.test`, `.replace(re, …)` | `/a+/.test(s)` | an opaque constant per literal, externals for the operations |
 | A callback passed to an external, stored in a record, or an async callback | `[...xs].sort((a, b) => a - b)` | an opaque function value named by its exact text and captured values; same-file callees are checked dependencies |
@@ -186,6 +187,7 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `assign-target` | `Object.assign` used as a value, or with a target that is not a plain record the function owns or was handed, or with a source that has a field the target does not declare; as a statement on such a record the target is rebuilt with every declared field of each source and a parameter target becomes an output | `const u = Object.assign(user, patch)` |
 | `class`, `inheritance` | `super` as a value (`const f = super.m`, `super.x`); `super.m(...)` as a call is read as a transition on the receiver | `const f = super.m` |
 | `this` | `this` outside a class method, a literal method, or a free function that declares a `this` parameter | `function self() { return this; }` |
+| `implicit-this` | a `this` a free function does not declare (TS2683, TS7041): the receiver is an input the function does not name; declare it as a `this` parameter ([design](design/implicit-any-policy.md)) | `function label() { return this.label; }` |
 | `receiver-mutation` | a nested receiver path through a class instance, optional value or opaque handle | `this.client.state.n += 1` when `client` is a class instance |
 | `object-method-capture` | a method or getter captures a changing local binding | `let n = 0; const o = { read() { return n; } }; n++` |
 | `object-method-mutation` | mutation of a literal with methods, including its methods writing `this`; detached/copied methods, shared named handlers and reference-valued literal receiver fields | `const o = { n: 0, read() { return this.n; } }; o.n++` |
@@ -226,7 +228,7 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `callback-form` | a callback that is not an arrow function, a same-file function or a local function value | `xs.map(function (x) { return x; })` |
 | `spread` | array-literal spreads of a Map, a Map iterator, a string or an opaque value (a Map's insertion order is not in its reading, [design](design/spread-map.md)); call spreads of held tuples, sets or custom iterables; local function values, optional methods, constructors or exact builtins without a sequence reading; same-file call arguments inside conditional sequence calls (use an if statement) | `callback(...xs)` |
 | `unsupported-syntax`, `unsupported-call`, `unsupported-member`, `unsupported-operator`, `unsupported-type` | a statement form, a method with no rule, a property the type does not declare, an operator or a type with no reading | `x ** 2` |
-| `ts-strict` | a compiler error in strict mode | a type mismatch |
+| `ts-strict` | a compiler error in strict mode, except the implicit-any policy's codes (admitted as opaque, above); a read of an `unknown` the unit wrote on the binding with no unresolved guard stays here (TypeScript without strict refuses it as TS2339) | a type mismatch; `function f(v: unknown) { return v.length; }` |
 
 ## Proof hints
 
