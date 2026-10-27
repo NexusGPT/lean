@@ -38,10 +38,10 @@ export function rollback(balances: Map<string, number>, last: Event): number {
 
 export class Ledger {
   private count = 0;
-  constructor(private readonly port: Port, private readonly floor: number) {}
+  constructor(private readonly port: Port) {}
   // a refactor: the field update written in two steps
-  post(balances: Map<string, number>, events: Event[]): Summary {
-    const s = applyAll(balances, events, this.port, this.floor);
+  post(balances: Map<string, number>, events: Event[], floor: number): Summary {
+    const s = applyAll(balances, events, this.port, floor);
     const next = this.count + s.posted;
     this.count = next;
     return s;

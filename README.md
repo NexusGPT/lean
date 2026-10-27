@@ -172,8 +172,8 @@ export function statement(account: string, events: Event[]): string[] { /* the l
 export function rollback(balances: Map<string, number>, last: Event): number { /* throws on an unknown account */ }
 export class Ledger {
   private count = 0;
-  constructor(private readonly port: Port, private readonly floor: number) {}
-  post(balances: Map<string, number>, events: Event[]): Summary { const s = applyAll(balances, events, this.port, this.floor); this.count += s.posted; return s; }
+  constructor(private readonly port: Port) {}
+  post(balances: Map<string, number>, events: Event[], floor: number): Summary { const s = applyAll(balances, events, this.port, floor); this.count += s.posted; return s; }
   reset(): number { const was = this.count; this.count = 0; return was; }
   posted(): number { return this.count; }
 }
@@ -186,7 +186,7 @@ The candidate changes five things, the way a real commit does: `applyAll` reject
 | `applyAll` | **WITNESS** | WITNESS | | input 12: `posted: 2` against `posted: 0`; the parent's trace calls `notify` twice, the candidate's never |
 | `statement` | **PASS-bounded** | PASS-bounded | ASK:unproved | no difference on the drawn inputs; the reshaped loop is not a theorem (`4 verified, 1 error`), and the certificate says so instead of guessing |
 | `rollback` | **WITNESS** | WITNESS | | input 0: the parent `threw: Error "unknown account credit"`, the candidate `returned: 0` and wrote a new key into the map |
-| `Ledger.post` | **WITNESS** | WITNESS | | the method's own text is a refactor, but it calls the changed `applyAll`: the slip reaches it, and the witness says which callee |
+| `Ledger.post` | **WITNESS** | WITNESS | | the method's own text is a refactor, but it calls the changed `applyAll`: the slip reaches it (`posted: 1` against `posted: 0`), and the receiver's `count` differs after the call |
 | `Ledger.reset` | **PASS-proved** | PASS-bounded | PASS-proved | `Equal_ledger_reset: true`, Dafny `1 verified, 0 errors`; the field write and the read through a local are one heap step |
 | `Ledger.posted` | **PASS-proved** | PASS-bounded | PASS-proved | untouched text, aliased |
 
