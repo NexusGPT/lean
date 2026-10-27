@@ -12,6 +12,7 @@ import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ts } from '../common.mjs';
+import { restsOf, restsClosure, provedLemma, commentAdapters } from '../check.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -212,7 +213,10 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
   const eff2 = c1.status === 0 ? headerOf('candidate', 'EFFECTFUL') : '';
   const hc = c1.status === 0 && exp.heap !== false ? headerOf('candidate', 'HEAP') : '';
   if (eff2 !== eff || hc !== hp) tr('parent', [...(eff2 ? ['--effectful', eff2] : []), ...heapArgs(hc)]);
-  fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])) }));
+  const adapters = typeof exp.adapters === 'string' ? JSON.parse(fs.readFileSync(path.join(d, exp.adapters), 'utf8')).adapters : exp.adapters; // a changed signature proves through the adapter the pair's scope file declares, the comment door included (check.mjs reads it from the candidate)
+  const commentDoor = commentAdapters(pairFile(d, 'candidate'));
+  const allAdapters = { ...commentDoor, ...(adapters ?? {}) };
+  fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])), summaries: true, ...(Object.keys(allAdapters).length ? { adapters: allAdapters } : {}) }));
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
   const th = run('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')]);
   add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
@@ -221,17 +225,21 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
-  lines.forEach((ln, i) => { const m = ln.match(/^lemma (?:\{[^}]*\}\s+)*(Equal(?:Canon)?_\w+)(?:<[^>]*>)?\(/); if (m) { cur = m[1]; spans[cur] = [i + 1, null]; } if (/^\} \/\/ END Equal(Canon)?_/.test(ln) && cur) spans[cur][1] = i + 1; });
+  lines.forEach((ln, i) => { const m = ln.match(/^lemma (?:\{[^}]*\}\s+)*(Equal(?:Canon|Direct)?_\w+)(?:<[^>]*>)?\(/); if (m) { cur = m[1]; spans[cur] = [i + 1, null]; } if (/^\} \/\/ END Equal(Canon|Direct)?_/.test(ln) && cur) spans[cur][1] = i + 1; });
   const errs = [...text.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1]));
   const finished = /finished with \d+ verified/.test(text); // no verdict line: a resolution error, nothing is proved
+  const rests = restsOf(lines); // a caller's lemma rests on its callees' summaries: proved only when every lemma it rests on is proved
+  const spanClean = (k) => finished && !!spans[k] && !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]);
   for (const [f, want] of Object.entries(exp.equal)) {
     const sp = spans[`Equal_${f}`];
-    const whole = finished && !!sp && !errs.some((L) => sp[0] <= L && L <= sp[1]);
+    const viaRests = provedLemma(`Equal_${f}`, spanClean, rests);
+    const through = viaRests || !spanClean(`Equal_${f}`) ? [] : restsClosure(rests, `Equal_${f}`).filter((k) => !provedLemma(k, spanClean, rests));
+    const whole = finished && !!sp && viaRests;
     const parts = Object.keys(spans).filter((k) => k.startsWith(`EqualCanon_${f}_`)); // the canonical-heap certificate: every part must hold
     const canon = finished && parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]));
     const proved = whole || canon;
     const withheld = lines.find((ln) => ln.startsWith(`// UNGUARDED Equal_${f}: `));
-    const got = sp ? (proved ? (whole ? 'proved' : 'proved (canonical heap)') : 'not proved') : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
+    const got = sp ? (proved ? (whole ? 'proved' : 'proved (canonical heap)') : through.length ? `not proved through ${through.map((k) => k.slice(6)).join(', ')}` : 'not proved') : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
     const ok = want === 'withheld' ? !!withheld : proved === want && !(want && withheld); // "withheld": the identity guard must have withheld the lemma
     add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want ? 'proved' : 'not proved'}`, ok, got);
     if (exp.canon && f in exp.canon) add('pair', name, `EqualCanon_${f} ${exp.canon[f] ? 'proved' : 'not proved'}`, canon === exp.canon[f] && (!exp.canon[f] || !whole), `${parts.length} parts: ${parts.filter((k) => errs.some((L) => spans[k][0] <= L && L <= spans[k][1])).map((k) => k.slice(k.lastIndexOf('_') + 1)).join(', ') || 'all hold'}${whole ? '; whole heap also proved' : ''}`); // "canon": the canonical reading alone proves it (the whole-heap lemma fails)
