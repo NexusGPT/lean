@@ -44,6 +44,10 @@ All of the above keep `spread`; escape `spread_map_iterator.ts` (`[...m.keys()]`
   returns `seq<K>` and the reader expects `Ext_MapIterator`. `for (const [k, v] of m)` reads `map_entries` of the
   order-erasing map; its swapped-order probe was not proved either.
 
+Evidence that nothing wrong is proved today: every swapped-insertion-order probe above came out not proved. That rests
+on Z3 not closing the set or map equality, not on the model, which would equate the two orders. An ordered Map
+reading is queued by the lead as its own row.
+
 ## Lane B
 
 Lane B runs the JavaScript: a Map built in the unit iterates in insertion order and a changed order is a WITNESS, so
