@@ -1,0 +1,42 @@
+export interface Jobs { start(id: string): Promise<void>; stop(id: string): Promise<void>; track(p: Promise<void>): void; note(text: string): void; }
+export interface Slots { open(id: string): Promise<undefined>; close(id: string): Promise<undefined>; keep(p: Promise<undefined>): void; }
+// changed: the candidate awaits the two handles in the other order, so a double rejection throws the other error
+export async function order(jobs: Jobs, id: string): Promise<void> {
+  const a = jobs.start(id);
+  const b = jobs.stop(id);
+  await b;
+  await a;
+}
+// changed: the candidate hands the outside the other void promise
+export function track(jobs: Jobs, id: string): void {
+  const a = jobs.start(id);
+  const b = jobs.stop(id);
+  jobs.track(b);
+}
+// changed: the candidate hands the outside the other promise of undefined
+export function absent(slots: Slots, id: string): void {
+  const a = slots.open(id);
+  const b = slots.close(id);
+  slots.keep(b);
+}
+// refactor: the held handle renamed and the label inlined, the same transitions in the same order
+export async function held(jobs: Jobs, id: string): Promise<void> {
+  const started = jobs.start(id);
+  jobs.track(started);
+  jobs.note('job-' + id);
+  await started;
+}
+// refactor: the candidate takes the handle through a same-file handle unit
+export async function relay(jobs: Jobs, id: string): Promise<void> {
+  const p = begin(jobs, id);
+  jobs.track(p);
+  await p;
+}
+// untouched: a handle unit returning the outside call's handle
+export function begin(jobs: Jobs, id: string): Promise<void> {
+  return jobs.start(id);
+}
+// untouched
+export function name(id: string): string {
+  return 'job-' + id;
+}

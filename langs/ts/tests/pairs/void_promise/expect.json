@@ -1,0 +1,22 @@
+{
+  "scope": ["order", "track", "absent", "held", "relay", "begin", "name"],
+  "equal": {
+    "order": false,
+    "track": false,
+    "absent": false,
+    "held": true,
+    "relay": true,
+    "begin": true,
+    "name": true
+  },
+  "why": "a held promise whose value reads with no identity (void, undefined, null) is a handle, an opaque PromiseHandle value named by the transition that produced it, so two different handles never read as one Unit or one absent constant; a renamed handle and a handle taken through a same-file handle unit keep the same transitions",
+  "b": {
+    "order": "WITNESS",
+    "track": "PASS-bounded",
+    "absent": "PASS-bounded",
+    "held": "PASS-bounded",
+    "relay": "PASS-bounded",
+    "begin": "PASS-bounded",
+    "name": "PASS-bounded"
+  }
+}
