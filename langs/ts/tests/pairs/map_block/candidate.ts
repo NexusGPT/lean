@@ -23,6 +23,11 @@ export function noted(items: Item[], log: Log): string[] {
   return out;
 }
 
+export function labelsInner(items: Item[], seen: number[]): string[] {
+  seen.push(items.length);
+  return items.map((x) => { const t = x.tag; return t.label; });
+}
+
 export function width(xs: number[]): number {
   return xs.length;
 }
