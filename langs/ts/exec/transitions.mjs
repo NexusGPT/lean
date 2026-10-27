@@ -12,6 +12,7 @@ const seen = (x) => x !== null && (typeof x === 'object' || typeof x === 'functi
 const isObj = (x) => x !== null && (typeof x === 'object' || typeof x === 'function');
 const MAX_PER_OP = 256; // records kept per operation per run; the calls beyond it are counted (summary.calls), never snapshotted
 const snap = (x) => { // the contents of a receiver or argument: primitives by value, objects by id
+  if (isObj(x) && x.__isFake) return { kind: 'fake', id: idOf(x) }; // a fake is the outside: its keys are a request of the world, so the recorder never enumerates them (a read the harness makes is no request of the unit's)
   if (Array.isArray(x)) { const out = []; let accessor = false; for (let i = 0; i < x.length; i++) { const dsc = Object.getOwnPropertyDescriptor(x, i); if (dsc && (dsc.get || dsc.set)) accessor = true; out[i] = i in x ? (isObj(x[i]) ? { id: idOf(x[i]) } : x[i]) : { hole: true }; } return accessor ? { kind: 'array', items: out, accessor: true } : { kind: 'array', items: out }; }
   if (isMapLike(x)) { const out = []; for (const [k, v] of Object.getPrototypeOf(x).entries.call(x)) out[out.length] = [isObj(k) ? { id: idOf(k) } : k, isObj(v) ? { id: idOf(v) } : v]; return { kind: 'map', entries: out }; }
   if (isSetLike(x)) { const out = []; for (const v of Object.getPrototypeOf(x).values.call(x)) out[out.length] = isObj(v) ? { id: idOf(v) } : v; return { kind: 'set', items: out }; }
