@@ -55,19 +55,7 @@ export function loadProgram(file, opts = {}) {
       }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
       options.configFilePath = configFile; // automatic @types inclusion starts from the config's directory
-      // a workspace package resolves to ITS SOURCE in this tree, never to a built dist or a node_modules link
-      // that may point at another checkout: the proof is about the commit, not the machine
-      const ws = workspacePaths(path.dirname(configFile));
-      if (ws) {
-        options.baseUrl = options.baseUrl ?? ws.root;
-        const rel = (p) => path.relative(options.baseUrl, p) || '.';
-        options.paths = { ...(options.paths ?? {}) };
-        for (const [name, dir] of ws.packages) {
-          const src = fs.existsSync(path.join(dir, 'src', 'index.ts')) ? path.join(dir, 'src', 'index.ts') : fs.existsSync(path.join(dir, 'index.ts')) ? path.join(dir, 'index.ts') : null;
-          if (src && !options.paths[name]) options.paths[name] = [rel(src)];
-          if (!options.paths[name + '/*']) options.paths[name + '/*'] = [rel(path.join(dir, 'src')) + '/*', rel(dir) + '/*'];
-        }
-      }
+      workspaceResolution(options, configFile);
       // the file alone is the root: the compiler follows its imports, which is what a translation needs
       roots = [abs];
     } else configFile = null;
@@ -136,20 +124,50 @@ export function loadProgramOptions(abs, configFile) {
       }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
       options.configFilePath = configFile;
-      const ws = workspacePaths(path.dirname(configFile));
-      if (ws) {
-        options.baseUrl = options.baseUrl ?? ws.root;
-        const rel = (p) => path.relative(options.baseUrl, p) || '.';
-        options.paths = { ...(options.paths ?? {}) };
-        for (const [name, dir] of ws.packages) {
-          const src = fs.existsSync(path.join(dir, 'src', 'index.ts')) ? path.join(dir, 'src', 'index.ts') : fs.existsSync(path.join(dir, 'index.ts')) ? path.join(dir, 'index.ts') : null;
-          if (src && !options.paths[name]) options.paths[name] = [rel(src)];
-          if (!options.paths[name + '/*']) options.paths[name + '/*'] = [rel(path.join(dir, 'src')) + '/*', rel(dir) + '/*'];
-        }
-      }
+      workspaceResolution(options, configFile);
     }
   }
   return { options };
+}
+
+// A project's module resolution, as TypeScript reads its tsconfig, plus the workspace's own packages (shared by
+// loadProgram and loadProgramOptions). A declared baseUrl is kept; with none, none is set, so `paths` resolve from
+// the folder of the tsconfig that declares them (TypeScript's pathsBasePath), never from the workspace root. A
+// workspace package resolves to ITS SOURCE in this tree, never to a built dist or a node_modules link that may point
+// at another checkout: the proof is about the commit, not the machine. Its entries are absolute targets, so they
+// hold whatever the base, and they are added only for a name no declared pattern already matches.
+export function workspaceResolution(options, configFile) {
+  const ws = workspacePaths(path.dirname(configFile));
+  if (!ws) return;
+  const declared = Object.keys(options.paths ?? {});
+  const matched = (name) => pathsKeyMatches(declared, name);
+  options.paths = { ...(options.paths ?? {}) };
+  for (const [name, dir] of ws.packages) {
+    const src = fs.existsSync(path.join(dir, 'src', 'index.ts')) ? path.join(dir, 'src', 'index.ts') : fs.existsSync(path.join(dir, 'index.ts')) ? path.join(dir, 'index.ts') : null;
+    if (src && !matched(name)) options.paths[name] = [src];
+    if (!matched(name + '/x')) options.paths[name + '/*'] = [path.join(dir, 'src') + '/*', dir + '/*'];
+  }
+}
+
+// TypeScript's pattern test for a `paths` key: an exact key, or a key with one `*` whose prefix and suffix both fit
+// around the name
+export function pathsKeyMatches(keys, name) {
+  return keys.some((k) => { const i = k.indexOf('*'); if (i < 0) return k === name; const pre = k.slice(0, i), suf = k.slice(i + 1); return name.length >= pre.length + suf.length && name.startsWith(pre) && name.endsWith(suf); });
+}
+
+// A non-relative import the project's own `paths` map to a source file of this tree, resolved as loadProgram resolves
+// it (the tsconfig above the importing file, workspaceResolution): the file, else null (a package, a builtin, a
+// name no `paths` key matches, a declaration file, anything under node_modules). Lane B's loader asks this.
+const aliasOptions = new Map(); // tsconfig -> its compiler options
+export function aliasTarget(fromAbs, spec) {
+  const cfg = ts.findConfigFile(path.dirname(fromAbs), ts.sys.fileExists, 'tsconfig.json');
+  if (!cfg) return null;
+  if (!aliasOptions.has(cfg)) aliasOptions.set(cfg, loadProgramOptions(fromAbs, cfg).options);
+  const options = aliasOptions.get(cfg);
+  if (!options.paths || !pathsKeyMatches(Object.keys(options.paths), spec)) return null;
+  const r = ts.resolveModuleName(spec, fromAbs, options, ts.sys).resolvedModule;
+  if (!r || r.isExternalLibraryImport || /\.d\.[mc]?ts$/.test(r.resolvedFileName) || /[\\/]node_modules[\\/]/.test(r.resolvedFileName)) return null;
+  return r.resolvedFileName;
 }
 
 // The pnpm/npm workspace above a directory: {root, packages: [[name, dir]]} or null.
