@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -560,6 +560,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (s.asteriskToken) return v(s, 'generator', 'generators are outside the subset');
         if (!s.body) return;
         for (const p of s.parameters) { if (p.dotDotDotToken) v(p, 'param-form', 'rest parameters are outside the subset'); checkType(tOf(p.name), p); }
+        if (localProcedure(s, checker, currentFn)) loopCallbacks.add(s); // stage 5 rank 21: a local procedure's body is the unit's own
         callbackStack.push(s);
         const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
         try { const prev = current; stmts(s.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; forEachDepth = savedEach; }
@@ -745,6 +746,14 @@ export function lintFile(file, ranges = null, opts = {}) {
       // object under another name, unless the callee is fresh (returnsFresh); a change through it is a change of that object
       if (!ref && ts.isCallExpression(init) && ts.isIdentifier(d.name) && objish(tOf(d.name))) { const callee = sameFileCallee(init, currentClass); if (callee ? !returnsFresh(callee) : libraryFresh(init) === false) { aliasLocals.add(d); aliasCalls.set(d, `the result of \`${callee ? callee.name : libraryOp(init)}\``); } }
       // `const t = rs.find(...)`, `m.get(k)`, `Promise.resolve(x)`: a built-in whose table row returns an existing object (libraryFresh)
+    }
+    if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name) && localProcedure(d, checker, currentFn)) { // stage 5 rank 21: a local procedure, its body spliced at each call: checked as the unit's own statements
+      const fn = d.initializer; loopCallbacks.add(fn);
+      for (const p of fn.parameters) checkType(tOf(p.name), p);
+      callbackStack.push(fn);
+      const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;
+      try { const prev = current; stmts(fn.body.statements); current = prev; } finally { callbackStack.pop(); loopDepth = savedLoop; switchDepth = savedSwitch; forEachDepth = savedEach; }
+      return;
     }
     if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name)) return callback(d.initializer, null); // a local function value: a pure lambda, called by name or passed as a callback
     expr(d.initializer);

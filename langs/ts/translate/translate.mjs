@@ -29,7 +29,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, countedFor, syncLoopCallback } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, countedFor, syncLoopCallback, localProcedure } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable } from '../decorators.mjs';
@@ -297,6 +297,7 @@ export function translate(file, fnName, opts = {}) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       if (o.kind === 'unit') return effectfulUnits.has(f.text);
       if (o.kind === 'global') return !PURE_RECEIVERS.has(f.text) && !['parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'String', 'Number', 'Boolean', 'structuredClone'].includes(f.text);
+      { const pd = o.kind === 'local' && o.decl ? procOf(o.decl) : null; if (pd) { if (localEffectScan.has(o.decl)) return true; localEffectScan.add(o.decl); try { return containsEffect(pd.fn.body); } finally { localEffectScan.delete(o.decl); } } } // stage 5 rank 21: a local procedure's call has its body's effects
       // a local bound to an arrow literal is a pure lambda (an effect inside it is refused by lambda()); any other local function value is opaque
       if (o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer)) {
         if (localEffectScan.has(o.decl)) return true;
@@ -339,6 +340,22 @@ export function translate(file, fnName, opts = {}) {
   const generalFor = (s) => ts.isForStatement(s) && !emptyFor(s) && !countedFor(s);
   const forStep = (s) => { if (!s.__step) { const st = ts.setTextRange(ts.factory.createExpressionStatement(s.incrementor), s.incrementor); st.parent = s; s.__step = st; } return s.__step; };
   const forInit = (s) => { if (!s.initializer) return []; if (!s.__init) { const st = ts.isVariableDeclarationList(s.initializer) ? ts.factory.createVariableStatement(undefined, s.initializer) : ts.factory.createExpressionStatement(s.initializer); ts.setTextRange(st, s.initializer); st.parent = s; s.__init = st; } return [s.__init]; };
+  // stage 5 rank 21: a local procedure (common.mjs localProcedure) is spliced at each call statement; its declaration emits nothing
+  const procCache = new Map();
+  const procOf = (decl) => { if (!decl) return null; if (!procCache.has(decl)) procCache.set(decl, localProcedure(decl, checker, currentUnit?.node ?? null)); return procCache.get(decl); };
+  const inlineCall = (s) => {
+    if (!ts.isExpressionStatement(s)) return null;
+    let e = s.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isCallExpression(e) || !ts.isIdentifier(e.expression)) return null;
+    const proc = procOf(checker.getSymbolAtLocation(e.expression)?.valueDeclaration);
+    if (!proc) return null;
+    const binds = proc.fn.parameters.map((p, i) => { const st = ts.setTextRange(ts.factory.createVariableStatement(undefined, ts.factory.createVariableDeclarationList([ts.factory.createVariableDeclaration(p.name, undefined, undefined, e.arguments[i])], ts.NodeFlags.Const)), e.arguments[i]); st.parent = s; return st; });
+    return [...binds, ...proc.fn.body.statements];
+  };
+  const procDecl = (s) => (ts.isVariableStatement(s) && s.declarationList.declarations.length === 1 && procOf(s.declarationList.declarations[0])) || (ts.isFunctionDeclaration(s) && procOf(s));
+  const procCall = (x) => (ts.isCallExpression(x) && ts.isIdentifier(x.expression) ? procOf(checker.getSymbolAtLocation(x.expression)?.valueDeclaration) : null);
+  // a declaration inside a local procedure's body (its parameters, its locals): the body's own, never a loop's state nor a free variable
+  const insideProc = (d) => { for (let q = d?.parent; q; q = q.parent) { if (ts.isFunctionLike(q)) { if (q === currentUnit?.node) return false; const decl = ts.isFunctionDeclaration(q) ? q : (ts.isArrowFunction(q) && q.parent && ts.isVariableDeclaration(q.parent) ? q.parent : null); return !!(decl && procOf(decl)); } } return false; };
   const initDecls = (s) => new Set(generalFor(s) && s.initializer && ts.isVariableDeclarationList(s.initializer) ? s.initializer.declarations : []);
   const boundCache = new WeakMap();
   // a bound is derived only when every next iteration moves one integer local toward a stable limit
@@ -3700,7 +3717,7 @@ export function translate(file, fnName, opts = {}) {
       if (names.some((m) => m.name === id.text)) return;
       const sym = checker.getSymbolAtLocation(id);
       const d = sym?.valueDeclaration;
-      if (!d || (insideNode(d, node) && !hoisted?.has(d))) return;
+      if (!d || (insideNode(d, node) && !hoisted?.has(d)) || insideProc(d)) return;
       names.push({ name: id.text, sym, node: id });
     };
     const walk = (x) => {
@@ -3711,8 +3728,10 @@ export function translate(file, fnName, opts = {}) {
       if (isMutCall(x)) { const r = pathRoot(x.expression.expression); if (ts.isIdentifier(r)) note(r); }
       if (isAssignStmt(x)) { const r = pathRoot(x.arguments[0]); if (ts.isIdentifier(r)) note(r); } // Object.assign(t, …): t is written, so a parameter t is an output
       if (isUpdate(x) && ts.isPropertyAccessExpression(x.operand)) { const r = pathRoot(x.operand); if (ts.isIdentifier(r)) note(r); }
+      { const pc = procCall(x); if (pc && !seenProcs.has(pc)) { seenProcs.add(pc); walk(pc.fn.body); } } // stage 5 rank 21: a call splices the body here
       ts.forEachChild(x, walk);
     };
+    const seenProcs = new Set();
     walk(node);
     // the state in declaration order (the world and a generator's yield state first): a map's collected result and a
     // for-of's pushed array then take the same position, so the two loop helpers are the same text (stage 5 rank 19)
@@ -4167,6 +4186,7 @@ export function translate(file, fnName, opts = {}) {
       }
       if (ts.isExpressionStatement(x)) {
         let e = x.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+        { const pc = procCall(e); if (pc) { for (const st of pc.fn.body.statements) visit(st, f); return; } } // stage 5 rank 21: a procedure call is its body here
         if (ts.isBinaryExpression(e) && ts.isIdentifier(e.left) && e.left.text === v) {
           seen = true;
           const op = e.operatorToken.kind;
@@ -4188,15 +4208,17 @@ export function translate(file, fnName, opts = {}) {
   }
   function freeVars(node, skipNode, hoisted = null) {
     const out = [];
+    const seenProcs = new Set();
     const walk = (x) => {
       if (x === skipNode || ts.isTypeNode(x)) return;
+      { const pc = procCall(x); if (pc) { if (!seenProcs.has(pc)) { seenProcs.add(pc); walk(pc.fn.body); } for (const a of x.arguments) walk(a); return; } } // stage 5 rank 21: the body's reads are this call's; its name is no variable
       if (ts.isIdentifier(x) && x.text !== 'undefined') {
         const par = x.parent;
         const isName = (ts.isPropertyAccessExpression(par) && par.name === x) || (ts.isPropertyAssignment(par) && par.name === x) || (ts.isParameter(par) && par.name === x) || (ts.isVariableDeclaration(par) && par.name === x) || (ts.isBindingElement(par) && (par.name === x || par.propertyName === x));
         if (!isName) {
           const o = originOf(checker, x, sf, currentUnit?.node ?? null);
           const d = o.decl;
-          if (o.kind === 'local' && d && (!insideNode(d, node) || hoisted?.has(d)) && !out.some((q) => q.name === x.text)) out.push({ name: x.text, sym: o.sym, node: x });
+          if (o.kind === 'local' && d && (!insideNode(d, node) || hoisted?.has(d)) && !insideProc(d) && !out.some((q) => q.name === x.text)) out.push({ name: x.text, sym: o.sym, node: x });
         }
       }
       ts.forEachChild(x, walk);
@@ -4268,6 +4290,7 @@ export function translate(file, fnName, opts = {}) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
     const next = () => faultTr(rest, fin, u, ctx);
+    { const inl = inlineCall(s); if (inl) return faultTr([...inl, ...rest], fin, u, ctx); if (procDecl(s)) return next(); } // stage 5 rank 21
     if (!ts.isTryStatement(s) && opaqueExceptionTry(s, checker)) {
       let propagates = false;
       const scan = (n, inLoopCb = false) => {
@@ -4326,6 +4349,7 @@ export function translate(file, fnName, opts = {}) {
   function tr(list, fin, u) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
+    { const inl = inlineCall(s); if (inl) return tr([...inl, ...rest], fin, u); if (procDecl(s)) return tr(rest, fin, u); } // stage 5 rank 21
     const more0 = (r = rest) => tr(r, fin, u);
     // after a statement of an exact try body that may fault: the catch path, else what follows
     const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) { const next = tr(r, fin, u); return `${code}${code ? '\n' : ''}${u.isAsync && !loopCtx.length && awaitsHere(s) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncFailure(u)} else ${wrapLet(next)}` : next}`; } const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
