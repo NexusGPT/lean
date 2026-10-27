@@ -122,6 +122,8 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
         const at = tOf(a); if ((l && typeof l.v === 'number') || (at && at.flags & TF.NumberLike)) return classify(p, elemOf(node));
         return;
       }
+      if (ts.isCallExpression(p) && p.arguments[0] === e && ts.isPropertyAccessExpression(p.expression) && p.expression.name.text === 'isArray' && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Array') { addLit(node.typeofs, 'Array.isArray'); return; }
+      if (ts.isBinaryExpression(p) && p.left === e && p.operatorToken.kind === K.InstanceOfKeyword) { addLit(node.typeofs, 'instanceof'); return; }
       if (ts.isCallExpression(p) && up(p.expression) === e) { node.called = Math.max(node.called ?? 0, p.arguments.length); return; }
       if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && p.arguments?.includes(e)) { if (node === tree) passes.push({ call: p, index: p.arguments.indexOf(e) }); return; }
       if (ts.isBinaryExpression(p)) {
@@ -247,6 +249,10 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
       precondition = `every use of ${name} is covered by this type: ${ev.evidence.slice(0, 4).join('; ')}`;
       msg = `\`${name}\` is ${tt} (${how}); its uses say ${short(proposal, 120)}`;
       adviceText = `annotate ${name} as ${proposal}`;
+    } else if (ev.guarded) {
+      label = 'migration';
+      msg = `\`${name}\` is ${tt} (${how}); the code tests its type at run time (${ev.evidence[0]}): no one type is proposed`;
+      adviceText = `keep the test and the ${tt}, or write the union of the types ${name} may hold`;
     } else if (kind === 'return') {
       label = 'migration';
       const why = ev.refs ? 'no returned value has a type' : 'nothing is returned';
@@ -260,7 +266,8 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     }
     const pos = node.getStart(sf), end = node.getEnd();
     const f = { file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule: 'any-type', msg, text: sf.text.slice(pos, end).slice(0, 200), kind, name, typed: tt, how, proposal, evidence: ev.evidence, ...(ev.conflicts.length ? { conflicts: ev.conflicts } : {}) };
-    if (proposal && ev.fix) f.fix = { line: lineOf(sf, ev.fix.start), col: colOf(sf, ev.fix.start), endLine: lineOf(sf, ev.fix.end), endCol: colOf(sf, ev.fix.end), text: ev.fix.text(proposal) };
+    if (ev.guarded) f.guarded = true;
+    if (proposal && ev.fix && !proposal.includes('import(')) f.fix = { line: lineOf(sf, ev.fix.start), col: colOf(sf, ev.fix.start), endLine: lineOf(sf, ev.fix.end), endCol: colOf(sf, ev.fix.end), text: ev.fix.text(proposal) };
     const u = unitSpans.find(([, a, b]) => a <= f.line && f.line <= b); f.unit = u ? u[0] : unitName;
     f.label = label; f.labelDecided = true; if (precondition) f.precondition = precondition;
     f.advice = `${labelTag(label, precondition)} ${adviceText}`;
@@ -274,8 +281,12 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     return { start: after.getEnd(), end: after.getEnd(), text: (p) => `: ${p}` };
   };
   // candidate types from outside the uses (callers, callees, assignments): a union when they agree with the uses
-  function combine(tree, candidates, at, base) {
+  function combine(tree, candidates0, at, base) {
     const conflicts = [], evidence = [];
+    // a caller passing `undefined` or `null` says only that the value may be absent
+    const nullish = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.Null | TF.Undefined | TF.Void)));
+    const absent = candidates0.filter((c) => nullish(c.type));
+    const candidates = candidates0.filter((c) => !nullish(c.type));
     const fromUses = shapeOf(tree, base, 0, conflicts, evidence);
     const texts = [];
     for (const c of candidates) {
@@ -290,8 +301,15 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     const outsideTexts = [...new Set(outside.map((c) => typeText(c.type, at)))].filter((s) => texts.includes(s));
     // an anonymous object type (a fresh literal at the call) is evidence that the uses fit, not a type to write: the
     // uses give the shape, the callers confirm it
-    const named = outside.every((c) => !anonymous(c.type));
-    const proposal = conflicts.length ? null : outsideTexts.length && named ? outsideTexts.join(' | ') : fromUses;
+    const named = outside.every((c) => !anonymous(c.type) && !typeText(c.type, at).includes('import('));
+    // a value the code tests at run time (typeof, Array.isArray, instanceof): the test says it can be other things,
+    // and the uses after it are narrowed; no one type is proposed, whatever flows in
+    if (tree.typeofs.length) return { proposal: null, conflicts: [], evidence: [`${base} is tested with ${tree.typeofs.map((x) => (x === 'Array.isArray' || x === 'instanceof' ? x : `typeof ${JSON.stringify(x)}`)).join(', ')}`], guarded: true };
+    let proposal = conflicts.length ? null : outsideTexts.length && named ? outsideTexts.join(' | ') : fromUses;
+    if (proposal && proposal !== 'unknown' && absent.length) {
+      for (const c of absent) evidence.push(`${c.where}: ${typeText(c.type, at)}`);
+      for (const word of ['undefined', 'null']) if (absent.some((c) => typeText(c.type, at).includes(word)) && !proposal.split(' | ').includes(word)) proposal += ` | ${word}`;
+    }
     return { proposal, conflicts, evidence: evidence.length ? evidence : [] };
   }
   const anonymous = (t, depth = 0) => depth > 3 || (t.flags & TF.Union ? t.types : [t]).some((x) => {
@@ -299,6 +317,14 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     if (isArrayLike(checker, x)) return (checker.getTypeArguments?.(x) ?? []).some((e) => anonymous(e, depth + 1));
     return !!(x.flags & TF.Object) && !x.aliasSymbol && (!x.symbol || !!(x.symbol.flags & (ts.SymbolFlags.ObjectLiteral | ts.SymbolFlags.TypeLiteral)));
   });
+  // the reason of a rejected promise, `p.catch((e) => ...)` or `p.then(f, (e) => ...)`: any by the language, as a catch binding
+  const rejectionHandler = (param) => {
+    const fn = param.parent; if (fn.parameters[0] !== param) return false;
+    let at = fn; while (at.parent && ts.isParenthesizedExpression(at.parent)) at = at.parent;
+    const c = at.parent; if (!c || !ts.isCallExpression(c) || !ts.isPropertyAccessExpression(c.expression)) return false;
+    const m = c.expression.name.text;
+    return (m === 'catch' && c.arguments[0] === at) || (m === 'then' && c.arguments[1] === at);
+  };
   const nonAny = (t) => !!t && !isAnyT(t) && !(t.flags & TF.Never);
   const calleeCandidates = (passes) => {
     const cs = [];
@@ -346,7 +372,7 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     // locals and the parameters of nested functions: the reader above, assignments, callees
     const walk = (n) => {
       if (ts.isVariableDeclaration(n) && !(n.parent && ts.isCatchClause(n.parent))) site(n, 'local');
-      else if (ts.isParameter(n) && n.parent !== u.fn && !(ts.isIdentifier(n.name) && n.name.text === 'this')) site(n, 'parameter');
+      else if (ts.isParameter(n) && n.parent !== u.fn && !(ts.isIdentifier(n.name) && n.name.text === 'this') && !rejectionHandler(n)) site(n, 'parameter');
       ts.forEachChild(n, walk);
     };
     const site = (d, kind) => {
