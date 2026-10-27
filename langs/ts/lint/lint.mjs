@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { fileUsesReals } from '../common.mjs';
-import { moduleState, moduleLoader, inertModuleInit } from '../module-forms.mjs';
+import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
@@ -444,6 +444,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name)) return callback(d.initializer, null); // a local function value: a pure lambda, called by name or passed as a callback
     expr(d.initializer);
   }
+  const outsideWriteStatement = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; return !!x.parent && ts.isExpressionStatement(x.parent); };
   function exprStmt(e) {
     if (ts.isYieldExpression(e)) return expr(e);
     while (ts.isParenthesizedExpression(e)) e = e.expression;
@@ -478,6 +479,15 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (root.kind === K.ThisKeyword && !thisParam) { if (objectMethod) return v(l, 'object-method-mutation', 'literal methods keep immutable data fields; use a class for mutable receiver state'); if (l.expression.kind !== K.ThisKeyword && !receiverRecordPath(checker, l)) return v(l, 'receiver-mutation', 'a receiver path needs nonoptional data records; assign a field itself for class or opaque handles'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return expr(e.right); } // a receiver write checks its right side, including exact promise forms
           const o = root.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(root) ? declOf(root) : { kind: null };
           if (localMethodLiteral(tOf(root))) return v(l, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
+          // a field of `process` (`process.exitCode = 1`, `process.env.K = v`): a write to the world, one transition after the
+          // receiver and the value, as a read of that path is one; a plain `=` of a data value as a statement. Lane B records
+          // these writes on its process fake; the other outside roots (globalThis, window) keep property-assign
+          if (ts.isIdentifier(root) && root.text === 'process' && outsideRoot(checker, root, sf, current)) {
+            if (op !== K.EqualsToken || !outsideWriteStatement(e)) { v(l, 'property-assign', `a field of \`${root.text}\` is written by a plain \`=\` statement; read the old value into a local first`); return expr(e.right); }
+            if (nonNull(tOf(e.right)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length)) { v(l, 'property-assign', `a function installed into \`${root.text}\` is called by the outside later; no transition reads that call`); return expr(e.right); }
+            if (l.expression !== root) expr(l.expression);
+            return expr(e.right);
+          }
           if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', `\`${root.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
@@ -972,6 +982,49 @@ export function lintFile(file, ranges = null, opts = {}) {
     };
     if (mutations(checker.getResolvedSignature(e)?.declaration).size) v(e, 'conditional-effect', 'move a call that changes its arguments into an explicit if branch so the updated values leave the branch');
   }
+  // an optional call `f?.(x)` is `if f is absent then absent else f(x)`: the arguments and the call run only when the
+  // callee is present. The callee is a local function value, a function field of a record path rooted at a local (each
+  // link a plain record, the last one optional under `?.`), or a function field of `this` in a class; the expression
+  // around it holds no assignment, update or comma, whose value reading evaluates every operand before any branch
+  const sameFileClassT = (t) => !!t.symbol?.declarations?.some((d) => (ts.isClassDeclaration(d) || ts.isClassExpression(d)) && d.getSourceFile() === sf);
+  const valueStepIn = (n) => { if (!n || ts.isFunctionLike(n)) return false; if ((ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) || ts.isCommaListExpression(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind === K.CommaToken)) return true; let found = false; ts.forEachChild(n, (c) => { if (!found && valueStepIn(c)) found = true; }); return found; };
+  function optionalCallRefusal(e) {
+    let top = e;
+    for (let p = e.parent; p && !ts.isStatement(p) && !ts.isFunctionLike(p) && !ts.isVariableDeclaration(p) && !ts.isParameter(p) && !ts.isCaseClause(p) && !ts.isSourceFile(p); p = p.parent) top = p;
+    const root = ts.isBinaryExpression(top) && top.operatorToken.kind >= K.FirstAssignment && top.operatorToken.kind <= K.LastAssignment && top.parent && ts.isExpressionStatement(top.parent) ? top.right : top;
+    if (valueStepIn(root)) return 'write the optional call in its own statement; an assignment, update or comma beside it evaluates every operand before the call decides';
+    let f = e.expression;
+    const plainRecord = (t) => nonNull(t).length === 1 && isRecordish(nonNull(t)[0]) && !isAny(nonNull(t)[0]) && !sameFileClassT(nonNull(t)[0]) && !localMethodLiteral(nonNull(t)[0]);
+    const fnType = (t) => { const parts = nonNull(t); if (parts.length !== 1 || isAny(parts[0])) return false; const sg = checker.getSignaturesOfType(parts[0], ts.SignatureKind.Call); return sg.length === 1 && !sg[0].typeParameters?.length; }; // one signature, not generic: its result is the present branch's
+    if (ts.isIdentifier(f)) {
+      if (declOf(f).kind !== 'local') return 'an optional call reads a local function value; bind an imported or global callee to a local first';
+      return fnType(tOf(f)) ? null : 'an optional call needs a callee typed as one nongeneric function or undefined; narrow an opaque or overloaded value first';
+    }
+    if (!ts.isPropertyAccessExpression(f)) return 'an optional call reads a named callee; bind a computed callee to a local first';
+    const recv = f.expression, name = f.name.text;
+    if (recv.kind === K.ThisKeyword) {
+      if (!currentClass || objectMethod || thisParam) return 'an optional call on `this` reads a field of a class receiver';
+      if (units.has(`${currentClass.name?.text}.${name}`)) return null; // a method of the class: never absent
+      const p = checker.getPropertyOfType(tOf(recv), name);
+      return p && fnType(checker.getTypeOfSymbolAtLocation(p, f)) && !p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)) ? null : 'an optional call on `this` reads a function field of the class';
+    }
+    // the receiver: a path of plain records from a local; `?.` before the field allows an absent last record
+    let link = recv;
+    for (;;) {
+      if (ts.isPropertyAccessExpression(link) && link.questionDotToken) return 'an optional call reads a field of a nonoptional record path; narrow the path first';
+      if (ts.isIdentifier(link)) { if (declOf(link).kind !== 'local') return 'an optional call reads a function field of a record held in a local or a parameter'; break; }
+      if (!ts.isPropertyAccessExpression(link)) return 'an optional call reads a function field of a record path; bind the receiver to a local first';
+      link = link.expression;
+    }
+    for (let x = recv; ts.isPropertyAccessExpression(x); x = x.expression) if (!plainRecord(tOf(x.expression)) || nonNull(tOf(x.expression)).length !== (tOf(x.expression).types?.length ?? 1)) return 'an optional call reads a field of a nonoptional record path; narrow the path first';
+    const rt = tOf(recv);
+    if (!plainRecord(rt)) return 'an optional call reads a function field of a plain record; narrow an opaque, class or union receiver first';
+    if (isOptional(rt) && !f.questionDotToken) return 'an optional call reads a field of a present record';
+    const p = checker.getPropertyOfType(nonNull(rt)[0], name);
+    if (!p || !fnType(checker.getTypeOfSymbolAtLocation(p, f))) return 'an optional call reads a declared function field of the record';
+    return null;
+  }
+  const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
   function call(e) {
     conditionalEffect(e);
     const generatorDecl = checker.getResolvedSignature(e)?.declaration;
@@ -984,7 +1037,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (form && !opaquePromiseDepth) { if (readPromise(e, form)) return; return opaquePromise(() => call(e)); }
     const f = e.expression;
     if (moduleLoader(checker, e, sf, current)) return argsOf(e);
-    if (e.questionDotToken) v(e, 'optional-chain', 'calling an optional function value is outside the subset');
+    if (e.questionDotToken) { const why = optionalCallRefusal(e); if (why) v(e, 'optional-chain', why); }
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
       const o = declOf(f);

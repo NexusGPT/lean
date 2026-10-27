@@ -9,7 +9,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | Identifier | 59378 | 94.8% | admitted | exact: a parameter, a local, a same-file unit; an outside name is a world read or refused (global-read) | same; module and captured cells as ledger cells (research note section 1) |
 | Block | 59338 | 94.7% | admitted | exact | same |
 | PropertyAccessExpression | 50650 | 80.8% | admitted | exact on records and arrays by shape; this.x a world read; a getter a callable unit; an unknown member refused (unsupported-member) | heap read on the ledger for every reference-typed receiver |
-| CallExpression | 50125 | 80% | admitted | exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; refused for unsupported calls and .call/.apply | same, plus the library table as transitions and callable records for escaped functions |
+| CallExpression | 50125 | 80% | admitted | exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; an optional call `f?.(x)` on a local, a record path or this: the call and its arguments on the present branch only (optional-call, done (lane)); refused for unsupported calls and .call/.apply | same, plus the library table as transitions and callable records for escaped functions |
 | ReturnStatement | 49908 | 79.7% | admitted | exact; a bare return in a value unit refused (bare-return) | same |
 | StringLiteral | 38403 | 61.3% | admitted | exact; a lone surrogate refused (string-code-unit) | same |
 | BinaryExpression | 34883 | 55.7% | admitted | exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; assignment a write; bitwise refused unless the integer file | same |
@@ -17,7 +17,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | VariableStatement | 32918 | 52.5% | admitted | exact | same |
 | ObjectLiteralExpression | 28851 | 46% | admitted | exact as a fresh record; in the heap core a fresh node; literal methods as function fields; getters and setters by name only | fresh heap node with a proto edge |
 | PropertyAssignment | 26056 | 41.6% | no case (refused by default, or reached through its parent) | exact | same |
-| ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; anything else refused (unsupported-syntax) | same |
+| ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; a `=` into a field of `process` a world transition (process-write, done (lane)); anything else refused (unsupported-syntax) | same |
 | IfStatement | 23894 | 38.1% | admitted | exact | same |
 | NumericLiteral | 18802 | 30% | admitted | exact as int or real by file; -0 witnessed in lane B, refused from the heap core | same |
 | ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
@@ -49,7 +49,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | JsxElement | 4911 | 7.8% | admitted | exact as a JsxElem value | same |
 | JsxText | 4770 | 7.6% | no case (refused by default, or reached through its parent) | exact (JSX whitespace rule) | same |
 | ArrayBindingPattern | 3982 | 6.4% | no case (refused by default, or reached through its parent) | exact | same |
-| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; otherwise refused (spread) | same |
+| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; otherwise refused (spread); a Map or Map iterator spread stays refused until the Map reading keeps insertion order (spread-map, measured) | same |
 | TypeOfExpression | 3649 | 5.8% | admitted | exact (type tests) | same |
 | RegularExpressionLiteral | 2457 | 3.9% | admitted | exact for the supported regex forms (strings reading); otherwise opaque | same |
 | ContinueStatement | 2049 | 3.3% | admitted | exact (loop forms) | same |
