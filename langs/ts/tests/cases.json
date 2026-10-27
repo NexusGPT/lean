@@ -1083,5 +1083,110 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "dict_order_keyOrder",
+  "file": "dict_order.ts",
+  "fn": "keyOrder",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "b",
+     "2",
+     "a",
+     "10",
+     "9"
+    ]
+   ],
+   [
+    [
+     "x",
+     "1",
+     "x",
+     "0"
+    ]
+   ],
+   [
+    [
+     "01",
+     "1",
+     "4294967295",
+     "4294967294",
+     "-1"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "dict_order_reinsertOrder",
+  "file": "dict_order.ts",
+  "fn": "reinsertOrder",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "b",
+     "2",
+     "a",
+     "10",
+     "9"
+    ]
+   ],
+   [
+    [
+     "x",
+     "1",
+     "x",
+     "0"
+    ]
+   ],
+   [
+    [
+     "01",
+     "1",
+     "4294967295",
+     "4294967294",
+     "-1"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "dict_order_spreadOrder",
+  "file": "dict_order.ts",
+  "fn": "spreadOrder",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "b",
+     "2",
+     "a",
+     "10",
+     "9"
+    ]
+   ],
+   [
+    [
+     "x",
+     "1",
+     "x",
+     "0"
+    ]
+   ],
+   [
+    [
+     "01",
+     "1",
+     "4294967295",
+     "4294967294",
+     "-1"
+    ]
+   ]
+  ]
  }
 ]

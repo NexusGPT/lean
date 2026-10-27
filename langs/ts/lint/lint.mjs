@@ -153,6 +153,45 @@ export function opaqueExceptionTry(n, checker) {
   return opaque;
 }
 
+// a delete in the body of `for (const k in o)` that may remove a key of o other than the current one, or a call of a
+// same-file function that deletes and is handed o itself or reads o from outside its own body: the loop then skips the
+// deleted key, while the reading holds the keys o had when the loop started. `delete o[k]` of the current key of a
+// const k leaves the rest as they were; an element of o handed to a call is another object.
+function forInDelete(s, checker, sf) {
+  const root = (x) => { x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x)) x = unparen(x.expression); return x; };
+  const r = root(s.expression);
+  const sym = ts.isIdentifier(r) ? checker.getSymbolAtLocation(r) : null;
+  if (!sym) return null;
+  const same = (x) => ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym;
+  const k = s.initializer.declarations[0].name;
+  const kSym = (s.initializer.flags & ts.NodeFlags.Const) ? checker.getSymbolAtLocation(k) : null;
+  const sameFileFn = (f) => { f = unparen(f); const d = ts.isIdentifier(f) ? checker.getSymbolAtLocation(f)?.valueDeclaration : null; return d && d.getSourceFile() === sf && (ts.isFunctionDeclaration(d) || (ts.isVariableDeclaration(d) && !!d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer)))) ? d : null; };
+  const some = (node, test) => { let found = false; const w2 = (x) => { if (test(x)) found = true; if (!found) ts.forEachChild(x, w2); }; w2(node); return found; };
+  const xDecl = sym.valueDeclaration;
+  const deletingCall = (call) => {
+    const d = sameFileFn(call.expression);
+    if (!d || !some(d, ts.isDeleteExpression)) return false;
+    if (call.arguments.some((a) => same(unparen(a)))) return true; // o itself, handed over
+    const own = !!xDecl && xDecl.pos >= d.pos && xDecl.end <= d.end; // o declared inside the callee: a recursive call's own local
+    return !own && some(d, same); // o read from outside the callee's body
+  };
+  let hit = null;
+  const w = (x) => {
+    if (hit) return;
+    if (ts.isDeleteExpression(x)) {
+      const t = unparen(x.expression);
+      if ((ts.isElementAccessExpression(t) || ts.isPropertyAccessExpression(t)) && same(root(t))) {
+        const current = !!kSym && ts.isElementAccessExpression(t) && same(unparen(t.expression)) && ts.isIdentifier(unparen(t.argumentExpression)) && checker.getSymbolAtLocation(unparen(t.argumentExpression)) === kSym;
+        if (!current) hit = x;
+      }
+    }
+    if (!hit && ts.isCallExpression(x) && deletingCall(x)) hit = x;
+    if (!hit) ts.forEachChild(x, w);
+  };
+  w(s.statement);
+  return hit;
+}
+
 export function lintFile(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
   const { sf, checker, diagnostics } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
@@ -555,6 +594,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ForInStatement: { // `for (const k in o)`: a loop over the keys of o, each a string
         const init = s.initializer;
         if (!(ts.isVariableDeclarationList(init) && init.declarations.length === 1 && ts.isIdentifier(init.declarations[0].name))) return v(s, 'for-in', 'for-in takes `const k`');
+        { const del = forInDelete(s, checker, sf); if (del) v(del, 'for-in-delete', 'a for-in skips a key deleted before its visit (ECMA-262 14.7.5.9), and the reading visits the keys the object held at the start; delete only the current key inside the loop, or delete after the loop'); }
         expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return;
       }
       case K.BreakStatement: if (switchDepth > 0 || loopDepth > 0) return; return v(s, 'break-continue', 'break outside a loop or switch');
