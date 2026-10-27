@@ -1,0 +1,6 @@
+{
+ "scope": ["limit", "span", "step", "twice"],
+ "equal": {"limit": false, "span": true, "step": true, "twice": true},
+ "why": "limit returns LIMIT = BASE + 1 and the candidate changes BASE only: the value is 3, not 2, and a key of LIMIT's own text would have proved it equal; SPAN is rewritten as 3 * UNIT for UNIT * 3, the same value read through its arithmetic; STEP (Math.max, keyed by its declaration and UNIT's) and twice are untouched",
+ "b": {"limit": "WITNESS", "span": "PASS-bounded", "step": "PASS-bounded", "twice": "PASS-bounded"}
+}

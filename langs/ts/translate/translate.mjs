@@ -1489,6 +1489,20 @@ export function translate(file, fnName, opts = {}) {
       default: return coerce(rawExpr(n, expected), n, expected);
     }
   }
+  // a module const initializer built from literals and other such consts with + - * (unary minus, parentheses): read as
+  // its value, so the dependency is in the proof and a refactor of the expression with the same value is proved
+  function constArithmetic(e, seen) {
+    if (ts.isParenthesizedExpression(e)) return constArithmetic(e.expression, seen);
+    if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || [K.TrueKeyword, K.FalseKeyword].includes(e.kind)) return !(ts.isNumericLiteral(e) && /[.eE]/.test(e.text) && !/^0[xXoObB]/.test(e.text));
+    if (ts.isPrefixUnaryExpression(e) && e.operator === K.MinusToken) return constArithmetic(e.operand, seen);
+    if (ts.isBinaryExpression(e) && [K.PlusToken, K.MinusToken, K.AsteriskToken].includes(e.operatorToken.kind)) return constArithmetic(e.left, seen) && constArithmetic(e.right, seen);
+    if (ts.isIdentifier(e)) {
+      const o = originOf(checker, e, sf, null);
+      if (o.kind !== 'module' || !o.decl || !ts.isVariableDeclaration(o.decl) || !o.decl.initializer || seen.has(o.decl) || moduleState(checker, e, sf)) return false;
+      return constArithmetic(o.decl.initializer, new Set([...seen, o.decl]));
+    }
+    return false;
+  }
   function ident(n) {
     if (n.text === 'undefined') return absentValue(typeOf(n));
     const o = originOf(checker, n, sf, currentUnit?.node ?? null);
@@ -1500,7 +1514,10 @@ export function translate(file, fnName, opts = {}) {
     }
     if (outsideRoot(checker, n, sf, currentUnit?.node) && n.text !== 'require') { const d = dtype(typeOf(n), n); addPrelude('World', 'type World'); return hoist(`${external(`global_read_${n.text}`, ['World'], `(World, ${d})`)}(${WORLD})`, d); }
     if (o.kind === 'module' && o.decl?.initializer && (ts.isLiteralExpression(o.decl.initializer) || [K.TrueKeyword, K.FalseKeyword].includes(o.decl.initializer.kind) || (ts.isPrefixUnaryExpression(o.decl.initializer) && o.decl.initializer.operator === K.MinusToken && ts.isNumericLiteral(o.decl.initializer.operand))) && !(typeOf(n).flags & TF.Object)) return expr(o.decl.initializer);
-    if (o.kind === 'module' && o.decl?.initializer && !isCallable(typeOf(n))) return `${external(`${n.text}_${hash(o.decl.getText(sf))}`, [], dtype(typeOf(n), n))}()`;
+    if (o.kind === 'module' && o.decl?.initializer && !(typeOf(n).flags & TF.Object) && constArithmetic(o.decl.initializer, new Set([o.decl]))) return `(${expr(o.decl.initializer, typeOf(n))})`; // literals and other such consts under + - *: the value itself
+    // any other module const: a bodiless constant keyed by its declaration and the same-file declarations it reads, so a
+    // changed dependency (\`const B = A + 1\` when A changes) is another constant
+    if (o.kind === 'module' && o.decl?.initializer && !isCallable(typeOf(n))) return `${external(`${n.text}_${hash(iteratorProgram(o.decl))}`, [], dtype(typeOf(n), n))}()`;
     if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return externalValue(n);
     if (o.kind === 'global') return externalValue(n);
     let code = dn(n.text);
