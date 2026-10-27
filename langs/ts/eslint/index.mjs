@@ -7,7 +7,9 @@
 // One rule, `lean/provable`. It runs lean's own lint on the file inside its project (the same lint `lean check`
 // uses), so what the editor shows is exactly what the proof lane will refuse. Where a mechanical rewrite keeps the
 // author's meaning it is offered as an ESLint suggestion; where it does not (a mutation that must become a returned
-// value), the message says the shape to write and no rewrite is offered.
+// value), the message says the shape to write and no rewrite is offered. A value typed `any` or `unknown` is shown with
+// the type its uses propose and the label of that proposal (rule any-type, option `anyType`, on by default); when the
+// proposal is conditional, the suggestion inserts the annotation at the declaration and changes nothing else.
 import { lintFile } from '../lint/lint.mjs';
 
 import { ADVICE } from '../lint/advice.mjs';
@@ -17,14 +19,15 @@ const provable = {
     type: 'problem',
     docs: { description: 'what lean cannot prove in this file, at its line, with what to write instead' },
     hasSuggestions: true,
-    schema: [{ type: 'object', properties: { project: { type: ['string', 'boolean'] } }, additionalProperties: false }],
+    schema: [{ type: 'object', properties: { project: { type: ['string', 'boolean'] }, anyType: { type: 'boolean' } }, additionalProperties: false }],
   },
   create(context) {
     const project = context.options[0]?.project ?? true;
+    const anyType = context.options[0]?.anyType ?? true;
     return {
       Program() {
         let findings;
-        try { findings = lintFile(context.filename ?? context.getFilename(), null, { project }); }
+        try { findings = lintFile(context.filename ?? context.getFilename(), null, { project, anyType }); }
         catch (e) { context.report({ loc: { line: 1, column: 0 }, message: `lean: could not read this file in its project: ${e.message}` }); return; }
         const src = context.sourceCode ?? context.getSourceCode();
         for (const f of findings) {
@@ -35,6 +38,11 @@ const provable = {
           if (f.rule === 'division' && f.text) suggest.push({ desc: 'integer division: wrap in Math.floor(...)', fix: (fixer) => fixer.replaceTextRange(range, `Math.floor(${f.text})`) });
           if (f.rule === 'loose-equality' && f.text) suggest.push({ desc: 'strict equality', fix: (fixer) => fixer.replaceTextRange(range, f.text.replace(/==(?!=)/, '===').replace(/!=(?!=)/, '!==')) });
           if (f.rule === 'var' && f.text) suggest.push({ desc: 'let instead of var', fix: (fixer) => fixer.replaceTextRange(range, f.text.replace(/^var\b/, 'let')) });
+          if (f.rule === 'any-type') { // a proposal, not a refusal: the label says what accepting it costs
+            if (f.label === 'conditional' && f.fix) { const at = [src.getIndexFromLoc({ line: f.fix.line, column: f.fix.col - 1 }), src.getIndexFromLoc({ line: f.fix.endLine, column: f.fix.endCol - 1 })]; suggest.push({ desc: `annotate ${f.name} as ${f.proposal.length > 80 ? f.proposal.slice(0, 77) + '...' : f.proposal}`, fix: (fixer) => fixer.replaceTextRange(at, f.fix.text) }); }
+            context.report({ loc, message: `lean (any-type): ${f.msg}; ${advice}`, suggest });
+            continue;
+          }
           context.report({ loc, message: `lean cannot prove this (${f.rule}): ${f.msg}${advice ? ' — ' + advice : ''}`, suggest });
         }
       },

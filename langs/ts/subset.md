@@ -227,6 +227,7 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `spread` | array-literal spreads of a Map, a Map iterator, a string or an opaque value (a Map's insertion order is not in its reading, [design](design/spread-map.md)); call spreads of held tuples, sets or custom iterables; local function values, optional methods, constructors or exact builtins without a sequence reading; same-file call arguments inside conditional sequence calls (use an if statement) | `callback(...xs)` |
 | `unsupported-syntax`, `unsupported-call`, `unsupported-member`, `unsupported-operator`, `unsupported-type` | a statement form, a method with no rule, a property the type does not declare, an operator or a type with no reading | `x ** 2` |
 | `ts-strict` | a compiler error in strict mode | a type mismatch |
+| `any-type` | not a refusal: an advisory finding, reported only with `--any-type` (and in the editor rule), that never changes a verdict. A parameter, local, field or return typed `any` or `unknown` inside a checked unit, at its declaration, with a type proposed from its uses, callers and callees: `conditional` with the evidence, `migration` on conflicting evidence, a run-time type test or no evidence. An `any` from an unresolved import stays `unresolved-module`; `catch` bindings and rejection reasons are not reported ([design](design/any-type.md)) | `function title(node: any)` reading `node.kind === "h"` and `node.text.trim()` |
 
 ## Proof hints
 
