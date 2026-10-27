@@ -27,7 +27,7 @@ Every change to a program is a claim: *I changed this, and nothing else.* Tests 
 - **Whole programs, not toy functions.** Services with injected ports, async pipelines, exceptions across calls, classes, generators, references into shared objects, Map and Set cells, timers, React components with hooks and effects.
 
 ```bash
-git clone https://github.com/NexusGPT/lean && cd lean     # needs node ≥ 20, python3, dafny ≥ 4 (brew install dafny)
+git clone https://github.com/NexusGPT/lean && cd lean     # node ≥ 20 for lane B; python3 and dafny ≥ 4 (brew install dafny) for the proof lane
 node langs/ts/check.mjs --parent old/feed.tsx --candidate new/feed.tsx --unit Feed
 ```
 
@@ -273,7 +273,17 @@ Code written with the lint on is inside the subset from the first line. Code wri
 | the gate, in the editor or the terminal | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--changed ranges.json]` · `import lean from 'lean/langs/ts/eslint/index.mjs'` |
 | the suite | `node langs/ts/tests/run.mjs` (1,419 checks on the current head, all pass) · `python3 -I conformance/run.py` |
 
-Scope is declared, never inferred: function names, input predicates over the parameters, effect operations allowed to change. The producer of a change is never consulted. A pull request then carries, per changed function, one of the verdicts above and its certificate; `WITNESS` comes with the input, `PASS-proved` with a theorem anyone can re-check.
+**Scope is optional.** Without it, every changed function of a pull request is judged and a difference is a `WITNESS`. With it, a function you name as meant to change reports `IN-SCOPE` with its lane B result: its difference is information, not a finding. Scope is declared, never inferred: function names, input predicates over the parameters, effect operations allowed to change. The producer of a change is never consulted.
+
+**Lane B needs only Node.** Dafny and Python are needed for the proof lane alone; without them every verdict is lane B's (`WITNESS`, `PASS-decided`, `PASS-bounded`, `ASK`) and the certificate says the proof lane did not run.
+
+A pull request then carries, per changed function, one verdict and its certificate; `WITNESS` comes with the input or the click sequence, `PASS-proved` with a theorem anyone can re-check.
+
+### Try it on your own repository
+
+1. **Shadow run.** Take the last twenty or thirty merged pull requests and run `pr.mjs` on each (`--base <merge base> --head <merge commit>`), without scope. Nothing blocks; you read tables.
+2. **Read three things.** The share of `ASK` and the rules behind it (each names what to write instead); whether any `WITNESS` lands on a slip that reached production; how often the changed function was the one meant to change, which is what scope would have said.
+3. **Then a comment, then a gate.** Post the table as a non-blocking comment on new pull requests. Turn on the ESLint rule for new code once the `ASK` share on your repository is one you accept. Make `WITNESS` blocking last.
 
 ## Numbers
 
@@ -292,9 +302,9 @@ Measured on a corpus of 39 production TypeScript repositories, private and publi
 
 ## Limits
 
-lean says `ASK` rather than guess. Today it asks on: a `while` loop without a measure (an opaque block), a changed function that calls a changed recursive sibling (an induction the theorem does not yet write), a result that may share an input when the identity skeleton cannot be read (`ASK:identity`), a suspended render, a render loop, more than one asynchronous schedule, and code the repository does not contain. It refuses by name what no value model can carry: `eval`, the prototype chain, `super` as a value, identity comparison of objects.
+lean says `ASK` rather than guess. Today it asks on: a `while` loop without a measure (an opaque block), a changed function that calls a changed recursive sibling (an induction the theorem does not yet write), a result that may share an input when the identity skeleton cannot be read (`ASK:identity`), a suspended render, a render loop, two asynchronous schedules racing (lane B runs one microtask order and says so), and code the repository does not contain. It refuses by name what no value model can carry: `eval`, the prototype chain, `super` as a value, identity comparison of objects.
 
-Lane B's bound is real: a frozen world, generated inputs, one microtask order, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. The front end is decided at the element-tree layer; pixels, styles and layout are never judged, and the certificate says so.
+Lane B's bound is real: a frozen world, generated inputs, one microtask order, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. The front end is decided at the element-tree layer; pixels, styles and layout are never judged, and the certificate says so. A child component is a name in the parent's tree with its props, never rendered inside the parent's unit (its state is its own unit's); deep render is on the list below.
 
 ## What is next
 
