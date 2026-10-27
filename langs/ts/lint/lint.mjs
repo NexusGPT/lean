@@ -525,7 +525,10 @@ export function lintFile(file, ranges = null, opts = {}) {
     const sig = fn && checker.getSignatureFromDeclaration(fn);
     const rt = sig && sig.getReturnType();
     const inner = rt && isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;
-    return !!fn?.asteriskToken || (!!inner && !!(inner.flags & (TF.Void | TF.Undefined)));
+    if (fn && ts.isConstructorDeclaration(fn)) return true; // a constructor's bare return ends it; `new` yields the receiver
+    // a bare return yields `undefined`, the value every path without a return yields: admitted where the result admits it
+    const admitsUndefined = (t) => !!(t.flags & (TF.Void | TF.Undefined | TF.Any | TF.Unknown)) || (!!(t.flags & TF.Union) && t.types.some((x) => !!(x.flags & (TF.Void | TF.Undefined))));
+    return !!fn?.asteriskToken || (!!inner && admitsUndefined(inner));
   }
   function switchStmt(s) {
     expr(s.expression);
