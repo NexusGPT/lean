@@ -393,6 +393,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (!t) return 'none';
     const parts = nonNull(t);
     if (parts.length !== 1) return parts.length === 0 ? 'null or undefined only' : 'union';
+    if (parts.length !== (t.flags & TF.Union ? t.types.length : 1) && !shapeOf(t)) return 'a reference, or null and undefined together, that may be absent'; // never read as present
     t = parts[0];
     if (t.flags & (TF.Any | TF.Unknown)) return 'any or unknown';
     if (t.flags & TF.TypeParameter) return 'type parameter';
