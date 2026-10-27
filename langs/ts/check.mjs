@@ -45,7 +45,12 @@ export async function check(opts) {
   cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
   if (b.verdict === 'NEW' || b.verdict === 'REFUSE' || b.candidateOnly) { cert.lanes.B = b; return finish(b.verdict, cert, b); }
   if (adapter) cert.adapter = adapter;
-  if (b.verdict === 'WITNESS' && !adapter) return finish('WITNESS', cert, { witness: b.witnesses[0] });
+  // a WITNESS ends the question, except on a unit whose signature changed with no adapter: the two sides take different
+  // inputs, so a raw same-input difference blames behaviour for an interface change. Lane A's translation and theorem
+  // (no Dafny) say which; with an adapter lane B is not the adapted claim and lane A answers (lane B does not run the
+  // candidate through A: the map is a Dafny expression, not code lane B can run)
+  const witnessed = b.verdict === 'WITNESS' && !adapter;
+  const witnessOut = () => finish('WITNESS', cert, { witness: b.witnesses[0] });
   if (b.bound?.library) cert.library = { records: b.bound.library.records, ops: b.bound.library.ops, outOfModel: b.bound.library.outOfModel, callbackEffects: b.bound.library.callbackEffects, defects: b.bound.library.defects.length }; // the library table validated by this run
   const bounded = b.verdict === 'PASS-decided' ? 'PASS-decided' : 'PASS-bounded'; // the rung lane B reached: decided (a finite component over every click order) outranks bounded
   const rung = () => (adapter ? 'ASK' : (b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK'); // what lane B alone supports; under an adapter it compared raw inputs, so nothing
@@ -57,9 +62,9 @@ export async function check(opts) {
   const effOf = (suffix) => headerOf(suffix, 'EFFECTFUL');
   const heapOf = (suffix) => headerOf(suffix, 'HEAP');
   const p1 = tr(parent, 'parent', '', undefined);
-  if (p1.status !== 0) { cert.lanes.A = { verdict: 'ASK', stage: 'translate-parent', detail: p1.out.trim().slice(-600) }; return finish(rung(), cert, {}); }
+  if (p1.status !== 0) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: 'translate-parent', detail: p1.out.trim().slice(-600) }; return finish(rung(), cert, {}); }
   const c1 = tr(candidate, 'candidate', effOf('parent'), heapOf('parent'));
-  if (c1.status !== 0) { cert.lanes.A = { verdict: 'ASK', stage: 'translate-candidate', detail: c1.out.trim().slice(-600) }; return finish(rung(), cert, {}); }
+  if (c1.status !== 0) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: 'translate-candidate', detail: c1.out.trim().slice(-600) }; return finish(rung(), cert, {}); }
   if (effOf('candidate') !== effOf('parent') || heapOf('candidate') !== heapOf('parent')) tr(parent, 'parent', effOf('candidate'), heapOf('candidate'));
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
   const names = [...new Set([...cand.matchAll(/\bfunction\s+([A-Za-z0-9_]+)_candidate\s*\(/g)].map((m) => m[1]))].filter((x) => !/_loop\d+$/.test(x));
@@ -71,11 +76,19 @@ export async function check(opts) {
   fs.writeFileSync(path.join(tmp, 'scope.json'), JSON.stringify(scopeObj)); fs.writeFileSync(path.join(tmp, 'edit.json'), '{}');
   const th = run('python3', ['-I', path.join(here, '../../spec/theorem.py'), '--parent', path.join(tmp, 'parent.dfy'), '--candidate', path.join(tmp, 'candidate.dfy'), '--scope', path.join(tmp, 'scope.json'), '--edit', path.join(tmp, 'edit.json'), '--out', path.join(tmp, 'theorem.dfy')], 60000);
   if (th.status !== 0) {
+    if (witnessed) return witnessOut();
     const why = th.out.trim().slice(-400);
     const iface = /differs|does not define|opaque block calls/.test(why);
     cert.lanes.A = { verdict: iface ? 'ASK:interface' : 'ASK:theorem', detail: why };
     return finish(iface || adapter ? 'ASK' : (rung()), cert, {});
   }
+  const withheldLine = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED Equal_${snake(unit)}: (interface differs: .*)$`, 'm')) || [])[1] ?? null;
+  if (withheldLine && !adapter) { // a changed signature without an adapter: ASK:interface naming the door, whatever lane B found
+    cert.lanes.A = { verdict: 'ASK:interface', identity: withheldLine, dir: tmp };
+    if (b.verdict === 'WITNESS') cert.lanes.B.consulted = false; // ran and recorded; not the answer to an ill-posed comparison
+    return finish('ASK', cert, { reason: `interface: ${withheldLine.replace(/^interface differs: /, '').slice(0, 600)}` });
+  }
+  if (witnessed) return witnessOut();
   const v = run('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), path.join(tmp, 'theorem.dfy')], (dafnySeconds + 60) * 1000 * Math.max(1, names.length));
   const text = v.out;
   const m = text.match(/finished with (\d+) verified, (\d+) error/);

@@ -1,8 +1,8 @@
 # Mutual summaries and adapters
 
 Source: the owner's research of 2026-10-27, section 4 ("Large Refactors: Compare Callers Through Callee Relations"),
-and `research-integration.md` section 11. Motivation, from the challenge's measurement on the corpus's Nexus defect
-commits (`lean-v3/challenge/dossier-limits-nexus.md`): 383 of 1,742 changed functions call a function the same commit
+and `research-integration.md` section 11. Motivation, as the challenge dossier reports it for the corpus's Nexus
+defect commits (`lean-v3/challenge/dossier-limits-nexus.md`, the brief's source; not measured by this row): 383 of 1,742 changed functions call a function the same commit
 changed, and 608 changed their signature. Before this row each function was proved alone, its same-file callees
 unfolded through both bodies; a recursive callee could not be unfolded far enough, and a changed signature was
 `ASK:interface` with no way out.
@@ -70,9 +70,13 @@ name and type on both sides (the world, the fuel), passed as it is, so the effec
 A caller of an adapted callee rests on that summary (`usePick` in the pair `adapters`). The adapter accounts for
 parameter count, types, optionality, rest and defaults; a changed decorator, receiver or return type it does not, and
 those stay `ASK:interface`. Without an adapter the unit's lemma is withheld and the reason names the door (a Dafny
-signature that changed now withholds that unit instead of refusing the whole file). Lane B runs both sides on the
-same raw inputs, which is not the adapted claim: check.mjs records lane B's verdict and lets lane A answer; if lane A
-does not prove it, the verdict is ASK, never PASS-bounded.
+signature that changed now withholds that unit instead of refusing the whole file). Without an adapter check.mjs
+answers `ASK:interface` naming the door whatever lane B found: the two sides take different inputs, so a raw
+same-input WITNESS would blame behaviour for an interface change (lane B's run is recorded with `consulted: false`;
+lane A's translation and theorem, without Dafny, decide it before a WITNESS is returned). With an adapter lane B is
+not the adapted claim either, and it does not run the candidate through A (the map is a Dafny expression, not code
+lane B can run): check.mjs records lane B's verdict and lets lane A answer; if lane A does not prove it, the verdict
+is ASK, never PASS-bounded. The pair `adapters` checks the whole verdict per unit (`expect.check`).
 
 ## Soundness
 
