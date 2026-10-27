@@ -9,7 +9,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | Identifier | 59378 | 94.8% | admitted | exact: a parameter, a local, a same-file unit; an outside name is a world read or refused (global-read) | same; module and captured cells as ledger cells (research note section 1) |
 | Block | 59338 | 94.7% | admitted | exact | same |
 | PropertyAccessExpression | 50650 | 80.8% | admitted | exact on records and arrays by shape; this.x a world read; a getter a callable unit; an unknown member refused (unsupported-member) | heap read on the ledger for every reference-typed receiver |
-| CallExpression | 50125 | 80% | admitted | exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; refused for unsupported calls and .call/.apply | same, plus the library table as transitions and callable records for escaped functions |
+| CallExpression | 50125 | 80% | admitted | exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; an optional call `f?.(x)` on a local, a record path or this: the call and its arguments on the present branch only (optional-call, done (lane)); refused for unsupported calls and .call/.apply | same, plus the library table as transitions and callable records for escaped functions |
 | ReturnStatement | 49908 | 79.7% | admitted | exact; a bare return in a value unit refused (bare-return) | same |
 | StringLiteral | 38403 | 61.3% | admitted | exact; a lone surrogate refused (string-code-unit) | same |
 | BinaryExpression | 34883 | 55.7% | admitted | exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; assignment a write; bitwise refused unless the integer file | same |

@@ -898,7 +898,7 @@ export function translate(file, fnName, opts = {}) {
     }
     const sequence = spread ? callSequence(args) : null;
     const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a) : dtype(typeOf(a), a); });
-    let rt = sig ? sig.getReturnType() : typeOf(n);
+    let rt = n.__plainReturn ?? (sig ? sig.getReturnType() : typeOf(n)); // an optional call's present branch returns what the callee returns
     if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
     else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
     let rd = dtype(rt, n);
@@ -909,14 +909,14 @@ export function translate(file, fnName, opts = {}) {
       let code;
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
       else { const id = external(calleeName, pts, rd); code = `${id}(${codes.join(', ')})`; }
-      if (cond) { usesOption = true; return `(if ${cond} then ${convert(code, rt, chainedType, n)} else ${missingD(dtype(chainedType, n))})`; } // an optional call: the value when the receiver is present
+      if (cond) { usesOption = true; return `(if ${cond} then ${convert(code, rt, chainedType, n)} else ${absentIn(chainedType, n)})`; } // an optional call: the value when the receiver is present; absent in the result's own type (a void call is Unit either way)
       return code;
     }
     addPrelude('World', 'type World');
     const ptsW = recvCode !== null ? ['World', recvType, ...pts] : ['World', ...pts];
     const argsW = recvCode !== null ? [WORLD, recvCode, ...codes] : [WORLD, ...codes];
     const id = external(calleeName, ptsW, `(World, ${rd})`);
-    if (cond) { usesOption = true; const w = `w${tempCount}_`, x = `x${tempCount}_`, D = dtype(chainedType, n); return hoist(`(if ${cond} then (var (${w}, ${x}) := ${id}(${argsW.join(', ')}); (${w}, ${convert(x, rt, chainedType, n)})) else (${WORLD}, ${missingD(D)}))`, D); } // an optional call: the transition happens only when the receiver is present
+    if (cond) { usesOption = true; const w = `w${tempCount}_`, x = `x${tempCount}_`, D = dtype(chainedType, n); return hoist(`(if ${cond} then (var (${w}, ${x}) := ${id}(${argsW.join(', ')}); (${w}, ${convert(x, rt, chainedType, n)})) else (${WORLD}, ${absentIn(chainedType, n)}))`, D); } // an optional call: the transition happens only when the receiver is present
     return hoist(`${id}(${argsW.join(', ')})`, rd);
   }
 
@@ -2743,7 +2743,81 @@ export function translate(file, fnName, opts = {}) {
         return `${fname(f.text)}(${[...fuelArg(callee), ...args].join(', ')})`;
   }
   const stripParens = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
+  // `f?.(x)` is `if f is absent then absent else f(x)`: the callee (a local function value, a function field of a record
+  // path, or a function field of this) is read once as an Option; the arguments and the call, with its transition, run
+  // only on the present branch, which is the ordinary reading of the same call. null when the callee cannot be absent.
+  // the value of an optional chain that stopped, in the chain's own type: a void call's result is Unit either way
+  function absentIn(t, n) { const none = checker.getUndefinedType(); return dtype(t, n) === 'Unit' ? 'Unit' : convert(absentValue(none), none, t, n); }
+  function optionalCall(n, awaited) {
+    if (valueOperands) fail(n, 'optional-chain: an optional call beside an assignment, update or comma is not read');
+    const f = n.expression;
+    let cond, present, calleeT;
+    const sig = checker.getResolvedSignature(n);
+    if (ts.isIdentifier(f)) {
+      const ft = typeOf(f);
+      if (originOf(checker, f, sf, currentUnit?.node ?? null).kind !== 'local' || isAny(baseOf(ft))) fail(n, 'optional-chain: the callee is not a local function value');
+      if (!isOptional(ft)) return null;
+      calleeT = baseOf(ft);
+      const v = `oc${tempCount++}_`;
+      pending.push(`var ${v} := ${rawOperand(f)};`);
+      const fd = dtype(baseOf(ft), f);
+      cond = `${v}.Some?`;
+      present = () => isEffectCall(n)
+        ? externalCall('invoke', n, [...n.arguments], `${v}.value`, fd, true)
+        : `${v}.value(${n.arguments.map((a, i) => expr(a, sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined)).join(', ')})`;
+    } else if (ts.isPropertyAccessExpression(f)) {
+      const recv = f.expression, name = f.name.text;
+      if (recv.kind === K.ThisKeyword && classOf(currentUnit)) {
+        if (fns.get(`${currentUnit.className}.${name}`)) return null; // a method of the class is never absent
+        const p = checker.getPropertyOfType(checker.getTypeAtLocation(currentUnit.cls.name), name);
+        const declared = p ? checker.getTypeOfSymbolAtLocation(p, f) : typeOf(f);
+        if (!isOptional(declared) && !(p && p.flags & ts.SymbolFlags.Optional)) return null;
+        calleeT = baseOf(declared);
+        const v = `oc${tempCount++}_`;
+        pending.push(`var ${v} := ${propAccess(f, true)};`);
+        cond = `${v}.Some?`;
+        // a field of the receiver is read once (a world read when a method assigns it); the call applies that value with
+        // this receiver, so it never folds in a second lookup the way the method-call reading of `this.m()` does
+        const T = selfType(currentUnit);
+        present = () => externalCall('invoke_bound', n, [...n.arguments], `(${v}.value, ${SELF})`, `(${dtype(calleeT, f)}, ${T})`, true);
+      } else {
+        const recvT = typeOf(recv), base = baseOf(recvT), T = dtype(base, n);
+        const absentRecv = !!f.questionDotToken && isOptional(recvT);
+        const p = checker.getPropertyOfType(base, name);
+        if (!p) fail(n, 'optional-chain: the callee is not a declared field');
+        const declared = checker.getTypeOfSymbolAtLocation(p, f);
+        const absentField = isOptional(declared) || !!(p.flags & ts.SymbolFlags.Optional);
+        if (!absentRecv && !absentField) return null;
+        calleeT = baseOf(declared);
+        let rc;
+        const parts = [];
+        if (absentRecv) { const o = `oc${tempCount++}_`; pending.push(`var ${o} := ${rawOperand(recv)};`); rc = `${o}.value`; parts.push(`${o}.Some?`); }
+        else { rc = `oc${tempCount++}_`; pending.push(`var ${rc} := ${expr(recv)};`); }
+        const fieldCode = () => { f.__keepOption = true; try { return outerParens(fieldOf(rc, base, name, f)); } finally { f.__keepOption = false; } };
+        if (absentField) parts.push(`${fieldCode()}.Some?`);
+        cond = parts.join(' && ');
+        // a data record's field read is a value, so the call is the ordinary method-call reading of `r.m(x)`; an opaque
+        // receiver's fields are read through the outside, so the call applies the value read once, with its receiver
+        const data = !T.startsWith('Ext_') && T !== 'Any' && !sums.has(T);
+        present = () => data || !absentField
+          ? externalCall(`${awaited ? 'await_' : ''}${T}_${name}`, n, [...n.arguments], rc, T)
+          : externalCall('invoke_bound', n, [...n.arguments], `(${fieldCode()}.value, ${rc})`, `(${dtype(calleeT, f)}, ${T})`, true);
+      }
+    } else fail(n, 'optional-chain: a computed callee is not read');
+    usesOption = true;
+    const one = checker.getSignaturesOfType(calleeT, ts.SignatureKind.Call);
+    if (one.length !== 1 || one[0].typeParameters?.length) fail(n, 'optional-chain: an overloaded or generic optional callee is not read');
+    n.__plainReturn = one[0].getReturnType();
+    let rt = n.__plainReturn;
+    if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+    else if (awaited && checker.getAwaitedType) { const aw = checker.getAwaitedType(rt); if (aw) rt = aw; }
+    const chained = typeOf(n), D = dtype(chained, n), absent = absentIn(chained, n);
+    if (!unitEffectful()) return `(if ${cond} then ${convert(present(), rt, chained, n)} else ${absent})`;
+    const branch = branchWithWorld(() => convert(present(), rt, chained, n), D);
+    return hoist(`(if ${cond} then ${branch} else (${WORLD}, ${absent}))`, D);
+  }
   function call(n, awaited = false) {
+    if (n.questionDotToken) { const read = optionalCall(n, awaited); if (read !== null) return read; }
     // the receiver precedes the arguments, including when await calls this reader directly
     if (valueOperands) {
       const callee = n.expression;
@@ -2834,6 +2908,7 @@ export function translate(file, fnName, opts = {}) {
     if ((f.questionDotToken || n.questionDotToken) && isOptional(typeOf(recv)) && recv.kind !== K.ThisKeyword) {
       // `a?.m(args)`: the call, and its transition, only when a is present; the result is an Option
       const base = baseOf(typeOf(recv));
+      { const m = checker.getPropertyOfType(base, name), sg = m ? checker.getSignaturesOfType(checker.getTypeOfSymbolAtLocation(m, f), ts.SignatureKind.Call) : []; if (sg.length === 1 && !sg[0].typeParameters?.length) n.__plainReturn = sg[0].getReturnType(); } // the method's own result: the chain's absence is added once, by the branch, so `a.m()` and `a?.m()` share one transition
       const v = `oc${tempCount++}_`;
       pending.push(`var ${v} := ${rawOperand(recv)};`);
       const Td = isAny(base) ? anyType() : dtype(base, n);
