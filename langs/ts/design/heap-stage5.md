@@ -424,3 +424,18 @@ Census (resolved, 39 roots), strict graph 920 -> 935, own syntax 2272 -> 2330; `
 ```text
 {"files":23359,"units":53918,"core":935,"heapOwnFit":2330,"mirrorMismatch":2188,"planErrorCount":0,"seconds":279}
 ```
+
+## 0b. The identity guard reads destructured and rest parameters
+
+Found by lane lint-2, a measurement defect of step 0's kind: `identitySkeleton` and `layer1Risk` collected identifier
+parameters only, so a destructured field and a record rest (`function Card({ title, ...rest }: P) { return <div
+{...rest} /> }`) had no path term, and every lemma whose result carries such a rest was withheld as "identity shape
+unreadable". Now a destructured field is the input path `arg<i>.f` and a rest a fresh node whose members are the
+input's (the reading `{...p}` already had); `layer1Risk` counts a binding as an alias of the input one level down (a rest
+at the input's own level), so a write through one is a write below the input. A binding with a default, or one the unit
+writes again, keeps no term.
+Soundness: a destructured field is read once, at entry, from the input; a rest is a shallow copy, so its members are
+the input's members and its own identity is fresh; the guard compares the two versions' skeletons site by site as before.
+Pair `heap5_rest` (`.tsx`): `Card` (the title named first, the same tree over the same forwarded members: proved, where
+the lemma was withheld), `Badge` (a changed member forwarded: the shapes differ, withheld, WITNESS), `Plain`
+(untouched). Lint: unchanged.

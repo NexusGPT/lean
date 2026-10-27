@@ -1280,6 +1280,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const risks = new Set();
     const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) ? p.name.text : null)).filter(Boolean));
     const aliases = new Map(); // local -> the depth of the input path it was bound to (`c = p` is 0, `c = p.inner` is 1)
+    // a destructured parameter: each field binding is the input path one level down, a rest holds the input's members
+    // (a fresh object whose members are the input's, so a write through one of them is a write below the input)
+    const bindNames = (pat, d) => { for (const el of pat.elements ?? []) { if (!el || ts.isOmittedExpression(el)) continue; if (ts.isIdentifier(el.name)) aliases.set(el.name.text, el.dotDotDotToken ? d : d + 1); else bindNames(el.name, d + 1); } };
+    for (const p of u.params) if (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name)) bindNames(p.name, 0);
     const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
     const effDepth = (x) => { const r = rootOf(x); return depth(x) + (ts.isIdentifier(r) && aliases.has(r.text) ? aliases.get(r.text) : 0); }; // the depth of a write below its input root, aliases unfolded
     const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
@@ -1337,6 +1341,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) ? p.name.text : null)).filter(Boolean));
     const bound = new Map(); // local -> its skeleton term, when its initializer has one
     let freshId = 0;
+    const destructured = []; // [name, term] of a destructured parameter's bindings: a field is the path `arg<i>.f`, a rest a fresh node of the input's members
+    u.params.forEach((p, i) => { if (!ts.isObjectBindingPattern(p.name)) return; for (const el of p.name.elements) { if (!ts.isIdentifier(el.name)) continue; const key = el.propertyName ? (ts.isIdentifier(el.propertyName) || ts.isStringLiteral(el.propertyName) ? el.propertyName.text : null) : el.name.text; if (el.dotDotDotToken) destructured.push([el.name.text, `#${freshId++}{...@arg${i}}`]); else if (key !== null && !el.initializer) destructured.push([el.name.text, `arg${i}.${key}`]); } });
     const path = (e) => { // an input path as a string, or null
       e = unparen(e);
       if (e.kind === K.ThisKeyword) return 'this';
@@ -1405,6 +1411,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       ts.forEachChild(n, scan);
     };
     scan(u.body);
+    for (const [name, tm] of destructured) if (!written.has(name)) bound.set(name, tm); // a binding the unit writes again has no fixed skeleton
     const walk = (n) => {
       if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && (n.parent.flags & ts.NodeFlags.Const) && !written.has(n.name.text)) { const tm = term(n.initializer); if (tm !== null) bound.set(n.name.text, tm); }
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
