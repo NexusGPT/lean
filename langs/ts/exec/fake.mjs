@@ -217,7 +217,9 @@ export function namePromise(env, p, path, settled) {
 export const promiseName = (v) => (v && (typeof v === 'object' || typeof v === 'function') && typeof v.then === 'function' ? promiseNames.get(v)?.label ?? null : null);
 
 // A rendering of a value for the trace and for outcome comparison: fakes by path, objects structurally, functions by name.
-export function render(v, depth = 0, seen = new Set()) {
+// With `share` (renderDrawn), an object reached more than once is named: its first sight is `{ $ref: k, value }`, every
+// later sight `{ $ref: k }`, so two positions holding one object show the same name; without it, nothing changes.
+export function render(v, depth = 0, seen = new Set(), share = null) {
   if (v === null) return null;
   if (v === undefined) return { $undefined: true };
   const t = typeof v;
@@ -228,18 +230,43 @@ export function render(v, depth = 0, seen = new Set()) {
   if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : { $fn: v.name || 'anonymous', src: fnHash(v) };
   if (v.__isFake) return { $fake: v.__fakePath };
   if (depth > 6) return { $deep: true };
+  if (share && share.multi.has(v)) { if (share.ids.has(v)) return { $ref: share.ids.get(v) }; share.ids.set(v, share.ids.size); return { $ref: share.ids.get(v), value: renderBody(v, depth, seen, share) }; }
   if (seen.has(v)) return { $cycle: true };
   seen.add(v);
-  if (Array.isArray(v)) return v.map((x) => render(x, depth + 1, seen));
+  return renderBody(v, depth, seen, share);
+}
+function renderBody(v, depth, seen, share) {
+  if (Array.isArray(v)) return v.map((x) => render(x, depth + 1, seen, share));
   if (v instanceof Date) return { $date: Number.isNaN(v.getTime()) ? 'invalid' : v.toISOString() };
-  if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [render(k, depth + 1, seen), render(x, depth + 1, seen)]) };
-  if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen)) };
+  if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [render(k, depth + 1, seen, share), render(x, depth + 1, seen, share)]) };
+  if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen, share)) };
   if (v instanceof Error) return { $error: v.constructor.name, message: v.message };
   if (v instanceof RegExp) return { $regex: String(v) };
-  if (typeof v.then === 'function') { const n = promiseNames.get(v); return n ? { $promise: n.label, settled: Object.hasOwn(n, 'reason') ? { rejected: render(n.reason, depth + 1, seen) } : render(n.value, depth + 1, seen) } : { $promise: true }; } // a promise the world or the input made is named by its creation; one the unit made is anonymous
+  if (typeof v.then === 'function') { const n = promiseNames.get(v); return n ? { $promise: n.label, settled: Object.hasOwn(n, 'reason') ? { rejected: render(n.reason, depth + 1, seen, share) } : render(n.value, depth + 1, seen, share) } : { $promise: true }; } // a promise the world or the input made is named by its creation; one the unit made is anonymous
   const out = {};
-  for (const k of Object.keys(v).sort()) out[k] = render(v[k], depth + 1, seen);
+  for (const k of Object.keys(v).sort()) out[k] = render(v[k], depth + 1, seen, share);
   return out;
+}
+
+// The input as drawn: every position rendered before either side runs, so a witness replayed from its certificate starts
+// where both runs started (a call that writes its arguments changes them after this rendering, never in it). Positions
+// that hold one object, and an object that holds itself, keep that sharing: the object is named by `$ref` in order of
+// first sight (render's `share`). The objects counted are the ones render walks into: fakes, dates, errors, regular
+// expressions and promises are leaves, named by what they are.
+export function renderDrawn(args) {
+  const count = new Set(), multi = new Set();
+  const visit = (v) => {
+    if (v === null || typeof v !== 'object' || v.__isFake || v instanceof Date || v instanceof Error || v instanceof RegExp || typeof v.then === 'function') return;
+    if (count.has(v)) { multi.add(v); return; }
+    count.add(v);
+    if (Array.isArray(v)) v.forEach(visit);
+    else if (v instanceof Map) for (const [k, x] of v) { visit(k); visit(x); }
+    else if (v instanceof Set) for (const x of v) visit(x);
+    else for (const k of Object.keys(v)) visit(v[k]);
+  };
+  args.forEach(visit);
+  const share = { multi, ids: new Map() };
+  return args.map((a) => render(a, 0, new Set(), share));
 }
 
 export function stable(v) { return JSON.stringify(render(v)); }

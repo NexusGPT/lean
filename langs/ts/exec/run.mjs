@@ -21,7 +21,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
-import { Environment, render, BudgetError, promiseName } from './fake.mjs';
+import { Environment, render, renderDrawn, BudgetError, promiseName } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor, aliasInputs } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
@@ -713,6 +713,15 @@ function layersOf(styles) {
   Object.defineProperty(layers, 'styles', { enumerable: true, get: () => styles.result() });
   return layers;
 }
+// the inputs of a unit: its spec (shaped by what both versions read), the enumerated small heaps, and the i-th draw on
+// one side's environment (a heap builder first, then the seeded generator with its sharing); each side draws its own
+// copy, so a replay draws input i on a fresh environment seeded as that side's was and gets the input both runs started from
+export function inputPlan(parent, candidate, unit, { project = true, seed = 1 } = {}) {
+  const spec = specOf(candidate, unit, { project, usageFrom: parent }); // the inputs are shaped by what both versions read and compare against (usage.mjs)
+  const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
+  spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
+  return { spec, heaps, draw: (i, env) => (i < heaps.builders.length ? heaps.builders[i](env) : aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i)) };
+}
 async function runPairOnce(opts) {
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
   deepMode.depth = deepDepth(deep); deepLog.rendered.clear(); deepLog.handles.clear(); deepLog.contexts.clear();
@@ -721,10 +730,9 @@ async function runPairOnce(opts) {
   if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
     return runNew(opts);
   }
-  let spec; step('inputs');
-  try { spec = specOf(candidate, unit, { project, usageFrom: parent }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; } // the inputs are shaped by what both versions read and compare against (usage.mjs)
-  const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
-  spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
+  let plan; step('inputs');
+  try { plan = inputPlan(parent, candidate, unit, { project, seed }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
+  const { spec, heaps } = plan;
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
@@ -741,12 +749,15 @@ async function runPairOnce(opts) {
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       let inputs;
-      try { inputs = i < heaps.builders.length ? heaps.builders[i](env) : aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
+      try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
-      sides[name] = { env, unit: u, inputs };
+      sides[name] = { env, unit: u, inputs, drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }
     return sides;
   };
+  // a witness's args: the input as drawn, before either call; `parent` and `candidate` keep what each call left. The two
+  // sides draw their own copies from one seed, so their drawn renderings are equal; one that differs is named beside it
+  const drawnOf = (sides) => ({ args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
   const observeBoth = (sides, record) => (record ? recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]) : (async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)])());
   // retained state: for a class unit, programs of method calls on one constructed instance per side run first (programs.mjs); a divergence in a program that calls this unit is its WITNESS, one elsewhere rides in the certificate for the unit it names
   let programRun = null;
@@ -765,19 +776,19 @@ async function runPairOnce(opts) {
     if ((sides.parent.sawJsx || sides.candidate.sawJsx) && oP.outcome && oC.outcome && Object.hasOwn(oP.outcome, 'returned') && Object.hasOwn(oC.outcome, 'returned')) styles.add(i, oP.outcome.returned, oC.outcome.returned);
     if (treeDone) continue;
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
-    if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, args: sides.parent.inputs.map((a) => render(a)), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
+    if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, ...drawnOf(sides), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
     if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
     if (oP.harness === 'stack overflow' && oC.harness === 'stack overflow') { skipped.push(i); continue; } // both sides exhausted the call stack on this input, with and without the recorder: the input proves nothing
     if ((oP.harness === 'stack overflow' && !oC.harness) || (oC.harness === 'stack overflow' && !oP.harness)) { // one side recursed past the stack where the other returned: the thrown RangeError is that side's outcome (SEMANTICS item 1), observed on the same stack without the recorder
       const side = oP.harness ? 'parent' : 'candidate';
-      diffs.push({ input: i, args: sides.parent.inputs.map((a) => render(a)), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } });
+      diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } });
       if (diffs.length >= 3) break;
       continue;
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
-      diffs.push({ input: i, args: sides.parent.inputs.map((a) => render(a)), parent: oP, candidate: oC, where: firstDifference(oP, oC) });
+      diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) });
       if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } // a rendered unit keeps running for the styles layer
     }
   }
@@ -871,7 +882,7 @@ function firstDifference(a, b) {
 }
 
 // the package root: the nearest package.json above the file (relative imports inside it are compiled, others faked)
-function findRoot(file) {
+export function findRoot(file) {
   let d = path.dirname(path.resolve(file));
   for (let i = 0; i < 10; i++) { if (fs.existsSync(path.join(d, 'package.json'))) return d; const up = path.dirname(d); if (up === d) break; d = up; }
   return path.dirname(path.resolve(file));
