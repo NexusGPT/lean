@@ -1272,5 +1272,196 @@
     5
    ]
   ]
+ },
+ {
+  "name": "lint_misfires_blockScope",
+  "file": "lint_misfires.ts",
+  "fn": "blockScope",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    5,
+    [
+     1,
+     2
+    ]
+   ],
+   [
+    0,
+    []
+   ],
+   [
+    -3,
+    [
+     7
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_shadowProc",
+  "file": "lint_misfires.ts",
+  "fn": "shadowProc",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "ab",
+     "c"
+    ],
+    [
+     "xyz"
+    ]
+   ],
+   [
+    [],
+    []
+   ],
+   [
+    [
+     "q"
+    ],
+    [
+     "r",
+     "st"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_buckets",
+  "file": "lint_misfires.ts",
+  "fn": "buckets",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "a",
+     "bb",
+     "a",
+     "a"
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     "xy",
+     "xy"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_rebound",
+  "file": "lint_misfires.ts",
+  "fn": "rebound",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ],
+    true
+   ],
+   [
+    [
+     4,
+     5
+    ],
+    false
+   ],
+   [
+    [],
+    true
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_widest",
+  "file": "lint_misfires.ts",
+  "fn": "widest",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     3,
+     -1,
+     7
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     2
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_shifted",
+  "file": "lint_misfires.ts",
+  "fn": "shifted",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ],
+    10
+   ],
+   [
+    [],
+    4
+   ],
+   [
+    [
+     5
+    ],
+    -1
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_scopedJumps",
+  "file": "lint_misfires.ts",
+  "fn": "scopedJumps",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    5,
+    [
+     1,
+     0,
+     -2,
+     3
+    ]
+   ],
+   [
+    0,
+    []
+   ],
+   [
+    -4,
+    [
+     2,
+     0
+    ]
+   ]
+  ]
  }
 ]

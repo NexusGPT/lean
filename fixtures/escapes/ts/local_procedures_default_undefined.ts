@@ -1,8 +1,9 @@
 // expect: closure-mutation
-// a procedure parameter named like a unit local that a call passes something else: the splice would shadow the local
-export function shifted(xs: number[], k: number): number {
+// a call that passes a defaulted parameter a value that may be undefined: the default would apply for that value, so the
+// function is no procedure (a splice binds the value as passed); as a lambda it cannot write the unit's cell
+export function weighted(xs: number[], w: number | undefined): number {
   let acc = 0;
-  const add = (k: number): void => { acc = acc + k; };
-  for (const x of xs) add(x);
-  return acc + k;
+  const add = (x: number, by: number = 1): void => { acc = acc + x * by; };
+  for (const x of xs) add(x, w);
+  return acc;
 }
