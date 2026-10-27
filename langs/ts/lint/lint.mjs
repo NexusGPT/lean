@@ -553,6 +553,17 @@ export function lintFile(file, ranges = null, opts = {}) {
     return null;
   };
   const declOf = (id) => originOf(checker, id, sf, current);
+  // what a value may be another name for: true (a name, a field, an element, a declared `this`), a description (the result
+  // of a call that may return an existing object), or null (a value the function built here)
+  function heldBy(x) {
+    while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression(x) || ts.isTypeAssertionExpression(x) || (ts.isAwaitExpression(x) && ts.isCallExpression(unparenX(x.expression)))) x = x.expression;
+    if (ts.isIdentifier(x) || ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || (x.kind === K.ThisKeyword && !!thisParam)) return x.kind === K.ThisKeyword || nonNull(tOf(x)).some((y) => !isPrim(y) && !isAny(y)) ? true : null; // `undefined` or a number names no object
+    if (ts.isCallExpression(x)) { const callee = sameFileCallee(x, currentClass); return (callee ? !returnsFresh(callee) : libraryFresh(x) === false) ? `the result of \`${callee ? callee.name : libraryOp(x)}\`` : null; }
+    if (ts.isBinaryExpression(x) && [K.QuestionQuestionToken, K.BarBarToken, K.AmpersandAmpersandToken].includes(x.operatorToken.kind)) return heldBy(x.left) ?? heldBy(x.right);
+    if (ts.isBinaryExpression(x) && x.operatorToken.kind === K.CommaToken) return heldBy(x.right);
+    if (ts.isConditionalExpression(x)) return heldBy(x.whenTrue) ?? heldBy(x.whenFalse);
+    return null;
+  }
 
   function stmts(list) { for (const s of list) stmt(s); }
   function stmt(s) {
@@ -796,14 +807,13 @@ export function lintFile(file, ranges = null, opts = {}) {
       checkType(t, n);
     }
     { // `const u = user`, `const t = user.tags`, `const x = xs[i]`: another name for an object the function did not build
-      let init = d.initializer; while (ts.isParenthesizedExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init) || (ts.isAwaitExpression(init) && ts.isCallExpression(unparenX(init.expression)))) init = init.expression;
-      const ref = ts.isIdentifier(init) || ts.isPropertyAccessExpression(init) || ts.isElementAccessExpression(init) || (init.kind === K.ThisKeyword && !!thisParam); // `const self = this` in a free function: another name for the receiver it was handed
-      const objish = (t) => nonNull(t).some((x) => !isPrim(x) && !isAny(x));
-      if (ref && ts.isIdentifier(d.name) && objish(tOf(d.name))) aliasLocals.add(d);
       // `const s = this.held()`, `const t = pick(user)`: the result of a same-file call may be a field, a parameter or a module
       // object under another name, unless the callee is fresh (returnsFresh); a change through it is a change of that object
-      if (!ref && ts.isCallExpression(init) && ts.isIdentifier(d.name) && objish(tOf(d.name))) { const callee = sameFileCallee(init, currentClass); if (callee ? !returnsFresh(callee) : libraryFresh(init) === false) { aliasLocals.add(d); aliasCalls.set(d, `the result of \`${callee ? callee.name : libraryOp(init)}\``); } }
       // `const t = rs.find(...)`, `m.get(k)`, `Promise.resolve(x)`: a built-in whose table row returns an existing object (libraryFresh)
+      // `m.get(k) ?? []`, `a || b`, `c ? a : b`: the value is one of the operands, so it holds what either operand holds
+      const objish = (t) => nonNull(t).some((x) => !isPrim(x) && !isAny(x));
+      const held = heldBy(d.initializer);
+      if (held && ts.isIdentifier(d.name) && objish(tOf(d.name))) { aliasLocals.add(d); if (held !== true) aliasCalls.set(d, held); }
     }
     if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name) && localProcedure(d, checker, currentFn)) { // stage 5 rank 21: a local procedure, its body spliced at each call: checked as the unit's own statements
       const fn = d.initializer; loopCallbacks.add(fn);
