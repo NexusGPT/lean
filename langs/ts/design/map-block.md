@@ -75,3 +75,28 @@ resolve now resolve; no file has more errors. Instances (the wrap error before, 
 - `langchainjs libs/langchain-core/src/prompts/few_shot.ts:433`: `examples = examples.map((example) => {...})`.
 - bench `packages/types/src/shared/analytics-export/analytics-result-to-json-text.ts:14`: the file now resolves (1 error, 0 after).
 - bench `apps/frontend/src/common/auth/confined-routes.ts:65`: the file now resolves (1 error, 0 after).
+
+## 2026-10-27: a tuple's collections are compared first (theorem hint)
+The open item above is closed in the theorem, not the translator. A unit that changes a parameter returns a tuple
+(value, parameter); Dafny proves `Map(s, f) == Map(s, g)` alone (an equality goal of type `seq` reaches the
+sequence's extensionality, and the prelude's `ensures` gives each element) but not the same equality as one component
+of a tuple goal. Scratch `/tmp/claude-501/mb/dx/t2.dfy`, before: "2 verified, 1 error"; with one assert on the first
+component: "3 verified, 0 errors".
+
+The rule (`spec/theorem.py`, `component_hints`): when the return type of a lemma's goal `f_parent(x) == f_candidate(x)`
+is a Dafny tuple, the lemma body asserts, before the goal, `f_parent(x).i == f_candidate(x).i` for every component
+whose type is a collection (`seq<..>`, `string`, `set`, `iset`, `multiset`, `map`, `imap`); a component that is itself
+a tuple is walked the same way (`.i.j`). It is a rule over the goal's type, never over one unit. The `Equal_` lemma
+and its `EqualDirect_` twin carry it, after the callee summaries.
+
+Soundness: each assert is the goal's own equality on a projection, so it holds whenever the goal holds; Dafny proves
+it, never assumes it. It can only guide the prover to a goal it could reach, never prove a goal that is false. A
+failed assert is an error inside the lemma's span, so the lemma reads as unproved, as before (pair `map_block`,
+`sizes`: the error moves from the postcondition to the assert on component 0).
+
+Pair `map_block` gains `labelsInner`: it pushes `items.length` on `seen`, then maps with a block callback refactored
+inside (`return x.tag.label` against `const t = x.tag; return t.label`). Base theorem: Equal_labels_inner not proved;
+with the hint: proved.
+
+Open: a collection inside a datatype or an `Option` (a record field holding a `seq`) gets no assert; the same limit
+may hold there and would need a field walk.

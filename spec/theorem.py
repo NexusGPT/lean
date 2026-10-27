@@ -295,6 +295,39 @@ def summaries_of(funcs, pf, cf, aliased, unguarded, hyps, adapters):
     return out
 
 
+COLLECTION_TYPE = re.compile(r'^(?:string|(?:seq|set|iset|multiset|map|imap)\s*<.*>)$')
+
+
+def _tuple_parts(t):
+    """The component types of a Dafny tuple type `(A, B, ...)`, or None when `t` is not a tuple of two or more."""
+    t = t.strip()
+    if not (t.startswith('(') and t.endswith(')')) or balanced(t, 0) != len(t):
+        return None
+    parts = split_top(t[1:-1].replace('->', '\x00'))
+    return [p.replace('\x00', '->') for p in parts] if len(parts) > 1 else None
+
+
+def component_hints(ret, lhs, rhs):
+    """The proof hint for an equality between two tuples: a collection compared inside a tuple is not compared by its
+    elements (tuple equality is equality of the components, and Dafny reaches a sequence's extensionality only from an
+    equality goal of that sequence's own type, so two `Map(s, f)` with pointwise-equal callbacks prove alone and not as a
+    component). For a goal `lhs == rhs` whose type is a tuple, one assert per component whose type is a collection
+    (seq, string, set, iset, multiset, map, imap), nested tuples walked: each is the same equality on a projection, a
+    consequence of the goal, so it can only help the prover reach it, never prove more."""
+    out = []
+
+    def walk(t, path):
+        parts = _tuple_parts(t)
+        if parts is None:
+            if path and COLLECTION_TYPE.match(t.strip()):
+                out.append(f'assert {lhs}{path} == {rhs}{path};')
+            return
+        for i, p in enumerate(parts):
+            walk(p, f'{path}.{i}')
+    walk(ret, '')
+    return out
+
+
 def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_name=None):
     check_forbidden(parent_text, 'parent')
     check_forbidden(cand_text, 'candidate')
@@ -522,14 +555,17 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         out.append(f'  ensures {f}_parent({names}) == {f}_candidate({adapted})')
         if sm.get('induction'):
             out.append(f'  decreases {sm["induction"]["measure"]}')
+        hints = component_hints(sig['ret'], f'{f}_parent({names})', f'{f}_candidate({adapted})')  # a tuple's collections compared first
         out.append('{ // PROOF Equal_' + f)
         out.extend('  ' + ln for ln in sm.get('lines', []))
+        out.extend('  ' + ln for ln in hints)
         out.append('} // END Equal_' + f)
         if sm.get('rests'):  # the same statement proved from the bodies alone: a function the bodies prove needs no summary
             out.append(f'lemma EqualDirect_{f}{tp}({params})')
             out.append(f'  requires !InScope_{f}({names})')
             out.append(f'  ensures {f}_parent({names}) == {f}_candidate({adapted_args(f, [n for n, _ in sig["params"]], adapters, cf)})')
             out.append('{ // PROOF EqualDirect_' + f)
+            out.extend('  ' + ln for ln in hints)
             out.append('} // END EqualDirect_' + f)
         if canon_fuel and f in hyps and f not in aliased and f not in unguarded and f not in adapters and sig['params'] and sig['params'][0][1] == 'HWorld' and sig['ret'].replace(' ', '').startswith('(HWorld,'):
             hw = sig['params'][0][0]
