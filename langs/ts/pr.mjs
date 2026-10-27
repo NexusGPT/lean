@@ -382,7 +382,7 @@ export function markdown(rows, base, head) {
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
-    if (r.verdict === 'WITNESS') {
+    if (r.verdict === 'WITNESS' && r.coverage !== 'reused') { // a reused row keeps its reuse note; the site rides on a fresh witness
       const site = r.witness?.where?.lines?.candidate;
       if (site) {
         const source = site.file.replace(/(^|\/)\.lean_head_\d+_/, '$1');
