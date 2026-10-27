@@ -33,7 +33,9 @@ Each reading below is a language construct; `lint.mjs` and `translate.mjs` read 
   may hand an array to another name (iteration, `values()`, a call), followed by a push, refuses the map.
 - Finding 3: A bucket local, `const l = m.get(k)` under `if (l) l.push(a)` or `const l = m.get(k) ?? [..]; l.push(a); m.set(k, l)`,
   is the map's array when k is present: the push changes l and writes l back at k (no map write runs between the
-  binding and a use of l). On a Map the unit did not build both forms are `alias-mutation`. A push on a narrowed
+  binding and a use of l). The set-back form holds on a Map of any values: `const s = m.get(k) ?? new Set()`, changes of s,
+  then `m.set(k, s)` later in the same list with no jump and no use of the map between: the model changes its copy and
+  writes it back, as the shared object ends. On a Map the unit did not build both forms are `alias-mutation`. A push on a narrowed
   optional local now changes the value inside its Some (a base type error).
 - Finding 8: A local procedure whose parameter or local shares a name with the unit is still a procedure: the splice saves and
   rebinds the outer name (the scoping above). A loop inside a procedure now reads the procedure's parameters.
@@ -50,7 +52,7 @@ Each reading below is a language construct; `lint.mjs` and `translate.mjs` read 
 
 `map_value_alias.ts` (alias-mutation), `bucket_map_escape.ts` (param-mutation: an array escapes before a push),
 `match_index_global.ts` (unsupported-member), `math_empty_other_array.ts` (math-empty), `alias_rebound_in_loop.ts`
-(alias-mutation), `local_procedures_default_undefined.ts` (closure-mutation; it replaces `local_procedures_shadow.ts`,
+(alias-mutation), `bucket_set_back_skipped.ts` (alias-mutation), `local_procedures_default_undefined.ts` (closure-mutation; it replaces `local_procedures_shadow.ts`,
 whose shape is now read).
 
 ## Lane B

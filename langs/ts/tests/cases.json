@@ -1463,5 +1463,31 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "lint_misfires_setBack",
+  "file": "lint_misfires.ts",
+  "fn": "setBack",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "a",
+     "bb",
+     "a"
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     "x",
+     "x",
+     "x"
+    ]
+   ]
+  ]
  }
 ]

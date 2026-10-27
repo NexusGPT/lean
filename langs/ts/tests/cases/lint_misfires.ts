@@ -62,6 +62,28 @@ export function buckets(keys: string[]): number {
   }
   return total;
 }
+export function setBack(keys: string[]): number {
+  const seen = new Map<string, Set<number>>();
+  const stats = new Map<string, { count: number; lengths: number[] }>();
+  for (const k of keys) {
+    const s = seen.get(k) ?? new Set<number>();
+    s.add(k.length);
+    s.add(1);
+    seen.set(k, s);
+    const st = stats.get(k) ?? { count: 0, lengths: [5] };
+    st.count++;
+    st.lengths.push(k.length);
+    stats.set(k, st);
+  }
+  let total = 0;
+  for (const k of keys) {
+    const s = seen.get(k);
+    const st = stats.get(k);
+    if (s) total = total + s.size * 100;
+    if (st) { total = total + st.count * 10; for (const x of st.lengths) total = total + x; }
+  }
+  return total;
+}
 export function rebound(merged: number[], g: boolean): number {
   let flat = merged;
   if (g) {

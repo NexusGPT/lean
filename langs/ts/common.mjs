@@ -515,7 +515,10 @@ export function execMatchMember(e, checker) {
 // the map runs between the binding and a use of l), and `m.set(k, l)` stores l itself. The reading writes the map: m :=
 // if k in m then m[k := m[k] + [a]] else m. Every other use of the map or of a bucket local that may hand an array to
 // another name (`return m` aside, after which nothing runs) must come after the last write, outside any loop that writes:
-// a value read from it would otherwise miss a later push. bucketMaps returns, per unit, the pushes and bucket locals.
+// a value read from it would otherwise miss a later push. A Map of any values also takes the set-back form, `const l =
+// m.get(k) ?? <fresh>`, changes of l, then `m.set(k, l)` in the same list with no jump and no other use of the map between
+// (the model changes its copy of l and writes it back, as the shared object ends). bucketMaps returns, per unit, the
+// pushes and the bucket locals.
 const BUCKET_MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin']);
 const bucketCache = new WeakMap();
 export function bucketMaps(unitFn, checker) {
@@ -536,24 +539,41 @@ export function bucketMaps(unitFn, checker) {
   // a reference to the map counts only in the unit itself or in array-method callbacks (loops)
   const plainPlace = (x) => { for (let q = x.parent; q && q !== unitFn; q = q.parent) if (ts.isFunctionLike(q) && !syncLoopCallback(q, checker)) return false; return true; };
   const walkIds = (sym, f) => { const w = (y) => { if (ts.isIdentifier(y) && checker.getSymbolAtLocation(y) === sym && !(y.parent && (ts.isVariableDeclaration(y.parent) || ts.isParameter(y.parent) || ts.isBindingElement(y.parent)) && y.parent.name === y) && !(y.parent && ts.isPropertyAccessExpression(y.parent) && y.parent.name === y)) f(y); ts.forEachChild(y, w); }; w(unitFn.body ?? unitFn); };
+  // a use whose member is written or changed in place: `l.f = v`, `l.f++`, `delete l.f`, `l[i] = v`, `l.push(..)`, `l.add(..)`
+  const CHANGERS = new Set([...BUCKET_MUTATORS, 'add', 'set', 'delete', 'clear']);
+  const changes = (top) => {
+    const p = top.parent; if (!p) return false;
+    const target = (x) => { const q = up(x).parent; return !!q && ((ts.isBinaryExpression(q) && q.left === up(x) && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(q) || ts.isPostfixUnaryExpression(q)) && [K.PlusPlusToken, K.MinusMinusToken].includes(q.operator)) || ts.isDeleteExpression(q)); };
+    if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === top) {
+      if (target(p)) return true;
+      if (ts.isPropertyAccessExpression(p) && CHANGERS.has(p.name.text) && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return true;
+      let q = p; while (q.parent && (ts.isPropertyAccessExpression(q.parent) || ts.isElementAccessExpression(q.parent)) && q.parent.expression === q) q = q.parent; // a path below it
+      if (q !== p && (target(q) || (ts.isPropertyAccessExpression(q) && CHANGERS.has(q.name.text) && q.parent && ts.isCallExpression(q.parent) && q.parent.expression === q))) return true;
+    }
+    return false;
+  };
+  const freshValue = (v) => { v = unp(v); return ts.isArrayLiteralExpression(v) || ts.isObjectLiteralExpression(v) || (ts.isNewExpression(v) && ts.isIdentifier(v.expression) && ['Map', 'Set', 'Array'].includes(v.expression.text) && !(v.arguments ?? []).length); };
   const maps = [];
   const findMaps = (y) => {
     if (ts.isVariableDeclaration(y) && ts.isIdentifier(y.name) && y.initializer && (y.parent.flags & ts.NodeFlags.Const)) {
       const init = unp(y.initializer);
       const t = checker.getTypeAtLocation(y.name);
       const vt = t.symbol?.name === 'Map' && checker.getTypeArguments ? checker.getTypeArguments(t)[1] : null;
-      if (ts.isNewExpression(init) && ts.isIdentifier(init.expression) && init.expression.text === 'Map' && !(init.arguments ?? []).length && vt && checker.isArrayType(vt) && plainPlace(y)) maps.push(y);
+      if (ts.isNewExpression(init) && ts.isIdentifier(init.expression) && init.expression.text === 'Map' && !(init.arguments ?? []).length && vt && plainPlace(y)) maps.push({ decl: y, arrays: checker.isArrayType(vt) });
     }
     ts.forEachChild(y, findMaps);
   };
   findMaps(unitFn.body ?? unitFn);
-  for (const decl of maps) {
+  const keyText = (k) => unp(k).getText();
+  const jumpsIn = (from, to, block) => { let f = false; const w = (y) => { if (f || ts.isFunctionLike(y)) return; if (y.pos >= from && y.end <= to && (ts.isReturnStatement(y) || ts.isThrowStatement(y) || ts.isBreakStatement(y) || ts.isContinueStatement(y))) { f = true; return; } ts.forEachChild(y, w); }; w(block); return f; };
+  for (const { decl, arrays } of maps) {
     const msym = checker.getSymbolAtLocation(decl.name);
-    const writes = [], escapes = [], pushes = new Map(), locals = new Map();
+    const writes = [], escapes = [], pushes = new Map(), locals = new Map(), mrefs = [];
     let ok = true;
     walkIds(msym, (r) => {
       if (!ok) return;
       if (!plainPlace(r)) { ok = false; return; }
+      mrefs.push(r);
       const top = up(r), p = top.parent;
       if (p && ts.isReturnStatement(p)) return; // nothing runs after
       if (!(p && ts.isPropertyAccessExpression(p) && p.expression === top)) { escapes.push(r); return; }
@@ -565,21 +585,21 @@ export function bucketMaps(unitFn, checker) {
       if ((name === 'delete' || name === 'clear') && stmt) { writes.push(call); return; }
       if (name === 'set' && stmt && call.arguments.length === 2) {
         const v = unp(call.arguments[1]);
-        if (ts.isArrayLiteralExpression(v)) { writes.push(call); return; }
+        if (freshValue(v)) { writes.push(call); return; }
         if (ts.isIdentifier(v)) { const ld = checker.getSymbolAtLocation(v)?.valueDeclaration; if (ld && ts.isVariableDeclaration(ld)) { writes.push(call); (call.__bucketSet ??= []).push({ ld, key: call.arguments[0] }); return; } }
         ok = false; return;
       }
       if (name === 'get' && call.arguments.length === 1) {
         const g = up(call), gp = g.parent;
-        if (gp && ts.isPropertyAccessExpression(gp) && gp.expression === g) { // a member of the array the map holds at k
+        if (gp && ts.isPropertyAccessExpression(gp) && gp.expression === g) { // a member of the value the map holds at k
           const mc = gp.parent && ts.isCallExpression(gp.parent) && gp.parent.expression === gp ? gp.parent : null;
-          if (gp.name.text === 'push' && mc && gp.questionDotToken && mc.parent && ts.isExpressionStatement(mc.parent) && !mc.arguments.some((a) => ts.isSpreadElement(a) || hasCall(a)) && g === call) { writes.push(mc); pushes.set(mc, { m: decl, key: call.arguments[0] }); return; }
-          if (BUCKET_MUTATORS.has(gp.name.text)) { ok = false; return; }
+          if (arrays && gp.name.text === 'push' && mc && gp.questionDotToken && mc.parent && ts.isExpressionStatement(mc.parent) && !mc.arguments.some((a) => ts.isSpreadElement(a) || hasCall(a)) && g === call) { writes.push(mc); pushes.set(mc, { m: decl, key: call.arguments[0] }); return; }
+          if (changes(g)) { ok = false; return; }
           if (prim(mc ?? gp)) return; // `.length`, `.includes(x)`: a primitive read
           escapes.push(r); return;
         }
-        // `const l = m.get(k)` or `const l = m.get(k) ?? [..]`: a bucket local
-        let b = g; if (b.parent && ts.isBinaryExpression(b.parent) && b.parent.left === b && b.parent.operatorToken.kind === K.QuestionQuestionToken && ts.isArrayLiteralExpression(unp(b.parent.right))) b = up(b.parent);
+        // `const l = m.get(k)` or `const l = m.get(k) ?? <a fresh value>`: a bucket local
+        let b = g; if (b.parent && ts.isBinaryExpression(b.parent) && b.parent.left === b && b.parent.operatorToken.kind === K.QuestionQuestionToken && freshValue(b.parent.right)) b = up(b.parent);
         const vd = b.parent;
         if (vd && ts.isVariableDeclaration(vd) && vd.initializer === b && ts.isIdentifier(vd.name) && (vd.parent.flags & ts.NodeFlags.Const) && stableKey(call.arguments[0])) { locals.set(vd, { m: decl, key: call.arguments[0], coalesced: b !== g }); return; }
         escapes.push(r); return;
@@ -587,40 +607,51 @@ export function bucketMaps(unitFn, checker) {
       escapes.push(r);
     });
     if (!ok) continue;
-    // each bucket local: its pushes write the map; a use that may hand the array on is an escape; m.set(k, l) needs the same key
-    const keyText = (k) => unp(k).getText();
+    // each bucket local is one of two kinds. A push local (an array map): its pushes write the map at k and nothing else
+    // changes it. A set-back local: `m.set(k, l)` stands later in the same statement list, every use of l lies between the
+    // binding and that statement, no jump leaves the stretch and the map is not named in it: whatever changes l there, the
+    // map at k ends as l (the model's copy of l, written back), as the shared object does.
     const localUses = new Map();
     for (const [ld, info] of locals) {
-      const lsym = checker.getSymbolAtLocation(ld.name), uses = [];
+      const lsym = checker.getSymbolAtLocation(ld.name), uses = [], changed = [], pushed = [];
+      let back = null;
       walkIds(lsym, (r) => {
         if (!ok) return;
         if (!plainPlace(r) || !inScope(r, info.m.name, msym) || (ts.isIdentifier(keyRoot(info.key)) && !inScope(r, keyRoot(info.key), checker.getSymbolAtLocation(keyRoot(info.key))))) { ok = false; return; }
         const top = up(r), p = top.parent;
         uses.push(r);
-        if (p && ts.isPropertyAccessExpression(p) && p.expression === top) {
-          const mc = p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p ? p.parent : null;
-          if (p.name.text === 'push' && mc && mc.parent && ts.isExpressionStatement(mc.parent) && !mc.arguments.some((a) => ts.isSpreadElement(a) || hasCall(a))) { writes.push(mc); pushes.set(mc, { m: info.m, key: info.key, local: ld }); return; }
-          if (BUCKET_MUTATORS.has(p.name.text)) { ok = false; return; }
-          if (prim(mc ?? p)) return;
-          escapes.push(r); return;
+        if (p && ts.isCallExpression(p) && p.arguments.includes(top) && p.__bucketSet?.some((x) => x.ld === ld)) { if (keyText(p.arguments[0]) !== keyText(info.key) || back) ok = false; back = p; return; } // m.set(k, l)
+        if (changes(top)) {
+          const mc = p.parent;
+          if (arrays && ts.isPropertyAccessExpression(p) && p.name.text === 'push' && mc && ts.isCallExpression(mc) && mc.parent && ts.isExpressionStatement(mc.parent) && !mc.arguments.some((a) => ts.isSpreadElement(a) || hasCall(a))) pushed.push(mc);
+          else changed.push(r);
+          return;
         }
-        if (p && ts.isCallExpression(p) && p.arguments.includes(top) && p.__bucketSet?.some((x) => x.ld === ld)) { if (keyText(p.arguments[0]) !== keyText(info.key)) ok = false; return; } // m.set(k, l): l is the map's array at k
-        // a test of presence (`if (l)`, `!l`, `l ? a : b`, `l && x`) reads no array
+        if (p && ts.isPropertyAccessExpression(p) && p.expression === top) { const mc = p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p ? p.parent : null; if (prim(mc ?? p)) return; escapes.push(r); return; }
+        // a test of presence (`if (l)`, `!l`, `l ? a : b`, `l && x`) reads no value
         if (p && (ts.isIfStatement(p) || ts.isConditionalExpression(p) && p.condition === top || ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken || ts.isBinaryExpression(p) && p.left === top && [K.AmpersandAmpersandToken, K.BarBarToken].includes(p.operatorToken.kind))) return;
         if (p && ts.isReturnStatement(p)) return;
         escapes.push(r);
       });
+      if (!ok) break;
+      const stmtOf = (x) => { while (x && !ts.isVariableStatement(x) && !ts.isExpressionStatement(x)) x = x.parent; return x; };
+      const vs = stmtOf(ld), bs = back && stmtOf(back);
+      const setBack = !!bs && !!vs && bs.parent === vs.parent && bs.pos > vs.end && uses.every((u) => u.pos < bs.end) && !jumpsIn(vs.end, bs.pos, vs.parent) && !mrefs.some((r) => r.pos > vs.end && r.pos < bs.pos) && !loopsOf(bs).some((L) => !loopsOf(vs).includes(L));
+      if (setBack) { info.setBack = true; for (const c of [...pushed]) writes.push(c); }
+      else if (changed.length) { ok = false; break; }
+      else for (const c of pushed) { writes.push(c); pushes.set(c, { m: info.m, key: info.key, local: ld }); }
       localUses.set(ld, uses);
     }
     // a set of a name that is no bucket local of this map
     for (const w of writes) if (w.__bucketSet && !w.__bucketSet.every((x) => locals.has(x.ld))) ok = false;
     if (!ok) continue;
     const after = (a, b) => b.pos > a.pos || loopsOf(a).some((L) => loopsOf(b).includes(L)); // b may run after a
-    // an escape followed by a write: the escaped array misses the write
+    // an escape followed by a write: the escaped value misses the write
     if (escapes.some((e) => writes.some((w) => after(e, w)))) continue;
-    // a bucket local used after a write that is not its own push (the local would no longer be the map's array)
+    // a push local used after a write that is not its own push (the local would no longer be the map's array)
     let bad = false;
     for (const [ld, uses] of localUses) {
+      if (locals.get(ld).setBack) continue;
       const own = new Set([...pushes].filter(([, v]) => v.local === ld).map(([c]) => c));
       for (const u of uses) for (const w of writes) {
         if (own.has(w) || (w.__bucketSet?.some((x) => x.ld === ld))) continue;
