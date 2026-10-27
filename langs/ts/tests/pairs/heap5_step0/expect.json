@@ -1,0 +1,19 @@
+{
+ "scope": [
+  "root_name",
+  "stamp",
+  "width"
+ ],
+ "equal": {
+  "root_name": true,
+  "stamp": true,
+  "width": false
+ },
+ "why": "step 0, two measurement defects: rootName takes a recursive tree type, whose missing shape the census now names (recursive shape) where it walked the type forever (the translation overflowed the stack); it stays out of the heap core and the value reading proves n.name + \"\" equal to n.name. stamp returns the count of a map whose callback returns a reference: the callback's return is its own result, not the unit's, so its guard reads it not exposed (it read it exposed by its result); proved. width adds one (unproved, WITNESS).",
+ "b": {
+  "rootName": "PASS-bounded",
+  "stamp": "PASS-bounded",
+  "width": "WITNESS"
+ },
+ "heap": true
+}

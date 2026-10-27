@@ -388,9 +388,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   }
   // a unit that may grow an array: a push, an unshift or an inserting splice in its text, or a call of one that may
   const growsOwn = (u) => { let g = false; const w = (n) => { if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && (['push', 'unshift'].includes(n.expression.name.text) || (n.expression.name.text === 'splice' && n.arguments.length > 2))) g = true; ts.forEachChild(n, w); }; w(u.body); return g; };
-  // why a type has no shape: the first offending part, for the census
-  function shapeWhy(t) {
+  // why a type has no shape: the first offending part, for the census. A type met again while it is open is a
+  // recursive shape (a tree of nodes): named, never descended twice (the walk would not end)
+  function shapeWhy(t, open = new Set()) {
     if (!t) return 'none';
+    if (open.has(t)) return 'recursive shape';
+    open = new Set(open).add(t);
     const parts = nonNull(t);
     if (parts.length !== 1) return parts.length === 0 ? 'null or undefined only' : 'union';
     if (parts.length !== (t.flags & TF.Union ? t.types.length : 1) && !shapeOf(t)) return 'a reference, or null and undefined together, that may be absent'; // never read as present
@@ -401,7 +404,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (t.flags & (TF.Void | TF.Undefined | TF.Null | TF.Never)) return 'void';
     if (t.flags & TF.EnumLike) return 'enum';
     if (checker.isTupleType(t)) return 'tuple';
-    if (checker.isArrayType(t)) return `array of ${shapeWhy(checker.getTypeArguments(t)[0])}`;
+    if (checker.isArrayType(t)) return `array of ${shapeWhy(checker.getTypeArguments(t)[0], open)}`;
     if (t.flags & TF.Object) {
       if (t.getCallSignatures().length) return 'function';
       if (t.getConstructSignatures().length) return 'class';
@@ -415,7 +418,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (p.flags & ts.SymbolFlags.Optional) return 'optional field';
         if (p.flags & ts.SymbolFlags.Accessor) return 'accessor field';
         const ft = checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? sf);
-        if (!shapeOf(ft, 1)) return `field ${p.name}: ${shapeWhy(ft)}`;
+        if (!shapeOf(ft, 1)) return `field ${p.name}: ${shapeWhy(ft, open)}`;
       }
       return 'depth';
     }
@@ -870,10 +873,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       }
       if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) && inputRooted(n.expression.expression)) { writesInput = true; const recv = unparen(n.expression.expression); if (effDepth(recv) >= 1) risks.add('nested write through an input'); }
       if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) writesInput = true; if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L) && effDepth(L) >= 2) risks.add('nested write through an input'); }
-      if (ts.isReturnStatement(n) && n.expression && !fresh(n.expression)) risks.add('result may carry an input or shared reference');
-      if (ts.isArrowFunction(n) && !ts.isBlock(n.body) && n.parent && ts.isCallExpression(n.parent) === false && n === u.fn.body) { /* unreachable: units with expression bodies are handled below */ }
+      if (ts.isReturnStatement(n) && n.expression && !nested && !fresh(n.expression)) risks.add('result may carry an input or shared reference');
+      if (ts.isFunctionLike(n)) { nested++; ts.forEachChild(n, walk); nested--; return; } // a nested function's returns are its own result, not the unit's (its writes through an input still count)
       ts.forEachChild(n, walk);
     };
+    let nested = 0;
     if (ts.isBlock(u.body)) walk(u.body); else { walk(u.body); if (!fresh(u.body)) risks.add('result may carry an input or shared reference'); }
     if (writesInput && aliasable.length) risks.add(`write through an input that another input position of the same shape may alias (${aliasable.join(', ')})`);
     return [...risks];
