@@ -96,3 +96,19 @@ array or a second record carries no domain: the lemma ranges over more heaps, ne
 Out: a union of records, of mixed literal kinds, negative or fractional number literals, enum literals.
 Pair `heap_unions`: `toggle`, `mark` (the other value tested first, proved only through the domain), `weight` (WITNESS).
 Reach: 103 -> 126 (units 53,866 -> 53,859: the census roots include live clones).
+
+## 6. Dictionaries on the ordered map model
+
+Reading: `Record<string, T>` of a primitive is a cell `Dk_T(keys: seq<string>, m: map<string, T>, proto: bool)`.
+`d[k] = v` is `DictSet_` (a new key goes last); `k in d` is `DictIn_` (own, or a key of Object.prototype when the
+bit is set); `d[k]` is `DictGet_` after `DictMark_`, which marks the world when `d` does not own `k`; `{}` allocates
+an empty cell with the bit set. Soundness: an unowned key reads `undefined` or an Object.prototype function, neither
+modelled, so a read proves only where the unit wrote the key; a primitive written to `__proto__` of an ordinary object
+is ignored by its setter and the read of that key is the prototype (so `readBack` is unproved, though lane B agrees).
+Key order is observed (the reachable graph lists keys in order; lane B witnesses the swapped `both`); JavaScript puts
+integer-like keys first, a function of the insertion sequence, so equal sequences mean equal orders: never a false proof.
+What the ordinary lane must share (row a485327e): the key sequence beside the map with the same append rule, and
+`in` through Object.prototype's names (`Object.getOwnPropertyNames(Object.prototype)`), else the two readings of one
+dictionary disagree. Out: dictionaries of records, number keys, keyed literals, `delete`, iteration over keys.
+Pair `heap_dicts`: `put` (another key, WITNESS), `both` (other order, WITNESS), `store`, `has` (proved), `readBack`.
+Reach: 126 -> 128; the type leaf `dictionary` falls 851 -> 726 (the rest hold records or number keys).
