@@ -8,8 +8,9 @@
 // uses), so what the editor shows is exactly what the proof lane will refuse. Where a mechanical rewrite keeps the
 // author's meaning it is offered as an ESLint suggestion; where it does not (a mutation that must become a returned
 // value), the message says the shape to write and no rewrite is offered. A value typed `any` or `unknown` is shown with
-// the type its uses propose and the label of that proposal (rule any-type, option `anyType`, on by default); when the
-// proposal is conditional, the suggestion inserts the annotation at the declaration and changes nothing else.
+// the type its uses and same-file callers propose and the label of that proposal (rule any-type, option `anyType`, on
+// by default); when the proposal is conditional, the quick fix (an ESLint suggestion) inserts the annotation at the
+// declaration and changes nothing else; a `flag-only` finding marks a value no evidence types and offers no fix.
 import { lintFile } from '../lint/lint.mjs';
 
 import { ADVICE } from '../lint/advice.mjs';
@@ -32,7 +33,7 @@ const provable = {
         const src = context.sourceCode ?? context.getSourceCode();
         for (const f of findings) {
           const loc = { start: { line: f.line, column: f.col - 1 }, end: { line: f.endLine, column: f.endCol - 1 } };
-          const advice = f.advice ?? ''; // the rewrite with its label in front: [proved], [conditional: <precondition>] or [migration]
+          const advice = f.advice ?? ''; // the rewrite with its label in front: [proved], [conditional: <precondition>], [migration] or [flag-only]
           const suggest = [];
           const range = [src.getIndexFromLoc(loc.start), src.getIndexFromLoc(loc.end)];
           if (f.rule === 'division' && f.text) suggest.push({ desc: 'integer division: wrap in Math.floor(...)', fix: (fixer) => fixer.replaceTextRange(range, `Math.floor(${f.text})`) });

@@ -19,7 +19,9 @@ A usage node gives `string`/`number`/`boolean` from operators and compared liter
 - `migration`, conflict listed, no proposal: two kinds of use, a caller's type lacking a use (a string passed where
   the uses map over an array), or a caller and a callee that disagree.
 - `migration`, no proposal: the code tests the type at run time (`typeof`, `Array.isArray`, `instanceof`), so the uses
-  are narrowed; or no use fixes a type ("<name> is never read", "no returned value has a type").
+  are narrowed.
+- `flag-only`, no proposal: no use fixes a type ("<name> is never read", "no returned value has a type"). Where the
+  rule looks beyond a unit (bound names, interface fields, non-unit functions): design/any-advice.md.
 
 `--json` adds `kind`, `name`, `typed`, `how`, `proposal`, `evidence`, `conflicts`, `fix` (the annotation after the name
 or over a written type; none on a for-of binding or a parenthesis-free arrow). ESLint shows `lean (any-type): <finding>;

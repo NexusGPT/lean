@@ -1,10 +1,12 @@
-// any-type: the declaration of every value typed `any` or `unknown` inside a checked unit (a parameter, a local, a
-// field, a return), with a type proposed from how the code uses the value. The proposal is a claim about intent, never
-// a proof: it carries the label `conditional` with its evidence as the precondition, `migration` when the evidence
-// conflicts, and no proposal at all when nothing fixes a type. Not reported: an `any` that comes from an import the
-// project could not resolve (that is `unresolved-module`, the checkout's finding), a `catch` binding, `this`.
-// The rule only adds findings; lintFile reports it when asked (opts.anyType, `--any-type`), so no verdict moves.
-// See design/any-type.md.
+// any-type: the declaration of every value typed `any` or `unknown` in a file (a parameter, a local, a bound name, a
+// class field, an interface or type-literal field, a unit's return), with a type proposed from how the code uses the
+// value and what flows into it. The proposal is a claim about intent, never a proof: it carries the label
+// `conditional` with its evidence as the precondition; `migration` when the evidence conflicts or the code tests the
+// type at run time; `flag-only` when no evidence exists, so the value is marked and nothing is proposed. Owned by
+// another finding, and named only in opts.skipped: an `any` that comes from an import the project could not resolve
+// (that is `unresolved-module`, the checkout's finding), a `catch` binding, a rejection reason; `this` is not a value
+// the code declares. The rule only adds findings; lintFile reports it when asked (opts.anyType, `--any-type`), so no
+// verdict moves. See design/any-type.md and design/any-advice.md.
 import { ts, overlaps, topLevelFunctions, lineOf, colOf, isArrayLike } from '../common.mjs';
 import { usage, newNode, mergeNodes } from '../exec/usage.mjs';
 import { labelTag } from './advice.mjs';
@@ -42,8 +44,11 @@ function envImports(sf, checker) {
   return syms;
 }
 
-export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = [] } = {}) {
+export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = [], skipped = null } = {}) {
   const out = [];
+  // a declaration typed any that another finding owns (an unresolved import's value, a catch binding, a rejection
+  // reason): named with its reason when the caller asks (opts.skipped), so a count can tell it from a gap
+  const skip = (d, reason) => { if (skipped && d?.name) { const at = d.name.getStart(sf); skipped.push({ line: lineOf(sf, at), col: colOf(sf, at), reason }); } };
   const units = topLevelFunctions(sf);
   const env = envImports(sf, checker);
   const tOf = (n) => { try { return checker.getTypeAtLocation(n); } catch { return null; } };
@@ -57,11 +62,12 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     const w = (n) => {
       if (hit) return;
       if (ts.isTypeReferenceNode(n) && !symOf(n.typeName)) { hit = true; return; } // a type name nothing declares
+      if (ts.isCallExpression(n) && n.expression.kind === K.ImportKeyword && n.arguments[0] && !symOf(n.arguments[0])) { hit = true; return; } // `import("x")` of a module the project cannot resolve
       if (ts.isIdentifier(n)) {
         const s = symOf(n);
         if (s && env.has(s)) { hit = true; return; }
         const d = s?.valueDeclaration;
-        if (d && d.getSourceFile() === sf && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d)) && d.name !== n && envDecl(d)) { hit = true; return; }
+        if (d && d.getSourceFile() === sf && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d) || ts.isBindingElement(d)) && d.name !== n && envDecl(d)) { hit = true; return; }
       }
       ts.forEachChild(n, w);
     };
@@ -75,6 +81,10 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     let r = !!t && (t.intrinsicName === 'error' || t.intrinsicName === 'unresolved');
     if (!r && d.type) r = mentionsEnv(d.type);
     if (!r && d.initializer) r = mentionsEnv(d.initializer);
+    if (!r && ts.isBindingElement(d)) { // a bound name takes its type from the declaration the pattern belongs to
+      let root = d.parent; while (root && (ts.isObjectBindingPattern(root) || ts.isArrayBindingPattern(root) || ts.isBindingElement(root))) root = root.parent;
+      if (root && (ts.isVariableDeclaration(root) || ts.isParameter(root))) r = envDecl(root);
+    }
     if (!r && ts.isVariableDeclaration(d) && d.parent && ts.isVariableDeclarationList(d.parent) && d.parent.parent && (ts.isForOfStatement(d.parent.parent) || ts.isForInStatement(d.parent.parent))) r = mentionsEnv(d.parent.parent.expression);
     if (!r && ts.isParameter(d) && !d.type) { // a callback parameter takes its type from where the callback goes
       const fn = d.parent; let at = fn; while (at.parent && ts.isParenthesizedExpression(at.parent)) at = at.parent;
@@ -151,12 +161,14 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
       if (ts.isSpreadElement(p) && p.parent && ts.isArrayLiteralExpression(p.parent)) { node.array = true; return; }
     }
     const w = (n) => {
-      if (ts.isIdentifier(n) && n !== declName && symOf(n) === sym) {
+      if ((ts.isIdentifier(n) || ts.isPrivateIdentifier(n)) && n !== declName && symOf(n) === sym) {
         refs++;
-        const e = up(n); const p = e.parent;
+        // a field's symbol is named by the member of an access (`x.data`, `this.data`): the value is the whole access
+        const v = n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n ? n.parent : n;
+        const e = up(v); const p = e.parent;
         if (p && ts.isBinaryExpression(p) && p.left === e && p.operatorToken.kind === K.EqualsToken) assigns.push(p.right);
         else if (p && ts.isShorthandPropertyAssignment(p)) { /* handed into a record: says nothing of its type */ }
-        else classify(n, tree);
+        else classify(v, tree);
       }
       ts.forEachChild(n, w);
     };
@@ -185,7 +197,10 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     const parts = [];
     for (const k of ks) {
       if (k === 'string' || k === 'number' || k === 'boolean') parts.push(k);
-      else if (k === 'array') { const el = n.elem && depth < 3 ? shapeOf(n.elem, `${path}[i]`, depth + 1, conflicts, evidence) : 'unknown'; parts.push(/[|&=]/.test(el) ? `(${el})[]` : `${el}[]`); if (lenOnly) evidence.push(`${path}.length is read`); else if (n.elem) evidence.push(`${path} is indexed or iterated`); else evidence.push(`${path} is used as an array`); }
+      else if (k === 'array' && n.tuple && !n.elem && !n.len) { // an array pattern: one type per position it binds
+        const els = Array.from({ length: n.tuple.length }, (_, i) => (n.tuple[i] && depth < 3 ? shapeOf(n.tuple[i], `${path}[${i}]`, depth + 1, conflicts, evidence) : 'unknown'));
+        parts.push(`[${els.join(', ')}]`); evidence.push(`${path} is bound by position`);
+      } else if (k === 'array') { const el = n.elem && depth < 3 ? shapeOf(n.elem, `${path}[i]`, depth + 1, conflicts, evidence) : 'unknown'; parts.push(/[|&=]/.test(el) ? `(${el})[]` : `${el}[]`); if (lenOnly) evidence.push(`${path}.length is read`); else if (n.elem) evidence.push(`${path} is indexed or iterated`); else evidence.push(`${path} is used as an array`); }
       else if (k === 'record') {
         const keys = Object.keys(n.fields);
         if (!keys.length || depth >= 3) { parts.push('object'); continue; }
@@ -204,6 +219,8 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     let text = parts.length ? parts.join(' | ') : 'unknown';
     if (parts.length > 1 && parts.some((p) => p.includes('=>'))) text = parts.map((p) => (p.includes('=>') ? `(${p})` : p)).join(' | ');
     if (text !== 'unknown') {
+      const absent = n.compares.includes(null) || n.compares.some(isUndef) || (n.truthy && !ks.has('boolean'));
+      if (absent && parts.length === 1 && ks.has('function')) text = `(${text})`; // `(() => T) | undefined`, never `() => T | undefined`
       if (n.compares.includes(null)) text += ' | null';
       if (n.compares.some(isUndef) || (n.truthy && !ks.has('boolean'))) text += ' | undefined';
     }
@@ -254,25 +271,45 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
       msg = `\`${name}\` is ${tt} (${how}); the code tests its type at run time (${ev.evidence[0]}): no one type is proposed`;
       adviceText = `keep the test and the ${tt}, or write the union of the types ${name} may hold`;
     } else if (kind === 'return') {
-      label = 'migration';
+      label = 'flag-only';
       const why = ev.partial ? `${ev.partial} returned value(s) typed any beside typed ones` : ev.refs ? 'no returned value has a type' : 'nothing is returned';
       msg = `\`${name}\` is ${tt} (${how}); no evidence: ${why}`;
       adviceText = `no evidence: ${why}; write the type its callers mean`;
     } else {
-      label = 'migration';
-      const why = ev.refs ? `no use of ${name} fixes a type` : `${name} is never read`;
+      label = 'flag-only';
+      const why = ev.bodiless ? `${name} belongs to a signature without a body, so nothing here reads it` : ev.refs ? `no use of ${name} fixes a type` : `${name} is never read`;
       msg = `\`${name}\` is ${tt} (${how}); no evidence: ${why}`;
       adviceText = `no evidence: ${why}; write the type its callers mean`;
     }
     const pos = node.getStart(sf), end = node.getEnd();
     const f = { file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule: 'any-type', msg, text: sf.text.slice(pos, end).slice(0, 200), kind, name, typed: tt, how, proposal, evidence: ev.evidence, ...(ev.conflicts.length ? { conflicts: ev.conflicts } : {}) };
     if (ev.guarded) f.guarded = true;
+    if (proposal) f.proposalKind = proposalKind(proposal);
     if (proposal && ev.fix && !proposal.includes('import(')) f.fix = { line: lineOf(sf, ev.fix.start), col: colOf(sf, ev.fix.start), endLine: lineOf(sf, ev.fix.end), endCol: colOf(sf, ev.fix.end), text: ev.fix.text(proposal) };
     const u = unitSpans.find(([, a, b]) => a <= f.line && f.line <= b); f.unit = u ? u[0] : unitName;
     f.label = label; f.labelDecided = true; if (precondition) f.precondition = precondition;
     f.advice = `${labelTag(label, precondition)} ${adviceText}`;
     out.push(f);
   }
+  // what a proposal is, for the count and the fixtures: a record, a primitive (string, number, boolean or a union of
+  // them, with or without null and undefined), or another type (an array, a function, a named type, a mixed union)
+  const topParts = (p) => { // the members of a union at its top level, never inside braces, brackets or parentheses
+    const parts = []; let depth = 0, from = 0;
+    for (let i = 0; i < p.length; i++) {
+      const c = p[i];
+      if (c === '{' || c === '[' || c === '(' || c === '<') depth++;
+      else if (c === '}' || c === ']' || c === ')' || (c === '>' && p[i - 1] !== '=')) depth--;
+      else if (depth === 0 && p.startsWith(' | ', i)) { parts.push(p.slice(from, i)); from = i + 3; i += 2; }
+    }
+    parts.push(p.slice(from));
+    return parts;
+  };
+  const proposalKind = (p) => {
+    const parts = topParts(p).filter((x) => x !== 'null' && x !== 'undefined');
+    if (parts.length && parts.every((x) => x === 'string' || x === 'number' || x === 'boolean')) return 'primitive';
+    if (parts.length === 1 && /^\{ .* \}$/.test(parts[0])) return 'record';
+    return 'other';
+  };
   // where the annotation goes: after the name (and its `?`/`!`), or over a written type
   const annotateAt = (d) => {
     if (d.type) return { start: d.type.getStart(sf), end: d.type.getEnd(), text: (p) => p };
@@ -350,18 +387,45 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
 
   const inRange = (n) => overlaps(sf, n, ranges);
   const seenDecl = new Set();
+  const isPattern = (n) => !!n && (ts.isObjectBindingPattern(n) || ts.isArrayBindingPattern(n));
+  const nameText = (d) => (ts.isIdentifier(d.name) ? d.name.text : short(d.name.getText(sf), 40));
+  const noReads = () => ({ tree: newNode(), passes: [], assigns: [], refs: 0 });
+  const readsOfName = (name, scope) => { const sym = ts.isIdentifier(name) ? symOf(name) : null; return sym ? readsOf(sym, scope, name) : noReads(); };
+  // a binding pattern read as one value: a record whose fields are the reads of the names it binds (an array pattern
+  // reads elements); every bound name is covered by the finding at the pattern
+  function patternReads(pat, scope) {
+    const node = newNode(); let refs = 0;
+    for (const el of pat.elements) {
+      if (!ts.isBindingElement(el)) continue;
+      seenDecl.add(el);
+      if (el.dotDotDotToken) continue; // a rest element is the remainder: it names no field
+      const r = isPattern(el.name) ? patternReads(el.name, scope) : readsOfName(el.name, scope);
+      refs += r.refs;
+      if (el.initializer) addLit(r.tree.compares, UNDEF); // a default separates at undefined
+      if (ts.isArrayBindingPattern(pat)) { node.array = true; (node.tuple ??= [])[pat.elements.indexOf(el)] = r.tree; continue; } // each position its own reads
+      const pn = el.propertyName ?? el.name;
+      const key = ts.isIdentifier(pn) || ts.isStringLiteral(pn) || ts.isNumericLiteral(pn) ? pn.text : null;
+      if (key == null || key === '__proto__') continue;
+      node.fields[key] = mergeNodes(Object.hasOwn(node.fields, key) ? node.fields[key] : null, r.tree);
+    }
+    return { tree: node, passes: [], assigns: [], refs };
+  }
+  const readsOfDecl = (d, scope) => (isPattern(d.name) ? patternReads(d.name, scope) : readsOfName(d.name, scope));
+  // a declaration typed any: reported, or named in opts.skipped when another finding owns it
+  function owned(d) { if (envDecl(d)) { skip(d, 'environment'); return true; } return false; }
   for (const u of units.values()) {
-    if (!inRange(u.node) || !u.fn || !u.body) continue; // a declaration without a body has no uses
+    if (!inRange(u.node) || !u.fn || !u.body) continue; // a declaration without a body is read with the signatures below
     const scope = u.fn;
     // parameters of the unit: usage.mjs's tree, callers' arguments, callees' parameters
     u.params.forEach((p, i) => {
       if (ts.isIdentifier(p.name) && p.name.text === 'this') return;
-      const t = tOf(p.name); if (!isAnyT(t) || envDecl(p)) return;
+      const t = tOf(p.name); if (!isAnyT(t)) return;
       seenDecl.add(p);
-      const sym = ts.isIdentifier(p.name) ? symOf(p.name) : null;
-      const r = sym ? readsOf(sym, scope, p.name) : { tree: newNode(), passes: [], assigns: [], refs: 0 };
+      if (owned(p)) return;
+      const r = readsOfDecl(p, scope);
       const tree = mergeNodes(usageOf(u)?.params[i]?.node ?? null, r.tree);
-      const name = ts.isIdentifier(p.name) ? p.name.text : short(p.name.getText(sf), 40);
+      if (r.tree.tuple && !tree.elem && !tree.len) tree.tuple = r.tree.tuple; // an array pattern keeps its positions
+      const name = nameText(p);
       const cands = [];
       for (const c of callsOf.get(u) ?? []) { const a = c.arguments?.[i]; if (!a || ts.isSpreadElement(a)) continue; const at = tOf(a); if (nonAny(at)) cands.push({ type: at, where: `a caller at line ${lineOf(sf, c.getStart(sf))} passes`, side: 'in' }); }
       cands.push(...calleeCandidates(r.passes));
@@ -369,27 +433,15 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
       const used = r.refs || Object.keys(tree.fields).length || tree.elem || tree.len;
       report(p.name, 'parameter', name, t, !!p.type, u.name, { ...ev, refs: used ? 1 : 0, fix: annotateAt(p) });
     });
-    // locals and the parameters of nested functions: the reader above, assignments, callees
+    // locals, bound names and the parameters of nested functions: the reader above, assignments, callees
     const walk = (n) => {
-      if (ts.isVariableDeclaration(n) && !(n.parent && ts.isCatchClause(n.parent))) site(n, 'local');
-      else if (ts.isParameter(n) && n.parent !== u.fn && !(ts.isIdentifier(n.name) && n.name.text === 'this') && !rejectionHandler(n)) site(n, 'parameter');
+      if (ts.isVariableDeclaration(n) && !(n.parent && ts.isCatchClause(n.parent))) site(n, 'local', scope, u.name);
+      else if (ts.isBindingElement(n)) site(n, 'binding', scope, u.name);
+      else if (ts.isParameter(n) && n.parent !== u.fn && !(ts.isIdentifier(n.name) && n.name.text === 'this') && !rejectionHandler(n)) site(n, 'parameter', n.parent.body ? n.parent : scope, u.name);
       ts.forEachChild(n, walk);
     };
-    const site = (d, kind) => {
-      if (seenDecl.has(d)) return; seenDecl.add(d);
-      const t = tOf(d.name); if (!isAnyT(t) || envDecl(d)) return;
-      const name = ts.isIdentifier(d.name) ? d.name.text : short(d.name.getText(sf), 40);
-      const sym = ts.isIdentifier(d.name) ? symOf(d.name) : null;
-      const r = sym ? readsOf(sym, scope, d.name) : { tree: newNode(), passes: [], assigns: [], refs: 0 };
-      const cands = [];
-      const inits = [...(d.initializer ? [d.initializer] : []), ...r.assigns];
-      for (const e of inits) { const et = tOf(e); if (nonAny(et)) cands.push({ type: et, where: `assigned at line ${lineOf(sf, e.getStart(sf))}`, side: 'in' }); }
-      cands.push(...calleeCandidates(r.passes));
-      const ev = combine(r.tree, cands, d, name);
-      report(d.name, kind, name, t, !!d.type, u.name, { ...ev, refs: r.refs, fix: annotateAt(d) });
-    };
-    if (u.body) walk(u.body);
-    for (const p of u.params) if (p.initializer) walk(p.initializer);
+    walk(u.body);
+    for (const p of u.params) { if (p.initializer) walk(p.initializer); if (isPattern(p.name)) walk(p.name); }
     // the return: the types of the returned values
     if (!u.isCtor && u.accessor !== 'set') {
       let sig = null; try { sig = checker.getSignatureFromDeclaration(u.fn); } catch { sig = null; }
@@ -413,13 +465,31 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
       }
     }
   }
+  // one local, bound name or nested parameter: its reads in its scope, what is assigned to it, the callees it goes to
+  function site(d, kind, scope, unitName) {
+    if (seenDecl.has(d)) return; seenDecl.add(d);
+    const t = tOf(d.name); if (!isAnyT(t)) return;
+    if (owned(d)) return;
+    const name = nameText(d);
+    const fix = kind === 'binding' ? null : annotateAt(d); // a bound name takes no annotation of its own
+    if (kind === 'parameter' && !d.parent.body) { report(d.name, kind, name, t, !!d.type, unitName, { proposal: null, conflicts: [], evidence: [], refs: 0, bodiless: true, fix }); return; }
+    const r = readsOfDecl(d, scope);
+    const cands = [];
+    const inits = [...(d.initializer ? [d.initializer] : []), ...r.assigns];
+    for (const e of inits) { const et = tOf(e); if (nonAny(et)) cands.push({ type: et, where: `assigned at line ${lineOf(sf, e.getStart(sf))}`, side: 'in' }); }
+    cands.push(...calleeCandidates(r.passes));
+    const ev = combine(r.tree, cands, d, name);
+    report(d.name, kind, name, t, !!d.type, unitName, { ...ev, refs: r.refs, fix });
+  }
   // fields of a class: what its methods read off `this.<field>` and what they assign to it
   for (const st of sf.statements) {
     if (!ts.isClassDeclaration(st) || !st.name || !inRange(st)) continue;
     const methods = [...units.values()].filter((m) => m.cls === st);
     for (const m of st.members) {
       if (!ts.isPropertyDeclaration(m) || !m.name || !ts.isIdentifier(m.name)) continue;
-      const t = tOf(m.name); if (!isAnyT(t) || envDecl(m)) continue;
+      const t = tOf(m.name); if (!isAnyT(t)) continue;
+      seenDecl.add(m);
+      if (owned(m)) continue;
       const name = m.name.text;
       let tree = null; const cands = [];
       for (const mu of methods) { const us = usageOf(mu); const fnode = us?.this?.fields[name]; if (fnode) tree = mergeNodes(tree, fnode); }
@@ -432,5 +502,59 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
       report(m.name, 'field', name, t, !!m.type, null, { ...ev, refs: used ? 1 : 0, fix: annotateAt(m) });
     }
   }
+  // a field read through its member name anywhere in the file (`x.data`, `this.data`): the uses of every access, the
+  // values assigned to it, and the values a record literal of that type gives it
+  function member(d) {
+    if (seenDecl.has(d)) return; seenDecl.add(d);
+    const t = tOf(d.name); if (!isAnyT(t)) return;
+    // a member of an interface or a type literal written `unknown` already says "narrow before use": it is the type a
+    // proposal itself gives a field no use reads, so only an `any` member is reported
+    if (ts.isPropertySignature(d) && !(t.flags & TF.Any)) return;
+    if (owned(d)) return;
+    const sym = symOf(d.name); const name = nameText(d);
+    const r = sym ? readsOf(sym, sf, d.name) : noReads();
+    let tree = r.tree, refs = r.refs;
+    const cands = [];
+    for (const e of [...(d.initializer ? [d.initializer] : []), ...r.assigns]) { const et = tOf(e); if (nonAny(et)) cands.push({ type: et, where: `assigned at line ${lineOf(sf, e.getStart(sf))}`, side: 'in' }); }
+    if (sym && ts.isIdentifier(d.name)) {
+      const key = d.name.text;
+      const given = (v) => { const et = tOf(v); if (nonAny(et)) cands.push({ type: et, where: `given at line ${lineOf(sf, v.getStart(sf))}`, side: 'in' }); };
+      const w = (n) => {
+        // a record literal of the field's type, `{ data: v }`: v is a value the field holds
+        if ((ts.isPropertyAssignment(n) || ts.isShorthandPropertyAssignment(n)) && ts.isIdentifier(n.name) && n.name.text === key && ts.isObjectLiteralExpression(n.parent)) {
+          let ct = null; try { ct = checker.getContextualType(n.parent) ?? null; } catch { ct = null; }
+          const ps = ct && !(ct.flags & TF.Union) ? checker.getPropertyOfType(ct, key) : null;
+          if (ps === sym) given(ts.isPropertyAssignment(n) ? n.initializer : n.name);
+        }
+        // a JSX attribute of the props type, `<C data={v} />`
+        if (ts.isJsxAttribute(n) && n.initializer && ts.isJsxExpression(n.initializer) && n.initializer.expression && symOf(n.name) === sym) given(n.initializer.expression);
+        // a destructured read, `const { data } = props`: the bound name's uses are the field's
+        if (ts.isBindingElement(n) && !n.dotDotDotToken && ts.isIdentifier(n.name) && ts.isObjectBindingPattern(n.parent) && ((n.propertyName ?? n.name).getText?.(sf) === key)) {
+          const pt = tOf(n.parent); const ps = pt && !(pt.flags & TF.Union) ? checker.getPropertyOfType(pt, key) : null;
+          if (ps === sym) { const br = readsOfName(n.name, enclosing(n)); refs += br.refs + 1; if (n.initializer) addLit(br.tree.compares, UNDEF); tree = mergeNodes(tree, br.tree); }
+        }
+        ts.forEachChild(n, w);
+      };
+      w(sf);
+    }
+    const ev = combine(tree, cands, d, name);
+    report(d.name, 'field', name, t, !!d.type, null, { ...ev, refs: refs || cands.length ? 1 : 0, fix: annotateAt(d) });
+  }
+  // everything the units above do not hold: module-level values, the parameters and locals of functions that are not
+  // units (an object-literal method, a class property arrow, a default export), the fields of other classes, interfaces
+  // and type literals, the parameters of a signature without a body; and the declarations another finding owns
+  const enclosing = (n) => { for (let p = n.parent; p; p = p.parent) if (ts.isFunctionLike(p) && p.body) return p; return sf; };
+  const ownedNamed = (d, reason) => { if (seenDecl.has(d)) return; seenDecl.add(d); if (isAnyT(tOf(d.name))) skip(d, reason); };
+  const rest = (n) => {
+    const here = inRange(n);
+    if (ts.isParameter(n)) {
+      if (!(ts.isIdentifier(n.name) && n.name.text === 'this') && here) { if (n.parent.body && rejectionHandler(n)) ownedNamed(n, 'rejection'); else site(n, 'parameter', n.parent.body ? n.parent : enclosing(n), null); }
+    } else if (ts.isVariableDeclaration(n)) {
+      if (n.parent && ts.isCatchClause(n.parent)) { if (here) ownedNamed(n, 'catch'); } else if (here) site(n, 'local', enclosing(n), null);
+    } else if (ts.isBindingElement(n)) { if (here) site(n, 'binding', enclosing(n), null); }
+    else if ((ts.isPropertyDeclaration(n) || ts.isPropertySignature(n)) && n.name && !ts.isComputedPropertyName(n.name) && here) member(n);
+    ts.forEachChild(n, rest);
+  };
+  rest(sf);
   return out;
 }

@@ -2,7 +2,8 @@
 // Each rewrite carries a label, because a person or an agent applies it blind:
 //   proved: the rewrite keeps behaviour on every input;
 //   conditional: it keeps behaviour when the precondition holds (one sentence a reader can check);
-//   migration: it changes the meaning on some input, and a person decides.
+//   migration: it changes the meaning on some input, and a person decides;
+//   flag-only: no rewrite is proposed, the finding marks a place with no evidence to propose one (any-type only).
 // The lint decides the label at the site for loose-equality (eqeqeq), bound-function (no-useless-call) and
 // arguments (prefer-rest-params); every other rule carries the label written here. See design/advice-labels.md.
 export const ADVICE = {
@@ -72,7 +73,7 @@ export const ADVICE = {
   'inheritance': { label: 'migration', text: 'A class that extends another is outside the subset in this version.' },
   'effect': { label: 'migration', text: 'This global is an effect; pass what you need as an argument.' },
   'non-null': { label: 'migration', text: '`x!` is translated as an uninterpreted value when absent; prefer an explicit check.' },
-  'any-type': { label: 'conditional', precondition: 'every use of the value is covered by the proposed type', text: 'Annotate the value with the type its uses need. The finding decides the label at the site: conditional with the evidence, migration when the evidence conflicts or is absent; a proposed type is a claim about intent, never proved.' },
+  'any-type': { label: 'conditional', precondition: 'every use of the value is covered by the proposed type', text: 'Annotate the value with the type its uses and same-file callers need. The finding decides the label at the site: conditional with the evidence as the precondition, migration when the evidence conflicts or the code tests the type at run time, flag-only when no evidence exists; a proposed type is a claim about intent, never proved.' },
   'record-rest': { label: 'migration', text: 'Take the rest in a parameter of a plain record or of an untyped value, with written keys (`function Card({ title, ...rest }: CardProps)`), or copy the fields you need by name; a copy by name drops the properties the type does not declare, which the rest keeps.' },
   'static-this': { label: 'conditional', precondition: 'the method is never called through a subclass (every call names this class, or the class has no subclass)', text: 'In a static method `this` is the class the call went through. Name the declaring class instead: `C.m()` for `this.m()`, `C.K` for `this.K`.' },
   'implicit-this': { label: 'conditional', precondition: 'the declared type covers every receiver the function is called with', text: 'Declare the receiver as the first parameter, `function f(this: T, ...)`: a type annotation, the emitted JavaScript is the same, and a declared receiver is read as the function\'s first operand.' },
