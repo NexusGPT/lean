@@ -2,7 +2,7 @@
 // lean check: one unit, parent against candidate, both lanes, one verdict with its certificate.
 //
 //   node check.mjs --parent <file.ts> --candidate <file.ts> --unit <name|Class.method> [--out verdict.json]
-//                  [--n 200] [--seed 1] [--project <tsconfig>|--no-project] [--dafny-seconds 60] [--scope scope.json]
+//                  [--n 200] [--seed 1] [--project <tsconfig>|--no-project] [--dafny-seconds 60] [--scope scope.json] [--deep[=k]]
 //
 // Order: lane B (bounded execution) first; a WITNESS ends the question. Then lane A (proof): lint, translate both
 // sides (the effect set shared), theorem, Dafny. The verdict is the strongest statement the evidence supports:
@@ -18,7 +18,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { runPair, crumb, crumbText, verdictGuard } from './exec/run.mjs';
+import { runPair, crumb, crumbText, verdictGuard, deepDepth } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 import { ts, loadProgram, topLevelFunctions } from './common.mjs';
@@ -44,6 +44,7 @@ export async function check(opts) {
   cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where, ...(w.through ? { through: w.through } : {}) })) : null };
   try { cert.unitTextEqual = b.unitTextEqual ?? unitTextEqual(parent, candidate, unit); } catch { cert.unitTextEqual = null; } // the unit's own text, comments and whitespace dropped, equal on both sides or not: beside the file hashes, it says whether a difference came through this function's text or through what it calls
   cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
+  if (b.bound?.frontEnd?.layers) { const L = b.bound.frontEnd.layers; cert.layers = { tree: { ...L.tree, proof: 'lane A reads the unit alone: a component tag is a name and useContext a world read keyed by the context, so a proof covers the unit\'s own tree of names' }, styles: L.styles, notObserved: L.notObserved }; } // a rendered unit: each layer its own result with its assumptions (design/ui-layers.md)
   if (b.verdict === 'NEW' || b.verdict === 'REFUSE' || b.candidateOnly) { cert.lanes.B = b; return finish(b.verdict, cert, b); }
   if (adapter) cert.adapter = adapter;
   // a WITNESS ends the question, except on a unit whose signature changed with no adapter: the two sides take different
@@ -209,7 +210,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const files = { parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit') };
   const guard = verdictGuard(opt('--out', null), (r) => harnessAsk(r.reason, files));
-  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), deep: a.includes('--deep') }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
+  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
   guard.settle();
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);

@@ -20,10 +20,19 @@ export function libraryHook(checker, n) {
   let imp = d; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent;
   if (!imp || !ts.isStringLiteral(imp.moduleSpecifier)) return null;
   const imported = ts.isImportSpecifier(d) ? (d.propertyName ?? d.name).text : null; if (!imported) return null;
-  const row = hookTable().hooks.find((h) => h.package === imp.moduleSpecifier.text && h.hook === imported);
+  const row = hookTable().hooks.find((h) => h.package === imp.moduleSpecifier.text && h.hook === imported && typeof h.result === 'object'); // a record row; a value row (useContext) keeps the call's own reading
   return row ? { row, name: row.hook, pkg: row.package } : null;
 }
 
+// the callee of `n` is a value row of the table (useContext from react): a world read whose result is the call's own type
+export function valueHook(checker, n) {
+  if (!ts.isCallExpression(n) || !ts.isIdentifier(n.expression)) return null;
+  const d = checker.getSymbolAtLocation(n.expression)?.declarations?.[0]; if (!d || !ts.isImportSpecifier(d)) return null;
+  let imp = d; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent;
+  if (!imp || !ts.isStringLiteral(imp.moduleSpecifier)) return null;
+  const row = hookTable().hooks.find((h) => h.package === imp.moduleSpecifier.text && h.hook === (d.propertyName ?? d.name).text && typeof h.result !== 'object');
+  return row ? { row, name: row.hook, pkg: row.package } : null;
+}
 // the kind of a field's value, from the table's type string
 export function fieldKind(typeString) {
   const t = typeString.trim();
@@ -45,8 +54,13 @@ export function hookDatatype(row, num = 'int') {
 }
 // lane B: the record spec a fake answers for a listed hook (spec.mjs kinds)
 export function hookRecordSpec(row) {
+  if (typeof row.result !== 'object') return { kind: 'opaque' }; // a value row: the value is the provider's (useContext), never a record
   if (row.result['*']) return { kind: 'dict', value: { kind: 'string' } };
   const fields = {};
   for (const [f, t] of Object.entries(row.result)) { const k = fieldKind(t); fields[f] = { spec: k === 'boolean' ? { kind: 'boolean' } : k === 'number' ? { kind: 'number' } : k === 'string' ? { kind: 'string' } : k === 'function' ? { kind: 'function' } : { kind: 'opaque' }, optional: false }; }
   return { kind: 'record', fields };
 }
+// the useContext row: React's own context read. Lane B (exec/run.mjs) reads the nearest provider element above the hook's
+// frame in the rendered tree, else the outside value; lane A reads the call as a world read keyed by the context handle,
+// since the provider of a unit's root is outside the unit. The row's text is the certificate's assumption.
+export function contextRow() { return hookTable().hooks.find((h) => h.package === 'react' && h.hook === 'useContext') ?? null; }

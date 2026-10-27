@@ -301,6 +301,18 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     const ok = got.verdict === want.verdict && (!want.laneA || A.verdict === want.laneA) && (!want.reason || (got.reason ?? '').includes(want.reason)) && (!want.door || A.adapter?.door === want.door);
     add('pair', name, `check ${unit} ${want.verdict}${want.laneA ? ' (' + want.laneA + ')' : ''}`, ok, `${got.verdict ?? 'no result'} | A: ${A.verdict ?? '-'} | B: ${got.certificate?.lanes?.B?.verdict ?? '-'} | ${(got.reason ?? '').slice(0, 140)}`);
   }
+  // the layered UI certificate (design/ui-layers.md): check.mjs on the unit, at the stated depth; the tree layer (its verdict,
+  // the depth, the children rendered and left as handles, each context read and where it came from) and the styles layer
+  // (its verdict, the classes it could not read), each carrying its assumptions
+  for (const [i, want] of (exp.layers ?? []).entries()) {
+    const out = path.join(tmpd, `layers_${i}_${want.unit}.json`);
+    run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', want.unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(want.deep ? [`--deep=${want.deep}`] : []), '--out', out]);
+    let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
+    const L = got.certificate?.layers ?? null, T = L?.tree ?? {}, S = L?.styles ?? {};
+    const names = (xs) => JSON.stringify((xs ?? []).map((x) => x.component).sort());
+    const ok = !!L && (want.verdict === undefined || got.verdict === want.verdict) && (want.tree === undefined || T.verdict === want.tree) && T.depth === (want.deep ?? 0) && (want.rendered === undefined || names(T.rendered) === JSON.stringify([...want.rendered].sort())) && (want.handles === undefined || names(T.handles) === JSON.stringify([...want.handles].sort())) && (want.contexts ?? []).every((c) => (T.contexts ?? []).some((x) => x.frame === c.frame && x.from === c.from)) && (want.styles === undefined || S.verdict === want.styles) && (want.unsupported ?? []).every((c) => (S.unsupported ?? []).some((x) => x.class === c)) && (T.assumptions ?? []).length > 0 && (S.assumptions ?? []).length > 0 && /pixels/.test(L.notObserved ?? '');
+    add('pair', name, `layers ${want.unit}${want.deep ? ' deep ' + want.deep : ''}: tree ${want.tree ?? '-'}, styles ${want.styles ?? '-'}`, ok, L ? `${got.verdict} | tree ${T.verdict} depth ${T.depth}, rendered ${names(T.rendered)}, handles ${names(T.handles)}, contexts ${(T.contexts ?? []).map((x) => `${x.frame}:${x.from}`).join(' ') || 'none'} | styles ${S.verdict}${(S.unsupported ?? []).length ? ', unsupported ' + S.unsupported.map((x) => x.class).join(' ') : ''}` : `no layers (${got.verdict ?? 'no result'})`);
+  }
   // the callee a WITNESS came through (exec/callees.mjs): a unit whose own text is equal on both sides names the changed same-file callees on its call path, with where.cause 'callee'; an empty list: the witness names none and keeps its own cause
   for (const [unit, want] of Object.entries(exp.through ?? {})) {
     let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
