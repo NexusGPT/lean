@@ -129,7 +129,7 @@ TypeScript today; each language fills its own table. The reading words: **exact*
 | **references (the heap)** | a parameter the function changes is an output; plain records and arrays live in a heap the proof carries; whole-heap equality is the identity certificate, and a canonical reading proves equality up to a renaming of fresh cells and dropped allocations; an identity guard withholds a value proof when sharing could interfere |
 | **the library** | `push`, `unshift`, `pop`, `shift`, `splice`, `reverse`, `slice`, `concat`, `map`, `filter`, `sort` with a comparator, the string methods, `Map` and `Set` with their insertion order (`keys`, `values`, `entries`, spread, `for … of`), `Array.from`, `Object.keys` of a dictionary, as transitions of a versioned table validated against the engine on every run and against Test262 |
 | **objects and keys** | own keys against prototype keys: `in` and `hasOwnProperty` read exactly on records and dictionaries; a `Map` is never a dictionary; `Object.create(null)`, `__proto__` members and files that make their own prototypes are refused by name |
-| **React** | JSX is a value tree; hooks are slots in call order; handlers are descriptors of their deferred setter calls or opaque values; effects with deps, cleanup and order; `useMemo` and `useCallback` exact; same-package children rendered one level down under `--deep`; Suspense as `ASK`; the Rules of React as refusals (`hook-order`, `render-impure`) plus a double render |
+| **React** | JSX is a value tree; hooks are slots in call order; handlers are descriptors of their deferred setter calls or opaque values; effects with deps, cleanup and order; `useMemo` and `useCallback` exact; same-package children rendered to a stated depth under `--deep=k`, each `useContext` read from the nearest provider above it; a `className` as declarations under a pinned Tailwind table; Suspense as `ASK`; the Rules of React as refusals (`hook-order`, `render-impure`) plus a double render |
 | **time** | a virtual clock: timeouts, intervals, immediates, animation frames and idle callbacks fire in due order after the call; a cleared timer is nothing; pending work is part of the observation |
 | **modules** | dynamic `import()` and `require()` as opaque handles, module constants by their initializers, module cells as world transitions, path aliases resolved from the project, `process.env` and globals as reads of the world |
 
@@ -330,7 +330,22 @@ PASS-decided   renders: "every click order from every prop assignment, decided: 
 
 A counter whose handler the proof lane can read (`setN(n + 1)` against `setN(1 + n)`) gets `PASS-proved` over its hook slots: one lemma, equal props and slots give an equal tree and an equal next slot. A child component is a name in the parent's tree with its props; under `--deep` a same-package child is rendered one level down inside the parent's run, on its own hook slots, and the certificate names the mode.
 
-In progress for this layer: a tree rendered to a stated depth where each child reads its context from the nearest provider above it, and a styles layer that compares `className` strings as the declarations they resolve to against the project's pinned Tailwind configuration, reported as separate layers of one certificate. Pixels, layout and the accessibility tree need a browser; no proof exists for them in any field we read, so lean never claims one.
+**Two more layers, each with its own verdict and assumptions in the certificate.** Under `--deep=k` the tree layer renders same-package children to depth *k*, top down where their elements are placed, and each `useContext` reads the nearest provider above it; a parent whose child reads a changed provider value is a `WITNESS` at depth 1 that the one-level render missed:
+
+```
+WITNESS   layers.tree: { verdict: "WITNESS", depth: 1, rendered: [{ component: "Bump", depth: 1 }],
+                         contexts: [{ frame: "Bump#1", context: "context#2", from: "provider" }] }
+patch:    C[0]/rendered/button[0] text "1" to "2"
+```
+
+The styles layer reads a `className` as the declarations of its classes under a pinned Tailwind table, so `text-sm` to `text-base` is a styles `WITNESS` (another font size and line height), a reordering of the same classes is equal in the styles layer while the tree layer still reports the attribute's text, and a class outside the table is reported `unknown`, never equal and never a witness:
+
+```
+Badge   layers.styles: WITNESS       parent: { "font-size": "0.875rem", "line-height": "1.25rem", … }   candidate: text-base
+Card    layers.styles: PASS-bounded  inputs: 30, elementsCompared: 60   (the tree layer: WITNESS, the attribute's text changed)
+```
+
+The project's own Tailwind theme is not read yet, so its theme classes are `unknown`. Pixels, layout and the accessibility tree need a browser; no proof exists for them in any field we read, so lean never claims one.
 
 ### 6. A coding agent's loop
 
@@ -407,7 +422,7 @@ Everything else is yours: `async`/`await`, `try`/`catch`, `switch`, destructurin
 
 | | command |
 |---|---|
-| one function, both lanes, one verdict with its certificate | `node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit applyDiscount` (`--unit PricingService.applyDiscount` for a method; `--scope scope.json`; `--n`, `--seed`, `--dafny-seconds`, `--deep`, `--out verdict.json`) |
+| one function, both lanes, one verdict with its certificate | `node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit applyDiscount` (`--unit PricingService.applyDiscount` for a method; `--scope scope.json`; `--n`, `--seed`, `--dafny-seconds`, `--deep[=k]`, `--out verdict.json`) |
 | a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m,file.ts:f] [--out report.md] [--json report.json]` |
 | lane B alone, in seconds | `node langs/ts/exec/run.mjs --parent old.ts --candidate new.ts --unit f [--sequence-depth 2 --sequence-breadth 4 --deep]` |
 | the finite lane alone | `node langs/ts/exec/finite.mjs --parent old.tsx --candidate new.tsx --unit Panel [--max 500]` |
@@ -429,7 +444,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 | the readings in the table above, the heap core, the library table with its engine validation, the virtual clock, hook slots, deep children | built |
 | the lint's labelled advice (`proved`, `conditional`, `migration`) and the `any` type proposals in the editor | built; the proposals are being widened to every `any` declaration from the unit's reads and its same-file callers |
 | the CI workflow on a GitHub runner | built, validated offline, not yet exercised on a runner |
-| the front-end layers: a tree to a stated depth with context from the nearest provider, resolved styles against the pinned Tailwind configuration | in progress |
+| the front-end layers: a tree to a stated depth with context from the nearest provider, resolved styles against the pinned Tailwind table | built; a project's own Tailwind theme is not read yet |
 | a row per changed unit in the pull-request table, including the refused and skipped ones, with the reason | planned |
 | a run identity and verdict reuse across pushes | planned |
 | a `WITNESS` that names the source line of the first differing effect on each side, with the advised rewrite | planned |
