@@ -6,7 +6,7 @@
 // array and string methods, integer division under Math.floor, and `%`. What stays refused is what no
 // deterministic translation can model: any, casts, prototype access, dynamic keys, mutation of what the
 // function does not own, effects reached through globals, throw, generics on the function itself.
-// Usage: node lint.mjs <file.ts> [--changed <ranges.json>] [--json] [--any-type] [--project <tsconfig>|--no-project]
+// Usage: node lint.mjs <file.ts> [--changed <ranges.json>] [--json] [--advice] [--any-type] [--project <tsconfig>|--no-project]
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -2173,6 +2173,50 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (rule === 'ts-strict' && /JSX\.IntrinsicElements|JSX element implicitly has type 'any'|JSX element type/.test(msg)) continue; // missing React types: one environment cause; the JSX itself is already reported
     out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule, msg, env: rule === 'unresolved-module' });
   }
+  // Optional mechanical advice never enters the proof gate. The editor and --advice ask for it.
+  if (opts.advisory) {
+    const note = (node, rule, msg) => {
+      if (!overlaps(sf, node, ranges)) return;
+      v(node, rule, msg);
+      out[out.length - 1].advisory = true;
+    };
+    const memberName = (node) => {
+      node = unparenX(node);
+      if (ts.isPropertyAccessExpression(node)) return node.name.text;
+      if (ts.isElementAccessExpression(node) && node.argumentExpression) {
+        const key = unparenX(node.argumentExpression);
+        if (ts.isStringLiteral(key) || ts.isNoSubstitutionTemplateLiteral(key)) return key.text;
+      }
+      return null;
+    };
+    const literal = (node) => {
+      node = unparenX(node);
+      return ts.isLiteralExpression(node) || [K.TrueKeyword, K.FalseKeyword, K.NullKeyword].includes(node.kind);
+    };
+    const walkAdvice = (node) => {
+      if (ts.isConditionalExpression(node) && [node.whenTrue, node.whenFalse].some((branch) => ts.isConditionalExpression(unparenX(branch)))) {
+        note(node, 'nested-ternary', 'a branch contains another conditional expression; nested if statements preserve its evaluation order');
+      }
+      if (ts.isBinaryExpression(node) && node.operatorToken.kind >= K.FirstAssignment && node.operatorToken.kind <= K.LastAssignment && ['innerHTML', 'outerHTML'].includes(memberName(node.left)) && !literal(node.right)) {
+        note(node, 'inner-html', 'this HTML property receives a value that is not a literal; use textContent if the intent is plain text');
+      }
+      if (ts.isCallExpression(node) && memberName(node.expression) === 'write') {
+        const receiver = unparenX(unparenX(node.expression).expression);
+        if (ts.isIdentifier(receiver) && receiver.text === 'document' && [null, 'global'].includes(originOf(checker, receiver, sf, null).kind)) {
+          note(node, 'inner-html', 'document.write parses HTML and changes the document; choose an element for textContent');
+        }
+      }
+      if (ts.isForOfStatement(node) && !node.awaitModifier) {
+        const body = ts.isBlock(node.statement) && node.statement.statements.length === 1 ? node.statement.statements[0] : node.statement;
+        const value = ts.isExpressionStatement(body) ? unparenX(body.expression) : null;
+        if (value && ts.isAwaitExpression(value) && ts.isCallExpression(unparenX(value.expression))) {
+          note(node, 'promise-all-order', 'this loop awaits one call per element; Promise.all needs independent calls that commute in the world');
+        }
+      }
+      ts.forEachChild(node, walkAdvice);
+    };
+    walkAdvice(sf);
+  }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
   for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
   // the unit each finding sits in, and the advice for its rule
@@ -2228,7 +2272,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   }
 
   const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--changed' && args[i - 1] !== '--project');
-  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--any-type] [--project <tsconfig>|--no-project]'); process.exit(2); }
+  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--advice] [--any-type] [--project <tsconfig>|--no-project]'); process.exit(2); }
   const ci = args.indexOf('--changed');
   let ranges = null;
   if (ci >= 0) {
@@ -2237,7 +2281,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   }
   const pi = args.indexOf('--project');
   const project = args.includes('--no-project') ? false : pi >= 0 ? args[pi + 1] : true;
-  const res = lintFile(file, ranges, { project, anyType: args.includes('--any-type') });
+  const res = lintFile(file, ranges, { project, advisory: args.includes('--advice'), anyType: args.includes('--any-type') });
   if (args.includes('--json')) console.log(JSON.stringify(res, null, 2));
   else if (args.includes('--agent')) console.log(agentReport(file, res));
   else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);

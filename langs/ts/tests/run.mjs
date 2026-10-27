@@ -381,7 +381,7 @@ for (const f of fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.e
   // an any_* fixture runs with --any-type; `// expect-none: <rule>` names a rule that must not fire (an any from an
   // unresolved import is unresolved-module only)
   const none = (src.match(/^\/\/ expect-none:\s*(\S+)/m) ?? [])[1];
-  const l = run('node', [lint, path.join(advDir, f), '--json', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
+  const l = run('node', [lint, path.join(advDir, f), '--json', '--advice', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
   let all = [], found = []; try { all = JSON.parse(l.stdout); found = all.filter((x) => x.rule === rule); } catch { /* not JSON: fails below */ }
   const tag = label === 'conditional' ? '[conditional: ' : `[${label}]`;
   const ok = l.status === 1 && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
