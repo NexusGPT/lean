@@ -35,6 +35,7 @@ import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
+import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
 
@@ -2163,53 +2164,22 @@ export function translate(file, fnName, opts = {}) {
     if (currentUnit) w(currentUnit.body);
     return found;
   }
-  // deferred calls are data: their callee, arguments, order and return behavior, without running the world
+  // deferred calls are data: their callee, arguments, order and return behavior, without running the world. The arrow
+  // is read by handlers.mjs (shared with lane B's interpreter); here its steps are rendered as Dafny values
   function reactHandler(cb) {
-    if (!ts.isArrowFunction(cb) || cb.parameters.length || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null;
-    let usedByReact = false;
-    const usage = (n) => {
-      if (usedByReact) return;
-      if (ts.isJsxAttribute(n) && n.initializer && ts.isJsxExpression(n.initializer) && arrowOf(checker, n.initializer.expression) === cb) usedByReact = true;
-      if (reactHook(checker, n) === 'useCallback' && arrowOf(checker, n.arguments[0]) === cb) usedByReact = true;
-      ts.forEachChild(n, usage);
-    };
-    if (currentUnit) usage(currentUnit.body);
-    if (!usedByReact) return null;
-    const steps = ts.isBlock(cb.body) ? [...cb.body.statements] : [{ kind: K.ReturnStatement, expression: cb.body }];
-    const outside = (id) => {
-      const d = checker.getSymbolAtLocation(id)?.declarations?.[0];
-      let imp = d; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent;
-      return imp ? `import:${imp.moduleSpecifier.text}:${ts.isImportSpecifier(d) ? (d.propertyName ?? d.name).text : '*'}` : `global:${id.text}`;
-    };
-    const specs = [];
-    for (const st of steps) {
-      if (!ts.isExpressionStatement(st) && !ts.isReturnStatement(st)) return null;
-      const e = st.expression;
-      const setterCallee = (c) => !!currentSlots && ts.isIdentifier(c.expression) && setterSlot.has(checker.getSymbolAtLocation(c.expression)); // a slot setter may take an updater arrow: the ReactSet step applies it
-      if (e && ts.isCallExpression(e) && !e.questionDotToken && (e.arguments.every((a) => renderPure(checker, a)) || (setterCallee(e) && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])))) {
-        let f = e.expression, name, recv = [];
-        if (ts.isIdentifier(f)) {
-          const o = originOf(checker, f, sf, currentUnit?.node ?? null);
-          if (o.kind === 'unit') return null;
-          if (o.kind === 'local') { name = 'value'; recv = [f]; }
-          else if (o.kind === 'import' || o.kind === 'global') name = outside(f);
-          else return null;
-        } else if (ts.isPropertyAccessExpression(f) && !f.questionDotToken) {
-          name = `member:${f.name.text}`;
-          if (renderPure(checker, f.expression)) recv = [f.expression];
-          else if (ts.isIdentifier(f.expression) && ['import', 'global'].includes(originOf(checker, f.expression, sf, currentUnit?.node ?? null).kind)) name = outside(f.expression) + '.' + f.name.text;
-          else return null;
-        } else return null;
-        specs.push({ name, recv, args: [...e.arguments], returns: ts.isReturnStatement(st) });
-      } else if (ts.isReturnStatement(st) && (!e || renderPure(checker, e))) specs.push({ value: e });
-      else return null;
-    }
+    const h = readHandler(checker, sf, cb, { isSetter: (s) => (currentSlots && setterSlot.has(s) ? setterSlot.get(s) : null), unitBody: currentUnit?.body ?? null, unitNode: currentUnit?.node ?? null });
+    if (!h) return null;
     anyType();
-    addPrelude('ReactExpr', 'datatype ReactExpr = ReactAtom(atom: Any) | ReactExpr(op: string, operands: seq<ReactExpr>)');
-    addPrelude('ReactStep', 'datatype ReactStep = ReactCall(callee: string, receiver: seq<ReactExpr>, args: seq<ReactExpr>, returnsResult: bool) | ReactReturn(value: ReactExpr) | ReactSet(slot: int, next: Any)');
+    addPrelude('ReactExpr', 'datatype ReactExpr = ReactAtom(atom: Any) | ReactExpr(op: string, operands: seq<ReactExpr>) | ReactParam(index: int)');
+    addPrelude('ReactStep', 'datatype ReactStep = ReactCall(callee: string, receiver: seq<ReactExpr>, args: seq<ReactExpr>, returnsResult: bool) | ReactReturn(value: ReactExpr) | ReactSet(slot: int, next: Any) | ReactSetExpr(slot: int, nextExpr: ReactExpr)');
     addPrelude('ReactHandler', 'datatype ReactHandler = ReactHandler(steps: seq<ReactStep>)');
+    const symOf = (e) => (ts.isIdentifier(e) ? checker.getSymbolAtLocation(e) : null);
+    // a parameter of the handler is the atom ReactParam(k); a local stands for its initializer
     const box = (e) => {
       if (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e)) return box(e.expression);
+      const s = symOf(e);
+      if (s && h.params.includes(s)) return `ReactParam(${h.params.indexOf(s)})`;
+      if (s && h.locals.has(s)) return box(h.locals.get(s));
       if (ts.isPropertyAccessExpression(e)) return `ReactExpr(${strEsc('get:' + e.name.text)}, [${box(e.expression)}])`;
       if (ts.isBinaryExpression(e)) return `ReactExpr(${strEsc('binary:' + ts.tokenToString(e.operatorToken.kind))}, [${box(e.left)}, ${box(e.right)}])`;
       if (ts.isPrefixUnaryExpression(e)) return `ReactExpr(${strEsc('unary:' + ts.tokenToString(e.operator))}, [${box(e.operand)}])`;
@@ -2217,19 +2187,33 @@ export function translate(file, fnName, opts = {}) {
       if (ts.isTemplateExpression(e)) return `ReactExpr(${strEsc('template:' + JSON.stringify([e.head.text, ...e.templateSpans.map((s) => s.literal.text)]))}, [${e.templateSpans.map((s) => box(s.expression)).join(', ')}])`;
       return `ReactAtom(${expr(e, anyTarget())})`;
     };
+    // the handler's locals a value reads, bound as a Dafny let before it (as lambda binds its parameters)
+    const withLocals = (node, code) => { const ls = localsOf(checker, node, h); return ls.length ? `(${ls.map((s) => { const init = h.locals.get(s); return `var ${dn(s.name)} := ${expr(init, checker.getTypeAtLocation(s.valueDeclaration.name))};`; }).join(' ')} ${code})` : code; };
     // a setter of a slot unit: the step carries the NEXT value of the slot (the handler captured this render's values; an
-    // updater is applied to the slot's running value, so chained updaters compose), not the setter's descriptor
+    // updater is applied to the slot's running value, so chained updaters compose), not the setter's descriptor; a next
+    // value that reads a parameter of the handler is the symbolic tree ReactSetExpr, and the slot's running value is
+    // then unknown to a later updater
     const cur = currentSlots ? Array.from({ length: currentSlots.n }, (_, i) => `slots.s${i}`) : null;
+    let refused = false;
     const setStep = (sp) => {
-      if (!cur || sp.name !== 'value' || sp.recv.length !== 1 || !ts.isIdentifier(sp.recv[0]) || sp.args.length !== 1) return null;
-      const sym = checker.getSymbolAtLocation(sp.recv[0]); if (!sym || !setterSlot.has(sym)) return null;
-      const i = setterSlot.get(sym), D = currentSlots.types[i], a = sp.args[0];
+      if (!cur || sp.kind !== 'set') return null;
+      const i = sp.slot, D = currentSlots.types[i], a = sp.args[0];
+      if (mentionsParam(checker, a, h)) {
+        if (sp.updater) { refused = true; return null; } // an updater over the event: no Dafny value and no tree for it
+        cur[i] = null;
+        return `ReactSetExpr(${i}, ${box(a)})`;
+      }
       let code;
-      try { code = ts.isArrowFunction(a) && a.parameters.length <= 1 && !a.modifiers?.some((m) => m.kind === K.AsyncKeyword) ? `(${lambda(a, 1, [checker.getTypeAtLocation(a.parameters[0]?.name ?? a)])})(${cur[i]})` : outerParens(expr(a, checker.getTypeAtLocation(a))); } catch (e) { if (!(e instanceof Unsupported)) throw e; return null; }
+      try {
+        if (ts.isArrowFunction(a) && a.parameters.length <= 1 && !a.modifiers?.some((m) => m.kind === K.AsyncKeyword)) { if (cur[i] === null) { refused = true; return null; } code = withLocals(a, `(${lambda(a, 1, [checker.getTypeAtLocation(a.parameters[0]?.name ?? a)])})(${cur[i]})`); }
+        else code = withLocals(a, outerParens(expr(a, checker.getTypeAtLocation(a))));
+      } catch (e) { if (!(e instanceof Unsupported)) throw e; return null; }
       cur[i] = code;
       return `ReactSet(${i}, ${convertD(code, D, anyType())})`;
     };
-    const codes = specs.map((s) => s.name !== undefined ? (setStep(s) ?? `ReactCall(${strEsc(s.name)}, [${s.recv.map(box).join(', ')}], [${s.args.map(box).join(', ')}], ${s.returns})`) : `ReactReturn(${s.value ? box(s.value) : `ReactAtom(${convertD('Unit', 'Unit', anyType())})`})`);
+    const callOf = (s) => (s.kind === 'set' ? { name: 'value', recv: [s.callee], args: s.args, returns: s.returns } : s);
+    const codes = h.steps.map((s) => s.kind !== 'return' ? (setStep(s) ?? ((c) => `ReactCall(${strEsc(c.name)}, [${c.recv.map(box).join(', ')}], [${c.args.map(box).join(', ')}], ${c.returns})`)(callOf(s))) : `ReactReturn(${s.value ? box(s.value) : `ReactAtom(${convertD('Unit', 'Unit', anyType())})`})`);
+    if (refused) return null;
     const d = dtype(typeOf(cb), cb);
     return `${external(`react_handler_${mangle(d)}`, ['ReactHandler'], d)}(ReactHandler([${codes.join(', ')}]))`;
   }
