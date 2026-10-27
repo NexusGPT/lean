@@ -1,9 +1,41 @@
 {
-  "why": "A local bound to a same-file call's result is another name for what the callee returned. mark: held() returns the receiver's own set and the candidate adds to it through the local; the lint refuses the candidate (alias-mutation), so no lemma is written, and lane B's witness stands. tag: the same add through view(), two calls from the field, is a refactor of the direct add; refused by the same rule, so lane A says nothing and lane B bounds it. grown: copy() returns fresh() which returns a spread copy of primitives, fresh through its callee; the push is admitted and proved (the heap core reads it, one allocation on each side). count: untouched, proved. Each unit runs through check.mjs, which translates the unit and its callees only, so an admitted unit is proved beside a refused one.",
+  "why": "A local bound to a same-file call's result is another name for what the callee returned. mark: held() returns the receiver's own set and the candidate adds to it through the local; the lint refuses the candidate (alias-mutation), so no lemma is written, and lane B's witness stands. tag: the same add through view(), two calls from the field, is a refactor of the direct add; refused by the same rule, so lane A says nothing and lane B bounds it. grown: copy() returns fresh() which returns a spread copy of primitives, fresh through its callee; the push is admitted and proved (the heap core reads it, one allocation on each side). count: untouched, proved. Each unit runs through check.mjs, which translates the unit and its callees only, so an admitted unit is proved beside a refused one. bump: find returns the caller's own row, and the candidate writes it; refused as alias-mutation (the library table's result for find is an existing element), lane B's witness stands. counts: map returns a new array (its table row is fresh), so the push changes only the copy; admitted and proved on a refactor.",
   "candidateOnly": [
-    { "file": "candidate.ts", "parent": "parent.ts", "unit": "Box.mark", "verdict": "WITNESS" },
-    { "file": "candidate.ts", "parent": "parent.ts", "unit": "Box.tag", "verdict": "PASS-bounded" },
-    { "file": "candidate.ts", "parent": "parent.ts", "unit": "Box.grown", "verdict": "PASS-proved" },
-    { "file": "candidate.ts", "parent": "parent.ts", "unit": "Box.count", "verdict": "PASS-proved" }
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "Box.mark",
+      "verdict": "WITNESS"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "Box.tag",
+      "verdict": "PASS-bounded"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "Box.grown",
+      "verdict": "PASS-proved"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "Box.count",
+      "verdict": "PASS-proved"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "bump",
+      "verdict": "WITNESS"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "counts",
+      "verdict": "PASS-proved"
+    }
   ]
 }

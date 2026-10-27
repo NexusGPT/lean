@@ -15,6 +15,16 @@ import { fileUsesReals } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
+// what a built-in call returns, from the library transition table (translate/library.json, its `result` fact, which lane B
+// checks on every run): `fresh` is a new object, `receiver` and `element-or-undefined` an object another name may reach
+const LIBRARY_RESULT = new Map(JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), '../translate/library.json'), 'utf8')).operations.map((o) => [o.op, o.result]));
+// the built-ins the table has no row for yet, by ECMA-262: a new array, record or iterator, or an object the caller may already hold
+const LIBRARY_RESULT_MORE = {
+  'Array.prototype.flat': 'fresh', 'Array.prototype.flatMap': 'fresh', 'Array.prototype.toSorted': 'fresh', 'Array.prototype.toReversed': 'fresh', 'Array.prototype.toSpliced': 'fresh', 'Array.prototype.with': 'fresh',
+  'Array.prototype.keys': 'fresh', 'Array.prototype.values': 'fresh', 'Array.prototype.entries': 'fresh', 'Map.prototype.keys': 'fresh', 'Map.prototype.values': 'fresh', 'Map.prototype.entries': 'fresh', 'Set.prototype.keys': 'fresh', 'Set.prototype.values': 'fresh', 'Set.prototype.entries': 'fresh',
+  'Array.from': 'fresh', 'Array.of': 'fresh', 'Object.keys': 'fresh', 'Object.values': 'fresh', 'Object.entries': 'fresh', 'Object.fromEntries': 'fresh', 'Object.create': 'fresh', 'JSON.parse': 'fresh', 'Promise.all': 'fresh', 'Promise.allSettled': 'fresh',
+  'Array.prototype.find': 'element-or-undefined', 'Array.prototype.findLast': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
+};
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 
@@ -144,8 +154,8 @@ export function lintFile(file, ranges = null, opts = {}) {
   const promiseCallbacks = new Set(); // inline promise bodies have their own fault channel
   const callbackStack = []; // the arrow functions being checked, innermost last
   const aliasLocals = new Set(); // declarations of locals bound to another name's object (an alias): never mutated here
-  const aliasCalls = new Map(); // alias declarations bound to a same-file call's result -> the callee's name, for the message
-  const aliasMsg = (name, decl, tail = true) => aliasCalls.has(decl) ? `\`${name}\` holds the result of \`${aliasCalls.get(decl)}\`, which may return a field, a parameter or a module object under another name; return a copy from it, or change that object through its own name` : `\`${name}\` is another name for a value this function was handed${tail ? '; change it through that name, or copy it first' : ''}`;
+  const aliasCalls = new Map(); // alias declarations bound to a call's result or a loop element -> what they hold, for the message
+  const aliasMsg = (name, decl, tail = true) => aliasCalls.has(decl) ? `\`${name}\` holds ${aliasCalls.get(decl)}, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name` : `\`${name}\` is another name for a value this function was handed${tail ? '; change it through that name, or copy it first' : ''}`;
   const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   const ownedHere = (decl) => { const cb = callbackStack[callbackStack.length - 1]; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
   // the Rules of React, as refusals: a unit that calls a hook is a render function (a component or a custom hook)
@@ -344,6 +354,10 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (!ts.isVariableDeclarationList(init) || init.declarations.length !== 1) v(s, 'destructuring', 'for-of binds one name or one pattern');
         const it = nonNull(tOf(s.expression));
         if (!it.every((t) => isArrayLike(checker, t) || isStr(t) || isSetT(t) || isMapT(t) || isAny(t) || isRecordish(t))) v(s.expression, 'for-of-non-array', 'for-of runs over arrays, strings, sets, maps and iterable values');
+        { // `for (const r of rs) r.n = 1`: each element is another name for an object the iterated value holds
+          const d0 = ts.isVariableDeclarationList(init) ? init.declarations[0] : null;
+          if (d0 && ts.isIdentifier(d0.name) && nonNull(tOf(d0.name)).some((x) => !isPrim(x) && !isAny(x))) { aliasLocals.add(d0); aliasCalls.set(d0, `an element of \`${s.expression.getText(sf).slice(0, 40)}\``); }
+        }
         expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return;
       }
       case K.ForStatement: return forStmt(s);
@@ -439,13 +453,35 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (si && !nonNull(si.type).every(isPrim)) return false;
     return checker.getPropertiesOfType(x).every((p) => nonNull(checker.getTypeOfSymbol(p)).every(isPrim));
   });
-  const COPY_METHODS = new Set(['slice', 'concat', 'filter', 'map', 'flatMap', 'toSorted', 'toReversed', 'toSpliced', 'split']);
   const sameFileCallee = (call, cls) => { // the unit a call names: `this.m()` inside a class, or a same-file function
     const f = unparenX(call.expression);
     if (ts.isPropertyAccessExpression(f) && f.expression.kind === K.ThisKeyword && cls?.name) return units.get(`${cls.name.text}.${f.name.text}`) ?? null;
     if (ts.isIdentifier(f)) { const sym = checker.getSymbolAtLocation(f); const decl = sym?.valueDeclaration ?? sym?.declarations?.[0]; return [...units.values()].find((u) => !u.cls && decl && (u.node === decl || u.fn === decl || (ts.isVariableDeclaration(decl) && decl.initializer === u.fn))) ?? null; }
     return null;
   };
+  // a built-in call by its table name (`Array.prototype.find`, `Map.prototype.get`, `Object.assign`, `structuredClone`)
+  const libraryOp = (call) => {
+    const f = unparenX(call.expression);
+    if (ts.isIdentifier(f)) return f.text === 'structuredClone' && declOf(f).kind === 'global' ? f.text : null;
+    if (!ts.isPropertyAccessExpression(f)) return null;
+    const r = f.expression, name = f.name.text;
+    if (ts.isIdentifier(r) && ['Object', 'Array', 'Promise', 'JSON'].includes(r.text) && declOf(r).kind === 'global') return `${r.text}.${name}`;
+    const rt = nonNull(tOf(r)); if (!rt.length || rt.some(isAny)) return null;
+    const kind = rt.every((x) => isArrayLike(checker, x)) ? 'Array' : rt.every(isSetT) ? 'Set' : rt.every(isMapT) ? 'Map' : rt.every(isStr) ? 'String' : rt.every(isPromiseT) ? 'Promise' : null;
+    return kind ? `${kind}.prototype.${name}` : null;
+  };
+  // true: the call returns a new object no other name reaches (an array copy's elements may be shared, and every change
+  // below an element is refused on its own); false: it may return an object the caller can reach; null: not a built-in call
+  const libraryFresh = (call) => {
+    const op = libraryOp(call); if (!op) return null;
+    if (op === 'Promise.resolve') { const a = call.arguments[0] && unparenX(call.arguments[0]); return !!a && (ts.isArrayLiteralExpression(a) || ts.isObjectLiteralExpression(a) || ts.isNewExpression(a)) && freshShallowLiteral(a); }
+    const res = LIBRARY_RESULT.get(op) ?? LIBRARY_RESULT_MORE[op] ?? (op.startsWith('String.prototype.') ? 'fresh' : null); // a string method never returns an object the caller holds
+    if (res !== 'fresh') return false; // an unknown built-in counts as returning an existing object
+    if (op === 'structuredClone' || op === 'JSON.parse' || op === 'Object.create') return true; // a whole new graph; `Object.create(null)` (a prototype argument is refused as `prototype`) an empty object
+    const t = checker.getAwaitedType?.(tOf(call)) ?? tOf(call);
+    return nonNull(t).every((x) => isPrim(x) || isArrayLike(checker, x)) || membersPrim(t) || /^(Array|Map|Set)\.prototype\.(keys|values|entries)$/.test(op);
+  };
+  const freshShallowLiteral = (a) => (ts.isArrayLiteralExpression(a) ? a.elements : ts.isObjectLiteralExpression(a) ? a.properties : (a.arguments ?? [])).every((x) => { const v = ts.isPropertyAssignment(x) ? x.initializer : ts.isSpreadElement(x) || ts.isSpreadAssignment(x) ? null : x; return !!v && nonNull(tOf(v)).every(isPrim); });
   function returnsFresh(u) {
     if (freshMemo.has(u)) return freshMemo.get(u) === true; // a callee still being read (a cycle) is unknown: not fresh
     freshMemo.set(u, 'reading');
@@ -492,9 +528,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         const callee = sameFileCallee(e, u.cls);
         if (callee) return returnsFresh(callee);
         const f = unparenX(e.expression);
-        if (ts.isPropertyAccessExpression(f) && COPY_METHODS.has(f.name.text) && !nonNull(tOf(f.expression)).some(isAny)) return membersPrim(tOf(e));
-        if (ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && ((f.expression.text === 'Array' && f.name.text === 'from') || (f.expression.text === 'Object' && ['keys', 'values', 'entries'].includes(f.name.text))) && declOf(f.expression).kind === 'global') return membersPrim(tOf(e));
-        return false;
+        return libraryFresh(e) === true; // a built-in: its table row says whether the result is new
       }
       if (ts.isIdentifier(e)) { const sym = checker.getSymbolAtLocation(e); const decl = sym?.valueDeclaration; return !!decl && ts.isVariableDeclaration(decl) && inUnit(decl) && freshLocal(decl); }
       return false;
@@ -524,7 +558,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ref && ts.isIdentifier(d.name) && objish(tOf(d.name))) aliasLocals.add(d);
       // `const s = this.held()`, `const t = pick(user)`: the result of a same-file call may be a field, a parameter or a module
       // object under another name, unless the callee is fresh (returnsFresh); a change through it is a change of that object
-      if (!ref && ts.isCallExpression(init) && ts.isIdentifier(d.name) && objish(tOf(d.name))) { const callee = sameFileCallee(init, currentClass); if (callee && !returnsFresh(callee)) { aliasLocals.add(d); aliasCalls.set(d, callee.name); } }
+      if (!ref && ts.isCallExpression(init) && ts.isIdentifier(d.name) && objish(tOf(d.name))) { const callee = sameFileCallee(init, currentClass); if (callee ? !returnsFresh(callee) : libraryFresh(init) === false) { aliasLocals.add(d); aliasCalls.set(d, `the result of \`${callee ? callee.name : libraryOp(init)}\``); } }
+      // `const t = rs.find(...)`, `m.get(k)`, `Promise.resolve(x)`: a built-in whose table row returns an existing object (libraryFresh)
     }
     if (ts.isArrowFunction(d.initializer) && ts.isIdentifier(d.name)) return callback(d.initializer, null); // a local function value: a pure lambda, called by name or passed as a callback
     expr(d.initializer);

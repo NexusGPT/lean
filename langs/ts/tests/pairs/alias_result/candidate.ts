@@ -50,3 +50,20 @@ export class Box {
     return this.list.length;
   }
 }
+
+type Row = { n: number; label: string };
+
+// changed: writes the found row, which is the caller's row (find returns an element, not a copy)
+export function bump(rs: Row[]): number {
+  const t = rs.find((r) => r.n > 0);
+  if (t) t.n = t.n + 1;
+  return t ? t.n - 1 : 0;
+}
+
+// refactor: map returns a new array, so the push changes only the copy; counted before the push, one more after it
+export function counts(rs: Row[]): number {
+  const xs = rs.map((r) => r.n);
+  const k = xs.length;
+  xs.push(0);
+  return k + 1;
+}

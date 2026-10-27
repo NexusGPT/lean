@@ -47,3 +47,18 @@ export class Box {
     return this.list.length;
   }
 }
+
+type Row = { n: number; label: string };
+
+// reads the first positive row
+export function bump(rs: Row[]): number {
+  const t = rs.find((r) => r.n > 0);
+  return t ? t.n : 0;
+}
+
+// a copy of the counts, grown by one
+export function counts(rs: Row[]): number {
+  const xs = rs.map((r) => r.n);
+  xs.push(0);
+  return xs.length;
+}
