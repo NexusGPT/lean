@@ -413,8 +413,23 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const isBoolT = (t) => !!(t.flags & ts.TypeFlags.BooleanLike); // `&&` and `||` in the core are the boolean connectives; a value on either side is the ordinary translation's mixed logic
   const sameFileCall = (e) => ts.isCallExpression(e) && ts.isIdentifier(e.expression) && fns.has(e.expression.text) && !e.typeArguments;
   // `this.m(..)` in an instance method: the same-file method unit `<Class>.m`, called with `this` as its receiver
+  // constructors: `new C(..)` of a class of this file (not decorated: a class decorator may return another class) runs
+  // `C.constructor` when the class declares one, else allocates inline; a constructor allocates the instance first (the
+  // object exists before its body runs), stores the parameter properties and the field initializers, then runs its body
+  // on the fresh reference and returns it. In a constructor `this` is only written (`this.f = e`): a read could meet a
+  // field not yet stored, a call could run an override of a subclass, and `this` handed anywhere escapes half-built.
+  const newClass = (e) => { if (!ts.isNewExpression(e) || !ts.isIdentifier(e.expression) || e.typeArguments) return null; const sym = checker.getSymbolAtLocation(e.expression); const cd = sym?.declarations?.find((d) => ts.isClassDeclaration(d)); if (!cd || cd.getSourceFile() !== sf || !cd.name || classWhy(cd) || hasDecorator(cd) || !instanceShape(cd, 0)) return null; return cd; };
+  const ctorOf = (cd) => cd.members.find((m) => ts.isConstructorDeclaration(m) && m.body);
+  const ctorUnitOf = (cd) => (ctorOf(cd) && fns.has(`${cd.name.text}.constructor`) ? `${cd.name.text}.constructor` : null);
+  const fieldInits = (cd) => cd.members.filter((m) => ts.isPropertyDeclaration(m) && !m.modifiers?.some((x) => x.kind === K.StaticKeyword) && m.initializer);
+  const paramProps = (cd) => (ctorOf(cd)?.parameters ?? []).filter((p) => p.modifiers?.some((x) => [K.PublicKeyword, K.PrivateKeyword, K.ProtectedKeyword, K.ReadonlyKeyword].includes(x.kind)));
+  const mentionsThis = (n) => { let hit = false; const w = (x) => { if (x.kind === K.ThisKeyword || x.kind === K.SuperKeyword) hit = true; if (!hit && !ts.isFunctionLike(x)) ts.forEachChild(x, w); }; w(n); return hit; };
+  const ctorWhy = (cd) => { if (fieldInits(cd).some((m) => mentionsThis(m.initializer) || ts.isFunctionLike(m.initializer))) return 'a field initializer reads this or is a function'; const c = ctorOf(cd); if (!c) return null; let why = null; const w = (x) => { if (why) return; if (ts.isReturnStatement(x)) why = 'return in a constructor'; if (x.kind === K.SuperKeyword) why = 'super'; if (x.kind === K.ThisKeyword && !(x.parent && ts.isPropertyAccessExpression(x.parent) && x.parent.expression === x && x.parent.parent && ts.isBinaryExpression(x.parent.parent) && x.parent.parent.operatorToken.kind === K.EqualsToken && x.parent.parent.left === x.parent)) why = 'this read or handed in a constructor (a field may not be stored yet)'; if (!ts.isFunctionLike(x) || x === c) ts.forEachChild(x, w); }; w(c); return why; };
   const thisCall = (e, owner) => { if (!owner?.cls || owner.isStatic || owner.isCtor || !ts.isCallExpression(e) || e.typeArguments || !ts.isPropertyAccessExpression(e.expression) || e.expression.expression.kind !== K.ThisKeyword) return null; const name = `${owner.className}.${e.expression.name.text}`; const m = fns.get(name); return m && !m.accessor && !m.isCtor && !m.isStatic && !replaceable(owner.cls, e.expression.name.text) ? name : null; };
-  const calleeOf = (e, owner) => (sameFileCall(e) ? e.expression.text : thisCall(e, owner)); // the same-file unit a call runs, or null
+  // `c.m(..)` where `c` is a const bound to `new C(..)` in the unit: an exact instance of C (no subclass can be behind it,
+  // and C is not decorated), so its method is C's own text: the core call `C.m` with `c` the receiver
+  const freshCall = (e) => { if (!ts.isCallExpression(e) || e.questionDotToken || e.typeArguments || !ts.isPropertyAccessExpression(e.expression) || e.expression.questionDotToken || !ts.isIdentifier(e.expression.expression)) return null; const d = checker.getSymbolAtLocation(e.expression.expression)?.valueDeclaration; if (!d || !ts.isVariableDeclaration(d) || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) || !d.initializer) return null; const cd = newClass(unparen(d.initializer)); if (!cd) return null; const name = `${cd.name.text}.${e.expression.name.text}`; const m = fns.get(name); return m && !m.accessor && !m.isCtor && !m.isStatic && !replaceable(cd, e.expression.name.text) ? name : null; };
+  const calleeOf = (e, owner) => (sameFileCall(e) ? e.expression.text : freshCall(e) ?? thisCall(e, owner)); // the same-file unit a call runs, or null
   const block = (s) => (ts.isBlock(s) ? [...s.statements] : [s]);
   const endsWithReturn = (list) => {
     const s = list[list.length - 1]; if (!s) return false;
@@ -428,7 +443,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     whyNot.set(u.name, reasons);
     let ok = true;
     const no = (why) => { ok = false; reasons.add(why); };
-    if (u.isCtor) no('constructor'); else if (u.accessor) no('accessor'); else if (u.cls && u.isStatic) no('static method');
+    if (u.isCtor) { const w = classWhy(u.cls); if (w) no(`class: ${w}`); else if (!instanceShape(u.cls, 0)) no('class: a field without a shape'); else { const cw = ctorWhy(u.cls); if (cw) no(`constructor: ${cw}`); } } else if (u.accessor) no('accessor'); else if (u.cls && u.isStatic) no('static method');
     else if (u.cls) { const w = classWhy(u.cls); if (w) no(`class: ${w}`); else if (!instanceShape(u.cls, 0)) no('class: a field without a shape'); } // an instance method: `this` is a reference to the record of the class's fields
     if (u.fn.asteriskToken || u.isAsync) no('generator or async');
     if (u.generics?.length) no('generic');
@@ -445,7 +460,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const elementWhy = (e) => { if (lambdaDepth) return 'element access inside a callback'; if (e.questionDotToken) return 'element access form'; const s = shapeOf(typeOf(e.expression)); if (s && s.kind === 'dict') return typeOf(e.argumentExpression).flags & TF.StringLike ? null : 'dictionary key type'; if (!s || s.kind !== 'arr') return 'element access of a non-array'; if (!(typeOf(e.argumentExpression).flags & TF.NumberLike)) return 'element index type'; if (isReal) return 'element index in a real file (a non-integer index reads a property, not an element)'; const a = unparen(e.argumentExpression); if (ts.isPrefixUnaryExpression(a) && a.operator === K.MinusToken) return 'negative element index (it reads a property, not an element)'; return null; };
     for (const p of u.params) { if (ts.isIdentifier(p.name) && /_$/.test(p.name.text)) no('name ending in an underscore (the generated names do)'); else if (!ts.isIdentifier(p.name) || p.name.text === 'this' || p.initializer || p.dotDotDotToken) no('parameter form'); else if (!shapeOf(typeOf(p.name))) no(`parameter type: ${shapeWhy(typeOf(p.name))}`); else names.add(p.name.text); }
     const rt = checker.getSignatureFromDeclaration(u.fn)?.getReturnType();
-    const proc = isVoidT(rt); // a procedure: it returns undefined, read as the unit value; its body may fall off its end
+    const proc = isVoidT(rt) || !!u.isCtor; // a procedure: it returns undefined, read as the unit value; its body may fall off its end (a constructor's too, then it returns the instance)
     if (!proc && (!rt || !shapeOf(rt))) no(`return type: ${shapeWhy(rt)}`);
     if (proc && !ts.isBlock(u.body) && !calleeOf(unparen(u.body), u)) no('expression body of a procedure (only a same-file call)');
     if (!ok) return false;
@@ -471,6 +486,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (s.kind === 'rec' && fieldOf(s, e.name.text).shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') usesIndex = true; // a narrowed read: its lemma shows the value is there
         return checkExpr(e.expression);
       }
+      if (newClass(e)) { const cd = newClass(e); if (lambdaDepth) return no('allocation inside a callback'); const cw = ctorWhy(cd); if (cw) return no(`constructor: ${cw}`); if (ctorOf(cd) && !ctorUnitOf(cd)) return no('constructor unit'); if (!ctorUnitOf(cd)) for (const m of fieldInits(cd)) checkExpr(m.initializer); for (const a of e.arguments ?? []) checkExpr(a); return; } // a construction
       if (copyForm(e)) { if (lambdaDepth) return no('allocation inside a callback'); return checkExpr(copyForm(e).src); } // a fresh cell with the source's contents
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && !e.questionDotToken && e.expression.name.text === 'get' && e.arguments.length === 1 && shapeOf(typeOf(e.expression.expression))?.kind === 'map') { const s = shapeOf(typeOf(e.expression.expression)); if (s.v.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'opt') return no('get of a reference value (an absent reference is not read)'); checkExpr(e.expression.expression); return checkExpr(e.arguments[0]); } // a value or absent
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && (e.expression.text === 'Map' || e.expression.text === 'Set') && !(e.arguments ?? []).length) { if (!shapeOf(typeOf(e))) return no(`new ${e.expression.text} type: ${shapeWhy(typeOf(e))}`); return; } // an empty cell
@@ -636,6 +652,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return no(`statement ${K[s.kind]}`);
       }
     };
+    if (u.isCtor) for (const m of fieldInits(u.cls)) checkExpr(m.initializer); // the field initializers run before the body
     if (!ts.isBlock(u.body)) checkExpr(u.body); // an expression body is the value it returns
     else { const body = [...u.body.statements]; checkStmts(body); if (!proc && !endsWithReturn(body)) no('path without return'); }
     if (ok && usesIndex) indexUnits.add(u.name);
@@ -700,7 +717,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   }
   let core = new Set();
   let inrange = new Set(); // core units whose lemma must also show no element access out of range, on either side
-  const callsOf = (u) => { const calls = new Set(); const w = (n) => { const c = calleeOf(n, u); if (c) calls.add(c); else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression.expression))[0]); const name = cd && `${cd.name.text}.${n.expression.name.text}`; if (name && fns.has(name)) calls.add(name); } ts.forEachChild(n, w); }; w(u.body); return calls; }; // a call of a method on another instance of a same-file class is an edge too: its caller decides its convention
+  const callsOf = (u) => { const calls = new Set(); const w = (n) => { const c = calleeOf(n, u) ?? (newClass(n) ? ctorUnitOf(newClass(n)) : null); if (c) calls.add(c); else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression.expression))[0]); const name = cd && `${cd.name.text}.${n.expression.name.text}`; if (name && fns.has(name)) calls.add(name); } ts.forEachChild(n, w); }; w(u.body); return calls; }; // a call of a method on another instance of a same-file class is an edge too: its caller decides its convention
   function plan(order, only) {
     const own = new Set(order.filter((u) => coreUnit(u) && (!only || only.includes(u.name))).map((u) => u.name));
     // a unit named as a VALUE anywhere (`.then(bump)`, a callback argument, a stored function) keeps its layer-1 signature: out of the core
@@ -970,6 +987,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isObjectLiteralExpression(e) && litShape(e)?.kind === 'dict') { const s = litShape(e); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, [], map[], true);`); return r; }
       if (tuplePos(e)) { const tp = tuplePos(e); return `Get_${tp.s.key}_${dn(tp.field)}(${HW}, ${expr(e.expression)})`; }
       if (ts.isElementAccessExpression(e)) { const [s, r, i] = element(e); if (!safeIndex.has(e)) lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; } // the receiver, then the index, once each; an index loop's own a[i] is in range by its guard
+      if (newClass(e)) { const cd = newClass(e); const cu = ctorUnitOf(cd); const sh = instanceShape(cd, 0);
+        if (cu) { const ps = fns.get(cu).params; const args = ps.map((p, j) => { const ash = shapeOf(typeOf(p.name)); return e.arguments?.[j] ? exprAs(e.arguments[j], ash) : `Option<${ash.inner.d}>.None`; }); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(cu)}(${[HW, ...args].join(', ')});`); return r; }
+        const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => fieldDflt(f.shape)).join(', ')});`); for (const m of fieldInits(cd)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${r}, ${exprField(m.initializer, f.shape)});`); } return r; } // allocated first, then the initializers in order
       if (copyForm(e)) { const c = copyForm(e); const r = bind(expr(c.src), 'o'); const out = fresh('r'); const items = c.from === 'map' ? null : `(if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].items_${c.ss.key} else [])`;
         if (c.from === 'map') lines.push(`var (${HW}, ${out}) := Alloc_${c.to.key}(${HW}, (if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].keys_${c.ss.key} else []), (if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].m_${c.ss.key} else map[]));`);
         else if (c.to.kind === 'set' && c.from === 'arr') { dedupUsed.add(c.to.key); lines.push(`var (${HW}, ${out}) := Alloc_${c.to.key}(${HW}, Dedup_${c.to.key}(${items}, []));`); }
@@ -1040,7 +1060,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${args.join(', ')});`); return r;
       }
       if (calleeOf(e, u)) {
-        const callee = calleeOf(e, u); const recv = sameFileCall(e) ? [] : [dn('this')]; // a method takes its receiver first
+        const callee = calleeOf(e, u); const recv = sameFileCall(e) ? [] : freshCall(e) ? [expr(e.expression.expression)] : [dn('this')]; // a method takes its receiver first
         const ps = fns.get(callee).params; const args = ps.map((p, j) => { const sh = shapeOf(typeOf(p.name)); return e.arguments[j] ? exprAs(e.arguments[j], sh) : `Option<${sh.inner.d}>.None`; }); // an argument not passed is undefined
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(callee)}(${[HW, ...recv, ...args].join(', ')});`); return r;
       }
@@ -1232,8 +1252,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', `Len_${sh.key}(${HW}, ${arr})`, ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
       lines.push(carried.length ? `var (${HW}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${HW} := ${call};`);
     }
-    const body = ts.isBlock(u.body) ? stmts([...u.body.statements], proc ? () => `(${HW}, ())` : null) : (() => { const v = exprAs(u.body, rt); const pre = flush(); return `${pre ? pre + '\n' : ''}(${HW}, ${v})`; })(); // an expression body: `return body`
-    const self = u.cls ? instanceShape(u.cls, 0) : null; // an instance method's receiver: a reference to the record of its fields
+    if (u.isCtor) { const sh = instanceShape(u.cls, 0); const me = dn('this'); lines.push(`var (${HW}, ${me}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => fieldDflt(f.shape)).join(', ')});`); for (const p of paramProps(u.cls)) lines.push(`var ${HW} := Set_${sh.key}_${dn(p.name.text)}(${HW}, ${me}, ${dn(p.name.text)});`); for (const m of fieldInits(u.cls)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${me}, ${exprField(m.initializer, f.shape)});`); } } // the instance first, then the parameter properties and the initializers
+    const body = u.isCtor ? (() => { const pre = flush(); const b = stmts([...u.body.statements], () => `(${HW}, ${dn('this')})`); return pre ? `${pre}\n${b}` : b; })() : ts.isBlock(u.body) ? stmts([...u.body.statements], proc ? () => `(${HW}, ())` : null) : (() => { const v = exprAs(u.body, rt); const pre = flush(); return `${pre ? pre + '\n' : ''}(${HW}, ${v})`; })(); // an expression body: `return body`
+    const self = u.cls && !u.isCtor ? instanceShape(u.cls, 0) : null; // an instance method's receiver (a constructor allocates its own): a reference to the record of its fields
     const params = [...(self ? [`${dn('this')}: Ref`] : []), ...u.params.map((p) => `${dn(p.name.text)}: ${valD(shapeOf(typeOf(p.name)))}`)];
     const lit = (v, sh) => (sh.d === 'string' ? strEsc(v) : isReal ? `${v}.0` : String(v));
     const member = (code, sh) => { if (sh.kind === 'opt') return sh.inner.values ? `((${code}).None? || ${member(`OptOr(${code}, ${dflt(sh.inner)})`, sh.inner)})` : null; return sh.kind === 'prim' && sh.values ? `(${sh.values.map((v) => `${code} == ${lit(v, sh)}`).join(' || ')})` : null; };

@@ -397,3 +397,30 @@ Census (resolved, 39 roots), strict graph 917 -> 920, own syntax 2269 -> 2272; `
 ```text
 {"files":23359,"units":53918,"core":920,"heapOwnFit":2272,"mirrorMismatch":2130,"planErrorCount":0,"seconds":304}
 ```
+
+## 21. Constructors
+
+Reading: `new C(..)` of a class of this file (row 1's conditions, and not decorated: a class decorator may return
+another class) runs `C.constructor` when the class declares one, `(hw_, params) -> (HWorld, Ref)`, else allocates
+inline. A constructor allocates the instance first, `Alloc_<K>` with each field's default, then stores the parameter
+properties and the field initializers in declaration order, then runs its body (the procedure reading of step 8: an
+`if` may fall through) on the fresh reference, and returns it.
+Soundness: JavaScript creates the object before any initializer or the body runs, so the instance takes `next` first
+and an initializer's allocation comes after it, as here. Every field is stored before the body ends (row 1's rule: an
+initializer, a parameter property or a top-level `this.f = ..` of the body), and in a constructor `this` is only
+written: a read could meet a field not yet stored (JavaScript reads `undefined`), a call `this.m()` could run a
+subclass's override on a half-built object, and `this` handed anywhere escapes half-built. A field initializer
+neither reads `this` nor is a function.
+A method call `c.m(..)` on a const `c` bound to `new C(..)` in the unit is the core call `C.m` with `c` its receiver:
+that instance is exactly a C (no subclass can be behind it, and C is not decorated), so step 18's transition is not
+needed there.
+Out: `super`, a `return` in a constructor, a constructor that reads or hands `this`, a decorated class's `new`, a
+class that extends or is extended, a field initializer that reads `this`.
+Pair `heap5_ctors`: `origin` (WITNESS), `start` and `Tally.constructor` (the label stored through a local: proved),
+`empty` (untouched, an inline allocation with its initializers), `shifted` (the moved coordinate named before the
+construction: proved), `Point.constructor` (untouched, parameter properties), `build` (a method of a Tally it built
+against the count written in place: proved), `Tally.bumped` (untouched). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 920 -> 935, own syntax 2272 -> 2330; `curve.md` expects 4905 after its step 21:
+```text
+{"files":23359,"units":53918,"core":935,"heapOwnFit":2330,"mirrorMismatch":2188,"planErrorCount":0,"seconds":279}
+```
