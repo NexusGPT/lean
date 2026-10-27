@@ -330,3 +330,24 @@ Census (resolved, 39 roots), strict graph 876 -> 886, own syntax 2159 -> 2182; `
 ```text
 {"files":23359,"units":53918,"core":886,"heapOwnFit":2182,"mirrorMismatch":2040,"planErrorCount":0,"seconds":330}
 ```
+
+## 17. Tuples and intersections
+
+Reading: a tuple of required elements of one shape (`[number, number]`) is an array of that shape whose length is fixed
+on entry: the hypothesis of a parameter states `Len_A_int(hw_, r) == 2`, and its reads are element reads (step 4's marks
+apply, the hypothesis making them provable). A tuple of mixed shapes (`[string, number]`) is a record of its positions
+`_0`, `_1`: a literal index reads or writes a field, `length` is the arity, a tuple literal allocates the record. An
+intersection of records is the record of all their fields (a type alias of the same fields is the same constructor);
+an intersection of one primitive and records (a branded `string & { __brand: "Id" }`) is the primitive.
+Soundness: a tuple of one shape stays an array so that it may alias an array of that shape (two views of one object);
+a tuple of mixed shapes cannot be the object of an array type with a shape (its elements would break that type), so a
+record of positions excludes no realizable sharing. A brand is a type-level tag only: the value is the primitive.
+Out: optional and rest elements, a spread into or out of a tuple, destructuring (step 24), a non-literal index into a
+tuple of mixed shapes, an intersection with a function or a primitive with methods.
+Pair `heap5_tuples`: `width` (the first position named first: proved, the reads in range by the hypothesis), `show`
+(WITNESS), `make` (untouched, a tuple literal of mixed shapes), `tagOf` (an intersection's field named first: proved),
+`idLength` (untouched, a branded string's length). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 886 -> 901, own syntax 2182 -> 2216; `curve.md` expects 2274 after its step 17:
+```text
+{"files":23359,"units":53918,"core":901,"heapOwnFit":2216,"mirrorMismatch":2074,"planErrorCount":0,"seconds":319}
+```
