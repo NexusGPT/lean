@@ -22,12 +22,14 @@ export function isNode(v) {
   if (v instanceof Date || v instanceof RegExp || v instanceof Error || v instanceof Promise) return false;
   if (typeof v.then === 'function') return false;
   if (ArrayBuffer.isView(v) || v instanceof ArrayBuffer) return false;
-  return Array.isArray(v) || v instanceof Map || v instanceof Set || Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null || isPlainInstance(v);
+  return Array.isArray(v) || v instanceof Map || v instanceof Set || isPlainProto(Object.getPrototypeOf(v)) || isPlainInstance(v);
 }
+// a plain object's prototype: the host's Object.prototype, a vm context's own (a literal written inside the sandbox has that realm's), or null
+const isPlainProto = (p) => p === null || p === Object.prototype || (Object.getPrototypeOf(p) === null && typeof p.constructor === 'function' && p.constructor.name === 'Object' && p.constructor.prototype === p);
 // an instance of a user class (fields on the object, methods on the prototype) is a node too: its identity matters
 function isPlainInstance(v) {
   const p = Object.getPrototypeOf(v);
-  return p !== null && typeof p.constructor === 'function' && p.constructor !== Object && !(v instanceof Map) && !(v instanceof Set) && !Array.isArray(v) && Object.prototype.toString.call(v) === '[object Object]';
+  return p !== null && !isPlainProto(p) && typeof p.constructor === 'function' && p.constructor !== Object && !(v instanceof Map) && !(v instanceof Set) && !Array.isArray(v) && Object.prototype.toString.call(v) === '[object Object]';
 }
 
 export class Graph {
@@ -50,7 +52,7 @@ export class Graph {
     for (const k of Object.keys(v)) out[k] = this.name(v[k]);
     return out;
   }
-  kind(v) { return Array.isArray(v) ? 'array' : v instanceof Map ? 'map' : v instanceof Set ? 'set' : Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null ? 'record' : `instance:${Object.getPrototypeOf(v).constructor.name}`; }
+  kind(v) { return Array.isArray(v) ? 'array' : v instanceof Map ? 'map' : v instanceof Set ? 'set' : isPlainProto(Object.getPrototypeOf(v)) ? 'record' : `instance:${Object.getPrototypeOf(v).constructor.name}`; } // a literal made inside the sandbox and an object made by the host (a clone, a parse) are both records
   // register everything reachable from the roots; returns the roots' names
   walk(roots) {
     const names = roots.map((r) => this.name(r));

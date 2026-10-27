@@ -57,6 +57,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     if (checker.isArrayType(t)) { const e = shapeOf(checker.getTypeArguments(t)[0], depth + 1); return e ? { kind: 'arr', elem: e, key: `A_${keyOf(e)}` } : null; }
     const symName = t.symbol?.name;
     if (symName === 'Map' && checker.getTypeArguments(t).length === 2) { const [kt, vt] = checker.getTypeArguments(t); const k = shapeOf(kt, depth + 1), v = shapeOf(vt, depth + 1); return k && k.kind === 'prim' && v ? { kind: 'map', k, v, key: `M_${keyOf(k)}_${keyOf(v)}` } : null; } // a Map cell: insertion-ordered entries, keys primitive (SameValueZero on primitives is ==)
+    if (symName === 'Date') return { kind: 'date', key: 'D' }; // a Date cell: its time value; getTime and the UTC getters read it, a setter keeps the unit out of the core (it reads the host's time zone)
     if (symName === 'Set' && checker.getTypeArguments(t).length === 1) { const e = shapeOf(checker.getTypeArguments(t)[0], depth + 1); return e && e.kind === 'prim' ? { kind: 'set', elem: e, key: `S_${keyOf(e)}` } : null; } // a Set cell of primitives
     if (t.flags & TF.Object) {
       if (t.getCallSignatures().length || t.getConstructSignatures().length) return null;
@@ -79,7 +80,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
   const keyOf = (s) => (s.kind === 'prim' ? s.d : s.key);
   const valD = (s) => (s.kind === 'prim' ? s.d : 'Ref');
   const dflt = (s) => (s.kind === 'prim' ? (s.d === 'string' ? '""' : s.d === 'bool' ? 'false' : isReal ? '0.0' : '0') : '0');
-  function register(s) { if (!s || s.kind === 'prim') return; if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map') register(s.v); else for (const f of s.fields) register(f.shape); } }
+  function register(s) { if (!s || s.kind === 'prim') return; if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map') register(s.v); else if (s.kind === 'rec') for (const f of s.fields) register(f.shape); } }
+  const dateGetters = new Set(); // the UTC getters a core unit reads: each a bodiless function of the time value in the prelude
   const mapInstances = new Set(); // 'K|K2' pairs of Array.prototype.map seen in the core, each its own Map_K_K2
   const typeOf = (n) => checker.getTypeAtLocation(n);
   const fieldOf = (s, name) => (s.kind === 'rec' ? s.fields.find((f) => f.name === name) : null);
@@ -129,6 +131,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
       }
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && (e.expression.text === 'Map' || e.expression.text === 'Set') && !(e.arguments ?? []).length) { if (!shapeOf(typeOf(e))) return no(`new ${e.expression.text} type: ${shapeWhy(typeOf(e))}`); return; } // an empty cell
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'has' && e.arguments.length === 1) { const s = shapeOf(typeOf(e.expression.expression)); if (!s || (s.kind !== 'map' && s.kind !== 'set')) return no('has on a non-cell'); checkExpr(e.expression.expression); return checkExpr(e.arguments[0]); }
+      if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'Date') { if ((e.arguments ?? []).length !== 1 || !(typeOf(e.arguments[0]).flags & TF.NumberLike)) return no('new Date form (one time value; no argument is the clock, a string is parsing)'); if (!shapeOf(typeOf(e))) return no('new Date type'); return checkExpr(e.arguments[0]); }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && shapeOf(typeOf(e.expression.expression))?.kind === 'date') { const g = e.expression.name.text; if (e.arguments.length) return no('date method with arguments'); if (!(g === 'getTime' || g === 'valueOf' || /^getUTC(FullYear|Month|Date|Day|Hours|Minutes|Seconds|Milliseconds)$/.test(g))) return no(`date method ${g} (a local-time getter reads the host's time zone; a setter writes it)`); return checkExpr(e.expression.expression); }
+      if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'structuredClone' && e.arguments.length === 1) { const s = shapeOf(typeOf(e.arguments[0])); if (!s || s.kind === 'prim') return no('clone of a non-cell'); const flat = s.kind === 'rec' ? s.fields.every((f) => f.shape.kind === 'prim') : s.kind === 'arr' ? s.elem.kind === 'prim' : true; if (!flat) return no('clone of a nested graph (one level of a plain cell only)'); return checkExpr(e.arguments[0]); }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (e.expression.name.text === 'map' || e.expression.name.text === 'filter') && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])) { // the table's map and filter rows: a pure one-parameter arrow with an expression body
         const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${e.expression.name.text} of a non-array`);
         const cb = e.arguments[0]; if (cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || ts.isBlock(cb.body) || cb.modifiers?.length) return no('callback form');
@@ -290,20 +295,20 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     if (!core.size) return [];
     const keys = [...shapes.keys()].sort();
     const fld = (name) => `${dn(name)}_f`; // a record field's destructor: suffixed, so a field named items, heap or next never meets the array constructor's items
-    const ctor = (k) => { const s = shapes.get(k); return s.kind === 'arr' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : s.kind === 'set' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : s.kind === 'map' ? `${k}(keys_${k}: seq<${valD(s.k)}>, m_${k}: map<${valD(s.k)}, ${valD(s.v)}>)` : `${k}(${s.fields.map((f) => `${fld(f.name)}: ${valD(f.shape)}`).join(', ')})`; };
+    const ctor = (k) => { const s = shapes.get(k); return s.kind === 'arr' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : s.kind === 'set' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : s.kind === 'map' ? `${k}(keys_${k}: seq<${valD(s.k)}>, m_${k}: map<${valD(s.k)}, ${valD(s.v)}>)` : s.kind === 'date' ? `${k}(tv_${k}: ${NUM})` : `${k}(${s.fields.map((f) => `${fld(f.name)}: ${valD(f.shape)}`).join(', ')})`; };
     const out = [];
     out.push('type Ref = nat');
     out.push(`datatype Obj = ${keys.length ? keys.map(ctor).join(' | ') + ' | ' : ''}Dead`);
     out.push('datatype HWorld = HWorld(heap: map<Ref, Obj>, next: nat)');
     for (const k of keys) out.push(`predicate Is${k}(hw: HWorld, r: Ref) { r in hw.heap && hw.heap[r].${k}? }`);
-    const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'set') { /* primitive items */ } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); } else for (const f of s.fields) if (f.shape.kind !== 'prim') conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
+    const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'set' || s.kind === 'date') { /* primitive contents */ } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); } else for (const f of s.fields) if (f.shape.kind !== 'prim') conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
     out.push(`predicate WFCell(hw: HWorld, o: Obj) { match o ${keys.map((k) => `case ${k}(${(shapes.get(k).kind === 'rec' ? shapes.get(k).fields.map(() => '_') : shapes.get(k).kind === 'map' ? ['_', '_'] : ['_']).join(', ')}) => ${cellOk(k)}`).join(' ')} case Dead => false }`);
     out.push('predicate WF(hw: HWorld) { (forall r :: r in hw.heap ==> r < hw.next) && (forall r :: r in hw.heap ==> WFCell(hw, hw.heap[r])) }');
     if (!isReal && keys.some((k) => shapes.get(k).kind === 'arr')) out.push(LIBRARY.helpers.Clamp); // the index clamp of slice and splice
     for (const k of keys) {
       const s = shapes.get(k);
-      const ps = s.kind === 'arr' || s.kind === 'set' ? [`items: seq<${valD(s.elem)}>`] : s.kind === 'map' ? [`keys: seq<${valD(s.k)}>`, `m: map<${valD(s.k)}, ${valD(s.v)}>`] : s.fields.map((f) => `${fld(f.name)}: ${valD(f.shape)}`);
-      const args = s.kind === 'arr' || s.kind === 'set' ? ['items'] : s.kind === 'map' ? ['keys', 'm'] : s.fields.map((f) => fld(f.name));
+      const ps = s.kind === 'arr' || s.kind === 'set' ? [`items: seq<${valD(s.elem)}>`] : s.kind === 'map' ? [`keys: seq<${valD(s.k)}>`, `m: map<${valD(s.k)}, ${valD(s.v)}>`] : s.kind === 'date' ? [`tv: ${NUM}`] : s.fields.map((f) => `${fld(f.name)}: ${valD(f.shape)}`);
+      const args = s.kind === 'arr' || s.kind === 'set' ? ['items'] : s.kind === 'map' ? ['keys', 'm'] : s.kind === 'date' ? ['tv'] : s.fields.map((f) => fld(f.name));
       out.push(`function Alloc_${k}(hw: HWorld, ${ps.join(', ')}): (HWorld, Ref) { (HWorld(hw.heap[hw.next := ${k}(${args.join(', ')})], hw.next + 1), hw.next) }`);
       if (s.kind === 'arr') {
         const E = valD(s.elem);
@@ -324,6 +329,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         out.push(instantiate(LIBRARY.helpers['RemoveItem_<K>'], k, E));
         for (const op of ['Set.prototype.add', 'Set.prototype.has', 'Set.prototype.delete']) out.push(instantiate(LIB_ROW[op].dafny, k, E));
         out.push(`function SetSize_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].items_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
+      } else if (s.kind === 'date') {
+        out.push(`function Get_${k}_tv(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then hw.heap[r].tv_${k} else ${isReal ? '0.0' : '0'} }`);
+        for (const g of [...dateGetters].sort()) out.push(`function DateUTC_${g}(tv: ${NUM}): ${NUM}`); // a UTC getter is a function of the time value alone (21.4.4): bodiless, the same on both sides
       } else {
         out.push(instantiate(LIB_ROW['Object.assign'].dafny, k, ''));
         for (const f of s.fields) {
@@ -362,6 +370,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         return `Get_${s.key}_${dn(e.name.text)}(${HW}, ${r})`;
       }
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && (e.expression.text === 'Map' || e.expression.text === 'Set')) { const s = shapeExpr(e); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${s.kind === 'map' ? '[], map[]' : '[]'});`); return r; }
+      if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'Date') { const s = shapeExpr(e); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${expr(e.arguments[0])});`); return r; }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && shapeExpr(e.expression.expression)?.kind === 'date') { const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const g = e.expression.name.text; if (g === 'getTime' || g === 'valueOf') return `Get_${s.key}_tv(${HW}, ${r})`; dateGetters.add(g); return `DateUTC_${g}(Get_${s.key}_tv(${HW}, ${r}))`; }
+      if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'structuredClone') { // a fresh cell with the source's own contents (HTML 2.7.4, one level: the lint admits flat cells only)
+        const s = shapeExpr(e.arguments[0]); const r = expr(e.arguments[0]); const out = fresh('r');
+        const contents = s.kind === 'rec' ? s.fields.map((f) => `Get_${s.key}_${dn(f.name)}(${HW}, ${r})`).join(', ') : s.kind === 'arr' ? `Items_${s.key}(${HW}, ${r})` : s.kind === 'set' ? `(if Is${s.key}(${HW}, ${r}) then ${HW}.heap[${r}].items_${s.key} else [])` : s.kind === 'map' ? `(if Is${s.key}(${HW}, ${r}) then ${HW}.heap[${r}].keys_${s.key} else []), (if Is${s.key}(${HW}, ${r}) then ${HW}.heap[${r}].m_${s.key} else map[])` : `Get_${s.key}_tv(${HW}, ${r})`;
+        lines.push(`var (${HW}, ${out}) := Alloc_${s.key}(${HW}, ${contents});`); return out;
+      }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'has') { const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); return `${s.kind === 'map' ? 'MapHas' : 'SetHas'}_${s.key}(${HW}, ${r}, ${expr(e.arguments[0])})`; }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (e.expression.name.text === 'map' || e.expression.name.text === 'filter') && ts.isArrowFunction(e.arguments[0])) {
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const cb = e.arguments[0]; const x = cb.parameters[0].name.text; const xs = shapeOf(typeOf(cb.parameters[0].name));
@@ -466,7 +481,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
     const text = [`function ${fname(u.name)}(${[`${HW}: HWorld`, ...params].join(', ')}): (HWorld, ${valD(rt)})`, '{', indent(body), '}'].join('\n');
     return { text, hyp };
   }
-  const shapeLegend = () => [...shapes.keys()].sort().map((k) => { const s = shapes.get(k); return `${k} = ${s.kind === 'arr' ? `[${keyOf(s.elem)}]` : s.kind === 'set' ? `Set<${keyOf(s.elem)}>` : s.kind === 'map' ? `Map<${keyOf(s.k)}, ${keyOf(s.v)}>` : `{${s.fields.map((f) => `${f.name}: ${keyOf(f.shape)}`).join(', ')}}`}`; }).join('; ');
+  const shapeLegend = () => [...shapes.keys()].sort().map((k) => { const s = shapes.get(k); return `${k} = ${s.kind === 'arr' ? `[${keyOf(s.elem)}]` : s.kind === 'set' ? `Set<${keyOf(s.elem)}>` : s.kind === 'date' ? 'Date' : s.kind === 'map' ? `Map<${keyOf(s.k)}, ${keyOf(s.v)}>` : `{${s.fields.map((f) => `${f.name}: ${keyOf(f.shape)}`).join(', ')}}`}`; }).join('; ');
   const whyNotOf = (name) => [...(whyNot.get(name) ?? [])];
 
   // ----- the exposure of references, layer 1, measured per unit -----

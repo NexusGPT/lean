@@ -118,7 +118,13 @@ call recording and the checker (`exec/transitions.mjs`): a mismatch is a model d
 until the row is fixed. Test262's directories for these operations run as a corpus of call patterns (`exec/test262.mjs`, a sparse BSD checkout
 under `work/lean-deps/test262`): on 2026-10-26, 996 files, 12,459 in-model records, 0 disagreements between the engine
 and the table; 2,814 records out of the model (array-likes, subclasses, accessors, symbol keys, string sources), 11 callback
-effects counted apart (`design/test262-report.json`). The recorder and checker (`exec/transitions.mjs`) are the standing
+effects counted apart (`design/test262-report.json`). Re-run on 2026-10-27 after the table grew (sort, assign, pop as
+statements; the Map cell version 2): 996 files, 11,290 in-model records, 0 disagreements, 2,817 out of the model, 11
+callback effects; the count fell from 12,459 because the recorder no longer records the calls its own snapshots make
+(a getter on a test's array-like calling push while the receiver is read). The re-run also found a silent loss: a vm
+timeout terminates a test without running finally blocks, so the recorder's re-entrancy guard stayed down after the
+first timed-out test and every later window recorded nothing; the guard now resets at every window, and lane B's
+watchdog (the same termination) can no longer empty the record set of a run. The recorder and checker (`exec/transitions.mjs`) are the standing
 validation, wired into lane B (2026-10-27): a recording window opens only while unit code runs (the watchdog call, an
 effect, a cleanup, the await of a promise the unit returned), so the harness's own work between calls costs nothing; a
 call is kept when its caller's file is one the sandbox loaded (a string stack read, re-entrancy guarded); each vm
@@ -189,6 +195,32 @@ zones: obligations unmet; `structuredClone` of unsupported values: refused by na
   swapped (sources swapped) refuted and witnessed; sortedCopy (`slice(0)` for `slice()`, the same comparator) proved;
   sortedDesc (the comparator reversed) unproved and witnessed; sortedInPlace proved. The lint's advice names both
   statement forms.
+
+### 4.4 Built, 2026-10-27: pop, structuredClone, the Date cell; freeze refused
+
+- `xs.pop()` as a statement joins shift, reverse, splice and sort: the lint admits it on an owned array, the ordinary
+  lane drops the last element of the sequence, the heap core reads the table's `Pop_<K>`.
+- `structuredClone(v)`: the ordinary lane takes the copy as the value itself (a copy of a value is the value); the heap
+  core allocates a fresh cell with the source's own contents for a flat record, an array, Set or Map of primitives, or a
+  Date; a nested graph is refused by name until the canonical-heap certificate. A checkout read without its project
+  gets the declaration from `langs/ts/ambient.d.ts` (the default lib lacks it).
+- The Date cell `D(tv)`: `new Date(n)` with one time value allocates it; `getTime`, `valueOf` read it; each UTC getter
+  is a bodiless function of the time value. A setter stays out of the core. In the ordinary lane a Date is an opaque
+  handle whose state lives in the world since the clock-read lane: a setter and a getter are world transitions in order,
+  so a setter needs no refusal and no rebinding, and finding 2 of section 0 (the setter leaving the Date unchanged in the
+  model) is closed by that lane, not by a rule. The `date-mutation` rule and its escape fixture are retired; a first cut
+  that rebound the Date and made a parameter an output was taken out the same night (a setter used as a value would then
+  have read the old handle, an incompleteness with no gain). `new Date()` (the clock) and a string argument (parsing) stay
+  where they were.
+- `Object.freeze`, `seal`, `preventExtensions` are refused by name (rule `freeze`): in strict code a write to a frozen
+  object throws, the value reading has no fault channel for it, and a frozen set with silent no-op writes would prove a
+  throwing candidate equal to one that writes nothing. The table's row says so; the fault channel is the condition.
+- Pair `tests/pairs/library_more`: dropLast (pop twice) refuted and witnessed; dropLastCopy proved; cloned (a clone
+  against a literal with the same fields) proved; clonedAlias (the input returned) refuted and witnessed on the graph;
+  stampYear proved; bump (the same setter, the time read through a local) proved; bumpOff (y + 1) refuted and witnessed.
+- Found on the way: lane B's graph observer read an object literal written inside the sandbox as `instance:Object`
+  (the vm context's own `Object.prototype`) and a host-made object (a clone, a parse) as a record, a false WITNESS
+  class; a plain prototype of any realm is now a record.
 
 ## 5. State over time (brief 14)
 

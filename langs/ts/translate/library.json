@@ -294,9 +294,9 @@
    "order": "none",
    "callback": "none",
    "throws": "TypeError when SetIntegrityLevel fails",
-   "status": "draft",
-   "dafny": "// needs a `frozen: set<Ref>` field in HWorld: Set_ and the mutators leave a frozen cell unchanged and the translator reads the write as a TypeError fault in strict code",
-   "note": "a schema change of HWorld: every generated function changes; after the table"
+   "status": "refused",
+   "dafny": "// refused by the lint (rule `freeze`): in strict code a write to a frozen object throws, and the value reading has no fault channel for that write; a frozen set in HWorld with silent no-op writes would prove a throwing candidate equal to one that writes nothing",
+   "note": "Decided 2026-10-27: refused by name until the heap core carries a fault channel; seal and preventExtensions alike."
   },
   {
    "op": "structuredClone",
@@ -309,8 +309,9 @@
    "order": "a memory map keyed by the input's objects",
    "callback": "none",
    "throws": "DataCloneError on a Symbol, a function, a DOM node; transfer detaches the source",
-   "status": "draft",
-   "dafny": "// acyclic plain records only: Clone_<K>(hw, r) allocates a copy of every reachable record and array in first-reach order; cycles, Map keys (cloned, identity lost) and unsupported values are refused by name"
+   "status": "generated",
+   "dafny": "// Clone_<K> is Alloc_<K> of the source cell's own contents: a record of primitives, an array, Set or Map of primitives, or a Date; one level, a nested graph is refused by the lint (`clone of a nested graph`); the value reading takes the copy as the value itself",
+   "note": "Built 2026-10-27 in the heap core and the ordinary lane; cycles and nested references wait for the canonical-heap certificate."
   },
   {
    "op": "new Date / Date.prototype.set*",
@@ -323,8 +324,9 @@
    "order": "none",
    "callback": "none",
    "throws": "none; an invalid Date is NaN; setFullYear on a NaN time value starts from +0 (21.4.4.21), the other setters give NaN",
-   "status": "draft",
-   "dafny": "// needs a D_cell(tv: real) constructor: NewDate(hw, t) allocates it; SetFullYear_(hw, r, y) stores TimeClip(UTC(MakeDate(...))) through bodiless calendar externals and returns the number; the no-argument constructor is the clock transition (clock-read lane)"
+   "status": "generated",
+   "dafny": "datatype D = D(tv: NUM); Alloc_D(hw, tv) for new Date(n); Get_D_tv for getTime and valueOf; function DateUTC_<getter>(tv: NUM): NUM bodiless for the UTC getters; a setter and a local-time getter are world transitions of the ordinary lane (the Date's state lives in the world), outside the core",
+   "note": "Built 2026-10-27: new Date(n) with one time value, getTime, valueOf and the UTC getters in the heap core; the setters and the local-time getters read or write the host's time zone, so they stay world transitions of the ordinary lane, ordered with every other Date method on the same handle; new Date() with no argument is the clock read; a string argument is parsing, refused."
   }
  ],
  "helpers": {

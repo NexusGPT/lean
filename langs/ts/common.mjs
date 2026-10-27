@@ -72,6 +72,7 @@ export function loadProgram(file, opts = {}) {
       roots = [abs];
     } else configFile = null;
   }
+  if (!configFile) roots = [...roots, path.join(here, 'ambient.d.ts')]; // structuredClone and the like, declared for a file read without its project
   const program = ts.createProgram(roots, options);
   const sf = program.getSourceFile(abs);
   if (!sf) throw new Error(`cannot read ${file}`);

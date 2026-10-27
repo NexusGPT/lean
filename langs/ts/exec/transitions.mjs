@@ -38,6 +38,7 @@ const callerFile = (skip) => {
 };
 let active = null; // the open window: { records, keep }, so a realm created inside it (a vm context for a fresh mount) can join
 export function startRecording(records, realm = { Array, Map, Set, Object }, { keep = null } = {}) {
+  inside = false; // a vm timeout terminates execution without running finally blocks: a window opens with the guard down, whatever the last one left
   active = { records, keep };
   patchRealm(realm, records, keep);
 }
@@ -82,7 +83,7 @@ function patchRealm(realm, records, keep) { // realm: the constructors whose pro
   if (realm.Set && !already(realm.Set.prototype)) for (const name of ['add', 'has', 'delete']) patch(realm.Set.prototype, name, `Set.prototype.${name}`);
   if (realm.Object && !already(realm.Object)) patch(realm.Object, 'assign', 'Object.assign', { receiverIsFirstArg: true });
 }
-export function stopRecording() { active = null; for (let i = ORIGINALS.length - 1; i >= 0; i--) { const [proto, name, original] = ORIGINALS[i]; proto[name] = original; } ORIGINALS.length = 0; } // not pop: it is patched until the last restore
+export function stopRecording() { inside = false; active = null; for (let i = ORIGINALS.length - 1; i >= 0; i--) { const [proto, name, original] = ORIGINALS[i]; try { proto[name] = original; } catch { /* a test froze or sealed its realm's prototype: that realm dies with the test, and the next window must still open */ } } ORIGINALS.length = 0; } // not pop: it is patched until the last restore
 export async function withRecording(records, fn) { startRecording(records); try { return await fn(); } finally { stopRecording(); } }
 // What a certificate carries about the table: how many built-in calls of the table the unit made, how many fell outside
 // the model (an array-like receiver, an accessor), how many callbacks wrote into their receiver, and every defect, each

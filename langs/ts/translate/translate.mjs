@@ -208,7 +208,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       if (o.kind === 'unit') return effectfulUnits.has(f.text);
-      if (o.kind === 'global') return !PURE_RECEIVERS.has(f.text) && !['parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'String', 'Number', 'Boolean'].includes(f.text);
+      if (o.kind === 'global') return !PURE_RECEIVERS.has(f.text) && !['parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURIComponent', 'decodeURIComponent', 'String', 'Number', 'Boolean', 'structuredClone'].includes(f.text);
       // a local bound to an arrow literal is a pure lambda (an effect inside it is refused by lambda()); any other local function value is opaque
       if (o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer)) {
         if (localEffectScan.has(o.decl)) return true;
@@ -2690,6 +2690,7 @@ export function translate(file, fnName, opts = {}) {
       }
       if (o.kind === 'global' && f.text === 'String' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike)) return stringOf(n.arguments[0]);
       if (o.kind === 'global' && f.text === 'Number' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.NumberLike | TF.BooleanLike)) return numberOf(n.arguments[0]);
+      if (o.kind === 'global' && f.text === 'structuredClone' && n.arguments.length === 1) return expr(n.arguments[0]); // HTML 2.7.4: a copy of a value is the value in the value reading (the heap core allocates a fresh cell)
       return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
     }
     if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); return externalCall(`super_init_${mangle(Tn)}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition
@@ -2923,7 +2924,7 @@ export function translate(file, fnName, opts = {}) {
   const retType = (u) => { if (u.fn.asteriskToken && !u.isAsync) return checker.createArrayType(generators.shape(u).element); let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;
   const isUpdate = (x) => (ts.isPostfixUnaryExpression(x) || ts.isPrefixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken);
-  const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set', 'shift', 'reverse', 'splice', 'sort']);
+  const MUT = new Set(['push', 'unshift', 'add', 'delete', 'set', 'shift', 'reverse', 'splice', 'sort', 'pop']);
   const isAssignStmt = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && ts.isIdentifier(x.expression.expression) && x.expression.expression.text === 'Object' && x.expression.name.text === 'assign' && x.arguments.length >= 2 && ts.isIdentifier(pathRoot(x.arguments[0])); // Object.assign(t, s…) as a statement: the lint admits it on an owned record
   const pathRoot = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
   const isMutCall = (x) => ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT.has(x.expression.name.text) && ts.isIdentifier(pathRoot(x.expression.expression)) && !isWorldField(x.expression.expression) && !(ts.isPropertyAccessExpression(x.expression.expression) && pathRoot(x.expression.expression).kind === K.ThisKeyword);
@@ -3258,6 +3259,7 @@ export function translate(file, fnName, opts = {}) {
         if (m === 'push') return `${cur} + ${piece}`;
         if (m === 'unshift') return `${piece} + ${cur}`;
         if (m === 'shift') return `(if |${cur}| > 0 then ${cur}[1..] else ${cur})`; // ECMA-262 23.1.3.27: the first element leaves; an empty array stays
+        if (m === 'pop') return `(if |${cur}| > 0 then ${cur}[..|${cur}| - 1] else ${cur})`; // 23.1.3.22: the last element leaves; an empty array stays
         if (m === 'sort') { const A = dtype(checker.getTypeArguments(t)[0], r); return `${external(`sort_${mangle(A)}`, [`seq<${A}>`, `(${A}, ${A}) -> ${NUM}`], `seq<${A}>`)}(${cur}, ${lambda(e.arguments[0], 2)})`; } // 23.1.3.30: an uninterpreted stable sort by the comparator, the same function as the expression form
         if (m === 'reverse') { addPrelude('SeqRev', 'function SeqRev<T>(xs: seq<T>): seq<T> decreases |xs| { if |xs| == 0 then [] else SeqRev(xs[1..]) + [xs[0]] }'); return `SeqRev(${cur})`; } // 23.1.3.26
         if (m === 'splice') { // 23.1.3.31: start and count clamped as ToIntegerOrInfinity does; the removed run is replaced by the items

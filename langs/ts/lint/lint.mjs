@@ -25,7 +25,6 @@ const TF = ts.TypeFlags;
 // version 3: an effect is a world transition, so I/O, the clock, randomness and the console are admitted as effects;
 // what stays out is dynamic code and the prototype chain, which no transition models
 const OBJECT_PROTOTYPE_FUNCTIONS = new Set(['getPrototypeOf', 'setPrototypeOf', 'create', 'defineProperty', 'defineProperties', 'getOwnPropertyDescriptor', 'getOwnPropertyDescriptors']);
-const DATE_SETTERS = /^set(UTC)?(FullYear|Month|Date|Hours|Minutes|Seconds|Milliseconds|Time|Year)$/;
 const unparenX = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
 const EFFECT_GLOBALS = {
   eval: 'dynamic-eval', Function: 'dynamic-eval', Reflect: 'prototype', Proxy: 'prototype',
@@ -34,7 +33,7 @@ const EFFECT_WORLD = new Set(['globalThis', 'global', 'Date', 'performance', 'co
 // modules whose exports are effects by nature; everything else imported is an uninterpreted external
 const EFFECT_MODULES = /^(node:.*|fs|fs\/promises|path|os|http|https|http2|net|dns|tls|child_process|cluster|worker_threads|process|stream|crypto|readline|zlib|util|events|timers|timers\/promises|axios|node-fetch|undici|got|ioredis|redis|pg|mysql2?|mongodb|mongoose|@prisma\/client|knex|typeorm|sequelize|nodemailer|ws|socket\.io|express|fastify|@nestjs\/.*|@aws-sdk\/.*|aws-sdk|@google-cloud\/.*|openai|@anthropic-ai\/.*|stripe|twilio)$/;
 // pure library globals the translator models as externals (uninterpreted functions)
-const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI', 'encodeURIComponent', 'decodeURIComponent', 'Set', 'Map', 'BigInt', ...EFFECT_WORLD]);
+const PURE_GLOBALS = new Set(['String', 'Number', 'Boolean', 'Array', 'JSON', 'Buffer', 'Math', 'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI', 'encodeURIComponent', 'decodeURIComponent', 'structuredClone', 'Set', 'Map', 'BigInt', ...EFFECT_WORLD]);
 const ARRAY_METHODS = new Set(['map', 'filter', 'reduce', 'some', 'every', 'find', 'findIndex', 'includes', 'indexOf', 'slice', 'concat', 'join', 'flatMap', 'flat', 'at', 'push', 'sort', 'reverse', 'entries', 'keys', 'values', 'forEach']);
 const NUMBER_METHODS = new Set(['toFixed', 'toString', 'toPrecision', 'toExponential']);
 const STRING_METHODS = new Set(['includes', 'startsWith', 'endsWith', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase', 'slice', 'substring', 'indexOf', 'lastIndexOf', 'split', 'replace', 'replaceAll', 'padStart', 'padEnd', 'charAt', 'charCodeAt', 'codePointAt', 'at', 'localeCompare', 'normalize', 'repeat', 'match', 'test', 'concat']);
@@ -167,6 +166,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   const objectCallRefusal = (e, r, name) => {
     if (!(ts.isIdentifier(r) && r.text === 'Object')) return null;
     if (OBJECT_PROTOTYPE_FUNCTIONS.has(name)) return v(e, 'prototype', `\`Object.${name}\` reaches the prototype chain or the property descriptors; no transition models it`);
+    if (name === 'freeze' || name === 'seal' || name === 'preventExtensions') return v(e, 'freeze', `\`Object.${name}\` makes a later write throw in strict code; the value reading has no fault for that write, so no transition models it yet`);
     if (name === 'assign' && !(e.arguments[0] && ts.isObjectLiteralExpression(unparenX(e.arguments[0])))) return v(e, 'assign-target', '`Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources into a new object');
     return null;
   };
@@ -460,7 +460,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       }
       { const refused = objectCallRefusal(e, r, name); if (refused) return refused; }
       // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
-      if (DATE_SETTERS.test(name) && nonNull(rt).some((x) => x.symbol?.name === 'Date')) return v(e, 'date-mutation', `\`${name}\` changes the Date in place; no transition models it: build a new Date from the computed time value instead`);
+      // a Date setter is a method call like any other: a world transition (the Date's state lives in the world since the clock-read lane), so no refusal and no rebinding
       if (moduleState(checker, r, sf) && MUT_NAMES.has(name)) { checkIdent(r); return argsOf(e); }
       const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasLocals.has(declOf(r).decl);
       if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasLocals.has(declOf(r).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', `\`${r.text}\` is another name for a value this function was handed; change it through that name, or copy it first`);
@@ -489,8 +489,9 @@ export function lintFile(file, ranges = null, opts = {}) {
         conditionalSpreadArgs(e);
         return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
       }
-      if ((name === 'shift' || name === 'reverse' || name === 'splice' || name === 'sort') && isArrayExpr(r)) { // the in-place rows of the library table, as statements whose result is dropped
+      if ((name === 'shift' || name === 'reverse' || name === 'splice' || name === 'sort' || name === 'pop') && isArrayExpr(r)) { // the in-place rows of the library table, as statements whose result is dropped
         if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
+        if (name === 'pop' && e.arguments.length) v(e, 'unsupported-call', 'pop takes no argument');
         if (name === 'sort') { const cb = e.arguments[0]; if (e.arguments.length !== 1 || !ts.isArrowFunction(cb) || cb.parameters.length !== 2) return v(e, 'unsupported-call', 'sort as a statement needs one comparator, an arrow of two parameters (the default order compares strings)'); return callback(cb, 2); }
         if ((name === 'shift' || name === 'reverse') && e.arguments.length) v(e, 'unsupported-call', `${name} takes no argument`);
         if (name === 'splice' && (e.arguments.length < 2 || e.arguments.some(ts.isSpreadElement))) v(e, 'unsupported-call', 'splice as a statement needs a start, a count and plain items');
