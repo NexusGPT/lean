@@ -493,3 +493,34 @@ export function localProcedure(decl, checker, unitFn) {
   }
   return { decl, fn, name: name.text, sym };
 }
+
+// The in operator with prototype names. `k in o` on an ordinary object is true when o owns k or when k is a name of
+// Object.prototype (ECMA-262 HasProperty walks [[GetPrototypeOf]] to Object.prototype); the names are the fixed list
+// below. The reading holds for a plain object, whose prototype is Object.prototype. A file that makes an object with
+// another prototype (`Object.create`, `Object.setPrototypeOf`, `Reflect.setPrototypeOf`, a `__proto__:` member of a
+// literal, an assignment to `.__proto__`) can hand such an object to any unit of the file, so the lint and the
+// translator both refuse `in` there; this returns the first such node, or null.
+export const OBJECT_PROTO_NAMES = Object.getOwnPropertyNames(Object.prototype).sort();
+// a `__proto__: v` member of an object literal (not computed, not shorthand) sets the new object's prototype (ECMA-262
+// B.3.1, __proto__ property names in object initializers); a value read as a record or a dictionary never carries it
+export function literalProtoMember(p) { return ts.isPropertyAssignment(p) && ts.isObjectLiteralExpression(p.parent) && !!p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) && p.name.text === '__proto__'; }
+const prototypeMakers = new WeakMap();
+export function prototypeMaker(checker, sf) {
+  if (prototypeMakers.has(sf)) return prototypeMakers.get(sf);
+  const K = ts.SyntaxKind;
+  const globalMember = (x, objects, names) => ts.isPropertyAccessExpression(x) && ts.isIdentifier(x.expression) && objects.includes(x.expression.text) && names.includes(x.name.text) && originOf(checker, x.expression, sf, null).kind === 'global';
+  let found = null;
+  const walk = (n) => {
+    if (found) return;
+    if (ts.isCallExpression(n) && (globalMember(n.expression, ['Object'], ['create', 'setPrototypeOf']) || globalMember(n.expression, ['Reflect'], ['setPrototypeOf']))) { found = n; return; }
+    if (literalProtoMember(n)) { found = n; return; }
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind === K.EqualsToken) {
+      const l = n.left;
+      if ((ts.isPropertyAccessExpression(l) && l.name.text === '__proto__') || (ts.isElementAccessExpression(l) && ts.isStringLiteral(l.argumentExpression) && l.argumentExpression.text === '__proto__')) { found = n; return; }
+    }
+    ts.forEachChild(n, walk);
+  };
+  walk(sf);
+  prototypeMakers.set(sf, found);
+  return found;
+}

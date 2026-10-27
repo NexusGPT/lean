@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -197,7 +197,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   // Object.assign writes into its first argument while the value reading returns a fresh record and leaves the target unchanged (research element 16); a fresh literal target is a copy and keeps its reading
   const objectCallRefusal = (e, r, name) => {
     if (!(ts.isIdentifier(r) && r.text === 'Object')) return null;
-    if (name === 'create' && e.arguments.length === 1 && e.arguments[0].kind === K.NullKeyword) { const ct = checker.getContextualType(e); if (ct && hasStringIndex(ct) && checker.getPropertiesOfType(ct).length === 0) return null; } // `Object.create(null)` typed as a dictionary: the empty dictionary, nothing to inherit
+    if (name === 'create' && e.arguments.length === 1 && e.arguments[0].kind === K.NullKeyword) return v(e, 'prototype', '`Object.create(null)` makes an object without a prototype; a plain object\'s reads and `in` go through Object.prototype and the ordinary lane has one dictionary for both; write `{}` and test own keys with `Object.prototype.hasOwnProperty.call(d, k)`');
     if (OBJECT_PROTOTYPE_FUNCTIONS.has(name)) return v(e, 'prototype', `\`Object.${name}\` reaches the prototype chain or the property descriptors; no transition models it`);
     if (name === 'freeze' || name === 'seal' || name === 'preventExtensions') return v(e, 'freeze', `\`Object.${name}\` makes a later write throw in strict code; the value reading has no fault for that write, so no transition models it yet`);
     if (name === 'assign' && !(e.arguments[0] && ts.isObjectLiteralExpression(unparenX(e.arguments[0])))) return v(e, 'assign-target', '`Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources into a new object');
@@ -1168,6 +1168,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (ts.isSpreadAssignment(p)) { if (localMethodLiteral(tOf(p.expression))) return v(p, 'object-method-mutation', 'spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly'); return expr(p.expression); }
           if (ts.isShorthandPropertyAssignment(p)) return checkIdent(p.name);
           if (ts.isPropertyAssignment(p)) {
+            if (literalProtoMember(p)) return v(p, 'prototype', '`__proto__:` in a literal sets the object\'s prototype, not a key; the value reading has only plain objects (prototype Object.prototype); write the key computed as `[\'__proto__\']` for an own key, or leave it out');
             if (ts.isComputedPropertyName(p.name)) { // a dictionary takes any string key; a record with declared keys takes a literal or a union of literals, read as a case split (translate.mjs objectLit keyMembers)
               const lt = literalRecordType(e); const dict = nonNull(lt).every((t) => !!(t.flags & TF.Object) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getPropertiesOfType(t).length);
               const why = dict ? (nonNull(tOf(p.name.expression)).every(isStr) ? null : 'a dictionary key is a string') : literalKeyWhy(p, lt, e);
@@ -1253,7 +1254,11 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (custom(d)) v(e.right, 'instanceof-constructor', 'a custom Symbol.hasInstance may run effects; use an ordinary constructor');
       return;
     }
-    if (op === K.InKeyword) { expr(e.left); expr(e.right); return; } // required properties and dictionaries are exact; open-record absence stays uninterpreted
+    if (op === K.InKeyword) { // required properties and dictionaries are exact (an own key or a name of Object.prototype); open-record absence stays uninterpreted
+      const pm = prototypeMaker(checker, sf);
+      if (pm) return v(e, 'prototype', `this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pm.getStart(sf))}), and \`in\` reads the prototype; test an own key with \`Object.prototype.hasOwnProperty.call(o, k)\``);
+      expr(e.left); expr(e.right); return;
+    }
     if (op === K.CommaToken) return commaValue(e);
     if (!(ARITH.has(op) || CMP.has(op) || EQ.has(op) || LOGIC.has(op))) return v(e, 'bitwise', 'bitwise and shift operators are outside the subset');
     expr(e.left); expr(e.right);
