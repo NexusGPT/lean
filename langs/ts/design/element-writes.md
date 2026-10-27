@@ -1,12 +1,11 @@
 # Element writes: a field written through a parameter's element path
 
 The construct: `rows[i].winner = v`, `rows[i]!.winner = v`, `(rows[i] as Row).winner = v`, `o.rows[i].qty = v`,
-`lines[i].item.qty = 0` (and `+=`, `-=`, `*=`, `++`, `--`). Before this reading the lint refused each as
+`lines[i].item.qty = 0` (and `+=`, `-=`, `*=`, `++`, `--`), and `o.rows.forEach((r) => { r.qty = 0; })`. Before, the lint refused the first as
 `property-assign: ... which this function does not own`, and the only accepted rewrite, `rows[i] = { ...r, winner: v }`,
 replaces the element, so lane B gives a true WITNESS on identity (pyka lane, finding 4).
 
 ## JavaScript meaning
-
 ECMA-262 13.15.2: the left side `rows[i].winner` is evaluated first (`rows`, then `i`, then the element is read), then
 the right side, then PutValue writes the field of the object read; an element that is `undefined` throws a TypeError at
 the write. `!` and `as T` are TypeScript only: the emitted JavaScript has neither.
@@ -57,12 +56,15 @@ element (`rows[i].tags.push(x)`) is unchanged.
   proved, and lane B witnesses `o.x === o.y`; the lemma is now withheld.
 - `as T` to another type would read another shape: refused by the predicate.
 
-Open: a write through a forEach callback's parameter is dropped by the value lane. Two Dafny texts then coincide and the
-theorem aliases them, a false proof the guard cannot reach (probe in the lane report). This construct is not part of
-this reading.
+- The element a synchronous array callback receives (`o.rows.forEach((r) => { r.qty = 0; })`) is the same step on
+  `o.rows[i]`. The heap core reads it (pair unit `zero`: against an empty body, unproved, lane B WITNESS). The value
+  reading copied the element and dropped the write, so two Dafny texts could coincide and the theorem aliased them: a
+  false proof at dcbc61c. The lint now admits such a write only for a field (`=`, `+=`, `-=`, `*=`, `++`, `--`) in a
+  `forEach` statement of one parameter over a plain data record (`plainDataRecord`, common.mjs). Every other shape is
+  refused as `alias-mutation` (escape `element_write_loop_callback`). The translator refuses by that name any unit
+  outside the heap core that writes through a loop's element (`loopElementWriteOf`): a dropped write is never silent.
 
 ## Lane B
-
 Lane B runs the JavaScript itself; korat draws arrays whose elements share one object (`[{$ref:0}, {$ref:0}]`), which
 witnessed the alias probe, and its graph observation sees a replaced element (`stamp`).
 
@@ -75,5 +77,4 @@ witnessed the alias probe, and its graph observation sees a replaced element (`s
 - `langchain-aws/src/utils/message_inputs.ts:605` `contentBlocks[contentBlocks.length - 1].text = ...`: local: refused.
 - `odoo-unofficial-api/src/services/helpdesk.service.ts:133` `tickets[i].messages = ...`: a local array: refused.
 - `snitch/infra/mock-api/src/cluster-fixtures.ts:685` `(plans[3] as ClusterPlan).dismissed = true`: local: refused.
-The census instances write elements of arrays the function built itself. Reading those is the next step: a local array
-whose elements may be inputs needs the same guard.
+Next: a local array the function built (every refused instance above) whose elements may be inputs, with the same guard.
