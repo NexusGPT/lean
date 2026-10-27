@@ -668,5 +668,83 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "for_general_sumPositive",
+  "file": "for_general.ts",
+  "fn": "sumPositiveGeneral",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     -2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     0,
+     5,
+     0
+    ]
+   ],
+   [
+    [
+     -1
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "for_general_firstNegative",
+  "file": "for_general.ts",
+  "fn": "firstNegativeGeneral",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     -1
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     2,
+     3
+    ]
+   ],
+   [
+    [
+     -4
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "for_general_repeatAdd",
+  "file": "for_general.ts",
+  "fn": "repeatAdd",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    2
+   ],
+   [
+    0
+   ],
+   [
+    -3
+   ]
+  ]
  }
 ]

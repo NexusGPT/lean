@@ -629,10 +629,115 @@ def merge_preludes(parent_path, cand_path, parent_text, cand_text):
     return texts[0], texts[1], merged
 
 
+def _strip_group_parens(t):
+    """Remove a pair of parentheses that encloses one whole list element or call argument (`[(e)]`, `f((e), x)`,
+    `((e))`): grouping that changes nothing, which one translation path writes and another does not. A group holding
+    a top-level comma is a tuple and stays; a group followed by `(`, `.`, `[` or `=>` is an operand or a lambda and
+    stays."""
+    changed = True
+    while changed:
+        changed = False
+        stack = []
+        for i, ch in enumerate(t):
+            if ch == '(':
+                stack.append(i)
+            elif ch == ')':
+                if not stack:
+                    continue
+                o = stack.pop()
+                before = t[:o].rstrip()
+                after = t[i + 1:].lstrip()
+                if not before or before[-1] not in '[,(' or not after or after[0] not in '],)':
+                    continue
+                inner = t[o + 1:i]
+                depth = 0
+                tuple_ = False
+                for c in inner:
+                    if c in '([{':
+                        depth += 1
+                    elif c in ')]}':
+                        depth -= 1
+                    elif c == ',' and depth == 0:
+                        tuple_ = True
+                        break
+                if tuple_ or not inner.strip():
+                    continue
+                t = t[:o] + inner + t[i + 1:]
+                changed = True
+                break
+    return t
+
+
 def _norm(text, suffix):
     t = strip_comments(text)
     t = re.sub(r'_' + suffix + r'\b', '', t)
-    return re.sub(r'\s+', ' ', t).strip()
+    return _strip_group_parens(re.sub(r'\s+', ' ', t).strip())
+
+
+_IDENT = r"[A-Za-z_][A-Za-z0-9_]*"
+
+
+def _enclosing_span(text, pos):
+    """The span of the innermost balanced `(...)` or `{...}` holding `pos` (the whole text when none): a `var`'s scope
+    cannot reach past it."""
+    stack = []
+    for i, ch in enumerate(text):
+        if ch in '({':
+            stack.append(i)
+        elif ch in ')}':
+            if not stack:
+                continue
+            o = stack.pop()
+            if o <= pos < i:
+                return o, i + 1
+    return 0, len(text)
+
+
+def _canon_locals(text):
+    """The text with every name a `var` binds, when that binding is the name's first occurrence and every occurrence
+    lies inside the binding's scope, renamed by the order of binding. Two texts equal after this are the same
+    function up to the names of its own locals (a consistent renaming of bound names changes nothing). A name used
+    before its binding (a parameter, an outer name) stays as written: parameters are compared by position, the rest as
+    written. A name before `:=` outside a binder is a field and is never renamed."""
+    i = 0
+    n = 0
+    out = text
+    seen = set()
+    while True:
+        m = re.search(r"\bvar\s+", out[i:])
+        if not m:
+            break
+        b0 = i + m.end()
+        e = re.search(r":=", out[b0:])
+        if not e:
+            break
+        b1 = b0 + e.start()
+        binder = out[b0:b1]
+        i = b1 + 2
+        inner = binder.strip()
+        parts = inner[1:inner.rfind(')')].split(',') if inner.startswith('(') else [inner]
+        names = [q.split(':')[0].strip() for q in parts]
+        names = [q for q in names if re.fullmatch(_IDENT, q) and q not in seen and not q.startswith('__lean_')]
+        for name in names:
+            seen.add(name)
+            occ = re.compile(r"(?<![.\w'?])" + re.escape(name) + r"(?![\w'?])")
+            first = occ.search(out)
+            if first is None or not (b0 <= first.start() < b1):
+                continue  # used before its binding: not this binder's own
+            s0, s1 = _enclosing_span(out, b0)
+            if any(not (s0 <= o.start() < s1) for o in occ.finditer(out)):
+                continue  # an occurrence outside the scope: another name of the same spelling
+            new = f'__lean_local_{n}__'
+            n += 1
+            # inside the binder every occurrence; elsewhere every occurrence not followed by `:=` (a field)
+            head, tail = out[:b1], out[b1:]
+            head = head[:b0] + occ.sub(new, head[b0:]) if False else head[:b0] + occ.sub(new, head[b0:b1])
+            tail = re.sub(r"(?<![.\w'?])" + re.escape(name) + r"(?![\w'?])(?!\s*:=)", new, tail)
+            delta = len(head) - b1
+            out = head + tail
+            i += delta
+            b1 += delta
+    return out
 
 
 def _by_position(text, params):
@@ -653,11 +758,17 @@ def _occurs(text, name):
 
 
 def _rebinds(text, name):
-    """Whether `text` binds `name` again (a `var`, a name before `:=` or `=>`, a quantifier or a match pattern):
-    a declaration, a field write, a nested function's parameter."""
+    """Whether `text` binds `name` again in a way `_by_position` cannot rename consistently: an untyped `var name :=`
+    (the binder stays as written while its uses are renamed), a lambda parameter (`=>`), a type binder (`::`), a
+    quantifier or a match pattern. A typed `var name: T :=` or a tuple binder `var (.., name, ..) :=` is renamed with
+    its uses, so it does not count; a field `R(name := v)` is a field on both sides and never renamed."""
     n = re.escape(name)
     stop = r"(?:(?!:=|:\||::|=>)[^;{}])*?"  # a binder list ends where the bound expression or the body starts
-    return re.search(r"(?<![.\w'?])" + n + r"(?![\w'?])\s*(?::=|=>|::)|\b(?:var|forall|exists|case)\b" + stop + r"(?<![.\w'?])" + n + r"(?![\w'?])", text) is not None
+    if re.search(r"(?<![.\w'?])" + n + r"(?![\w'?])\s*(?:=>|::)", text):
+        return True
+    if re.search(r"\bvar\s+" + n + r"(?![\w'?])\s*:=", text):
+        return True
+    return re.search(r"\b(?:forall|exists|case)\b" + stop + r"(?<![.\w'?])" + n + r"(?![\w'?])", text) is not None
 
 
 def equal_by_position(ptext, ctext, pparams, cparams):
@@ -706,7 +817,7 @@ def alias_identical(parent_text, cand_text, pf, cf, exclude=frozenset()):
     edits = []
     # identical text is not enough: a function that calls a changed function is changed through it. Keep only the
     # functions whose text is identical AND whose same-file callees are all identical (a fixpoint).
-    same = {b for b in cf if b in pf and b not in exclude and equal_by_position(_norm(pf[b]['body'], 'parent'), _norm(cf[b]['body'], 'candidate'), pf[b]['params'], cf[b]['params'])} # a unit whose TypeScript signature changed is changed, whatever its Dafny text; parameters compared by position
+    same = {b for b in cf if b in pf and b not in exclude and equal_by_position(_canon_locals(_norm(pf[b]['body'], 'parent')), _canon_locals(_norm(cf[b]['body'], 'candidate')), pf[b]['params'], cf[b]['params'])} # a unit whose TypeScript signature changed is changed, whatever its Dafny text; parameters compared by position
     changed = True
     while changed:
         changed = False

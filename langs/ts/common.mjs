@@ -394,3 +394,31 @@ export function receiverRecordPath(checker, target) {
   }
   return chain;
 }
+
+// Stage 5 rank 15. The counted for header `let i = e; i < limit; i++` (also <=, >, >= with i--, i += k, i -= k, k a positive
+// literal, the step in the direction of the condition) whose body never assigns the counter: the translator reads it as a
+// counted loop with the counter as the helper's lead parameter. Every other for header is read as
+// `init; while (cond) { body; step }`, continue running the step; the lint and the translator agree through this one test.
+export function countedFor(s) {
+  const K = ts.SyntaxKind;
+  if (!ts.isForStatement(s) || !s.initializer || !s.condition || !s.incrementor) return false;
+  const i = s.initializer;
+  if (!ts.isVariableDeclarationList(i) || !(i.flags & ts.NodeFlags.Let) || i.declarations.length !== 1 || !ts.isIdentifier(i.declarations[0].name) || !i.declarations[0].initializer) return false;
+  const name = i.declarations[0].name.text, u = s.incrementor, c = s.condition;
+  const isName = (x) => ts.isIdentifier(x) && x.text === name;
+  const unary = (op) => (ts.isPostfixUnaryExpression(u) || ts.isPrefixUnaryExpression(u)) && u.operator === op && isName(u.operand);
+  const compound = (op) => ts.isBinaryExpression(u) && u.operatorToken.kind === op && isName(u.left) && ts.isNumericLiteral(u.right) && Number(u.right.text) > 0;
+  const up = unary(K.PlusPlusToken) || compound(K.PlusEqualsToken), down = unary(K.MinusMinusToken) || compound(K.MinusEqualsToken);
+  const ck = ts.isBinaryExpression(c) && isName(c.left) ? c.operatorToken.kind : null;
+  const condUp = ck === K.LessThanToken || ck === K.LessThanEqualsToken, condDown = ck === K.GreaterThanToken || ck === K.GreaterThanEqualsToken;
+  if (!((up && condUp) || (down && condDown))) return false;
+  let assigned = false;
+  const scan = (n) => {
+    if (assigned) return;
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && isName(n.left)) assigned = true;
+    if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && isName(n.operand)) assigned = true;
+    ts.forEachChild(n, scan);
+  };
+  scan(s.statement);
+  return !assigned;
+}

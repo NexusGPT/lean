@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals } from '../common.mjs';
+import { fileUsesReals, countedFor } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -272,6 +272,50 @@ export function lintFile(file, ranges = null, opts = {}) {
   const isRecordish = (t) => !!(t.flags & (TF.Object | TF.Intersection)) && !isArrayLike(checker, t) && !isSetT(t) && !isMapT(t) && !isPromiseT(t);
   const hasStringIndex = (t) => !!(t.flags & TF.Object) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String);
   const nonNull = (t) => (t.flags & TF.Union ? t.types.filter((x) => !(x.flags & (TF.Undefined | TF.Null))) : [t]);
+  // a computed key in a literal whose type has declared keys: why it is refused, or null when the translator reads it as a
+  // case split over the key's literal members (one member names the field outright)
+  // the record type the translator builds a literal as (translate.mjs objectLit recT): the spread's type when the first
+  // property is a spread, else the contextual type without its absent members, else (a union, a non-object) the literal's own type
+  const literalRecordType = (lit) => {
+    const first = lit.properties[0];
+    const ctx = checker.getContextualType(lit);
+    let rt = first && ts.isSpreadAssignment(first) ? tOf(first.expression) : ctx ? (nonNull(ctx).length === 1 ? nonNull(ctx)[0] : ctx) : null;
+    if (!rt || !(rt.flags & (TF.Object | TF.Intersection))) rt = tOf(lit);
+    return rt;
+  };
+  const literalKeyWhy = (p, lt, lit) => {
+    const parts = nonNull(lt);
+    if (parts.length !== 1 || !(parts[0].flags & (TF.Object | TF.Intersection))) return `narrow the literal (${checker.typeToString(lt)}) to one record type before a computed key`;
+    let keyCall = false; const visitKey = (x) => { if (ts.isCallExpression(x) || ts.isNewExpression(x)) keyCall = true; ts.forEachChild(x, visitKey); }; visitKey(p.name.expression);
+    if (keyCall) return 'bind the computed key before the literal; a key call may mutate its receiver';
+    const ks = nonNull(tOf(p.name.expression));
+    if (!ks.length || !ks.every((t) => t.flags & (TF.StringLiteral | TF.NumberLiteral))) return 'a computed key on a record with declared keys is a literal or a union of literals; give the literal a Record<string, T> type for an open key';
+    const names = ks.map((t) => String(t.value));
+    if (names.some((k) => ['constructor', 'prototype', '__proto__'].includes(k))) return 'this computed key reaches the prototype chain; name a declared data field';
+    const missing = names.filter((k) => !checker.getPropertyOfType(parts[0], k));
+    if (missing.length) return `key ${missing.map((k) => JSON.stringify(k)).join(', ')} is not declared on ${checker.typeToString(lt)}`;
+    if (lit.properties.some((q) => ts.isMethodDeclaration(q) || ts.isGetAccessorDeclaration(q) || ts.isSetAccessorDeclaration(q))) return 'a computed key needs a data-only literal; use a class for methods';
+    const fts = [...new Set(names.map((k) => checker.typeToString(checker.getTypeOfSymbolAtLocation(checker.getPropertyOfType(parts[0], k), p))))];
+    if (fts.length > 1) return `the fields of the key union have different types (${fts.join(', ')}); write one literal per key`;
+    return null;
+  };
+  // a type that may hold undefined (void, undefined, any, unknown, or a union with one of them): a default on a value of it may apply
+  const typeAdmitsUndefined = (t) => !!(t.flags & (TF.Void | TF.Undefined | TF.Any | TF.Unknown)) || (!!(t.flags & TF.Union) && t.types.some((x) => !!(x.flags & (TF.Void | TF.Undefined | TF.Any | TF.Unknown))));
+  // stage 5 rank 13: why an effectful callback's parameter stays out, or null. The element parameter may be an object or
+  // array pattern without a rest element (the loop binds it from the element as `for (const { id } of xs)` does), and
+  // may carry a default only when the element type never holds undefined (the default then never applies and the
+  // reading is the element itself); a rest parameter, an optional marker, a nested rest, or a default the element may
+  // take stays refused. The index and reduce's accumulator are plain names.
+  const effectfulParamWhy = (p, isElement, method) => {
+    if (p.dotDotDotToken) return `a rest parameter of the ${method} callback is outside the subset; name the element`;
+    if (p.questionToken) return `an optional parameter of the ${method} callback is outside the subset`;
+    if (!isElement) return ts.isIdentifier(p.name) && !p.initializer ? null : `the ${method === 'reduce' ? 'accumulator' : 'index'} of the ${method} callback is a plain name`;
+    if (p.initializer && typeAdmitsUndefined(tOf(p.name))) return `a default on the ${method} callback's element applies when the element is undefined; the element type admits it, so the default is not read: destructure with the default inside the pattern, or narrow the array`;
+    if (ts.isIdentifier(p.name)) return null;
+    const nestedRest = (pat) => (ts.isObjectBindingPattern(pat) || ts.isArrayBindingPattern(pat)) && pat.elements.some((el) => ts.isBindingElement(el) && (el.dotDotDotToken || nestedRest(el.name)));
+    if (nestedRest(p.name)) return `a rest element inside the ${method} callback's destructured element is outside the subset; name the fields you read`;
+    return null;
+  };
   const isArrayExpr = (e) => nonNull(tOf(e)).every((t) => isArrayLike(checker, t));
   const isLitUnion = (t) => !!(t.flags & TF.Union) && nonNull(t).every((x) => x.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral | TF.StringLike | TF.NumberLike | TF.BooleanLike));
 
@@ -835,29 +879,19 @@ export function lintFile(file, ranges = null, opts = {}) {
   function forStmt(s) {
     const i = s.initializer, c = s.condition, u = s.incrementor;
     if (!i && !c && !u) { loopDepth++; stmt(s.statement); loopDepth--; return; }
-    let name = null;
-    if (i && ts.isVariableDeclarationList(i) && (i.flags & ts.NodeFlags.Let) && i.declarations.length === 1 && ts.isIdentifier(i.declarations[0].name) && i.declarations[0].initializer) {
-      name = i.declarations[0].name.text; expr(i.declarations[0].initializer);
-    } else v(s, 'loop-form', 'for needs `let i = <expr>; i < <expr>; i++`');
-    // the counter moves by a positive literal step, up (`<`, `<=`) or down (`>`, `>=`); the direction must match the step
-    const up = u && (((ts.isPostfixUnaryExpression(u) || ts.isPrefixUnaryExpression(u)) && u.operator === K.PlusPlusToken && ts.isIdentifier(u.operand) && u.operand.text === name)
-      || (ts.isBinaryExpression(u) && u.operatorToken.kind === K.PlusEqualsToken && ts.isIdentifier(u.left) && u.left.text === name && ts.isNumericLiteral(u.right) && Number(u.right.text) > 0));
-    const down = u && (((ts.isPostfixUnaryExpression(u) || ts.isPrefixUnaryExpression(u)) && u.operator === K.MinusMinusToken && ts.isIdentifier(u.operand) && u.operand.text === name)
-      || (ts.isBinaryExpression(u) && u.operatorToken.kind === K.MinusEqualsToken && ts.isIdentifier(u.left) && u.left.text === name && ts.isNumericLiteral(u.right) && Number(u.right.text) > 0));
-    const ck = c && ts.isBinaryExpression(c) && ts.isIdentifier(c.left) && c.left.text === name ? c.operatorToken.kind : null;
-    const condUp = ck === K.LessThanToken || ck === K.LessThanEqualsToken, condDown = ck === K.GreaterThanToken || ck === K.GreaterThanEqualsToken;
-    if (condUp || condDown) expr(c.right);
-    else v(s, 'loop-form', 'for needs the condition `i < <expr>`, `i <= <expr>`, `i > <expr>` or `i >= <expr>`');
-    const okInc = (up && condUp) || (down && condDown);
-    if (!okInc) v(s, 'loop-form', 'for needs the step `i++`, `i += k`, `i--` or `i -= k` (k a positive literal), in the direction of the condition');
-    const scan = (n) => {
-      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(n.left) && n.left.text === name) v(n, 'loop-var-assign', 'the loop variable is assigned in the body');
-      if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && ts.isIdentifier(n.operand) && n.operand.text === name) v(n, 'loop-var-assign', 'the loop variable is assigned in the body');
-      ts.forEachChild(n, scan);
-    };
-    scan(s.statement);
+    if (!countedFor(s)) { // stage 5 rank 15: any other header is init; while (cond) { body; step }, continue running the step; the translator derives a bound from the condition and the step, else reads the loop as an opaque block
+      if (i) {
+        if (ts.isVariableDeclarationList(i)) { if (!(i.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const))) v(s, 'var', '`var` is outside the subset; use let or const'); for (const d of i.declarations) varDecl(d); }
+        else for (const e of commaParts(i)) exprStmt(e);
+      }
+      if (c) expr(c);
+      if (u) for (const e of commaParts(u)) exprStmt(e);
+      loopDepth++; stmt(s.statement); loopDepth--; return;
+    }
+    expr(i.declarations[0].initializer); expr(c.right);
     loopDepth++; stmt(s.statement); loopDepth--;
   }
+  const commaParts = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return ts.isBinaryExpression(e) && e.operatorToken.kind === K.CommaToken ? [...commaParts(e.left), ...commaParts(e.right)] : [e]; };
 
   // ---------- expressions ----------
   const ARITH = new Set([K.PlusToken, K.MinusToken, K.AsteriskToken, K.PercentToken]);
@@ -1115,7 +1149,11 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (ts.isSpreadAssignment(p)) { if (localMethodLiteral(tOf(p.expression))) return v(p, 'object-method-mutation', 'spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly'); return expr(p.expression); }
           if (ts.isShorthandPropertyAssignment(p)) return checkIdent(p.name);
           if (ts.isPropertyAssignment(p)) {
-            if (ts.isComputedPropertyName(p.name)) { const lt = checker.getContextualType(e) ?? tOf(e); const dict = nonNull(lt).every((t) => !!(t.flags & TF.Object) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getPropertiesOfType(t).length); if (!dict) v(p, 'dynamic-key', 'a computed property name builds a dictionary; give the literal a Record<string, T> type'); else if (!nonNull(tOf(p.name.expression)).every(isStr)) v(p, 'dynamic-key', 'a dictionary key is a string'); else expr(p.name.expression); }
+            if (ts.isComputedPropertyName(p.name)) { // a dictionary takes any string key; a record with declared keys takes a literal or a union of literals, read as a case split (translate.mjs objectLit keyMembers)
+              const lt = literalRecordType(e); const dict = nonNull(lt).every((t) => !!(t.flags & TF.Object) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getPropertiesOfType(t).length);
+              const why = dict ? (nonNull(tOf(p.name.expression)).every(isStr) ? null : 'a dictionary key is a string') : literalKeyWhy(p, lt, e);
+              if (why) v(p, 'dynamic-key', why); else expr(p.name.expression);
+            }
             if (ts.isArrowFunction(p.initializer)) return callback(p.initializer, null); // a handler in a record: a callback value
             return expr(p.initializer);
           }
@@ -1371,7 +1409,12 @@ export function lintFile(file, ranges = null, opts = {}) {
             if (cb.type && ts.isTypePredicateNode(cb.type) && callbackNeedsLoop(cb)) return v(cb, 'callback-result', 'an effectful type-predicate callback needs an explicit for-of loop with a type guard');
             if (sig.getReturnType().symbol?.name === 'PromiseLike') return v(cb, 'callback-result', 'a thenable callback needs an async arrow with an explicit await');
             if (name === 'flatMap' && !asyncCb && callbackNeedsLoop(cb)) { const parts = nonNull(sig.getReturnType()); if (parts.some((t) => isArrayLike(checker, t)) && !parts.every((t) => isArrayLike(checker, t))) return v(cb, 'callback-result', 'an effectful flatMap callback returns either arrays on every path or scalar values on every path; use a for-of loop for mixed results'); }
-            if (callbackNeedsLoop(cb) && (cb.parameters.length < (name === 'reduce' ? 2 : 1) || cb.parameters.length > 2 || cb.parameters.some((p) => !ts.isIdentifier(p.name)))) return v(cb, 'callback-form', 'an effectful array callback takes plain element/index names, or accumulator/element names for reduce');
+            if (callbackNeedsLoop(cb)) { // stage 5 rank 13: the element may be a destructured pattern (no rest) or carry a default the element type never takes; the index and the accumulator stay plain names
+              const elemAt = name === 'reduce' ? 1 : 0; const nParams = cb.parameters.length;
+              if (nParams < elemAt + 1 || nParams > 2) return v(cb, 'callback-form', 'an effectful array callback takes the element (and an index), or the accumulator and the element; an extra parameter is outside the subset');
+              const bad = cb.parameters.map((p, i) => effectfulParamWhy(p, i === elemAt, name)).find(Boolean);
+              if (bad) return v(cb, 'callback-form', bad);
+            }
             if (asyncCb && !orderedAsyncCallback(cb)) return v(cb, 'promise-all-order', 'Promise.all does not order work after await; use a for-of loop with await for ordered effects');
             checkCallbackControl(cb);
             if (underPromiseAll(e) && ['map', 'flatMap'].includes(name)) {
@@ -1652,7 +1695,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (!ts.isArrowFunction(a)) return v(a, 'callback-form', 'the callback must be an arrow function');
     // arity null: a callback handed to an outside call or stored in a record, an opaque value keyed by its text; it may be async
     if (arity !== null && a.modifiers?.some((m) => m.kind === K.AsyncKeyword)) v(a, 'async', 'async callbacks are outside the subset');
-    if (arity !== null && (a.parameters.length > arity || a.parameters.some((p) => p.initializer || p.dotDotDotToken || p.questionToken))) v(a, 'callback-form', `the callback takes at most ${arity} plain parameter(s)`);
+    if (arity !== null && (a.parameters.length > arity || a.parameters.some((p) => (p.initializer && typeAdmitsUndefined(tOf(p.name))) || p.dotDotDotToken || p.questionToken))) v(a, 'callback-form', `the callback takes at most ${arity} plain parameter(s); a default is read only where the parameter's type never holds undefined`); // stage 5 rank 13: a default the type never takes is not read
     for (const p of a.parameters) { const names = []; bindingNames(p.name, names); checkType(tOf(p.name), p); }
     callbackStack.push(a);
     const savedLoop = loopDepth, savedSwitch = switchDepth, savedEach = forEachDepth; loopDepth = 0; switchDepth = 0; forEachDepth = 0;

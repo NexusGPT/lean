@@ -15,7 +15,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | BinaryExpression | 34883 | 55.7% | admitted | exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; === between a primitive-or-record union and a literal exact on the literal's primitive arm since the mixed-vs-literal reading; assignment a write; bitwise refused unless the integer file | same |
 | VariableDeclaration | 33616 | 53.7% | no case (refused by default, or reached through its parent) | exact; a let rebinding read by its first assigned type | same |
 | VariableStatement | 32918 | 52.5% | admitted | exact | same |
-| ObjectLiteralExpression | 28851 | 46% | admitted | exact as a fresh record; in the heap core a fresh node; literal methods as function fields; getters and setters by name only | fresh heap node with a proto edge |
+| ObjectLiteralExpression | 28851 | 46% | admitted | exact as a fresh record; in the heap core a fresh node; literal methods as function fields; getters and setters by name only; a computed key of literal type names its field, a union of literals is a case split on the key (stage 5 rank 14) | fresh heap node with a proto edge |
 | PropertyAssignment | 26056 | 41.6% | no case (refused by default, or reached through its parent) | exact | same |
 | ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; a `=` into a field of `process` a world transition (process-write, done (lane)); anything else refused (unsupported-syntax) | same |
 | IfStatement | 23894 | 38.1% | admitted | exact | same |
@@ -25,7 +25,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | ParenthesizedExpression | 16252 | 25.9% | admitted | exact | same |
 | TemplateExpression | 16167 | 25.8% | admitted | exact (string concatenation of converted parts) | same |
 | AwaitExpression | 15997 | 25.5% | admitted | exact as a settled source with the try fault channel (promise forms) | same, with pending reactions on the ledger |
-| Parameter | 15777 | 25.2% | no case (refused by default, or reached through its parent) | exact; rest parameters and defaults by the param-form rule; a parameter the unit reassigns in its own body is a local that starts as the argument (param-rebind), refused inside a callback, as an output or under an earlier closure (param-assign) | same, rest parameters admitted |
+| Parameter | 15777 | 25.2% | no case (refused by default, or reached through its parent); an effectful array callback's element parameter may be a pattern or carry a never-taken default (callback-patterns) | exact; rest parameters and defaults by the param-form rule; a parameter the unit reassigns in its own body is a local that starts as the argument (param-rebind), refused inside a callback, as an output or under an earlier closure (param-assign) | same, rest parameters admitted |
 | ConditionalExpression | 14656 | 23.4% | admitted | exact | same |
 | ArrayLiteralExpression | 14558 | 23.2% | admitted | exact as a sequence; holes refused; in the heap core a fresh node | fresh heap node |
 | PrefixUnaryExpression | 13715 | 21.9% | admitted | exact for !, unary minus on numbers, ++/-- on a name; -0 refused from the heap core | same |
@@ -40,7 +40,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | JsxAttribute | 5979 | 9.5% | no case (refused by default, or reached through its parent) | exact as a boxed prop; a handler as a descriptor or opaque value | same |
 | TryStatement | 5893 | 9.4% | admitted | exact (try/catch/finally with the fault channel) | same |
 | FalseKeyword | 5564 | 8.9% | admitted | exact | same |
-| ObjectBindingPattern | 5564 | 8.9% | no case (refused by default, or reached through its parent) | exact; the record rest of a parameter, any field types, an uninterpreted function of the source named by the excluded keys (record-rest-any, done (lane)) | same |
+| ObjectBindingPattern | 5564 | 8.9% | no case (refused by default, or reached through its parent); the element of an effectful array callback (callback-patterns) | exact; the record rest of a parameter, any field types, an uninterpreted function of the source named by the excluded keys (record-rest-any, done (lane)) | same |
 | CatchClause | 5517 | 8.8% | no case (refused by default, or reached through its parent) | exact (part of TryStatement) | same |
 | ForOfStatement | 5511 | 8.8% | admitted | exact over sequences (loop forms); over an opaque iterable refused | same, plus Map and Set iteration from the library table |
 | JsxExpression | 5495 | 8.8% | admitted | exact as a child or attribute value | same |
@@ -55,7 +55,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | ContinueStatement | 2049 | 3.3% | admitted | exact (loop forms) | same |
 | SuperKeyword | 1636 | 2.6% | admitted | exact for same-file parent classes (class_super pair) | same |
 | UndefinedKeyword | 1596 | 2.5% | no case (refused by default, or reached through its parent) |  |  |
-| ForStatement | 1542 | 2.5% | admitted | exact for the counted forms (loop forms); other forms refused (loop-form) | same |
+| ForStatement | 1542 | 2.5% | admitted | exact for the counted forms (loop forms); since stage 5 rank 15 any other header is `init; while (cond) { body; step }`: a derived bound when the counter, the limit and a literal step give one, else one opaque block | same |
 | NoSubstitutionTemplateLiteral | 1537 | 2.5% | admitted | exact | same |
 | PostfixUnaryExpression | 1345 | 2.1% | admitted | exact on a name; on a member a world write | heap write |
 | JsxSpreadAttribute | 1306 | 2.1% | no case (refused by default, or reached through its parent) | exact as an ordered prop merge | same |

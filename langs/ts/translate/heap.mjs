@@ -1298,13 +1298,19 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => (ts.isSpreadElement(x) ? spreadFresh(x.expression) : fresh(x)));
       if (ts.isConditionalExpression(e)) return fresh(e.whenTrue) && fresh(e.whenFalse);
       if (ts.isTemplateExpression(e) || ts.isStringLiteral(e) || ts.isNumericLiteral(e)) return true;
+      if (freshPrimArrayCall(e)) return true; // map, filter, slice, concat, flat, toSorted, toReversed over primitives: a fresh array holding no reference (the library table's result fact)
+      if (ts.isIdentifier(e)) { // a const of the unit holding a fresh value, of a shape no reference can live in: nothing stored into it since can carry one
+        const d = checker.getSymbolAtLocation(e)?.valueDeclaration;
+        if (d && ts.isVariableDeclaration(d) && ts.isIdentifier(d.name) && d.initializer && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end && (d.parent.flags & ts.NodeFlags.Const) && holdsNoRef(shapeOf(typeOf(d.name))) && fresh(d.initializer)) return true;
+      }
       return false;
     };
+    const holdsNoRef = (s) => !!s && (s.kind === 'prim' || s.kind === 'opt' || (s.kind === 'rec' && s.fields.every((f) => holdsNoRef(f.shape))) || ((s.kind === 'arr' || s.kind === 'set') && holdsNoRef(s.elem))); // a shape no reference can live in: a primitive, an optional one, a record or an array of such
     const spreadFresh = (src) => { // spreading copies the source's reference-typed members: fresh only when it has none
       const t = typeOf(src); const s = shapeOf(t);
       if (checker.isArrayType(nonNull(t)[0] ?? t)) { const el = checker.getTypeArguments(nonNull(t)[0])[0]; return !!el && !isRefType(el); }
       if (!s || s.kind !== 'rec') return false;
-      return s.fields.every((f) => f.shape.kind === 'prim');
+      return holdsNoRef(s);
     };
     // the aliasing class: two input positions of one reference shape may be one object (lane B draws them so), and a
     // write through an input is then visible through the other position, which the value reading never sees: each
@@ -1333,6 +1339,17 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (writesInput && aliasable.length) risks.add(`write through an input that another input position of the same shape may alias (${aliasable.join(', ')})`);
     return [...risks];
   }
+  // an array method whose result the library table marks fresh (translate/library.json: map, filter, flatMap, slice,
+  // concat, flat, toSorted, toReversed, toSpliced, with), called on an array, whose result's element type holds no
+  // reference: the result is a new array carrying no input reference, so it exposes nothing and its identity is one node
+  const FRESH_ARRAY_METHODS = new Set(['map', 'filter', 'flatMap', 'slice', 'concat', 'flat', 'toSorted', 'toReversed', 'toSpliced', 'with']);
+  const freshPrimArrayCall = (e) => {
+    e = unparen(e);
+    if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || !FRESH_ARRAY_METHODS.has(e.expression.name.text)) return false;
+    const recvT = nonNull(typeOf(e.expression.expression))[0]; if (!recvT || !checker.isArrayType(recvT)) return false;
+    const rt = nonNull(typeOf(e))[0]; if (!rt || !checker.isArrayType(rt)) return false;
+    const el = checker.getTypeArguments(rt)[0]; return !!el && !isRefType(el);
+  };
   const MUTATORS_ALL = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin', 'set', 'add', 'delete', 'clear']);
 
   // ----- identity skeletons: where tree equality would imply graph equality -----
@@ -1394,6 +1411,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       }
       if (ts.isTemplateExpression(e)) return '.';
       if (ts.isNewExpression(e)) { const parts = []; for (const a of e.arguments ?? []) { const tm = term(a); if (tm === null) return null; parts.push(tm); } return `#${freshId++}new<${e.expression.getText(sf)}>(${parts.join(',')})`; } // a construction is a fresh node whose parts are its arguments: a constructor may keep what it is handed
+      if (freshPrimArrayCall(e)) return `#${freshId++}[prim]`; // a fresh array of primitives from the library table: one node, no reference parts
       return null; // a call, a method result, an element read: the identity is not visible here
     };
     const spreadFreshOrPath = (src, s) => { // spreading copies members: fine when they are primitive, or when the source is an input path (its members are that path's members)
