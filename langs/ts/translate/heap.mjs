@@ -158,6 +158,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const fieldOf = (s, name) => (s.kind === 'rec' ? s.fields.find((f) => f.name === name) : null);
   // an object literal takes the shape of the place it is written to (a `{ age: undefined }` literal's own type has no
   // shape), when that type is a record holding every key the literal writes
+  // an array literal likewise: `[]` has no element type of its own (never[]), so it takes the array shape of its place
+  const arrShape = (e) => { const c = shapeOf(checker.getContextualType(e)); return c && c.kind === 'arr' ? c : shapeOf(typeOf(e)); };
   const litShape = (e) => { const c = shapeOf(checker.getContextualType(e)); if (c && c.kind === 'rec' && e.properties.every((p) => !p.name || !ts.isIdentifier(p.name) || fieldOf(c, p.name.text))) return c; return shapeOf(typeOf(e)); };
 
   // ----- the core, by syntax -----
@@ -201,7 +203,6 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (u.fn.asteriskToken || u.isAsync) no('generator or async');
     if (u.generics?.length) no('generic');
     if (recursive.has(u.name)) no('recursive');
-    if (!ts.isBlock(u.body)) no('expression body');
     if (!ok) return false;
     const names = new Set(); let lambdaDepth = 0; let usesIndex = false; const loopCalls = new Set();
     // `a[i]` on an array path, `i` a number: the access is read through Idx_/SetIdx_ and marks the world when out of range
@@ -255,7 +256,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isBinaryExpression(e)) { if (!BINOPS.has(e.operatorToken.kind)) return no(`operator ${e.operatorToken.getText(sf)}`); if ((e.operatorToken.kind === K.AmpersandAmpersandToken || e.operatorToken.kind === K.BarBarToken) && !(isBoolT(typeOf(e.left)) && isBoolT(typeOf(e.right)))) return no('logic on values'); if (e.operatorToken.kind === K.PlusToken && !((typeOf(e.left).flags & TF.NumberLike) && (typeOf(e.right).flags & TF.NumberLike)) && !((typeOf(e.left).flags & TF.StringLike) && (typeOf(e.right).flags & TF.StringLike))) return no('mixed + (a number joined to a string converts it)'); checkExpr(e.left); checkExpr(e.right); return; }
       if (ts.isPrefixUnaryExpression(e)) { if (e.operator !== K.ExclamationToken) return no('prefix operator (a negation can make a negative zero the int reading does not see)'); return checkCond(e.operand); }
       if ((ts.isArrayLiteralExpression(e) || ts.isObjectLiteralExpression(e) || ts.isNewExpression(e)) && lambdaDepth) return no('allocation inside a callback');
-      if (ts.isArrayLiteralExpression(e)) { if (!shapeOf(typeOf(e))) return no(`array literal type: ${shapeWhy(typeOf(e))}`); for (const x of e.elements) checkExpr(ts.isSpreadElement(x) ? x.expression : x); return; }
+      if (ts.isArrayLiteralExpression(e)) { if (!arrShape(e)) return no(`array literal type: ${shapeWhy(typeOf(e))}`); for (const x of e.elements) checkExpr(ts.isSpreadElement(x) ? x.expression : x); return; }
       if (ts.isObjectLiteralExpression(e) && litShape(e)?.kind === 'dict') return e.properties.length ? no('dictionary literal with keys') : undefined; // `{}`: an empty dictionary of Object.prototype
       if (ts.isObjectLiteralExpression(e)) {
         const s = litShape(e); if (!s || s.kind !== 'rec') return no(`object literal type: ${shapeWhy(typeOf(e))}`);
@@ -364,9 +365,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return no(`statement ${K[s.kind]}`);
       }
     };
-    const body = [...u.body.statements];
-    checkStmts(body);
-    if (!endsWithReturn(body)) no('path without return');
+    if (!ts.isBlock(u.body)) checkExpr(u.body); // an expression body is the value it returns
+    else { const body = [...u.body.statements]; checkStmts(body); if (!endsWithReturn(body)) no('path without return'); }
     if (ok && usesIndex) indexUnits.add(u.name);
     if (ok && loopCalls.size) loopCallsOf.set(u.name, loopCalls);
     return ok;
@@ -457,7 +457,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       for (const p of u.params) register(shapeOf(typeOf(p.name)));
       if (u.cls) register(instanceShape(u.cls, 0));
       register(shapeOf(checker.getSignatureFromDeclaration(u.fn).getReturnType()));
-      const w = (n) => { if (ts.isArrayLiteralExpression(n) || ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
+      const w = (n) => { if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
       w(u.body);
     }
     return core;
@@ -680,7 +680,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return `(${l} ${op} ${r})`;
       }
       if (ts.isArrayLiteralExpression(e)) {
-        const s = shapeExpr(e);
+        const s = arrShape(e);
         const items = e.elements.some(ts.isSpreadElement) ? e.elements.map((x) => (ts.isSpreadElement(x) ? `Items_${shapeExpr(x.expression).key}(${HW}, ${expr(x.expression)})` : `[${expr(x)}]`)).join(' + ') : `[${e.elements.map((x) => expr(x)).join(', ')}]`; // one literal when nothing is spread: the prover reads `[a, b]` ten times faster than `[a] + [b]`
         const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${items});`); return r;
       }
@@ -823,7 +823,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', `Len_${sh.key}(${HW}, ${arr})`, ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
       lines.push(carried.length ? `var (${HW}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${HW} := ${call};`);
     }
-    const body = stmts([...u.body.statements]);
+    const body = ts.isBlock(u.body) ? stmts([...u.body.statements]) : (() => { const v = exprAs(u.body, rt); const pre = flush(); return `${pre ? pre + '\n' : ''}(${HW}, ${v})`; })(); // an expression body: `return body`
     const self = u.cls ? instanceShape(u.cls, 0) : null; // an instance method's receiver: a reference to the record of its fields
     const params = [...(self ? [`${dn('this')}: Ref`] : []), ...u.params.map((p) => `${dn(p.name.text)}: ${valD(shapeOf(typeOf(p.name)))}`)];
     const lit = (v, sh) => (sh.d === 'string' ? strEsc(v) : isReal ? `${v}.0` : String(v));

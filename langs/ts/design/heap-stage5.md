@@ -65,3 +65,22 @@ Census (resolved, 39 roots), strict graph 155 -> 283, own syntax 388 -> 632; `cu
 ```text
 {"files":23359,"units":53918,"core":283,"heapOwnFit":632,"mirrorMismatch":490,"planErrorCount":0,"seconds":492}
 ```
+
+## 2. Empty literals typed by their place, expression bodies
+
+Reading: an array literal takes the array shape of the place it is written to (a field, a local's declared type, a
+parameter, the return type): `[]` has no element type of its own (`never[]`), and `const xs: string[] = []` is an
+empty cell of `[string]`, `Alloc_A_string(hw_, [])`. (An object literal already took the shape of its place.) An arrow
+unit whose body is an expression returns it: `(t: Team): string => t.name` is the unit
+`(hw_, Get_R_.._name(hw_, t))`.
+Soundness: an empty array holds no element, so any element type describes it; a non-empty literal is written to a
+place whose shape its elements already have (TypeScript checks the assignment), and literal unions share their
+primitive's key. An expression body is the `return` of that expression, evaluated once.
+Out: an array literal with no shaped place and no shaped type of its own (`const xs = []`, an evolving array).
+Pair `heap5_literals`: `title` (expression body against a block: proved), `reset` (WITNESS), `clear` (the empty array
+named before the store: the same allocation, proved), `start` (an empty local against an empty literal typed by the
+return type: proved), `twice` (untouched expression body). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 283 -> 339, own syntax 632 -> 794; `curve.md` expects 296 after its step 2:
+```text
+{"files":23359,"units":53918,"core":339,"heapOwnFit":794,"mirrorMismatch":652,"planErrorCount":0,"seconds":492}
+```
