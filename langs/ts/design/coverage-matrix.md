@@ -49,7 +49,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | JsxElement | 4911 | 7.8% | admitted | exact as a JsxElem value | same |
 | JsxText | 4770 | 7.6% | no case (refused by default, or reached through its parent) | exact (JSX whitespace rule) | same |
 | ArrayBindingPattern | 3982 | 6.4% | no case (refused by default, or reached through its parent) | exact | same |
-| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; otherwise refused (spread) | same |
+| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; otherwise refused (spread); a Map or Map iterator spread stays refused until the Map reading keeps insertion order (spread-map, measured) | same |
 | TypeOfExpression | 3649 | 5.8% | admitted | exact (type tests) | same |
 | RegularExpressionLiteral | 2457 | 3.9% | admitted | exact for the supported regex forms (strings reading); otherwise opaque | same |
 | ContinueStatement | 2049 | 3.3% | admitted | exact (loop forms) | same |
