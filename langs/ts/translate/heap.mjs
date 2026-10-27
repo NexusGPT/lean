@@ -168,6 +168,23 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const isAssignCall = (e) => ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign'; // Object.assign(t, s) as a statement: the table's Assign_ row on same-shape records
   const BINOPS = new Set([K.PlusToken, K.MinusToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken]);
   const unparen = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
+  // `xs.forEach((x) => body)` as a statement is the loop `for (const x of xs) body` (the length read once, an
+  // index visited while it is below the current length; nothing in a core loop body grows an array, so the two visit
+  // the same items): the statement is read through a for-of node standing for it, the callback's parameter its element
+  const forEachMemo = new WeakMap();
+  const forEachLoop = (s) => {
+    if (forEachMemo.has(s)) return forEachMemo.get(s);
+    let loop = null; const e = ts.isExpressionStatement(s) ? unparen(s.expression) : null;
+    if (e && ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && !e.questionDotToken && !e.expression.questionDotToken && e.expression.name.text === 'forEach' && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0]) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') {
+      const cb = e.arguments[0];
+      if (cb.parameters.length === 1 && ts.isIdentifier(cb.parameters[0].name) && !cb.parameters[0].initializer && !cb.modifiers?.length) {
+        const body = ts.isBlock(cb.body) ? cb.body : { kind: K.ExpressionStatement, expression: cb.body, pos: cb.body.pos, end: cb.body.end, parent: cb, flags: 0 };
+        loop = { kind: K.ForOfStatement, awaitModifier: undefined, expression: e.expression.expression, initializer: { kind: K.VariableDeclarationList, flags: ts.NodeFlags.Const, declarations: [{ kind: K.VariableDeclaration, name: cb.parameters[0].name, initializer: undefined }] }, statement: body, pos: s.pos, end: s.end, parent: s.parent, flags: 0 };
+      }
+    }
+    forEachMemo.set(s, loop); return loop;
+  };
+  const CB1 = new Set(['map', 'filter', 'some', 'every', 'find', 'findIndex']); // the array methods of one pure callback the core reads
   const cbBody = (cb) => (!ts.isBlock(cb.body) ? cb.body : cb.body.statements.length === 1 && ts.isReturnStatement(cb.body.statements[0]) && cb.body.statements[0].expression ? cb.body.statements[0].expression : null); // `(x) => e` or `(x) => { return e; }`
   // the string rows of the table read as pure functions of their operands: trim and replace (a string pattern) are
   // bodiless, the same on both sides; join of strings is the exact fold, join of numbers bodiless (it formats them)
@@ -311,12 +328,28 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'Date') { if ((e.arguments ?? []).length !== 1 || !(typeOf(e.arguments[0]).flags & TF.NumberLike)) return no('new Date form (one time value; no argument is the clock, a string is parsing)'); if (!shapeOf(typeOf(e))) return no('new Date type'); return checkExpr(e.arguments[0]); }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && shapeOf(typeOf(e.expression.expression))?.kind === 'date') { const g = e.expression.name.text; if (e.arguments.length) return no('date method with arguments'); if (!(g === 'getTime' || g === 'valueOf' || /^getUTC(FullYear|Month|Date|Day|Hours|Minutes|Seconds|Milliseconds)$/.test(g))) return no(`date method ${g} (a local-time getter reads the host's time zone; a setter writes it)`); return checkExpr(e.expression.expression); }
       if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'structuredClone' && e.arguments.length === 1) { const s = shapeOf(typeOf(e.arguments[0])); if (!s || s.kind === 'prim') return no('clone of a non-cell'); const flat = s.kind === 'rec' ? s.fields.every((f) => f.shape.kind === 'prim') : s.kind === 'arr' ? s.elem.kind === 'prim' : true; if (!flat) return no('clone of a nested graph (one level of a plain cell only)'); return checkExpr(e.arguments[0]); }
-      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (e.expression.name.text === 'map' || e.expression.name.text === 'filter') && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])) { // the table's map and filter rows: a pure one-parameter arrow with an expression body
-        const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${e.expression.name.text} of a non-array`);
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && CB1.has(e.expression.name.text) && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])) { // map and filter (the table's rows), some, every, find, findIndex: a pure one-parameter arrow with an expression body
+        const m = e.expression.name.text; const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${m} of a non-array`);
         const cb = e.arguments[0]; if (cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || !cbBody(cb) || cb.modifiers?.length) return no('callback form');
-        if (e.expression.name.text === 'map') { const rs = shapeOf(typeOf(e)); if (!rs || rs.kind !== 'arr') return no(`map result type: ${shapeWhy(typeOf(e))}`); }
+        if ((m === 'map' || m === 'filter') && lambdaDepth) return no('allocation inside a callback');
+        if (m === 'map') { const rs = shapeOf(typeOf(e)); if (!rs || rs.kind !== 'arr') return no(`map result type: ${shapeWhy(typeOf(e))}`); }
+        if (m === 'find' && (s.elem.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'opt')) return no('find of references (an absent reference is not read)');
+        if (m === 'findIndex' && isReal) return no('findIndex in a real file');
         const x = cb.parameters[0].name.text; if (names.has(x) || x === HW) return no('name reused'); if (!shapeOf(typeOf(cb.parameters[0].name))) return no('callback parameter type');
         checkExpr(e.expression.expression); names.add(x); lambdaDepth++; checkExpr(cbBody(cb)); lambdaDepth--; names.delete(x); return;
+      }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'reduce' && e.arguments.length === 2 && ts.isArrowFunction(e.arguments[0]) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') { // reduce with an initial value: a left fold over the items
+        const cb = e.arguments[0]; if (cb.parameters.length !== 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name)) || !cbBody(cb) || cb.modifiers?.length) return no('callback form');
+        const [acc, x] = cb.parameters.map((p) => p.name.text); if (acc === x || names.has(acc) || names.has(x) || acc === HW || x === HW) return no('name reused');
+        const as = shapeOf(typeOf(cb.parameters[0].name)); if (!as || as.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'prim' || !shapeOf(typeOf(cb.parameters[1].name))) return no('reduce accumulator type (a primitive)');
+        checkExpr(e.expression.expression); checkExpr(e.arguments[1]); names.add(acc); names.add(x); lambdaDepth++; checkExpr(cbBody(cb)); lambdaDepth--; names.delete(acc); names.delete(x); return;
+      }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['includes', 'indexOf', 'at'].includes(e.expression.name.text) && e.arguments.length === 1 && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') { // a search of the items (=== on references is identity), or an element counted from either end
+        const m = e.expression.name.text; const s = shapeOf(typeOf(e.expression.expression));
+        if (m !== 'includes' && isReal) return no(`${m} in a real file`);
+        if (m === 'at' && (s.elem.kind !== 'prim' || !(typeOf(e.arguments[0]).flags & TF.NumberLike))) return no('at of references or by a non-number');
+        if (m !== 'at' && shapeOf(typeOf(e.arguments[0]))?.key !== s.elem.key && keyOf(shapeOf(typeOf(e.arguments[0])) ?? {}) !== keyOf(s.elem)) return no(`${m} of another shape`);
+        checkExpr(e.expression.expression); return checkExpr(e.arguments[0]);
       }
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { // a ?? b: the left a value that may be absent, the right pure (it is read whatever the left holds)
         if (shapeOf(typeOf(e.left))?.kind !== 'opt') return no('?? on a value that is never absent'); if (!pureExpr(e.right)) return no('?? with a right side that calls or allocates'); if (!shapeOf(typeOf(e))) return no('?? result type'); checkExpr(e.left); return checkExpr(e.right);
@@ -396,6 +429,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const checkStmts = (list, loop = null) => {
       for (let i = 0; i < list.length && ok; i++) {
         const s = list[i];
+        if (forEachLoop(s)) { checkLoop(forEachLoop(s), loop); continue; }
         if (ts.isForOfStatement(s) || ts.isForStatement(s)) { checkLoop(s, loop); continue; }
         if (loop && (ts.isReturnStatement(s) || ts.isBreakStatement(s) || ts.isContinueStatement(s))) return no(ts.isReturnStatement(s) ? 'return inside a loop' : 'break or continue');
         if (loop && ts.isIfStatement(s)) { checkCond(s.expression); checkStmts(block(s.thenStatement), loop); if (s.elseStatement) checkStmts(block(s.elseStatement), loop); continue; }
@@ -534,7 +568,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       for (const p of u.params) register(shapeOf(typeOf(p.name)));
       if (u.cls) register(instanceShape(u.cls, 0));
       register(shapeOf(checker.getSignatureFromDeclaration(u.fn).getReturnType()));
-      const w = (n) => { if (strMethod(n) === 'split' || reCall(n)?.m === 'split') register(shapeOf(typeOf(n))); if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
+      const w = (n) => { if (strMethod(n) === 'split' || reCall(n)?.m === 'split') register(shapeOf(typeOf(n))); if (ts.isCallExpression(n) || ts.isConditionalExpression(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind === K.QuestionQuestionToken)) register(shapeOf(typeOf(n))); if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
       w(u.body);
     }
     return core;
@@ -671,7 +705,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
 
   // ----- emission -----
   function emit(u) {
-    let temp = 0;
+    let temp = 0; let inLam = 0; // inLam: inside a callback's body, which is a Dafny lambda (no binding can leave it)
     const lines = []; // hoisted let lines of the region being built
     const fresh = (p) => `${p}${temp++}_`;
     const sig = checker.getSignatureFromDeclaration(u.fn);
@@ -750,12 +784,26 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         lines.push(`var (${HW}, ${out}) := Alloc_${s.key}(${HW}, ${contents});`); return out;
       }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'has') { const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); return `${s.kind === 'map' ? 'MapHas' : 'SetHas'}_${s.key}(${HW}, ${r}, ${expr(e.arguments[0])})`; }
-      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (e.expression.name.text === 'map' || e.expression.name.text === 'filter') && ts.isArrowFunction(e.arguments[0])) {
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && CB1.has(e.expression.name.text) && ts.isArrowFunction(e.arguments[0])) {
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const cb = e.arguments[0]; const x = cb.parameters[0].name.text; const xs = shapeOf(typeOf(cb.parameters[0].name));
-        const body = expr(cbBody(cb)); const lam = `((${dn(x)}: ${valD(xs)}) => ${body})`; const out = fresh('r');
+        inLam++; const body = expr(cbBody(cb)); inLam--; const lam = `((${dn(x)}: ${valD(xs)}) => ${body})`; const out = fresh('r');
+        const m = e.expression.name.text; const E = valD(s.elem);
+        if (m === 'some' || m === 'every') { const it = bind(`Items_${s.key}(${HW}, ${r})`, 'it'); const i = fresh('i'); return m === 'some' ? `(exists ${i} :: 0 <= ${i} < |${it}| && ${lam}(${it}[${i}]))` : `(forall ${i} :: 0 <= ${i} < |${it}| ==> ${lam}(${it}[${i}]))`; } // the items as they are at the call: the callback reads, never writes
+        if (m === 'find') return `${helper('Find', [E])}(Items_${s.key}(${HW}, ${r}), ${lam})`; // the first item the callback accepts, or absent
+        if (m === 'findIndex') return `${helper('FindIndex', [E])}(Items_${s.key}(${HW}, ${r}), ${lam})`;
         if (e.expression.name.text === 'filter') { lines.push(`var (${HW}, ${out}) := Filter_${s.key}(${HW}, ${r}, ${lam});`); return out; }
         const rs = shapeExpr(e); mapInstances.add(`${s.key}|${rs.key}`);
         lines.push(`var (${HW}, ${out}) := Map_${s.key}_${rs.key}(${HW}, ${r}, ${lam});`); return out;
+      }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'reduce' && e.arguments.length === 2 && ts.isArrowFunction(e.arguments[0])) {
+        const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const init = exprAs(e.arguments[1], shapeOf(typeOf(e.arguments[0].parameters[0].name))); const cb = e.arguments[0];
+        const [acc, x] = cb.parameters.map((p) => p.name.text); const U = valD(shapeOf(typeOf(cb.parameters[0].name))), E = valD(s.elem);
+        inLam++; const body = exprAs(cbBody(cb), shapeOf(typeOf(cb.parameters[0].name))); inLam--;
+        return `${helper('Fold', [E, U])}(Items_${s.key}(${HW}, ${r}), ((${dn(acc)}: ${U}, ${dn(x)}: ${E}) => ${body}), ${init})`; // the receiver, then the initial value, then the fold
+      }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['includes', 'indexOf', 'at'].includes(e.expression.name.text) && e.arguments.length === 1 && shapeExpr(e.expression.expression)?.kind === 'arr') {
+        const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const v = expr(e.arguments[0]); const it = `Items_${s.key}(${HW}, ${r})`; const E = valD(s.elem); const m = e.expression.name.text;
+        if (m === 'includes') return `(${v} in ${it})`; if (m === 'indexOf') return `${helper('IndexOf', [E])}(${it}, ${v})`; return `${helper('At', [E])}(${it}, ${v})`;
       }
       if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!${cond(e.operand)}` : `(-(${expr(e.operand)}))`;
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { const ls = locShape(e); const a = expr(e.left); return ls.kind === 'opt' ? `OptOrOpt(${a}, ${exprAs(e.right, ls)})` : `OptOr(${a}, ${expr(e.right)})`; }
@@ -848,7 +896,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       throw new Error(`heap: no table row for .${m}`);
     }
     // an element's receiver and index, each evaluated once and bound
-    const bind = (code, p) => { if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(code) || /^-?\d+(\.\d+)?$/.test(code)) return code; const x = fresh(p); lines.push(`var ${x} := ${code};`); return x; }; // a name or a literal is its own value; anything else is bound once
+    const bind = (code, p) => { if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(code) || /^-?\d+(\.\d+)?$/.test(code)) return code; if (inLam) return `(${code})`; const x = fresh(p); lines.push(`var ${x} := ${code};`); return x; }; // a name or a literal is its own value; anything else is bound once (inside a callback, where nothing writes, it is written in place)
     function element(e) { const s = shapeExpr(e.expression); const r = bind(expr(e.expression), 'a'); const i = bind(expr(e.argumentExpression), 'i'); return [s, r, i]; }
     const dictRead = (s, r, i) => { lines.push(`var ${HW} := DictMark_${s.key}(${HW}, ${r}, ${i});`); return `DictGet_${s.key}(${HW}, ${r}, ${i})`; };
     // a write target in JavaScript order: its receiver (and index) first, then the right side, then the store
@@ -868,6 +916,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const out = [];
       for (let i = 0; i < list.length; i++) {
         const s = list[i];
+        if (forEachLoop(s)) { loopCall(forEachLoop(s)); out.push(flush()); continue; }
         if (ts.isForOfStatement(s) || ts.isForStatement(s)) { loopCall(s); out.push(flush()); continue; }
         if (k && ts.isIfStatement(s)) {
           const c = cond(s.expression); const pre = flush(); const rest = list.slice(i + 1);

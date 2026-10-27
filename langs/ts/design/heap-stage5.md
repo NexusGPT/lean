@@ -190,3 +190,25 @@ Census (resolved, 39 roots), strict graph 572 -> 647, own syntax 1471 -> 1609; `
 ```text
 {"files":23359,"units":53918,"core":647,"heapOwnFit":1609,"mirrorMismatch":1467,"planErrorCount":0,"seconds":427}
 ```
+
+## 11. Array callbacks and the other array methods
+
+Reading: beside `map` and `filter`, a pure one-parameter callback with an expression body is read for `some` and
+`every` (a quantifier over the items as they are at the call), `find` (the first item accepted, an option: primitive
+items only), `findIndex`; `reduce(cb, init)` with a primitive accumulator is a left fold (`Fold` of the ordinary
+lane); `includes`, `indexOf` and `at` search or index the items (`===` on references is identity, which `Ref`
+equality is). `xs.forEach((x) => body)` as a statement is the loop `for (const x of xs) body`, read by stage 4's loop
+helper. A binding inside a callback body is written in place (a Dafny lambda keeps no binding).
+Soundness: the callbacks read and never write (no allocation, element access or narrowed field read inside them), so
+evaluating them over the items at the call is exact; `forEach` reads the length once and visits an index while it is
+below the current length, and nothing in a core loop body grows an array, so it visits what the for-of loop visits.
+Out: a callback with an index or a statement body (beside `forEach`), `find` of references (an absent reference),
+`map` or `filter` inside a callback (an allocation; this also closes a stage 4 path that wrote an invalid binding),
+`indexOf`, `findIndex` and `at` in a real file, `reduce` without an initial value.
+Pair `heap5_arrays`: `hasRush` (`includes` for a `some` comparing each tag: proved), `allPositive` (WITNESS), `total`
+(the receiver named before `reduce`: proved), `firstBig` (untouched), `bump` (`forEach` against `for-of`: the same loop
+helper, proved), `firstTag` (untouched, `at`). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 647 -> 672, own syntax 1609 -> 1675; `curve.md` expects 1160 after its step 11:
+```text
+{"files":23359,"units":53918,"core":672,"heapOwnFit":1675,"mirrorMismatch":1533,"planErrorCount":0,"seconds":377}
+```
