@@ -912,5 +912,83 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "ordered_collections_orderCode",
+  "file": "ordered_collections.ts",
+  "fn": "orderCode",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     6,
+     2,
+     11,
+     7
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     4,
+     9
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "ordered_collections_distinctCode",
+  "file": "ordered_collections.ts",
+  "fn": "distinctCode",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     3,
+     1,
+     3,
+     2,
+     1
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     5
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "ordered_collections_reinsertCode",
+  "file": "ordered_collections.ts",
+  "fn": "reinsertCode",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     3,
+     1
+    ]
+   ]
+  ]
  }
 ]
