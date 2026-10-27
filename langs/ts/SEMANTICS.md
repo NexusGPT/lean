@@ -41,6 +41,8 @@ A function on a recursive cycle (alone or with others) takes a fuel. Every call 
 
 Both versions run in one process, each in its own sandbox, against the same fakes: every import that leaves the package, every global that reaches the outside, every field of a receiver. A fake records what is asked of it; its answers come from the seed and the path, the same on both sides; a call made twice is two values. Clock requests are recorded in order and receive advancing seeded instants. Inputs come from the parameter types, boundary values first, recursive shapes unfolded to depth three. The observation is the one above; a difference on any input is a WITNESS with that input; none on n inputs is PASS-bounded, which states n, the seed, the fake policy and the time limit, and never becomes a proof.
 
+While the unit runs, every call of a library-table operation (`translate/library.json`: the array, Map, Set and Object.assign rows) made from the unit's own files is recorded with its receiver before and after, its arguments and its result, and checked against the row (`exec/transitions.mjs`). The certificate carries the counts per operation (`bound.library`). A record the row contradicts is a defect of the table, not of the unit: lane B's verdict stands, and the proof lane refuses the operation (`ASK:library-model`) until the row is corrected.
+
 ## What stays outside
 
 Assignment to a field of `this`, `super`, generators, closures that change an outer variable, mutation of a parameter, more than one asynchronous schedule, code the repository does not contain. Each is an ASK with its reason, never a PASS.

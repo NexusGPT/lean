@@ -119,7 +119,16 @@ until the row is fixed. Test262's directories for these operations run as a corp
 under `work/lean-deps/test262`): on 2026-10-26, 996 files, 12,459 in-model records, 0 disagreements between the engine
 and the table; 2,814 records out of the model (array-likes, subclasses, accessors, symbol keys, string sources), 11 callback
 effects counted apart (`design/test262-report.json`). The recorder and checker (`exec/transitions.mjs`) are the standing
-validation; their wiring around `unit.call` in lane B follows the heap merge.
+validation, wired into lane B (2026-10-27): a recording window opens only while unit code runs (the watchdog call, an
+effect, a cleanup, the await of a promise the unit returned), so the harness's own work between calls costs nothing; a
+call is kept when its caller's file is one the sandbox loaded (a string stack read, re-entrancy guarded); each vm
+context's own Array and Object intrinsics are patched beside the host's, since an array literal in the unit uses them.
+The certificate's `bound.library` carries the records per operation, the out-of-model and callback-effect counts, and
+one defect per (operation, contradiction) with its first record; `check.mjs` refuses the proof (`ASK:library-model`)
+while a row is contradicted and lane B's own verdict stands. Pair `builtin_transitions` runs every generated row the lint
+admits (pop and Object.assign are not admitted as statements yet); the suite also runs the unit against a deliberately
+wrong table (`tests/fixtures/library-wrong.json`) and checks the refutation and the refusal. Cost measured on the finite
+explorer: 0.6 s without the recorder, 0.7 s with the narrowed window (4.5 s with a window over the whole run).
 
 **Boundary.** Getters, setters, proxies, species constructors, effectful comparators, Date string parsing and time
 zones: obligations unmet; `structuredClone` of unsupported values: refused by name. `Object.freeze` needs a

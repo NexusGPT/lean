@@ -18,6 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { Environment, render, BudgetError } from './fake.mjs';
@@ -25,8 +26,26 @@ import { specOf } from './spec.mjs';
 import { inputsFor, aliasInputs } from './gen.mjs';
 import { runNew } from './new-unit.mjs';
 import { Graph } from './graph.mjs';
+import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
 
 const require = createRequire(import.meta.url);
+// The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
+// call of the table made from the sandbox's files is recorded (transitions.mjs) and checked against its row; the
+// certificate carries the counts and every defect. LEAN_LIBRARY_TABLE names another table (the suite's negative
+// check); LEAN_LIBRARY_CASES names a directory where each defect is written as a case.
+const loadedFiles = new Set(); // every file a sandbox loaded: a built-in call is the unit's when its caller's file is one of them
+let libraryTable = null;
+const libraryTableOf = () => libraryTable ??= JSON.parse(fs.readFileSync(process.env.LEAN_LIBRARY_TABLE || path.join(path.dirname(new URL(import.meta.url).pathname), '../translate/library.json'), 'utf8'));
+let activeRecords = null, windowDepth = 0; // a run's record set, and the window: the prototypes are patched only while unit code runs (guardedCall, an effect, a cleanup, the await of a promise the unit returned), so the harness's own work between calls costs nothing
+const recording = async (records, fn) => { const prev = activeRecords; activeRecords = records; try { return await fn(); } finally { activeRecords = prev; } };
+const openWindow = (env) => { if (!activeRecords) return false; if (windowDepth++ === 0) { startRecording(activeRecords, undefined, { keep: (f) => loadedFiles.has(f) }); } if (env && env.realm) addRealm(env.realm); return true; };
+const closeWindow = (opened) => { if (!opened) return; if (--windowDepth === 0) stopRecording(); };
+const awaitUnit = async (env, p, ms) => { const w = openWindow(env); try { return await withTimeout(p, ms); } finally { closeWindow(w); } }; // a promise the unit returned: its continuations are unit code
+const libraryCases = (summary) => {
+  const dir = process.env.LEAN_LIBRARY_CASES; if (!dir || !summary.defects.length) return;
+  fs.mkdirSync(dir, { recursive: true });
+  for (const d of summary.defects) { const name = `${d.op.replace(/[^A-Za-z0-9]+/g, '_')}-${crypto.createHash('sha256').update(JSON.stringify(d)).digest('hex').slice(0, 12)}.json`; fs.writeFileSync(path.join(dir, name), JSON.stringify(d, null, 1)); }
+};
 
 const COMPILE = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, experimentalDecorators: true, emitDecoratorMetadata: false, esModuleInterop: true, importHelpers: false, strict: false, sourceMap: false, removeComments: true, jsx: ts.JsxEmit.ReactJSX, allowJs: true, moduleDetection: ts.ModuleDetectionKind.Force };
 
@@ -73,7 +92,7 @@ class RenderLoop extends Error { constructor(why) { super(`render-loop: ${why}`)
 // one commit: render until a setter during render stops changing the state (React re-renders at once, up to 25 times)
 async function commitRender(env, call, ms) {
   let v, renders = 0;
-  do { env.stateDirty = false; env.react?.__beginRender?.(); renders++; const r = call(); v = (r && typeof r.then === 'function') ? await withTimeout(r, ms) : r; if (env.stateDirty && renders >= 25) throw new RenderLoop('a setter during render re-rendered 25 times'); } while (env.stateDirty && env.react);
+  do { env.stateDirty = false; env.react?.__beginRender?.(); renders++; const r = call(); v = (r && typeof r.then === 'function') ? await awaitUnit(env, r, ms) : r; if (env.stateDirty && renders >= 25) throw new RenderLoop('a setter during render re-rendered 25 times'); } while (env.stateDirty && env.react);
   return v;
 }
 // after a commit: effects run (settleEffects), and an effect that set the state re-renders and settles again, bounded
@@ -171,6 +190,7 @@ export function sandbox(env, root) {
   };
   g.globalThis = g; g.global = g; g.window = undefined;
   const ctx = vm.createContext(g);
+  env.realm = vm.runInContext('({ Array: [].constructor, Object: ({}).constructor })', ctx); // the context's own intrinsics: an array literal in the unit uses them, not the host's Array; patched while a recording window is open
   env.ctx = ctx; // a unit call runs under this context's watchdog (guardedCall): a synchronous loop that never ends is a timeout, never a hang or a native crash
   function load(file) {
     const abs = path.resolve(file);
@@ -189,6 +209,7 @@ export function sandbox(env, root) {
       'var __decorate = function (decorators, target, key, desc) { var c = arguments.length, r = c < 3 ? target : desc === null ? Object.getOwnPropertyDescriptor(target, key) : desc; for (var i = decorators.length - 1; i >= 0; i--) { var d = decorators[i]; if (d) { try { c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key); } catch (e) { if (!(e && e.__isFake)) throw e; } } } return r; };');
     const mod = { exports: {} };
     cache.set(abs, mod);
+    loadedFiles.add(abs);
     const req = (spec) => {
       if (spec.startsWith('.') ) {
         if (/\.(css|scss|sass|less|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|md|txt|html|wasm)(\?.*)?$/i.test(spec)) return env.module(spec); // an asset, not code: a fake module
@@ -255,10 +276,12 @@ class CallTimeout extends Error { constructor(ms) { super(`__timeout__`); this.m
 function guardedCall(env, fn, ms) {
   if (!env.ctx) return fn();
   env.ctx.__leanCall = fn;
+  const w = openWindow(env);
   try { return vm.runInContext('__leanCall()', env.ctx, { timeout: Math.max(1, ms) }); }
   catch (e) { if (e && e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') throw new CallTimeout(ms); throw e; }
-  finally { delete env.ctx.__leanCall; }
+  finally { delete env.ctx.__leanCall; closeWindow(w); }
 }
+const callUnit = (env, fn) => { const w = openWindow(env); try { return fn(); } finally { closeWindow(w); } }; // an effect or a cleanup called directly: unit code, inside a window
 async function withTimeout(p, ms) {
   let timer;
   const t = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('__timeout__')), ms); });
@@ -290,7 +313,7 @@ export async function observe(side, spec, args, ms) {
     }
     for (const effect of env.reactEffects ?? []) { // the mount's effects, once, in registration order (the pending records of their cleanups are part of the one-render observation)
       const es = (env.effectSlots ?? []).find((x) => x && x.fn === effect);
-      try { const cleanup = await withTimeout(Promise.resolve(effect()), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); if (es) { es.ran = true; es.lastDeps = es.deps; es.cleanup = typeof cleanup === 'function' ? cleanup : null; } }
+      try { const cleanup = await awaitUnit(env, Promise.resolve(callUnit(env, effect)), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); if (es) { es.ran = true; es.lastDeps = es.deps; es.cleanup = typeof cleanup === 'function' ? cleanup : null; } }
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
     if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
@@ -337,7 +360,7 @@ async function runTimers(env, ms, limit = 50) {
     const i = t.queue.indexOf(e); t.queue.splice(i, 1); const j = env.pending.findIndex((x) => x.id === e.id); if (j >= 0) env.pending.splice(j, 1);
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
     env.record('fire', { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[e.kind], [e.due]); // the instant, never the id: an id is an arm counter nobody outside sees
-    try { const r = guardedCall(env, () => e.fn(...e.args), ms); if (r && typeof r.then === 'function') await withTimeout(r, ms); } catch (x) { if (x instanceof BudgetError || x?.message === '__timeout__') throw x; env.record('timer-throw', e.kind, [render(x)]); }
+    try { const r = guardedCall(env, () => e.fn(...e.args), ms); if (r && typeof r.then === 'function') await awaitUnit(env, r, ms); } catch (x) { if (x instanceof BudgetError || x?.message === '__timeout__') throw x; env.record('timer-throw', e.kind, [render(x)]); }
     if (e.interval) { e.fired = 1; e.due = t.now + e.interval; e.order = t.nextId++; t.queue.push(e); env.pending.push({ op: 'setInterval', ms: e.interval, id: e.id }); } // once per run: the interval stays pending for the next tick
     await new Promise((r) => setImmediate(r));
   }
@@ -355,9 +378,9 @@ async function settleEffects(env, ms) {
   for (const es of env.effectSlots ?? []) {
     if (!es) continue;
     if (es.ran && es.deps !== undefined && sameDeps(es.deps, es.lastDeps)) continue;
-    if (es.cleanup) { env.record('call', `${es.key}.cleanup`, []); try { await withTimeout(Promise.resolve(es.cleanup()), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
+    if (es.cleanup) { env.record('call', `${es.key}.cleanup`, []); try { await awaitUnit(env, Promise.resolve(callUnit(env, es.cleanup)), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
     env.record('call', es.key, []);
-    try { const c = await withTimeout(Promise.resolve(es.fn()), ms); es.cleanup = typeof c === 'function' ? c : null; } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', es.key, [render(e)]); }
+    try { const c = await awaitUnit(env, Promise.resolve(callUnit(env, es.fn)), ms); es.cleanup = typeof c === 'function' ? c : null; } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', es.key, [render(e)]); }
     es.ran = true; es.lastDeps = es.deps;
   }
   await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r));
@@ -383,13 +406,13 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
       const from = s.env.trace.length;
       const h = treeHandlers(tree).find((x) => x.label === label);
       if (!h) { obs.push({ command: label, missing: true, handlers: treeHandlers(tree).map((x) => x.label) }); return { obs, s }; }
-      try { const r = guardedCall(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await withTimeout(r, ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('handler-throw', label, [render(e)]); }
+      try { const r = guardedCall(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('handler-throw', label, [render(e)]); }
       tree = await commit(s); if (s.env.timers.queue.length) { await runTimers(s.env, ms); tree = await commit(s); }
       obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
     }
     // unmount: every cleanup, in slot order
     const from = s.env.trace.length;
-    for (const es of s.env.effectSlots ?? []) if (es && es.cleanup) { s.env.record('call', `${es.key}.cleanup`, []); try { await withTimeout(Promise.resolve(es.cleanup()), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
+    for (const es of s.env.effectSlots ?? []) if (es && es.cleanup) { s.env.record('call', `${es.key}.cleanup`, []); try { await awaitUnit(s.env, Promise.resolve(callUnit(s.env, es.cleanup)), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
     obs.push({ command: 'unmount', trace: s.env.trace.slice(from).map((x) => render(x)) });
     return { obs, s, handlers: treeHandlers(tree).map((x) => x.label) };
   };
@@ -421,7 +444,7 @@ export async function runPair(opts) {
   let spec;
   try { spec = specOf(candidate, unit, { project }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
-  const diffs = [];
+  const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
   for (let i = 0; i < n; i++) {
     const sides = {};
@@ -439,8 +462,7 @@ export async function runPair(opts) {
       sides[name] = { env, unit: u, inputs };
     }
     if (harnessAsk) break;
-    const oP = await observe(sides.parent, spec, sides.parent.inputs, ms);
-    const oC = await observe(sides.candidate, spec, sides.candidate.inputs, ms);
+    const [oP, oC] = await recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]);
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
     if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, args: sides.parent.inputs.map((a) => render(a)), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
     if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
@@ -452,6 +474,7 @@ export async function runPair(opts) {
     }
   }
   const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); return sm; } }); // read when the result is written, after every rung
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop); the input proves nothing' };
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
   if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };
@@ -459,10 +482,10 @@ export async function runPair(opts) {
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
   if (sawJsx) { // the one-render check found no difference: a finite component is decided over every click order (rung 2); the rest runs re-render sequences (rung 3)
-    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop };
+    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
     let domain = null; try { domain = finiteDomain(candidate, unit, { project }); } catch (e) { domain = { why: `finiteness: ${String(e && e.message).slice(0, 120)}` }; }
     if (domain && !domain.why) {
-      const r = await exploreFinite({ files: { parent, candidate }, roots, spec, unit, domain, seed, ms, rt });
+      const r = await recording(records, () => exploreFinite({ files: { parent, candidate }, roots, spec, unit, domain, seed, ms, rt }));
       bound.frontEnd.finite = { slots: domain.slots.map((x) => x.values.length), props: domain.props.map((p) => `${p.name}:${p.opaque ? p.opaque : p.values.length}`), assignments: domain.assignments.length };
       if (r.verdict === 'ASK') return { verdict: 'ASK', reason: `finite exploration: ${r.reason}`, unit, bound };
       if (r.verdict === 'WITNESS') { bound.frontEnd.renders = 'every click order from every prop assignment, explored'; return { verdict: 'WITNESS', unit, witnesses: [{ input: r.witness.props, sequence: r.witness.clicks, step: r.witness.step ?? null, parent: r.witness.parent ?? null, candidate: r.witness.candidate ?? null, reason: r.witness.reason ?? null, where: { field: 'sequence', command: (r.witness.clicks ?? [])[r.witness.step ?? 0] ?? null } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
@@ -475,7 +498,7 @@ export async function runPair(opts) {
   if (sawJsx && sequenceDepth > 0) { // not finite: re-render sequences from a fresh mount, on the first inputs
     let paths = 0;
     for (let i = 0; i < Math.min(sequenceInputs, n); i++) {
-      const r = await runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth });
+      const r = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth }));
       if (r.ask) return { verdict: 'ASK', reason: `input ${i}: ${r.ask}`, unit, bound };
       if (r.witness) { bound.frontEnd.renders = `one, then command sequences of up to ${sequenceDepth} clicks`; return { verdict: 'WITNESS', unit, witnesses: [{ input: i, sequence: r.witness.sequence, step: r.witness.step, parent: r.witness.parent, candidate: r.witness.candidate, where: { field: 'sequence', command: r.witness.sequence[r.witness.step] ?? 'unmount' } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
       paths += r.paths ?? 0;

@@ -5,6 +5,7 @@
 // Array, Map, Set and Object into the vm context), and restores them in `finally`; it never calls a patched method
 // itself, so the harness's own arrays are unaffected while the window is open.
 const ORIGINALS = [];
+let inside = false; // the recorder's own bookkeeping (the keep filter, the snapshots) may call a patched method: such a call passes through, never recorded, never recursed into
 const ids = new WeakMap(); let nextId = 1;
 const idOf = (x) => { if (x === null || (typeof x !== 'object' && typeof x !== 'function')) return null; if (!ids.has(x)) ids.set(x, nextId++); return ids.get(x); };
 const seen = (x) => x !== null && (typeof x === 'object' || typeof x === 'function') && ids.has(x);
@@ -22,35 +23,78 @@ const tag = (x) => Object.prototype.toString.call(x);
 const isMapLike = (x) => tag(x) === '[object Map]';
 const isSetLike = (x) => tag(x) === '[object Set]';
 
-export function startRecording(records, realm = { Array, Map, Set, Object }) { // realm: the constructors whose prototypes carry the calls (the host's for lane B's sandbox, a vm context's own for a foreign corpus)
+// The caller's file: the nearest stack frame that has one (a native builtin such as `new Map(iterable)` calling `set` has
+// none and is skipped). Lane B keeps a record only when that file is one the sandbox loaded, so the harness's own
+// arrays (the fakes, the renderer, the graph) never enter the record set while the window is open.
+const FRAME = /\((.*?):\d+:\d+\)\s*$|at (\S+?):\d+:\d+\s*$/; // `at fn (file:line:col)` or `at file:line:col`; a native builtin prints `(<anonymous>)` and has no file
+const callerFile = (skip) => {
+  const lim = Error.stackTraceLimit; Error.stackTraceLimit = 10;
+  const o = {}; Error.captureStackTrace(o, skip); const text = o.stack; // the string form: a prepareStackTrace override would also format every other error raised in the window
+  Error.stackTraceLimit = lim;
+  if (typeof text !== 'string') return null;
+  let i = text.indexOf('\n');
+  while (i >= 0) { const j = text.indexOf('\n', i + 1); const line = j >= 0 ? text.slice(i + 1, j) : text.slice(i + 1); const m = FRAME.exec(line); if (m) { const f = m[1] ?? m[2]; if (f && f !== '<anonymous>' && !f.startsWith('node:')) return f.startsWith('file://') ? f.slice(7) : f; } i = j; }
+  return null;
+};
+let active = null; // the open window: { records, keep }, so a realm created inside it (a vm context for a fresh mount) can join
+export function startRecording(records, realm = { Array, Map, Set, Object }, { keep = null } = {}) {
+  active = { records, keep };
+  patchRealm(realm, records, keep);
+}
+// A vm context has its own intrinsic Array and Object: an array literal or a slice made inside it uses the context's
+// prototype, whatever `Array` its globals name. Lane B's sandbox adds each context's intrinsics while a window is open.
+export function addRealm(realm) { if (active) patchRealm(realm, active.records, active.keep); }
+function patchRealm(realm, records, keep) { // realm: the constructors whose prototypes carry the calls (the host's for lane B's sandbox, a vm context's own for a foreign corpus); keep(file): record only calls whose caller's file passes (lane B: the sandbox's loaded files)
   const patch = (proto, name, op, { receiverIsFirstArg = false } = {}) => {
     const original = proto[name];
     if (typeof original !== 'function') return;
-    ORIGINALS.push([proto, name, original]);
-    proto[name] = function (...args) {
+    ORIGINALS[ORIGINALS.length] = [proto, name, original]; // not push: it may already be patched
+    const wrapper = function (...args) {
+      if (inside) return Reflect.apply(original, this, args);
+      inside = true; let kept = true; try { if (keep) kept = !!keep(callerFile(wrapper)); } finally { inside = false; }
+      if (!kept) return Reflect.apply(original, this, args); // the harness's own call: not a record
       const receiver = receiverIsFirstArg ? args[0] : this;
       const argList = []; for (let i = receiverIsFirstArg ? 1 : 0; i < args.length; i++) argList[argList.length] = args[i]; // no array method here: they are patched
-      const before = snap(receiver), beforeArgs = []; for (let i = 0; i < argList.length; i++) beforeArgs[i] = snap(argList[i]);
-      const argIds = []; for (let i = 0; i < argList.length; i++) argIds[i] = idOf(argList[i]);
-      const receiverId = idOf(receiver);
-      const knownBefore = []; for (let i = 0; i < argList.length; i++) knownBefore[i] = seen(argList[i]);
+      inside = true; let before, beforeArgs, argIds, receiverId, knownBefore;
+      try {
+      before = snap(receiver); beforeArgs = []; for (let i = 0; i < argList.length; i++) beforeArgs[i] = snap(argList[i]);
+      argIds = []; for (let i = 0; i < argList.length; i++) argIds[i] = idOf(argList[i]);
+      receiverId = idOf(receiver);
+      knownBefore = []; for (let i = 0; i < argList.length; i++) knownBefore[i] = seen(argList[i]);
+      } finally { inside = false; }
       let result, threw = null;
       try { result = Reflect.apply(original, this, args); } catch (e) { threw = e; }
+      inside = true;
+      try {
       const resultKind = threw ? 'throw' : result === receiver ? 'receiver' : isObj(result) ? (seen(result) ? 'existing' : 'fresh') : 'primitive';
       const resultId = threw || !isObj(result) ? null : idOf(result);
       const afterArgs = []; for (let i = 0; i < argList.length; i++) afterArgs[i] = snap(argList[i]);
       records[records.length] = ({ op, receiverId, argIds, before, after: snap(receiver), beforeArgs, afterArgs, resultKind, resultId, resultValue: isObj(result) ? undefined : result, threw: threw ? String(threw && threw.name) : null });
+      } finally { inside = false; }
       if (threw) throw threw;
       return result;
     };
+    proto[name] = wrapper;
   };
-  for (const name of ['push', 'unshift', 'pop', 'shift', 'splice', 'reverse', 'sort', 'slice', 'concat', 'map', 'filter']) patch(realm.Array.prototype, name, `Array.prototype.${name}`);
-  for (const name of ['set', 'get', 'has', 'delete']) patch(realm.Map.prototype, name, `Map.prototype.${name}`);
-  for (const name of ['add', 'has', 'delete']) patch(realm.Set.prototype, name, `Set.prototype.${name}`);
-  patch(realm.Object, 'assign', 'Object.assign', { receiverIsFirstArg: true });
+  const already = (proto) => ORIGINALS.some((o) => o[0] === proto); // the host's realm shared by a context: patched once
+  if (realm.Array && !already(realm.Array.prototype)) for (const name of ['push', 'unshift', 'pop', 'shift', 'splice', 'reverse', 'sort', 'slice', 'concat', 'map', 'filter']) patch(realm.Array.prototype, name, `Array.prototype.${name}`);
+  if (realm.Map && !already(realm.Map.prototype)) for (const name of ['set', 'get', 'has', 'delete']) patch(realm.Map.prototype, name, `Map.prototype.${name}`);
+  if (realm.Set && !already(realm.Set.prototype)) for (const name of ['add', 'has', 'delete']) patch(realm.Set.prototype, name, `Set.prototype.${name}`);
+  if (realm.Object && !already(realm.Object)) patch(realm.Object, 'assign', 'Object.assign', { receiverIsFirstArg: true });
 }
-export function stopRecording() { while (ORIGINALS.length) { const [proto, name, original] = ORIGINALS.pop(); proto[name] = original; } }
+export function stopRecording() { active = null; for (let i = ORIGINALS.length - 1; i >= 0; i--) { const [proto, name, original] = ORIGINALS[i]; proto[name] = original; } ORIGINALS.length = 0; } // not pop: it is patched until the last restore
 export async function withRecording(records, fn) { startRecording(records); try { return await fn(); } finally { stopRecording(); } }
+// What a certificate carries about the table: how many built-in calls of the table the unit made, how many fell outside
+// the model (an array-like receiver, an accessor), how many callbacks wrote into their receiver, and every defect, each
+// with the record that contradicts its row. A defect is a model defect of translate/library.json: the proof lane's
+// transition for that operation is refused until the row is corrected (check.mjs reads this).
+export function summarizeRecords(records, table) {
+  const defects = checkRecords(records, table);
+  const ops = {}; for (const r of records) ops[r.op] = (ops[r.op] ?? 0) + 1;
+  const distinct = new Map(); // one entry per (operation, contradiction), with the first record and how many records showed it
+  for (const d of defects) { const k = `${d.op}|${d.why}|${d.expected}`; const e = distinct.get(k); if (e) e.count++; else distinct.set(k, { op: d.op, why: d.why, expected: d.expected, count: 1, record: { before: d.record.before, after: d.record.after, args: d.record.beforeArgs, resultKind: d.record.resultKind, resultValue: d.record.resultValue } }); }
+  return { records: records.length, ops, outOfModel: defects.outOfModel, callbackEffects: defects.callbackEffects, defectRecords: defects.length, defects: [...distinct.values()] };
+}
 
 // ----- the check: every record against its row -----
 const items = (s) => (s.kind === 'array' ? s.items : s.kind === 'set' ? s.items : null);
