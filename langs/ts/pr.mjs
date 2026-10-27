@@ -5,6 +5,7 @@
 // An unchanged caller of a changed function gets a row too when lane B finds a WITNESS through that callee.
 //
 //   node pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--preview] [--out report.md] [--json report.json]
+//               [--time-budget seconds] [--unit-budget n]
 //               [--n 100] [--dafny-seconds 30] [--project <tsconfig>|--no-project] [--adapters scope.json]
 //
 // A changed signature proves only through an adapter the developer declares: the scope door (`--adapters`, a scope
@@ -134,80 +135,117 @@ export function coverageOf(result) {
   return 'checked';
 }
 
+export function budgetValue(value, flag, integer = false) {
+  if (value === null) return null;
+  const n = Number(value);
+  if (value === undefined || String(value).trim() === '' || !Number.isFinite(n) || n < 0 || (integer && !Number.isInteger(n))) {
+    throw new Error(`${flag} must be a nonnegative ${integer ? 'integer' : 'number'}`);
+  }
+  return n;
+}
+
+export function reportJSON(rows) {
+  return { rows, order: rows.order, stop: rows.stop };
+}
+
+export function stopNote(stop) {
+  return stop && stop.reason !== 'none' ? `stopped: ${stop.reason} after ${stop.reached} of ${stop.total} units` : '';
+}
+
 export async function prReport(opts) {
-  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set(), filesRoot = null, maxUnits = null, adapters = null } = opts;
-  // filesRoot: a tree that mirrors the checkout (an export of it); the temporary files are written there, so a checkout
-  // that must stay untouched is only read through git
-  const rows = []; const temps = [];
-  let runs = 0, callersChecked = 0;
+  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set(), adapters = null } = opts;
+  const timeBudget = budgetValue(opts.timeBudget === undefined ? null : opts.timeBudget, '--time-budget');
+  const unitBudget = budgetValue(opts.unitBudget === undefined ? null : opts.unitBudget, '--unit-budget', true);
+  const started = performance.now();
+  const rows = [], temps = [];
+  const changed = [], callers = [], heap = [];
+  let callersChecked = 0;
   try {
     const files = changedFiles(opts, temps);
     const selected = selectUnits(files, opts);
     for (const entry of files) {
-      const rel = entry.file, headFile = entry.headFile, baseFile = entry.baseFile;
+      const rel = entry.file;
       const intake = selected.filter((x) => x.unit.file === rel);
       const units = intake.filter((x) => x.decision === 'check' || x.decision === 'refused').map((x) => x.unit);
       for (const item of intake) {
         const u = item.unit;
-        const coverage = item.decision === 'check' ? 'pending' : `${item.decision}:${item.reason}`;
-        if (opts.preview || item.decision === 'skipped' || item.decision === 'failed') {
-          rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage, decision: item.decision, verdict: null, reason: entry.error ?? u.error ?? item.reason, advice: [] });
-        }
+        const index = rows.length;
+        rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: entry.error ?? u.error ?? item.reason, advice: [] });
+        if (!opts.preview && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });
       }
-      if (opts.preview || !units.length) continue;
-      if (!baseFile || entry.deleted) {
-        for (const u of units) rows.push({ file: rel, unit: u.name, verdict: 'ASK', coverage: u.findings?.length ? `refused:${u.findings[0].rule}` : 'checked', reason: entry.deleted ? 'deleted unit: no candidate to compare with' : 'new file: no parent to compare with', lines: [u.start, u.end] });
-        continue;
-      }
-      for (const u of units) {
-        if (u.findings?.length) {
-          let b;
-          runs++;
-          try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, project }); }
-          catch (e) { b = { verdict: 'ASK', reason: `harness: ${String(e.message).slice(0, 300)}` }; }
-          rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : b.verdict, laneB: b.verdict, laneA: null, witness: b.witnesses?.[0] ?? null, reason: b.reason ?? u.findings[0].msg, advice: u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
-          continue;
-        }
-        if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
-          // declared in scope: this function was meant to change; its difference is information, not a refusal
-          let b = null; runs++; try { b = (await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds: 1 })).certificate?.lanes?.B ?? null; } catch { /* keep */ }
-          rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'IN-SCOPE', coverage: 'checked', laneB: b?.verdict ?? null, laneA: null, witness: b?.witnesses?.[0] ?? null, reason: b?.verdict === 'WITNESS' ? 'changed as asked: the two versions differ' : b?.verdict === 'PASS-bounded' ? 'declared in scope but no difference found within the bound' : (b?.reason ?? null), advice: [] });
-          continue;
-        }
-        let res; runs++;
-        try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds, adapters }); }
-        catch (e) { res = { verdict: 'ASK', certificate: { lanes: { B: { verdict: 'ASK:harness', reason: `harness: ${String(e.message).slice(0, 300)}` } } } }; }
-        const lanes = res.certificate?.lanes ?? {};
-        const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}) };
-        if (res.verdict !== 'PASS-proved' && res.verdict !== 'WITNESS') {
-          try { const f = lintFile(headFile, [[u.start, u.end]], { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
-        }
-        rows.push(row);
-      }
-      // an unchanged caller of a changed function: its text did not move, so the diff names it nowhere, but a difference
-      // may show through the callee on the caller's inputs. Lane B alone runs on it; it gets a row only when it is a
-      // WITNESS that came through a changed callee (where.cause 'callee')
+      if (opts.preview || !units.length || !entry.baseFile || entry.deleted) continue;
       const changedNames = new Set(units.map((u) => u.name));
-      if (changedNames.size && !(maxUnits && runs >= maxUnits)) {
-        let loaded;
-        try { loaded = loadProgram(headFile, { project: false }); } catch { continue; }
-        const { sf, checker } = loaded;
-        const all = topLevelFunctions(sf);
-        let callers = []; try { callers = callersOf(sf, checker, [...changedNames]); } catch { /* unread: no caller runs */ }
-        for (const name of callers) {
-          if (scope.has(name) || scope.has(`${rel}:${name}`)) continue;
-          if (maxUnits && runs >= maxUnits) break;
-          runs++; callersChecked++;
-          let b = null; try { b = await runPair({ parent: baseFile, candidate: headFile, unit: name, n, project }); } catch { /* no row */ }
-          const w = b?.verdict === 'WITNESS' ? b.witnesses?.[0] : null;
-          if (!w || w.where?.cause !== 'callee') continue; // an ASK or a PASS on a caller adds no row
-          const u = all.get(name); const a = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1, e = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
-          rows.push({ file: rel, unit: name, lines: [a, e], verdict: 'WITNESS', coverage: 'checked', laneB: 'WITNESS', laneA: null, caller: true, witness: { input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, reason: null, advice: [] });
-        }
+      let loaded;
+      try { loaded = loadProgram(entry.headFile, { project: false }); } catch { continue; }
+      const { sf, checker } = loaded;
+      const all = topLevelFunctions(sf);
+      let names = [];
+      try { names = callersOf(sf, checker, [...changedNames]); } catch { /* No caller runs. */ }
+      for (const name of names) {
+        if (changedNames.has(name) || scope.has(name) || scope.has(`${rel}:${name}`)) continue;
+        const unit = all.get(name);
+        if (!unit) continue;
+        const start = sf.getLineAndCharacterOfPosition(unit.node.getStart(sf)).line + 1;
+        const end = sf.getLineAndCharacterOfPosition(unit.node.getEnd()).line + 1;
+        callers.push({ entry, u: { name, start, end }, caller: true });
       }
     }
-  } finally { for (const t of temps) { try { fs.rmSync(t, { force: true }); } catch { /* gone */ } } }
-  rows.callersChecked = callersChecked; // how many unchanged callers lane B ran on, for the table's header
+    // The heap group stays empty until discovery supplies extra units.
+    const groups = [{ group: 'changed', units: changed }, { group: 'callers', units: callers }, { group: 'heap', units: heap }];
+    const order = groups.flatMap((g) => g.units);
+    rows.order = groups.map(({ group, units }) => ({ group, units: units.map(({ entry, u }) => ({ file: entry.file, unit: u.name, lines: [u.start, u.end] })) }));
+    rows.stop = { reason: 'none', reached: 0, total: order.length };
+    for (const task of order) {
+      const { entry, u, caller, index } = task;
+      const rel = entry.file, headFile = entry.headFile, baseFile = entry.baseFile;
+      const save = (row) => { if (caller) rows.push(row); else rows[index] = row; };
+      if (rows.stop.reason === 'none') {
+        if (unitBudget !== null && rows.stop.reached >= unitBudget) rows.stop.reason = 'unit-budget';
+        else if (timeBudget !== null && performance.now() - started >= timeBudget * 1000) rows.stop.reason = 'time-budget';
+      }
+      if (rows.stop.reason !== 'none') {
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: 'skipped:budget', verdict: null, reason: `stop at unit ${rows.stop.reached + 1} of ${rows.stop.total}`, advice: [], ...(caller ? { caller: true } : {}) });
+        continue;
+      }
+      rows.stop.reached++;
+      if (caller) {
+        callersChecked++;
+        let b = null;
+        try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, project }); } catch { /* No witness row. */ }
+        const w = b?.verdict === 'WITNESS' ? b.witnesses?.[0] : null;
+        if (!w || w.where?.cause !== 'callee') continue;
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'WITNESS', coverage: 'checked', laneB: 'WITNESS', laneA: null, caller: true, witness: { input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, reason: null, advice: [] });
+        continue;
+      }
+      if (!baseFile || entry.deleted) {
+        save({ file: rel, unit: u.name, verdict: 'ASK', coverage: u.findings?.length ? `refused:${u.findings[0].rule}` : 'checked', reason: entry.deleted ? 'deleted unit: no candidate to compare with' : 'new file: no parent to compare with', lines: [u.start, u.end] });
+        continue;
+      }
+      if (u.findings?.length) {
+        let b;
+        try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, project }); }
+        catch (e) { b = { verdict: 'ASK', reason: `harness: ${String(e.message).slice(0, 300)}` }; }
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : b.verdict, laneB: b.verdict, laneA: null, witness: b.witnesses?.[0] ?? null, reason: b.reason ?? u.findings[0].msg, advice: u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
+        continue;
+      }
+      if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
+        // declared in scope: this function was meant to change; its difference is information, not a refusal
+        let b = null; try { b = (await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds: 1 })).certificate?.lanes?.B ?? null; } catch { /* keep */ }
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'IN-SCOPE', coverage: 'checked', laneB: b?.verdict ?? null, laneA: null, witness: b?.witnesses?.[0] ?? null, reason: b?.verdict === 'WITNESS' ? 'changed as asked: the two versions differ' : b?.verdict === 'PASS-bounded' ? 'declared in scope but no difference found within the bound' : (b?.reason ?? null), advice: [] });
+        continue;
+      }
+      let res;
+      try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds, adapters }); }
+      catch (e) { res = { verdict: 'ASK', certificate: { lanes: { B: { verdict: 'ASK:harness', reason: `harness: ${String(e.message).slice(0, 300)}` } } } }; }
+      const lanes = res.certificate?.lanes ?? {};
+      const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}) };
+      if (res.verdict !== 'PASS-proved' && res.verdict !== 'WITNESS') {
+        try { const f = lintFile(headFile, [[u.start, u.end]], { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
+      }
+      save(row);
+    }
+  } finally { for (const t of temps) { try { fs.rmSync(t, { force: true }); } catch { /* Gone. */ } } }
+  rows.callersChecked = callersChecked;
   return rows;
 }
 
@@ -231,7 +269,7 @@ export function intakeMarkdown(rows) {
 
 export function markdown(rows, base, head) {
   const count = (v) => rows.filter((r) => r.verdict === v).length;
-  const lines = [`# lean report: ${base} → ${head}`, '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller).length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     const note = r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
@@ -258,8 +296,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
   if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]'); process.exit(2); }
   const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
-  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
+  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
   const md = a.includes('--preview') ? intakeMarkdown(rows) : markdown(rows, base, head);
-  if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(rows, null, 1));
+  if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(a.includes('--preview') ? rows : reportJSON(rows), null, 1));
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);
 }
