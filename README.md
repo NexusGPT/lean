@@ -238,7 +238,15 @@ $ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --preview
 | `examples/booking/pricing.ts` | deliveryFee  | pending  | check    | selected for checking  |
 ```
 
-Planned for the table (status in [Built and planned](#what-is-built-and-what-is-planned)): a run identity and verdict reuse (`reused`), so a one-line follow-up commit re-checks only the units whose inputs changed; run-level budgets with a named stop (`skipped:budget`), so a long pull request ends with a partial table and the rows it did not reach, never a silent kill.
+**A run stops by name, never by a kill.** `--time-budget <seconds>` and `--unit-budget <n>` bound the whole run; the spending order is fixed and written into the report (changed units, then unchanged callers of changed callees), a unit not reached gets `skipped:budget` with its position, the report carries `stop: { reason, reached, total }`, and the comment's block rule treats a stop as not green:
+
+```
+$ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDiscount --unit-budget 2
+# lean report: 85136f1~1 → 85136f1; stopped: unit-budget after 2 of 9 units
+stop: { reason: "unit-budget", reached: 2, total: 9 }      formatCents … QuoteService.missingFor: skipped:budget, "stop at unit 3 of 9"
+```
+
+Planned for the table (status in [Built and planned](#what-is-built-and-what-is-planned)): a run identity and verdict reuse (`reused`), so a one-line follow-up commit re-checks only the units whose inputs changed.
 
 ### 3. In the editor
 
@@ -437,7 +445,7 @@ Everything else is yours: `async`/`await`, `try`/`catch`, `switch`, destructurin
 | | command |
 |---|---|
 | one function, both lanes, one verdict with its certificate | `node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit applyDiscount` (`--unit PricingService.applyDiscount` for a method; `--scope scope.json`; `--n`, `--seed`, `--dafny-seconds`, `--deep[=k]`, `--out verdict.json`) |
-| a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]` |
+| a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m,file.ts:f] [--preview] [--time-budget <s>] [--unit-budget <n>] [--out report.md] [--json report.json]` |
 | lane B alone, in seconds | `node langs/ts/exec/run.mjs --parent old.ts --candidate new.ts --unit f [--sequence-depth 2 --sequence-breadth 4 --deep]` |
 | the finite lane alone | `node langs/ts/exec/finite.mjs --parent old.tsx --candidate new.tsx --unit Panel [--max 500]` |
 | the lint, in the terminal or an agent's loop | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--any-type] [--changed ranges.json]` |
@@ -462,7 +470,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 | a row per changed unit in the pull-request table, including the refused and skipped ones, with the reason; `--preview` | built |
 | a run identity and verdict reuse across pushes | planned |
 | a `WITNESS` that names the source line of the first differing effect on each side, with the advised rewrite | planned |
-| run-level budgets with a named stop | planned |
+| run-level budgets with a named stop (`--time-budget`, `--unit-budget`, `skipped:budget`, the comment blocks on a stop) | built |
 | the mechanical rules of code review as labelled advice entries, each with a proof where the rewrite is a theorem | planned |
 | a census report grouped by rule and directory, with sums that match the JSON | built |
 | the gate around lean: the run record, the predicate registry, sibling relations, the producer-facing preview, the assurance case | planned |
