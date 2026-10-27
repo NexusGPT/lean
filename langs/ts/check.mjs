@@ -72,6 +72,7 @@ export async function check(opts) {
   if (b.bound?.library) cert.library = { records: b.bound.library.records, ops: b.bound.library.ops, outOfModel: b.bound.library.outOfModel, callbackEffects: b.bound.library.callbackEffects, defects: b.bound.library.defects.length }; // the library table validated by this run
   const bounded = b.verdict === 'PASS-decided' ? 'PASS-decided' : 'PASS-bounded'; // the rung lane B reached: decided (a finite component over every click order) outranks bounded
   const rung = () => (adapter ? 'ASK' : (b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK'); // what lane B alone supports; under an adapter it compared raw inputs, so nothing
+  const unreached = (extra) => (b.unreached && !adapter ? { ...extra, reason: extra.reason ? `${b.reason}; ${extra.reason}` : b.reason } : extra); // lane B's ASK when no drawn input got past a guard: its reason (the count and the first throw) is the verdict's, whatever lane A could not prove
   // ---- lane A ----
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-check-'));
   // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature (agreeCore: on the units both translations hold)
@@ -79,7 +80,7 @@ export async function check(opts) {
   const headerOf = (suffix, key) => { const p = path.join(tmp, `${suffix}.dfy`); if (!fs.existsSync(p)) return ''; const m = fs.readFileSync(p, 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm')); return m ? m[1].trim() : ''; };
   const heapOf = (suffix) => headerOf(suffix, 'HEAP');
   const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
-  if (agreed.failed) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: `translate-${agreed.failed}`, detail: agreed.run.out.trim().slice(-600) }; return finish(rung(), cert, {}); }
+  if (agreed.failed) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: `translate-${agreed.failed}`, detail: agreed.run.out.trim().slice(-600) }; return finish(rung(), cert, unreached({})); }
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
   const names = [...new Set([...cand.matchAll(/\bfunction\s+([A-Za-z0-9_]+)_candidate\s*\(/g)].map((m) => m[1]))].filter((x) => !/_loop\d+$/.test(x));
   // the scope of the translated units (the unit and its same-file callees): a scope file names the file's units, and those
@@ -94,7 +95,7 @@ export async function check(opts) {
     const why = th.out.trim().slice(-400);
     const iface = /differs|does not define|opaque block calls/.test(why);
     cert.lanes.A = { verdict: iface ? 'ASK:interface' : 'ASK:theorem', detail: why };
-    return finish(iface || adapter ? 'ASK' : (rung()), cert, {});
+    return finish(iface || adapter ? 'ASK' : (rung()), cert, iface ? {} : unreached({}));
   }
   const withheldLine = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED Equal_${dafnyName(unit)}: (interface differs: .*)$`, 'm')) || [])[1] ?? null;
   if (withheldLine && !adapter) { // a changed signature without an adapter: ASK:interface naming the door, whatever lane B found
@@ -141,8 +142,8 @@ export async function check(opts) {
   if (hd && typeof hd === 'object' && hd.defects?.length) { cert.lanes.A.handlerDefects = hd.defects; if (m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:handler-model'; return finish('ASK', cert, { reason: `handler-model: the engine contradicts the descriptor on ${[...new Set(hd.defects.map((x) => x.handler))].join('; ')}; the proof lane refuses the reading until it is corrected` }); } }
   if (unguarded && unguarded.startsWith('interface')) return finish('ASK', cert, { reason: `interface: ${unguarded.replace(/^interface differs: /, '').slice(0, 600)}` }); // a changed decorator, a changed type: never a proof, and the bounded run drew its inputs from one side's types
   if (m && lemmas[main] && !unguarded) return finish('PASS-proved', cert, adapter ? { reason: `proved through the declared adapter: ${adapterLine}` } : {});
-  if (m && through.length && !unguarded) return finish(rung(), cert, { reason: `unproved through ${through.join(', ')}` }); // its own lemma holds given summaries that are not proved
-  return finish(rung(), cert, {});
+  if (m && through.length && !unguarded) return finish(rung(), cert, unreached({ reason: `unproved through ${through.join(', ')}` })); // its own lemma holds given summaries that are not proved
+  return finish(rung(), cert, unreached({}));
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
 
