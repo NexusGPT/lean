@@ -564,6 +564,33 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isConditionalExpression(x)) return heldBy(x.whenTrue) ?? heldBy(x.whenFalse);
     return null;
   }
+  // an alias local rebound: `let flat = merged; if (g) { flat = []; flat.push(h) }` changes the fresh array, not the
+  // value it was handed. A change at a site goes to the alias only when no earlier statement of an enclosing list rebinds
+  // the name to a fresh value (a literal, `new`, a fresh call) with nothing in between that writes it again; a rebinding
+  // outside a loop the site sits in counts only when the loop never assigns the name
+  const freshRebind = (x) => !heldBy(x);
+  const assignsName = (node, sym) => { let hit = false; const w = (x) => { if (hit) return; if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) { const l = unparenX(x.left); if ((ts.isIdentifier(l) && checker.getSymbolAtLocation(l) === sym) || ((ts.isArrayLiteralExpression(l) || ts.isObjectLiteralExpression(l)) && l.getText(sf).includes(sym.name))) hit = true; } if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && ts.isIdentifier(unparenX(x.operand)) && checker.getSymbolAtLocation(unparenX(x.operand)) === sym) hit = true; ts.forEachChild(x, w); }; w(node); return hit; };
+  const aliasAt = (decl, site) => {
+    const sym = decl && ts.isIdentifier(decl.name) ? checker.getSymbolAtLocation(decl.name) : null;
+    if (!sym || !site) return true;
+    const loops = [];
+    for (let child = site, p = site.parent; p; child = p, p = p.parent) {
+      if (p === decl || ts.isFunctionLike(p)) return true; // reached the declaration, or a function boundary: the handed value may hold
+      if (ts.isIterationStatement(p, false) && child === p.statement) loops.push(p);
+      const list = ts.isBlock(p) || ts.isCaseClause(p) || ts.isDefaultClause(p) || ts.isSourceFile(p) ? p.statements : null;
+      if (!list) { for (const c of p.getChildren(sf)) { if (c === child || c.pos >= child.pos) break; if (assignsName(c, sym)) return true; } continue; } // a write in a head before the site
+      for (let i = list.indexOf(child) - 1; i >= 0; i--) {
+        const st = list[i];
+        if (st.pos <= decl.pos && decl.end <= st.end) return true; // the declaration itself: the handed value
+        if (!assignsName(st, sym)) continue;
+        const ex = ts.isExpressionStatement(st) ? unparenX(st.expression) : null;
+        const fresh = ex && ts.isBinaryExpression(ex) && ex.operatorToken.kind === K.EqualsToken && ts.isIdentifier(unparenX(ex.left)) && checker.getSymbolAtLocation(unparenX(ex.left)) === sym && freshRebind(ex.right) && !assignsName(ex.right, sym);
+        return !fresh || loops.some((L) => assignsName(L, sym));
+      }
+    }
+    return true;
+  };
+  const aliasHere = (decl, site) => aliasLocals.has(decl) && aliasAt(decl, site);
 
   function stmts(list) { for (const s of list) stmt(s); }
   function stmt(s) {
@@ -851,7 +878,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           const dict = !isArrayExpr(l.expression);
           const o = declOf(l.expression);
           if (o.kind !== 'local') v(l, 'index-assign', `index assignment into \`${l.expression.text}\`, which this function does not own`);
-          else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', aliasMsg(l.expression.text, o.decl));
+          else if (aliasHere(o.decl, l)) v(l, 'alias-mutation', aliasMsg(l.expression.text, o.decl));
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', `a callback cannot change an outer ${dict ? 'dictionary' : 'array'}`);
           else if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
           else if (dict && !nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
@@ -877,7 +904,7 @@ export function lintFile(file, ranges = null, opts = {}) {
             return expr(e.right);
           }
           if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
-          else if (aliasLocals.has(o.decl)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl));
+          else if (aliasHere(o.decl, l)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl));
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
         }
@@ -892,7 +919,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(e.operand)) { let root = e.operand; while (ts.isPropertyAccessExpression(root)) root = root.expression; if ((root.kind === K.ThisKeyword && objectMethod) || methodLiteralPath(e.operand)) return v(e, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); if (root.kind === K.ThisKeyword && !thisParam && e.operand.expression.kind !== K.ThisKeyword) return receiverRecordPath(checker, e.operand) ? undefined : v(e, 'receiver-mutation', 'a receiver path needs nonoptional data records'); if (root.kind === K.ThisKeyword && thisParam && !thisParamPath(checker, e.operand)) return v(e, 'receiver-write', RECEIVER_WRITE); }
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
-      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasLocals.has(o.decl) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
+      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasHere(o.decl, e) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
       if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
@@ -907,7 +934,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const rt = tOf(r);
       if (name === 'assign' && ts.isIdentifier(r) && r.text === 'Object' && e.arguments.length >= 2) { // Object.assign(t, s…) as a statement on a record the function owns: t is rebuilt with every declared field of each source (the ordinary lane) or the Assign_ row (the heap core); a parameter target is an output
         const t0 = unparenX(e.arguments[0]);
-        const ownedTarget = ts.isIdentifier(t0) && declOf(t0).kind === 'local' && ownedHere(declOf(t0).decl) && !aliasLocals.has(declOf(t0).decl);
+        const ownedTarget = ts.isIdentifier(t0) && declOf(t0).kind === 'local' && ownedHere(declOf(t0).decl) && !aliasHere(declOf(t0).decl, e);
         const plainRecord = (x) => { const t = tOf(x); if (!isRecordish(t) || nonNull(t).length !== 1 || t.flags & (TF.Null | TF.Undefined)) return false; return checker.getPropertiesOfType(t).every((p) => !(p.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor | ts.SymbolFlags.Method))); };
         const targetProps = ownedTarget && plainRecord(t0) ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
         const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
@@ -917,8 +944,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
       // a Date setter is a method call like any other: a world transition (the Date's state lives in the world since the clock-read lane), so no refusal and no rebinding
       if (moduleState(checker, r, sf) && MUT_NAMES.has(name)) { checkIdent(r); return argsOf(e); }
-      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasLocals.has(declOf(r).decl);
-      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasLocals.has(declOf(r).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
+      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasHere(declOf(r).decl, e);
+      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
       if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
       if (nonNull(rt).some(isAny)) {
         // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
@@ -937,9 +964,9 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a path on a local or a parameter (user.tags): the owner of the root owns the path
       const pathRootOf = (x) => { while (ts.isPropertyAccessExpression(x)) x = x.expression; return x; };
       const pr = pathRootOf(r);
-      const pathOwned = (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && ownedHere(declOf(pr).decl) && !aliasLocals.has(declOf(pr).decl)) || (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && !!thisParam && ownedHere(thisParam) && !!thisParamPath(checker, r)); // a container on a free function's data record receiver is owned as a parameter's is
+      const pathOwned = (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && ownedHere(declOf(pr).decl) && !aliasHere(declOf(pr).decl, e)) || (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && !!thisParam && ownedHere(thisParam) && !!thisParamPath(checker, r)); // a container on a free function's data record receiver is owned as a parameter's is
       if (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && thisParam && MUT_NAMES.has(name) && !thisParamPath(checker, r)) return v(e, 'receiver-write', RECEIVER_WRITE);
-      if (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && aliasLocals.has(declOf(pr).decl) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(pr.text, declOf(pr).decl));
+      if (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && aliasHere(declOf(pr).decl, e) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(pr.text, declOf(pr).decl));
       if ((name === 'push' || name === 'unshift') && isArrayExpr(r)) {
         if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
         conditionalSpreadArgs(e);
@@ -1191,8 +1218,8 @@ export function lintFile(file, ranges = null, opts = {}) {
         // `delete r.f` on an optional field, `delete m[k]` on a dictionary, on a local, a parameter or a field of this
         let t = e.expression; while (ts.isParenthesizedExpression(t)) t = t.expression;
         if (!(e.parent && ts.isExpressionStatement(e.parent))) return v(e, 'delete', '`delete` is a statement, not a value');
-        if (ts.isElementAccessExpression(t)) { const r = t.expression; if (r.kind === K.ThisKeyword && thisParam) return v(e, 'receiver-write', RECEIVER_WRITE); if (r.kind === K.ThisKeyword || (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass)) { expr(t.argumentExpression); return; } let root = r; while (ts.isPropertyAccessExpression(root)) root = root.expression; const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); if (!nonNull(tOf(t.argumentExpression)).every(isStr)) return v(e, 'dynamic-key', 'a dictionary key is a string'); expr(t.argumentExpression); return; }
-        if (ts.isPropertyAccessExpression(t)) { let root = t; while (ts.isPropertyAccessExpression(root)) root = root.expression; if (root.kind === K.ThisKeyword) return v(e, 'delete', 'delete of a field of this is outside the subset; assign undefined'); const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasLocals.has(o.decl)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); return; }
+        if (ts.isElementAccessExpression(t)) { const r = t.expression; if (r.kind === K.ThisKeyword && thisParam) return v(e, 'receiver-write', RECEIVER_WRITE); if (r.kind === K.ThisKeyword || (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass)) { expr(t.argumentExpression); return; } let root = r; while (ts.isPropertyAccessExpression(root)) root = root.expression; const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasHere(o.decl, e)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); if (!nonNull(tOf(t.argumentExpression)).every(isStr)) return v(e, 'dynamic-key', 'a dictionary key is a string'); expr(t.argumentExpression); return; }
+        if (ts.isPropertyAccessExpression(t)) { let root = t; while (ts.isPropertyAccessExpression(root)) root = root.expression; if (root.kind === K.ThisKeyword) return v(e, 'delete', 'delete of a field of this is outside the subset; assign undefined'); const o = ts.isIdentifier(root) ? declOf(root) : { kind: null }; if (o.kind !== 'local') return v(e, 'delete', `delete on \`${root.getText(sf)}\`, which this function does not own`); if (aliasHere(o.decl, e)) return v(e, 'alias-mutation', aliasMsg(root.text, o.decl, false)); return; }
         return v(e, 'delete', 'delete of this target is outside the subset');
       }
       case K.VoidExpression: return v(e, 'void', '`void` is outside the subset');
@@ -1605,7 +1632,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const o = ts.isIdentifier(r) ? declOf(r) : null;
       if (!o || o.kind !== 'local') return refuse('unsupported-call', `.${name}() as a value changes \`${recv.getText(sf).slice(0, 40)}\`; call it on a local array or on a fresh one`);
       if (isParam(o.decl)) return refuse('param-mutation', `.${name}() as a value changes the parameter \`${r.text}\`; copy it to a local first`);
-      if (aliasLocals.has(o.decl)) return refuse('alias-mutation', `\`${r.text}\` is another name for a value this function was handed; copy it first`);
+      if (aliasHere(o.decl, e)) return refuse('alias-mutation', `\`${r.text}\` is another name for a value this function was handed; copy it first`);
       if (!ownedHere(o.decl) || callbackStack.length || forEachDepth) return refuse('closure-mutation', `.${name}() as a value inside a callback changes \`${r.text}\`; use a for-of loop`);
       const site = unconditionalSite(e);
       if (!site) return refuse('mutator-value', `.${name}() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind it to a const in its own statement first`);
