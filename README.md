@@ -188,7 +188,7 @@ export function flip(box: Box): string[] { box.names.reverse(); return box.names
 export function head(box: Box): string[] { return box.names.slice(0, 2); }
 ```
 
-The candidate's `flip` returns the receiver through a local (`const out = box.names; return out;`): `PASS-proved`, with `reverse` read from the library transition table as a step on the heap the proof carries, and the result's identity shown to be the input's. The candidate's `head` slices three names for two:
+The candidate's `flip` returns the receiver through a local (`const out = box.names; return out;`): `PASS-proved`, with `reverse` read from the library transition table as a step on the heap the proof carries, and the result's identity shown to be the input's. A `shift` for a `splice(0, 1)` leaves the same reachable graph but not the same heap, since `splice` allocates the removed part nobody keeps: the whole-heap lemma fails and the canonical reading proves it, equal up to a renaming of fresh cells and up to dropped allocations (`lanes.A.reading`), so allocation order and temporaries never cost a proof. The candidate's `head` slices three names for two:
 
 ```
 WITNESS   input 1   args: [{ items: [{ id: 347, tags: ["vhn02", "vk85x"] }], names: [" ", "v20gs", "ve9vk", "x y"] }]   where: { field: "outcome" }

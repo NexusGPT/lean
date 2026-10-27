@@ -21,6 +21,10 @@ In the proof lane every effectful call takes the current world and returns the n
 
 A parent and a candidate are compared under the same initial world. When one side asks the environment something the other never asked, no answer is invented for it: the world token makes the two histories different values, and equality is not provable.
 
+## Equal up to allocation
+
+In the proof lane the heap is a map from references to cells, and a fresh cell takes the next address. Two runs that allocate the same cells in another order, or allocate a cell nobody keeps, end in different heaps and the same observation. A heap-core unit therefore carries two readings of equality: the whole heap (`Equal_<f>`), and the canonical heap (`EqualCanon_<f>_*`, five parts): the initial cells agree, literally or after a renaming of fresh references; the fresh cells reached from the roots (the reference parameters, then the result) agree after renaming in first-reach order; the roots' names agree; no fresh reference stays unnamed on either side; a primitive result agrees. A fresh cell the walk cannot reach (hooked below an initial record that is not a root, or into an initial container) stays unnamed and the certificate fails: ASK, never a proof. Either reading proves the unit; `lanes.A.reading` names which. Definition and limits: `design/canonical-heap.md`.
+
 ## Equal by identity
 
 A function whose text is identical on both sides (comments removed, whitespace folded, suffixes stripped) is the same function; the theorem aliases the candidate's definition to the parent's. No proof is needed for unchanged code.

@@ -341,6 +341,46 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
         }
       }
     }
+    // ----- the canonical heap: the certificate up to a renaming of fresh cells and up to dropped allocations -----
+    // theorem.py writes EqualCanon_<f> beside Equal_<f> when this block is present. The two final worlds are canonically
+    // equal when: every initial cell (a reference below the initial `next`) agrees, literally or after renaming; the fresh
+    // cells, named by first reach from the roots (the reference parameters, then the result), agree after renaming; the
+    // roots' names agree; and no fresh reference stays unnamed on either side. Allocation order and an allocation nobody
+    // keeps are invisible to it. The naming walk descends every fresh cell, an initial record CanonDepth levels down,
+    // never an initial container (its width is symbolic, and the prover unfolds nothing symbolic). A fresh cell the
+    // walk does not reach is an unnamed reference, and the certificate fails: never a false proof. Design and the
+    // scratch proofs: design/canonical-heap.md.
+    const cd = (k, name) => `c_${k}_${name}`;
+    const cT = (sh) => (sh.kind === 'prim' ? sh.d : 'nat');
+    const cctor = (k) => { const s = shapes.get(k); return s.kind === 'arr' || s.kind === 'set' ? `C${k}(${cd(k, 'items')}: seq<${cT(s.elem)}>)` : s.kind === 'map' ? `C${k}(${cd(k, 'keys')}: seq<${valD(s.k)}>, ${cd(k, 'm')}: map<${valD(s.k)}, ${cT(s.v)}>)` : s.kind === 'date' ? `C${k}(${cd(k, 'tv')}: ${NUM})` : `C${k}(${s.fields.map((f) => `${cd(k, dn(f.name))}: ${cT(f.shape)}`).join(', ')})`; };
+    const arity = (k) => { const s = shapes.get(k); return s.kind === 'rec' ? s.fields.length : s.kind === 'map' ? 2 : 1; };
+    const pat = (k) => `${k}(${Array.from({ length: arity(k) }, (_, i) => `p${i}`).join(', ')})`;
+    const edges = (k) => { const s = shapes.get(k); if (s.kind === 'rec') return `[${s.fields.map((f, i) => (f.shape.kind === 'prim' ? null : `p${i}`)).filter(Boolean).join(', ')}]`; if (s.kind === 'arr') return s.elem.kind === 'prim' ? '[]' : 'p0'; if (s.kind === 'map') return s.v.kind === 'prim' ? '[]' : `MapEdges_${k}(p0, p1)`; return '[]'; };
+    const canonObj = (k) => { const s = shapes.get(k); const nm = (x) => `CanonName(next0, order, ${x})`; if (s.kind === 'rec') return `C${k}(${s.fields.map((f, i) => (f.shape.kind === 'prim' ? `p${i}` : nm(`p${i}`))).join(', ')})`; if (s.kind === 'arr') return `C${k}(${s.elem.kind === 'prim' ? 'p0' : 'CanonNames(next0, order, p0)'})`; if (s.kind === 'map') return `C${k}(p0, ${s.v.kind === 'prim' ? 'p1' : 'map kk | kk in p1 :: CanonName(next0, order, p1[kk])'})`; return `C${k}(p0)`; };
+    const recs = keys.filter((k) => shapes.get(k).kind === 'rec');
+    const mapRefs = keys.filter((k) => shapes.get(k).kind === 'map' && shapes.get(k).v.kind !== 'prim');
+    out.push(`// CANON fuel=${['CanonOrder', 'CanonRootEdges', 'CanonCells', 'CanonIndex', 'CanonNames', ...mapRefs.map((k) => `MapEdges_${k}`)].join(',')}`); // the recursive functions the part lemmas unfold (fuel 20: a walk of twenty steps; a three-cell unit needs ten)
+    out.push(`datatype CObj = ${keys.length ? keys.map(cctor).join(' | ') + ' | ' : ''}CDead`);
+    for (const k of mapRefs) out.push(`function MapEdges_${k}(keys: seq<${valD(shapes.get(k).k)}>, m: map<${valD(shapes.get(k).k)}, Ref>): seq<Ref> decreases |keys| { if |keys| == 0 then [] else (if keys[0] in m then [m[keys[0]]] else []) + MapEdges_${k}(keys[1..], m) }`);
+    out.push(`function CanonEdges(o: Obj): seq<Ref> { match o ${keys.map((k) => `case ${pat(k)} => ${edges(k)}`).join(' ')} case Dead => [] }`);
+    out.push(`predicate CanonRecord(o: Obj) { ${recs.length ? recs.map((k) => `o.${k}?`).join(' || ') : 'false'} }`);
+    out.push('predicate CanonLive(hw: HWorld, r: Ref) { r in hw.heap && !hw.heap[r].Dead? }');
+    // the walk: a fresh cell is descended and named in first-reach order; an initial cell is never descended, except
+    // that a ROOT which is an initial record contributes its own fields (CanonRootEdges) behind the roots. An initial
+    // container is never walked (its width is symbolic); an initial record below a root is not either: a fresh cell
+    // hooked there stays unnamed, and the certificate fails rather than lies.
+    out.push(['function CanonOrder(hw: HWorld, next0: nat, work: seq<Ref>, seen: set<Ref>, order: seq<Ref>): seq<Ref>', '  decreases hw.heap.Keys - seen, |work|', '{', '  if |work| == 0 then order', '  else var r := work[0];', '    if r in seen || r < next0 || !CanonLive(hw, r) then CanonOrder(hw, next0, work[1..], seen, order)', '    else CanonOrder(hw, next0, work[1..] + CanonEdges(hw.heap[r]), seen + {r}, order + [r])', '}'].join('\n'));
+    out.push('function CanonRootEdges(hw: HWorld, next0: nat, roots: seq<Ref>): seq<Ref> decreases |roots| { if |roots| == 0 then [] else (if roots[0] < next0 && CanonLive(hw, roots[0]) && CanonRecord(hw.heap[roots[0]]) then CanonEdges(hw.heap[roots[0]]) else []) + CanonRootEdges(hw, next0, roots[1..]) }');
+    out.push('function CanonOrderOf(hw: HWorld, next0: nat, roots: seq<Ref>): seq<Ref> { CanonOrder(hw, next0, roots + CanonRootEdges(hw, next0, roots), {}, []) }');
+    out.push('function CanonIndex(order: seq<Ref>, r: Ref): nat decreases |order| { if |order| == 0 then 0 else if order[0] == r then 0 else 1 + CanonIndex(order[1..], r) }');
+    out.push('function CanonName(next0: nat, order: seq<Ref>, r: Ref): nat { if r < next0 then r else next0 + CanonIndex(order, r) }');
+    out.push('function CanonNames(next0: nat, order: seq<Ref>, rs: seq<Ref>): seq<nat> decreases |rs| { if |rs| == 0 then [] else [CanonName(next0, order, rs[0])] + CanonNames(next0, order, rs[1..]) }');
+    out.push(`function CanonObj(next0: nat, order: seq<Ref>, o: Obj): CObj { match o ${keys.map((k) => `case ${pat(k)} => ${canonObj(k)}`).join(' ')} case Dead => CDead }`);
+    out.push('function CanonCells(hw: HWorld, next0: nat, order: seq<Ref>, i: nat): seq<CObj> decreases |order| - i { if i >= |order| then [] else [if CanonLive(hw, order[i]) then CanonObj(next0, order, hw.heap[order[i]]) else CDead] + CanonCells(hw, next0, order, i + 1) }');
+    out.push('predicate CanonNamed(next0: nat, order: seq<Ref>, rs: seq<Ref>) { forall i :: 0 <= i < |rs| ==> rs[i] < next0 || rs[i] in order }');
+    out.push('predicate CanonNoUnnamed(hw0: HWorld, hw: HWorld, next0: nat, order: seq<Ref>) { (forall r :: r in hw.heap && r < next0 && (r !in hw0.heap || hw.heap[r] != hw0.heap[r]) ==> CanonNamed(next0, order, CanonEdges(hw.heap[r]))) && (forall i :: 0 <= i < |order| && order[i] in hw.heap ==> CanonNamed(next0, order, CanonEdges(hw.heap[order[i]]))) }'); // only a cell the unit wrote can hold a fresh reference (WF of the initial world hw0 bounds every other cell's references below next0)
+    out.push('predicate CanonInitial(next0: nat, hp: HWorld, op: seq<Ref>, hc: HWorld, oc: seq<Ref>) { forall r :: 0 <= r < next0 ==> ((r in hp.heap) <==> (r in hc.heap)) && (r in hp.heap && r in hc.heap ==> hp.heap[r] == hc.heap[r] || CanonObj(next0, op, hp.heap[r]) == CanonObj(next0, oc, hc.heap[r])) }');
+    out.push(['predicate CanonEqual(hw0: HWorld, next0: nat, hp: HWorld, rootsP: seq<Ref>, hc: HWorld, rootsC: seq<Ref>)', '{', '  && CanonInitial(next0, hp, CanonOrderOf(hp, next0, rootsP), hc, CanonOrderOf(hc, next0, rootsC))', '  && CanonCells(hp, next0, CanonOrderOf(hp, next0, rootsP), 0) == CanonCells(hc, next0, CanonOrderOf(hc, next0, rootsC), 0)', '  && CanonNames(next0, CanonOrderOf(hp, next0, rootsP), rootsP) == CanonNames(next0, CanonOrderOf(hc, next0, rootsC), rootsC)', '  && CanonNoUnnamed(hw0, hp, next0, CanonOrderOf(hp, next0, rootsP)) && CanonNoUnnamed(hw0, hc, next0, CanonOrderOf(hc, next0, rootsC))', '}'].join('\n'));
     return out;
   }
 
@@ -393,8 +433,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive })
       }
       if (ts.isArrayLiteralExpression(e)) {
         const s = shapeExpr(e);
-        const parts = e.elements.map((x) => (ts.isSpreadElement(x) ? `Items_${shapeExpr(x.expression).key}(${HW}, ${expr(x.expression)})` : `[${expr(x)}]`));
-        const items = parts.length ? parts.join(' + ') : `[]`;
+        const items = e.elements.some(ts.isSpreadElement) ? e.elements.map((x) => (ts.isSpreadElement(x) ? `Items_${shapeExpr(x.expression).key}(${HW}, ${expr(x.expression)})` : `[${expr(x)}]`)).join(' + ') : `[${e.elements.map((x) => expr(x)).join(', ')}]`; // one literal when nothing is spread: the prover reads `[a, b]` ten times faster than `[a] + [b]`
         const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${items});`); return r;
       }
       if (ts.isObjectLiteralExpression(e)) {

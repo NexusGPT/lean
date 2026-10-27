@@ -67,7 +67,7 @@ with my ruling where it differs from the dossier.
 | Element | Dossier | Verdict | Where in lean | How, in one line | Cost (CLAIM) |
 |---|---|---|---|---|---|
 | Korat heap enumeration | 13 §28 | PORT | `exec/gen.mjs` `enumerateHeaps(spec, k)` | enumerate non-isomorphic small heaps per shape (null, existing or fresh per reference field, cycles), deduplicated by `graph.mjs` naming | 3 d |
-| CMC heap canonicalisation | 13 §32 | PORT (stage 3) | `translate/heap.mjs` `Canon(hw, roots)`, `spec/theorem.py` | the lemma proves `Canon(parent) == Canon(candidate)`; garbage and allocation order stop mattering | 5 d |
+| CMC heap canonicalisation | 13 §32 | BUILT 2026-10-27 | `translate/heap.mjs` prelude `// CANON`, `spec/theorem.py` `EqualCanon_<f>_*`, `check.mjs` `lanes.A.reading` | five part lemmas beside `Equal_<f>`: initial cells, named fresh cells, roots, no unnamed reference, primitive result; garbage and allocation order stop mattering; `design/canonical-heap.md` | done |
 | `Object.assign` transition | 13 §37, 16 table | PORT | `translate/library.json` → `heap.mjs` `Assign_<shape>` | copy own enumerable keys of each source into the target in order through `Set_`; getters, setters, proxies and target-is-source refused | 4 d |
 | Steensgaard may-alias, HotSpot escape | 13 §25, §26 | REFERENCE (dossier said PORT) | `heap.mjs` `identitySkeleton` | the skeleton already treats every input path as a may-alias and every fresh node used twice as shared; a separate unification pass adds nothing the guard needs | 0 |
 | Hobbit closure search | 14 §4 | REFERENCE, later (dossier said PORT) | none now | a bisimulation search over paired worlds is the escalation for closures with state; the one-step proof over the complete ledger comes first | later |
@@ -103,11 +103,13 @@ identity cannot interfere.
 and shared inputs (stage 1); the identity guard (on since 2026-10-26, the owner's call): layer 1 keeps a value proof
 only where no nested write goes through an input and both sides have one readable identity skeleton that agrees;
 otherwise `ASK:identity`. Measured over the 39 census roots: 34 of 53,899 units in the core; 34,655 of 53,865 units
-outside it exposed; 14,559 with a readable skeleton, 3,579 of them exposed.
+outside it exposed; 14,559 with a readable skeleton, 3,579 of them exposed. The canonical-heap certificate (stage 3,
+2026-10-27): five part lemmas beside the whole-heap lemma, hint-free, so allocation order and dropped allocations
+stop mattering; `library_ops` `dropFirst`/`dropTwo` and the `heap_canonical` pair prove by it in 4 to 7 s each, and
+the unhooked-leaf trap fails its `initial` part as it must (`design/canonical-heap.md`).
 
-**Next.** Korat-style heap enumeration in lane B; the canonical-heap certificate (stage 3) so allocation order and
-garbage stop mattering; the witness record carries both hashes, the serialized initial environment, the heap node
-table with roots and sharing edges, the seed, the observed outcome and the replay result.
+**Next.** Korat-style heap enumeration in lane B; the witness record carries both hashes, the serialized initial
+environment, the heap node table with roots and sharing edges, the seed, the observed outcome and the replay result.
 
 **Boundary.** `===` on objects, identity hashes, WeakMap/WeakRef and finalizers: obligation `identity observation`.
 

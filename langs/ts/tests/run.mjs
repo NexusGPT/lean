@@ -220,16 +220,20 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
-  lines.forEach((ln, i) => { const m = ln.match(/^lemma (Equal_\w+)(?:<[^>]*>)?\(/); if (m) { cur = m[1]; spans[cur] = [i + 1, null]; } if (ln.startsWith('} // END Equal_') && cur) spans[cur][1] = i + 1; });
+  lines.forEach((ln, i) => { const m = ln.match(/^lemma (?:\{[^}]*\}\s+)*(Equal(?:Canon)?_\w+)(?:<[^>]*>)?\(/); if (m) { cur = m[1]; spans[cur] = [i + 1, null]; } if (/^\} \/\/ END Equal(Canon)?_/.test(ln) && cur) spans[cur][1] = i + 1; });
   const errs = [...text.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1]));
   const finished = /finished with \d+ verified/.test(text); // no verdict line: a resolution error, nothing is proved
   for (const [f, want] of Object.entries(exp.equal)) {
     const sp = spans[`Equal_${f}`];
-    const proved = finished && !!sp && !errs.some((L) => sp[0] <= L && L <= sp[1]);
+    const whole = finished && !!sp && !errs.some((L) => sp[0] <= L && L <= sp[1]);
+    const parts = Object.keys(spans).filter((k) => k.startsWith(`EqualCanon_${f}_`)); // the canonical-heap certificate: every part must hold
+    const canon = finished && parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]));
+    const proved = whole || canon;
     const withheld = lines.find((ln) => ln.startsWith(`// UNGUARDED Equal_${f}: `));
-    const got = sp ? (proved ? 'proved' : 'not proved') : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
+    const got = sp ? (proved ? (whole ? 'proved' : 'proved (canonical heap)') : 'not proved') : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
     const ok = want === 'withheld' ? !!withheld : proved === want && !(want && withheld); // "withheld": the identity guard must have withheld the lemma
     add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want ? 'proved' : 'not proved'}`, ok, got);
+    if (exp.canon && f in exp.canon) add('pair', name, `EqualCanon_${f} ${exp.canon[f] ? 'proved' : 'not proved'}`, canon === exp.canon[f] && (!exp.canon[f] || !whole), `${parts.length} parts: ${parts.filter((k) => errs.some((L) => spans[k][0] <= L && L <= spans[k][1])).map((k) => k.slice(k.lastIndexOf('_') + 1)).join(', ') || 'all hold'}${whole ? '; whole heap also proved' : ''}`); // "canon": the canonical reading alone proves it (the whole-heap lemma fails)
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
