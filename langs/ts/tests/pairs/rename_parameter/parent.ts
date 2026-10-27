@@ -10,6 +10,9 @@ export function width(value: number | undefined, pad: number): number { if (valu
 export interface Box { n: number; tags: string[] }
 export function bump(box: Box, by: number): number { box.n = box.n + by; return box.n; }
 export function diff(a: number, b: number): number { return a - b; }
+export function shadow(a: number, on: boolean): number { if (on) { const b = 1; return a + b; } return a; }
+export interface Pt { b: number; c: number }
+export function fieldname(p: Pt, a: number): number { return p.b + a; }
 export class Routes {
   @Post()
   close(@Param("conversationId", "ResolveWritable") id: string): number { return id.length; }

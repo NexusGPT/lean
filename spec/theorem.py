@@ -232,7 +232,7 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
                 raise Refusal(f'{label}: hypothesis for {name} does not end in {suffix}')
             hyps.setdefault(name[: -len(suffix)], {})[label] = re.sub(r'\s+', ' ', m.group(2).strip())
     for f, h in hyps.items():  # compared with the parameters by position: the lemma states the parent's, over the parent's names
-        if f in funcs and (h.get('parent') is None or h.get('candidate') is None or _by_position(h['parent'], pf[f]['params']) != _by_position(h['candidate'], cf[f]['params'])):
+        if f in funcs and (h.get('parent') is None or h.get('candidate') is None or not equal_by_position(h['parent'], h['candidate'], pf[f]['params'], cf[f]['params'])):
             raise Refusal(f'{f}: hypothesis differs between parent and candidate')
     # the identity guard (references, layer 1): a unit read as a value tree carries `// GUARD <name>: {exposed, determinate,
     # sites, writes}`. Tree equality implies graph equality only when the unit is not exposed, or when both sides have one
@@ -451,12 +451,32 @@ def _by_position(text, params):
     return pat.sub(lambda m: by[m.group(1)], text)
 
 
-def _norm_params(text, suffix, params):
-    """_norm with every parameter name replaced by its position: two functions whose texts agree this way differ only
-    by a consistent renaming of their parameters (a bound name), so they are the same function. A name after a dot is a
-    field, never a parameter. Every other identifier is kept as written, so an equal text never maps a parameter onto a
-    name that means something else on the other side."""
-    return _by_position(_norm(text, suffix), params)
+def _occurs(text, name):
+    """Whether `name` occurs in `text` as an identifier other than a field read (a name after a dot)."""
+    return re.search(r"(?<![.\w'?])" + re.escape(name) + r"(?![\w'?])", text) is not None
+
+
+def _rebinds(text, name):
+    """Whether `text` binds `name` again (a `var`, a name before `:=` or `=>`, a quantifier or a match pattern):
+    a declaration, a field write, a nested function's parameter."""
+    n = re.escape(name)
+    stop = r"(?:(?!:=|:\||::|=>)[^;{}])*?"  # a binder list ends where the bound expression or the body starts
+    return re.search(r"(?<![.\w'?])" + n + r"(?![\w'?])\s*(?::=|=>|::)|\b(?:var|forall|exists|case)\b" + stop + r"(?<![.\w'?])" + n + r"(?![\w'?])", text) is not None
+
+
+def equal_by_position(ptext, ctext, pparams, cparams):
+    """Two texts equal up to a renaming of the parameters by position. A renamed position is admitted only when the
+    rename cannot capture: the candidate's new name does not occur in the parent text, the parent's old name does not
+    occur in the candidate text, and neither side binds its name again. Otherwise the texts must agree as written."""
+    pn, cn = [n for n, _ in pparams], [n for n, _ in cparams]
+    if len(pn) != len(cn):
+        return False
+    if pn == cn:
+        return ptext == ctext
+    for o, n in zip(pn, cn):
+        if o != n and (_occurs(ptext, n) or _occurs(ctext, o) or _rebinds(ptext, o) or _rebinds(ctext, n)):
+            return False
+    return _by_position(ptext, pparams) == _by_position(ctext, cparams)
 
 
 def _body_span(clean, start):
@@ -490,7 +510,7 @@ def alias_identical(parent_text, cand_text, pf, cf, exclude=frozenset()):
     edits = []
     # identical text is not enough: a function that calls a changed function is changed through it. Keep only the
     # functions whose text is identical AND whose same-file callees are all identical (a fixpoint).
-    same = {b for b in cf if b in pf and b not in exclude and _norm_params(pf[b]['body'], 'parent', pf[b]['params']) == _norm_params(cf[b]['body'], 'candidate', cf[b]['params'])} # a unit whose TypeScript signature changed is changed, whatever its Dafny text; parameters compared by position
+    same = {b for b in cf if b in pf and b not in exclude and equal_by_position(_norm(pf[b]['body'], 'parent'), _norm(cf[b]['body'], 'candidate'), pf[b]['params'], cf[b]['params'])} # a unit whose TypeScript signature changed is changed, whatever its Dafny text; parameters compared by position
     changed = True
     while changed:
         changed = False

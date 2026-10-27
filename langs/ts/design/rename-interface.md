@@ -23,7 +23,13 @@ that renaming, provided no other token is touched: every identifier that is not 
 sides, so a candidate name that means something else in the parent (a global, a field of the same spelling read
 without a dot) makes the texts differ, never agree. A name after a dot is a field and is never replaced. Swapped names
 over an unchanged body (`diff(a, b) { a - b }` against `diff(b, a) { a - b }`) map to `p0 - p1` against `p1 - p0`:
-not equal, not aliased, the lemma not proved, lane B's witness stands (pair unit `diff`). A default or a type that
+not equal, not aliased, the lemma not proved, lane B's witness stands (pair unit `diff`). A rename may also
+capture: `f(a) { { const b = 1; return a + b } }` against `f(b) { { const b = 1; return b + b } }`. A renamed position
+is therefore admitted only when the candidate's new name does not occur in the parent text, the parent's old name does
+not occur in the candidate text, and neither side binds its name again (`var`, a name before `:=` or `=>`, a
+quantifier, a match pattern); otherwise the texts must agree as written and the lemma decides (pair unit `shadow`:
+not aliased, not proved, WITNESS). A field read after a dot is not an occurrence (`fieldname`, `p.b` with `a` renamed
+`b`: aliased, proved). A default or a type that
 mentions another parameter's name is compared as written, so a rename there stays `ASK:interface`: safe, not complete.
 
 What stays ASK:interface: a parameter type, optionality, rest-ness, default or decorator change; a method decorator
