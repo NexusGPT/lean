@@ -84,8 +84,8 @@ framework hands in) reads one written cell of its key, chosen by the seed, or no
 ## Fixtures
 
 `lean-v3/harness/decorators/<package>/<export>.fixture.ts`, one per row, run by `run.mjs` there against an installed
-copy (Nest's own `ExternalContextCreator` runs guards and pipes, no HTTP server). The census-env copy holds no
-`node_modules` yet: every row is `pending`.
+copy (Nest's own `ExternalContextCreator` runs guards and pipes, no HTTP server): `node run.mjs --env
+lean-v3/work/env/nexus-head/tree --lean <worktree>` (Nest 11.1.9 under `apps/backend/node_modules`) agrees on every row.
 
 ## Instances (the census-env copy of the Nexus monorepo, lint run on each file)
 
