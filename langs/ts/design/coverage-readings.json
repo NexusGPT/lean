@@ -25,7 +25,7 @@
   "faithful": "same"
  },
  "BinaryExpression": {
-  "today": "exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; assignment a write; bitwise refused unless the integer file",
+  "today": "exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; === between a primitive-or-record union and a literal exact on the literal's primitive arm since the mixed-vs-literal reading; assignment a write; bitwise refused unless the integer file",
   "faithful": "same"
  },
  "VariableDeclaration": {

@@ -966,7 +966,9 @@ export function lintFile(file, ranges = null, opts = {}) {
       const litSide = (x) => ts.isStringLiteral(x) || ts.isNumericLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword;
       // a comparison with a primitive on either side is a value comparison; only record against record (or array against array) compares references
       const mixed = (t) => { const ps = nonNull(t); return ps.some((x) => isPrim(x)) && ps.some((x) => !isPrim(x) && !isAny(x)); };
-      if (!nul(e.left) && !nul(e.right) && (mixed(lt) || mixed(rt))) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array is opaque; narrow it before comparing');
+      // against a literal (a negated number included) === is true only on the literal's primitive arm holding its value
+      const eqLit = (x) => { x = unparenX(x); return litSide(x) || (ts.isPrefixUnaryExpression(x) && x.operator === K.MinusToken && ts.isNumericLiteral(x.operand)); };
+      if (!nul(e.left) && !nul(e.right) && (mixed(lt) || mixed(rt)) && !eqLit(e.left) && !eqLit(e.right)) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal; narrow it before comparing it with another value');
       else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt)) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
     }
   }

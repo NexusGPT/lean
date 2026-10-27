@@ -48,7 +48,7 @@ export const ADVICE = {
   'destructuring': { label: 'migration', text: 'Object patterns may carry defaults; array patterns take names only, and rest patterns are outside the subset.' },
   'uninitialised': { label: 'migration', text: 'A pattern needs an initial value; a plain `let x;` takes the type of its first assignment.' },
   'bare-return': { label: 'migration', text: 'Return a value, or declare the function void.' },
-  'mixed-types': { label: 'migration', text: '`+` adds two numbers or joins to a string.' },
+  'mixed-types': { label: 'migration', text: '`+` adds two numbers or joins to a string. A value that is sometimes a primitive and sometimes a record compares with `===` against a literal (`x === "auto"`); against another value, narrow it first (`typeof x === "string" && x === y`), which changes the result when both are the same record.' },
   'string-order': { label: 'migration', text: 'Ordering strings (`<`) is outside the subset.' },
   'bitwise': { label: 'migration', text: 'Bitwise and shift operators are outside the subset.' },
   'unary-coercion': { label: 'conditional', precondition: 'the operand is never a bigint', text: 'Unary `+` coerces; use `Number(x)`.' },
