@@ -223,6 +223,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (isAbsent(e)) return absentOk(e) ? undefined : no('undefined or null outside an optional place');
       if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!declaredInside(e)) no(`outside name ${e.text}`); else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
       if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return;
+      if (ts.isTemplateExpression(e)) { for (const sp of e.templateSpans) { const sh = shapeOf(typeOf(sp.expression)); if (!sh || isRefShape(sh)) return no('template hole of a reference (it reads the object through toString)'); checkExpr(sp.expression); } return; } // a string concatenation, each hole by ToString
       if (e.kind === K.ThisKeyword) return u.cls && !u.isStatic ? undefined : no('this');
       if ((ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e) || ts.isCallExpression(e)) && e.questionDotToken) return no('optional chaining');
       if (ts.isPropertyAccessExpression(e) && lambdaDepth && fieldOf(shapeOf(typeOf(e.expression)) ?? {}, e.name.text)?.shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') return no('a narrowed optional read inside a callback');
@@ -487,6 +488,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (strUsed.has('replace')) out.push('function StrReplace(s: string, a: string, b: string): string'); // replace with a string pattern: the first match, the replacement's $ patterns included, a function of the three
     if (strUsed.has('join_string')) out.push('function JoinStr(xs: seq<string>, sep: string): string decreases |xs| { if |xs| == 0 then "" else if |xs| == 1 then xs[0] else xs[0] + sep + JoinStr(xs[1..], sep) }');
     for (const d of ['int', 'real']) if (strUsed.has(`join_${d}`)) out.push(`function JoinNum_${d}(xs: seq<${d}>, sep: string): string`); // numbers are formatted first: bodiless
+    for (const d of ['int', 'real']) if (strUsed.has(`numstr_${d}`)) out.push(`function NumStr_${d}(n: ${d}): string`); // Number::toString: a function of the number alone, bodiless
     if (keys.some((k) => shapes.get(k).kind === 'dict')) out.push(`const ObjectProtoNames: set<string> := {${OBJECT_PROTO.map((x) => JSON.stringify(x)).join(', ')}}`); // Object.getOwnPropertyNames(Object.prototype)
     const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'set' || s.kind === 'date' || s.kind === 'dict') { /* primitive contents */ } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); } else for (const f of s.fields) if (isRefShape(f.shape)) conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
     out.push(`predicate WFCell(hw: HWorld, o: Obj) { match o ${keys.map((k) => `case ${k}(${(shapes.get(k).kind === 'rec' ? shapes.get(k).fields.map(() => '_') : shapes.get(k).kind === 'map' ? ['_', '_'] : shapes.get(k).kind === 'dict' ? ['_', '_', '_'] : ['_']).join(', ')}) => ${cellOk(k)}`).join(' ')} case Dead => false }`);
@@ -612,6 +614,15 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     }
     const truthyPrim = (c, sh) => (sh.d === 'bool' ? c : sh.d === 'string' ? `(${c} != "")` : `(${c} != 0)`); // 0 and "" are falsy (the int reading has no NaN)
     const cond = (x) => { const sh = locShape(x); const c = expr(x); return sh.kind === 'opt' ? `((${c}).Some? && ${truthyPrim(`OptOr(${c}, ${dflt(sh.inner)})`, sh.inner)})` : truthyPrim(c, sh); };
+    // ToString of a template hole: a string is itself, a boolean its name, a number a function of the number
+    // alone (bodiless: the same on both sides, nothing assumed of its digits), absent its name "undefined" or "null"
+    const primStr = (c, sh) => { if (sh.d === 'string') return c; if (sh.d === 'bool') return `(if ${c} then "true" else "false")`; strUsed.add(`numstr_${sh.d}`); return `NumStr_${sh.d}(${c})`; };
+    function toStr(x) {
+      const sh = locShape(x); const lit = unparen(x);
+      if (sh.kind === 'prim' && ts.isNumericLiteral(lit)) return strEsc(String(Number(lit.text.replace(/_/g, ''))));
+      if (sh.kind === 'prim') return primStr(expr(x), sh);
+      const o = bind(expr(x), 't'); return `(if (${o}).Some? then ${primStr(`(${o}).value`, sh.inner)} else ${sh.absent === 'n' ? '"null"' : '"undefined"'})`;
+    }
     function expr(e0) {
       const e = unparen(e0);
       if (isAbsent(e)) return absentCode(e, shapeOf(checker.getContextualType(e)));
@@ -619,6 +630,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (e.kind === K.ThisKeyword) return dn('this');
       if (ts.isNumericLiteral(e)) return num(e.text);
       if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return strEsc(e.text);
+      if (ts.isTemplateExpression(e)) { const parts = e.head.text ? [strEsc(e.head.text)] : []; for (const sp of e.templateSpans) { parts.push(toStr(sp.expression)); if (sp.literal.text) parts.push(strEsc(sp.literal.text)); } return `(${parts.join(' + ')})`; } // an empty literal part is left out: "" + s is s, which the prover reads only through extensionality
       if (e.kind === K.TrueKeyword) return 'true';
       if (e.kind === K.FalseKeyword) return 'false';
       if (ts.isPropertyAccessExpression(e)) {

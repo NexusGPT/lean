@@ -42,3 +42,26 @@ Every plan error was the stack overflow; the 151 units of those 15 files are rea
 strict graph of 50 at its step 0 (the base before stage 4); stage 4 brought it to 154. (`mirrorMismatch` counts the
 census's mirror of the stage 2 core test against stage 4's heap.mjs: it is no longer a check of this core.)
 
+## 1. Template literals
+
+Reading: `` `a${x}b` `` is the concatenation `"a" + S(x) + "b"`, an empty literal part left out. `S` is ToString:
+a string hole is itself, a boolean `if x then "true" else "false"`, a number literal its own string
+(`String(Number(text))`), any other number `NumStr_int(x)` (or `NumStr_real`), bodiless: a function of the number
+alone, the same on both sides, nothing assumed of its digits. A hole that may be absent reads its value when present
+and `"undefined"` (or `"null"`, by the shape's absence) when not: both names are what JavaScript writes.
+```dafny
+function NumStr_int(n: int): string
+function greet_parent(hw_: HWorld, u: Ref): (HWorld, string)
+{ (hw_, ("Hi " + Get_R_83e68165_name(hw_, u) + ", " + NumStr_int(Get_R_83e68165_age(hw_, u)))) }
+```
+Soundness: every hole is a primitive or an option of one, so ToString runs no user code (a record hole would call
+its `toString`, a getter could run): the concatenation is exact on strings, booleans and absent values, and a
+number's string is uninterpreted, so two holes are equal only when their numbers are. Out: a hole of a reference (a
+record, an array, a Map), a tagged template.
+Pair `heap5_template`: `greet` (WITNESS), `badge` (the boolean hole spelled as two literals under a test: proved,
+canonical heap), `years` (`age + 0`: proved), `handle` (a hole that may be missing, untouched: proved), `stamp`
+(split into concatenations, `10` as `"10"`: proved). Lint: unchanged (the lint already admits template literals).
+Census (resolved, 39 roots), strict graph 155 -> 283, own syntax 388 -> 632; `curve.md` expects 245 after its step 1:
+```text
+{"files":23359,"units":53918,"core":283,"heapOwnFit":632,"mirrorMismatch":490,"planErrorCount":0,"seconds":492}
+```
