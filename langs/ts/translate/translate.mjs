@@ -3104,10 +3104,12 @@ export function translate(file, fnName, opts = {}) {
     return `(var ${v} := ${code}; if ${v}.Some? then ${convert(`${v}.value`, element, result, n)} else ${missingD(D)})`;
   }
   const cbArity = { map: 2, filter: 2, some: 2, every: 2, find: 2, findIndex: 2, flatMap: 2, reduce: 3 };
+  // the current unit takes a fuel, so its body and every loop helper of it bind `fuel` (a call there passes `fuel - 1`)
+  const fuelInScope = () => !!(currentUnit && recursiveUnits.has(currentUnit.name));
   // the fuel a call passes: one less inside the cycle, an uninterpreted start value from outside it
   function fuelArg(callee) {
     if (!recursiveUnits.has(callee.name)) return [];
-    if (currentUnit && recursiveUnits.has(currentUnit.name)) return [`${FUEL} - 1`];
+    if (fuelInScope()) return [`${FUEL} - 1`];
     return [`${external('fuel_start', [], 'nat')}()`];
   }
   // the arguments of a call to a same-file unit, shaped to its parameters: a defaulted parameter takes Some(v) or None
@@ -4623,6 +4625,7 @@ export function translate(file, fnName, opts = {}) {
     const M = assignedOutside(s).map((m) => m.synthetic ? m : { ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) });
     const free = freeVars(s, s.expression).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }));
     if (u.cls && !u.isStatic) free.unshift({ name: SELF, d: selfType(u) });
+    if (fuelInScope()) free.unshift({ name: FUEL, d: 'nat' }); // the unit's fuel, as in coreLoop
     const vars = [...free, ...M], names = vars.map((v) => dn(v.name));
     const state = () => tupleOf(M.map((v) => dn(v.name)));
     const result = M.length === 1 ? M[0].d : `(${M.map((v) => v.d).join(', ')})`;
@@ -4638,7 +4641,7 @@ export function translate(file, fnName, opts = {}) {
     let step;
     try { step = tr(flatten(s.statement), next, u); } finally { loopCtx.pop(); }
     coreHelpers.push(`function ${hn}${tclause([...vars.map((v) => v.d), T])}(${iter}: ${IT}, ${remaining}: nat, ${vars.map((v) => `${dn(v.name)}: ${v.d}`).join(', ')}): ${result}
-  decreases ${remaining}
+${fuelInScope() ? `  requires ${FUEL} > 0\n  decreases ${FUEL}, ${remaining}` : `  decreases ${remaining}`}
 {
 ${indentBlock(`if ${remaining} == 0 then ${tail}(${iter}, ${names.join(', ')}) else
   (var (${WORLD}, ${answer}) := ${nextOp}(${WORLD}, ${iter});
@@ -4680,10 +4683,13 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const jumpName = `jump${id}`;
     const outNames = [...(jumps.length ? [jumpName] : []), ...(returns ? [retName] : []), ...mNames]; // what the helper returns
     let loopUsesSelf = false; { const w = (x) => { if (x.kind === K.ThisKeyword) loopUsesSelf = true; if (!loopUsesSelf) ts.forEachChild(x, w); }; w(s); }
-    const constParams = [...(loopUsesSelf && classOf(u) ? [`${SELF}: ${selfType(u)}`] : []), ...free.map((v) => `${dn(v.name)}: ${v.d}`)];
+    // a loop of a unit on a recursive cycle takes the unit's fuel as a const parameter: a recursive call in its body
+    // passes it decremented as the unit itself does, and the helper decreases the fuel first, then its own measure
+    const fuelled = fuelInScope();
+    const constParams = [...(fuelled ? [`${FUEL}: nat`] : []), ...(loopUsesSelf && classOf(u) ? [`${SELF}: ${selfType(u)}`] : []), ...free.map((v) => `${dn(v.name)}: ${v.d}`)];
     const stateParams = M.map((m) => `${dn(m.name)}: ${m.d}`);
-    const constArgs = [...(loopUsesSelf && classOf(u) ? [SELF] : []), ...free.map((v) => dn(v.name))];
-    const requiresL = [];
+    const constArgs = [...(fuelled ? [FUEL] : []), ...(loopUsesSelf && classOf(u) ? [SELF] : []), ...free.map((v) => dn(v.name))];
+    const requiresL = fuelled ? [`${FUEL} > 0`] : [];
     let lead = [], leadArgsNext = [], leadArgsFirst = [], exit, bind = '', decreases, factsIn = new Set();
     let conditionLines = [];
     let lp = null;
@@ -4760,7 +4766,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const specs = [...requiresL.map((r) => `  requires ${r}`),
       ...hints.map((h) => `  ensures (${h}) ==> (var ${tupleOf(outNames)} := ${callS}; ${h})`),
       ...exitFact,
-      `  decreases ${decreases}`];
+      `  decreases ${fuelled ? `${FUEL}, ` : ''}${decreases}`];
     coreHelpers.push([`function ${hn}${tclause([...params, resT])}(${params.join(', ')}): ${resT}`, ...specs, '{',
       indentBlock(`${conditionLines.length ? conditionLines.join('\n') + '\n' : ''}if ${exit} then ${exitVal()}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
     if (isFor && real) intVars.delete(lp.i);
