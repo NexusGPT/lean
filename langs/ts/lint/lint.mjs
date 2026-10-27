@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { elementWritePath, plainDataRecord } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -857,6 +858,26 @@ export function lintFile(file, ranges = null, opts = {}) {
     expr(d.initializer);
   }
   const outsideWriteStatement = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; return !!x.parent && ts.isExpressionStatement(x.parent); };
+  // a write through a parameter of a synchronous array-method callback (`rows.forEach((r) => { r.n = 0; })`): that
+  // parameter is the array's element at each step, so the write is the heap step `rows[i].n = 0` (common.mjs
+  // elementWritePath). The heap core carries it in a `forEach` statement over a plain data record (plainDataRecord); the
+  // value reading copies the element and would lose the write, so every other shape is refused here (escape
+  // element_write_loop_callback) and the translator refuses a unit outside the heap core
+  function loopElementWrite(e) {
+    let w = ts.isBinaryExpression(e) && e.operatorToken.kind >= K.FirstAssignment && e.operatorToken.kind <= K.LastAssignment ? e.left : (ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) ? e.operand : ts.isDeleteExpression(e) ? e.expression : null;
+    if (!w && ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) w = ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign' ? e.arguments[0] ?? null : MUT_NAMES.has(e.expression.name.text) ? e.expression.expression : null;
+    if (!w) return null;
+    let r = w; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r) || ts.isAsExpression(r)) r = r.expression;
+    const through = r !== w || !ts.isBinaryExpression(e) || ts.isCallExpression(e); // a field, an element, a mutator: not a rebinding of the name
+    if (!ts.isIdentifier(r) || !through) return null;
+    const d = declOf(r).decl;
+    if (!d || !ts.isParameter(d) || !syncLoopCallback(d.parent, checker)) return null;
+    const call = d.parent.parent; const st = call.parent;
+    const fieldWrite = (ts.isBinaryExpression(e) && [K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e); // the writes the heap core reads in a loop body (a mutator, Object.assign and delete are not)
+    const carried = fieldWrite && call.expression.name.text === 'forEach' && st && ts.isExpressionStatement(st) && d.parent.parameters.length === 1 && d.parent.parameters[0] === d && ts.isIdentifier(d.name) && plainDataRecord(checker, checker.getTypeAtLocation(d.name));
+    if (carried) return null;
+    return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
+  }
   function exprStmt(e) {
     if (ts.isYieldExpression(e)) return expr(e);
     while (ts.isParenthesizedExpression(e)) e = e.expression;
@@ -864,6 +885,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isAwaitExpression(e)) return awaitExpr(e, true);
     const assigned = ts.isBinaryExpression(e) && e.operatorToken.kind >= K.FirstAssignment && e.operatorToken.kind <= K.LastAssignment ? e.left : ts.isDeleteExpression(e) ? e.expression : null;
     if (assigned && !ts.isIdentifier(assigned)) { let root = assigned; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root)) root = root.expression; if (methodLiteralPath(assigned)) return v(assigned, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); }
+    { const why = loopElementWrite(e); if (why) return why; } // a write through the element a synchronous array callback receives
     if (ts.isDeleteExpression(e)) return expr(e); // `delete r.f` as a statement
     if (ts.isBinaryExpression(e)) {
       const op = e.operatorToken.kind;
@@ -906,7 +928,21 @@ export function lintFile(file, ranges = null, opts = {}) {
             if (l.expression !== root) expr(l.expression);
             return expr(e.right);
           }
-          if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
+          // a field of an element reached from a parameter through field and element steps (`p[i].f`, `p[i]!.f`,
+          // `(p[i] as T).f`, `p.a[i].b`): a heap step on that element, the parameter an output as for `p.f = v`
+          const ep = !ts.isIdentifier(root) && root.kind !== K.ThisKeyword ? elementWritePath(checker, l) : null;
+          if (ep) {
+            const po = declOf(ep.root);
+            if (po.kind !== 'local' || !isParam(po.decl) || po.decl.parent !== currentFn) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, an element of \`${ep.root.text}\`, which is not a parameter of this function; write an element of a parameter, or build a new record with a spread`);
+            else if (aliasHere(po.decl, l)) v(l, 'alias-mutation', aliasMsg(ep.root.text, po.decl));
+            else if (!ownedHere(po.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
+            else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
+            expr(l.expression);
+            return expr(e.right);
+          }
+          const throughElement = (() => { let x = l.expression; while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x)) { if (ts.isElementAccessExpression(x)) return true; x = x.expression; } return false; })();
+          if (throughElement) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`: a field of an element is written when the path from a parameter takes field and array-element steps only, each index a number that calls nothing (name it first: \`const k = ...\`), and \`!\` or \`as T\` stand only on an element, T its own type`);
+          else if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (aliasHere(o.decl, l)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl));
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
@@ -922,6 +958,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(e.operand)) { let root = e.operand; while (ts.isPropertyAccessExpression(root)) root = root.expression; if ((root.kind === K.ThisKeyword && objectMethod) || methodLiteralPath(e.operand)) return v(e, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); if (root.kind === K.ThisKeyword && !thisParam && e.operand.expression.kind !== K.ThisKeyword) return receiverRecordPath(checker, e.operand) ? undefined : v(e, 'receiver-mutation', 'a receiver path needs nonoptional data records'); if (root.kind === K.ThisKeyword && thisParam && !thisParamPath(checker, e.operand)) return v(e, 'receiver-write', RECEIVER_WRITE); }
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
+      if (ts.isPropertyAccessExpression(e.operand) && elementWritePath(checker, e.operand)) { const ep = elementWritePath(checker, e.operand); const po = declOf(ep.root); if (po.kind === 'local' && isParam(po.decl) && po.decl.parent === currentFn && !aliasLocals.has(po.decl) && ownedHere(po.decl)) return expr(e.operand.expression); } // a field of a parameter's element: a heap step on that element
       if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasHere(o.decl, e) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);

@@ -1,0 +1,30 @@
+{
+ "scope": [
+  "mark",
+  "stamp",
+  "settle",
+  "clear",
+  "crown",
+  "bump",
+  "zero"
+ ],
+ "equal": {
+  "mark": true,
+  "stamp": false,
+  "settle": true,
+  "clear": true,
+  "crown": true,
+  "bump": true,
+  "zero": false
+ },
+ "why": "A field write through a parameter's element path (p[i].f, p[i]!.f, (p[i] as T).f, p.a[i].b) is a heap step on that element, the step p.f = v takes on the parameter; the parameter is an output. mark is the pyka repro's form (as Row on the element) with its index renamed: its Row holds a reference that may be null, so it stays out of the heap core, and the value reading of both sides is the same Dafny text up to the index's name, so it is equal by identity (proved; lane B PASS-bounded). stamp replaces each row by a copy holding the winner in the parent and writes the winner into the row itself in the candidate: the same fields, but the caller's array then holds other objects (SEMANTICS item 2), so lane B gives a WITNESS on identity and the identity guard withholds the value lemma. settle stores a sum through o.rows[i] (a field and an element step) in the heap core, the sum's for-of loop rewritten as forEach: the same loop helper, proved. clear writes lines[i].item.qty (two steps below the element) in an index loop whose step is rewritten as a compound assignment: the same helper, proved. crown (the repro's non-null form) is untouched. bump raises a quantity through items[0]! by += in the parent and through items[0] as Item by a written-out sum in the candidate: the erased ! and as read the same element in the heap core, proved by the prover. zero writes every row's quantity through the element forEach hands its callback (the heap core reads the callback's parameter as the element at each step, the step o.rows[i].qty = 0) against a body that writes nothing: not proved, lane B WITNESS. The same write on an element the heap core does not hold (a record with a reference that may be null) would be dropped by the value reading, so the lint refuses it (escape element_write_loop_callback) and the translator refuses such a unit outside the core; a refused unit cannot sit in this pair's files, since one refused unit leaves the whole file outside the subset.",
+ "b": {
+  "mark": "PASS-bounded",
+  "stamp": "WITNESS",
+  "settle": "PASS-bounded",
+  "clear": "PASS-bounded",
+  "crown": "PASS-bounded",
+  "bump": "PASS-bounded",
+  "zero": "WITNESS"
+ }
+}

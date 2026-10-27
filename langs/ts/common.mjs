@@ -428,6 +428,81 @@ export function thisParamPath(checker, target) {
   return accessor(chain[chain.length - 1]) ? null : chain;
 }
 
+// A field write through a parameter's own element path: `p[i].f = v`, `p[i]!.f = v`, `(p[i] as T).f = v`,
+// `p.a[i].b.f = v`. The written record is reached from the root name through data-field and array-element steps only,
+// at least one an element: each element step indexes an array whose element type is never null or undefined, by a
+// number index whose expression calls, assigns and awaits nothing; `!` and `as T` (T the element's own type) stand
+// directly on an element step and are erased at run time; no step is optional or an accessor. Such a write is a heap
+// step on the element reached, the step `p.f = v` takes on the parameter itself; the lint and the translator recognise
+// the path through this one test. The root identifier and the steps from the root (fields and elements), or null.
+export function elementWritePath(checker, target) {
+  const TF = ts.TypeFlags;
+  if (!target || !ts.isPropertyAccessExpression(target) || target.questionDotToken) return null;
+  const absent = (t) => (t.flags & (TF.Null | TF.Undefined | TF.Void)) || ((t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Null | TF.Undefined | TF.Void)));
+  const accessor = (pa) => checker.getSymbolAtLocation(pa.name)?.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d));
+  const quiet = (e) => { let ok = true; const w = (n) => { if (!ok) return; if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n) || ts.isAwaitExpression(n) || ts.isYieldExpression(n) || ts.isDeleteExpression(n) || ts.isFunctionLike(n) || ts.isClassLike(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment) || ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === ts.SyntaxKind.PlusPlusToken || n.operator === ts.SyntaxKind.MinusMinusToken))) { ok = false; return; } ts.forEachChild(n, w); }; w(e); return ok; };
+  const steps = []; let x = target.expression; let elements = 0; let erased = false; // erased: a `!` or `as T` met, which must stand on an element step
+  for (;;) {
+    if (ts.isParenthesizedExpression(x)) { x = x.expression; continue; }
+    if (ts.isNonNullExpression(x)) { erased = true; x = x.expression; continue; }
+    if (ts.isAsExpression(x) || ts.isTypeAssertionExpression(x)) {
+      const to = checker.getTypeAtLocation(x), from = checker.getNonNullableType(checker.getTypeAtLocation(x.expression));
+      if (to !== from && !(checker.isTypeAssignableTo(to, from) && checker.isTypeAssignableTo(from, to))) return null; // a cast to another type reads another shape
+      erased = true; x = x.expression; continue;
+    }
+    if (ts.isElementAccessExpression(x)) {
+      if (x.questionDotToken) return null;
+      const at = checker.getTypeAtLocation(x.expression);
+      if (absent(at) || !checker.isArrayType(at)) return null; // an array, never a tuple, a dictionary or an absent value
+      const et = checker.getTypeArguments(at)[0];
+      if (!et || absent(et) || !(checker.getTypeAtLocation(x.argumentExpression).flags & TF.NumberLike) || !quiet(x.argumentExpression)) return null;
+      steps.unshift(x); elements++; erased = false; x = x.expression; continue;
+    }
+    if (erased) return null; // `!` or `as` on anything but an element step
+    if (ts.isPropertyAccessExpression(x)) {
+      if (x.questionDotToken || accessor(x) || absent(checker.getTypeAtLocation(x))) return null;
+      steps.unshift(x); x = x.expression; continue;
+    }
+    break;
+  }
+  if (erased || !ts.isIdentifier(x) || !elements || accessor(target)) return null;
+  return { root: x, steps };
+}
+
+// A plain data record: an object type with fields only (no call, construct or index signature, no method or accessor,
+// no class), each field a number, a string, a boolean, a literal union, a primitive that may be absent one way, a plain
+// data record or an array of one of these. The heap core holds such a value as a cell of its fields
+// (translate/heap.mjs shapeOf); the lint admits a write through the element a synchronous `forEach` callback receives
+// only for such an element, the case the heap core carries (elementWritePath above).
+export function plainDataRecord(checker, t, depth = 0) {
+  const TF = ts.TypeFlags;
+  if (!t || depth > 6) return false;
+  const prim = (x) => !!(x.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike));
+  const field = (ft, d) => {
+    if (prim(ft)) return true;
+    if (ft.flags & TF.Union) {
+      const absent = ft.types.filter((x) => x.flags & (TF.Null | TF.Undefined | TF.Void)), rest = ft.types.filter((x) => !absent.includes(x));
+      if (new Set(absent.map((x) => (x.flags & TF.Null ? 'n' : 'u'))).size > 1) return false;
+      return rest.length > 0 && rest.every(prim) && (!absent.length || rest.every((x) => !(x.flags & TF.Object)));
+    }
+    if (checker.isArrayType(ft)) { const e = checker.getTypeArguments(ft)[0]; return !!e && (prim(e) || plainDataRecord(checker, e, d + 1)); }
+    return plainDataRecord(checker, ft, d + 1);
+  };
+  if (!(t.flags & TF.Object) || checker.isArrayType(t) || checker.isTupleType(t)) return false;
+  if (t.getCallSignatures().length || t.getConstructSignatures().length || checker.getIndexInfosOfType(t).length) return false;
+  if ((t.objectFlags & ts.ObjectFlags.Class) || t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) || ts.isClassExpression(d))) return false;
+  if (['Map', 'Set', 'Date', 'Promise', 'RegExp', 'WeakMap', 'WeakSet', 'Error'].includes(t.symbol?.name)) return false;
+  const props = checker.getPropertiesOfType(t);
+  if (!props.length) return false;
+  for (const p of props) {
+    if (p.flags & (ts.SymbolFlags.Method | ts.SymbolFlags.Accessor) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(p.name)) return false;
+    const decl = p.valueDeclaration ?? p.declarations?.[0];
+    if (!decl) return false;
+    if (!field(checker.getTypeOfSymbolAtLocation(p, decl), depth)) return false;
+  }
+  return true;
+}
+
 // Stage 5 rank 15. The counted for header `let i = e; i < limit; i++` (also <=, >, >= with i--, i += k, i -= k, k a positive
 // literal, the step in the direction of the condition) whose body never assigns the counter: the translator reads it as a
 // counted loop with the counter as the helper's lead parameter. Every other for header is read as

@@ -48,7 +48,8 @@ const TF = ts.TypeFlags;
 
 class Unsupported extends Error {}
 
-import { dn } from '../common.mjs'; // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
+import { dn } from '../common.mjs';
+import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const indentBlock = (s, n = 1) => s.split('\n').map((l) => '  '.repeat(n) + l).join('\n');
@@ -620,6 +621,7 @@ export function translate(file, fnName, opts = {}) {
       if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !isLoopCallback(n)) return; // a callback cannot mutate an outer value (lint); a loop callback's body is the loop's, run here
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) hit(n.left);
       if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) hit(n.operand);
+      { const w = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? n.left : (ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) ? n.operand : null; const ew = w && elementWritePath(checker, w); if (ew && params.has(ew.root.text)) out.add(ew.root.text); } // a field of a parameter's element (`as T` included): the parameter is an output
       if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) { const r = rootOf(e.expression.expression); if (own(r) && params.has(own(r))) out.add(own(r)); } }
       if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign' && e.arguments.length >= 2) { const r = rootOf(e.arguments[0]); if (ts.isIdentifier(r) && params.has(r.text)) out.add(r.text); } } // Object.assign(t, …) writes t: a parameter t is an output
       if (ts.isDeleteExpression(n)) hit(n.expression);
@@ -3992,6 +3994,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const walk = (x) => {
       if (isAssign(x) && ts.isIdentifier(x.left)) note(x.left);
       if (isAssign(x) && ts.isPropertyAccessExpression(x.left)) { let r = x.left; while (ts.isPropertyAccessExpression(r)) r = r.expression; if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); }
+      if ((isAssign(x) && ts.isPropertyAccessExpression(x.left)) || (isUpdate(x) && ts.isPropertyAccessExpression(x.operand))) { const ew = elementWritePath(checker, isAssign(x) ? x.left : x.operand); if (ew) note(ew.root); } // a field of an element: its array's root is written
       if (isAssign(x) && ts.isElementAccessExpression(x.left) && ts.isIdentifier(x.left.expression)) note(x.left.expression);
       if (isUpdate(x) && ts.isIdentifier(x.operand)) note(x.operand);
       if (isMutCall(x)) { const r = pathRoot(x.expression.expression); if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); }
@@ -4173,6 +4176,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   }
   // text of `x = e`, `x += e`, `x++`, `xs.push(e)`, `s.add(e)`, `m.set(k, v)`, `s.delete(e)` as `name := new value`
     function pathUpdate(target, leaf) {
+      { const ew = elementWritePath(checker, target); if (ew) return elementPathUpdate(target, ew, leaf); }
       const chain = []; let root = target;
       while (ts.isPropertyAccessExpression(root)) { chain.unshift(root); root = root.expression; }
       const ownThis = root.kind === K.ThisKeyword && thisParamOf(currentUnit); // a free function's declared receiver: its parameter `this`, rebuilt as any parameter is
@@ -4181,6 +4185,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const field = worldPath ? chain.shift() : null;
       if (!ts.isIdentifier(root) && !field && !ownThis) fail(target, 'receiver-mutation: a receiver path needs nonoptional data records');
       const rootName = ownThis ? 'this' : root.text;
+      if (ts.isIdentifier(root) && loopElement(root)) fail(target, `alias-mutation: \`${root.text}\` is the element a loop or an array callback walks; this reading copies it, so a write through it would be lost: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); // a dropped write is never silent
       const rootCode = field ? expr(field) : dn(rootName);
       const rootT = field ? typeOf(field) : typeOf(root);
       if (!chain.length) { // a local declared optional and narrowed here (`if (l) l.push(x)`): its value is changed inside the Some
@@ -4210,6 +4215,45 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const value = build(0, rootCode, rootT);
       if (field) { const d = dtype(rootT, field); hoist(`${worldFieldAccessor(field, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit'); return null; }
       return [rootName, value, root];
+    }
+    // a field of an element reached from a parameter through field and element steps (`p[i].f`, `p.a[i].b`, with `!` or
+    // `as T` on an element erased): the root is rebuilt along the path, each element by its index read once, in order,
+    // before the leaf: p := p[i := p[i].(f := leaf(p[i].f))]. The parameter is an output, as for `p.f = v`
+    // a name bound to the element a loop walks: a for-of binding, or a parameter of a synchronous array callback
+    function loopElement(id) {
+      const d = checker.getSymbolAtLocation(id)?.valueDeclaration;
+      if (!d) return false;
+      if (ts.isParameter(d)) return !!d.parent && (isLoopCallback(d.parent) || syncLoopCallback(d.parent, checker));
+      return ts.isVariableDeclaration(d) && !!d.parent && ts.isVariableDeclarationList(d.parent) && !!d.parent.parent && ts.isForOfStatement(d.parent.parent);
+    }
+    function elementPathUpdate(target, ew, leaf) {
+      const steps = [...ew.steps, target];
+      const root = ew.root;
+      const build = (i, cur, curT) => {
+        const st = steps[i];
+        if (ts.isElementAccessExpression(st)) {
+          const base = baseOf(curT);
+          if (!checker.isArrayType(base)) fail(st, 'an element write through a value that is not an array');
+          const et = checker.getTypeArguments(base)[0];
+          const ix = `ix${tempCount++}_`;
+          return `(var ${ix} := ${index(st.argumentExpression)}; ${cur}[${ix} := ${build(i + 1, `${cur}[${ix}]`, et)}])`;
+        }
+        const fname_ = st.name.text;
+        const recvT = baseOf(curT);
+        if (!isRecordish(recvT) || !checker.getPropertyOfType(recvT, fname_)) fail(st, `field ${fname_} is not a declared field of a record`);
+        const p = checker.getPropertyOfType(recvT, fname_);
+        const ft = checker.getTypeOfSymbolAtLocation(p, st);
+        const RD = dtype(recvT, st), opaqueRec = RD.startsWith('Ext_');
+        let FD = opaqueRec ? (isAny(ft) ? anyType() : dtype(ft, st)) : null;
+        if (opaqueRec && (p.flags & ts.SymbolFlags.Optional) && !optionalD(FD)) { usesOption = true; FD = `Option<${FD}>`; }
+        const fcur = opaqueRec ? `${external(`${RD}_${fname_}`, [RD], FD)}(${cur})` : `${cur}.${dn(fname_)}`;
+        let inner;
+        if (i === steps.length - 1) inner = leaf(fcur, p, ft);
+        else { if (isOptional(ft)) fail(st, 'assignment through an optional field is not translated'); inner = build(i + 1, fcur, ft); }
+        if (opaqueRec) return `${external(`${RD}_set_${fname_}`, [RD, FD], RD)}(${cur}, ${inner})`;
+        return `${cur}.(${dn(fname_)} := ${inner})`;
+      };
+      return [root.text, build(0, dn(root.text), typeOf(root)), root];
     }
   function newValue(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
@@ -5460,8 +5504,29 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     // the complete source keeps every module initializer and same-file dependency in the opaque identity
     return `${external(`Module_file_block_${hash(sf.text)}_${u.name}`, types, `(${outputs.join(', ')})`)}(${inputs.join(', ')})`;
   }
+  // a write through the element a loop walks (a for-of binding, a parameter of a synchronous array callback): `r.n = 0`,
+  // `r.tags.push(x)`, `Object.assign(r, s)`, `delete r.f`. The value reading binds a copy of the element, so it would
+  // drop the write; the heap core reads it as the step on the element (design/element-writes.md). A unit outside the
+  // core that holds one is refused by name, never translated without its write
+  function loopElementWriteOf(u) {
+    const elementBinding = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; if (!d) return false; if (ts.isParameter(d)) return !!d.parent && (isLoopCallback(d.parent) || syncLoopCallback(d.parent, checker)); return ts.isVariableDeclaration(d) && !!d.parent && ts.isVariableDeclarationList(d.parent) && !!d.parent.parent && ts.isForOfStatement(d.parent.parent); };
+    let hit = null;
+    const w = (n) => {
+      if (hit) return;
+      let t = null, through = false;
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) t = n.left;
+      else if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) t = n.operand;
+      else if (ts.isDeleteExpression(n)) t = n.expression;
+      else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) { if (ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'assign') t = n.arguments[0] ?? null; else if (MUT.has(n.expression.name.text)) t = n.expression.expression; through = true; }
+      if (t) { let r = t; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r) || ts.isAsExpression(r)) r = r.expression; if (ts.isIdentifier(r) && (through || r !== t) && elementBinding(r)) { hit = { node: n, name: r.text }; return; } }
+      ts.forEachChild(n, w);
+    };
+    if (u.body) w(u.body);
+    return hit;
+  }
   function emitUnit(u) {
     currentUnit = u;
+    { const lw = loopElementWriteOf(u); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
     tempCount = 0; // a unit's temporaries are numbered from its own start: an edit elsewhere in the file leaves its text unchanged, so the theorem's identity shortcut still reads it
     faultMode = false;
     loopCount = 0; labelIds.clear();
