@@ -194,7 +194,12 @@ export function translate(file, fnName, opts = {}) {
   const decoLines = []; // `// DECORATORS <unit>: <row ids>`: the decorator-table rows a unit's reading used (check.mjs withholds the proof when the framework contradicts one)
   const sigLines = []; // `// SIG <unit>: <json>`: the TypeScript signature a caller sees (the method's decorators, the `this` type if declared, per position the parameter's decorators, type, optionality, rest-ness and default, the return type); the theorem compares it across the two sides before writing a lemma. Parameter names sit in `names`, which the theorem never compares: a caller passes by position
   const fold = (t) => String(t ?? '').replace(/\s+/g, ' ').trim();
-  const sigOf = (u) => { const fn = u.fn; const decs = (n) => (ts.canHaveDecorators && ts.canHaveDecorators(n) ? (ts.getDecorators(n) ?? []) : []).map((d) => fold(d.getText(sf))); const isThis = (p) => ts.isIdentifier(p.name) && p.name.text === 'this'; const thisP = fn.parameters.find(isThis); const ps = fn.parameters.filter((p) => !isThis(p)); return JSON.stringify({ decorators: decs(fn), ...(thisP ? { this: thisP.type ? fold(thisP.type.getText(sf)) : null } : {}), params: ps.map((p) => ({ decorators: decs(p), type: p.type ? fold(p.type.getText(sf)) : null, optional: !!p.questionToken, rest: !!p.dotDotDotToken, init: p.initializer ? fold(p.initializer.getText(sf)) : null })), ret: fn.type ? fold(fn.type.getText(sf)) : null, names: ps.map((p) => fold(p.name.getText(sf))) }); };
+  const sigOf = (u) => { const fn = u.fn; const decs = (n) => (ts.canHaveDecorators && ts.canHaveDecorators(n) ? (ts.getDecorators(n) ?? []) : []).map((d) => fold(d.getText(sf))); const isThis = (p) => ts.isIdentifier(p.name) && p.name.text === 'this'; const thisP = fn.parameters.find(isThis); const ps = fn.parameters.filter((p) => !isThis(p)); return JSON.stringify({ decorators: decs(fn), ...(thisP ? { this: thisP.type ? fold(thisP.type.getText(sf)) : null } : {}), params: ps.map((p) => ({ decorators: decs(p), type: p.type ? fold(p.type.getText(sf)) : null, optional: !!p.questionToken, rest: !!p.dotDotDotToken, init: p.initializer ? fold(p.initializer.getText(sf)) : null })), ret: fn.type ? fold(fn.type.getText(sf)) : null, names: ps.map((p) => fold(p.name.getText(sf))), ...(promiseHandleUnit(u) ? { handle: true } : {}) }); };
+  // a promise handle unit returns the promise an outside call returned, unsettled: a caller sees another interface than an async unit's adopted result
+  const promiseHandleUnit = (u) => !u.isAsync && !u.isCtor && !u.accessor && !!u.fn.body && isPromiseT(checker.getSignatureFromDeclaration(u.fn).getReturnType());
+  // its result is a handle: the term of the outside transition (or the input) that produced it names that one object, so
+  // equal terms are the same promise; the lint keeps out the handles whose term could not tell two objects apart
+  const promiseHandleGuard = (u, g) => promiseHandleUnit(u) ? { ...g, exposed: g.exposed.filter((r) => r !== 'result may carry an input or shared reference') } : g;
   const heapGuards = []; // layer-1 units: exposure and identity skeleton, for the theorem's identity guard
 
   // ----- the world: every effectful call is a transition of an explicit world token -----
@@ -4332,14 +4337,14 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   for (const u of order) {
     if (tolerant) {
       const before = chunks.length; const savedPending = pending;
-      try { sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`); if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); if (heapT.needsInRange(u)) heapHyps.push(`// INRANGE ${fname(u.name)}`); } else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(heapT.guard(u))}`); } cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`); fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`); report.translated.push(u.name); }
+      try { sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`); if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); if (heapT.needsInRange(u)) heapHyps.push(`// INRANGE ${fname(u.name)}`); } else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(promiseHandleGuard(u, heapT.guard(u)))}`); } cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`); fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`); report.translated.push(u.name); }
       catch (e) { if (!(e instanceof Unsupported)) throw e; chunks.length = before; pending = savedPending; failedUnits.add(u.name); report.failed.push({ unit: u.name, message: String(e.message).split('\n')[0].slice(0, 160) }); currentUnit = null; yieldState = null; }
       continue;
     }
     sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`);
     const before = chunks.length;
     if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); if (heapT.needsInRange(u)) heapHyps.push(`// INRANGE ${fname(u.name)}`); }
-    else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(heapT.guard(u))}`); }
+    else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(promiseHandleGuard(u, heapT.guard(u)))}`); }
     cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`);
     fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`);
   }

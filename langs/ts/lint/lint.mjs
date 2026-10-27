@@ -1421,6 +1421,32 @@ export function lintFile(file, ranges = null, opts = {}) {
     return v(e, 'dynamic-key', 'index an array or string by a number, or a record by declared string keys');
   }
 
+  // a promise handle: a non-async unit returns a promise it did not build (an outside call, a Promise static, a chain, a
+  // name, a conditional of these); the result is the handle that call returned, a transition's value, never settled here
+  function promiseHandle(u, at) {
+    const leaves = [];
+    const collect = (e) => { e = unparen(e); if (ts.isConditionalExpression(e)) { collect(e.whenTrue); collect(e.whenFalse); } else leaves.push(e); };
+    if (!u.body) return;
+    if (ts.isBlock(u.body)) { const w = (x) => { if (ts.isFunctionLike(x) || ts.isClassLike(x)) return; if (ts.isReturnStatement(x) && x.expression) collect(x.expression); ts.forEachChild(x, w); }; w(u.body); } else collect(u.body);
+    if (!leaves.length) return v(at, 'promise', 'a Promise-returning function must return a promise or be async');
+    for (const e of leaves) {
+      if (ts.isNewExpression(e)) { v(e, 'promise', 'a promise built with new Promise is not a handle; make the function async'); continue; }
+      if (ts.isCallExpression(e)) {
+        const d = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(e.expression) ? e.expression.name : e.expression)?.declarations?.[0];
+        const fn = d && d.getSourceFile() === sf ? (ts.isVariableDeclaration(d) ? d.initializer : d) : null;
+        if (fn && ts.isFunctionLike(fn) && fn.body && fn.modifiers?.some((m) => m.kind === K.AsyncKeyword)) v(e, 'promise', 'a same-file async function runs on after its first await; return it from an async function with await');
+        else if (ts.isPropertyAccessExpression(e.expression) && nonNull(tOf(e.expression.expression)).some((t) => isArrayLike(checker, t) || isSetT(t) || isMapT(t) || (t.flags & TF.StringLike))) v(e, 'promise', 'a promise read out of a collection has no identity in the reading; return the call that made it');
+        continue;
+      }
+      if (ts.isIdentifier(e)) {
+        const t = checker.getAwaitedType(tOf(e)) ?? tOf(e);
+        if (!(t.flags & (TF.String | TF.Number | TF.Boolean | TF.BigInt)) && !isArrayLike(checker, t)) v(e, 'promise', 'a held promise of this result type has no identity in the reading; return the call itself');
+        continue;
+      }
+      v(e, 'promise', 'return the promise from a call, a name or a conditional, or make the function async');
+    }
+  }
+
   // ---------- top level ----------
   const checkedDiagSpans = [];
   for (const st of sf.statements) {
@@ -1443,7 +1469,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       const sig = checker.getSignatureFromDeclaration(u.fn);
       const rt = sig.getReturnType();
       const inner = isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;
-      if (!u.isAsync && isPromiseT(rt)) v(st, 'promise', 'a Promise-returning function must be async');
+      if (!u.isAsync && isPromiseT(rt)) promiseHandle(u, st);
       checkType(inner, u.typeNode ?? st);
       for (const p of u.params) {
         if (p.dotDotDotToken && !isArrayExpr(p.name)) v(p, 'param-form', 'a rest parameter is an array');
@@ -1479,7 +1505,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         const sig = checker.getSignatureFromDeclaration(u.fn);
         const rt = sig.getReturnType();
         const inner = isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;
-        if (!u.isAsync && isPromiseT(rt)) v(u.node, 'promise', 'a Promise-returning method must be async');
+        if (!u.isAsync && isPromiseT(rt)) promiseHandle(u, u.node);
         checkType(inner, u.typeNode ?? u.node);
         for (const p of u.params) {
           if (p.dotDotDotToken && !isArrayExpr(p.name)) v(p, 'param-form', 'a rest parameter is an array');

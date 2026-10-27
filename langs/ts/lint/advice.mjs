@@ -65,7 +65,7 @@ export const ADVICE = {
   'unresolved-module': { label: 'migration', text: 'The project cannot resolve this import; the proof reads it as opaque.' },
   'toplevel-state': { label: 'migration', text: 'Module-level `let` is state the function does not own.' },
   'toplevel-effect': { label: 'migration', text: 'Code at module level runs on import.' },
-  'promise': { label: 'migration', text: 'A Promise-returning function must be async.' },
+  'promise': { label: 'migration', text: 'Return the promise an outside call, a Promise static or a chain gave you (or a held name of it), or make the function async; async turns a synchronous throw into a rejection and returns a new promise.' },
   'optional-chain': { label: 'conditional', precondition: 'the callee is a plain name, and the test is `f != null`', text: 'Optional calls `f?.()` are outside the subset; test the function first.' },
   'spread': { label: 'migration', text: 'Spread works in array and record literals only.' },
   'inheritance': { label: 'migration', text: 'A class that extends another is outside the subset in this version.' },

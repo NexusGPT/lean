@@ -104,6 +104,7 @@ transition the parent did not make, or makes it with another argument or in anot
 | consumed `new Promise` | `await new Promise<number>(resolve => resolve(n))` | synchronous terminal settlement bodies return the resolve value or raise the reject fault; a single outside callback bridge is opaque by text, captures and callees |
 | consumed `Promise.resolve`, `Promise.reject` | `return Promise.resolve(n)` | plain value/adoption, or raise the world fault when eligible; otherwise the existing outside call |
 | other promise calls | stored/dangling/loop chains; `Promise.race`, `Promise.allSettled`, `Promise.any`; stored `Promise.resolve` | outside transition on the receiver and supplied values; handlers are opaque values by text, with captures and dependencies retained |
+| a promise handle: a non-async unit returning a promise it did not build | `function f(c: Client): Promise<User> { return c.get(id); }`; a Promise static, a chain, a held name, a conditional of these | the handle is the returned transition's value, never settled inside the unit (its chains keep the outside-call reading); the signature carries `handle`, so an async rewrite is an interface change (design/promise-handle.md) |
 | Unknown record enumeration | `Object.keys/values/entries(r)` for a parameter, escaped or mutated record | source-sensitive transition; own keys/order cannot be recovered from the structural datatype |
 
 ## What is uninterpreted
@@ -209,7 +210,7 @@ fallback. No initializer is executed or assumed by the proof lane.
 | `async-predicate`, `async-reduce` | promises are truthy predicates; reduce does not await its accumulator | `xs.filter(async x => svc.ok(x))` |
 | `async-callback`, `promise-all-order` | async map/flatMap without direct awaited Promise.all; multiple suspensions or observable work after suspension | `xs.map(async x => { await f(x); log(x); })` |
 | `callback-control`, `callback-result` | callback try/throw or return from an inner loop; effectful type guards, mixed flatMap results or PromiseLike callbacks | `xs.map(x => { for (;;) return svc.get(x); })` |
-| `async`, `promise` | `await` outside an async function, a Promise-returning function that is not async | `function f() { return Promise.resolve(1); }` |
+| `async`, `promise` | `await` outside an async function; a non-async Promise-returning function whose returned promise is not a handle: built by `new Promise`, from a same-file async function, read out of a collection or a field, or a held name of a result type with no identity (void) | `function f() { return new Promise((r) => r(1)); }` |
 | `promise-pending` | unconsumed or loop-contained constructors, which had no earlier reading | `new Promise(resolve => resolve(1));` |
 | `promise-unsettled`, `promise-executor-escape`, `promise-executor` | missing settlement paths, statements after settlement, saved/passed resolvers, nonterminal settlement or async executors | `new Promise(resolve => { if (ok) resolve(1); })` |
 | `promise-handler`, `promise-thenable` | unsupported bodies or unknown/custom thenable adoption in newly admitted executors; existing chains fall back to opaque calls | `await new Promise(resolve => resolve(unknownValue))` |
