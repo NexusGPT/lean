@@ -881,6 +881,39 @@ export function translate(file, fnName, opts = {}) {
   // them, absent, or a type parameter (the proof is generic in it); an object is compared by reference (SameValueZero)
   const keyByValue = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.EnumLike | TF.Undefined | TF.Null | TF.TypeParameter)));
   const omapT = (Kd, Vd) => { orderedCarrier('map'); return `OMap<${Kd}, ${Vd}>`; };
+  // a dictionary (a plain object with a string index signature and no declared key) is the same ordered carrier, its
+  // keys held in property order (ECMA-262 10.1.11 OrdinaryOwnPropertyKeys: every array index first, ascending, then
+  // the other string keys in creation order). A new key takes its place in that order when it is created, an existing
+  // one keeps its place (10.1.9 OrdinarySet), a deleted one leaves it. Object.keys, Object.values, Object.entries, for-in
+  // and a spread read the keys as they are held, so two dictionaries written in another order are two values exactly
+  // when JavaScript can tell them apart
+  const dictOrder = () => {
+    orderedCarrier('map');
+    addPrelude('DictPut', [
+      'function {:fuel 11} DictDigits(s: string): bool decreases |s| { |s| == 0 || (\'0\' <= s[0] <= \'9\' && DictDigits(s[1..])) }',
+      'function {:fuel 11} DictValue(s: string, acc: int): int decreases |s| { if |s| == 0 then acc else DictValue(s[1..], acc * 10 + (s[0] as int - \'0\' as int)) }',
+      'predicate DictIndex(s: string) { 0 < |s| <= 10 && DictDigits(s) && (s[0] != \'0\' || |s| == 1) && DictValue(s, 0) <= 4294967294 }',
+      'predicate DictBefore(k: string, x: string) { DictIndex(k) && (!DictIndex(x) || DictValue(k, 0) < DictValue(x, 0)) }',
+      'function {:fuel 5} DictIns(k: string, xs: seq<string>): seq<string> decreases |xs| { if |xs| == 0 then [k] else if DictBefore(k, xs[0]) then [k] + xs else [xs[0]] + DictIns(k, xs[1..]) }',
+      'function DictPut<V>(o: OMap<string, V>, k: string, v: V): OMap<string, V> { if k in o.m then OMap(o.keys, o.m[k := v]) else OMap(DictIns(k, o.keys), o.m[k := v]) }',
+      'function {:fuel 3} DictFrom<V>(o: OMap<string, V>, es: seq<(string, V)>): OMap<string, V> decreases |es| { if |es| == 0 then o else DictFrom(DictPut(o, es[0].0, es[0].1), es[1..]) }',
+      'function DictMerge<V>(o: OMap<string, V>, src: OMap<string, V>): OMap<string, V> { DictFrom(o, OMapEntries(src)) }',
+    ].join('\n'));
+  };
+  const dictT = (Vd) => { dictOrder(); return omapT('string', Vd); };
+  const isDictD = (d) => /^OMap<string, /.test(d); // a dictionary's Dafny type (a Map keyed by strings shares it; the TypeScript type says which one is read)
+  // a dictionary operand: its carrier code when its Dafny type is the ordered carrier, else null (a name bound to a
+  // listed hook keeps the table's map, and its order stays an uninterpreted read of that map)
+  const dictCarrier = (node) => { const t = baseOf(typeOf(node)); if (isAny(t) || !isDictionary(checker, t)) return null; let D; try { D = dtype(typeOf(node), node); } catch { return null; } return isDictD(D) ? D : null; };
+  const dictOperand = (node) => { const D = dictCarrier(node); return D ? { code: expr(node), D } : null; };
+  // Object.keys, Object.values, Object.entries of a dictionary (20.1.2.18, 20.1.2.23, 20.1.2.6, through
+  // EnumerableOwnProperties): the own keys as the carrier holds them, in property order, with each key's value
+  const dictEnumeration = (n, name) => {
+    if (n.arguments.length !== 1 || ts.isSpreadElement(n.arguments[0])) return null;
+    const o = dictOperand(n.arguments[0]); if (!o) return null;
+    dictOrder();
+    return name === 'keys' ? member(o.code, 'keys') : `${name === 'values' ? 'OMapValues' : 'OMapEntries'}(${outerParens(o.code)})`;
+  };
   const osetT = (A) => { orderedCarrier('set'); return `OSet<${A}>`; };
   const member = (code, field) => `${/^[\w.']+$/.test(code) ? code : `(${code})`}.${field}`; // a destructor read on a carrier value
   const emptyMap = (Kd, Vd) => `(var m0: ${omapT(Kd, Vd)} := OMap([], map[]); m0)`;
@@ -1011,7 +1044,7 @@ export function translate(file, fnName, opts = {}) {
         return `(${ps.join(', ')}) -> ${dtype(rt, n, depth + 1)}`;
       }
       const ix = stringIndex(t);
-      if (ix && !checker.getPropertiesOfType(t).length) return `map<string, ${dtype(ix.type, n, depth + 1)}>`;
+      if (ix && !checker.getPropertiesOfType(t).length) return dictT(dtype(ix.type, n, depth + 1)); // a dictionary: keys in creation order beside the entries
       return recordType(t, n, depth);
     }
     // a type with no value reading of its own: an indexed access on a type parameter, a conditional or mapped form, a
@@ -1683,6 +1716,7 @@ export function translate(file, fnName, opts = {}) {
     if (fd === 'Any') return `${external(`Any_as_${td.includes('->') ? 'fn_' : ''}${mangle(td)}`, ['Any'], td)}(${code})`;
     if (td.startsWith('Option<') && !fd.startsWith('Option<')) { usesOption = true; return `Some(${convertD(code, fd, innerOf(td))})`; }
     if (td.startsWith('Option<') && fd.startsWith('Option<')) { usesOption = true; const v = `o_${hash(code).slice(0, 4)}`; return `(var ${v} := ${code}; if ${v}.Some? then Some(${convertD(`${v}.value`, innerOf(fd), innerOf(td))}) else None)`; }
+    if (isDictD(td) && !isDictD(fd)) return `${external(`cast_${mangle(fd)}_${mangle(td)}_source_${hash(sf.text)}`, [fd], td)}(${code})`; // a record read as a dictionary: its key order is the order its fields were created in, which the record value does not hold, so the conversion is named by the source text (two files that differ never share it)
     return `${external(`cast_${mangle(fd)}_${mangle(td)}`, [fd], td)}(${code})`;
   }
   const strEsc = (s) => {
@@ -2385,11 +2419,11 @@ export function translate(file, fnName, opts = {}) {
       { const pm = prototypeMaker(checker, sf); if (pm) fail(n, `prototype: this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pm.getStart(sf))}), and \`in\` reads the prototype; test an own key with Object.prototype.hasOwnProperty.call(o, k)`); }
       const rt0 = typeOf(n.right); const rd = (() => { try { return isAny(rt0) ? 'Any' : dtype(rt0, n); } catch { return 'Any'; } })();
       if (assertionDerived(n.left) || assertionDerived(n.right)) return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
-      if (rd.startsWith('map<string') && (typeOf(n.left).flags & TF.StringLike)) {
+      if ((rd.startsWith('map<string') || (isDictD(rd) && isDictionary(checker, baseOf(rt0)))) && (typeOf(n.left).flags & TF.StringLike)) {
         // a key test on a dictionary (a plain object): an own key, or a name of Object.prototype; a Map's entries are no properties, so `in` on a Map is an uninterpreted test of the Map and the key
         if (!isDictionary(checker, baseOf(rt0))) return `${external('in_object', ['string', rd], 'bool')}(${expr(n.left)}, ${expr(n.right)})`;
         const k = `ik${tempCount++}_`;
-        return `(var ${k} := ${expr(n.left)}; ${k} in ${expr(n.right)} || ${k} in ${helper('ObjectProtoNames', [])})`;
+        return `(var ${k} := ${expr(n.left)}; ${k} in ${isDictD(rd) ? member(expr(n.right), 'm') : expr(n.right)} || ${k} in ${helper('ObjectProtoNames', [])})`;
       }
       if (ts.isStringLiteral(n.left)) {
         const key = n.left.text;
@@ -2564,6 +2598,20 @@ export function translate(file, fnName, opts = {}) {
       const types = vals.map((v, i) => { const p = n.properties[i]; const t = ts.isPropertyAssignment(p) ? typeOf(p.initializer) : ts.isShorthandPropertyAssignment(p) ? typeOf(p.name) : ts.isMethodDeclaration(p) ? typeOf(p) : typeOf(p.expression); try { return dtype(t, p); } catch { return anyType(); } });
       const id = external(`lit_${mangle(rname)}_${hash(n.properties.map((p) => p.name ? p.name.getText(sf) : '...').join(','))}`, types, rname);
       return `${id}(${vals.join(', ')})`;
+    }
+    if (isDictD(rname) && isDictionary(checker, recT)) {
+      // a dictionary literal: each property created in source order (13.2.5.5), a spread copying the source's own
+      // keys in property order (CopyDataProperties); a repeated key keeps its place
+      const ix = stringIndex(recT);
+      const vt = ix ? ix.type : undefined;
+      let acc = emptyMap('string', rname.slice('OMap<string, '.length, -1));
+      for (const p of n.properties) {
+        if (ts.isSpreadAssignment(p)) { acc = `DictMerge(${acc}, ${outerParens(expr(p.expression))})`; continue; }
+        const keyCode = ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name) ? outerParens(expr(p.name.expression)) : strEsc(ts.isShorthandPropertyAssignment(p) ? p.name.text : ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf).replace(/^["']|["']$/g, ''));
+        const val = ts.isShorthandPropertyAssignment(p) ? expr(p.name, vt) : expr(p.initializer, vt);
+        acc = `DictPut(${acc}, ${keyCode}, ${outerParens(val)})`;
+      }
+      return acc;
     }
     if (rname.startsWith('map<')) {
       const ix = stringIndex(recT);
@@ -3021,7 +3069,8 @@ export function translate(file, fnName, opts = {}) {
       if ((hasMethods && !literalRecord(recvT)) || T.startsWith('Ext_') || !props.length || !checker.getPropertyOfType(recvT, name)) {
         // an opaque type, or a field reached through an index signature: an uninterpreted accessor of the DECLARED field
         // type (one declaration per accessor); a read narrowed by a guard takes `.value`
-        if (T.startsWith('map<')) { const found = `(if ${strEsc(name)} in ${recvCode} then Some(${recvCode}[${strEsc(name)}]) else None)`; return isAny(ft) && T.endsWith(', Any>') ? lowerOptionAny(found) : found; } // a missing key of an any-valued dictionary reads undefined, in Any
+        if (isDictD(T) && !isAny(ft) && !isOptional(ft) && !isNullish(ft)) { const M = member(recvCode, 'm'), V = dtype(ft, n); return `(if ${strEsc(name)} in ${M} then ${M}[${strEsc(name)}] else ${external(`absent_${V}`, [], V)}())`; } // a dictionary read typed without absence: a missing key reads the one absent value of V, as an index read does
+        if (T.startsWith('map<') || isDictD(T)) { const M = isDictD(T) ? member(recvCode, 'm') : recvCode; const found = `(if ${strEsc(name)} in ${M} then Some(${M}[${strEsc(name)}]) else None)`; return isAny(ft) && T.endsWith(', Any>') ? lowerOptionAny(found) : found; } // a missing key of an any-valued dictionary reads undefined, in Any
         const pr = checker.getPropertyOfType(recvT, name);
         const declared = pr ? checker.getTypeOfSymbolAtLocation(pr, pr.valueDeclaration ?? n) : ft;
         const dOpt = pr ? (isOptional(declared) || !!(pr.flags & ts.SymbolFlags.Optional)) : false;
@@ -3058,7 +3107,8 @@ export function translate(file, fnName, opts = {}) {
     const rt = baseOf(typeOf(e.expression));
     const ix = stringIndex(rt);
     if (!ix || checker.getPropertiesOfType(rt).length) return null;
-    return { map: expr(e.expression), key: expr(e.argumentExpression), valueType: ix.type };
+    const o = dictOperand(e.expression); // the ordered carrier keeps its entries in `m`
+    return { map: o ? member(o.code, 'm') : expr(e.expression), key: expr(e.argumentExpression), valueType: ix.type };
   }
   // an open key on a plain record is an uninterpreted lookup of the record value and the key, the same function on both
   // sides; it claims nothing about inherited members or undeclared names, so a changed record or key is never proved equal
@@ -3529,7 +3579,7 @@ export function translate(file, fnName, opts = {}) {
     { const ok = ownKeyTest(checker, n, sf); if (ok) { // the own-key test, exact on a dictionary (its key set) and on a record of required fields (its declared keys)
       if (ok.refuse) fail(n, ok.refuse);
       const key = expr(ok.key, typeOf(ok.key));
-      return ok.kind === 'dict' ? `(${key} in ${expr(ok.obj)})` : `(${key} in {${ok.keys.map(strEsc).join(', ')}})`;
+      return ok.kind === 'dict' ? `(${key} in ${dictCarrier(ok.obj) ? member(expr(ok.obj), 'm') : expr(ok.obj)})` : `(${key} in {${ok.keys.map(strEsc).join(', ')}})`;
     } }
     if (isNullCreate(n)) fail(n, 'prototype: `Object.create(null)` makes an object without a prototype; a plain object reads through Object.prototype and a dictionary is one map for both'); // the heap core's prototype bit (design/heap-stage4.md section 6) is the reading that would admit it
     if (ts.isIdentifier(f)) {
@@ -3658,6 +3708,8 @@ export function translate(file, fnName, opts = {}) {
       return externalCall(`JSON_stringify${schema.replace(/\|/g, '') ? '_absence_' + hash(schema) : ''}`, n, [...n.arguments]);
     }
     if (!awaited && ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(name)) {
+      const ordered = dictEnumeration(n, name); // a dictionary: its keys in property order, read from the carrier
+      if (ordered !== null) return ordered;
       const enumeration = recordEnumeration(n, name);
       if (enumeration !== null) return enumeration;
     }
@@ -4106,14 +4158,15 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isBinaryExpression(e) && ts.isElementAccessExpression(e.left) && ts.isIdentifier(e.left.expression)) {
       const arr = e.left.expression; const t = baseOf(typeOf(arr));
       const ix = !isArrayLike(checker, t) ? stringIndex(t) : null;
-      if (ix) { // a local dictionary: the map gains or replaces a key
+      if (ix) { // a local dictionary: the map gains or replaces a key, a new key taking its place in property order on the ordered carrier
         const pw = protoKeyWrite(checker, e.left.argumentExpression, e.right);
         if (pw === 'prototype') fail(e, 'prototype: a key that may be \'__proto__\' with an object or null value replaces the prototype');
-        const key = outerParens(expr(e.left.argumentExpression)), val = outerParens(expr(e.right, ix.type)), m = dn(arr.text);
-        if (pw === 'free') return [arr.text, `${m}[${key} := ${val}]`, arr];
+        const key = outerParens(expr(e.left.argumentExpression)), val = outerParens(expr(e.right, ix.type)), m = dn(arr.text), ordered = !!dictCarrier(arr);
+        const put = (k) => ordered ? `DictPut(${m}, ${k}, ${val})` : `${m}[${k} := ${val}]`;
+        if (pw === 'free') return [arr.text, put(key), arr];
         // a primitive written to '__proto__' of a dictionary without that own key reaches the setter of Object.prototype, which ignores it
         const pk = `pk${tempCount++}_`;
-        return [arr.text, `(var ${pk} := ${key}; if ${pk} == ${strEsc('__proto__')} && ${pk} !in ${m} then ${m} else ${m}[${pk} := ${val}])`, arr];
+        return [arr.text, `(var ${pk} := ${key}; if ${pk} == ${strEsc('__proto__')} && ${pk} !in ${m}${ordered ? '.m' : ''} then ${m} else ${put(pk)})`, arr];
       }
       if (!isArrayLike(checker, t)) fail(e, 'index assignment on a non-array');
       return [arr.text, `${dn(arr.text)}[${index(e.left.argumentExpression)} := ${outerParens(expr(e.right, checker.getTypeArguments(t)[0]))}]`, arr];
@@ -4163,8 +4216,10 @@ export function translate(file, fnName, opts = {}) {
       let tgt = e.expression; while (ts.isParenthesizedExpression(tgt)) tgt = tgt.expression;
       if (ts.isElementAccessExpression(tgt)) {
         const recv = tgt.expression; const key = outerParens(expr(tgt.argumentExpression));
-        if (isWorldField(recv)) { if (!unitEffectful()) fail(e, 'internal: a world field written in a pure method'); const d = isAny(typeOf(recv)) ? anyType() : dtype(typeOf(recv), recv); hoist(`${worldFieldAccessor(recv, 'set', [{ d }])}(${WORLD}, ${SELF}, ${expr(recv)} - {${key}})`, 'Unit'); return null; }
-        return pathUpdate(recv, (cur) => `${cur} - {${key}}`);
+        const ordered = !isAny(typeOf(recv)) && isDictionary(checker, baseOf(typeOf(recv))) && isDictD(dtype(typeOf(recv), recv)); // a dictionary: the key leaves its place in creation order
+        const drop = (cur) => (ordered ? `OMapDel(${cur}, ${key})` : `${cur} - {${key}}`);
+        if (isWorldField(recv)) { if (!unitEffectful()) fail(e, 'internal: a world field written in a pure method'); const d = isAny(typeOf(recv)) ? anyType() : dtype(typeOf(recv), recv); hoist(`${worldFieldAccessor(recv, 'set', [{ d }])}(${WORLD}, ${SELF}, ${drop(expr(recv))})`, 'Unit'); return null; }
+        return pathUpdate(recv, (cur) => drop(cur));
       }
       if (ts.isPropertyAccessExpression(tgt)) {
         if (tgt.expression.kind === K.ThisKeyword) fail(e, 'delete of a field of this is not translated; assign undefined');
@@ -4361,6 +4416,26 @@ export function translate(file, fnName, opts = {}) {
     };
     visit(node, facts);
     return ok && seen;
+  }
+  // `for (const [k, v] of Object.entries(d))` over a dictionary that the body never names: the entries are the keys in
+  // property order, each with the value it held at the call (20.1.2.6), and a body that never names d leaves every
+  // value as it was, so the loop is the for-in over d with each value read at its key: one loop text for both forms
+  function dictEntriesLoop(s) {
+    if (!ts.isForOfStatement(s) || s.awaitModifier) return null;
+    let e = s.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isCallExpression(e) || e.arguments.length !== 1 || !ts.isPropertyAccessExpression(e.expression) || !ts.isIdentifier(e.expression.expression) || e.expression.expression.text !== 'Object' || e.expression.name.text !== 'entries' || originOf(checker, e.expression.expression, sf, currentUnit?.node ?? null).kind !== 'global') return null;
+    const X = e.arguments[0];
+    if (!ts.isIdentifier(X) || !dictCarrier(X)) return null;
+    const o = originOf(checker, X, sf, currentUnit?.node ?? null);
+    if (o.kind !== 'local' || !o.sym) return null;
+    const init = s.initializer;
+    if (!ts.isVariableDeclarationList(init) || init.declarations.length !== 1) return null;
+    const pat = init.declarations[0].name;
+    if (!ts.isArrayBindingPattern(pat) || pat.elements.length !== 2 || !pat.elements.every((b) => ts.isBindingElement(b) && ts.isIdentifier(b.name) && !b.initializer && !b.dotDotDotToken)) return null;
+    let named = false;
+    const w = (x) => { if (ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === o.sym) named = true; if (!named) ts.forEachChild(x, w); };
+    w(s.statement);
+    return named ? null : { X, sym: o.sym, k: pat.elements[0].name, v: pat.elements[1].name, V: dictCarrier(X).slice('OMap<string, '.length, -1) };
   }
   function freeVars(node, skipNode, hoisted = null) {
     const out = [];
@@ -4828,6 +4903,8 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     };
     scan(u.fn);
     const free = freeVars(s, isOf ? s.expression : null, hoisted);
+    const entriesLoop = dictEntriesLoop(s); // the values are read from the dictionary itself, a const parameter of the helper
+    if (entriesLoop && !free.some((f) => f.name === entriesLoop.X.text)) free.push({ name: entriesLoop.X.text, sym: entriesLoop.sym, node: entriesLoop.X });
     for (const v of inScopeVars) if (hintWords.has(v.name) && !free.some((f) => f.name === v.name)) free.push(v);
     const freeTyped = free.filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }));
     free.length = 0; free.push(...freeTyped);
@@ -4851,7 +4928,9 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const x = s.initializer.declarations[0].name;
       const itT = baseOf(typeOf(s.expression));
       let T, src;
-      if (isIn) { const D = isAny(itT) ? anyType() : dtype(itT, s); T = 'string'; src = `${external('Object_keys', [D], 'seq<string>')}(${expr(s.expression)})`; } // the keys of the object, an uninterpreted sequence of the value (JavaScript's insertion order is a fact of the value)
+      if (entriesLoop) { T = 'string'; src = member(expr(entriesLoop.X), 'keys'); } // the for-in's keys
+      else if (isIn && dictCarrier(s.expression)) { T = 'string'; src = member(expr(s.expression), 'keys'); } // 14.7.5.9 EnumerateObjectProperties on a dictionary: its own keys in property order (a plain object's prototype has no enumerable key)
+      else if (isIn) { const D = isAny(itT) ? anyType() : dtype(itT, s); T = 'string'; src = `${external('Object_keys', [D], 'seq<string>')}(${expr(s.expression)})`; } // the keys of the object, an uninterpreted sequence of the value (JavaScript's insertion order is a fact of the value)
       else if (isAny(itT)) { T = anyType(); src = seqOf(s.expression); }
       else if (collectionIterator(s.expression)) { T = collectionIterator(s.expression).elem(s); src = seqOf(s.expression); } // `for (const k of m.keys())`: the carrier's sequence
       else if (isRecordish(itT)) { T = dtype(typeOf(x), x); const IT = dtype(itT, s); src = `${external(`${mangle(IT)}_to_seq`, [IT], `seq<${T}>`)}(${expr(s.expression)})`; }
@@ -4868,6 +4947,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       if (cb) requiresL.push(`forall k :: 0 <= k < |${sq}| ==> ${lambda(cb, 1)}(${sq}[k])`);
       exit = `${ix} >= |${sq}|`;
       bind = ts.isIdentifier(x) ? `var ${dn(x.text)}: ${T} := ${sq}[${ix}];\n` : destructure(x, `${sq}[${ix}]`, typeOf(x)).join('\n') + '\n';
+      if (entriesLoop) { const K = dn(entriesLoop.k.text), M = `${dn(entriesLoop.X.text)}.m`; bind = `var ${K}: string := ${sq}[${ix}];\nvar ${dn(entriesLoop.v.text)}: ${entriesLoop.V} := if ${K} in ${M} then ${M}[${K}] else ${external(`absent_${entriesLoop.V}`, [], entriesLoop.V)}();\n`; } // the binding a for-in body writes as \`const v = d[k]\`
       decreases = `|${sq}| - ${ix}`;
       if (s.__callback?.method === 'reduce') bind += `var ${dn(s.__callback.cb.parameters[0].name.text)} := ${dn(s.__collect.name)};\n`;
       else if (s.__callback?.cb.parameters.length === 2) bind += `var ${dn(s.__callback.cb.parameters[1].name.text)} := ${real ? `(${ix} as real)` : ix};\n`;

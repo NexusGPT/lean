@@ -464,6 +464,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (!proc && (!rt || !shapeOf(rt))) no(`return type: ${shapeWhy(rt)}`);
     if (proc && !ts.isBlock(u.body) && !calleeOf(unparen(u.body), u)) no('expression body of a procedure (only a same-file call)');
     if (!ok) return false;
+    // a record value where a dictionary is read (an initializer, an argument, a return, a field of a literal: the
+    // contextual type says so): its key order is the order its fields were created in, which a record cell does not
+    // hold, and a dictionary read of a record cell is empty; the unit stays in the ordinary lane (design/dict-order.md)
+    { const w = (x) => { if (!ok) return; if (ts.isExpression(x) && shapeOf(typeOf(x))?.kind === 'rec') { const ct = checker.getContextualType(x); if (ct && shapeOf(ct)?.kind === 'dict') return no('a record read as a dictionary'); } ts.forEachChild(x, w); }; if (u.body) w(u.body); }
+    if (!ok) return false;
     const declaredInside = (id) => { const s = checker.getSymbolAtLocation(id); const d = s?.valueDeclaration ?? s?.declarations?.[0]; return !!d && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end; };
     const checkExpr = (e0) => {
       if (!ok) return;
