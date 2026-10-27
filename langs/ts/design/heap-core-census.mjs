@@ -28,7 +28,7 @@ for (const name of Object.keys(baseline.perRepo).sort()) {
   repos.push({ name, roots: report.roots });
 }
 const K = ts.SyntaxKind;
-const coarse = (r) => r.replace(/^(calls|called by) .*, outside the core$/, '$1 a unit outside the core').replace(/^(parameter type|return type|value type|local type|receiver type|array literal type|object literal type): .*$/, '$1').replace(/^property \S+$/, 'property outside the shape').replace(/^operator .*$/, 'operator outside the core').replace(/^call \.\S+$/, 'method call').replace(/^(expression|statement|expression statement) \S+$/, '$1 outside the core');
+const coarse = (r) => r.replace(/^(calls|called by) .*, outside the core$/, '$1 a unit outside the core').replace(/^(parameter type|return type|value type|local type|receiver type|array literal type|object literal type): .*$/, '$1').replace(/^property \S+$/, 'property outside the shape').replace(/^operator .*$/, 'operator outside the core').replace(/^call \.\S+$/, 'method call').replace(/^class: field \S+: (.*)$/, 'class: field $1').replace(/^(expression|statement|expression statement) \S+$/, '$1 outside the core');
 const leaf = (r) => { const m = r.match(/: (.*)$/); if (!m) return null; const parts = m[1].split(': '); return parts[parts.length - 1].replace(/^array of /, ''); };
 const perRepo = {}, reasons = Object.create(null), leaves = Object.create(null), methodCalls = Object.create(null), sample = []; // null prototypes: a method named toString must not meet Object.prototype
 let files = 0, units = 0, core = 0, own = 0;
@@ -50,7 +50,7 @@ for (const repo of repos) {
       const order = [...fns.values()];
       // same-file call cycles: the translator gives those units fuel; the core leaves them out
       const calls = new Map(order.map((u) => [u.name, new Set()]));
-      for (const u of order) { const w = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text)) calls.get(u.name).add(n.expression.text); ts.forEachChild(n, w); }; w(u.body); }
+      for (const u of order) { const w = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text)) calls.get(u.name).add(n.expression.text); if (u.cls && ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.expression.kind === K.ThisKeyword && fns.has(`${u.className}.${n.expression.name.text}`)) calls.get(u.name).add(`${u.className}.${n.expression.name.text}`); ts.forEachChild(n, w); }; w(u.body); } // a method calling `this.m()` is an edge too (stage 4)
       const recursive = new Set();
       for (const u of order) { const seen = new Set(); const stack = [...calls.get(u.name)]; while (stack.length) { const c = stack.pop(); if (c === u.name) { recursive.add(u.name); break; } if (!seen.has(c)) { seen.add(c); for (const d of calls.get(c) ?? []) stack.push(d); } } }
       let heapT;
@@ -76,6 +76,6 @@ for (const repo of repos) {
   perRepo[repo.name] = row;
 }
 const sortDesc = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1]));
-const result = { census, resolve, layer1: { outsideCore: units - core, exposed: risky, notExposed: sound, byClass: sortDesc(risk), determinate, exposedDeterminate }, policy: `heap core as planned by translate/heap.mjs (stage 2): structural membership per unit, modules ${resolve ? 'resolved with each repository tsconfig' : 'unresolved'}; a count of units the core reads, not of proofs`, files, units, core, ownSyntaxFitsCallGraphExcludes: own, perRepo, firstReasonCoarse: sortDesc(reasons), typeLeaves: sortDesc(leaves), methodCalls: sortDesc(methodCalls), coreSample: sample, manifestSha256: createHash('sha256').update(JSON.stringify({ perRepo, reasons, leaves })).digest('hex') };
+const result = { census, resolve, layer1: { outsideCore: units - core, exposed: risky, notExposed: sound, byClass: sortDesc(risk), determinate, exposedDeterminate }, policy: `heap core as planned by translate/heap.mjs (stage 4): structural membership per unit, modules ${resolve ? 'resolved with each repository tsconfig' : 'unresolved'}; a count of units the core reads, not of proofs`, files, units, core, ownSyntaxFitsCallGraphExcludes: own, perRepo, firstReasonCoarse: sortDesc(reasons), typeLeaves: sortDesc(leaves), methodCalls: sortDesc(methodCalls), coreSample: sample, manifestSha256: createHash('sha256').update(JSON.stringify({ perRepo, reasons, leaves })).digest('hex') };
 fs.writeFileSync(output, JSON.stringify(result, null, 1) + '\n');
 console.log(JSON.stringify({ files, units, core, ownSyntaxFitsCallGraphExcludes: own, layer1: result.layer1, firstReasonCoarse: sortDesc(reasons) }, null, 1));

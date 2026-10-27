@@ -196,6 +196,8 @@ WITNESS   input 1   args: [{ items: [{ id: 347, tags: ["vhn02", "vk85x"] }], nam
 
 A `shift()` for a `splice(0, 1)` leaves the same reachable graph: `PASS-bounded` in lane B, and unproved under whole-heap equality because `splice` allocates the part it removed. That gap is named, and the canonical-heap certificate that closes it is on the list below.
 
+The heap core reads real code: a method of a class takes `this` as a reference to the record of its fields, so a write to `this.count` is a step on the same heap.
+
 ### 7. An exception that crosses a call
 
 ```ts
