@@ -37,7 +37,7 @@ const instantiate = (form, k, E, KT = null, k2 = null, E2 = null) => form.replac
 
 export const HW = 'hw_';
 
-export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null }) {
+export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '' }) {
   const TF = ts.TypeFlags, K = ts.SyntaxKind;
   const NUM = isReal ? 'real' : 'int';
   const shapes = new Map(); // key -> shape
@@ -159,10 +159,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (recursive.has(u.name)) no('recursive');
     if (!ts.isBlock(u.body)) no('expression body');
     if (!ok) return false;
-    const names = new Set(); let lambdaDepth = 0; let usesIndex = false;
+    const names = new Set(); let lambdaDepth = 0; let usesIndex = false; const loopCalls = new Set();
     // `a[i]` on an array path, `i` a number: the access is read through Idx_/SetIdx_ and marks the world when out of range
     const elementWhy = (e) => { if (lambdaDepth) return 'element access inside a callback'; if (e.questionDotToken) return 'element access form'; const s = shapeOf(typeOf(e.expression)); if (!s || s.kind !== 'arr') return 'element access of a non-array'; if (!(typeOf(e.argumentExpression).flags & TF.NumberLike)) return 'element index type'; if (isReal) return 'element index in a real file (a non-integer index reads a property, not an element)'; const a = unparen(e.argumentExpression); if (ts.isPrefixUnaryExpression(a) && a.operator === K.MinusToken) return 'negative element index (it reads a property, not an element)'; return null; };
-    for (const p of u.params) { if (!ts.isIdentifier(p.name) || p.name.text === 'this' || p.initializer || p.questionToken || p.dotDotDotToken) no('parameter form'); else if (!shapeOf(typeOf(p.name))) no(`parameter type: ${shapeWhy(typeOf(p.name))}`); else names.add(p.name.text); }
+    for (const p of u.params) { if (ts.isIdentifier(p.name) && /_$/.test(p.name.text)) no('name ending in an underscore (the generated names do)'); else if (!ts.isIdentifier(p.name) || p.name.text === 'this' || p.initializer || p.questionToken || p.dotDotDotToken) no('parameter form'); else if (!shapeOf(typeOf(p.name))) no(`parameter type: ${shapeWhy(typeOf(p.name))}`); else names.add(p.name.text); }
     const rt = checker.getSignatureFromDeclaration(u.fn)?.getReturnType();
     if (!rt || !shapeOf(rt)) no(`return type: ${shapeWhy(rt)}`);
     if (!ok) return false;
@@ -217,21 +217,50 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); return;
       }
       if (ts.isCallExpression(e)) return no(ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file');
-      if (ts.isElementAccessExpression(e)) { const why = elementWhy(e); if (why) return no(why); usesIndex = true; checkExpr(e.expression); return checkExpr(e.argumentExpression); }
+      if (ts.isElementAccessExpression(e)) { const why = elementWhy(e); if (why) return no(why); if (!safeIndex.has(e)) usesIndex = true; checkExpr(e.expression); return checkExpr(e.argumentExpression); }
       no(`expression ${K[e.kind]}`);
     };
     const checkTarget = (t0) => {
       const t = unparen(t0);
       if (ts.isIdentifier(t)) return checkExpr(t);
-      if (ts.isElementAccessExpression(t)) { const why = elementWhy(t); if (why) return no(why.replace('element access', 'element write')); usesIndex = true; checkExpr(t.expression); return checkExpr(t.argumentExpression); }
+      if (ts.isElementAccessExpression(t)) { const why = elementWhy(t); if (why) return no(why.replace('element access', 'element write')); if (!safeIndex.has(t)) usesIndex = true; checkExpr(t.expression); return checkExpr(t.argumentExpression); }
       if (ts.isPropertyAccessExpression(t)) { const s = shapeOf(typeOf(t.expression)); if (!s || s.kind !== 'rec' || !fieldOf(s, t.name.text)) return no('write target'); return checkExpr(t.expression); }
       no(ts.isElementAccessExpression(t) ? 'element write' : 'write target');
     };
-    const checkStmts = (list) => {
+    // a loop over an array: `for (const x of a)`, or `for (let i = 0; i < a.length; i++)` over an array name. Its body
+    // takes the core's statements and an `if` that does not return; nothing in it grows an array (the helper's measure
+    // is the length at entry), returns, breaks or continues. An element read a[i] of the index loop is in range by the
+    // guard when nothing in the body can shrink an array: it reads without the out-of-range mark (safeIndex).
+    const checkLoop = (s, outer) => {
+      const loop = outer ?? { calls: new Set() };
+      if (ts.isForOfStatement(s)) {
+        if (s.awaitModifier) return no('for await');
+        const dl = s.initializer; if (!ts.isVariableDeclarationList(dl) || dl.declarations.length !== 1 || !ts.isIdentifier(dl.declarations[0].name) || dl.declarations[0].initializer) return no('loop binding form');
+        const sh = shapeOf(typeOf(s.expression)); if (!sh || sh.kind !== 'arr') return no('for-of over a non-array');
+        const x = dl.declarations[0].name.text; if (names.has(x) || /_$/.test(x)) return no('name reused'); if (!shapeOf(typeOf(dl.declarations[0].name))) return no('loop element type');
+        if (bodyAssigns(s.statement, x)) return no('loop element assigned');
+        checkExpr(s.expression); names.add(x);
+      } else if (ts.isForStatement(s)) {
+        const f = indexLoop(s); if (!f) return no('loop form (for (let i = 0; i < a.length; i++) over an array name)');
+        if (isReal) return no('index loop in a real file');
+        if (names.has(f.i) || /_$/.test(f.i)) return no('name reused');
+        if (bodyAssigns(s.statement, f.i) || bodyAssigns(s.statement, f.a)) return no('loop index or array assigned in the body');
+        checkExpr(s.condition.right.expression); names.add(f.i);
+        let shrinks = false; const w = (n) => { if (ts.isCallExpression(n) && (calleeOf(n, u) || (ts.isPropertyAccessExpression(n.expression) && ['pop', 'shift', 'splice'].includes(n.expression.name.text)))) shrinks = true; ts.forEachChild(n, w); }; w(s.statement);
+        if (!shrinks) { const m = (n) => { if (ts.isElementAccessExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === f.a && ts.isIdentifier(n.argumentExpression) && n.argumentExpression.text === f.i) safeIndex.add(n); ts.forEachChild(n, m); }; m(s.statement); }
+      } else return no(`statement ${K[s.kind]}`);
+      checkStmts(block(s.statement), loop);
+      if (!outer) for (const c of loop.calls) loopCalls.add(c);
+    };
+    const checkStmts = (list, loop = null) => {
       for (let i = 0; i < list.length && ok; i++) {
         const s = list[i];
+        if (ts.isForOfStatement(s) || ts.isForStatement(s)) { checkLoop(s, loop); continue; }
+        if (loop && (ts.isReturnStatement(s) || ts.isBreakStatement(s) || ts.isContinueStatement(s))) return no(ts.isReturnStatement(s) ? 'return inside a loop' : 'break or continue');
+        if (loop && ts.isIfStatement(s)) { checkExpr(s.expression); checkStmts(block(s.thenStatement), loop); if (s.elseStatement) checkStmts(block(s.elseStatement), loop); continue; }
+        if (loop && ts.isExpressionStatement(s)) { const e = unparen(s.expression); if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (['push', 'unshift'].includes(e.expression.name.text) || (e.expression.name.text === 'splice' && e.arguments.length > 2)) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') return no('loop body grows an array'); const c = calleeOf(e, u); if (c) loop.calls.add(c); }
         if (ts.isVariableStatement(s)) {
-          for (const d of s.declarationList.declarations) { if (!ts.isIdentifier(d.name) || !d.initializer) return no('binding form'); if (d.name.text === HW || names.has(d.name.text)) return no('name reused'); if (!shapeOf(typeOf(d.name))) return no(`local type: ${shapeWhy(typeOf(d.name))}`); names.add(d.name.text); checkExpr(d.initializer); }
+          for (const d of s.declarationList.declarations) { if (!ts.isIdentifier(d.name) || !d.initializer) return no('binding form'); if (d.name.text === HW || names.has(d.name.text)) return no('name reused'); if (/_$/.test(d.name.text)) return no('name ending in an underscore (the generated names do)'); if (!shapeOf(typeOf(d.name))) return no(`local type: ${shapeWhy(typeOf(d.name))}`); names.add(d.name.text); checkExpr(d.initializer); }
           continue;
         }
         if (ts.isReturnStatement(s)) { if (!s.expression) return no('bare return'); if (i !== list.length - 1) return no('statement after return'); return checkExpr(s.expression); }
@@ -275,9 +304,27 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     checkStmts(body);
     if (!endsWithReturn(body)) no('path without return');
     if (ok && usesIndex) indexUnits.add(u.name);
+    if (ok && loopCalls.size) loopCallsOf.set(u.name, loopCalls);
     return ok;
   }
   const indexUnits = new Set(); // units that access an element themselves
+  const safeIndex = new WeakSet(); // element accesses a[i] of an index loop that the guard keeps in range
+  const loopCallsOf = new Map(); // unit -> the same-file units its loop bodies call
+  const bodyAssigns = (n, name) => { let hit = false; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(unparen(x.left)) && unparen(x.left).text === name) hit = true; if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [K.PlusPlusToken, K.MinusMinusToken].includes(x.operator) && ts.isIdentifier(unparen(x.operand)) && unparen(x.operand).text === name) hit = true; ts.forEachChild(x, w); }; w(n); return hit; };
+  // `for (let i = 0; i < a.length; i++)` (or `++i`, `i += 1`, `i = i + 1`) over an array name: { i, a }, else null
+  function indexLoop(s) {
+    const init = s.initializer; if (!init || !ts.isVariableDeclarationList(init) || !(init.flags & ts.NodeFlags.Let) || init.declarations.length !== 1) return null;
+    const d = init.declarations[0]; if (!ts.isIdentifier(d.name) || !d.initializer || !ts.isNumericLiteral(unparen(d.initializer)) || unparen(d.initializer).text !== '0') return null;
+    const i = d.name.text; const c = s.condition && unparen(s.condition);
+    if (!c || !ts.isBinaryExpression(c) || c.operatorToken.kind !== K.LessThanToken || !ts.isIdentifier(c.left) || c.left.text !== i || !ts.isPropertyAccessExpression(c.right) || c.right.name.text !== 'length' || !ts.isIdentifier(c.right.expression)) return null;
+    const sh = shapeOf(typeOf(c.right.expression)); if (!sh || sh.kind !== 'arr') return null;
+    const inc = s.incrementor && unparen(s.incrementor); if (!inc) return null;
+    const isI = (x) => ts.isIdentifier(unparen(x)) && unparen(x).text === i; const one = (x) => ts.isNumericLiteral(unparen(x)) && unparen(x).text === '1';
+    const ok = ((ts.isPostfixUnaryExpression(inc) || ts.isPrefixUnaryExpression(inc)) && inc.operator === K.PlusPlusToken && isI(inc.operand)) || (ts.isBinaryExpression(inc) && isI(inc.left) && ((inc.operatorToken.kind === K.PlusEqualsToken && one(inc.right)) || (inc.operatorToken.kind === K.EqualsToken && ts.isBinaryExpression(unparen(inc.right)) && unparen(inc.right).operatorToken.kind === K.PlusToken && isI(unparen(inc.right).left) && one(unparen(inc.right).right))));
+    return ok ? { i, a: c.right.expression.text } : null;
+  }
+  // a unit that may grow an array: a push, an unshift or an inserting splice in its text, or a call of one that may
+  const growsOwn = (u) => { let g = false; const w = (n) => { if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && (['push', 'unshift'].includes(n.expression.name.text) || (n.expression.name.text === 'splice' && n.arguments.length > 2))) g = true; ts.forEachChild(n, w); }; w(u.body); return g; };
   // why a type has no shape: the first offending part, for the census
   function shapeWhy(t) {
     if (!t) return 'none';
@@ -320,6 +367,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     for (const u of order) { const w = (n) => { if (ts.isPropertyAccessExpression(n) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression))[0]); const name = cd && `${cd.name.text}.${n.name.text}`; if (name && fns.has(name)) asValue.add(name); } if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && (ts.isFunctionDeclaration(n.parent) || ts.isVariableDeclaration(n.parent)) && n.parent.name === n)) asValue.add(n.text); ts.forEachChild(n, w); }; w(u.body); }
     for (const name of asValue) if (own.has(name)) { own.delete(name); whyNot.get(name)?.add('named as a value'); }
     const graph = new Map(order.map((u) => [u.name, callsOf(u)]));
+    const grows = new Set(order.filter(growsOwn).map((u) => u.name));
+    for (let more = true; more;) { more = false; for (const u of order) if (!grows.has(u.name) && [...graph.get(u.name)].some((c) => grows.has(c))) { grows.add(u.name); more = true; } }
+    for (const [name, cs] of loopCallsOf) if (own.has(name) && [...cs].some((c) => grows.has(c))) { own.delete(name); whyNot.get(name)?.add('a loop body calls a unit that may grow an array'); }
     let changed = true;
     while (changed) {
       changed = false;
@@ -376,6 +426,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           out.push(`function Oob_${k}(hw: HWorld, r: Ref, i: int): HWorld { if InRange_${k}(hw, r, i) then hw else hw.(oob := true) }`);
           out.push(`function Idx_${k}(hw: HWorld, r: Ref, i: int): ${E} { if InRange_${k}(hw, r, i) then hw.heap[r].items_${k}[i] else ${dflt(s.elem)} }`);
           out.push(`function SetIdx_${k}(hw: HWorld, r: Ref, i: int, v: ${E}): HWorld { if InRange_${k}(hw, r, i) then hw.(heap := hw.heap[r := ${k}(hw.heap[r].items_${k}[i := v])]) else hw.(oob := true) }`);
+          out.push(`function SetIdxIn_${k}(hw: HWorld, r: Ref, i: int, v: ${E}): HWorld { if InRange_${k}(hw, r, i) then hw.(heap := hw.heap[r := ${k}(hw.heap[r].items_${k}[i := v])]) else hw }`); // an index loop's own a[i] = v: in range by the loop's guard
         }
         for (const op of Object.values(ARRAY_ROWS)) { const row = LIB_ROW[op]; if (!row || row.status !== 'generated') throw new Error(`library table: ${op} has no generated form`); if ((op.endsWith('.splice') || op.endsWith('.slice')) && isReal) continue; out.push(instantiate(row.dafny, k, E)); } // the table's forms, per shape
         out.push(instantiate(LIBRARY.helpers['Rev_<K>'], k, E));
@@ -473,7 +524,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (s.kind === 'set') return `SetSize_${s.key}(${HW}, ${r})`;
         return `Get_${s.key}_${dn(e.name.text)}(${HW}, ${r})`;
       }
-      if (ts.isElementAccessExpression(e)) { const [s, r, i] = element(e); lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; } // the receiver, then the index, once each
+      if (ts.isElementAccessExpression(e)) { const [s, r, i] = element(e); if (!safeIndex.has(e)) lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; } // the receiver, then the index, once each; an index loop's own a[i] is in range by its guard
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && (e.expression.text === 'Map' || e.expression.text === 'Set')) { const s = shapeExpr(e); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${s.kind === 'map' ? '[], map[]' : '[]'});`); return r; }
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'Date') { const s = shapeExpr(e); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${expr(e.arguments[0])});`); return r; }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && shapeExpr(e.expression.expression)?.kind === 'date') { const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const g = e.expression.name.text; if (g === 'getTime' || g === 'valueOf') return `Get_${s.key}_tv(${HW}, ${r})`; dateGetters.add(g); return `DateUTC_${g}(Get_${s.key}_tv(${HW}, ${r}))`; }
@@ -539,16 +590,25 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     function target(t0) {
       const t = unparen(t0);
       if (ts.isIdentifier(t)) return { read: () => dn(t.text), write: (v) => lines.push(`var ${dn(t.text)} := ${v};`) };
-      if (ts.isElementAccessExpression(t)) { const [s, r, i] = element(t); return { read: () => { lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; }, write: (v) => lines.push(`var ${HW} := SetIdx_${s.key}(${HW}, ${r}, ${i}, ${v});`) }; }
+      if (ts.isElementAccessExpression(t)) { const [s, r, i] = element(t); const safe = safeIndex.has(t); return { read: () => { if (!safe) lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; }, write: (v) => lines.push(`var ${HW} := ${safe ? 'SetIdxIn' : 'SetIdx'}_${s.key}(${HW}, ${r}, ${i}, ${v});`) }; }
       const s = shapeExpr(t.expression); const r = bind(expr(t.expression), 'o');
       return { read: () => `Get_${s.key}_${dn(t.name.text)}(${HW}, ${r})`, write: (v) => lines.push(`var ${HW} := Set_${s.key}_${dn(t.name.text)}(${HW}, ${r}, ${v});`) };
     }
     const flush = () => lines.splice(0).join('\n');
     const indent = (t) => t.split('\n').map((l) => '  ' + l).join('\n');
-    function stmts(list) {
+    // a statement list. At the unit's level every path ends in a return; in a loop body (k given) nothing returns and
+    // every path ends in k(), the loop's next step, so an `if` carries the rest of the body into both branches
+    function stmts(list, k = null) {
       const out = [];
       for (let i = 0; i < list.length; i++) {
         const s = list[i];
+        if (ts.isForOfStatement(s) || ts.isForStatement(s)) { loopCall(s); out.push(flush()); continue; }
+        if (k && ts.isIfStatement(s)) {
+          const c = expr(s.expression); const pre = flush(); const rest = list.slice(i + 1);
+          const t = stmts([...block(s.thenStatement), ...rest], k), el = stmts([...(s.elseStatement ? block(s.elseStatement) : []), ...rest], k);
+          out.push(`${pre ? pre + '\n' : ''}if ${c} then\n${indent(t)}\nelse\n${indent(el)}`);
+          return out.filter(Boolean).join('\n');
+        }
         if (ts.isVariableStatement(s)) { for (const d of s.declarationList.declarations) { const v = expr(d.initializer); lines.push(`var ${dn(d.name.text)} := ${v};`); } out.push(flush()); continue; }
         if (ts.isReturnStatement(s)) { const v = expr(s.expression); const pre = flush(); out.push(`${pre ? pre + '\n' : ''}(${HW}, ${v})`); return out.filter(Boolean).join('\n'); }
         if (ts.isIfStatement(s)) {
@@ -563,7 +623,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           const op = e.operatorToken.kind;
           const tg = target(e.left);
           if (op === K.EqualsToken) { const v = expr(e.right); tg.write(v); }
-          else { const cur = fresh('v'); lines.push(`var ${cur} := ${tg.read()};`); const v = expr(e.right); tg.write(`(${cur} ${op === K.PlusEqualsToken ? '+' : '-'} ${v})`); }
+          else { let cur = tg.read(); if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(cur)) { const c = fresh('v'); lines.push(`var ${c} := ${cur};`); cur = c; } const v = expr(e.right); tg.write(`(${cur} ${op === K.PlusEqualsToken ? '+' : '-'} ${v})`); }
           out.push(flush()); continue;
         }
         if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['set', 'add', 'delete'].includes(e.expression.name.text) && ['map', 'set'].includes(shapeExpr(e.expression.expression)?.kind)) { // cell statements
@@ -584,13 +644,52 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (isAssignCall(e)) { const st = shapeExpr(e.arguments[0]); const t = expr(e.arguments[0]); const src = expr(e.arguments[1]); const d = fresh('d'); lines.push(`var (${HW}, ${d}) := Assign_${st.key}(${HW}, ${t}, ${src});`); out.push(flush()); continue; }
         expr(e); out.push(flush()); // a same-file call as a statement: its heap effect
       }
+      if (k) { out.push(k()); return out.filter(Boolean).join('\n'); }
       throw new Error('heap: a path ends without a return');
+    }
+    // a loop over an array is a recursive helper that threads the heap world: its counter, the length at entry (the
+    // measure; nothing in the body grows an array, so the guard on the current length decides), the locals the body
+    // assigns (returned, in name order), the names it reads; `for (const x of e)` evaluates e once, the index loop
+    // reads its array name. The helper is written beside the unit and named <unit>_loop<n>.
+    const helpers = []; let loopId = 0;
+    const base = suffix && fname(u.name).endsWith(suffix) ? fname(u.name).slice(0, -suffix.length) : fname(u.name);
+    function loopCall(s) {
+      const id = loopId++; const name = `${base}_loop${id}${suffix}`;
+      const forOf = ts.isForOfStatement(s); const ix = forOf ? null : indexLoop(s);
+      const sh = shapeExpr(forOf ? s.expression : s.condition.right.expression);
+      const arr = forOf ? bind(expr(s.expression), 'a') : dn(ix.a);
+      const declaredIn = (id0) => { const sym = checker.getSymbolAtLocation(id0); const d = sym?.valueDeclaration ?? sym?.declarations?.[0]; return d && d.getSourceFile() === sf ? d : null; };
+      const inner = (d) => d.pos >= s.pos && d.end <= s.end;
+      const assigned = new Set(), read = new Map(); let usesThis = false;
+      const w = (n) => {
+        if (n.kind === K.ThisKeyword) usesThis = true;
+        if (ts.isIdentifier(n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && ts.isPropertyAssignment(n.parent) && n.parent.name === n)) { const d = declaredIn(n); if (d && d.pos >= u.fn.pos && d.end <= u.fn.end && !inner(d) && (ts.isVariableDeclaration(d) || ts.isParameter(d))) read.set(n.text, d); }
+        if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(unparen(n.left))) assigned.add(unparen(n.left).text);
+        ts.forEachChild(n, w);
+      };
+      w(s.statement); if (!forOf) w(s.condition);
+      for (const x of [...assigned]) if (!read.has(x)) assigned.delete(x); // a local of the body itself is not carried
+      const carried = [...assigned].sort().map((x) => ({ x, d: valD(shapeOf(typeOf(read.get(x).name))) }));
+      const free = [...read.keys()].filter((x) => !assigned.has(x)).sort().map((x) => ({ x, d: valD(shapeOf(typeOf(read.get(x).name))) }));
+      const ctr = forOf ? `k${id}_` : dn(ix.i), n = `n${id}_`;
+      const params = [`${HW}: HWorld`, ...(forOf ? [`a${id}_: Ref`] : []), `${ctr}: int`, `${n}: int`, ...carried.map((c) => `${dn(c.x)}: ${c.d}`), ...(usesThis && u.cls ? [`${dn('this')}: Ref`] : []), ...free.map((f) => `${dn(f.x)}: ${f.d}`)];
+      const A = forOf ? `a${id}_` : arr;
+      const args = (cv, first) => [HW, ...(forOf ? [first ? arr : A] : []), cv, n, ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ');
+      const ret = carried.length ? `(HWorld, ${carried.map((c) => c.d).join(', ')})` : 'HWorld';
+      const done = carried.length ? `(${HW}, ${carried.map((c) => dn(c.x)).join(', ')})` : HW;
+      const saved = lines.splice(0);
+      const head = forOf ? `var ${dn(s.initializer.declarations[0].name.text)} := Idx_${sh.key}(${HW}, ${A}, ${ctr});` : '';
+      const bodyText = stmts(block(s.statement), () => `${name}(${args(`${ctr} + 1`, false)})`);
+      helpers.push([`function ${name}(${params.join(', ')}): ${ret}`, `  decreases ${n} - ${ctr}`, '{', `  if !(${ctr} < ${n} && ${ctr} < Len_${sh.key}(${HW}, ${A})) then ${done}`, '  else', indent(indent([head, bodyText].filter(Boolean).join('\n'))), '}'].join('\n'));
+      lines.push(...saved);
+      const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', `Len_${sh.key}(${HW}, ${arr})`, ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
+      lines.push(carried.length ? `var (${HW}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${HW} := ${call};`);
     }
     const body = stmts([...u.body.statements]);
     const self = u.cls ? instanceShape(u.cls, 0) : null; // an instance method's receiver: a reference to the record of its fields
     const params = [...(self ? [`${dn('this')}: Ref`] : []), ...u.params.map((p) => `${dn(p.name.text)}: ${valD(shapeOf(typeOf(p.name)))}`)];
     const hyp = [`WF(${HW})`, ...(self ? [`Is${self.key}(${HW}, ${dn('this')})`] : []), ...u.params.map((p) => { const s = shapeOf(typeOf(p.name)); return s.kind === 'prim' ? null : `Is${s.key}(${HW}, ${dn(p.name.text)})`; }).filter(Boolean)].join(' && ');
-    const text = [`function ${fname(u.name)}(${[`${HW}: HWorld`, ...params].join(', ')}): (HWorld, ${valD(rt)})`, '{', indent(body), '}'].join('\n');
+    const text = [...helpers.map((h) => `${h}\n`), `function ${fname(u.name)}(${[`${HW}: HWorld`, ...params].join(', ')}): (HWorld, ${valD(rt)})`, '{', indent(body), '}'].join('\n');
     return { text, hyp };
   }
   const shapeLegend = () => [...shapes.keys()].sort().map((k) => { const s = shapes.get(k); return `${k} = ${s.kind === 'arr' ? `[${keyOf(s.elem)}]` : s.kind === 'set' ? `Set<${keyOf(s.elem)}>` : s.kind === 'date' ? 'Date' : s.kind === 'map' ? `Map<${keyOf(s.k)}, ${keyOf(s.v)}>` : `{${s.fields.map((f) => `${f.name}: ${keyOf(f.shape)}`).join(', ')}}`}`; }).join('; ');

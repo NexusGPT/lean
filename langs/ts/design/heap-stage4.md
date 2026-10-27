@@ -41,3 +41,24 @@ Out: an index in a real file, a negative literal index, `?.[ ]`, an access insid
 Pair `heap_index`: `first`, `setFirst` under the length test (proved); `get` unchecked (unproved, PASS-bounded);
 `label` (`a[i] + ""` for `a[i]`, unproved, WITNESS at index -1); `bump` (WITNESS); `size` (proved).
 Reach: 94 -> 95 (element access was the first reason of 44 units; loops and other reasons hold the rest).
+
+## 3. Loops over arrays
+
+Reading: `for (const x of e)` and `for (let i = 0; i < a.length; i++)` (`++i`, `i += 1`, `i = i + 1`) over an array
+name are a helper `<unit>_loop<n>(hw_, [a], k, n, carried.., free..)` with `decreases n - k`: it stops when
+`!(k < n && k < Len(hw_, a))`, else binds `x := Idx_(hw_, a, k)` (for-of), runs the body and calls itself at `k + 1`.
+`n` is the length at entry; the carried locals (outer locals the body assigns) come back in name order; the names the
+body reads (and `this_`) are passed. The body takes the core's statements and an `if` that does not return (the rest
+of the body is carried into both branches). For-of evaluates its expression once; the index loop reads its array name.
+Soundness: JavaScript tests the current length each step; the helper tests it too, and the entry length `n` only
+bounds the recursion: nothing in a body grows an array (`push`, `unshift`, an inserting `splice`, a call of a unit
+that may), so the current length never exceeds `n` and the extra test is never the deciding one. The index and the
+array name are never assigned in the body. An index loop's own `a[i]`, in a body that cannot shrink an array (no
+`pop`, `shift`, `splice` or call), is in range by the guard: it reads and writes (`SetIdxIn_`) without the mark.
+Two different loop bodies are two recursive functions: their equality needs an induction the theorem does not write,
+so a refactor proves when the helper is the same text (aliased) applied to equal arguments.
+Out: `break`, `continue`, `return` in a loop, `for await`, other loop forms, a body that grows an array, an assigned
+loop element, an index loop in a real file. Names ending in an underscore leave the core (the generated ones do).
+Pair `heap_loops`: `total` (another body, WITNESS), `raise` (its step `1 + k` for `k + 1`, proved), `positives`
+(`n += 1` for `n = n + 1`, proved), `weight` (proved).
+Reach: 95 -> 95; the first reason `statement` falls 309 -> 164 and own-syntax fits kept out by the call graph rise 90 -> 95: a loop was rarely a unit's only blocker.
