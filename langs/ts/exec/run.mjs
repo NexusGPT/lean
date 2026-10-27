@@ -783,6 +783,7 @@ async function runPairOnce(opts) {
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
+  const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
   let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
   const mountSides = async (i) => { // a fresh environment per side for input i, the unit picked, the inputs drawn
     const sides = {};
@@ -833,6 +834,7 @@ async function runPairOnce(opts) {
       continue;
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
+    if (atGuard(oP, sides.parent) && atGuard(oC, sides.candidate)) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
       const held = heldTextOnly(oP, oC); // the sides differ only in a held function lean cannot read: its text is no difference lean can show on a run
@@ -840,7 +842,7 @@ async function runPairOnce(opts) {
       else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
     }
   }
-  const bound = { n, seed, ms, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  const bound = { n, seed, ms, reached, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (diffs.heldText && !diffs.length) bound.heldText = { inputs: diffs.heldText.length, first: diffs.heldText[0] }; // runPair turns a PASS into ASK naming the escape
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing' };
@@ -915,8 +917,39 @@ async function runPairOnce(opts) {
     bound.frontEnd.renders = `one, then every command sequence of up to ${sequenceDepth} clicks over at most ${sequenceBreadth} handlers per step, from a fresh mount, on ${Math.min(sequenceInputs, n)} inputs (${paths} paths); effects re-run by Object.is deps with cleanup first; unmount runs every cleanup`;
     bound.frontEnd.notObserved = 'committed DOM, computed styles, layout, pixels, accessibility tree; timers never fire; sequences beyond the depth';
   }
+  // no input got past a guard: the inputs drawn from the types all fell outside the domain the unit accepts (a table, a
+  // check the types do not state), so the bounded run sampled the refusal only and says nothing about the body
+  if (reached.body === 0 && reached.guard > 0) return { verdict: 'ASK', unreached: true, reason: `no input reached the body: every one of the ${reached.guard} inputs threw at a guard (first: ${thrownText(firstGuard)})`, unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
 }
+// an input stopped at a guard: the call threw at a guard's throw (guardThrow) having done nothing the observation sees, no
+// request of the environment, no pending work, no field of the receiver touched, its arguments as drawn; a throw after any
+// of these, an unconditional throw and a fault of the language (a read of undefined) reached the body
+function atGuard(o, side) {
+  if (!o.outcome || !Object.hasOwn(o.outcome, 'threw') || o.outcome.promise) return false;
+  if (o.trace.length || o.pending.length || Object.keys(o.receiver ?? {}).length) return false;
+  if (!guardThrow(o.site)) return false;
+  return JSON.stringify(renderDrawn(side.inputs)) === JSON.stringify(side.drawn);
+}
+// a guard's throw: the throw statement the run completed at sits in a branch of its own function (an if, a case of a
+// switch, a catch), so the function has a way past it; the site is the statement marker's (patch.mjs), the file read once
+const guardFiles = new Map();
+function guardThrow(site) {
+  if (!site || !site.file || typeof site.text !== 'string' || !/^throw\b/.test(site.text)) return false;
+  let sf = guardFiles.get(site.file);
+  if (sf === undefined) { try { sf = ts.createSourceFile(site.file, fs.readFileSync(site.file, 'utf8'), ts.ScriptTarget.Latest, true); } catch { sf = null; } guardFiles.set(site.file, sf); }
+  if (!sf) return false;
+  const line = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
+  let hit = null;
+  const walk = (n) => { if (hit) return; if (ts.isThrowStatement(n) && line(n.getStart(sf)) === site.start && line(n.end - 1) === site.end) { hit = n; return; } ts.forEachChild(n, walk); };
+  walk(sf);
+  for (let c = hit, p = hit?.parent; p && !ts.isFunctionLike(p) && !ts.isSourceFile(p); c = p, p = p.parent) {
+    if (ts.isIfStatement(p) && c !== p.expression) return true;
+    if (ts.isCaseClause(p) || ts.isDefaultClause(p) || ts.isCatchClause(p)) return true;
+  }
+  return false;
+}
+const thrownText = (t) => (t && typeof t === 'object' && typeof t.$error === 'string' ? `${t.$error}: ${t.message}` : JSON.stringify(t)).slice(0, 200);
 
 function siteLines(site) {
   if (!site) return null;
