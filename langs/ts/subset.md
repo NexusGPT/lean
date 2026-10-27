@@ -68,7 +68,7 @@ are carried by every candidate-only result. See [the design](design/new-units.md
 | Numbers | `toFixed`, `toString`, `toPrecision`, `toExponential` as uninterpreted functions of the number; `a ** b` as an uninterpreted power of both sides | `n.toFixed(2)` |
 | Record rest | `{ a, ...rest } = r` builds a datatype of remaining fields; fixed scalar records, static keys, no defaults, nonempty remainder | `const { a: ignored, ...rest } = r` |
 | Numeric spread | `Math.min`/`Math.max` fold every argument; nonemptiness follows from a scalar argument, literal element, or a sole array identifier spread in a direct `?:` length guard | `xs.length > 0 ? Math.max(...xs) : 0` |
-| Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with a finite union of declared data-field string keys (including `keyof`), or a string on a dictionary; `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
+| Records at work | `{ f: v }`, `{ ...r, f: v }`, `r.f`, `r["f"]`, `r[k]` with a finite union of declared data-field string keys (including `keyof`), or a string on a dictionary; `r[k]` with an open key (a string, a number, a template) on one plain record of data fields, an uninterpreted lookup of the record value and the key ([open-key-read](design/open-key-read.md)); `{ [k]: v, ...m }` when the literal is a dictionary; `delete r.f` on an optional field of a local or parameter record; `delete m[k]` on a dictionary | `{ ...a, balance: a.balance + n }` |
 | Record enumeration | `Object.keys/values/entries` on a plain immediate record literal or an enumeration-only const literal; integer-index keys first, then insertion order | `Object.keys({ b: 2, a: 1 })` is `["b", "a"]` |
 | Calls | top-level functions of the same file, recursion included (a fuel bounds the unfolding; the theorem holds for every fuel), default arguments (only undefined runs the initializer; nullable inputs retain Null), a function-typed parameter or local, a local lambda `const f = (x) => ...` | `double(double(x))` |
 | Generators | top-level pure scalar generators with finite counted loops; statement yield appends and yield* concatenates; direct for-of, spread and one-argument Array.from consume the sequence | `function* g(n: number) { yield n; yield n + 1; }` |
@@ -172,7 +172,7 @@ fallback. No initializer is executed or assumed by the proof lane.
 
 | Rule | Refused | Example that is refused |
 |---|---|---|
-| `dynamic-key` | record keys that are unrestricted strings, numbers, missing fields, method values or calls inside the key; optional/union receivers must first be narrowed | `r[k]` with `k: string` and `r: { a: number }` |
+| `dynamic-key` | open keys on a record holding a method or an accessor, on a class instance or a number-indexed receiver; symbol keys; missing fields; method values or calls inside the key; optional/union receivers must first be narrowed | `r[k]` with `k: string` and `r: { a: number; run(): number }` |
 | `index-assign` | dynamic writes to records | `r[k] = v` with `k: "a" \| "b"` |
 | `instanceof-constructor` | dynamic constructor expressions, constructor values and custom `Symbol.hasInstance` hooks | `x instanceof chooseConstructor()` |
 | `exception-callback` | throwing callbacks or throwing units passed as values outside an opaque try | `xs.map(throwingUnit)` |

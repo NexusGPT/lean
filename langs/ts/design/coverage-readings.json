@@ -109,7 +109,7 @@
   "faithful": "same"
  },
  "ElementAccessExpression": {
-  "today": "exact for literal and typed keys; a dynamic key refused (dynamic-key) outside the dynamic-record reading",
+  "today": "exact for literal and typed keys; an open key on a plain record of data fields an uninterpreted lookup (open-key-read); other dynamic keys refused (dynamic-key)",
   "faithful": "heap read by key"
  },
  "AsExpression": {
