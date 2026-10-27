@@ -421,6 +421,12 @@ for (const f of fs.readdirSync(path.join(here, 'fixtures/self-pair')).filter((x)
   const text = (r.stdout ?? '') + (r.stderr ?? ''); const pass = text.match(/^\S+ pass (\d+)$/m), fail = text.match(/^\S+ fail (\d+)$/m);
   add('repo', 'callees.test.mjs', 'node:test', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : text.trim().slice(-160));
 }
+// ----- what a unit reads off its inputs and compares against, on hand-written units (langs/ts/exec/usage.test.mjs, node:test) -----
+{
+  const r = run('node', ['--test', path.join(here, '../exec/usage.test.mjs')]);
+  const text = (r.stdout ?? '') + (r.stderr ?? ''); const pass = text.match(/^\S+ pass (\d+)$/m), fail = text.match(/^\S+ fail (\d+)$/m);
+  add('repo', 'usage.test.mjs', 'node:test', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : text.trim().slice(-160));
+}
 if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.join(root, 'langs/ts/conformance.json'))) {
   const c = run('python3', ['-I', 'conformance/run.py', 'ts']);
   const last = (c.stdout ?? '').trim().split('\n').pop();
