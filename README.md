@@ -16,7 +16,9 @@
 
 ---
 
-**lean is a differential equivalence checker for TypeScript.** Give it the old version and the new version of a function, and the scope of what was meant to change. It decides whether the two behave the same everywhere else: by proof when it can, by exhaustive exploration when the state is finite, by execution when it must, and it says which.
+**lean is a differential equivalence checker.** Give it the old version and the new version of a function, and the scope of what was meant to change. It decides whether the two behave the same everywhere else: by proof when it can, by exhaustive exploration when the state is finite, by execution when it must, and it says which.
+
+TypeScript is the first language. The core (the theorem, the checker, the certificate, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`, and merges when it passes the same conformance run. More languages are coming; Python is next.
 
 Every change to a program is a claim: *I changed this, and nothing else.* Tests sample that claim. Review guesses at it. lean checks it.
 
@@ -58,7 +60,7 @@ The verdict is the strongest statement the evidence supports. A bounded pass nev
 
 ## What it reads
 
-A function is inside the subset when every construct in it has a reading as mathematics. Then it gets a proof. Everything else still runs in lane B and gets a bounded verdict with the exact rule that stopped the proof. The reading words: **exact** (a Dafny value of the same meaning) · **transition** (a step of an explicit world) · **uninterpreted** (the same unknown on both sides) · **opaque** (one transition named by the block's text) · **refused** (named, with what to write instead).
+TypeScript today; each language fills its own table. A function is inside the subset when every construct in it has a reading as mathematics. Then it gets a proof. Everything else still runs in lane B and gets a bounded verdict with the exact rule that stopped the proof. The reading words: **exact** (a Dafny value of the same meaning) · **transition** (a step of an explicit world) · **uninterpreted** (the same unknown on both sides) · **opaque** (one transition named by the block's text) · **refused** (named, with what to write instead).
 
 | area | what lean reads today |
 |---|---|
@@ -310,7 +312,7 @@ On the board, in order:
 - **The table grows.** `Object.assign` and `sort` with a pure comparator as transitions; `Object.freeze`, `structuredClone`, Date cells.
 - **Heap enumeration in lane B.** Small heaps with sharing and cycles as inputs.
 - **Deep render and a hook table.** Same-package child components rendered one level down; the top library hooks as typed transitions.
-- **Python**, under `langs/py`, through the same conformance suite.
+- **More languages.** Python first, under `langs/py`, through the same conformance suite: the theorem, the verdicts and the certificate do not change; the lint, the translator and the harness are the language's.
 
 ## Repository layout
 
