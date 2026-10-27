@@ -100,3 +100,26 @@ Census (resolved, 39 roots), strict graph 339 -> 418, own syntax 794 -> 970; `cu
 ```text
 {"files":23359,"units":53918,"core":418,"heapOwnFit":970,"mirrorMismatch":828,"planErrorCount":0,"seconds":1269}
 ```
+
+## 5. String methods
+
+Reading: the string methods read exactly through the ordinary lane's helpers (`translate.mjs` `helper`, design
+`strings.md`, its BMP envelope: a character is a code unit): `s.length` is `|s|`; `trimStart`, `trimEnd`,
+`toLowerCase`, `toUpperCase` (ASCII exact, else a bodiless function of the whole string), `includes`, `indexOf`,
+`startsWith`, `endsWith` (an optional position clamped), `slice`, `substring`, `charAt`, `at`, `padStart`, `padEnd`,
+`replaceAll` with a literal pattern and a string replacement, `concat`; `split` by a literal separator allocates a
+fresh array of the pieces, `Alloc_A_string(hw_, StrSplit_string(s, sep))`. Stage 4's `trim` and `replace` stay
+bodiless. The heap translator receives the ordinary lane's `helper` (`makeHeap({ .., helper })`), so both lanes read
+one string operation with one Dafny function.
+Soundness: each helper is the ordinary lane's exact reading, verified there against its probes and Test262; a method
+on a primitive receiver reads no heap and runs no user code; `split` allocates in source order like a literal.
+Out: a regular expression or a function argument (step 6 reads the literal ones), a split limit, `lastIndexOf` (its
+helper carries a precondition, so the call site would carry a proof obligation), `repeat` (a negative count throws),
+the index methods in a real file (a fractional position is truncated), a `split` inside a callback (an allocation).
+Pair `heap5_strings`: `slug` (WITNESS), `words` (untouched, a split and its length), `isDraft` (`slice(0, 5) ===` for
+`startsWith`: proved), `short` (a slice for a guarded substring: proved), `hasTag` (`indexOf >= 0` for `includes`:
+proved). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 418 -> 487, own syntax 970 -> 1177; `curve.md` expects 465 after its step 5:
+```text
+{"files":23359,"units":53918,"core":487,"heapOwnFit":1177,"mirrorMismatch":1035,"planErrorCount":0,"seconds":1263}
+```

@@ -38,7 +38,7 @@ const instantiate = (form, k, E, KT = null, k2 = null, E2 = null) => form.replac
 export const HW = 'hw_';
 const OBJECT_PROTO = Object.getOwnPropertyNames(Object.prototype).sort(); // the keys `in` finds on an ordinary object it does not own
 
-export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '' }) {
+export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null }) {
   const TF = ts.TypeFlags, K = ts.SyntaxKind;
   const NUM = isReal ? 'real' : 'int';
   const shapes = new Map(); // key -> shape
@@ -176,6 +176,27 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (m === 'replace' && (recv.flags & TF.StringLike) && e.arguments.length === 2 && e.arguments.every(str)) return 'replace';
     if (m === 'join' && e.arguments.length <= 1 && e.arguments.every(str)) { const sh = shapeOf(recv); if (sh && sh.kind === 'arr' && sh.elem.kind === 'prim' && sh.elem.d !== 'bool') return 'join'; }
     return null; };
+  // the string methods read exactly through the ordinary lane's helpers (design/strings.md: the BMP envelope, so a
+  // character is a code unit): a pure function of the receiver and the arguments, each argument a string or a number
+  // as the method takes it. split of a literal separator allocates a fresh array of the pieces. Out: a regular
+  // expression or a function argument, a split limit, lastIndexOf (its helper carries a precondition), repeat (a
+  // negative count throws), the index methods in a real file (a fractional position is truncated).
+  const STR_METHODS = { trimStart: [0, 0], trimEnd: [0, 0], toLowerCase: [0, 0], toUpperCase: [0, 0], split: [1, 1], includes: [1, 2], indexOf: [1, 2], startsWith: [1, 2], endsWith: [1, 2], slice: [0, 2], substring: [1, 2], charAt: [1, 1], at: [1, 1], padStart: [1, 2], padEnd: [1, 2], replaceAll: [2, 2], concat: [1, 1] };
+  const strMethod = (e) => {
+    if (!helper || !ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.questionDotToken || e.expression.questionDotToken) return null;
+    const m = e.expression.name.text; if (!Object.hasOwn(STR_METHODS, m)) return null;
+    if (shapeOf(typeOf(e.expression.expression))?.kind !== 'prim' || shapeOf(typeOf(e.expression.expression)).d !== 'string') return null;
+    const [lo, hi] = STR_METHODS[m]; const a = e.arguments; if (a.length < lo || a.length > hi || a.some((x) => ts.isSpreadElement(x))) return null;
+    const str = (x) => shapeOf(typeOf(x))?.kind === 'prim' && shapeOf(typeOf(x)).d === 'string', num = (x) => shapeOf(typeOf(x))?.kind === 'prim' && shapeOf(typeOf(x)).d !== 'string' && shapeOf(typeOf(x)).d !== 'bool';
+    const lit = (x) => ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x);
+    if (m === 'split') return lit(a[0]) ? m : null;
+    if (m === 'replaceAll') return lit(a[0]) && str(a[1]) ? m : null;
+    if (m === 'concat') return str(a[0]) ? m : null;
+    if (['includes', 'indexOf', 'startsWith', 'endsWith'].includes(m)) return str(a[0]) && (!a[1] || num(a[1])) && !isReal ? m : null;
+    if (['slice', 'substring', 'charAt', 'at'].includes(m)) return a.every(num) && !isReal ? m : null;
+    if (m === 'padStart' || m === 'padEnd') return num(a[0]) && (!a[1] || str(a[1])) && !isReal ? m : null;
+    return a.length === 0 ? m : null;
+  };
   const strUsed = new Set();
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
   // an expression with no call, allocation or element access: it reads the heap and nothing else, so reading it eagerly is exact
@@ -231,6 +252,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isPropertyAccessExpression(e) && lambdaDepth && fieldOf(shapeOf(typeOf(e.expression)) ?? {}, e.name.text)?.shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') return no('a narrowed optional read inside a callback');
       if (ts.isPropertyAccessExpression(e)) {
         const s = shapeOf(typeOf(e.expression)); if (!s) return no(`receiver type: ${shapeWhy(typeOf(e.expression))}`);
+        if (s.kind === 'prim' && s.d === 'string' && e.name.text === 'length' && helper) return checkExpr(e.expression); // a string's length: its code units (the BMP envelope)
         if (s.kind === 'arr' ? e.name.text !== 'length' : (s.kind === 'map' || s.kind === 'set') ? e.name.text !== 'size' : !fieldOf(s, e.name.text)) return no(`property ${e.name.text}`);
         if (s.kind === 'rec' && fieldOf(s, e.name.text).shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') usesIndex = true; // a narrowed read: its lemma shows the value is there
         return checkExpr(e.expression);
@@ -272,6 +294,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return;
       }
       if (calleeOf(e, u)) { for (const a of e.arguments) checkExpr(a); return; }
+      if (strMethod(e)) { if (strMethod(e) === 'split' && lambdaDepth) return no('allocation inside a callback'); checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); return; } // a string method of the ordinary lane's exact readings
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['slice', 'concat', 'reverse', 'splice'].includes(e.expression.name.text)) { // the table's rows that yield a reference: a fresh array (slice, concat, splice) or the receiver (reverse)
         const m = e.expression.name.text; const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${m} of a non-array`);
         if ((m === 'slice' || m === 'splice') && isReal) return no(`${m} index in a real file`);
@@ -458,7 +481,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       for (const p of u.params) register(shapeOf(typeOf(p.name)));
       if (u.cls) register(instanceShape(u.cls, 0));
       register(shapeOf(checker.getSignatureFromDeclaration(u.fn).getReturnType()));
-      const w = (n) => { if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
+      const w = (n) => { if (strMethod(n) === 'split') register(shapeOf(typeOf(n))); if (ts.isArrayLiteralExpression(n)) register(arrShape(n)); else if (ts.isIdentifier(n) || ts.isPropertyAccessExpression(n)) register(shapeOf(typeOf(n))); if (ts.isObjectLiteralExpression(n)) register(litShape(n)); ts.forEachChild(n, w); };
       w(u.body);
     }
     return core;
@@ -644,6 +667,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isPropertyAccessExpression(e)) {
         const s = shapeExpr(e.expression);
         const r = expr(e.expression);
+        if (s.kind === 'prim' && s.d === 'string') return isReal ? `(|${r}| as real)` : `|${r}|`; // the code units of a BMP string
         if (s.kind === 'arr') return `Len_${s.key}(${HW}, ${r})`;
         if (s.kind === 'map') return `MapSize_${s.key}(${HW}, ${r})`;
         if (s.kind === 'set') return `SetSize_${s.key}(${HW}, ${r})`;
@@ -708,6 +732,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const ps = fns.get(callee).params; const args = ps.map((p, j) => { const sh = shapeOf(typeOf(p.name)); return e.arguments[j] ? exprAs(e.arguments[j], sh) : `Option<${sh.inner.d}>.None`; }); // an argument not passed is undefined
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(callee)}(${[HW, ...recv, ...args].join(', ')});`); return r;
       }
+      if (strMethod(e)) return strEmit(e);
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['slice', 'concat', 'reverse', 'splice'].includes(e.expression.name.text)) {
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression);
         return libCall(e, s, r);
@@ -717,6 +742,33 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (sc === 'trim') return `StrTrim(${r})`; if (sc === 'replace') return `StrReplace(${r}, ${a[0]}, ${a[1]})`;
         const sh = shapeExpr(e.expression.expression); return `${sh.elem.d === 'string' ? 'JoinStr' : `JoinNum_${sh.elem.d}`}(Items_${sh.key}(${HW}, ${r}), ${a[0] ?? '","'})`; } // join() joins with a comma
       throw new Error(`heap: unsupported expression ${e.getText(sf)}`);
+    }
+    // a string method through the ordinary lane's exact helper: the receiver, then the arguments, once each, in order
+    function strEmit(e) {
+      const m = strMethod(e); const S = bind(expr(e.expression.expression), 's'); const a = e.arguments.map((x) => bind(expr(x), 'g'));
+      const h = (k) => helper(k, ['string']);
+      switch (m) {
+        case 'trimStart': return `${h('TrimStart')}(${S})`;
+        case 'trimEnd': return `${h('TrimEnd')}(${S})`;
+        case 'toLowerCase': return `${h('Lower')}(${S})`;
+        case 'toUpperCase': return `${h('Upper')}(${S})`;
+        case 'split': { const sh = shapeOf(typeOf(e)); const out = fresh('r'); lines.push(`var (${HW}, ${out}) := Alloc_${sh.key}(${HW}, ${h('StrSplit')}(${S}, ${a[0]}));`); return out; } // a fresh array of the pieces
+        case 'includes': case 'indexOf': case 'startsWith': case 'endsWith': {
+          const P = `${helper('StrClamp', ['int'])}(${a[1] ?? (m === 'endsWith' ? `|${S}|` : '0')}, |${S}|)`;
+          if (m === 'endsWith') return `${h('StrEnds')}(${S}, ${a[0]}, ${P})`;
+          if (m === 'startsWith') return `(var pp_ := ${P}; pp_ + |${a[0]}| <= |${S}| && ${S}[pp_..pp_ + |${a[0]}|] == ${a[0]})`;
+          const search = `${h('StrFind')}(${S}, ${a[0]}, ${P})`; return m === 'includes' ? `(${search} >= 0)` : search;
+        }
+        case 'slice': return `${helper('Slice', ['char'])}(${S}, ${a[0] ?? '0'}, ${a[1] ?? `|${S}|`})`;
+        case 'substring': return `${h('StrSubstring')}(${S}, ${a[0]}, ${a[1] ?? `|${S}|`})`;
+        case 'charAt': return `${h('StrCharAt')}(${S}, ${a[0]})`;
+        case 'at': return `${h('StrAt')}(${S}, ${a[0]})`;
+        case 'padStart': return `${h('PadStart')}(${S}, ${a[0]}, ${a[1] ?? '" "'})`;
+        case 'padEnd': return `${h('PadEnd')}(${S}, ${a[0]}, ${a[1] ?? '" "'})`;
+        case 'replaceAll': return `${h('StrReplace')}(${S}, ${a[0]}, ${a[1]}, 0, true)`;
+        case 'concat': return `(${S} + ${a[0]})`;
+      }
+      throw new Error(`heap: no string reading for .${m}`);
     }
     // a call of a table row that yields a reference: Slice_/Concat_/Splice_ allocate (a fresh ref), Reverse_ returns the receiver
     function libCall(e, s, r) {

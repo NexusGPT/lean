@@ -643,7 +643,7 @@ for (const repo of repos) {
       const recursive = new Set();
       for (const u of order) { const seen = new Set(); const stack = [...calls.get(u.name)]; while (stack.length) { const c = stack.pop(); if (c === u.name) { recursive.add(u.name); break; } if (!seen.has(c)) { seen.add(c); for (const d of calls.get(c) ?? []) stack.push(d); } } }
       let heapT;
-      try { heapT = makeHeap({ ts, checker, sf, fns, dn: (x) => x, fname: (x) => x, isReal: false, recursive }); heapT.plan(order); }
+      try { heapT = makeHeap({ ts, checker, sf, fns, dn: (x) => x, fname: (x) => x, isReal: false, recursive, helper: (k) => k }); heapT.plan(order); } // helper: the translator's exact helpers by name (the core reads string methods through them); the census emits nothing, a name is enough
       catch (e) { planErrors.push(`${file}: ${String(e.message).slice(0, 120)}`); row.planErrorFiles++; continue; }
       const mirror = makeMirror({ checker, sf, fns, recursive, file });
       // the core's call graph: same-file calls (callsOf in heap.mjs) and units named as a value
