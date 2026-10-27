@@ -12,7 +12,7 @@ import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ts } from '../common.mjs';
-import { restsOf, restsClosure, provedLemma, commentAdapters } from '../check.mjs';
+import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore } from '../check.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -206,15 +206,8 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   }
   if (!exp.laneBOnly) { // a pair whose units lane A refuses by design (closures over mutable cells) checks lane B alone
   const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...(exp.heap !== false ? ['--heap'] : []), ...extra]);
-  const headerOf = (which, key) => fs.readFileSync(path.join(tmpd, `${which}.dfy`), 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm'))?.[1] ?? '';
-  const p1 = tr('parent', []);
-  const eff = p1.status === 0 ? headerOf('parent', 'EFFECTFUL') : '';
-  const hp = p1.status === 0 && exp.heap !== false ? headerOf('parent', 'HEAP') : '';
-  const heapArgs = (units) => (exp.heap !== false ? ['--heap-units', units || '-'] : []); // the heap core agreed on both sides: a unit in the core on one side only would change its signature
-  const c1 = tr('candidate', [...(eff ? ['--effectful', eff] : []), ...heapArgs(hp)]);
-  const eff2 = c1.status === 0 ? headerOf('candidate', 'EFFECTFUL') : '';
-  const hc = c1.status === 0 && exp.heap !== false ? headerOf('candidate', 'HEAP') : '';
-  if (eff2 !== eff || hc !== hp) tr('parent', [...(eff2 ? ['--effectful', eff2] : []), ...heapArgs(hc)]);
+  // the heap core agreed on the units both sides hold (check.mjs agreeCore): a unit in the core on one side only would change its signature; a unit one side holds alone (a callee inlined away) takes its own side's core
+  agreeCore({ files: { parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate') }, dfyOf: (which) => path.join(tmpd, `${which}.dfy`), heap: exp.heap !== false, tr: (which, eff, units) => tr(which, [...(eff ? ['--effectful', eff] : []), ...(units !== undefined ? ['--heap-units', units || '-'] : [])]) });
   const adapters = typeof exp.adapters === 'string' ? JSON.parse(fs.readFileSync(path.join(d, exp.adapters), 'utf8')).adapters : exp.adapters; // a changed signature proves through the adapter the pair's scope file declares, the comment door included (check.mjs reads it from the candidate)
   const commentDoor = commentAdapters(pairFile(d, 'candidate'));
   const allAdapters = { ...commentDoor, ...(adapters ?? {}) };

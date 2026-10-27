@@ -57,16 +57,12 @@ export async function check(opts) {
   const rung = () => (adapter ? 'ASK' : (b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK'); // what lane B alone supports; under an adapter it compared raw inputs, so nothing
   // ---- lane A ----
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-check-'));
-  // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature
+  // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature (agreeCore: on the units both translations hold)
   const tr = (file, suffix, eff, heapUnits) => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', unit, '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000);
   const headerOf = (suffix, key) => { const p = path.join(tmp, `${suffix}.dfy`); if (!fs.existsSync(p)) return ''; const m = fs.readFileSync(p, 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm')); return m ? m[1].trim() : ''; };
-  const effOf = (suffix) => headerOf(suffix, 'EFFECTFUL');
   const heapOf = (suffix) => headerOf(suffix, 'HEAP');
-  const p1 = tr(parent, 'parent', '', undefined);
-  if (p1.status !== 0) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: 'translate-parent', detail: p1.out.trim().slice(-600) }; return finish(rung(), cert, {}); }
-  const c1 = tr(candidate, 'candidate', effOf('parent'), heapOf('parent'));
-  if (c1.status !== 0) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: 'translate-candidate', detail: c1.out.trim().slice(-600) }; return finish(rung(), cert, {}); }
-  if (effOf('candidate') !== effOf('parent') || heapOf('candidate') !== heapOf('parent')) tr(parent, 'parent', effOf('candidate'), heapOf('candidate'));
+  const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
+  if (agreed.failed) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: `translate-${agreed.failed}`, detail: agreed.run.out.trim().slice(-600) }; return finish(rung(), cert, {}); }
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
   const names = [...new Set([...cand.matchAll(/\bfunction\s+([A-Za-z0-9_]+)_candidate\s*\(/g)].map((m) => m[1]))].filter((x) => !/_loop\d+$/.test(x));
   // the scope of the translated units (the unit and its same-file callees): a scope file names the file's units, and those
@@ -146,6 +142,48 @@ export function provedLemma(k, clean, rests) {
   return true;
 }
 export function restsClosure(rests, start) { const seen = new Set(), todo = [start]; while (todo.length) for (const g of rests[todo.pop()] ?? []) if (!seen.has(g)) { seen.add(g); todo.push(g); } seen.delete(start); return [...seen]; }
+
+// the heap core agreed between the two sides (references, layer 2). Whether a unit is in the core changes its Dafny
+// signature, so a unit BOTH translations hold is in the core on both sides or on neither: the theorem compares exactly
+// those units. A unit one side holds alone (a callee the candidate inlined away, a helper only one version calls) has
+// no counterpart and no lemma; inside its own side the core is closed under calls (heap.mjs plan: a core unit calls core
+// units only), so it takes the core when its own side puts it there, and its callers read its body as written. The
+// shared units' core is the intersection of the two sides' cores, narrowed until both translations agree on it: each
+// narrowing removes a unit, so the rounds end. EFFECTFUL keeps its own agreement (the candidate takes the parent's list,
+// the parent then the candidate's). tr(side, eff, units|undefined) translates one side ('parent' | 'candidate') to
+// dfyOf(side); with heap false no --heap-units is passed. Returns { failed, run } when a translation fails, else the
+// two sides read: { parent: {eff, heap, held}, candidate: {...}, agreed: bool }.
+export function agreeCore({ files, dfyOf, tr, heap = true }) {
+  const fileUnits = (f) => { try { return [...topLevelFunctions(loadProgram(f, { project: false }).sf).keys()]; } catch { return []; } };
+  const units = { parent: fileUnits(files.parent), candidate: fileUnits(files.candidate) };
+  const read = (side) => {
+    const text = fs.existsSync(dfyOf(side)) ? fs.readFileSync(dfyOf(side), 'utf8') : '';
+    const hdr = (key) => (text.match(new RegExp(`^// ${key}: (.*)$`, 'm')) ?? [])[1]?.trim() ?? '';
+    const defined = new Set([...text.matchAll(/^\/\/ CELLS ([A-Za-z0-9_]+): /gm)].map((m) => m[1])); // every unit the translation emitted has its CELLS line (written once the unit is read)
+    return { eff: hdr('EFFECTFUL'), heap: hdr('HEAP').split(',').filter(Boolean), held: new Set(units[side].filter((u) => { const x = snake(u).replace(/[^A-Za-z0-9_]/g, '_').replace(/^_/, 'u_'); return defined.has(`${x}_${side}`) || defined.has(`${x}__${side}`); })) }; // the unit's Dafny name as the translator writes it (a Dafny keyword takes a trailing underscore)
+  };
+  const list = (xs) => (heap ? [...new Set(xs)].sort().join(',') : undefined);
+  const p1 = tr('parent', '', undefined);
+  if (p1.status !== 0) return { failed: 'parent', run: p1 };
+  let P = read('parent');
+  // the candidate may put in its core what the parent put there, and any unit the parent's translation does not hold
+  const c1 = tr('candidate', P.eff, list([...P.heap, ...units.candidate.filter((u) => !P.held.has(u))]));
+  if (c1.status !== 0) return { failed: 'candidate', run: c1 };
+  let C = read('candidate');
+  const agree = () => { const shared = (u) => P.held.has(u) && C.held.has(u); const a = P.heap.filter(shared).sort(), b = C.heap.filter(shared).sort(); return { same: a.join(',') === b.join(','), both: a.filter((u) => b.includes(u)), shared }; };
+  const narrowed = (X, both, shared) => list([...both, ...X.heap.filter((u) => !shared(u))]);
+  let g = agree();
+  if (C.eff !== P.eff || (heap && !g.same)) {
+    const r = tr('parent', C.eff, narrowed(P, g.both, g.shared)); if (r.status !== 0) return { failed: 'parent', run: r };
+    P = read('parent');
+    for (let rounds = P.held.size + 1; heap && rounds > 0 && !(g = agree()).same; rounds--) { // a shared unit the narrowed side dropped: narrow the other side, and so on
+      const side = C.heap.filter(g.shared).length > g.both.length ? 'candidate' : 'parent';
+      const r2 = tr(side, side === 'parent' ? C.eff : P.eff, narrowed(side === 'parent' ? P : C, g.both, g.shared)); if (r2.status !== 0) return { failed: side, run: r2 };
+      if (side === 'parent') P = read('parent'); else C = read('candidate');
+    }
+  }
+  return { parent: P, candidate: C, agreed: !heap || agree().same };
+}
 
 // the comment door of an adapter: `// lean-adapter {"from": [...], "to": [...], "map": [...]}` in the comments just above a
 // candidate function (a top-level function, an arrow const, a class method). Keys are the Dafny names the theorem uses.

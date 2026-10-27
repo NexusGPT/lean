@@ -1,0 +1,22 @@
+{
+ "scope": [
+  "rename",
+  "visit",
+  "name_of",
+  "counter_tick"
+ ],
+ "equal": {
+  "rename": true,
+  "visit": false,
+  "name_of": true,
+  "counter_tick": true
+ },
+ "why": "the candidate inlines both same-file helpers and defines neither: the heap core is agreed on the units both sides hold (rename, visit, nameOf, Counter.tick), and each helper takes the core on the parent side alone, where its caller calls it; rename inlines setName's write unchanged (proved), visit inlines bump with a step of 2 for 1 (not proved, WITNESS), nameOf is untouched (proved); Counter.tick inlines the method advance, which the candidate no longer defines (proved)",
+ "b": {
+  "rename": "PASS-bounded",
+  "visit": "WITNESS",
+  "nameOf": "PASS-bounded",
+  "Counter.tick": "PASS-bounded"
+ },
+ "heap": true
+}
