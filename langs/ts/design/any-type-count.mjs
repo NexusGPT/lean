@@ -41,7 +41,15 @@ function anyDecls(sf, checker) {
     else if ((ts.isPropertyDeclaration(n) || ts.isPropertySignature(n)) && n.name && !ts.isComputedPropertyName(n.name)) kind = ts.isPropertySignature(n) ? 'member' : 'field';
     if (kind && n.name) {
       let t = null; try { t = checker.getTypeAtLocation(n.name); } catch { t = null; }
-      if (t && t.flags & (TF.Any | TF.Unknown) && !(kind === 'member' && !(t.flags & TF.Any))) { const at = n.name.getStart(sf); out.push({ kind, line: lineOf(sf, at), col: colOf(sf, at), name: n.name.getText(sf).slice(0, 40) }); }
+      if (t && t.flags & (TF.Any | TF.Unknown) && !(kind === 'member' && !(t.flags & TF.Any))) {
+        const at = n.name.getStart(sf);
+        // a bound name is covered by a finding at any pattern it belongs to (the pattern's proposal is a record of it)
+        const cover = [];
+        for (let p = n.parent; p && (ts.isObjectBindingPattern(p) || ts.isArrayBindingPattern(p) || ts.isBindingElement(p) || ts.isVariableDeclaration(p) || ts.isParameter(p)); p = p.parent) {
+          if (p.name && (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name))) { const q = p.name.getStart(sf); cover.push(`${lineOf(sf, q)}:${colOf(sf, q)}`); }
+        }
+        out.push({ kind, line: lineOf(sf, at), col: colOf(sf, at), name: n.name.getText(sf).slice(0, 40), cover });
+      }
     }
     ts.forEachChild(n, w);
   };
@@ -70,7 +78,7 @@ for (const loaded of loadManyChunks(files, { log: (m) => console.error(m) })) fo
   }
   for (const x of skipped) owned[x.reason] = (owned[x.reason] ?? 0) + 1;
   const marked = new Set([...fs_.filter((f) => f.rule === 'any-type').map((f) => `${f.line}:${f.col}`), ...skipped.map((x) => `${x.line}:${x.col}`)]);
-  for (const d of anyDecls(L.sf, L.checker)) if (!marked.has(`${d.line}:${d.col}`)) { gaps[d.kind] = (gaps[d.kind] ?? 0) + 1; if (gapSamples.length < 20) gapSamples.push(`${path.relative(root, abs)}:${d.line}:${d.col} ${d.kind} ${d.name}`); }
+  for (const d of anyDecls(L.sf, L.checker)) if (!marked.has(`${d.line}:${d.col}`) && !d.cover.some((k) => marked.has(k))) { gaps[d.kind] = (gaps[d.kind] ?? 0) + 1; if (gapSamples.length < 20) gapSamples.push(`${path.relative(root, abs)}:${d.line}:${d.col} ${d.kind} ${d.name}`); }
   if (linted % 200 === 0) console.error(`${linted} files, ${n} any-type findings, ${Math.round((Date.now() - t0) / 1000)} s`);
 }
 const top = [...proposals.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1)).slice(0, 10).map(([type, count]) => ({ type, count }));

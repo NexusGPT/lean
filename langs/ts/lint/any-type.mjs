@@ -62,6 +62,7 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     const w = (n) => {
       if (hit) return;
       if (ts.isTypeReferenceNode(n) && !symOf(n.typeName)) { hit = true; return; } // a type name nothing declares
+      if (ts.isCallExpression(n) && n.expression.kind === K.ImportKeyword && n.arguments[0] && !symOf(n.arguments[0])) { hit = true; return; } // `import("x")` of a module the project cannot resolve
       if (ts.isIdentifier(n)) {
         const s = symOf(n);
         if (s && env.has(s)) { hit = true; return; }
@@ -218,6 +219,8 @@ export function anyTypeFindings(sf, checker, { file, ranges = null, unitSpans = 
     let text = parts.length ? parts.join(' | ') : 'unknown';
     if (parts.length > 1 && parts.some((p) => p.includes('=>'))) text = parts.map((p) => (p.includes('=>') ? `(${p})` : p)).join(' | ');
     if (text !== 'unknown') {
+      const absent = n.compares.includes(null) || n.compares.some(isUndef) || (n.truthy && !ks.has('boolean'));
+      if (absent && parts.length === 1 && text.includes('=>')) text = `(${text})`; // `(() => T) | undefined`, never `() => T | undefined`
       if (n.compares.includes(null)) text += ' | null';
       if (n.compares.some(isUndef) || (n.truthy && !ks.has('boolean'))) text += ' | undefined';
     }
