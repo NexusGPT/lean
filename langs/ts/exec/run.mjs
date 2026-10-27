@@ -32,7 +32,7 @@ import { witnessPatch, statementMarks } from '../patch.mjs';
 import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
 import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
-import { stylesLayer } from './styles.mjs';
+import { stylesLayer, projectConfig } from './styles.mjs';
 import { contextRow } from '../hooks.mjs';
 
 const require = createRequire(import.meta.url);
@@ -769,7 +769,7 @@ export function inputPlan(parent, candidate, unit, { project = true, seed = 1 } 
 async function runPairOnce(opts) {
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
   deepMode.depth = deepDepth(deep); deepLog.rendered.clear(); deepLog.handles.clear(); deepLog.contexts.clear();
-  const styles = stylesLayer(); let treeDone = false; // the styles layer reads every input both sides rendered, past the tree layer's witnesses too
+  const styles = stylesLayer({ parent: projectConfig(parent), candidate: projectConfig(candidate) }); let treeDone = false; // the styles layer reads every input both sides rendered, past the tree layer's witnesses too; each side's classes under its own project's Tailwind configuration (the nearest tailwind.config.* or CSS entry, exec/styles.mjs projectConfig)
   // a missing parent unit has no equality question
   if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
     return runNew(opts);
