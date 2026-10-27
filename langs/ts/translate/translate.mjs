@@ -51,7 +51,7 @@ const RESERVED = new Set(['abstract', 'allocated', 'as', 'assert', 'assume', 'bo
   'ghost', 'if', 'import', 'in', 'include', 'inductive', 'int', 'invariant', 'is', 'iterator', 'label', 'lemma', 'map', 'match', 'method', 'modifies',
   'modify', 'module', 'multiset', 'nameonly', 'nat', 'new', 'newtype', 'null', 'object', 'old', 'opaque', 'predicate', 'print', 'provides', 'reads',
   'real', 'refines', 'requires', 'return', 'returns', 'reveal', 'seq', 'set', 'static', 'string', 'then', 'this', 'trait', 'true', 'type', 'unchanged',
-  'var', 'while', 'witness', 'yield', 'yields', 'result', 'Option', 'None', 'Some', 'value', 'Nullish', 'Absent', 'Null', 'Undef',
+  'var', 'while', 'witness', 'yield', 'yields', 'result', 'Option', 'None', 'Some', 'value', 'Nullish', 'Absent', 'Null', 'Undef', 'PromiseHandle',
   'fresh', 'twostate', 'ORDINAL', 'array', 'iset', 'imap', 'bv', 'least', 'greatest', 'continue', 'default', 'extern', 'exports', 'synthesize']);
 const dn = (name) => { let n = name.replace(/[^A-Za-z0-9_]/g, '_'); if (n.startsWith('_')) n = 'u' + n; return RESERVED.has(n) ? `${n}_` : n; };
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
@@ -842,6 +842,10 @@ export function translate(file, fnName, opts = {}) {
   const isSetT = (t) => !!t.symbol && (t.symbol.name === 'Set' || t.symbol.name === 'ReadonlySet');
   const isMapT = (t) => !!t.symbol && (t.symbol.name === 'Map' || t.symbol.name === 'ReadonlyMap');
   const isPromiseT = (t) => !!t.symbol && t.symbol.name === 'Promise';
+  // a promise whose value reads with no identity (void, undefined, null, never, or a Unit reading): two such promises
+  // would read as one value, so a held one is a handle, an opaque value of its own named by the term that produced it
+  const identityFreeT = (t) => !!t && (t.flags & TF.Union ? t.types.every(identityFreeT) : !!(t.flags & (TF.Void | TF.Undefined | TF.Null | TF.Never)));
+  const isHandleT = (t) => !!t && isPromiseT(t) && (identityFreeT(checker.getTypeArguments(t)[0]) || dtype(checker.getTypeArguments(t)[0], currentUnit?.node ?? sf) === 'Unit');
   const nonNull = (t) => (t.flags & TF.Union ? t.types.filter((x) => !(x.flags & (TF.Undefined | TF.Null))) : [t]);
   const nonUndefined = (t) => { const parts = nonNull(t); return parts.length === 1 ? parts[0] : t; }; // the type with undefined and null removed, when that leaves one
   const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
@@ -920,7 +924,7 @@ export function translate(file, fnName, opts = {}) {
       if (isArrayLike(checker, t)) { const et = checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); if (!et) fail(n, `array-like type ${checker.typeToString(t)} has no element type`); return `seq<${dtype(et, n, depth + 1)}>`; } // arrays, tuples and interfaces that extend an array (a match result)
       if (isSetT(t)) return `set<${dtype(checker.getTypeArguments(t)[0], n, depth + 1)}>`;
       if (isMapT(t)) { const [k, vv] = checker.getTypeArguments(t); return `map<${dtype(k, n, depth + 1)}, ${dtype(vv, n, depth + 1)}>`; }
-      if (isPromiseT(t)) return dtype(checker.getTypeArguments(t)[0], n, depth + 1);
+      if (isPromiseT(t)) { const inner = dtype(checker.getTypeArguments(t)[0], n, depth + 1); if (!isHandleT(t)) return inner; addPrelude('PromiseHandle', 'type PromiseHandle(==)<T>'); return `PromiseHandle<${inner}>`; } // a held promise of a value with no identity is a handle
       if (isCallable(t)) {
         const sg = checker.getSignaturesOfType(t, ts.SignatureKind.Call)[0];
         const ps = sg.getParameters().map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, n), n, depth + 1));
@@ -1266,7 +1270,7 @@ export function translate(file, fnName, opts = {}) {
     const sequence = spread ? callSequence(args) : null;
     const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a.__tupleElem ? a.node : a) : dtype(a.__tupleElem ? a.type : typeOf(a), a.__tupleElem ? a.node : a); });
     let rt = n.__plainReturn ?? (sig ? sig.getReturnType() : typeOf(n)); // an optional call's present branch returns what the callee returns
-    if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+    if (isPromiseT(rt) && !(isHandleT(rt) && !calleeName.startsWith('await_'))) rt = checker.getTypeArguments(rt)[0]; // an awaited call yields the value; a held one of a value with no identity yields the handle
     else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
     let rd = dtype(rt, n);
     const chainedType = cond ? typeOf(n) : null; // the signature result excludes absence introduced by the call chain
@@ -1524,7 +1528,7 @@ export function translate(file, fnName, opts = {}) {
   const isLiteralish = (node) => { while (ts.isParenthesizedExpression(node)) node = node.expression; return ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node) || ts.isNumericLiteral(node) || ts.isStringLiteral(node) || ts.isTemplateExpression(node) || ts.isNoSubstitutionTemplateLiteral(node) || node.kind === K.TrueKeyword || node.kind === K.FalseKeyword; };
   function coerce(code, node, expected) {
     if (!expected) return code;
-    const sourceT = typeOf(node), nt = isPromiseT(sourceT) ? promiseResultType(node) : sourceT;
+    const sourceT = typeOf(node), nt = isPromiseT(sourceT) && !(isHandleT(sourceT) && isPromiseT(expected)) ? promiseResultType(node) : sourceT; // a handle into a promise slot stays the handle
     const members = sums.get(dtype(expected, node));
     if (members && dtype(nt, node) !== dtype(expected, node)) {
       const matches = members.filter((m) => checker.isTypeAssignableTo(nt, m.t));
@@ -1962,7 +1966,7 @@ export function translate(file, fnName, opts = {}) {
   // an opaque promise call evaluates its receiver and arguments, then records one outside transition
   function promiseOutsideCall(n, form, awaited) {
     if (!unitEffectful()) fail(n, 'an opaque promise call requires an effectful unit');
-    const R = dtype(promiseResultType(n), n), types = [], values = [], spread = n.arguments.some(ts.isSpreadElement);
+    const R = !awaited && isHandleT(typeOf(n)) ? dtype(typeOf(n), n) : dtype(promiseResultType(n), n), types = [], values = [], spread = n.arguments.some(ts.isSpreadElement); // an unconsumed chain of a value with no identity is a handle
     if (form.source) {
       const D = dtype(typeOf(form.source), form.source); let value = expr(form.source);
       if (spread) { const saved = `pr${tempCount++}_`; pending.push(`var ${saved}: ${D} := ${value};`); value = saved; }
@@ -3238,7 +3242,7 @@ export function translate(file, fnName, opts = {}) {
           const names = muts.map((m) => { const i = callee.params.findIndex((p) => ts.isIdentifier(p.name) && p.name.text === m); let a = argNodes[i]; while (a && ts.isParenthesizedExpression(a)) a = a.expression; if (!a) return null; if (ts.isIdentifier(a)) return dn(a.text); if (ts.isArrayLiteralExpression(a) || ts.isObjectLiteralExpression(a) || ts.isNewExpression(a)) return `_`; fail(a, `the argument for \`${m}\`, which ${f.text} changes, must be a name or a fresh literal`); });
           const eff = effectfulUnits.has(f.text);
           if (eff && !unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
-          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt) && !(isHandleT(rt) && promiseHandleUnit(callee))) rt = checker.getTypeArguments(rt)[0];
           const t = valueOperands ? valueName() : `t${tempCount++}_`;
           const temps = names.map((nm, k) => (nm === '_' || nm === null ? `_` : `${t}m${k}`));
           pending.push(`var (${[...(eff ? [WORLD] : []), t, ...temps].join(', ')}) := ${fname(f.text)}(${[...(eff ? [WORLD] : []), ...fuelArg(callee), ...args].join(', ')});`);
@@ -3248,7 +3252,7 @@ export function translate(file, fnName, opts = {}) {
         }
         if (effectfulUnits.has(f.text)) {
           if (!unitEffectful()) fail(n, 'internal: effectful callee in a pure unit');
-          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt) && !(isHandleT(rt) && promiseHandleUnit(callee))) rt = checker.getTypeArguments(rt)[0];
           const value = hoist(`${fname(f.text)}(${[WORLD, ...fuelArg(callee), ...args].join(', ')})`, dtype(rt, n));
           if (!faultMode && completionMode && exceptionUnits.has(callee.name)) pending.push(FAULT_CHECK);
           return value;
@@ -3323,14 +3327,24 @@ export function translate(file, fnName, opts = {}) {
     if (one.length !== 1 || one[0].typeParameters?.length) fail(n, 'optional-chain: an overloaded or generic optional callee is not read');
     n.__plainReturn = one[0].getReturnType();
     let rt = n.__plainReturn;
-    if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+    if (isPromiseT(rt) && !(isHandleT(rt) && !awaited)) rt = checker.getTypeArguments(rt)[0];
     else if (awaited && checker.getAwaitedType) { const aw = checker.getAwaitedType(rt); if (aw) rt = aw; }
     const chained = typeOf(n), D = dtype(chained, n), absent = absentIn(chained, n);
     if (!unitEffectful()) return `(if ${cond} then ${convert(present(), rt, chained, n)} else ${absent})`;
     const branch = branchWithWorld(() => convert(present(), rt, chained, n), D);
     return hoist(`(if ${cond} then ${branch} else (${WORLD}, ${absent}))`, D);
   }
+  // a same-file handle unit (design/promise-handle.md) whose promise is a handle: awaited, its result is the handle and
+  // the await is a transition on it, as for a held handle; an untranslated callee keeps its earlier reading
+  const handleUnitOf = (n) => { const d = checker.getResolvedSignature(n)?.declaration; const u = d && [...fns.values()].find((x) => x.fn === d); return u && !failedUnits.has(u.name) && promiseHandleUnit(u) && isHandleT(checker.getSignatureFromDeclaration(u.fn).getReturnType()) ? u : null; };
   function call(n, awaited = false) {
+    const handleUnit = awaited ? handleUnitOf(n) : null;
+    if (handleUnit) {
+      const pt = checker.getSignatureFromDeclaration(handleUnit.fn).getReturnType(), rd = dtype(checker.getTypeArguments(pt)[0], n);
+      const handle = outerParens(call(n, false));
+      addPrelude('World', 'type World');
+      return hoist(`${external('await_value', ['World', dtype(pt, n)], `(World, ${rd})`)}(${WORLD}, ${handle})`, rd);
+    }
     if (n.questionDotToken) { const read = optionalCall(n, awaited); if (read !== null) return read; }
     // the receiver precedes the arguments, including when await calls this reader directly
     if (valueOperands) {
@@ -3451,7 +3465,7 @@ export function translate(file, fnName, opts = {}) {
         const selfArg = callee.isStatic ? [] : [SELF];
         if (effectfulUnits.has(callee.name)) {
           if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure method');
-          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt) && !(isHandleT(rt) && promiseHandleUnit(callee))) rt = checker.getTypeArguments(rt)[0];
           const value = hoist(`${fname(callee.name)}(${[WORLD, ...fuelArg(callee), ...selfArg, ...args].join(', ')})`, dtype(rt, n));
           if (!faultMode && completionMode && exceptionUnits.has(callee.name)) pending.push(FAULT_CHECK);
           return value;
@@ -3472,7 +3486,7 @@ export function translate(file, fnName, opts = {}) {
         const selfArg = callee.isStatic ? [] : [outerParens(expr(recv))];
         if (effectfulUnits.has(callee.name)) {
           if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure unit');
-          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
+          let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt) && !(isHandleT(rt) && promiseHandleUnit(callee))) rt = checker.getTypeArguments(rt)[0];
           const value = hoist(`${fname(callee.name)}(${[WORLD, ...fuelArg(callee), ...selfArg, ...args].join(', ')})`, dtype(rt, n));
           if (!faultMode && completionMode && exceptionUnits.has(callee.name)) pending.push(FAULT_CHECK);
           return value;
@@ -3669,7 +3683,7 @@ export function translate(file, fnName, opts = {}) {
   }
 
   // ----- shared statement analysis -----
-  const retType = (u) => { if (u.fn.asteriskToken && !u.isAsync) return checker.createArrayType(generators.shape(u).element); let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t)) t = checker.getTypeArguments(t)[0]; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
+  const retType = (u) => { if (u.fn.asteriskToken && !u.isAsync) return checker.createArrayType(generators.shape(u).element); let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t) && !(isHandleT(t) && promiseHandleUnit(u))) t = checker.getTypeArguments(t)[0]; else if (isPromiseT(t)) return t; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
   // `return;` yields `undefined`, the value a path without a return yields: Unit in a constructor (`new` yields the receiver) or a void unit, the absent value where the result admits undefined
   const bareReturn = (u, s) => {
     if (u.isCtor) return 'Unit';
