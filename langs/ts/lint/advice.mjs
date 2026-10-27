@@ -75,6 +75,7 @@ export const ADVICE = {
   'record-rest': { label: 'migration', text: 'Take the rest in a parameter of a plain record or of an untyped value, with written keys (`function Card({ title, ...rest }: CardProps)`), or copy the fields you need by name; a copy by name drops the properties the type does not declare, which the rest keeps.' },
   'static-this': { label: 'conditional', precondition: 'the method is never called through a subclass (every call names this class, or the class has no subclass)', text: 'In a static method `this` is the class the call went through. Name the declaring class instead: `C.m()` for `this.m()`, `C.K` for `this.K`.' },
   'implicit-this': { label: 'conditional', precondition: 'the declared type covers every receiver the function is called with', text: 'Declare the receiver as the first parameter, `function f(this: T, ...)`: a type annotation, the emitted JavaScript is the same, and a declared receiver is read as the function\'s first operand.' },
+  'mutator-value': { label: 'conditional', precondition: 'the call runs on every path of its statement, and nothing evaluated before it in that statement reads the array or can throw', text: 'pop, shift and splice used as values are read where the call runs on every path of its statement and nothing else in the statement reads the array. Bind the removed element in its own statement first (`const last = xs.pop();`), then use `last`.' },
 };
 
 // the label in one bracket, as the --json advice, the agent report and the ESLint message print it

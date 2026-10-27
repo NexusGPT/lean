@@ -21,11 +21,12 @@ import { anyTypeFindings } from './any-type.mjs';
 const LIBRARY_RESULT = new Map(JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), '../translate/library.json'), 'utf8')).operations.map((o) => [o.op, o.result]));
 // the built-ins the table has no row for yet, by ECMA-262: a new array, record or iterator, or an object the caller may already hold
 const LIBRARY_RESULT_MORE = {
-  'Array.prototype.flat': 'fresh', 'Array.prototype.flatMap': 'fresh', 'Array.prototype.toSorted': 'fresh', 'Array.prototype.toReversed': 'fresh', 'Array.prototype.toSpliced': 'fresh', 'Array.prototype.with': 'fresh',
+  'Array.prototype.flat': 'fresh', 'Array.prototype.flatMap': 'fresh', 'Array.prototype.toSpliced': 'fresh', 'Array.prototype.with': 'fresh',
   'Array.prototype.keys': 'fresh', 'Array.prototype.values': 'fresh', 'Array.prototype.entries': 'fresh', 'Map.prototype.keys': 'fresh', 'Map.prototype.values': 'fresh', 'Map.prototype.entries': 'fresh', 'Set.prototype.keys': 'fresh', 'Set.prototype.values': 'fresh', 'Set.prototype.entries': 'fresh',
   'Array.from': 'fresh', 'Array.of': 'fresh', 'Object.keys': 'fresh', 'Object.values': 'fresh', 'Object.entries': 'fresh', 'Object.fromEntries': 'fresh', 'Object.create': 'fresh', 'JSON.parse': 'fresh', 'Promise.all': 'fresh', 'Promise.allSettled': 'fresh',
-  'Array.prototype.find': 'element-or-undefined', 'Array.prototype.findLast': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
+  'Array.prototype.find': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
 };
+import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText } from '../library-rows.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
@@ -1420,6 +1421,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (parts.every((t) => !!(t.flags & TF.NumberLike)) && NUMBER_METHODS.has(name)) { expr(recv); return argsOf(e); } // a formatting of a number: pure
       if (parts.every(isSetT) && SET_METHODS.has(name)) { if (name === 'forEach' || name === 'clear') return v(e, 'unsupported-call', `Set.${name} is outside the subset`); expr(recv); return e.arguments.forEach(expr); }
       if (parts.every(isMapT) && MAP_METHODS.has(name)) { if (name === 'forEach' || name === 'clear') return v(e, 'unsupported-call', `Map.${name} is outside the subset`); expr(recv); return e.arguments.forEach(expr); }
+      if (libraryRowCall(e, recv, name, rt)) return; // the stage 5 library rows (design/library-rows.md)
       // a method call on an external value (an imported object or a record with methods): uninterpreted
       if (ts.isIdentifier(recv)) { const o = declOf(recv); if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return argsOf(e); }
       expr(recv);
@@ -1430,6 +1432,74 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (e.expression.kind === K.SuperKeyword && currentClass && currentFn && ts.isConstructorDeclaration(currentFn)) return argsOf(e); // `super(args)` in a constructor: the parent's constructor on this handle, a transition
     { const b = unparenX(f); if (ts.isCallExpression(b) && ts.isPropertyAccessExpression(b.expression) && b.expression.name.text === 'bind' && ts.isIdentifier(b.expression.expression) && declOf(b.expression.expression).kind === 'unit') return call(b); } // `f.bind(r, a)(b)` on a same-file function: the bind is the refusal, and its site decides the label
     return v(e, 'unsupported-call', 'calls through computed callees are outside the subset');
+  }
+  // the stage 5 library rows (translate/library.json, `lane: ordinary`; design/library-rows.md): true when the call is one
+  // of them, admitted or refused by name
+  function libraryRowCall(e, recv, name, rt) {
+    const parts = nonNull(rt); if (!parts.length) return false;
+    const arr = parts.every((t) => isArrayLike(checker, t)), str = parts.every(isStr);
+    const isGlobal = (id) => declOf(id).kind === 'global';
+    const noSpread = () => !e.arguments.some(ts.isSpreadElement);
+    const refuse = (rule, msg) => { v(e, rule, msg); return true; };
+    const admit = () => { expr(recv); e.arguments.forEach((a) => expr(a)); return true; };
+    if (arr && ARRAY_VALUE_MUTATORS.has(name)) {
+      if (!noSpread() || (name !== 'splice' && e.arguments.length)) return refuse('unsupported-call', name === 'splice' ? 'splice as a value takes plain arguments' : `${name} takes no argument`);
+      if (e.flags & ts.NodeFlags.OptionalChain) return refuse('unsupported-call', `.${name}() in an optional chain changes a receiver that may be absent; check it first`);
+      if (freshArray(checker, recv, isGlobal)) return admit(); // nobody else holds the receiver: only the value is read
+      const r = unparenX(recv);
+      const o = ts.isIdentifier(r) ? declOf(r) : null;
+      if (!o || o.kind !== 'local') return refuse('unsupported-call', `.${name}() as a value changes \`${recv.getText(sf).slice(0, 40)}\`; call it on a local array or on a fresh one`);
+      if (isParam(o.decl)) return refuse('param-mutation', `.${name}() as a value changes the parameter \`${r.text}\`; copy it to a local first`);
+      if (aliasLocals.has(o.decl)) return refuse('alias-mutation', `\`${r.text}\` is another name for a value this function was handed; copy it first`);
+      if (!ownedHere(o.decl) || callbackStack.length || forEachDepth) return refuse('closure-mutation', `.${name}() as a value inside a callback changes \`${r.text}\`; use a for-of loop`);
+      const site = unconditionalSite(e);
+      if (!site) return refuse('mutator-value', `.${name}() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind it to a const in its own statement first`);
+      if (readsOf(checker, site.scope, checker.getSymbolAtLocation(r)) !== 1) return refuse('mutator-value', `\`${r.text}\` is read again in the statement that calls .${name}() on it; read it in its own statement`);
+      return admit();
+    }
+    if (arr && name === 'fill') {
+      if (!noSpread() || !e.arguments.length || e.arguments.length > 3) return refuse('unsupported-call', 'fill takes a value and an optional start and end');
+      if (!freshArray(checker, recv, isGlobal)) return refuse('in-place-mutation', 'fill changes its receiver in place and returns it; fill a fresh array (`new Array(n).fill(v)`, `[...xs].fill(v)`)');
+      return admit();
+    }
+    if (arr && (name === 'toSorted' || name === 'toReversed')) {
+      if (name === 'toReversed' && e.arguments.length) return refuse('unsupported-call', 'toReversed takes no argument');
+      if (e.arguments.length > 1) return refuse('unsupported-call', 'toSorted takes one comparator');
+      expr(recv); if (e.arguments[0]) { const cb = e.arguments[0]; if (callbackNeedsLoop(cb)) return refuse('callback-form', 'the comparator of toSorted is a pure function of two elements'); callback(cb, 2); }
+      return true;
+    }
+    if (arr && (name === 'findLast' || name === 'findLastIndex')) {
+      const cb = e.arguments[0];
+      if (e.arguments.length !== 1 || !(ts.isArrowFunction(cb) || ts.isIdentifier(cb))) return refuse('unsupported-call', `${name} takes one callback`);
+      if (ts.isArrowFunction(cb) && (cb.parameters.length !== 1 || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword))) return refuse('callback-form', `the callback of ${name} takes the element only (an index counts from the end); use a for loop over the indices`);
+      if (callbackNeedsLoop(cb)) return refuse('callback-form', `the callback of ${name} is a pure predicate; an effect needs a for loop`);
+      expr(recv); callback(cb, 1); return true;
+    }
+    if (arr && name === 'lastIndexOf') {
+      if (e.arguments.length !== 1 || !noSpread()) return refuse('unsupported-call', 'lastIndexOf takes one value (a start index stays out)');
+      const el = checker.getIndexTypeOfType?.(parts[0], ts.IndexKind.Number);
+      if (!el || !nonNull(el).every(isPrim)) return refuse('unsupported-call', 'lastIndexOf compares by identity; on objects it is outside the subset');
+      return admit();
+    }
+    if (arr && name === 'toString') return e.arguments.length ? refuse('unsupported-call', 'toString on an array takes no argument') : admit();
+    if (name === 'toString' && primitiveText(rt) && !parts.every((t) => !!(t.flags & TF.NumberLike))) return e.arguments.length ? refuse('unsupported-call', 'toString with a radix is read on numbers only') : admit();
+    if (LOCALE_READS.has(name) && (str || parts.every((t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike))))) {
+      if (str && name === 'toLocaleString') return false;
+      if (!str && name !== 'toLocaleString') return false;
+      if (callbackStack.length) return refuse('unsupported-call', `.${name}() reads the host's locale (a world read); call it outside the callback`);
+      if (!noSpread()) return refuse('unsupported-call', `.${name}() takes plain arguments`);
+      return admit();
+    }
+    if (str && name === 'substr') return noSpread() && e.arguments.length <= 2 && e.arguments.every((a) => !!(tOf(a).flags & TF.NumberLike)) ? admit() : refuse('unsupported-call', 'substr takes a numeric start and an optional numeric length');
+    if (str && name === 'matchAll') { // the matches start at the pattern's lastIndex: a literal (a new object) or a string pattern starts at 0
+      const a = e.arguments[0] && unparenX(e.arguments[0]);
+      if (e.arguments.length !== 1 || !noSpread()) return refuse('unsupported-call', 'matchAll takes one pattern');
+      if (ts.isRegularExpressionLiteral(a)) return a.text.slice(a.text.lastIndexOf('/') + 1).includes('g') ? admit() : refuse('unsupported-call', 'matchAll needs the g flag; without it the call throws a TypeError');
+      if (isStr(tOf(a))) return admit();
+      return refuse('unsupported-call', "matchAll starts at its pattern's lastIndex, which another call may have moved; pass a regular expression literal with the g flag, or a string");
+    }
+    if (str && name === 'search') return e.arguments.length === 1 && noSpread() ? admit() : refuse('unsupported-call', 'search takes one pattern');
+    return false;
   }
   // `.map(cb)` directly under an awaited `Promise.all(...)`: the callback is a loop body (its returns are collected values)
   const underPromiseAll = (call) => { let arg = call; while (arg.parent && ts.isParenthesizedExpression(arg.parent)) arg = arg.parent; const p = arg.parent; if (!(p && ts.isCallExpression(p) && p.arguments.length === 1 && p.arguments[0] === arg && ts.isPropertyAccessExpression(p.expression) && p.expression.name.text === 'all' && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Promise')) return false; let q = p.parent; while (q && ts.isParenthesizedExpression(q)) q = q.parent; return !!(q && ts.isAwaitExpression(q)); };
