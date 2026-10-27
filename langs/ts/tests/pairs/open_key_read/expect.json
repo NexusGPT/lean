@@ -1,6 +1,24 @@
 {
- "scope": ["number_name", "is_text", "has_media"],
- "equal": { "number_name": false, "is_text": true, "has_media": true },
- "why": "An open key (a number, a string, a template) on a plain record of data fields is one uninterpreted lookup of the record value and the key, the same function on both sides. numberName reads the next key (unproved, WITNESS at n = 0: \"zero\" against \"one\"); isText binds the receiver and the key to names and reads twice, the same lookup of the same values (proved); hasMedia is untouched (proved).",
- "b": { "numberName": "WITNESS", "isText": "PASS-bounded", "hasMedia": "PASS-bounded" }
+ "scope": [
+  "number_name",
+  "is_text",
+  "has_media",
+  "or_default",
+  "length_of"
+ ],
+ "equal": {
+  "number_name": false,
+  "is_text": true,
+  "has_media": true,
+  "or_default": false,
+  "length_of": false
+ },
+ "why": "An open key (a number, a string, a template) on a plain record of data fields is one uninterpreted lookup of the record value and the key, the same function on both sides. numberName reads the next key (unproved, WITNESS at n = 0: \"zero\" against \"one\"); isText binds the receiver and the key to names and reads twice, the same lookup of the same values (proved); hasMedia is untouched (proved). orDefault (`(x ?? \"A\") === \"A\"` against `(x ?? \"B\") === \"A\"`, x: any) and lengthOf (`x?.length` against `x.length`) were PASS-proved at 67b8201, which read an any operand as never nullish; the `??` and `?.` readings now test it (is_null_Any, is_undefined_Any): both unproved, and lane B draws null and undefined first for an any input tested by ?? or ?., so both are WITNESS.",
+ "b": {
+  "numberName": "WITNESS",
+  "isText": "PASS-bounded",
+  "hasMedia": "PASS-bounded",
+  "orDefault": "WITNESS",
+  "lengthOf": "WITNESS"
+ }
 }

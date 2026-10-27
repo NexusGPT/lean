@@ -26,3 +26,13 @@ export function isText(row: Row, key: string): boolean {
 export function hasMedia(p: Media, i: number): boolean {
   return p[`MediaUrl${i}`] !== undefined;
 }
+
+// an opaque value defaulted by ??: the candidate's default differs, seen only when the value is null or undefined
+export function orDefault(x: any): boolean {
+  return (x ?? "A") === "A";
+}
+
+// an optional read on an opaque value: the candidate drops the ?., which throws on null or undefined
+export function lengthOf(x: any): number {
+  return x?.length;
+}
