@@ -1,0 +1,6 @@
+{
+  "scope": ["report", "settle", "mark", "finish", "exit_with"],
+  "equal": { "report": false, "settle": true, "mark": true, "finish": false, "exit_with": true },
+  "why": "a write to a field of `process` is one transition of the world on its handle, the field name and the value, after the receiver path is read; the same writes in the same order prove, another value or another order does not",
+  "b": { "report": "WITNESS", "settle": "PASS-bounded", "mark": "PASS-bounded", "finish": "WITNESS", "exitWith": "PASS-bounded" }
+}

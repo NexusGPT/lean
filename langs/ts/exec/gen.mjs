@@ -5,8 +5,17 @@ import { sampleRegex } from './regex-sample.mjs';
 const STR_EDGE = ['', 'a', 'abc', ' ', 'x y', '0', '-1', 'ÄÖü', '日本', 'a'.repeat(64), 'twelve-chars', 'Hello, World! 2024-01-31 10:30', 'abcdefghijklmnopqrstuvwxyz'.repeat(8), 'line one\nline two', 'null', 'undefined', '  padded  ', 'a,b,c', '/path/to/file.txt', 'user@example.com'];
 const NUM_EDGE = [0, 1, -1, 2, 10, 100, -100, 0.5, 1e9, Number.MAX_SAFE_INTEGER];
 
-export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = []) {
+// the number of inputs, from the first generated one, that walk the boundaries of a shaped spec (spec.mjs) in order
+export const WALK = 48;
+
+export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null) {
   const rng = makeRng(seed);
+  // a shaped spec's boundaries: in the walk (input `walk` < WALK) each boundary takes its digit of the walk index,
+  // the first boundary turning fastest; after it, a boundary value is mixed in at random. The declared draw is made
+  // first in every case and the boundary decisions use their own stream, so the declared draws of every other leaf
+  // are the ones an unshaped spec makes
+  const brng = makeRng((seed ^ 0x5bd1e995) >>> 0);
+  const walking = walk != null && walk >= 0 && walk < WALK;
   const spool = [...strings];
   for (const re of regexes) { const xs = sampleRegex(re, rng, 2); if (xs) spool.push(...xs); } // strings that match the unit's own patterns // string literals of the unit: a comparison against a constant should go both ways
   let edge = startEdge; // the i-th generated input leans on the i-th boundary value: the caller passes i, so the first
@@ -20,7 +29,20 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
     if (pool.length < 64) pool.push(v, v + 1, v - 1);
     return v;
   }
+  const materialize = (x, v, env, path) => (x && typeof x === 'object' ? (x.t === 'undefined' ? undefined : x.t === 'object' ? {} : x.t === 'array' ? [] : x.t === 'fn' ? (env ? env.fake(`${path}#fn`) : () => undefined) : v) : x);
+  const choose = (b) => { // an index into b.cmp, or -1
+    if (!b || !b.cmp || !b.cmp.length) return -1;
+    if (walking) { const q = Math.floor(walk / (b.radix ?? 1)); return b.rank === 1 && q === 0 ? -1 : q % b.cmp.length; } // a truthiness-only leaf whose digit has not started turning mixes its falsy values in at random
+    return brng() < 0.3 ? Math.floor(brng() * b.cmp.length) : -1;
+  };
   function gen(spec, depth = 0, env = null, path = 'in', leaf = false) {
+    const v = gen0(spec, depth, env, path, leaf);
+    const b = spec && spec.boundary; if (!b) return v;
+    const c = choose(b); if (c >= 0) return materialize(b.cmp[c], v, env, path);
+    if (b.falsy && b.falsy.length && brng() < (walking ? 0.5 : 0.25)) return materialize(b.falsy[Math.floor(brng() * b.falsy.length)], v, env, path);
+    return v;
+  }
+  function gen0(spec, depth = 0, env = null, path = 'in', leaf = false) {
     if (!spec || depth > 8) return env ? env.fake(path) : null;
     switch (spec.kind) {
       case 'promise': return Promise.resolve(gen(spec.of, depth + 1, env, path));
@@ -31,7 +53,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'null': return null;
       case 'undefined': return undefined;
       case 'literal': return spec.values[Math.floor(rng() * spec.values.length)];
-      case 'array': { const n = leaf ? 0 : pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); return Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`, leaf)); }
+      case 'array': { let n = leaf ? 0 : pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); const c = choose(spec.lengths); if (c >= 0) n = spec.lengths.cmp[c]; return Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`, leaf)); }
       case 'async-iterable': {
         const values = gen({ kind: 'array', of: spec.of }, depth + 1, env, path, leaf);
         return { [Symbol.asyncIterator]() {
@@ -47,8 +69,9 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'set': return new Set(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => gen(spec.of, depth + 1, env, `${path}{${i}}`)));
       case 'map': return new Map(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => [gen(spec.key, depth + 1, env, `${path}<k${i}>`), gen(spec.value, depth + 1, env, `${path}<v${i}>`)]));
       case 'dict': { const o = {}; for (let i = 0, n = Math.floor(rng() * 4); i < n; i++) o[`k${i}`] = gen(spec.value, depth + 1, env, `${path}.k${i}`); return o; }
-      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); } return o; }
-      case 'union': return gen(spec.options[Math.floor(rng() * spec.options.length)], depth + 1, env, path);
+      // a record: a field leading to a compared leaf stays present while walking, unless the unit tests its key with `in`
+      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3 && !((spec.refined || f.shaped) && walking && !f.presence)) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); } return o; }
+      case 'union': { const j = Math.floor(rng() * spec.options.length); return gen(spec.options[spec.prefer != null && walking && brng() >= 1 / 3 ? spec.prefer : j], depth + 1, env, path); } // while walking, the option leading to a compared leaf two times in three; the declared draw stays reachable
       case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
       case 'function': return env ? env.fake(`${path}#fn`, spec.returns ? { kind: 'method', returns: spec.returns } : null) : () => undefined;
@@ -59,7 +82,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
     }
   }
   // nullable optional fields draw both absent tags as well as omission
-  function present(u) { if (u.options.some((o) => o.kind === 'null')) return u; const opts = u.options.filter((o) => o.kind !== 'undefined'); return opts.length && opts.length < u.options.length ? (opts.length === 1 ? opts[0] : { kind: 'union', options: opts }) : u; }
+  function present(u) { if (u.options.some((o) => o.kind === 'null')) return u; const opts = u.options.filter((o) => o.kind !== 'undefined'); const r = opts.length && opts.length < u.options.length ? (opts.length === 1 ? opts[0] : { kind: 'union', options: opts }) : u; return r !== u && u.boundary ? { ...r, boundary: u.boundary } : r; } // a shaped union keeps its boundary
   function pick(edges, random) {
     if (rng() < 0.6) return edges[(edge + leafIx++) % edges.length];
     return random();
@@ -69,7 +92,9 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
 
 // the i-th input set for a unit: a list of argument values; each call gets a fresh generator seeded by (seed, i)
 export function inputsFor(spec, seed, i, env) {
-  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? []);
+  // a shaped spec walks its boundaries from its first generated input (`walkFrom`: the inputs before it are enumerated heaps)
+  const walk = spec.shaped && i >= (spec.walkFrom ?? 0) ? i - (spec.walkFrom ?? 0) : null;
+  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk);
   return spec.params.map((p, k) => (p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`)));
 }
 

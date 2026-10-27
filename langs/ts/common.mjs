@@ -22,7 +22,7 @@ export const COMPILER_OPTIONS = {
   noEmit: true,
   skipLibCheck: true,
   allowJs: true,
-  checkJs: true, jsx: ts.JsxEmit.ReactJSX };
+  checkJs: true, jsx: ts.JsxEmit.ReactJSX, experimentalDecorators: true }; // a file read without its project keeps its legacy decorators (a project's own tsconfig decides otherwise)
 
 // Diagnostics that only say "this file's neighbours are not here". With a project they do not occur; alone
 // they would hide the real verdict behind missing modules, so they are reported under their own rule.
@@ -55,23 +55,12 @@ export function loadProgram(file, opts = {}) {
       }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
       options.configFilePath = configFile; // automatic @types inclusion starts from the config's directory
-      // a workspace package resolves to ITS SOURCE in this tree, never to a built dist or a node_modules link
-      // that may point at another checkout: the proof is about the commit, not the machine
-      const ws = workspacePaths(path.dirname(configFile));
-      if (ws) {
-        options.baseUrl = options.baseUrl ?? ws.root;
-        const rel = (p) => path.relative(options.baseUrl, p) || '.';
-        options.paths = { ...(options.paths ?? {}) };
-        for (const [name, dir] of ws.packages) {
-          const src = fs.existsSync(path.join(dir, 'src', 'index.ts')) ? path.join(dir, 'src', 'index.ts') : fs.existsSync(path.join(dir, 'index.ts')) ? path.join(dir, 'index.ts') : null;
-          if (src && !options.paths[name]) options.paths[name] = [rel(src)];
-          if (!options.paths[name + '/*']) options.paths[name + '/*'] = [rel(path.join(dir, 'src')) + '/*', rel(dir) + '/*'];
-        }
-      }
+      workspaceResolution(options, configFile);
       // the file alone is the root: the compiler follows its imports, which is what a translation needs
       roots = [abs];
     } else configFile = null;
   }
+  if (!configFile) roots = [...roots, path.join(here, 'ambient.d.ts')]; // structuredClone and the like, declared for a file read without its project
   const program = ts.createProgram(roots, options);
   const sf = program.getSourceFile(abs);
   if (!sf) throw new Error(`cannot read ${file}`);
@@ -135,20 +124,50 @@ export function loadProgramOptions(abs, configFile) {
       }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
       options.configFilePath = configFile;
-      const ws = workspacePaths(path.dirname(configFile));
-      if (ws) {
-        options.baseUrl = options.baseUrl ?? ws.root;
-        const rel = (p) => path.relative(options.baseUrl, p) || '.';
-        options.paths = { ...(options.paths ?? {}) };
-        for (const [name, dir] of ws.packages) {
-          const src = fs.existsSync(path.join(dir, 'src', 'index.ts')) ? path.join(dir, 'src', 'index.ts') : fs.existsSync(path.join(dir, 'index.ts')) ? path.join(dir, 'index.ts') : null;
-          if (src && !options.paths[name]) options.paths[name] = [rel(src)];
-          if (!options.paths[name + '/*']) options.paths[name + '/*'] = [rel(path.join(dir, 'src')) + '/*', rel(dir) + '/*'];
-        }
-      }
+      workspaceResolution(options, configFile);
     }
   }
   return { options };
+}
+
+// A project's module resolution, as TypeScript reads its tsconfig, plus the workspace's own packages (shared by
+// loadProgram and loadProgramOptions). A declared baseUrl is kept; with none, none is set, so `paths` resolve from
+// the folder of the tsconfig that declares them (TypeScript's pathsBasePath), never from the workspace root. A
+// workspace package resolves to ITS SOURCE in this tree, never to a built dist or a node_modules link that may point
+// at another checkout: the proof is about the commit, not the machine. Its entries are absolute targets, so they
+// hold whatever the base, and they are added only for a name no declared pattern already matches.
+export function workspaceResolution(options, configFile) {
+  const ws = workspacePaths(path.dirname(configFile));
+  if (!ws) return;
+  const declared = Object.keys(options.paths ?? {});
+  const matched = (name) => pathsKeyMatches(declared, name);
+  options.paths = { ...(options.paths ?? {}) };
+  for (const [name, dir] of ws.packages) {
+    const src = fs.existsSync(path.join(dir, 'src', 'index.ts')) ? path.join(dir, 'src', 'index.ts') : fs.existsSync(path.join(dir, 'index.ts')) ? path.join(dir, 'index.ts') : null;
+    if (src && !matched(name)) options.paths[name] = [src];
+    if (!matched(name + '/x')) options.paths[name + '/*'] = [path.join(dir, 'src') + '/*', dir + '/*'];
+  }
+}
+
+// TypeScript's pattern test for a `paths` key: an exact key, or a key with one `*` whose prefix and suffix both fit
+// around the name
+export function pathsKeyMatches(keys, name) {
+  return keys.some((k) => { const i = k.indexOf('*'); if (i < 0) return k === name; const pre = k.slice(0, i), suf = k.slice(i + 1); return name.length >= pre.length + suf.length && name.startsWith(pre) && name.endsWith(suf); });
+}
+
+// A non-relative import the project's own `paths` map to a source file of this tree, resolved as loadProgram resolves
+// it (the tsconfig above the importing file, workspaceResolution): the file, else null (a package, a builtin, a
+// name no `paths` key matches, a declaration file, anything under node_modules). Lane B's loader asks this.
+const aliasOptions = new Map(); // tsconfig -> its compiler options
+export function aliasTarget(fromAbs, spec) {
+  const cfg = ts.findConfigFile(path.dirname(fromAbs), ts.sys.fileExists, 'tsconfig.json');
+  if (!cfg) return null;
+  if (!aliasOptions.has(cfg)) aliasOptions.set(cfg, loadProgramOptions(fromAbs, cfg).options);
+  const options = aliasOptions.get(cfg);
+  if (!options.paths || !pathsKeyMatches(Object.keys(options.paths), spec)) return null;
+  const r = ts.resolveModuleName(spec, fromAbs, options, ts.sys).resolvedModule;
+  if (!r || r.isExternalLibraryImport || /\.d\.[mc]?ts$/.test(r.resolvedFileName) || /[\\/]node_modules[\\/]/.test(r.resolvedFileName)) return null;
+  return r.resolvedFileName;
 }
 
 // The pnpm/npm workspace above a directory: {root, packages: [[name, dir]]} or null.
@@ -374,4 +393,103 @@ export function receiverRecordPath(checker, target) {
     if (!checker.getPropertyOfType(t, chain[i + 1].name.text)) return null;
   }
   return chain;
+}
+
+// Stage 5 rank 15. The counted for header `let i = e; i < limit; i++` (also <=, >, >= with i--, i += k, i -= k, k a positive
+// literal, the step in the direction of the condition) whose body never assigns the counter: the translator reads it as a
+// counted loop with the counter as the helper's lead parameter. Every other for header is read as
+// `init; while (cond) { body; step }`, continue running the step; the lint and the translator agree through this one test.
+export function countedFor(s) {
+  const K = ts.SyntaxKind;
+  if (!ts.isForStatement(s) || !s.initializer || !s.condition || !s.incrementor) return false;
+  const i = s.initializer;
+  if (!ts.isVariableDeclarationList(i) || !(i.flags & ts.NodeFlags.Let) || i.declarations.length !== 1 || !ts.isIdentifier(i.declarations[0].name) || !i.declarations[0].initializer) return false;
+  const name = i.declarations[0].name.text, u = s.incrementor, c = s.condition;
+  const isName = (x) => ts.isIdentifier(x) && x.text === name;
+  const unary = (op) => (ts.isPostfixUnaryExpression(u) || ts.isPrefixUnaryExpression(u)) && u.operator === op && isName(u.operand);
+  const compound = (op) => ts.isBinaryExpression(u) && u.operatorToken.kind === op && isName(u.left) && ts.isNumericLiteral(u.right) && Number(u.right.text) > 0;
+  const up = unary(K.PlusPlusToken) || compound(K.PlusEqualsToken), down = unary(K.MinusMinusToken) || compound(K.MinusEqualsToken);
+  const ck = ts.isBinaryExpression(c) && isName(c.left) ? c.operatorToken.kind : null;
+  const condUp = ck === K.LessThanToken || ck === K.LessThanEqualsToken, condDown = ck === K.GreaterThanToken || ck === K.GreaterThanEqualsToken;
+  if (!((up && condUp) || (down && condDown))) return false;
+  let assigned = false;
+  const scan = (n) => {
+    if (assigned) return;
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && isName(n.left)) assigned = true;
+    if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && isName(n.operand)) assigned = true;
+    ts.forEachChild(n, scan);
+  };
+  scan(s.statement);
+  return !assigned;
+}
+
+// Stage 5 rank 20. A synchronous array-method callback (forEach, map, filter, find, findIndex, some, every, flatMap, reduce
+// on an array): the method runs it once per element before returning, so a throw inside it is the enclosing unit's throw,
+// and the lint and the translator read the statement holding it as one opaque block, as a loop statement with a throw.
+const LOOP_METHODS = new Set(['forEach', 'map', 'filter', 'find', 'findIndex', 'some', 'every', 'flatMap', 'reduce']);
+// the call `xs.m(...)` of such a method on an array
+export function syncLoopCall(n, checker) {
+  if (!n || !ts.isCallExpression(n)) return false;
+  const f = n.expression;
+  if (!ts.isPropertyAccessExpression(f) || !LOOP_METHODS.has(f.name.text)) return false;
+  return isArrayLike(checker, checker.getTypeAtLocation(f.expression));
+}
+export function syncLoopCallback(n, checker) {
+  if (!n || !ts.isArrowFunction(n) || !n.parent || n.parent.arguments?.[0] !== n || n.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword)) return false;
+  return syncLoopCall(n.parent, checker);
+}
+
+// Stage 5 rank 21. A local procedure: a function declared inside a unit (a const arrow with a block body, or a nested
+// function declaration) whose name is used only as the callee of plain calls of its arity, whose body never returns a
+// value, throws, tries, awaits, yields, reads `this` or `arguments` or names itself, and whose declared names (its
+// parameters and locals) collide with no name the unit declares outside it. Each call is read as the body spliced at the
+// call site with the parameters bound to the arguments, so an outer cell the body writes threads like any statement.
+export function localProcedure(decl, checker, unitFn) {
+  const K = ts.SyntaxKind;
+  let fn, name;
+  if (ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && decl.initializer && ts.isArrowFunction(decl.initializer) && ts.isBlock(decl.initializer.body)) { fn = decl.initializer; name = decl.name; }
+  else if (ts.isFunctionDeclaration(decl) && decl.name && decl.body) { fn = decl; name = decl.name; }
+  else return null;
+  if (!unitFn || !(decl.pos >= unitFn.pos && decl.end <= unitFn.end) || decl === unitFn) return null;
+  if (fn.modifiers?.some((m) => m.kind === K.AsyncKeyword) || fn.asteriskToken || fn.typeParameters) return null;
+  if (!fn.parameters.every((p) => ts.isIdentifier(p.name) && !p.dotDotDotToken && !p.questionToken && !p.initializer)) return null;
+  const sym = checker.getSymbolAtLocation(name);
+  if (!sym) return null;
+  let bad = false, calls = 0;
+  const inBody = (n) => {
+    if (bad) return;
+    if (ts.isReturnStatement(n) || ts.isThrowStatement(n) || ts.isTryStatement(n) || ts.isAwaitExpression(n) || ts.isYieldExpression(n) || n.kind === K.ThisKeyword || (ts.isIdentifier(n) && n.text === 'arguments')) { bad = true; return; }
+    if (ts.isIdentifier(n) && checker.getSymbolAtLocation(n) === sym) { bad = true; return; }
+    ts.forEachChild(n, inBody);
+  };
+  inBody(fn.body);
+  if (bad) return null;
+  const refs = (n) => {
+    if (bad || n === decl) return;
+    if (ts.isIdentifier(n) && n !== name && checker.getSymbolAtLocation(n) === sym) {
+      const p = n.parent;
+      if (!(p && ts.isCallExpression(p) && p.expression === n && !p.questionDotToken && p.arguments.length === fn.parameters.length && !p.arguments.some(ts.isSpreadElement) && p.parent && ts.isExpressionStatement(p.parent))) { bad = true; return; }
+      calls++;
+    }
+    ts.forEachChild(n, refs);
+  };
+  refs(unitFn);
+  if (bad || !calls) return null;
+  // a name the body declares that the unit also declares outside it would shadow the unit's after the splice: refused,
+  // except a parameter the body never assigns that every call passes under that same name (`keep(x)` in `for (const x of xs)`)
+  const inside = new Map(), outside = new Set();
+  const declNames = (n, add, skip) => { if (n === skip) return; if ((ts.isParameter(n) || ts.isVariableDeclaration(n) || ts.isBindingElement(n) || ts.isFunctionDeclaration(n)) && n.name && ts.isIdentifier(n.name)) add(n.name.text, n); ts.forEachChild(n, (c) => declNames(c, add, skip)); };
+  declNames(fn, (k, n) => inside.set(k, n), null);
+  declNames(unitFn, (k) => outside.add(k), fn);
+  outside.delete(name.text);
+  const assigned = new Set();
+  const writes = (n) => { if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(n.left)) assigned.add(n.left.text); if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && ts.isIdentifier(n.operand)) assigned.add(n.operand.text); ts.forEachChild(n, writes); };
+  writes(fn.body);
+  const callArgs = []; const collect = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression !== name && checker.getSymbolAtLocation(n.expression) === sym) callArgs.push(n.arguments); ts.forEachChild(n, collect); }; collect(unitFn);
+  for (const [k, n] of inside) {
+    if (!outside.has(k)) continue;
+    const i = ts.isParameter(n) ? fn.parameters.indexOf(n) : -1;
+    if (i < 0 || assigned.has(k) || !callArgs.every((as) => ts.isIdentifier(as[i]) && as[i].text === k)) return null;
+  }
+  return { decl, fn, name: name.text, sym };
 }

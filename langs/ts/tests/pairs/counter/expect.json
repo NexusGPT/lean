@@ -3,18 +3,34 @@
   "counter_bump",
   "counter_flush",
   "counter_label",
-  "counter_constructor"
+  "counter_constructor",
+  "counter_step"
  ],
  "equal": {
   "counter_bump": false,
   "counter_flush": true,
   "counter_label": true,
-  "counter_constructor": true
+  "counter_constructor": true,
+  "counter_step": false
  },
- "why": "bump adds 2 instead of 1 to the count field, a world transition with a different value; flush and label are untouched",
+ "why": "bump adds 2 instead of 1 to the count field, a world transition with a different value; flush and label are untouched step adds 1 on an empty counter and 2 after: equal on one command from a constructed instance, different on the second; lane B's retained-state programs give the two-command witness (programs.mjs); label and flush, whose text is the same on both sides, run twelve clean programs over each other (a changed method is never in another unit's alphabet).",
  "b": {
   "Counter.bump": "WITNESS",
   "Counter.flush": "PASS-bounded",
-  "Counter.label": "PASS-bounded"
+  "Counter.label": "PASS-bounded",
+  "Counter.step": "WITNESS"
+ },
+ "programs": {
+  "Counter.step": {
+   "verdict": "WITNESS",
+   "commands": 2
+  },
+  "Counter.bump": {
+   "verdict": "WITNESS",
+   "commands": 1
+  },
+  "Counter.label": {
+   "verdict": "PASS-bounded"
+  }
  }
 }

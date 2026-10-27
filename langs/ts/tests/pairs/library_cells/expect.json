@@ -11,13 +11,13 @@
  "equal": {
   "doubled": true,
   "big_ones": false,
-  "tally": false,
-  "remember": false,
+  "tally": true,
+  "remember": true,
   "known": true,
   "drop": false,
-  "fresh_map": false
+  "fresh_map": true
  },
- "why": "The table's map and filter rows with a pure callback, and the Map and Set cells. doubled renames the callback's parameter: proved. known untouched: proved. bigOnes keeps a different bound: refuted. drop skips the delete: refuted by lane A; lane B finds no difference because its generated keys never meet an entry of the generated map (a generator gap, not a proof). tally sets the same key twice for once, remember adds once for twice, freshMap sets twice in a fresh cell: the entries are the same, but the second write is a no-op update of the heap map, and the prover does not reach `m[r := m[r]] == m` without a lemma body (theorem.py writes none): unproved, PASS-bounded in lane B. Idempotence of cell writes is the next proof obligation of the table.",
+ "why": "The table's map and filter rows with a pure callback, and the Map and Set cells. doubled renames the callback's parameter: proved. known untouched: proved. bigOnes keeps a different bound: refuted. drop skips the delete: refuted by lane A; lane B finds no difference because its generated keys never meet an entry of the generated map (a generator gap, not a proof). tally sets the same key twice for once, remember adds once for twice, freshMap sets twice in a fresh cell: the entries are the same, but the second write is a no-op update of the heap map, and the prover does not reach `m[r := m[r]] == m` without a lemma body (theorem.py writes none): unproved, PASS-bounded in lane B. Idempotence of cell writes is the next proof obligation of the table. Version 2 of the Map cell (keys beside a Dafny map): tally (set twice), remember (add twice) and freshMap (set then size) prove, the repeated write being the same cell by the map update laws.",
  "heap": true,
  "b": {
   "doubled": "PASS-bounded",

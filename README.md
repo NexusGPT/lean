@@ -18,7 +18,7 @@
 
 **lean is a differential equivalence checker.** Give it the old version and the new version of a function, and the scope of what was meant to change. It decides whether the two behave the same everywhere else: by proof when it can, by exhaustive exploration when the state is finite, by execution when it must, and it says which.
 
-TypeScript is the first language. The core (the theorem, the checker, the certificate, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`, and merges when it passes the same conformance run. More languages are coming; Python is next.
+TypeScript is the first language. The core (the theorem, the checker, the certificate, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`, and merges when it passes the same conformance run. Python is at milestone 1: typed functions, dataclasses and plain classes over ints, strings, lists, tuples, dicts and optionals, with calls into the outside as transitions of the world and raised exceptions as faults ([`langs/py/subset.md`](langs/py/subset.md)).
 
 Every change to a program is a claim: *I changed this, and nothing else.* Tests sample that claim. Review guesses at it. lean checks it.
 
@@ -81,7 +81,7 @@ TypeScript today; each language fills its own table. A function is inside the su
 
 The full table, construct by construct, with its reading and an example, is [`langs/ts/subset.md`](langs/ts/subset.md). The coverage matrix over every concept of the language, with the unit count each one holds in 39 real repositories, is [`langs/ts/COVERAGE.md`](langs/ts/COVERAGE.md).
 
-What is refused, by name, because no value model keeps the axiom true: `eval` and `new Function`, the prototype chain (`Proxy`, `Reflect`, `Object.create`, `defineProperty`, `setPrototypeOf`), `super` as a value, `===` on two objects, mutation through an alias of a parameter, a callback that writes an outer variable, a Date setter, an `Object.assign` into an argument. Each refusal names the line and what to write instead.
+What is refused, by name, because no value model keeps the axiom true: `eval` and `new Function`, the prototype chain (`Proxy`, `Reflect` beyond the metadata reads and writes of the decorator table, `Object.create`, `defineProperty`, `setPrototypeOf`), `super` as a value, `===` on two objects, mutation through an alias of a parameter, a callback that writes an outer variable, a Date setter, an `Object.assign` into an argument; the plain-object test on a record (`Object.getPrototypeOf(x) === Object.prototype`) and the own-key test on a record or a dictionary (`Object.prototype.hasOwnProperty.call(o, k)`) are read exactly instead. Each refusal names the line and what to write instead.
 
 ## Examples
 
@@ -188,13 +188,15 @@ export function flip(box: Box): string[] { box.names.reverse(); return box.names
 export function head(box: Box): string[] { return box.names.slice(0, 2); }
 ```
 
-The candidate's `flip` returns the receiver through a local (`const out = box.names; return out;`): `PASS-proved`, with `reverse` read from the library transition table as a step on the heap the proof carries, and the result's identity shown to be the input's. The candidate's `head` slices three names for two:
+The candidate's `flip` returns the receiver through a local (`const out = box.names; return out;`): `PASS-proved`, with `reverse` read from the library transition table as a step on the heap the proof carries, and the result's identity shown to be the input's. A `shift` for a `splice(0, 1)` leaves the same reachable graph but not the same heap, since `splice` allocates the removed part nobody keeps: the whole-heap lemma fails and the canonical reading proves it, equal up to a renaming of fresh cells and up to dropped allocations (`lanes.A.reading`), so allocation order and temporaries never cost a proof. The candidate's `head` slices three names for two:
 
 ```
 WITNESS   input 1   args: [{ items: [{ id: 347, tags: ["vhn02", "vk85x"] }], names: [" ", "v20gs", "ve9vk", "x y"] }]   where: { field: "outcome" }
 ```
 
 A `shift()` for a `splice(0, 1)` leaves the same reachable graph: `PASS-bounded` in lane B, and unproved under whole-heap equality because `splice` allocates the part it removed. That gap is named, and the canonical-heap certificate that closes it is on the list below.
+
+The heap core reads real code: a method of a class takes `this` as a reference to the record of its fields, so a write to `this.count` is a step on the same heap. An element access `a[i]` is proved only where the code keeps its index in range, since JavaScript reads `undefined` outside it. A loop over an array is a recursive step on the heap, and a refactor around an unchanged loop body proves. A field that may be missing keeps apart a missing key and a key holding `undefined`, and a value read after a presence test is proved present. A literal union such as `'open' | 'done'` states its values in the proof's hypothesis, so testing the other value first is a refactor. A dictionary keeps its keys in insertion order, so two writes swapped are a different object. `filter`, `map`, `join`, `trim` and `replace` read as steps of the library table, so a filter kept under a name before its map proves. A recursive type such as a tree of nodes is named as outside the core instead of stopping the translation, and a callback's own return no longer counts as its function's result. A template literal is a string concatenation, each hole by its string conversion, so a boolean hole spelled as two literals proves. An empty array literal takes the shape of the place it is written to, and an arrow whose body is an expression returns it. A conditional expression evaluates the operand it selects and no other, so an allocation in one branch is a step of that branch alone. The string methods `split`, `includes`, `slice`, `startsWith` and their kin, and a string's `length`, read exactly through the same helpers as the rest of the proof lane. A regular expression literal in `test`, `replace`, `split` or `search` is a function of its text and its operands, the same on both sides and assumed nothing else. A function that returns nothing is compared on the heap it leaves, and its body may fall through or end with a bare `return`. A module constant is read by its initializer, and an imported constant is the environment's value, the same on both sides only for the same import. `some`, `every`, `find`, `findIndex`, `reduce`, `includes`, `indexOf` and `at` read the items as a pure function of them, and a `forEach` statement is a loop over them. A union of records told apart by a literal field, such as a shape whose kind is a circle or a square, is a reference to one of its alternatives, and a test of that field narrows it. Multiplication, the remainder and the bitwise operators read exactly, a zero divisor counts as leaving the model, and an update such as `x++` is a step like `x += 1`. `Math.max`, `Math.min`, `Math.abs`, `Math.floor`, `String`, `Array.isArray` and `Object.keys` of a dictionary read as functions of their arguments. A call of an imported function is a step of the whole heap, so a refactor proves only when both versions make the same calls in the same order. A Set or a Map may hold records by identity, `Map.get` of a value reads it or its absence, and `new Set`, `new Map` and `Array.from` copy into a fresh cell. A tuple of one shape is an array of fixed length, a tuple of mixed shapes a record of its positions, an intersection of records the record of all their fields, and a branded string a string. A method of an interface, or of another instance of a class, is a step of the whole heap, since a subclass elsewhere may override it. A decorated class is read like any other, and a call of a method a decorator may have replaced is a step of the whole heap, never the method's own text. A constructor allocates its instance first, stores its fields, then runs its body on the fresh reference, so building an object with `new` is a step on the heap.
 
 ### 7. An exception that crosses a call
 
@@ -223,7 +225,7 @@ A throw is a fault raised on the world; it crosses same-file calls; `finally` ru
 
 <p align="center"><img src="docs/pipeline.svg" alt="Lane B runs both versions; lane A proves them equal; a component gets a third rung" width="100%"></p>
 
-**Lane B, bounded execution.** Both versions load in one process, each in its own sandbox, against the same fakes: every import that leaves the package, every global that reaches outside, every field of a receiver. Inputs come from the parameter types, boundary values first, recursive shapes unfolded, objects sometimes shared between positions. A fake records what is asked of it and answers from the seed and the path, the same on both sides, so two runs disagree only where the code disagrees. After each call lane B compares the four observations. A component is rendered twice from the same slots (Strict Mode's rule), its effects run, its handlers fire along command sequences, its timers fire through the virtual clock. Every call of a library-table operation made from the unit's files is recorded and checked against its row; a row the engine contradicts is a defect of the table, never of the unit. A synchronous loop that never ends is a timeout under the vm watchdog, never a hang.
+**Lane B, bounded execution.** Both versions load in one process, each in its own sandbox, against the same fakes: every import that leaves the package, every global that reaches outside, every field of a receiver. Inputs come from the parameter types and from the values the code compares against, boundary values first, recursive shapes unfolded, objects sometimes shared between positions. A fake records what is asked of it and answers from the seed and the path, the same on both sides, so two runs disagree only where the code disagrees. After each call lane B compares the four observations. A component is rendered twice from the same slots (Strict Mode's rule), its effects run, its handlers fire along command sequences, its timers fire through the virtual clock, in every order the event loop allows when up to three are due at one instant. Every call of a library-table operation made from the unit's files is recorded and checked against its row; a row the engine contradicts is a defect of the table, never of the unit. A synchronous loop that never ends is a timeout under the vm watchdog, never a hang.
 
 **Lane A, the proof.** The lint decides whether every construct has a reading. The translator turns both sides into Dafny: a pure function becomes a function; a loop becomes a recursive helper with its termination measure; an effectful call takes the world and returns the next one; a parameter the function changes is returned beside the result; plain records and arrays live in a heap the function threads; a component is a function of its props and its hook slots. `spec/theorem.py` writes one lemma per changed function: outside the scope, `f_parent(x) == f_candidate(x)`. Code whose text is identical on both sides is aliased, not proved. Dafny and Z3 decide the rest.
 
@@ -235,7 +237,7 @@ A throw is a fault raised on the world; it crosses same-file calls; `finally` ru
 
 <p align="center"><img src="docs/component.svg" alt="A React component as a machine: props and slots in, a tree out, one step per command" width="100%"></p>
 
-**A component is a machine.** Its state is the hook slots in call order plus the props; a command is a fired handler, a settle, a tick of the clock or an unmount; its output after each command is the element tree, the effect and request trace, and the pending work. lean decides at the element-tree layer and says so in every front-end certificate (`observation.layer`, what was rendered, what was not observed). The committed DOM, styles, layout, pixels and the accessibility tree need a browser; no proof exists for them in any field we read, so lean never claims one. Lane B's hook runtime agrees with React-tRace's formal semantics on 8 of 8 ported scenarios (setter during render, effect loops, the 25-retry limit, a module counter, two user clicks).
+**A component is a machine.** Its state is the hook slots in call order plus the props; a command is a fired handler, a settle, a tick of the clock or an unmount; its output after each command is the element tree, the effect and request trace, and the pending work. lean decides at the element-tree layer and says so in every front-end certificate (`observation.layer`, what was rendered, what was not observed). A WITNESS at the element-tree layer is printed as the patch from the parent's tree to the candidate's: the nodes inserted, removed and moved (matched by key), the text and the attributes that changed. The committed DOM, styles, layout, pixels and the accessibility tree need a browser; no proof exists for them in any field we read, so lean never claims one. Lane B's hook runtime agrees with React-tRace's formal semantics on 8 of 8 ported scenarios (setter during render, effect loops, the 25-retry limit, a module counter, two user clicks).
 
 ## Writing code lean can prove
 
@@ -275,9 +277,11 @@ Code written with the lint on is inside the subset from the first line. Code wri
 
 **Scope is optional.** Without it, every changed function of a pull request is judged and a difference is a `WITNESS`. With it, a function you name as meant to change reports `IN-SCOPE` with its lane B result: its difference is information, not a finding. Scope is declared, never inferred: function names, input predicates over the parameters, effect operations allowed to change. The producer of a change is never consulted.
 
-**Lane B needs only Node.** Dafny and Python are needed for the proof lane alone; without them every verdict is lane B's (`WITNESS`, `PASS-decided`, `PASS-bounded`, `ASK`) and the certificate says the proof lane did not run.
+**Lane B needs only Node** (fast-check, which draws and shrinks its environment programs, is vendored under `langs/ts/vendor` with its licence). Dafny and Python are needed for the proof lane alone; without them every verdict is lane B's (`WITNESS`, `PASS-decided`, `PASS-bounded`, `ASK`) and the certificate says the proof lane did not run.
 
 A pull request then carries, per changed function, one verdict and its certificate; `WITNESS` comes with the input or the click sequence, `PASS-proved` with a theorem anyone can re-check.
+
+**In CI.** [`langs/ts/ci/comment.mjs`](langs/ts/ci/) posts that table as one pull-request comment, updated on every push, and the reusable workflow [`.github/workflows/lean-pr.yml`](.github/workflows/lean-pr.yml) runs it from a caller of a few lines, blocking nothing until the caller asks ([`langs/ts/design/ci.md`](langs/ts/design/ci.md)).
 
 ### Try it on your own repository
 
@@ -302,9 +306,9 @@ Measured on a corpus of 39 production TypeScript repositories, private and publi
 
 ## Limits
 
-lean says `ASK` rather than guess. Today it asks on: a `while` loop without a measure (an opaque block), a changed function that calls a changed recursive sibling (an induction the theorem does not yet write), a result that may share an input when the identity skeleton cannot be read (`ASK:identity`), a suspended render, a render loop, two asynchronous schedules racing (lane B runs one microtask order and says so), and code the repository does not contain. It refuses by name what no value model can carry: `eval`, the prototype chain, `super` as a value, identity comparison of objects.
+lean says `ASK` rather than guess. Today it asks on: a `while` loop without a measure (an opaque block), a recursive call made from inside a loop (the loop's helper does not carry the fuel, so the induction over the cycle has nothing to stand on), a result that may share an input when the identity skeleton cannot be read (`ASK:identity`), a suspended render, a render loop, two asynchronous schedules racing (lane B runs one microtask order and says so), and code the repository does not contain. It refuses by name what no value model can carry: `eval`, the prototype chain, `super` as a value, identity comparison of objects. A changed function that calls changed same-file functions is proved through their proved relations, and a changed recursive function or cycle by induction on its fuel; a caller over a callee that is not proved stays unproved through that callee, by name. A changed TypeScript signature (a parameter type, a decorator on the method or a parameter) is `ASK:interface`, never a proof, even when the two Dafny signatures agree, unless the developer declares an adapter from the old parameters to the new ones; a parameter rename alone is not a signature change.
 
-Lane B's bound is real: a frozen world, generated inputs, one microtask order, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. The front end is decided at the element-tree layer; pixels, styles and layout are never judged, and the certificate says so. A child component is a name in the parent's tree with its props, never rendered inside the parent's unit (its state is its own unit's); deep render is on the list below.
+Lane B's bound is real: a frozen world, generated inputs, one microtask order, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. The front end is decided at the element-tree layer; pixels, styles and layout are never judged, and the certificate says so. A child component is a name in the parent's tree with its props; under `--deep` a same-package child is rendered one level down inside the parent's run, on its own hook slots, and the certificate names the mode. A library hook listed in `translate/hooks.json` is a typed transition in lane A and a typed fake in lane B; an unlisted one is an opaque call.
 
 ## What is next
 
@@ -317,7 +321,6 @@ On the board, in order:
 - **The canonical heap.** Allocation order and garbage stop mattering (`shift` for `splice` becomes a theorem); idempotent cell writes proved.
 - **The table grows.** `Object.assign` and `sort` with a pure comparator as transitions; `Object.freeze`, `structuredClone`, Date cells.
 - **Heap enumeration in lane B.** Small heaps with sharing and cycles as inputs.
-- **Deep render and a hook table.** Same-package child components rendered one level down; the top library hooks as typed transitions.
 - **More languages.** Python first, under `langs/py`, through the same conformance suite: the theorem, the verdicts and the certificate do not change; the lint, the translator and the harness are the language's.
 
 ## Repository layout
@@ -337,7 +340,11 @@ spec/theorem.py           the theorem: equal outside S; identity aliasing; prelu
 conformance/              one command runs every language against every fixture
 fixtures/                 shared behaviours, escapes the subset must refuse, clean changes it must pass
 examples/booking/         a pricing core and a quote service written in lean style
-langs/py/, langs/_template  the next languages
+langs/py/lint/            Python: the subset gate, the same rule names as TypeScript where the construct is the same
+langs/py/translate/       Python → Dafny, the same core conventions: the world, faults, loops as measured helpers
+langs/py/exec/            Python lane B: both sides in one process, recording stubs, typed inputs from the hints
+langs/py/subset.md        the Python subset; langs/py/SEMANTICS.md, where Python's meaning differs
+langs/_template/          how to add a language
 ```
 
 ## Contributing

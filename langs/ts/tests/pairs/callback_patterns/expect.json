@@ -1,0 +1,24 @@
+{
+ "scope": [
+  "send_all",
+  "note_keys",
+  "labels",
+  "above",
+  "ids"
+ ],
+ "equal": {
+  "send_all": false,
+  "note_keys": true,
+  "labels": true,
+  "above": false,
+  "ids": true
+ },
+ "why": "Stage 5 rank 13: an effectful array callback may destructure its element (an object or an array pattern without a rest element) or carry a default the element type never takes; the loop binds the pattern from the element at each step, exactly as a for-of with a destructured binding does. sendAll changes its filter from n > 0 to n >= 0 (unproved; lane B WITNESS on an item with a zero count: one more send on the trace and one more id). noteKeys rewrites the map as a for-of with the same array pattern pushing into a result (proved: both bind the pattern from the element at each step, the same loop helper). labels drops a default the element never takes (proved: the array type holds no undefined, so the default was never read). above notes the id instead of the tag (unproved; WITNESS on the trace). ids is untouched and pure.",
+ "b": {
+  "sendAll": "WITNESS",
+  "noteKeys": "PASS-bounded",
+  "labels": "PASS-bounded",
+  "above": "WITNESS",
+  "ids": "PASS-bounded"
+ }
+}

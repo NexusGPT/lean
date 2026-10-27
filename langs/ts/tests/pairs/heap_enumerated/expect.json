@@ -1,0 +1,27 @@
+{
+ "scope": [
+  "write_then_read",
+  "length",
+  "total"
+ ],
+ "equal": {
+  "write_then_read": "withheld",
+  "length": false,
+  "total": true
+ },
+ "why": "Lane B enumerates small heaps first (exec/korat.mjs): every assignment of the record shapes' reference fields and arguments over a pool of two objects per shape, one representative per non-isomorphic graph. writeThenRead reads the second leaf after or before writing the first: equal unless the two arguments are one object, which the enumeration supplies as its first inputs; lane A withholds the value-reading lemma (two input positions of one shape, a write through one: the identity guard's aliasing class). length walks a list: equal on every chain, different on a cycle (the parent stops at the first repeat, the candidate at 64), which the enumeration supplies too. total is read-only and commutative: proved by lane A, bounded by lane B.",
+ "heap": false,
+ "b": {
+  "writeThenRead": "WITNESS",
+  "length": "WITNESS",
+  "total": "PASS-bounded"
+ },
+ "heaps": {
+  "writeThenRead": {
+   "min": 2
+  },
+  "length": {
+   "min": 5
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "scope": [
+  "parse",
+  "summary",
+  "here",
+  "size_of",
+  "widen"
+ ],
+ "equal": {
+  "parse": true,
+  "summary": false,
+  "here": false,
+  "size_of": true,
+  "widen": true
+ },
+ "why": "Stage 5 rank 16: a type alias or an interface declared inside a function is erased at run time, so a unit that declares one is read as if the types were written inline; import.meta is a world read. parse drops its alias and interface and writes the types inline (proved: the same Dafny). summary counts one more (unproved; lane B WITNESS on any input). here appends a fragment to import.meta.url (unproved; WITNESS: the world read is the same on both sides, the result differs). sizeOf is untouched. widen renames its alias (proved by identity).",
+ "b": {
+  "parse": "PASS-bounded",
+  "summary": "WITNESS",
+  "here": "WITNESS",
+  "sizeOf": "PASS-bounded",
+  "widen": "PASS-bounded"
+ }
+}

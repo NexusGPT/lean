@@ -1,0 +1,48 @@
+# lean on its own pull requests: every pair test the pull request touches becomes a change set (its parent, then its
+# candidate, in a scratch two-commit repository) and its table is posted as the comment. Never blocking.
+name: lean self
+
+on:
+  pull_request:
+    paths:
+      - "langs/ts/tests/pairs/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pairs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install dafny
+        run: |
+          brew install dafny
+          dafny --version
+      - name: the touched pairs as a two-commit repository
+        id: pairs
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pairs=$(git diff --name-only "$BASE" "$HEAD" -- langs/ts/tests/pairs | cut -d/ -f5 | sort -u | while read -r p; do [ -d "langs/ts/tests/pairs/$p" ] && echo "$p"; done | paste -sd, -)
+          echo "pairs=$pairs" >> "$GITHUB_OUTPUT"
+          if [ -n "$pairs" ]; then node langs/ts/ci/pairs-repo.mjs --out "$RUNNER_TEMP/pairs" --pairs "$pairs" >> "$GITHUB_OUTPUT"; fi
+      - name: lean table and comment
+        if: ${{ steps.pairs.outputs.pairs != '' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LEAN_PR: ${{ github.event.pull_request.number }}
+        run: |
+          node langs/ts/ci/comment.mjs --repo "$RUNNER_TEMP/pairs" --base "${{ steps.pairs.outputs.base }}" --head "${{ steps.pairs.outputs.head }}" \
+            --no-project --max-functions 40 --out lean-report.md --post

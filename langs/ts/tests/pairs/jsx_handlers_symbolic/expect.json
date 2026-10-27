@@ -1,0 +1,49 @@
+{
+ "scope": [
+  "text_input",
+  "text_input_local",
+  "form",
+  "two_sets",
+  "two_sets_swapped",
+  "toggle",
+  "caption"
+ ],
+ "equal": {
+  "text_input": true,
+  "text_input_local": true,
+  "form": false,
+  "two_sets": true,
+  "two_sets_swapped": false,
+  "toggle": true,
+  "caption": true
+ },
+ "why": "a handler over its event parameter is a symbolic descriptor: a local stands for its initializer, preventDefault is a call step on the event, an updater is applied to the running slot value, and a swapped pair of slot values is a different descriptor",
+ "b": {
+  "TextInput": "PASS-bounded",
+  "TextInputLocal": "PASS-bounded",
+  "Form": "WITNESS",
+  "TwoSets": "PASS-bounded",
+  "TwoSetsSwapped": "WITNESS",
+  "Toggle": "PASS-decided",
+  "Caption": "PASS-bounded"
+ },
+ "handlers": {
+  "TextInput": {
+   "interpretable": 1
+  },
+  "TextInputLocal": {
+   "interpretable": 1
+  },
+  "Form": {},
+  "TwoSets": {
+   "interpretable": 1
+  },
+  "TwoSetsSwapped": {
+   "interpretable": 1
+  },
+  "Toggle": {
+   "interpretable": 1
+  },
+  "Caption": {}
+ }
+}

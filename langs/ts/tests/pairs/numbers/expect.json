@@ -7,11 +7,11 @@
  ],
  "equal": {
   "average": true,
-  "vat": true,
-  "discounted": true,
+  "vat": false,
+  "discounted": false,
   "pages": false
  },
- "why": "a real file (bare / and a float literal): vat and discounted are algebraic rewrites, proved equal on exact reals by lane A and witnessed on IEEE doubles by lane B (rounding differs); pages changes the rounding; average is untouched. The execution lane's verdict stands: PASS-proved on a real unit is a fact about exact arithmetic",
+ "why": "a real file (bare / and a float literal): vat and discounted are algebraic rewrites, proved equal on exact reals by lane A and witnessed on IEEE doubles by lane B (rounding differs); pages changes the rounding; average is untouched. The execution lane's verdict stands: PASS-proved on a real unit is a fact about exact arithmetic 2026-10-27, the heap core: vat and discounted are no longer proved. Each really differs on a negative zero (vat(0, -200) is -0 on the parent and 0 on the candidate; discounted(0, 200) is 0 against -0); layer 1 proved them through its known signed-zero gap, and the core marks the world wherever a negative zero may escape, so the lemma does not close. Lane B witnesses both on drawn inputs.",
  "b": {
   "average": "PASS-bounded",
   "vat": "WITNESS",

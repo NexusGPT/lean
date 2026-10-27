@@ -25,7 +25,7 @@
   "two": true,
   "refactor": "withheld",
   "composed": true,
-  "composition": "withheld",
+  "composition": true,
   "counted": true,
   "collect_counted": true,
   "outside": false,
@@ -53,5 +53,5 @@
   "outsideSync": "PASS-bounded",
   "labelled": "PASS-bounded"
  },
- "why_withheld": "Units refactor, composition: the identity guard withholds the lemma because the value reading could not be shown to be a graph reading (the result comes from a call, an await or a generator, so its identity shape is unreadable); lane B decides (ASK:identity in the check)."
+ "why_withheld": "Unit refactor: the identity guard withholds the lemma because the value reading could not be shown to be a graph reading (the result comes from a call, an await or a generator, so its identity shape is unreadable); lane B decides (ASK:identity in the check). composition (2026-10-27): the guard now reads the translator's own type of a pure generator call, so `[...composed(n)]` is a fresh array of numbers and the lemma stands, proved."
 }

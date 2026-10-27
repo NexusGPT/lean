@@ -20,13 +20,18 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
+import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
 import { Environment, render, BudgetError } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor, aliasInputs } from './gen.mjs';
+import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
 import { Graph } from './graph.mjs';
 import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
+import { witnessPatch } from '../patch.mjs';
+import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
+import { annotateWitness } from './callees.mjs';
+import { decoratorTable } from '../decorators.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -49,6 +54,26 @@ const libraryCases = (summary) => {
 
 const COMPILE = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, experimentalDecorators: true, emitDecoratorMetadata: false, esModuleInterop: true, importHelpers: false, strict: false, sourceMap: false, removeComments: true, jsx: ts.JsxEmit.ReactJSX, allowJs: true, moduleDetection: ts.ModuleDetectionKind.Force };
 
+// the loader's marks: every `on[A-Z]` JSX attribute value becomes `__lean_h(pos, value, file)` and every `useState(...)`
+// or `x.useState(...)` call `__lean_s(pos, call, file)`, where pos is the node's position in the source; both return
+// their value unchanged and record the function or the slot under that position (handlers-interp.mjs meets them with
+// the static descriptors there). The positions are the source file's unless the file uses import.meta before the node
+// (src2 replaces it before transpiling)
+const leanMarks = (file) => (context) => {
+  const f = context.factory;
+  const visit = (node) => {
+    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && /^on[A-Z]/.test(node.name.text) && node.initializer && ts.isJsxExpression(node.initializer) && node.initializer.expression) {
+      const e = node.initializer.expression;
+      return f.updateJsxAttribute(node, node.name, f.updateJsxExpression(node.initializer, f.createCallExpression(f.createIdentifier('__lean_h'), undefined, [f.createNumericLiteral(e.pos), ts.visitNode(e, visit), f.createStringLiteral(file)])));
+    }
+    if (ts.isCallExpression(node) && ((ts.isIdentifier(node.expression) && node.expression.text === 'useState') || (ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'useState'))) {
+      return f.createCallExpression(f.createIdentifier('__lean_s'), undefined, [f.createNumericLiteral(node.pos), ts.visitEachChild(node, visit, context), f.createStringLiteral(file)]);
+    }
+    return ts.visitEachChild(node, visit, context);
+  };
+  return (sf) => ts.visitNode(sf, visit);
+};
+
 // every top-level function and class of the file, exported or not, reachable for the harness
 function unitShim(src, abs) {
   const sf = ts.createSourceFile(abs, src, ts.ScriptTarget.ES2020, true, abs.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
@@ -60,6 +85,8 @@ function unitShim(src, abs) {
   }
   return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n`;
 }
+
+// a non-relative import the project's own `paths` map to a source file of this tree: common.mjs aliasTarget (lane paths-alias)
 
 function resolveRelative(fromFile, spec) {
   const base = path.resolve(path.dirname(fromFile), spec);
@@ -78,15 +105,30 @@ function jsxChildren(c) {
   add(c);
   return out;
 }
-function jsxValue(type, props, key) {
+const deepMode = { on: false }; // --deep: a same-package function component is rendered one level down (moonshot 7); off, a component tag is its name and props (a tree of names)
+function jsxValue(type, props, key, env = null) {
   const tag = typeof type === 'string' ? type : type && type.__isFake ? { $fake: type.__fakePath } : typeof type === 'function' ? { $component: type.name || 'anonymous' } : type === JSX_FRAGMENT ? '' : String(type);
   const rest = {}; let children = [];
   for (const k of Object.keys(props ?? {})) { if (k === 'children') children = jsxChildren(props[k]); else rest[k] = props[k]; }
   if (key !== undefined && key !== null) rest.key = key;
-  return { $el: tag, props: rest, children };
+  const el = { $el: tag, props: rest, children };
+  // deep render: a same-package component (a real function the sandbox linked, never a fake) is called with its props
+  // inside the parent's render, on its own hook frame keyed by its order among the parent's component tags (React keys
+  // by position); one level only, so a component tag inside the child is a name again; no context
+  if (deepMode.on && env && env.react && typeof type === 'function' && !type.__isFake && !(env.deepDepth > 0)) {
+    const frameKey = `${type.name || 'anonymous'}#${env.deepSeq = (env.deepSeq ?? 0) + 1}`;
+    const frames = (env.childFrames ??= new Map()); if (!frames.has(frameKey)) frames.set(frameKey, { hookSlots: [], effectSlots: [] });
+    const frame = frames.get(frameKey);
+    const saved = env.react.__pushFrame(frame); env.deepDepth = (env.deepDepth ?? 0) + 1;
+    try { el.rendered = type({ ...rest, ...(children.length ? { children: children.length === 1 ? children[0] : children } : {}) }); }
+    catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop) throw e; el.rendered = { threw: render(e) }; }
+    finally { env.deepDepth -= 1; env.react.__popFrame(saved); }
+    el.deep = frameKey;
+  }
+  return el;
 }
 const JSX_FRAGMENT = '';
-const jsxRuntime = { jsx: jsxValue, jsxs: jsxValue, jsxDEV: jsxValue, Fragment: JSX_FRAGMENT, __esModule: true };
+const jsxRuntimeFor = (env) => { const j = (type, props, key) => jsxValue(type, props, key, env); return { jsx: j, jsxs: j, jsxDEV: j, Fragment: JSX_FRAGMENT, __esModule: true }; };
 
 class RenderLoop extends Error { constructor(why) { super(`render-loop: ${why}`); this.name = 'RenderLoop'; } } // React's own limits: 25 re-renders from a setter during render, then it throws; effects that keep setting state re-render without end
 // one commit: render until a setter during render stops changing the state (React re-renders at once, up to 25 times)
@@ -125,6 +167,7 @@ function reactRuntime(env) {
       if (!(i in slots)) { slots[i] = typeof initial === 'function' ? initial() : initial; env.record('hook', key, [render(slots[i])]); }
       const value = slots[i];
       const setter = (next) => { const v = typeof next === 'function' ? next(slots[i]) : next; if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; // no trace record: the slots after the handler are the observation (observeJsx), so the order of setter calls inside one handler, React's batching, is not
+      (env.setterIndex ??= new WeakMap()).set(setter, i); // the slot a setter writes: the loader's __lean_s mark turns it into position -> slot on the current frame
       return [value, setter];
     },
     useEffect: (fn, deps) => effectSlot(fn, deps, 'react:effect'),
@@ -135,7 +178,9 @@ function reactRuntime(env) {
     useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; return [slots[i], dispatch]; },
     useLayoutEffect: (fn, deps) => effectSlot(fn, deps, 'react:layout-effect'), // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
-  runtime.__beginRender = () => { slot = 0; }; // a render starts at slot 0 (React's call-order keying)
+  runtime.__beginRender = () => { slot = 0; env.deepSeq = 0; }; // a render starts at slot 0 (React's call-order keying); the deep children restart their order too
+  runtime.__pushFrame = (frame) => { const saved = { slot, hookSlots: env.hookSlots, effectSlots: env.effectSlots, hookFrame: env.hookFrame }; slot = 0; env.hookSlots = frame.hookSlots; env.effectSlots = frame.effectSlots; env.hookFrame = frame; return saved; }; // a child's own hook frame (its own position -> slot map too)
+  runtime.__popFrame = (saved) => { slot = saved.slot; env.hookSlots = saved.hookSlots; env.effectSlots = saved.effectSlots; env.hookFrame = saved.hookFrame; };
   const proxy = new Proxy(runtime, { get(t, p) { if (p === '__esModule') return true; if (p === 'default') return proxy; return p in t ? t[p] : env.module('react')[p]; } });
   env.react = runtime;
   return proxy;
@@ -154,7 +199,141 @@ async function observeJsx(v, env) {
   }
   const children = [];
   for (const c of v.children) children.push(await observeJsx(c, env));
-  return { ...v, props, children };
+  const out = { ...v, props, children };
+  if (Object.hasOwn(v, 'rendered')) out.rendered = await observeJsx(v.rendered, env); // the deep child's own tree, its handlers invoked like the parent's
+  return out;
+}
+
+// the breadcrumb: the phase the harness is in, the input, and the file being loaded, so that a run whose event loop
+// drains before a verdict names what was pending
+export const crumb = { phase: 'start', input: null, loading: null };
+const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; };
+export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
+// a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
+// will settle, no timer or handle left), the run reports ASK naming what was pending, writes it to --out, and exits 2
+export function verdictGuard(out, shape = (r) => r) {
+  let owed = true;
+  const drained = () => {
+    if (!owed) return; owed = false;
+    const res = shape({ verdict: 'ASK', reason: `harness: the run ended before a verdict; ${crumbText()}` });
+    const text = JSON.stringify(res, null, 1);
+    let wrote = null; if (out) { try { fs.writeFileSync(out, text); wrote = out; } catch (e) { console.log(`--out not written: ${e.message}`); } } // the verdict is printed even when --out cannot be written
+    console.log(wrote ? `${res.verdict}: ${res.reason} -> ${wrote}` : text);
+    process.exit(2);
+  };
+  process.on('beforeExit', drained);
+  process.on('uncaughtException', (e) => { crumb.escaped = String(e && e.message || e).slice(0, 300); }); // the late-error hooks keep the process alive past an escaped error; the guard names it
+  return { settle() { owed = false; process.off('beforeExit', drained); } };
+}
+
+// ----- the decorator contract table (translate/decorators.json): lane B applies each listed row in its fakes -----
+// A guard row registers its guards on the class or on the handler, and a call of the handler runs them first (class
+// guards, then method guards): a guard that answers false throws ForbiddenException before the body. A pipe row
+// registers its pipes on the parameter, and the call passes the argument through each. A metadata row writes a cell of
+// the sandbox's metadata store (keyed by the target object, then the key), which the sandbox's Reflect.getMetadata and
+// Nest's Reflector read. Every other decorator keeps the rule of the loader below: run for its reads, its result never
+// replaces the class or the member.
+class ForbiddenException extends Error { constructor() { super('Forbidden resource'); this.name = 'ForbiddenException'; } }
+const decoStore = (env) => (env.decorations ??= { guards: new Map(), pipes: new Map(), cells: new Map(), written: [] });
+const seededUnit = (env, tag) => crypto.createHash('sha256').update(`${env.seed}:${tag}`).digest().readUInt32BE(0) / 4294967296; // the same on both sides for the same question, never drawn from the shared stream
+// a stable name for a guard or a pipe: a same-file class by its name, a fake by its path with the arguments of the
+// call or construction that made it (never its call counter, which another decorator of the file would shift)
+function decoLabel(env, x) {
+  if (x && x.__isFake) {
+    const path = x.__fakePath, m = /^(new )?(.*?)(?:\(\))?#(\d+)$/.exec(path);
+    if (!m) return path;
+    let seen = 0; const op = m[1] ? 'new' : 'call';
+    for (const r of env.trace) if (r.op === op && r.path === m[2] && ++seen === Number(m[3])) return `${m[1] ?? ''}${m[2]}(${JSON.stringify(r.args)})`;
+    return `${m[1] ?? ''}${m[2]}`;
+  }
+  if (typeof x === 'function') return `class:${x.name || 'anonymous'}`;
+  if (x && typeof x === 'object') return `instance:${x.constructor?.name ?? 'Object'}`;
+  return String(x);
+}
+const metaCell = (env, target, prop) => { const s = decoStore(env); let byProp = s.cells.get(target); if (!byProp) s.cells.set(target, byProp = new Map()); const pk = prop === undefined ? '\u0000' : prop; let m = byProp.get(pk); if (!m) byProp.set(pk, m = new Map()); return m; };
+function defineMeta(env, key, value, target, prop) { metaCell(env, target, prop).set(key, value); decoStore(env).written.push({ key, target, prop }); }
+// a read walks the target's prototype chain (reflect-metadata's OrdinaryGetMetadata); a fake target stands for a
+// handler the framework hands in: it reads one of the cells written with that key, in write order, or none, chosen by
+// the seed and the fake's path, the same choice on both sides
+function getMeta(env, key, target, prop) {
+  if (target && target.__isFake) {
+    const ws = decoStore(env).written.filter((w) => w.key === key && w.prop === prop && !(w.target && w.target.__isFake));
+    const i = Math.floor(seededUnit(env, `metadata:${target.__fakePath}:${String(key)}`) * (ws.length + 1));
+    return i < ws.length ? metaCell(env, ws[i].target, prop).get(key) : undefined;
+  }
+  for (let t = target; t !== null && t !== undefined && (typeof t === 'object' || typeof t === 'function'); t = Object.getPrototypeOf(t)) {
+    const byProp = decoStore(env).cells.get(t); const m = byProp && byProp.get(prop === undefined ? '\u0000' : prop);
+    if (m && m.has(key)) return m.get(key);
+  }
+  return undefined;
+}
+function metadataReflect(env) {
+  const R = {}; for (const k of Reflect.ownKeys(Reflect)) if (typeof Reflect[k] === 'function') R[k] = Reflect[k];
+  R.getMetadata = (key, target, prop) => getMeta(env, key, target, prop);
+  R.defineMetadata = (key, value, target, prop) => { env.record('call', 'Reflect.defineMetadata', [render(key), render(value), target && target.__isFake ? target.__fakePath : decoLabel(env, target)]); defineMeta(env, key, value, target, prop); };
+  return R;
+}
+// Nest's Reflector over the same store (@nestjs/core 11: get, getAll, getAllAndOverride, getAllAndMerge)
+function metadataReflector(env) {
+  const get = (key, target) => getMeta(env, key, target);
+  const getAll = (key, targets) => (targets ?? []).map((t) => get(key, t));
+  const isObj = (x) => x !== null && typeof x === 'object' && !Array.isArray(x);
+  return {
+    get, getAll,
+    getAllAndOverride: (key, targets) => { for (const t of targets ?? []) { const v = get(key, t); if (v !== undefined) return v; } return undefined; },
+    getAllAndMerge: (key, targets) => { const vs = getAll(key, targets).filter((v) => v !== undefined); if (!vs.length) return vs; if (vs.length === 1) return isObj(vs[0]) ? vs[0] : [vs[0]]; return vs.reduce((a, b) => (Array.isArray(a) ? a.concat(b) : isObj(a) && isObj(b) ? { ...a, ...b } : [a, b])); },
+  };
+}
+// the module answer for a package of the table: its guard, pipe and SetMetadata exports apply their rows; every other
+// export is the package's fake
+function decoratedModule(env, spec) {
+  const rows = [...decoratorTable().decorators, ...decoratorTable().metadata].filter((r) => r.package === spec && (r.kind === 'guard' || r.kind === 'pipe' || r.export === 'SetMetadata'));
+  if (!rows.length) return null;
+  const cache = (env.decoModules ??= new Map()); if (cache.has(spec)) return cache.get(spec);
+  const over = {};
+  for (const r of rows) {
+    if (r.kind === 'guard') over[r.export] = (...guards) => { const labels = guards.map((g) => decoLabel(env, g)); return function (target, key) { const s = decoStore(env); const k = key === undefined ? '' : String(key); let m = s.guards.get(target); if (!m) s.guards.set(target, m = new Map()); m.set(k, [...(m.get(k) ?? []), ...guards.map((g, i) => ({ guard: g, label: labels[i] }))]); }; };
+    if (r.kind === 'pipe') over[r.export] = (...args) => { const pipes = typeof args[0] === 'string' ? args.slice(1) : args; const labels = pipes.map((p) => decoLabel(env, p)); return function (target, key, index) { if (!pipes.length || typeof index !== 'number') return; const s = decoStore(env); let m = s.pipes.get(target); if (!m) s.pipes.set(target, m = new Map()); const k = String(key); let byIndex = m.get(k); if (!byIndex) m.set(k, byIndex = new Map()); byIndex.set(index, [...(byIndex.get(index) ?? []), ...pipes.map((p, i) => ({ pipe: p, label: labels[i] }))]); }; };
+    if (r.export === 'SetMetadata') over[r.export] = (key, value) => function (target, k, desc) { defineMeta(env, key, value, desc && desc.value !== undefined ? desc.value : target); };
+  }
+  const base = env.module(spec);
+  const mod = new Proxy(base, { get: (t, p) => (typeof p === 'string' && Object.hasOwn(over, p) ? over[p] : t[p]) });
+  cache.set(spec, mod);
+  return mod;
+}
+// a guard's verdict: a same-file guard class runs its own canActivate on a fake receiver and a fake context; any other
+// guard is a seeded answer, true about seven times in ten, the same on both sides for the same guard and input
+function guardVerdict(env, g) {
+  const G = g.guard;
+  if (typeof G === 'function' && !G.__isFake && G.prototype && typeof G.prototype.canActivate === 'function') return G.prototype.canActivate.call(Object.create(G.prototype), env.fake(`guard:${g.label}:context`));
+  if (G && typeof G === 'object' && !G.__isFake && typeof G.canActivate === 'function') return G.canActivate(env.fake(`guard:${g.label}:context`));
+  env.record('call', `guard:${g.label}.canActivate`, []);
+  return seededUnit(env, `guard:${g.label}`) < 0.7;
+}
+// a pipe's result: a same-file pipe runs its own transform; any other pipe answers a value of the parameter's declared
+// type, seeded by the pipe and the argument it received
+function pipeResult(env, p, raw, pspec) {
+  const P = p.pipe;
+  if (typeof P === 'function' && !P.__isFake && P.prototype && typeof P.prototype.transform === 'function') return P.prototype.transform.call(Object.create(P.prototype), raw, env.fake(`pipe:${p.label}:metadata`));
+  if (P && typeof P === 'object' && !P.__isFake && typeof P.transform === 'function') return P.transform(raw, env.fake(`pipe:${p.label}:metadata`));
+  env.record('call', `pipe:${p.label}.transform`, [render(raw)]);
+  const path = `pipe:${p.label}(${JSON.stringify(render(raw))})`;
+  return pspec ? env.typed(path, pspec) : env.answer(path);
+}
+// a call of a handler through its listed guards and pipes (Nest's order: guards, then pipes, then the handler)
+function routeCall(env, Cls, member, args, spec, run) {
+  const s = env.decorations; if (!s) return run(args);
+  const guards = [...(s.guards.get(Cls)?.get('') ?? []), ...(s.guards.get(Cls.prototype)?.get(member) ?? [])];
+  const pipes = s.pipes.get(Cls.prototype)?.get(member);
+  if (!guards.length && !pipes) return run(args);
+  const piped = () => { const a = [...args]; if (pipes) for (const [i, list] of pipes) for (const p of list) a[i] = pipeResult(env, p, a[i], spec.params[i]?.spec ?? null); return run(a); };
+  const step = (i) => {
+    if (i >= guards.length) return piped();
+    const v = guardVerdict(env, guards[i]);
+    const decide = (ok) => { if (!ok) { env.record('guard-deny', guards[i].label, []); throw new ForbiddenException(); } return step(i + 1); };
+    return v && typeof v.then === 'function' ? v.then(decide) : decide(v);
+  };
+  return step(0);
 }
 
 // one sandbox per side: a module cache, the fakes, the frozen globals
@@ -185,24 +364,27 @@ export function sandbox(env, root) {
     requestAnimationFrame: (fn) => env.arm('frame', fn, 16), requestIdleCallback: (fn) => env.arm('idle', fn, 1),
     clearTimeout: (id) => env.clearTimer(id, 'clearTimeout'), clearInterval: (id) => env.clearTimer(id, 'clearInterval'), clearImmediate: (id) => env.clearTimer(id, 'clearImmediate'), cancelAnimationFrame: (id) => env.clearTimer(id, 'cancelAnimationFrame'), cancelIdleCallback: (id) => env.clearTimer(id, 'cancelIdleCallback'), queueMicrotask: (fn) => Promise.resolve().then(fn),
     Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
-    Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect, Proxy, structuredClone,
+    Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
   };
   g.globalThis = g; g.global = g; g.window = undefined;
+  // the loader's marks (leanMarks): a handler attribute's function value and a useState pair, each with its source position
+  g.__lean_h = (pos, fn, file) => { if (typeof fn === 'function') (env.handlerPos ??= new WeakMap()).set(fn, { pos, file }); return fn; };
+  g.__lean_s = (pos, pair, file) => { const i = Array.isArray(pair) && typeof pair[1] === 'function' ? env.setterIndex?.get(pair[1]) : undefined; if (i !== undefined) { const holder = env.hookFrame ?? env; (holder.statePos ??= new Map()).set(`${file}:${pos}`, i); } return pair; };
   const ctx = vm.createContext(g);
   env.realm = vm.runInContext('({ Array: [].constructor, Object: ({}).constructor })', ctx); // the context's own intrinsics: an array literal in the unit uses them, not the host's Array; patched while a recording window is open
   env.ctx = ctx; // a unit call runs under this context's watchdog (guardedCall): a synchronous loop that never ends is a timeout, never a hang or a native crash
   function load(file) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
-    const wasLoading = env.loading; env.loading = true;
-    try { return loadInner(abs); } finally { env.loading = wasLoading; }
+    const wasLoading = env.loading, wasCrumb = crumb.loading; env.loading = true; crumb.loading = abs;
+    try { return loadInner(abs); } finally { env.loading = wasLoading; crumb.loading = wasCrumb; }
   }
   function loadInner(abs) {
     const src = fs.readFileSync(abs, 'utf8');
     const tsName = /\.(mjs|cjs|js)$/.test(abs) ? abs.replace(/\.(mjs|cjs|js)$/, '.ts') : abs; // a script file is read as TypeScript so its imports become requires
     const src2 = src.replace(/\bimport\.meta\.url\b/g, JSON.stringify('file://' + abs)).replace(/\bimport\.meta\b/g, '({})'); // a script's import.meta under CommonJS
-    let js = ts.transpileModule(src2, { compilerOptions: COMPILE, fileName: tsName }).outputText + unitShim(src2, tsName);
+    let js = ts.transpileModule(src2, { compilerOptions: COMPILE, fileName: tsName, transformers: { before: [leanMarks(abs)] } }).outputText + unitShim(src2, tsName);
     // a decorator is run (so its reads and calls are recorded) but its result never replaces the class or the member:
     // the decorated code stays the code under test, whatever the fake decorator returned
     js = js.replace(/var __decorate = \(this && this\.__decorate\) \|\| function \(decorators, target, key, desc\) \{[\s\S]*?\n\};/,
@@ -219,8 +401,10 @@ export function sandbox(env, root) {
         return env.module(spec);
       }
       if (spec === 'react') return react;
-      if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntime; // an element is a value tree, by React's rules for children
-      return env.module(spec); // packages, builtins, path aliases: the environment
+      if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
+      const alias = aliasTarget(abs, spec); // the project's own `paths` alias to a file of this package is code, loaded like a relative import
+      if (alias && (!root || alias.startsWith(root + path.sep))) return load(alias);
+      return decoratedModule(env, spec) ?? env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment (a package of the decorator table answers its listed exports by their rows)
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
@@ -230,7 +414,7 @@ export function sandbox(env, root) {
     wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs));
     return mod.exports;
   }
-  return { load, ctx, react, jsxRuntime };
+  return { load, ctx, react, jsxRuntime: jsxRuntimeFor(env) };
 }
 
 export function pickUnit(exportsObj, spec, env) {
@@ -238,7 +422,7 @@ export function pickUnit(exportsObj, spec, env) {
   if (!spec.isMethod) {
     const f = units[spec.unit] ?? exportsObj[spec.unit];
     if (typeof f !== 'function') return null;
-    return { call: (args) => f(...args), receiver: null };
+    return { call: (args) => (spec.thisParam ? f.call(args[0], ...args.slice(1)) : f(...args)), receiver: null }; // a free function with a declared `this` parameter takes its receiver first
   }
   const Cls = units[spec.className] ?? exportsObj[spec.className];
   if (typeof Cls !== 'function') return null;
@@ -262,12 +446,13 @@ export function pickUnit(exportsObj, spec, env) {
       if (typeof p === 'symbol') return t[p];
       if (p in Cls.prototype) { const v = Reflect.get(Cls.prototype, p, self); return typeof v === 'function' ? v.bind(self) : v; }
       if (Object.prototype.hasOwnProperty.call(t, p)) return t[p]; // a field this run assigned: its value
+      if ((spec.metadataReaders ?? []).includes(p)) { env.record('get', `this.${String(p)}`); return (env.reflector ??= metadataReflector(env)); } // a field declared as Nest's Reflector reads the sandbox's metadata store (decorator table)
       env.record('get', `this.${String(p)}`);
       return env.member('this', p, spec.receiver); // a field of the receiver: typed by the class (a service handle, a value of the field's type)
     },
     set(t, p, v) { const d = Object.getOwnPropertyDescriptor(Cls.prototype, p); if (d?.set) { d.set.call(self, v); return true; } env.record('set', `this.${String(p)}`, [render(v)]); t[p] = v; return true; },
   });
-  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : method.apply(self, args), receiver: self };
+  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : routeCall(env, Cls, member, args, spec, (a) => method.apply(self, a)), receiver: self }; // a handler runs through the guards and pipes its listed decorators registered
 }
 
 // a synchronous call under the vm's watchdog: JavaScript cannot be preempted, so an unbounded loop (an input aliased
@@ -327,7 +512,7 @@ export async function observe(side, spec, args, ms) {
     if (e instanceof Suspended || (e && typeof e.then === 'function')) return { harness: `suspense: ${e instanceof Suspended ? e.message.slice(10) : 'a thenable thrown during render'}` }; // ASK:suspense, never a crash and never a thrown-value outcome
     if (e instanceof RenderLoop) return { harness: e.message }; // ASK:render-loop: React would throw or never settle
     if (e instanceof CallTimeout) return { harness: 'timeout' };
-    if (e instanceof RangeError && /call stack/.test(String(e.message))) return { harness: 'stack overflow' };
+    if (e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message))) return { harness: 'stack overflow' }; // whichever realm threw it: the host's (a fake, a patched intrinsic) or the sandbox's (the unit's own recursion)
     outcome = { threw: render(e) };
   }
   // drain microtasks so pending work settles
@@ -351,12 +536,14 @@ export async function observe(side, spec, args, ms) {
 // interval re-arms after its run and stays pending; a timer that arms another runs it too, up to the limit (then a
 // budget: ASK). The observation holds the fired order (a 'fire' record per timer) and what each callback asked of
 // the environment.
-async function runTimers(env, ms, limit = 50) {
+const PERMS = { 1: [[0]], 2: [[0, 1], [1, 0]], 3: [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] }; // the firing orders of up to three timers due at one instant
+async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0 } = {}) { // until: fire what is due up to this instant (the schedule explorer advances the clock step by step); perm: which order the timers due at one instant fire in (the event loop fixes none for equal instants)
   const t = env.timers; let fired = 0;
   for (;;) {
-    const due = t.queue.filter((e) => e.fired === 0).sort((a, b) => a.due - b.due || a.order - b.order);
+    const due = t.queue.filter((e) => e.fired === 0 && e.due <= until).sort((a, b) => a.due - b.due || a.order - b.order);
     if (!due.length) break;
-    const e = due[0]; if (e.due > t.now) t.now = e.due;
+    const ties = due.filter((x) => x.due === due[0].due); const pick = perm && PERMS[ties.length] ? ties[PERMS[ties.length][perm % PERMS[ties.length].length][0]] : due[0];
+    const e = pick; if (e.due > t.now) t.now = e.due;
     const i = t.queue.indexOf(e); t.queue.splice(i, 1); const j = env.pending.findIndex((x) => x.id === e.id); if (j >= 0) env.pending.splice(j, 1);
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
     env.record('fire', { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[e.kind], [e.due]); // the instant, never the id: an id is an arm counter nobody outside sees
@@ -387,7 +574,7 @@ async function settleEffects(env, ms) {
 }
 const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers) } : v);
 const treeHandlers = (v, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeHandlers(c, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (/^on[A-Z]/.test(k) && typeof x === 'function') out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeHandlers(c, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); return out; };
-async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth }) {
+async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth, schedules = false, handlers = null }) { // schedules: the clock is a command (moonshot 9): a tick fires what is due at the next instant, ties in every order, and a handler may arrive before a timer fires
   const mount = async (name) => { // a fresh mount: the same seed gives the same fakes and the same inputs as the pair's run of this input
     const env = new Environment(seed * 7919 + inputIndex); env.shapes = spec;
     const exportsObj = sandbox(env, roots[name]).load(files[name]); const u = pickUnit(exportsObj, spec, env); if (!u) throw new Error(`${name}: unit ${unit} not exported`);
@@ -402,54 +589,73 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
   const runPath = async (name, labels) => {
     const s = await mount(name); const obs = [];
     const harness = (e) => e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop || e instanceof CallTimeout; // the harness's own stops end the sequence run as ASK; anything else a render throws is an observation
-    const settle = async () => { let t = await commit(s); if (s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and the timers they armed
+    const settle = async () => { let t = await commit(s); if (!schedules && s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and (outside the schedule explorer) the timers they armed
+    const tick = async (perm) => { const q = s.env.timers.queue.filter((e) => e.fired === 0); if (!q.length) return null; const next = Math.min(...q.map((e) => e.due)); await runTimers(s.env, ms, 50, { until: next, perm }); return commit(s); }; // the clock advances to the next due instant; the timers due there fire in the chosen order
     let tree;
     try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: 'mount', threw: render(e), trace: s.env.trace.map((x) => render(x)) }); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
     for (const label of labels) {
       const from = s.env.trace.length;
+      if (label.startsWith('tick@')) { // a clock step: the instant it reaches and what fired are the observation
+        const perm = Number(label.slice(5)) || 0; const before = s.env.timers.now;
+        try { const t2 = await tick(perm); if (t2 !== null) tree = t2; } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; }
+        obs.push({ command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
+        continue;
+      }
       const h = treeHandlers(tree).find((x) => x.label === label);
       if (!h) { obs.push({ command: label, missing: true, handlers: treeHandlers(tree).map((x) => x.label) }); return { obs, s }; }
-      try { const r = guardedCall(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (harness(e)) throw e; s.env.record('handler-throw', label, [render(e)]); }
+      const event = s.env.fake(`react:event:${label}`), slotsBefore = (s.env.hookSlots ?? []).slice(); let threw = false;
+      try { const r = guardedCall(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (harness(e)) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
+      if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // a readable descriptor applied to the slots before the handler must give the slots the handler left
       try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
       obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
     }
+    const pendingTimers = s.env.timers.queue.filter((e) => e.fired === 0); const ties = pendingTimers.length ? pendingTimers.filter((e) => e.due === Math.min(...pendingTimers.map((x) => x.due))).length : 0; // read before the unmount clears them: the clock steps the next level may take
+    const ticks = schedules && pendingTimers.length && pendingTimers.length <= 3 ? Array.from({ length: Math.min(PERMS[ties]?.length ?? 1, 6) }, (_, k) => `tick@${k}`) : [];
     // unmount: every cleanup, in slot order
     const from = s.env.trace.length;
     for (const es of s.env.effectSlots ?? []) if (es && es.cleanup) { s.env.record('call', `${es.key}.cleanup`, []); try { await awaitUnit(s.env, Promise.resolve(callUnit(s.env, es.cleanup)), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
     obs.push({ command: 'unmount', trace: s.env.trace.slice(from).map((x) => render(x)) });
-    return { obs, s, handlers: treeHandlers(tree).map((x) => x.label) };
+    return { obs, s, handlers: treeHandlers(tree).map((x) => x.label), ticks, timers: pendingTimers.length };
   };
-  let paths = 0; let frontier = [[]]; const done = new Set();
+  let paths = 0; let frontier = [[]]; const done = new Set(); let maxTimers = 0;
   for (let level = 0; level <= depth; level++) {
     const next = [];
     for (const labels of frontier) {
       const key = labels.join('>'); if (done.has(key)) continue; done.add(key); paths++;
       let P, C;
       try { P = await runPath('parent', labels); C = await runPath('candidate', labels); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop) return { ask: `sequence ${JSON.stringify(labels)}: ${e.message}` }; throw e; }
+      maxTimers = Math.max(maxTimers, P.timers ?? 0);
       for (let k = 0; k < Math.max(P.obs.length, C.obs.length); k++) {
         const a = JSON.stringify(P.obs[k] ?? null), b = JSON.stringify(C.obs[k] ?? null);
-        if (a !== b) return { witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null } };
+        if (a !== b) return { timers: maxTimers, witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null, ...witnessPatch(P.obs[k] ?? null, C.obs[k] ?? null) } }; // the step's tree difference as a patch
       }
-      if (level < depth) for (const label of (P.handlers ?? []).slice(0, breadth)) next.push([...labels, label]);
+      if (level < depth) for (const label of [...(P.handlers ?? []).slice(0, breadth), ...(P.ticks ?? [])]) next.push([...labels, label]);
     }
     frontier = next;
   }
-  return { paths };
+  return { paths, timers: maxTimers };
 }
 
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
-export async function runPair(opts) {
-  const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2 } = opts;
+// a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
+// `where.cause = 'callee'` when the unit's own text is equal on both sides
+export async function runPair(opts) { return annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit); }
+async function runPairOnce(opts) {
+  const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
+  deepMode.on = !!deep;
   // a missing parent unit has no equality question
   if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
     return runNew(opts);
   }
-  let spec;
-  try { spec = specOf(candidate, unit, { project }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
+  let spec; step('inputs');
+  try { spec = specOf(candidate, unit, { project, usageFrom: parent }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; } // the inputs are shaped by what both versions read and compare against (usage.mjs)
+  const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
+  spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
-  for (let i = 0; i < n; i++) {
+  let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
+  const mountSides = async (i) => { // a fresh environment per side for input i, the unit picked, the inputs drawn
     const sides = {};
     for (const [name, file] of [['parent', parent], ['candidate', candidate]]) {
       const env = new Environment(seed * 7919 + i);
@@ -460,15 +666,37 @@ export async function runPair(opts) {
       if (!u) { harnessAsk = `${name}: unit ${unit} not exported`; break; }
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
-      const inputs = aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i); // the i-th input set may share objects between positions of one shape (heap layer, stage 1)
+      let inputs;
+      try { inputs = i < heaps.builders.length ? heaps.builders[i](env) : aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
       sides[name] = { env, unit: u, inputs };
     }
+    return sides;
+  };
+  const observeBoth = (sides, record) => (record ? recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]) : (async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)])());
+  // retained state: for a class unit, programs of method calls on one constructed instance per side run first (programs.mjs); a divergence in a program that calls this unit is its WITNESS, one elsewhere rides in the certificate for the unit it names
+  let programRun = null;
+  if (spec.isMethod && !spec.isStatic && !spec.accessor && spec.unit.split('.')[1] !== 'constructor') {
+    const { runPrograms } = await import('./programs.mjs'); step('programs');
+    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
+  }
+  for (let i = 0; i < n; i++) {
+    step('lane B', i); let sides = await mountSides(i);
     if (harnessAsk) break;
-    const [oP, oC] = await recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]);
+    let [oP, oC] = await observeBoth(sides, true);
+    if (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout') { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
+      recorderRetries++; sides = await mountSides(i); if (harnessAsk) break; [oP, oC] = await observeBoth(sides, false);
+    }
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
     if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, args: sides.parent.inputs.map((a) => render(a)), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
     if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
+    if (oP.harness === 'stack overflow' && oC.harness === 'stack overflow') { skipped.push(i); continue; } // both sides exhausted the call stack on this input, with and without the recorder: the input proves nothing
+    if ((oP.harness === 'stack overflow' && !oC.harness) || (oC.harness === 'stack overflow' && !oP.harness)) { // one side recursed past the stack where the other returned: the thrown RangeError is that side's outcome (SEMANTICS item 1), observed on the same stack without the recorder
+      const side = oP.harness ? 'parent' : 'candidate';
+      diffs.push({ input: i, args: sides.parent.inputs.map((a) => render(a)), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } });
+      if (diffs.length >= 3) break;
+      continue;
+    }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
@@ -476,23 +704,57 @@ export async function runPair(opts) {
       if (diffs.length >= 3) break;
     }
   }
-  const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
-  Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); return sm; } }); // read when the result is written, after every rung
-  if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop); the input proves nothing' };
+  const bound = { n, seed, ms, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
+  if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing' };
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
   if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };
-  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
+  const handlerRun = sawJsx ? { models: { parent: descriptorsOf(parent, unit, { project }), candidate: descriptorsOf(candidate, unit, { project }) }, stats: newHandlerStats() } : null; // the descriptors of the unit's handlers, read once per side, applied at every fire of the sequences and the finite lane
+  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, components: deep ? 'same-package function components rendered one level down on their own hook frames, no context (--deep)' : 'a tree of names: a component tag is its name and props', notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
+  if (handlerRun) bound.frontEnd.handlers = Object.assign(handlerRun.stats, { observed: FRONT_END_OBSERVATION.handlers }); // how a handler is observed, and the descriptor interpreter's counts: fired, readable, interpretable, agreed, and every defect
+  if (programRun) {
+    const member = spec.member ?? unit.split('.')[1];
+    bound.programs = { programs: programRun.programs, commands: programRun.commands, methods: programRun.methods, maxLen: 5, seed, ...(programRun.skipped ? { skipped: programRun.skipped } : {}) };
+    if (programRun.verdict === 'ASK') bound.programs.ask = programRun.reason;
+    if (programRun.verdict === 'WITNESS') {
+      const mine = programRun.program.some((c) => c.method === member);
+      bound.programs.divergence = { method: programRun.divergence.method, commands: programRun.program.length, program: programRun.program, mine };
+      if (mine) return { verdict: 'WITNESS', unit, witnesses: [{ input: `program ${programRun.programIndex}`, program: programRun.program, args: programRun.program.map((c) => c.args), parent: programRun.divergence.parent, candidate: programRun.divergence.candidate, where: { ...programRun.divergence.where, command: programRun.divergence.command, method: programRun.divergence.method } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+    }
+  }
+  // races (design/schedules.md): an async unit called twice, the second call arriving while the first is pending, every
+  // promise the world answers held by the scheduler; the orders run are bounded by conflicts and by b preemptions
+  const racesOf = async (load) => { step('races'); const { RACE_BOUND } = await import('./program.mjs'); let rr = null; try { rr = await recording(records, load); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') rr = { verdict: 'ASK', reason: `races: ${e instanceof BudgetError ? 'budget: ' + e.message : 'timeout'}`, stats: null }; else rr = { verdict: 'ASK', reason: `races: ${String(e && e.message).slice(0, 160)}`, stats: null }; } if (!rr) return null; const st = rr.stats; bound.races = { liveCalls: 2, preemptions: 2, programs: st?.programs ?? 0, orders: st?.orders ?? null, drawn: st?.drawn ?? 0, dependentPairs: st?.dependentPairs ?? 0, cut: st?.cut ?? null, complete: st?.complete ?? false, events: 'the first call\'s start, the second call\'s arrival, each release of a promise the world answers', bound: RACE_BOUND, ...(rr.skipped ? { skipped: rr.skipped } : {}) }; if (rr.verdict === 'ASK') bound.races.ask = rr.reason; return rr; };
+  const raceWitness = (rr) => ({ verdict: 'WITNESS', unit, witnesses: [{ input: `race program ${rr.witness.program}`, race: true, program: [`call(${rr.witness.program})`, `call2(${rr.witness.program})`], side: rr.witness.side, orders: rr.witness.orders, dependentPair: rr.witness.dependentPair, otherSide: rr.witness.otherSide, replayed: rr.witness.replayed, where: { field: 'race', side: rr.witness.side, moved: rr.witness.dependentPair.moved, before: rr.witness.dependentPair.before } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } });
+  if (!diffs.length && !sawJsx && !harnessAsk && spec.isAsync && spec.isMethod) {
+    const { runClassRaces } = await import('./programs.mjs');
+    const rr = await racesOf(() => runClassRaces({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, guardedCall, awaitUnit } }));
+    if (rr?.verdict === 'WITNESS') return raceWitness(rr);
+    if (rr?.undecided) return { verdict: 'ASK', reason: rr.reason, unit, bound };
+  }
+  if (diffs.length && sawJsx) for (const d of diffs) Object.assign(d, witnessPatch(d.parent, d.candidate)); // a rendered unit: each witness carries the patch from the parent's tree to the candidate's
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+  if (!spec.isMethod && !sawJsx && !harnessAsk && !diffs.length) { // environment programs with retained handles (program.mjs): what the environment may do later with what the unit handed it
+    const { runEnvironmentPrograms } = await import('./program.mjs'); step('environment programs');
+    let r = null;
+    try { r = await recording(records, () => runEnvironmentPrograms({ files: { parent, candidate }, roots, spec, seed, ms, rt: { sandbox, pickUnit, guardedCall, awaitUnit, runTimers } })); } catch (e) { if (e instanceof BudgetError) r = { verdict: 'ASK', reason: `budget: ${e.message}` }; else throw e; }
+    if (r) {
+      bound.environmentPrograms = { runs: r.runs ?? 0, maxCommands: r.maxCommands ?? 6, seed: r.seed ?? seed, commands: 'call, invoke, fire, tick, settle, next, throw, return', observation: 'the outcome, the requests since the previous command, the pending count; never the graph' };
+      if (r.verdict === 'ASK') bound.environmentPrograms.ask = r.reason;
+      if (r.verdict === 'WITNESS') return { verdict: 'WITNESS', unit, witnesses: [{ input: 'environment program', program: r.program, step: r.step, seed: r.seed, path: r.path, replayPath: r.replayPath, replayed: r.replayed, parent: r.parent, candidate: r.candidate, where: { field: 'program', step: r.step } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+      if (spec.isAsync) { const { runFreeRaces } = await import('./program.mjs'); const rr = await racesOf(() => runFreeRaces({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, pickUnit, guardedCall, awaitUnit } })); if (rr?.verdict === 'WITNESS') return raceWitness(rr); if (rr?.undecided) return { verdict: 'ASK', reason: rr.reason, unit, bound }; }
+    }
+  }
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
   if (sawJsx) { // the one-render check found no difference: a finite component is decided over every click order (rung 2); the rest runs re-render sequences (rung 3)
-    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
+    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); step('finite'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
     let domain = null; try { domain = finiteDomain(candidate, unit, { project }); } catch (e) { domain = { why: `finiteness: ${String(e && e.message).slice(0, 120)}` }; }
     if (domain && !domain.why) {
-      const r = await recording(records, () => exploreFinite({ files: { parent, candidate }, roots, spec, unit, domain, seed, ms, rt }));
+      const r = await recording(records, () => exploreFinite({ files: { parent, candidate }, roots, spec, unit, domain, seed, ms, rt, handlers: handlerRun }));
       bound.frontEnd.finite = { slots: domain.slots.map((x) => x.values.length), props: domain.props.map((p) => `${p.name}:${p.opaque ? p.opaque : p.values.length}`), assignments: domain.assignments.length };
       if (r.verdict === 'ASK') return { verdict: 'ASK', reason: `finite exploration: ${r.reason}`, unit, bound };
-      if (r.verdict === 'WITNESS') { bound.frontEnd.renders = 'every click order from every prop assignment, explored'; return { verdict: 'WITNESS', unit, witnesses: [{ input: r.witness.props, sequence: r.witness.clicks, step: r.witness.step ?? null, parent: r.witness.parent ?? null, candidate: r.witness.candidate ?? null, reason: r.witness.reason ?? null, where: { field: 'sequence', command: (r.witness.clicks ?? [])[r.witness.step ?? 0] ?? null } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
-      bound.frontEnd.renders = `every click order from every prop assignment, decided: ${r.pairs} state pairs over ${r.assignments} assignment(s); effects and armed timers inside each step; a function or element prop is one opaque input`;
+      if (r.verdict === 'WITNESS') { bound.frontEnd.renders = 'every click order from every prop assignment, explored'; return { verdict: 'WITNESS', unit, witnesses: [{ input: r.witness.props, sequence: r.witness.clicks, step: r.witness.step ?? null, parent: r.witness.parent ?? null, candidate: r.witness.candidate ?? null, reason: r.witness.reason ?? null, patch: r.witness.patch, patchSummary: r.witness.patchSummary, where: { field: 'sequence', command: (r.witness.clicks ?? [])[r.witness.step ?? 0] ?? null } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
+      bound.frontEnd.renders = `every click order from every prop assignment, decided: ${r.pairs} state pairs over ${r.assignments} assignment(s); effects and armed timers inside each step; a function or element prop is one opaque input; handler descriptors agreed on ${handlerRun.stats.agreed} of ${handlerRun.stats.fired} fired`;
       bound.frontEnd.notObserved = 'committed DOM, computed styles, layout, pixels, accessibility tree; other values of opaque props';
       return { verdict: 'PASS-decided', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
     }
@@ -501,9 +763,15 @@ export async function runPair(opts) {
   if (sawJsx && sequenceDepth > 0) { // not finite: re-render sequences from a fresh mount, on the first inputs
     let paths = 0;
     for (let i = 0; i < Math.min(sequenceInputs, n); i++) {
-      const r = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth }));
+      step('sequences', i);
+      const r = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth, handlers: handlerRun }));
+      if (r.ask === undefined && !r.witness) { // the schedule explorer (moonshot 9): the same machine with the clock as a command, when the mount armed at most three timers
+      const r2 = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, schedules: true, depth: Math.max(sequenceDepth, 2), breadth: sequenceBreadth, handlers: handlerRun }));
+        if (r2.witness) return { verdict: 'WITNESS', unit, witnesses: [{ ...r2.witness, schedule: true }], bound: { ...bound, schedules: { timers: r2.timers, paths: r2.paths, orders: 'every order of the timers due at one instant, up to three' } }, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+        if (r2.ask) bound.schedulesAsk = r2.ask; else bound.schedules = { timers: r2.timers ?? 0, paths: r2.paths, orders: 'every order of the timers due at one instant, up to three' };
+      }
       if (r.ask) return { verdict: 'ASK', reason: `input ${i}: ${r.ask}`, unit, bound };
-      if (r.witness) { bound.frontEnd.renders = `one, then command sequences of up to ${sequenceDepth} clicks`; return { verdict: 'WITNESS', unit, witnesses: [{ input: i, sequence: r.witness.sequence, step: r.witness.step, parent: r.witness.parent, candidate: r.witness.candidate, where: { field: 'sequence', command: r.witness.sequence[r.witness.step] ?? 'unmount' } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
+      if (r.witness) { bound.frontEnd.renders = `one, then command sequences of up to ${sequenceDepth} clicks`; return { verdict: 'WITNESS', unit, witnesses: [{ input: i, sequence: r.witness.sequence, step: r.witness.step, parent: r.witness.parent, candidate: r.witness.candidate, patch: r.witness.patch, patchSummary: r.witness.patchSummary, where: { field: 'sequence', command: r.witness.sequence[r.witness.step] ?? 'unmount' } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
       paths += r.paths ?? 0;
     }
     bound.frontEnd.renders = `one, then every command sequence of up to ${sequenceDepth} clicks over at most ${sequenceBreadth} handlers per step, from a fresh mount, on ${Math.min(sequenceInputs, n)} inputs (${paths} paths); effects re-run by Object.is deps with cleanup first; unmount runs every cleanup`;
@@ -534,8 +802,10 @@ function findRoot(file) {
 if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) {
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) });
+  const guard = verdictGuard(opt('--out', null));
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: a.includes('--deep'), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
   const out = opt('--out', null);
+  guard.settle();
   const text = JSON.stringify(res, null, 1);
   if (out) fs.writeFileSync(out, text); else console.log(text);
   if (out) console.log(`${res.verdict}${res.reason ? ': ' + res.reason : ''} -> ${out}`);

@@ -15,6 +15,10 @@ export class Counter {
     await this.store.save(n);
     return n;
   }
+  step(): number {
+    this.count += this.count === 0 ? 1 : 2;
+    return this.count;
+  }
   label(): string {
     return "n=" + this.count;
   }

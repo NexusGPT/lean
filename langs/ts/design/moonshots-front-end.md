@@ -148,6 +148,26 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `preventDefault`, a local declaration, a branch keep a handler opaque today). Part b (the interpreter) waits
   on the hook-slot runtime.
 - Kill: under 20% readable.
+- Measured (part b, 2026-10-27, `harness/handler_count.mjs`, `translate.mjs --core --tolerant --report` per file): the
+  selection is the first 200 `.tsx` files in sorted path order under the census clones whose syntax carries a JSX
+  attribute named `on[A-Z]` (the 2026-10-26 selection is not recoverable, so the baseline is re-run on the same 200).
+  A boxed function-valued prop is a prop map entry `:= ext_Any_of_fn_...(value)`; other is a named function or a local.
+
+  | lean | files | handler attributes | units | translated | linted out | failed | boxed props | descriptor | opaque | lambda | other |
+  |---|---|---|---|---|---|---|---|---|---|---|---|
+  | 4a5bdec | 200 | 1,731 | 817 | 476 | 331 | 10 | 247 | 54 (21.9%) | 103 (41.7%) | 1 | 89 |
+  | df025b9 | 200 | 1,731 | 817 | 476 | 331 | 10 | 247 | 97 (39.3%) | 60 (24.3%) | 1 | 89 |
+
+  The reader now admits event parameters, calls on them such as `preventDefault`, and `const` locals: descriptors go
+  from 54 to 97 of 247 boxed props, with the same unit counts translated, linted out and failed; of the 158 boxed
+  props that are a function body (descriptor, opaque or lambda), 97 are descriptors. By the part (a) measure (39.3%
+  of boxed props) the 40% bar is not reached; the other boxed props are named functions and locals passed through
+  (`onChange={onChange}`), which no body reader changes.
+
+  The interpreter (lane B, `exec/handlers-interp.mjs`) applies each readable descriptor at every fire of the command
+  sequences and the finite lane and agrees with the real invocation on every interpretable fire of
+  `tests/pairs/jsx_handlers` (17 units) and `tests/pairs/jsx_handlers_symbolic` (7 units); a disagreement is
+  `ASK:handler-model`. Design: `design/handler-descriptors.md`.
 
 ## 7. Deep render: a page as one unit
 
@@ -160,6 +180,15 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   changes: the parent unit shows WITNESS only in deep mode.
 - Pass: at least 50% of tags resolvable in the app repository (the census's top tags, `DocCode` 728,
   `Button` 395, `Card` 214, are a docs site's); the probe behaves.
+- Measured (a), 2026-10-27, `lean-v3/harness/jsx_tags.mjs` over the census's largest app repository (320 `.tsx`
+  files): 2,320 component tags, 2,205 (95%) resolve to a same-package declaration, 69 to a package import, 46
+  unresolved; the top same-package tags are a motion wrapper (257), a label (191) and an icon (148). The bar is met.
+- Built (b), 2026-10-27: `run.mjs --deep` (and `check.mjs --deep`) renders a same-package function component (a real
+  function the sandbox linked, never a fake) inside the parent's render, on its own hook frame keyed by its order
+  among the parent's component tags, one level down, no context; the element keeps its name and props and gains
+  `rendered`, which `observeJsx` walks like the parent's tree (handlers included); the certificate's observation line
+  names the mode. Pair `deep_render`: only the child's text changes; `Page` is PASS-bounded as a tree of names and
+  WITNESS in deep mode. Off by default: the suite runs both modes only for `expect.deep`.
 - Kill: context providers or hooks inside children make over half the deep renders ASK.
 
 ## 8. A hook table, like the library table
@@ -172,6 +201,18 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `useQuery` sites and count how many become exact.
 - Pass: at least 30 of 42 exact. Census: the top 10 non-React hooks are 305 calls (9%); the long tail of
   custom hooks is 1,057 (32%), which the table never reaches and the census says so.
+- Built, 2026-10-27: `translate/hooks.json` (five rows: `useQuery`, `useMutation` of react-query, `useRouter`,
+  `useParams` of next/navigation, `useTranslation` of react-i18next: result shape, effect class, what a callback may
+  do) and `langs/ts/hooks.mjs`. Lane A reads a listed call as a transition of the world returning a datatype of the
+  row's shape (`Hook_useQuery`, primitive fields exact, handles and `data` opaque), types the names bound to it
+  (a variable, a destructured field) by the table where the checker says `any`, and reads their fields as the
+  datatype's; lane B's fake answers a record of that shape with typed fields. Pair `library_hooks` (the module declared
+  as `any`): the swapped-branches candidate is WITNESS, the untouched one PASS-proved.
+- Measured over the census's 226 `.tsx` files that call one of the five (the owner's product repositories): 68 calls
+  become exact (useQuery 24 of 44 sites, useTranslation 23 of 50, useRouter 10 of 156, useParams 8 of 14,
+  useMutation 3 of 15); the rest sit in units the lint keeps out (177 of 371 units) or that fail to translate (6).
+  The bar of 30 of 42 useQuery calls is not met: the limit is the subset the surrounding units fall in, not the
+  table. Custom hooks (the census's long tail) stay opaque transitions.
 - Kill: the result shapes hang on generics the type reader cannot resolve at most sites.
 
 ## 9. A schedule explorer for timers and frames in a component
@@ -183,7 +224,16 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   effect; candidate 0 ms; commands `set(q, 'a')`, `tick(100)`, `settle`.
 - Pass: WITNESS with the clock trace; equal delays PASS-bounded with the bound "3 timers" in the certificate.
   Census: 87 `.tsx` files hold a timer or a frame.
-- Kill: none; the bound is stated.
+- Built, 2026-10-27: the sequence runner gains the clock as a command. In schedule mode a settle fires no timer; a
+  `tick@k` command advances the clock to the next due instant and fires what is due there in the k-th order of their
+  arm order (every order of up to three timers at one instant, `runTimers` with `until` and `perm`); the clock step's
+  observation carries the instants reached, the tree, the requests and the pending work; a handler may arrive before
+  a timer fires. The explorer runs after the plain sequences when the mount armed one to three timers; a divergence is
+  a WITNESS with the sequence (`tick@1` for the order the arm order hides), a clean run states the timer bound and the
+  paths (`bound.schedules`). The fire record already carries the instant, so a delay change (300 ms to 0) is a WITNESS
+  at the first render with the clock in the trace. Pair `schedule_explorer`: SearchBox (the delay), Order (a timer
+  whose report depends on which of two equal timers fired first: witnessed by `tick@1` alone), Twin (two equal timers
+  the same on both sides: nine paths agree, two timers in the bound).
 
 ## 10. The front-end mutation benchmark nobody has
 
@@ -213,6 +263,13 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   path ends there, both sides compared). The remaining misses are the ones named above: a dropped useMemo or
   useCallback dependency, a list or text inside a branch the inputs never take.
 - Kill: none; this is the measure the other nine are judged on.
+
+## Class components, counted (2026-10-27)
+
+Over the 39 census roots (31,106 source files walked, `node_modules`, `dist`, `build`, `.next` and `out` skipped),
+6 classes extend `Component` or `PureComponent`, in 4 files: two sign-in views and two error boundaries. Decision:
+no lifecycle machine in the fake runtime. A class component stays a unit of methods (its `render` a method of an
+explicit receiver, its fields in the world), never a machine; the hook runtime is where the components are.
 
 ## Two more, cheaper, waiting for the owner
 

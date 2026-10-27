@@ -1,7 +1,7 @@
 {
  "_note": "lean's reading today per runtime syntax kind, and the faithful reading. today: exact (a value or statement read as is) | transition (a world step with a recorded request) | opaque (a value kept by text and captures) | refused (a lint rule names it) | erased (no runtime meaning). Sources: the lint's expression and statement switches (admitted kinds; the default refuses), translate.mjs, the design notes under design/. The faithful column is the target (CLAIM). 'uninterpreted' in the row's acceptance is the world read or transition without a model (named 'transition' here); 'absent' is a kind with no lint case.",
  "Identifier": {
-  "today": "exact: a parameter, a local, a same-file unit; an outside name is a world read or refused (global-read)",
+  "today": "exact: a parameter, a local, a same-file unit; an outside name is a world read (a global the lib or an @types package declares: lib-globals, done (lane)) or refused (global-read: unresolved, module state, a global only the project declares)",
   "faithful": "same; module and captured cells as ledger cells (research note section 1)"
  },
  "Block": {
@@ -17,7 +17,7 @@
   "faithful": "same, plus the library table as transitions and callable records for escaped functions"
  },
  "ReturnStatement": {
-  "today": "exact; a bare return in a value unit refused (bare-return)",
+  "today": "exact; a bare return in a value unit refused (bare-return); in a non-async Promise-returning unit, a returned outside call, Promise static, chain, held name or conditional of these is the handle the call returned, unsettled (promise-handle, partial (lane))",
   "faithful": "same"
  },
  "StringLiteral": {
@@ -25,7 +25,7 @@
   "faithful": "same"
  },
  "BinaryExpression": {
-  "today": "exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; assignment a write; bitwise refused unless the integer file",
+  "today": "exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; === between a primitive-or-record union and a literal exact on the literal's primitive arm since the mixed-vs-literal reading; assignment a write; bitwise refused unless the integer file",
   "faithful": "same"
  },
  "VariableDeclaration": {
@@ -77,7 +77,7 @@
   "faithful": "same, with pending reactions on the ledger"
  },
  "Parameter": {
-  "today": "exact; rest parameters and defaults by the param-form rule",
+  "today": "exact; rest parameters and defaults by the param-form rule; a parameter the unit reassigns in its own body is a local that starts as the argument (param-rebind), refused inside a callback, as an output or under an earlier closure (param-assign)",
   "faithful": "same, rest parameters admitted"
  },
  "ConditionalExpression": {
@@ -109,7 +109,7 @@
   "faithful": "same"
  },
  "ElementAccessExpression": {
-  "today": "exact for literal and typed keys; a dynamic key refused (dynamic-key) outside the dynamic-record reading",
+  "today": "exact for literal and typed keys; an open key on a plain record of data fields an uninterpreted lookup (open-key-read); other dynamic keys refused (dynamic-key)",
   "faithful": "heap read by key"
  },
  "AsExpression": {
@@ -129,7 +129,7 @@
   "faithful": "same"
  },
  "ObjectBindingPattern": {
-  "today": "exact",
+  "today": "exact; the record rest of a parameter, any field types, an uninterpreted function of the source named by the excluded keys (record-rest-any, done (lane))",
   "faithful": "same"
  },
  "CatchClause": {

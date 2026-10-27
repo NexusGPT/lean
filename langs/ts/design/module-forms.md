@@ -67,3 +67,12 @@ Instances inspected (paths relative to the read-only census/bench roots):
   named global, not a global root; retains the existing reading.
 - census/repos/nutshell/apps/desktop/main/src/start.ts:98: process.platform read,
   a world transition before the existing notification call.
+
+## A module const that reads another
+
+`const B = A + 1` was an outside constant keyed by B's own text, so a candidate that changed only `A` read the same
+constant and proved a changed result equal (pair `module_const_deps`: `limit` returns 2 against 3). The key now covers
+the same-file declarations the initializer reads (`iteratorProgram`), and an initializer of literals and such consts
+under `+`, `-`, `*` is read as its value, so `UNIT * 3` against `3 * UNIT` proves. Lane B runs each side's module, a
+WITNESS for `limit`.
+

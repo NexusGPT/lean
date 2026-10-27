@@ -1,0 +1,13 @@
+{
+ "name": "fast-check",
+ "version": "4.10.2",
+ "license": "MIT",
+ "homepage": "https://fast-check.dev/",
+ "repository": {
+  "type": "git",
+  "url": "git+https://github.com/dubzzz/fast-check.git",
+  "directory": "packages/fast-check"
+ },
+ "type": "module",
+ "vendored": "lean keeps the ESM build and the licence only; see langs/ts/vendor/VENDOR.md"
+}

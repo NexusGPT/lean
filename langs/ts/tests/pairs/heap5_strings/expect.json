@@ -1,0 +1,7 @@
+{
+ "scope": ["slug", "words", "is_draft", "short", "has_tag"],
+ "equal": {"slug": false, "words": true, "is_draft": true, "short": true, "has_tag": true},
+ "why": "string methods read exactly through the ordinary lane's helpers (design/strings.md, the BMP envelope): slug joins words with _ for - (unproved, WITNESS on a title with a space); words is untouched, a split allocating its pieces and its length read; isDraft compares the first five characters for startsWith (proved); short slices ten characters where the parent takes a substring when longer (proved); hasTag tests indexOf against 0 for includes (proved: both are the same search).",
+ "b": {"slug": "WITNESS", "words": "PASS-bounded", "isDraft": "PASS-bounded", "short": "PASS-bounded", "hasTag": "PASS-bounded"},
+ "heap": true
+}

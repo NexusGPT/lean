@@ -6,26 +6,26 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 
 | kind | units | share | lint | reading today | faithful reading |
 |---|---:|---:|---|---|---|
-| Identifier | 59378 | 94.8% | admitted | exact: a parameter, a local, a same-file unit; an outside name is a world read or refused (global-read) | same; module and captured cells as ledger cells (research note section 1) |
+| Identifier | 59378 | 94.8% | admitted | exact: a parameter, a local, a same-file unit; an outside name is a world read (a global the lib or an @types package declares: lib-globals, done (lane)) or refused (global-read: unresolved, module state, a global only the project declares) | same; module and captured cells as ledger cells (research note section 1) |
 | Block | 59338 | 94.7% | admitted | exact | same |
 | PropertyAccessExpression | 50650 | 80.8% | admitted | exact on records and arrays by shape; this.x a world read; a getter a callable unit; an unknown member refused (unsupported-member) | heap read on the ledger for every reference-typed receiver |
-| CallExpression | 50125 | 80% | admitted | exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; refused for unsupported calls and .call/.apply | same, plus the library table as transitions and callable records for escaped functions |
-| ReturnStatement | 49908 | 79.7% | admitted | exact; a bare return in a value unit refused (bare-return) | same |
+| CallExpression | 50125 | 80% | admitted;  | exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; an optional call `f?.(x)` on a local, a record path or this: the call and its arguments on the present branch only (optional-call, done (lane)); the stage 5 library rows: pop, shift and splice as values, fill, toSorted, toReversed, findLast, findLastIndex, lastIndexOf, toString on primitives and arrays, substr, search, matchAll, and the locale reads as transitions (library-rows, done (lane)); refused for unsupported calls and .call/.apply | same, plus the library table as transitions and callable records for escaped functions |
+| ReturnStatement | 49908 | 79.7% | admitted | exact; a bare return in a value unit refused (bare-return); a bare return in a constructor (Unit: `new` yields the receiver) or in a unit or callback whose result admits undefined (`T;  | undefined`, `void`, `any`, `unknown`) reads as undefined, the result's absent value (bare-return-void, done (lane)) | same |
 | StringLiteral | 38403 | 61.3% | admitted | exact; a lone surrogate refused (string-code-unit) | same |
-| BinaryExpression | 34883 | 55.7% | admitted | exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; assignment a write; bitwise refused unless the integer file | same |
+| BinaryExpression | 34883 | 55.7% | admitted | exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; === between a primitive-or-record union and a literal exact on the literal's primitive arm since the mixed-vs-literal reading; assignment a write; bitwise refused unless the integer file | same |
 | VariableDeclaration | 33616 | 53.7% | no case (refused by default, or reached through its parent) | exact; a let rebinding read by its first assigned type | same |
 | VariableStatement | 32918 | 52.5% | admitted | exact | same |
-| ObjectLiteralExpression | 28851 | 46% | admitted | exact as a fresh record; in the heap core a fresh node; literal methods as function fields; getters and setters by name only | fresh heap node with a proto edge |
+| ObjectLiteralExpression | 28851 | 46% | admitted | exact as a fresh record; in the heap core a fresh node; literal methods as function fields; getters and setters by name only; a computed key of literal type names its field, a union of literals is a case split on the key (stage 5 rank 14) | fresh heap node with a proto edge |
 | PropertyAssignment | 26056 | 41.6% | no case (refused by default, or reached through its parent) | exact | same |
-| ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; anything else refused (unsupported-syntax) | same |
+| ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; a `=` into a field of `process` a world transition (process-write, done (lane)); anything else refused (unsupported-syntax) | same |
 | IfStatement | 23894 | 38.1% | admitted | exact | same |
 | NumericLiteral | 18802 | 30% | admitted | exact as int or real by file; -0 witnessed in lane B, refused from the heap core | same |
-| ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
+| ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; a synchronous array-method callback writing outer cells as a loop body (stage 5 rank 19); a const arrow only ever called as a statement spliced at each call (stage 5 rank 21); otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
 | ThisKeyword | 17059 | 27.2% | admitted | exact as the receiver (self) of a class unit; a field read a world read; a write a world write | the receiver as a heap node |
 | ParenthesizedExpression | 16252 | 25.9% | admitted | exact | same |
 | TemplateExpression | 16167 | 25.8% | admitted | exact (string concatenation of converted parts) | same |
 | AwaitExpression | 15997 | 25.5% | admitted | exact as a settled source with the try fault channel (promise forms) | same, with pending reactions on the ledger |
-| Parameter | 15777 | 25.2% | no case (refused by default, or reached through its parent) | exact; rest parameters and defaults by the param-form rule | same, rest parameters admitted |
+| Parameter | 15777 | 25.2% | no case (refused by default, or reached through its parent); an effectful array callback's element parameter may be a pattern or carry a never-taken default (callback-patterns) | exact; rest parameters and defaults by the param-form rule; a parameter the unit reassigns in its own body is a local that starts as the argument (param-rebind), refused inside a callback, as an output or under an earlier closure (param-assign) | same, rest parameters admitted |
 | ConditionalExpression | 14656 | 23.4% | admitted | exact | same |
 | ArrayLiteralExpression | 14558 | 23.2% | admitted | exact as a sequence; holes refused; in the heap core a fresh node | fresh heap node |
 | PrefixUnaryExpression | 13715 | 21.9% | admitted | exact for !, unary minus on numbers, ++/-- on a name; -0 refused from the heap core | same |
@@ -33,14 +33,14 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | ShorthandPropertyAssignment | 12737 | 20.3% | no case (refused by default, or reached through its parent) | exact | same |
 | NullKeyword | 10147 | 16.2% | admitted | exact (Absent) | same |
 | BindingElement | 8691 | 13.9% | no case (refused by default, or reached through its parent) | exact (destructuring) | same |
-| ElementAccessExpression | 8672 | 13.8% | admitted | exact for literal and typed keys; a dynamic key refused (dynamic-key) outside the dynamic-record reading | heap read by key |
+| ElementAccessExpression | 8672 | 13.8% | admitted | exact for literal and typed keys; an open key on a plain record of data fields an uninterpreted lookup (open-key-read); other dynamic keys refused (dynamic-key) | heap read by key |
 | AsExpression | 8500 | 13.6% | admitted | exact (the asserted type is read) | same |
 | TrueKeyword | 7702 | 12.3% | admitted | exact | same |
-| ThrowStatement | 6263 | 10% | admitted | exact as a fault on the try channel (exceptions across calls) | same |
+| ThrowStatement | 6263 | 10% | admitted | exact as a fault on the try channel (exceptions across calls); inside a synchronous array callback the holding statement is one opaque block, inside a handed-away arrow part of the opaque value (stage 5 rank 20) | same |
 | JsxAttribute | 5979 | 9.5% | no case (refused by default, or reached through its parent) | exact as a boxed prop; a handler as a descriptor or opaque value | same |
 | TryStatement | 5893 | 9.4% | admitted | exact (try/catch/finally with the fault channel) | same |
 | FalseKeyword | 5564 | 8.9% | admitted | exact | same |
-| ObjectBindingPattern | 5564 | 8.9% | no case (refused by default, or reached through its parent) | exact | same |
+| ObjectBindingPattern | 5564 | 8.9% | no case (refused by default, or reached through its parent); the element of an effectful array callback (callback-patterns) | exact; the record rest of a parameter, any field types, an uninterpreted function of the source named by the excluded keys (record-rest-any, done (lane)) | same |
 | CatchClause | 5517 | 8.8% | no case (refused by default, or reached through its parent) | exact (part of TryStatement) | same |
 | ForOfStatement | 5511 | 8.8% | admitted | exact over sequences (loop forms); over an opaque iterable refused | same, plus Map and Set iteration from the library table |
 | JsxExpression | 5495 | 8.8% | admitted | exact as a child or attribute value | same |
@@ -49,13 +49,13 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | JsxElement | 4911 | 7.8% | admitted | exact as a JsxElem value | same |
 | JsxText | 4770 | 7.6% | no case (refused by default, or reached through its parent) | exact (JSX whitespace rule) | same |
 | ArrayBindingPattern | 3982 | 6.4% | no case (refused by default, or reached through its parent) | exact | same |
-| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; otherwise refused (spread) | same |
+| SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; a fixed tuple spread into an outside call is its elements in order (stage 5 rank 18); otherwise refused (spread); a Map or Map iterator spread stays refused until the Map reading keeps insertion order (spread-map, measured) | same |
 | TypeOfExpression | 3649 | 5.8% | admitted | exact (type tests) | same |
 | RegularExpressionLiteral | 2457 | 3.9% | admitted | exact for the supported regex forms (strings reading); otherwise opaque | same |
 | ContinueStatement | 2049 | 3.3% | admitted | exact (loop forms) | same |
 | SuperKeyword | 1636 | 2.6% | admitted | exact for same-file parent classes (class_super pair) | same |
 | UndefinedKeyword | 1596 | 2.5% | no case (refused by default, or reached through its parent) |  |  |
-| ForStatement | 1542 | 2.5% | admitted | exact for the counted forms (loop forms); other forms refused (loop-form) | same |
+| ForStatement | 1542 | 2.5% | admitted | exact for the counted forms (loop forms); since stage 5 rank 15 any other header is `init; while (cond) { body; step }`: a derived bound when the counter, the limit and a literal step give one, else one opaque block | same |
 | NoSubstitutionTemplateLiteral | 1537 | 2.5% | admitted | exact | same |
 | PostfixUnaryExpression | 1345 | 2.1% | admitted | exact on a name; on a member a world write | heap write |
 | JsxSpreadAttribute | 1306 | 2.1% | no case (refused by default, or reached through its parent) | exact as an ordered prop merge | same |
@@ -68,7 +68,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | DeleteExpression | 524 | 0.8% | admitted | refused (delete) | heap key removal on the ledger |
 | YieldExpression | 295 | 0.5% | admitted | generators: a bounded reading; most forms refused (generator-use) | a state machine on the ledger |
 | MethodDeclaration | 285 | 0.5% | no case (refused by default, or reached through its parent) | exact for class methods as units Class.method and immutable object-literal methods as function fields; a mutating literal method refused (object-method-mutation) | a callable record on the object's proto |
-| FunctionDeclaration | 248 | 0.4% | admitted | exact as a unit; nested declarations as local function values | same |
+| FunctionDeclaration | 248 | 0.4% | admitted | exact as a unit; nested declarations as local function values, or spliced at each call statement when only ever called (stage 5 rank 21) | same |
 | OmittedExpression | 217 | 0.3% | no case (refused by default, or reached through its parent) |  |  |
 | DoStatement | 196 | 0.3% | admitted | exact for the admitted forms | same |
 | TaggedTemplateExpression | 186 | 0.3% | admitted | refused (unsupported-syntax) unless the tag is a known pure tag | a call with the strings array |
@@ -76,15 +76,15 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | PrivateIdentifier | 90 | 0.1% | no case (refused by default, or reached through its parent) |  |  |
 | FunctionExpression | 90 | 0.1% | admitted | as ArrowFunction; a this-capturing one refused (this) | callable record |
 | ForInStatement | 81 | 0.1% | admitted | refused unless the dynamic-record reading applies | key iteration on the ledger |
-| TypeAliasDeclaration | 60 | 0.1% | no case (refused by default, or reached through its parent) |  |  |
-| MetaProperty | 41 | 0.1% | no case (refused by default, or reached through its parent) |  |  |
+| TypeAliasDeclaration | 60 | 0.1% | admitted | erased at run time, inside a function too (stage 5 rank 16); its uses are read through the checker | none |
+| MetaProperty | 41 | 0.1% | admitted | `import.meta.x` is a world read (stage 5 rank 16); `import.meta.env` and `new.target` refused | none |
 | GetAccessor | 22 | 0% | no case (refused by default, or reached through its parent) |  |  |
 | BigIntLiteral | 20 | 0% | admitted | exact as int | same |
 | MethodSignature | 15 | 0% | no case (refused by default, or reached through its parent) |  |  |
 | LabeledStatement | 10 | 0% | admitted | refused (unsupported-syntax) | same as the loop it labels |
-| InterfaceDeclaration | 9 | 0% | no case (refused by default, or reached through its parent) |  |  |
-| PropertyDeclaration | 7 | 0% | no case (refused by default, or reached through its parent) |  |  |
-| ClassDeclaration | 7 | 0% | admitted | exact as units Class.method with a receiver; inheritance across files refused (class) | same, with a proto edge |
+| InterfaceDeclaration | 9 | 0% | admitted | erased at run time, inside a function too (stage 5 rank 16) | none |
+| PropertyDeclaration | 7 | 0% | no case (refused by default, or reached through its parent) | a static field of a same-file class read as `C.K`: a constant, or a world cell when written, holding an object or reachable from outside ([class statics](class-statics.md)) |  |
+| ClassDeclaration | 7 | 0% | admitted | exact as units Class.method with a receiver; a static method called as `C.m(x)` is the unit `C.m` ([class statics](class-statics.md)); inheritance across files refused (class) | same, with a proto edge |
 | ClassExpression | 5 | 0% | admitted | refused (class) | allocation of a class value |
 | Constructor | 5 | 0% | no case (refused by default, or reached through its parent) |  |  |
 | EmptyStatement | 4 | 0% | admitted | exact | same |

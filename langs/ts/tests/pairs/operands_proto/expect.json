@@ -1,0 +1,13 @@
+{
+ "scope": [
+  "tally"
+ ],
+ "equal": {
+  "tally": true
+ },
+ "why": "Object.create(null) typed as a dictionary is the empty dictionary the candidate writes as a literal: proved. Object.create with a prototype, setPrototypeOf and getPrototypeOf stay refused by name (the prototype chain has no transition).",
+ "heap": false,
+ "b": {
+  "tally": "PASS-bounded"
+ }
+}

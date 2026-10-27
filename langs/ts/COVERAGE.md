@@ -172,7 +172,7 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | element, fragment, text, attributes | 5,972, 713 | exact (`JsxNode` value tree) | same | done |
-| handler attribute | 1,560 | pure lambdas; zero-argument straight-line calls as symbolic deferred steps with captured values; other bodies opaque by text and captures | event parameters and branching deferred bodies as symbolic expressions too | partial (lane) |
+| handler attribute | 1,560 | pure lambdas; straight-line calls, slot sets and `const` locals as a symbolic descriptor with captured values, an event parameter as the atom `ReactParam(k)` (`handlers.mjs`); lane B applies each readable descriptor to the hook slots and compares with the real invocation (`ASK:handler-model` on a disagreement); other bodies opaque by text and captures | branching deferred bodies as symbolic expressions too | partial (lane) |
 | spread attribute | 1,295 | a map merge in order | same | done |
 | conditional children, `.map` children, arrays | | exact (`JsxNothing`, `JsxList`) | same | done |
 | hooks (`useState`, `useEffect`, `useQuery`, `useRouter`) | 2,585 | state and scheduling transitions; current state and setter are values returned by the world; setter invocation is a transition | same | done (lane) |
