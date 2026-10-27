@@ -73,4 +73,7 @@ A write of a string or a number value under a dynamic key enters with the guard.
 
 ## Measurement
 
-See the lane report (`harness/lanes/proto-write.md`): census on both roots before and after.
+`node langs/ts/census.mjs`, units inside the subset, base 91b7237 run from a scratch copy, then this reading:
+nexus 23,854 to 23,733 of 26,520 (117 units lost: 91 by the write refusal, 21 by `in` in a file holding one, 5 by
+both); langchainjs 3,575 to 3,486 of 4,871 (82 lost: 24, 54, 4). Without the `prototypeMaker` line the counts are
+23,754 and 3,544. No unit entered: the guarded primitive write was already inside, as an unsound map update.
