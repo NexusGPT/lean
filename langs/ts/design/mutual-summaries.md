@@ -46,15 +46,11 @@ on the others. Relative termination is the side condition in the certificate (`i
 definition decreases its fuel, and running out is the same uninterpreted value on both sides, so the equality includes
 both sides recursing to the same depth. A cycle without a fuel parameter gets no premise and stays as before.
 
-    // INDUCTION Equal_is_even: decreases fuel over is_even,is_odd; termination: ...
-    lemma Equal_is_even(fuel: nat, n: int) ... decreases fuel
-    { forall r0_is_odd: nat, r1_is_odd: int | !InScope_is_odd(r0_is_odd, r1_is_odd) && r0_is_odd < fuel
-        ensures is_odd_parent(r0_is_odd, r1_is_odd) == is_odd_candidate(r0_is_odd, r1_is_odd)
-      { Equal_is_odd(r0_is_odd, r1_is_odd); } ... }
+    lemma Equal_is_even(fuel: nat, n: int) ... decreases fuel   // INDUCTION over is_even,is_odd
+    { forall r0: nat, r1: int | !InScope_is_odd(r0, r1) && r0 < fuel ensures ... { Equal_is_odd(r0, r1); } ... }
 
-The pair `recursion` keeps its expectations: `total` and `depth` recurse from inside a loop, and the translator's loop
-helper passes a fuel it does not bind (a resolution error in Dafny), so nothing in that file is proved and both stay
-not proved, as before. That is a translator defect outside this row; the README names the loop case.
+The pair `recursion` keeps its expectations: its loop helper passes a fuel it does not bind (a translator defect, a
+Dafny resolution error), so nothing in it is proved, as before.
 
 ## The adapter theorem
 
@@ -78,18 +74,27 @@ not the adapted claim either, and it does not run the candidate through A (the m
 lane B can run): check.mjs records lane B's verdict and lets lane A answer; if lane A does not prove it, the verdict
 is ASK, never PASS-bounded. The pair `adapters` checks the whole verdict per unit (`expect.check`).
 
-## Soundness
+## Adapters on heap-core units
 
+A unit in the heap core takes and returns the heap world and carries `// HYP <f>: WF(hw_)`. An adapter on it is read
+through the core's encoding: the heap world is threaded, the map is over the core's value types (`number | null` is
+its `Option`, so `Some(x)`), and the lemma assumes the parent's hypothesis; the candidate runs on A(x):
+
+    // ADAPTER Equal_pad: pad_candidate(hw_, Some(x)) == pad_parent(hw_, x) (door comment)
+    lemma Equal_pad(hw_: HWorld, x: int) requires ... WF(hw_) ensures pad_parent(hw_, x) == pad_candidate(hw_, Some(x))
+
+A candidate `Ref` parameter is a cell the core allocates, which no expression over values makes: withheld as
+`ASK:interface` naming the adapter and the core, unless the map passes a parent `Ref` through.
+
+## Soundness
 - A summary is a proved lemma, resolved by the rule above; an unproved one is shown as such and lowers the caller.
-- An induction premise is checked by Dafny's own termination check on the fuel; the fuel reading itself is the
-  translator's (SEMANTICS, Recursion).
+- An induction premise is checked by Dafny's termination check on the fuel (the fuel reading is the translator's).
 - An adapter is a declared proof input, shown in the certificate with its door; the claim proved is the adapted one,
   never the raw same-input one, and the theorem refuses an adapter that names a parameter the function lacks, leaves
   a candidate parameter without a value, or maps with anything but an expression.
-- Heap-core units (a `// HYP` hypothesis) and generic callees keep their bodies: the heap hypothesis handling is
-  unchanged.
+- Heap-core and generic callees keep their bodies as summaries; an adapted heap-core unit assumes only the parent's
+  hypothesis, the weaker premise, so the claim covers every input the parent receives.
 
 ## What stays out
-
 Generated modules: compared through the schema and the generator version as the module contract, a later row.
 Cross-file callees: a transition today. A recursive call inside a loop helper (above). Lane B under an adapter.
