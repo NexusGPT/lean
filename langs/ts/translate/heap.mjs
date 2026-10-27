@@ -166,6 +166,15 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const isAssignCall = (e) => ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign'; // Object.assign(t, s) as a statement: the table's Assign_ row on same-shape records
   const BINOPS = new Set([K.PlusToken, K.MinusToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken]);
   const unparen = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
+  const cbBody = (cb) => (!ts.isBlock(cb.body) ? cb.body : cb.body.statements.length === 1 && ts.isReturnStatement(cb.body.statements[0]) && cb.body.statements[0].expression ? cb.body.statements[0].expression : null); // `(x) => e` or `(x) => { return e; }`
+  // the string rows of the table read as pure functions of their operands: trim and replace (a string pattern) are
+  // bodiless, the same on both sides; join of strings is the exact fold, join of numbers bodiless (it formats them)
+  const strCall = (e) => { if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.questionDotToken) return null; const m = e.expression.name.text, recv = typeOf(e.expression.expression); const str = (x) => !!(typeOf(x).flags & TF.StringLike);
+    if (m === 'trim' && (recv.flags & TF.StringLike) && !e.arguments.length) return 'trim';
+    if (m === 'replace' && (recv.flags & TF.StringLike) && e.arguments.length === 2 && e.arguments.every(str)) return 'replace';
+    if (m === 'join' && e.arguments.length <= 1 && e.arguments.every(str)) { const sh = shapeOf(recv); if (sh && sh.kind === 'arr' && sh.elem.kind === 'prim' && sh.elem.d !== 'bool') return 'join'; }
+    return null; };
+  const strUsed = new Set();
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
   // an expression with no call, allocation or element access: it reads the heap and nothing else, so reading it eagerly is exact
   const pureExpr = (x) => { x = unparen(x); if (ts.isIdentifier(x) || ts.isNumericLiteral(x) || ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || [K.TrueKeyword, K.FalseKeyword, K.ThisKeyword].includes(x.kind)) return true; if (ts.isPropertyAccessExpression(x)) return pureExpr(x.expression); if (ts.isBinaryExpression(x)) return pureExpr(x.left) && pureExpr(x.right); if (ts.isPrefixUnaryExpression(x)) return pureExpr(x.operand); return false; };
@@ -230,10 +239,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'structuredClone' && e.arguments.length === 1) { const s = shapeOf(typeOf(e.arguments[0])); if (!s || s.kind === 'prim') return no('clone of a non-cell'); const flat = s.kind === 'rec' ? s.fields.every((f) => f.shape.kind === 'prim') : s.kind === 'arr' ? s.elem.kind === 'prim' : true; if (!flat) return no('clone of a nested graph (one level of a plain cell only)'); return checkExpr(e.arguments[0]); }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (e.expression.name.text === 'map' || e.expression.name.text === 'filter') && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])) { // the table's map and filter rows: a pure one-parameter arrow with an expression body
         const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${e.expression.name.text} of a non-array`);
-        const cb = e.arguments[0]; if (cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || ts.isBlock(cb.body) || cb.modifiers?.length) return no('callback form');
+        const cb = e.arguments[0]; if (cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || !cbBody(cb) || cb.modifiers?.length) return no('callback form');
         if (e.expression.name.text === 'map') { const rs = shapeOf(typeOf(e)); if (!rs || rs.kind !== 'arr') return no(`map result type: ${shapeWhy(typeOf(e))}`); }
         const x = cb.parameters[0].name.text; if (names.has(x) || x === HW) return no('name reused'); if (!shapeOf(typeOf(cb.parameters[0].name))) return no('callback parameter type');
-        checkExpr(e.expression.expression); names.add(x); lambdaDepth++; checkExpr(cb.body); lambdaDepth--; names.delete(x); return;
+        checkExpr(e.expression.expression); names.add(x); lambdaDepth++; checkExpr(cbBody(cb)); lambdaDepth--; names.delete(x); return;
       }
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { // a ?? b: the left a value that may be absent, the right pure (it is read whatever the left holds)
         if (shapeOf(typeOf(e.left))?.kind !== 'opt') return no('?? on a value that is never absent'); if (!pureExpr(e.right)) return no('?? with a right side that calls or allocates'); if (!shapeOf(typeOf(e))) return no('?? result type'); checkExpr(e.left); return checkExpr(e.right);
@@ -269,6 +278,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (m === 'concat') { if (e.arguments.length !== 1) return no('concat arity'); const q = shapeOf(typeOf(e.arguments[0])); if (!q || q.kind !== 'arr' || q.key !== s.key) return no('concat of a different shape'); }
         checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); return;
       }
+      if (strCall(e)) { checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); return; }
       if (ts.isCallExpression(e)) return no(ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file');
       if (ts.isElementAccessExpression(e)) { const why = elementWhy(e); if (why) return no(why); if (!safeIndex.has(e)) usesIndex = true; checkExpr(e.expression); return checkExpr(e.argumentExpression); }
       no(`expression ${K[e.kind]}`);
@@ -469,6 +479,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       out.push('function OptMark<T>(hw: HWorld, o: Option<T>): HWorld { if o.Some? then hw else hw.(oob := true) }'); // a narrowed read that finds no value: the program left what the model reads
     }
     for (const k of keys) out.push(`predicate Is${k}(hw: HWorld, r: Ref) { r in hw.heap && hw.heap[r].${k}? }`);
+    if (strUsed.has('trim')) out.push('function StrTrim(s: string): string'); // String.prototype.trim: a function of the string alone
+    if (strUsed.has('replace')) out.push('function StrReplace(s: string, a: string, b: string): string'); // replace with a string pattern: the first match, the replacement's $ patterns included, a function of the three
+    if (strUsed.has('join_string')) out.push('function JoinStr(xs: seq<string>, sep: string): string decreases |xs| { if |xs| == 0 then "" else if |xs| == 1 then xs[0] else xs[0] + sep + JoinStr(xs[1..], sep) }');
+    for (const d of ['int', 'real']) if (strUsed.has(`join_${d}`)) out.push(`function JoinNum_${d}(xs: seq<${d}>, sep: string): string`); // numbers are formatted first: bodiless
     if (keys.some((k) => shapes.get(k).kind === 'dict')) out.push(`const ObjectProtoNames: set<string> := {${OBJECT_PROTO.map((x) => JSON.stringify(x)).join(', ')}}`); // Object.getOwnPropertyNames(Object.prototype)
     const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'set' || s.kind === 'date' || s.kind === 'dict') { /* primitive contents */ } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); } else for (const f of s.fields) if (isRefShape(f.shape)) conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
     out.push(`predicate WFCell(hw: HWorld, o: Obj) { match o ${keys.map((k) => `case ${k}(${(shapes.get(k).kind === 'rec' ? shapes.get(k).fields.map(() => '_') : shapes.get(k).kind === 'map' ? ['_', '_'] : shapes.get(k).kind === 'dict' ? ['_', '_', '_'] : ['_']).join(', ')}) => ${cellOk(k)}`).join(' ')} case Dead => false }`);
@@ -630,7 +644,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'has') { const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); return `${s.kind === 'map' ? 'MapHas' : 'SetHas'}_${s.key}(${HW}, ${r}, ${expr(e.arguments[0])})`; }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (e.expression.name.text === 'map' || e.expression.name.text === 'filter') && ts.isArrowFunction(e.arguments[0])) {
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const cb = e.arguments[0]; const x = cb.parameters[0].name.text; const xs = shapeOf(typeOf(cb.parameters[0].name));
-        const body = expr(cb.body); const lam = `((${dn(x)}: ${valD(xs)}) => ${body})`; const out = fresh('r');
+        const body = expr(cbBody(cb)); const lam = `((${dn(x)}: ${valD(xs)}) => ${body})`; const out = fresh('r');
         if (e.expression.name.text === 'filter') { lines.push(`var (${HW}, ${out}) := Filter_${s.key}(${HW}, ${r}, ${lam});`); return out; }
         const rs = shapeExpr(e); mapInstances.add(`${s.key}|${rs.key}`);
         lines.push(`var (${HW}, ${out}) := Map_${s.key}_${rs.key}(${HW}, ${r}, ${lam});`); return out;
@@ -674,6 +688,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression);
         return libCall(e, s, r);
       }
+      const sc = strCall(e);
+      if (sc) { const r = expr(e.expression.expression); const a = e.arguments.map((x) => expr(x)); strUsed.add(sc === 'join' ? `join_${shapeExpr(e.expression.expression).elem.d}` : sc);
+        if (sc === 'trim') return `StrTrim(${r})`; if (sc === 'replace') return `StrReplace(${r}, ${a[0]}, ${a[1]})`;
+        const sh = shapeExpr(e.expression.expression); return `${sh.elem.d === 'string' ? 'JoinStr' : `JoinNum_${sh.elem.d}`}(Items_${sh.key}(${HW}, ${r}), ${a[0] ?? '","'})`; } // join() joins with a comma
       throw new Error(`heap: unsupported expression ${e.getText(sf)}`);
     }
     // a call of a table row that yields a reference: Slice_/Concat_/Splice_ allocate (a fresh ref), Reverse_ returns the receiver

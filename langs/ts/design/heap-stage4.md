@@ -4,8 +4,7 @@ Stage 2 built the heap core (`translate/heap.mjs`, `design/heap-layer.md` "Stage
 (`design/canonical-heap.md`). Stage 4 widens the core's syntax in the order of the census's first reasons, keeping its
 invariants: every heap read and write is a total prelude function; no unit body carries a proof obligation; the lemma
 ranges over well-formed heaps (`// HYP`); equality is of the result and the whole final heap (or the canonical parts).
-One section per row. Reach: `design/heap-core-census.mjs` over the 39 census roots, modules unresolved; each section
-quotes its run. Baseline at the stage-4 base (607de20): 46 of 53,866 units in the core.
+Reach: `design/heap-core-census.mjs` over the 39 census roots, modules unresolved; base (607de20): 46 of 53,866 units.
 
 ## 1. Methods with `this` fields
 
@@ -13,7 +12,6 @@ Reading: a class of the file is a record of its instance fields (declared or con
 shape a type alias of those fields would have. An instance method is `(hw_, this_: Ref, params) -> (HWorld, result)`
 with `Is<K>(hw_, this_)` in its HYP; `this.f` is `Get_<K>_f(hw_, this_)`, `this.f = v` is `Set_<K>_f`, `this.m(a)` is
 the core call `<class>_m(hw_, this_, a)`. A method called on another instance or named as a value is a call-graph edge.
-Dafny: `var hw_ := Set_R_edc5963e_count(hw_, this_, (Get_R_edc5963e_count(hw_, this_) + 1));` (pair `heap_methods`).
 Soundness: methods live on the prototype, so the cell holds exactly the fields, and a plain record of those fields may
 be the instance itself (one constructor; the lemma ranges over that sharing). A field is initialized at its declaration
 or by a top-level `this.f = ..` of the constructor, so no well-formed heap holds a field the program leaves undefined.
@@ -22,8 +20,7 @@ out (an override would run other code); a subclass in another file is the ordina
 Lane B: twelve programs per method on a constructed instance; receiver fields are traced, so a refactor keeps the order
 of its field reads. Out: constructors, accessors, static methods, `class: <why>`. `check.mjs --only` cannot agree the
 core when a refactor inlines a same-file callee (`ASK:interface`, the base does the same on a free function).
-Reach: 46 -> 94 of 53,866 units. The method bucket (21,519) splits: abstract or decorated class 8,618, constructor
-4,379, extends a class 3,465, a field without a shape 1,703, static 906, accessor 842, a field not initialized 568.
+Reach: 46 -> 94. The method bucket (21,519) splits: abstract or decorated 8,618, constructor 4,379, extends 3,465.
 
 ## 2. Array element access
 
@@ -35,8 +32,7 @@ Soundness: out of range JavaScript reads `undefined` (and a write makes a hole o
 models; a default alone would prove `a[i] + ""` equal to `a[i]`. So `WF` requires `!oob` on entry, every unit that
 indexes (itself or through a callee) carries `// INRANGE <unit>`, and its lemmas, whole and canonical (part
 `inrange`), also require that neither side sets the flag. Equality is proved only where the code keeps its index in
-range (a length test, a loop guard); an unchecked index is `ASK:unproved` even when both sides read it alike, and lane
-B decides. A text-identical unit is aliased and needs nothing.
+range (a length test, a loop guard); an unchecked index is `ASK:unproved` even when both sides read it alike.
 Out: an index in a real file, a negative literal index, `?.[ ]`, an access inside a callback, a non-array receiver.
 Pair `heap_index`: `first`, `setFirst` under the length test (proved); `get` unchecked (unproved, PASS-bounded);
 `label` (`a[i] + ""` for `a[i]`, unproved, WITNESS at index -1); `bump` (WITNESS); `size` (proved).
@@ -55,12 +51,11 @@ bounds the recursion: nothing in a body grows an array (`push`, `unshift`, an in
 that may), so the current length never exceeds `n` and the extra test is never the deciding one. The index and the
 array name are never assigned in the body. An index loop's own `a[i]`, in a body that cannot shrink an array (no
 `pop`, `shift`, `splice` or call), is in range by the guard: it reads and writes (`SetIdxIn_`) without the mark.
-Two different loop bodies are two recursive functions: their equality needs an induction the theorem does not write,
-so a refactor proves when the helper is the same text (aliased) applied to equal arguments.
+Two different bodies are two recursive functions (an induction the theorem does not write): a refactor proves when the
+helper is the same text (aliased) applied to equal arguments.
 Out: `break`, `continue`, `return` in a loop, `for await`, other loop forms, a body that grows an array, an assigned
 loop element, an index loop in a real file. Names ending in an underscore leave the core (the generated ones do).
-Pair `heap_loops`: `total` (another body, WITNESS), `raise` (its step `1 + k` for `k + 1`, proved), `positives`
-(`n += 1` for `n = n + 1`, proved), `weight` (proved).
+Pair `heap_loops`: `total` (WITNESS), `raise` (step `1 + k` for `k + 1`), `positives` (`n += 1`), `weight` (proved).
 Reach: 95 -> 95; the first reason `statement` falls 309 -> 164 and own-syntax fits kept out by the call graph rise 90 -> 95: a loop was rarely a unit's only blocker.
 
 ## 4. Optional fields
@@ -79,8 +74,7 @@ nullable type was read as its inner type (`nonNull`), which a `x + ""` on a null
 either modelled or out. A literal takes the shape of the place it is written to, so its omitted fields are known.
 Out: absent references (`R | undefined`), `T | null | undefined`, optional chaining, arrays or maps of optionals, a
 compound write to an optional, a narrowed field read inside a callback, the truthiness of a real.
-Pair `heap_optional`: `display` (`??` as a presence test, proved), `greeting` (another default, WITNESS), `pad`
-(`by?` tested first, proved), `forget`, `visit` (proved).
+Pair `heap_optional`: `display` (`??` as a presence test), `pad` (`by?` tested first), `forget`, `visit` proved; `greeting` WITNESS.
 Reach: 95 -> 103; `parameter type` rises 12,257 -> 12,450 since an absent reference is now named, not read as present.
 
 ## 5. Literal unions
@@ -112,3 +106,15 @@ What the ordinary lane must share (row a485327e): the key sequence beside the ma
 dictionary disagree. Out: dictionaries of records, number keys, keyed literals, `delete`, iteration over keys.
 Pair `heap_dicts`: `put` (another key, WITNESS), `both` (other order, WITNESS), `store`, `has` (proved), `readBack`.
 Reach: 126 -> 128; the type leaf `dictionary` falls 851 -> 726 (the rest hold records or number keys).
+
+## 7. The five method calls
+
+Reading: `s.trim()` is `StrTrim(s)`, `s.replace(a, b)` with string operands `StrReplace(s, a, b)`, both bodiless (a
+function of their operands, the same on both sides); `xs.join(sep)` on strings is `JoinStr`, the exact fold (no
+separator is `","`), on numbers `JoinNum_` bodiless (it formats). `filter` and `map` were the table's `Filter_` and
+`Map_K_K2` (an allocation, then the elements); a callback may now be `(x) => { return e; }`.
+Soundness: a bodiless function is equal on equal operands only; nothing about its result is assumed. Out: a regular
+expression or function replacement, join of booleans or records, callbacks with an index or a statement.
+Pair `heap_strings_calls`: `ids` (filter under a name, a block body), `clean`, `line` proved; `busy` WITNESS.
+
+Reach: 128 -> 132; `trim` (109) and `join` (119) leave the method-call first reasons, `replace` stays (mostly regular expressions).
