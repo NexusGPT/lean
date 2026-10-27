@@ -82,12 +82,14 @@ export function usage(sf, unitName, checker, opts = {}) {
     if (e.kind === ts.SyntaxKind.ThisKeyword) return env.get('this') ?? null;
     if (ts.isPropertyAccessExpression(e)) {
       const n = nodeOf(e.expression, env); if (!n) return null;
+      if (e.questionDotToken) { addLit(n.compares, null); addLit(n.compares, UNDEF); } // `x?.f` tests x for null and undefined
       if (!ts.isIdentifier(e.name)) return null;
       if (e.name.text === 'length') return (n.len ??= newNode());
       return field(n, e.name.text);
     }
     if (ts.isElementAccessExpression(e)) {
       const n = nodeOf(e.expression, env); if (!n) return null;
+      if (e.questionDotToken) { addLit(n.compares, null); addLit(n.compares, UNDEF); } // `x?.[k]` tests x for null and undefined
       const a = strip(e.argumentExpression);
       if (a && (ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a))) return field(n, a.text);
       if (a && ts.isNumericLiteral(a)) return elemOf(n);

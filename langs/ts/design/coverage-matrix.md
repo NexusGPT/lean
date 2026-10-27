@@ -33,7 +33,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | ShorthandPropertyAssignment | 12737 | 20.3% | no case (refused by default, or reached through its parent) | exact | same |
 | NullKeyword | 10147 | 16.2% | admitted | exact (Absent) | same |
 | BindingElement | 8691 | 13.9% | no case (refused by default, or reached through its parent) | exact (destructuring) | same |
-| ElementAccessExpression | 8672 | 13.8% | admitted | exact for literal and typed keys; a dynamic key refused (dynamic-key) outside the dynamic-record reading | heap read by key |
+| ElementAccessExpression | 8672 | 13.8% | admitted | exact for literal and typed keys; an open key on a plain record of data fields an uninterpreted lookup (open-key-read); other dynamic keys refused (dynamic-key) | heap read by key |
 | AsExpression | 8500 | 13.6% | admitted | exact (the asserted type is read) | same |
 | TrueKeyword | 7702 | 12.3% | admitted | exact | same |
 | ThrowStatement | 6263 | 10% | admitted | exact as a fault on the try channel (exceptions across calls) | same |

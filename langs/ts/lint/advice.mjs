@@ -38,7 +38,7 @@ export const ADVICE = {
   'unsupported-syntax': { label: 'migration', text: 'This statement form is not translated; see langs/ts/subset.md.' },
   'unsupported-call': { label: 'migration', text: 'This method has no translation; see langs/ts/subset.md for the covered methods.' },
   'unsupported-member': { label: 'migration', text: 'This property is not declared on the type; declare it or narrow the type.' },
-  'dynamic-key': { label: 'migration', text: 'Only array indices, string indices and declared keys are readable; a computed key needs a `Record<string, T>` type.' },
+  'dynamic-key': { label: 'migration', text: 'Only array indices, string indices and declared keys are readable; a computed key needs a `Record<string, T>` type. An open key (a string, a number) on a plain record of data fields is read as an uninterpreted lookup; on a union, a class instance, a record with a method or a getter, or with a symbol or a key call, narrow the receiver, name the field, or bind the key first.' },
   'for-of-non-array': { label: 'migration', text: 'for-of runs over arrays, strings, sets, maps and iterables; this is none of them.' },
   'loop-form': { label: 'migration', text: 'for needs `let i = a; i < b; i++`.' },
   'do-while': { label: 'proved', text: 'A do-while is the body once, then a while; give it `// @decreases <expr>` to be proved, else it is an opaque block.' },

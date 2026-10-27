@@ -537,6 +537,18 @@ export function translate(file, fnName, opts = {}) {
     return { lines, text };
   }
   // a branch with transitions inside, as one Dafny expression of type (World, T): the hoisted lines, then the pair
+  // `x ?? d` with x of type any: an opaque value may be null or undefined, so the left is tested, never read alone
+  function anyNullishOr(n) {
+    const t = typeOf(n), td = isAny(t) ? anyType() : dtype(t, n);
+    const l = `na${tempCount++}_`, left = expr(n.left, anyTarget());
+    const N = external('is_null_Any', ['Any'], 'bool'), U = external('is_undefined_Any', ['Any'], 'bool');
+    const test = `(${N}(${l}) || ${U}(${l}))`, chosen = convert(l, anyTarget(), t, n);
+    if (containsEffect(n.right)) {
+      const right = branchWithWorld(() => expr(n.right, t), td);
+      return hoist(`(var ${l} := ${left}; if ${test} then ${right} else (${WORLD}, ${chosen}))`, td);
+    }
+    return `(var ${l} := ${left}; if ${test} then ${valueOperands ? valueBranch(() => expr(n.right, t)) : expr(n.right, t)} else ${chosen})`;
+  }
   function branchWithWorld(f, d) {
     const { lines, text } = captureParts(f);
     const body = `(${WORLD}, ${outerParens(text)})`;
@@ -1918,6 +1930,7 @@ export function translate(file, fnName, opts = {}) {
     }
     if (op === K.QuestionQuestionToken && !bothAbsent(storedType(n.left)) && !isNullish(typeOf(n.left)) && !isNullish(typeOf(n.right)) && !containsEffect(n.right)) {
       const lt = typeOf(n.left);
+      if (isAny(lt)) return anyNullishOr(n);
       if (!isOptional(lt)) return expr(n.left);
       const l = rawOperand(n.left);
       const t = typeOf(n); const td = isAny(t) ? anyType() : dtype(t, n); const inner = isAny(baseOf(lt)) ? anyType() : dtype(baseOf(lt), n); const rtp = typeOf(n.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, n);
@@ -1928,6 +1941,7 @@ export function translate(file, fnName, opts = {}) {
     if (op === K.QuestionQuestionToken) {
       const lt = typeOf(n.left), t = typeOf(n);
       if (isNullish(lt)) { expr(n.left); return expr(n.right, t); }
+      if (isAny(lt)) return anyNullishOr(n);
       if (!isOptional(lt)) return expr(n.left, t);
       if (valueOperands) {
         const left = expr(n.left), chosen = dtype(lt, n) === dtype(t, n) ? left : convert(`${left}.value`, baseOf(lt), t, n);
@@ -2498,6 +2512,11 @@ export function translate(file, fnName, opts = {}) {
         const o = originOf(checker, e, sf, currentUnit?.node ?? null);
         if (o.sym && isOptional(symType(o.sym, e)) && !isOptional(typeOf(e)) && !isNullish(typeOf(e))) rv += '.value';
       } else rv = expr(n.expression, anyTarget());
+      if (n.questionDotToken && (rd === 'Any' || optionalD(rd))) { // `x?.f` on an opaque x: a null or undefined x reads undefined
+        const r = `nq${tempCount++}_`, N = external('is_null_Any', ['Any'], 'bool'), U = external('is_undefined_Any', ['Any'], 'bool');
+        const absent = rd === 'Any' ? `${external('Any_undefined', [], anyType())}()` : missingD(rd);
+        return `(var ${r} := ${rv}; if (${N}(${r}) || ${U}(${r})) then ${absent} else ${external(`Any_${name}`, [anyType()], rd)}(${r}))`;
+      }
       return `${external(`Any_${name}`, [anyType()], rd)}(${rv})`;
     }
     if (n.questionDotToken && !isOptional(recvT) && !isAny(recvT)) return fieldOf(expr(n.expression), recvT, name, n); // ?. on a value that cannot be absent
@@ -2576,6 +2595,17 @@ export function translate(file, fnName, opts = {}) {
     if (!ix || checker.getPropertiesOfType(rt).length) return null;
     return { map: expr(e.expression), key: expr(e.argumentExpression), valueType: ix.type };
   }
+  // an open key on a plain record is an uninterpreted lookup of the record value and the key, the same function on both
+  // sides; it claims nothing about inherited members or undeclared names, so a changed record or key is never proved equal
+  function openKeyRead(n, base, at) {
+    const D = dtype(base, n);
+    const anyKey = isAny(at), K = anyKey ? anyType() : dtype(at, n);
+    const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
+    if (rd !== 'Any' && !optionalD(rd)) fail(n, 'an absent key reads undefined, which this value type leaves out');
+    const receiver = expr(n.expression);
+    const key = anyKey ? expr(n.argumentExpression, anyTarget()) : expr(n.argumentExpression);
+    return `${external(`open_key_read_to_${rd}`, [D, K], rd)}(${receiver}, ${key})`;
+  }
   function elemAccess(n) {
     const q = argumentsParam(n); if (q) return dn(q.name.text); // `arguments[k]`: the k-th parameter itself
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
@@ -2596,7 +2626,7 @@ export function translate(file, fnName, opts = {}) {
     if (isRecordish(base)) {
       // a finite key selects a declared field; receiver and key are evaluated once, in that order
       const keyParts = at.flags & TF.Union ? at.types : [at];
-      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) fail(n, 'use a finite union of declared string keys');
+      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) return openKeyRead(n, base, at);
       const keys = keyParts.map((x) => x.value);
       const R = `rr${tempCount++}_`, Kc = `rk${tempCount++}_`;
       const receiver = expr(n.expression);
