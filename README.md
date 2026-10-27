@@ -271,6 +271,13 @@ $ node langs/ts/lint/lint.mjs users.ts --any-type
 users.ts:1:43  any-type  `plan` is any (written); its uses say { tier: string; seats: number }
 ```
 
+The same switch family (`--advice` on the command line, `advisory` in the editor rule, on by default there) carries the mechanical rules a reviewer would otherwise type: a nested ternary to nested `if` (`proved`, with the pair that proves it), `innerHTML` or `document.write` with a non-literal to a `textContent` write (`migration`), `Promise.all` over independent awaits in a loop (`conditional` on the calls commuting in the world), `var` to `let` (`conditional` on no use before the declaration). An advisory finding never refuses a unit; the reach on both census roots is unchanged by it.
+
+```
+$ node langs/ts/lint/lint.mjs pick.ts --advice
+pick.ts:1:50  nested-ternary  a branch contains another conditional expression; nested if statements preserve its evaluation order
+```
+
 `--agent` prints the same findings as a work list a coding agent acts on item by item, with the order that pays (mutations first, then equality and arithmetic), and `--json` carries each finding's `label`, `precondition` and `advice` as fields:
 
 ```
@@ -453,8 +460,8 @@ Everything else is yours: `async`/`await`, `try`/`catch`, `switch`, destructurin
 | a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m,file.ts:f] [--preview] [--time-budget <s>] [--unit-budget <n>] [--fresh] [--cache-dir <dir>] [--out report.md] [--json report.json]` |
 | lane B alone, in seconds | `node langs/ts/exec/run.mjs --parent old.ts --candidate new.ts --unit f [--sequence-depth 2 --sequence-breadth 4 --deep]` |
 | the finite lane alone | `node langs/ts/exec/finite.mjs --parent old.tsx --candidate new.tsx --unit Panel [--max 500]` |
-| the lint, in the terminal or an agent's loop | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--any-type] [--changed ranges.json]` |
-| the lint, in the editor | `import lean from 'lean/langs/ts/eslint/index.mjs'`, rule `lean/provable` (options `project`, `anyType`) |
+| the lint, in the terminal or an agent's loop | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--any-type] [--advice] [--changed ranges.json]` |
+| the lint, in the editor | `import lean from 'lean/langs/ts/eslint/index.mjs'`, rule `lean/provable` (options `project`, `anyType`, `advisory`) |
 | the pull-request comment and gate | `node langs/ts/ci/comment.mjs --repo <checkout> --base <sha> --head <sha> [--post] [--block none\|witness\|ask]` |
 | a whole repository's reach, and where the subset stops | `node langs/ts/census.mjs <repo-root> [--out census.json] [--report reach.md --depth 2]` |
 | the suite | `node langs/ts/tests/run.mjs` (`LEAN_PAIRS=a,b` runs a subset of the pairs) · `python3 -I conformance/run.py` |
@@ -476,7 +483,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 | a run identity and verdict reuse across pushes (`reused`, `--fresh`, `--cache-dir`) | built; the key stops at one import level and does not see module initialization order |
 | a `WITNESS` that names the source line of the first differing effect or the return on each side, with the advised rewrite | built |
 | run-level budgets with a named stop (`--time-budget`, `--unit-budget`, `skipped:budget`, the comment blocks on a stop) | built |
-| the mechanical rules of code review as labelled advice entries, each with a proof where the rewrite is a theorem | planned |
+| the mechanical rules of code review as labelled advice entries under one advisory switch (`--advice`), a proof pair where the rewrite is a theorem | built |
 | a census report grouped by rule and directory, with sums that match the JSON | built |
 | the gate around lean: the run record, the predicate registry, sibling relations, the producer-facing preview, the assurance case | planned |
 | the gate as tools for a coding agent, the reference loop with guards, the behavioural self-check, structured refusals, the witness library | planned |
