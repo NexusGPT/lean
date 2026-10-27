@@ -1,0 +1,22 @@
+{
+ "scope": [
+  "labels",
+  "sizes",
+  "noted",
+  "width"
+ ],
+ "equal": {
+  "labels": true,
+  "sizes": false,
+  "noted": true,
+  "width": true
+ },
+ "why": "a map with a block callback in a unit that changes a parameter (seen.push) or touches the outside (log.note): the callback's return is its own value; the changed parameter and the world stay with the unit and the closure reads them as they are when the callback runs (before, each return of the callback was wrapped with them, a Dafny type error, nothing proved). labels rewrites the callback's if with two returns as a conditional bound to a local (proved); noted drops the callback's local (proved, the same note transition on both sides); sizes adds two where it added one (unproved, WITNESS on any non-empty array); width is untouched.",
+ "b": {
+  "labels": "PASS-bounded",
+  "sizes": "WITNESS",
+  "noted": "PASS-bounded",
+  "width": "PASS-bounded"
+ },
+ "heap": true
+}
