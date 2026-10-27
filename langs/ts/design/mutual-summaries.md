@@ -49,8 +49,7 @@ both sides recursing to the same depth. A cycle without a fuel parameter gets no
     lemma Equal_is_even(fuel: nat, n: int) ... decreases fuel   // INDUCTION over is_even,is_odd
     { forall r0: nat, r1: int | !InScope_is_odd(r0, r1) && r0 < fuel ensures ... { Equal_is_odd(r0, r1); } ... }
 
-The pair `recursion` keeps its expectations: its loop helper passes a fuel it does not bind (a translator defect, a
-Dafny resolution error), so nothing in it is proved, as before.
+The pair `recursion` reaches a verdict on `total` and `depth` since lane loop-fuel: a loop helper of a unit on a recursive cycle takes the unit's fuel as its first const parameter, `requires fuel > 0`, `decreases fuel` then its own measure, and a recursive call in the body passes `fuel - 1` (`design/loop-fuel.md`); `total` stays unproved for want of the induction lemma over the helper.
 
 ## The adapter theorem
 
