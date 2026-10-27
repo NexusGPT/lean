@@ -918,6 +918,30 @@ export function translate(file, fnName, opts = {}) {
   const absentType = () => { addPrelude('Absent', 'datatype Absent = Null | Undef'); return 'Absent'; };
   const absentValue = (t) => { absentType(); return t.flags & TF.Null ? 'Absent.Null' : 'Absent.Undef'; };
   const missingD = (d, kind = 'Undef') => d.startsWith('Nullish<') ? `Nullish.${kind}` : 'None';
+  // the absent value of a Dafny type D: `any` holds undefined and null itself, so absence in Any is Any_undefined() or
+  // Any_null(), never None; every other type with absence is an Option or a Nullish (branch-types)
+  const absentInD = (d, kind = 'Undef') => d === 'Any' ? `${external(kind === 'Null' ? 'Any_null' : 'Any_undefined', [], anyType())}()` : missingD(d, kind);
+  // an Option<Any> slot (an optional field or parameter declared `any`) read as the value TypeScript types `any`:
+  // Some(v) is v, None is undefined, so both branches are Any
+  const lowerOptionAny = (code) => { const v = `oa${tempCount++}_`; return `(var ${v} := ${code}; if ${v}.Some? then ${v}.value else ${absentInD('Any')})`; };
+  // an Any value put in an Option<T> or Nullish<T> slot: the value may be undefined (or null), which is absence, so the
+  // lift tests for each absence the slot's type admits before it claims a present value (Some of the value read as T)
+  function liftAny(code, td, undef = true, nul = false) {
+    usesOption = true;
+    const v = `la${tempCount++}_`, some = someD(convertD(v, 'Any', innerOf(td)), td);
+    const U = external('is_undefined_Any', ['Any'], 'bool'), N = external('is_null_Any', ['Any'], 'bool');
+    if (td.startsWith('Nullish<')) return `(var ${v} := ${code}; if ${U}(${v}) then Nullish.Undef else if ${N}(${v}) then Nullish.Null else ${some})`;
+    const tests = [undef && `${U}(${v})`, nul && `${N}(${v})`].filter(Boolean);
+    return tests.length ? `(var ${v} := ${code}; if ${tests.join(' || ')} then None else ${some})` : some;
+  }
+  // a value stored as Any read where a guard narrowed its type: one uninterpreted cast to the narrowed type, an absence
+  // the narrowed type admits tested first, so every narrowed read of one stored value is a function of that value
+  function narrowAny(code, here, n) {
+    if (isAny(here)) return code;
+    const hereD = dtype(here, n);
+    if (optionalD(hereD)) return liftAny(code, hereD, hasAbsence(here, TF.Undefined), hasAbsence(here, TF.Null));
+    return hereD === 'Any' ? code : convertD(code, 'Any', hereD);
+  }
   const someD = (code, d) => `${d.startsWith('Nullish<') ? 'Nullish.' : ''}Some(${code})`;
   const inputType = (p) => checker.getUnionType([typeOf(p.name), checker.getUndefinedType()]);
   // the type of storage before a flow guard narrows a read
@@ -1283,8 +1307,9 @@ export function translate(file, fnName, opts = {}) {
   const unitTParams = () => (currentUnit?.generics ?? []).map((g) => dn(g.name.text));
   const tclause = (types) => { const ps = unitTParams().filter((p) => types.some((t) => new RegExp(`\\b${p}\\b`).test(t))); return ps.length ? `<${ps.map((p) => `${p}(==)`).join(', ')}>` : ''; };
   function external(name, paramTypes, retType) {
-    const id = `ext_${mangle(name)}${paramTypes.length ? '_' + paramTypes.map(mangle).join('_') : ''}`;
+    let id = `ext_${mangle(name)}${paramTypes.length ? '_' + paramTypes.map(mangle).join('_') : ''}`;
     const ps = paramTypes.map((t, i) => `a${i}: ${t}`).join(', ');
+    { const had = prelude.get(id); if (had && had.startsWith('function ') && !had.endsWith(`): ${retType}`) && !had.includes(`): ${retType} {`)) id = `${id}_to_${mangle(retType)}`; } // one name read at two types (a field narrowed in one branch, not in the other): one function per result type, so both branches keep their own type
     addPrelude(id, `function ${id}${tclause([...paramTypes, retType])}(${ps}): ${retType}`); // generic when a type parameter of the unit appears
     return id;
   }
@@ -1607,6 +1632,7 @@ export function translate(file, fnName, opts = {}) {
     if (isOptional(expected)) {
       if (isOptional(nt)) return convert(code, nt, expected, node);
       if (isNullish(nt)) return missingD(dtype(expected, node), nt.flags & TF.Null ? 'Null' : 'Undef');
+      if (isAny(nt)) return liftAny(code, dtype(expected, node), hasAbsence(expected, TF.Undefined), hasAbsence(expected, TF.Null)); // an any value may be the absence the slot admits
       usesOption = true;
       return someD(convertD(code, dtype(nt, node), innerOf(dtype(expected, node))), dtype(expected, node)); // the union may flatten several literals beside null
     }
@@ -1891,6 +1917,7 @@ export function translate(file, fnName, opts = {}) {
     if (LT) { if (LT.startsWith('Option<') && !isOptional(typeOf(n)) && !isNullish(typeOf(n))) code += '.value'; return code; }
     if (o.sym && o.sym.valueDeclaration && o.kind === 'local') {
       const dt = symType(o.sym, n);
+      if (optionalAnyParam(o.sym, n)) return lowerOptionAny(code);
       code = narrowed(code, dt, typeOf(n), n);
       if (isNullish(typeOf(n))) return code;
       const declaredD = dtype(dt, n);
@@ -1901,6 +1928,8 @@ export function translate(file, fnName, opts = {}) {
         if (matches.length === 1) return `${code}.${matches[0].field}`;
         return convertD(code, valueD, dtype(typeOf(n), n));
       }
+      if (valueD === 'Any' && !hookBinding(n) && !isAny(typeOf(n))) return narrowAny(code, typeOf(n), n); // a value stored as Any read where a guard narrowed it
+      if (optionalD(valueD) && innerOf(valueD) === 'Any' && !hookBinding(n) && !isAny(typeOf(n))) { const hereD = dtype(typeOf(n), n); if (optionalD(hereD) && hereD !== valueD) return convertD(code, valueD, hereD); } // an optional Any narrowed to an optional T: the absence kept, the value cast
     }
     if (real && intVars.has(n.text)) return `(${code} as real)`;
     return code;
@@ -2294,7 +2323,10 @@ export function translate(file, fnName, opts = {}) {
         const inherited = !prototypeMaker(checker, sf) && (loose || kind === 'Undef') ? ` && !(${dict.key} in ${helper('ObjectProtoNames', [])})` : '';
         test = `(if ${present} then ${hit} else ${loose || kind === 'Undef'}${inherited})`;
       } else if (isAny(t) || isAny(dt)) {
-        const value = isAny(dt) ? rawOperand(other) : expr(other), id = `na${tempCount++}_`;
+        let o = other; while (ts.isParenthesizedExpression(o)) o = o.expression;
+        if (isAny(dt)) o.__storedAny = true;
+        let value; try { value = isAny(dt) ? rawOperand(other) : expr(other); } finally { o.__storedAny = false; }
+        const id = `na${tempCount++}_`;
         const N = external('is_null_Any', ['Any'], 'bool'), U = external('is_undefined_Any', ['Any'], 'bool');
         test = `(var ${id} := ${value}; ${loose ? `${N}(${id}) || ${U}(${id})` : `${kind === 'Null' ? N : U}(${id})`})`;
       } else if (isNullish(t)) { expr(other); test = loose || !!(t.flags & (kind === 'Null' ? TF.Null : TF.Undefined)) ? 'true' : 'false'; }
@@ -2444,11 +2476,14 @@ export function translate(file, fnName, opts = {}) {
     return `(${expr(n.left)} ${o} ${expr(n.right)})`;
   }
   // an operand kept in its declared (Option) form
+  // the unit's optional parameter declared `any` is an Option<Any> slot (emitUnit), while its reads are typed any
+  const optionalAnyParam = (sym, n) => { const pd = sym?.valueDeclaration; return !!pd && ts.isParameter(pd) && !!pd.questionToken && !pd.initializer && !!currentUnit?.params?.includes(pd) && !letTypeOf(sym) && dtype(symType(sym, n), n) === 'Any'; };
   function rawOperand(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (valueOperands && !ts.isIdentifier(e)) return expr(e);
     if (ts.isIdentifier(e)) {
       const o = originOf(checker, e, sf, currentUnit?.node ?? null);
+      if (o.kind === 'local' && optionalAnyParam(o.sym, e)) return lowerOptionAny(dn(e.text)); // the stored value of an any slot is Any
       if (o.kind === 'local' || o.kind === 'unit') return dn(e.text);
       return ident(e);
     }
@@ -2558,7 +2593,7 @@ export function translate(file, fnName, opts = {}) {
     const fieldCode = (key, valueNode) => {
       const pt = propT(key);
       let code = expr(valueNode, pt);
-      if (propOpt(key) && !isOptional(pt ?? typeOf(valueNode)) && !isOptional(typeOf(valueNode))) { usesOption = true; code = `Some(${code})`; }
+      if (propOpt(key) && !isOptional(pt ?? typeOf(valueNode)) && !isOptional(typeOf(valueNode))) { usesOption = true; code = isAny(typeOf(valueNode)) && isAny(pt ?? typeOf(valueNode)) ? liftAny(code, 'Option<Any>') : `Some(${code})`; } // an any value in an optional any field: undefined is the absent field
       return [key, code];
     };
     // a computed key on a record with declared keys: a literal type or a union of literals (an enum member is one). One
@@ -2849,10 +2884,15 @@ export function translate(file, fnName, opts = {}) {
         const prop = el.propertyName ? (ts.isStringLiteral(el.propertyName) ? el.propertyName.text : el.propertyName.getText(sf)) : el.name.text;
         const pt = srcType ? checker.getTypeOfPropertyOfType(baseOf(srcType), prop) : null;
         let code = `${sourceCode}.${dn(prop)}`;
+        if (srcType && pt && isAny(pt) && (checker.getPropertyOfType(baseOf(srcType), prop)?.flags ?? 0) & ts.SymbolFlags.Optional) { const sd = (() => { try { return dtype(baseOf(srcType), el); } catch { return null; } })(); if (sd && sd !== 'Any' && !sd.startsWith('Ext_') && !sd.startsWith('map<')) code = lowerOptionAny(code); } // an optional any field of a datatype is an Option<Any> slot
         if (srcType) { const sd = (() => { try { return dtype(baseOf(srcType), el); } catch { return null; } })(); if (sd === 'Any' || (sd && sd.startsWith('Ext_'))) { const fd = pt ? (() => { try { return dtype(pt, el); } catch { return anyType(); } })() : anyType(); code = sd === 'Any' ? `${external(`Any_${prop}`, [anyType()], fd)}(${sourceCode})` : `${external(`${sd}_${prop}`, [sd], fd)}(${sourceCode})`; } } // a field of an opaque value: an accessor
         if (el.initializer && srcType && isAny(baseOf(srcType)) && !pt) { // `{ a = d }` of an untyped source: the field or the default, one uninterpreted function of both, so a changed default is never proved equal
           const dT = typeOf(el.initializer), dD = dtype(dT, el.initializer), target = typeOf(el.name), fd = isAny(target) ? anyType() : dtype(target, el);
           code = `${external(`Any_${prop}_or`, [anyType(), dD], fd)}(${sourceCode}, ${outerParens(expr(el.initializer, dT))})`;
+        }
+        else if (el.initializer && pt && isAny(pt)) { // `{ a = d }` of an any field: the value may be undefined, which takes the default
+          const v = `nd${tempCount++}_`, U = external('is_undefined_Any', ['Any'], 'bool');
+          code = `(var ${v} := ${code}; if ${U}(${v}) then ${outerParens(expr(el.initializer, typeOf(el.name)))} else ${v})`;
         }
         else if (el.initializer) {
           // `{ a = d }`: the field's value when present, the default when the field is absent or undefined
@@ -2934,9 +2974,10 @@ export function translate(file, fnName, opts = {}) {
       if (n.questionDotToken && (rd === 'Any' || optionalD(rd))) { // `x?.f` on an opaque x: a null or undefined x reads undefined
         const r = `nq${tempCount++}_`, N = external('is_null_Any', ['Any'], 'bool'), U = external('is_undefined_Any', ['Any'], 'bool');
         const absent = rd === 'Any' ? `${external('Any_undefined', [], anyType())}()` : missingD(rd);
-        return `(var ${r} := ${rv}; if (${N}(${r}) || ${U}(${r})) then ${absent} else ${external(`Any_${name}`, [anyType()], rd)}(${r}))`;
+        return `(var ${r} := ${rv}; if (${N}(${r}) || ${U}(${r})) then ${absent} else ${narrowAny(`${external(`Any_${name}`, [anyType()], anyType())}(${r})`, typeOf(n), n)})`;
       }
-      return `${external(`Any_${name}`, [anyType()], rd)}(${rv})`;
+      const read = `${external(`Any_${name}`, [anyType()], anyType())}(${rv})`;
+      return n.__storedAny ? read : narrowAny(read, typeOf(n), n); // a field of an opaque value is one accessor to Any, a narrowed read a cast of it; the stored value for an absence test of it
     }
     { // stage 5 rank 17: a member of a type parameter, read through its declared constraint as one uninterpreted field read generic in the parameter
       const tp = isOptional(recvT) ? baseOf(recvT) : recvT;
@@ -2958,7 +2999,7 @@ export function translate(file, fnName, opts = {}) {
       const p = checker.getPropertyOfType(inner, name);
       const pt = p ? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n) : fieldT;
       const fieldCode = fieldOf(`${r}.value`, inner, name, n);
-      return `(var ${r} := ${receiver}; if ${r}.Some? then ${convert(fieldCode, pt, fieldT, n)} else ${missingD(D)})`;
+      return `(var ${r} := ${receiver}; if ${r}.Some? then ${convert(fieldCode, pt, fieldT, n)} else ${absentInD(D)})`; // both branches of type D, an any field's absence is Any_undefined()
     }
     if (name === 'length' && (isArrayLike(checker, recvT) || recvT.flags & TF.StringLike)) return lenOf(expr(n.expression));
     if (name === 'size' && (isSetT(recvT) || isMapT(recvT)) && dtype(recvT, n)) return lenOf(member(expr(n.expression), isMapT(recvT) ? 'keys' : 'items')); // the size is the number of keys or items
@@ -2987,7 +3028,7 @@ export function translate(file, fnName, opts = {}) {
       if ((hasMethods && !literalRecord(recvT)) || T.startsWith('Ext_') || !props.length || !checker.getPropertyOfType(recvT, name)) {
         // an opaque type, or a field reached through an index signature: an uninterpreted accessor of the DECLARED field
         // type (one declaration per accessor); a read narrowed by a guard takes `.value`
-        if (T.startsWith('map<')) return `(if ${strEsc(name)} in ${recvCode} then Some(${recvCode}[${strEsc(name)}]) else None)`;
+        if (T.startsWith('map<')) { const found = `(if ${strEsc(name)} in ${recvCode} then Some(${recvCode}[${strEsc(name)}]) else None)`; return isAny(ft) && T.endsWith(', Any>') ? lowerOptionAny(found) : found; } // a missing key of an any-valued dictionary reads undefined, in Any
         const pr = checker.getPropertyOfType(recvT, name);
         const declared = pr ? checker.getTypeOfSymbolAtLocation(pr, pr.valueDeclaration ?? n) : ft;
         const dOpt = pr ? (isOptional(declared) || !!(pr.flags & ts.SymbolFlags.Optional)) : false;
@@ -3002,6 +3043,7 @@ export function translate(file, fnName, opts = {}) {
     if (p) {
       const declared = checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n);
       const here = typeOf(n);
+      if ((p.flags & ts.SymbolFlags.Optional) && isAny(declared)) return lowerOptionAny(`${recvCode}.${dn(name)}`); // an optional any field is an Option<Any> slot, its value Any, kept or not
       if (!n.__keepOption) {
         const value = narrowed(`${recvCode}.${dn(name)}`, declared, here, n);
         if (isNullish(here) || isOptional(here)) return value;
@@ -3178,9 +3220,9 @@ export function translate(file, fnName, opts = {}) {
     return `(var ${v} := ${R}; var ${x}: ${A} := ${expr(n.arguments[0], elemType(recv))}; var ${lo} := ${bound(n.arguments[1], '0')}; var ${hi} := ${bound(n.arguments[2], `|${v}|`)}; seq(|${v}|, (i: int) requires 0 <= i < |${v}| => if ${lo} <= i < ${hi} then ${x} else ${v}[i]))`;
   }
   function foundValue(code, element, result, n) {
-    if (!isOptional(element) && !isNullish(element)) return code;
+    if (!isOptional(element) && !isNullish(element)) return dtype(result, n) === 'Any' ? lowerOptionAny(code) : code; // a found any element: not found is undefined, in Any
     const v = `nf${tempCount++}_`, D = dtype(result, n);
-    return `(var ${v} := ${code}; if ${v}.Some? then ${convert(`${v}.value`, element, result, n)} else ${missingD(D)})`;
+    return `(var ${v} := ${code}; if ${v}.Some? then ${convert(`${v}.value`, element, result, n)} else ${absentInD(D)})`;
   }
   const cbArity = { map: 2, filter: 2, some: 2, every: 2, find: 2, findIndex: 2, flatMap: 2, reduce: 3 };
   // the current unit takes a fuel, so its body and every loop helper of it bind `fuel` (a call there passes `fuel - 1`)
@@ -3210,6 +3252,7 @@ export function translate(file, fnName, opts = {}) {
         const bodyT = typeOf(p.name), incoming = inputType(p);
         if (hasAbsence(bodyT, TF.Null)) { dtype(incoming, p); out.push(a ? expr(a, incoming) : 'Nullish.Undef'); return; }
         if (!a || (typeOf(a).flags & TF.Undefined)) { if (a) expr(a); out.push('None'); return; }
+        if (isAny(typeOf(a))) { out.push(liftAny(expr(a, checker.getAnyType()), `Option<${dtype(bodyT, p)}>`)); return; } // an any argument may be undefined, which takes the default (ES 10.2.11)
         if (hasAbsence(typeOf(a), TF.Undefined)) {
           const v = `nd${tempCount++}_`, value = expr(a);
           out.push(`(var ${v} := ${value}; if ${v}.Some? then Some(${convert(`${v}.value`, baseOf(typeOf(a)), bodyT, a)}) else None)`);
@@ -3217,6 +3260,7 @@ export function translate(file, fnName, opts = {}) {
         return;
       }
       if (!a) { if (p.questionToken) { usesOption = true; out.push(missingD(dtype(pt, p))); return; } fail(n, `${callee.name} needs ${callee.params.length} arguments`); }
+      if (p.questionToken && dtype(typeOf(p.name), p) === 'Any') { out.push(isAny(typeOf(a)) ? liftAny(expr(a, pt), 'Option<Any>') : `Some(${outerParens(expr(a, pt))})`); return; } // an optional any parameter is an Option<Any> slot
       out.push(expr(a, pt));
     });
     return out;
