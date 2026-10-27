@@ -38,9 +38,9 @@ const callerFile = (skip) => {
   return null;
 };
 let active = null; // the open window: { records, keep }, so a realm created inside it (a vm context for a fresh mount) can join
-export function startRecording(records, realm = { Array, Map, Set, Object }, { keep = null } = {}) {
+export function startRecording(records, realm = { Array, Map, Set, Object }, { keep = null, site = null } = {}) {
   inside = false; // a vm timeout terminates execution without running finally blocks: a window opens with the guard down, whatever the last one left
-  active = { records, keep };
+  active = { records, keep, site };
   patchRealm(realm, records, keep);
 }
 // A vm context has its own intrinsic Array and Object: an array literal or a slice made inside it uses the context's
@@ -57,6 +57,7 @@ function patchRealm(realm, records, keep) { // realm: the constructors whose pro
       if (!kept) return Reflect.apply(original, this, args); // the harness's own call: not a record
       const calls = records.calls ?? (records.calls = {}); calls[op] = (calls[op] ?? 0) + 1; // every call from the unit's files is counted; past the cap the call runs unrecorded: a record is one check of the row on real data, the first MAX_PER_OP of an operation are the run's sample, and an unbounded loop would otherwise fill the run with ever larger snapshots (measured: 20,370 push records of a growing array, 38 minutes to check)
       if (calls[op] > MAX_PER_OP) return Reflect.apply(original, this, args);
+      const site = active?.site?.() ?? null;
       const receiver = receiverIsFirstArg ? args[0] : this; // an ES module function is strict: `this` of a method called on a primitive is the primitive itself, never boxed
       const argList = []; for (let i = receiverIsFirstArg ? 1 : 0; i < args.length; i++) argList[argList.length] = args[i]; // no array method here: they are patched
       inside = true; let before, beforeArgs, argIds, receiverId, knownBefore;
@@ -73,7 +74,7 @@ function patchRealm(realm, records, keep) { // realm: the constructors whose pro
       const resultKind = threw ? 'throw' : !isObj(result) ? 'primitive' : result === receiver ? 'receiver' : seen(result) ? 'existing' : 'fresh'; // a primitive first: a string method on a string may return the receiver's own value
       const resultId = threw || !isObj(result) ? null : idOf(result);
       const afterArgs = []; for (let i = 0; i < argList.length; i++) afterArgs[i] = snap(argList[i]);
-      records[records.length] = ({ op, receiverId, argIds, before, after: snap(receiver), beforeArgs, afterArgs, resultKind, resultId, resultValue: isObj(result) ? undefined : result, threw: threw ? String(threw && threw.name) : null });
+      records[records.length] = ({ op, site, receiverId, argIds, before, after: snap(receiver), beforeArgs, afterArgs, resultKind, resultId, resultValue: isObj(result) ? undefined : result, threw: threw ? String(threw && threw.name) : null });
       } finally { inside = false; }
       if (threw) throw threw;
       return result;

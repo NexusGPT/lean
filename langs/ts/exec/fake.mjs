@@ -79,9 +79,9 @@ export class Environment {
   arm(kind, fn, ms, args = []) {
     const t = this.timers; const id = t.nextId++;
     const delay = kind === 'immediate' ? 0 : kind === 'frame' ? 16 : kind === 'idle' ? 1 : Math.max(0, Number(ms) || 0);
-    const entry = { id, kind, fn, args, due: t.now + delay, interval: kind === 'interval' ? Math.max(1, Number(ms) || 0) : null, order: id, fired: 0 };
+    const entry = { site: this.siteState?.current?.site ?? null, id, kind, fn, args, due: t.now + delay, interval: kind === 'interval' ? Math.max(1, Number(ms) || 0) : null, order: id, fired: 0 };
     t.queue.push(entry);
-    this.pending.push({ op: { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[kind], ms: kind === 'immediate' ? undefined : delay, id });
+    this.pending.push(withSite({ op: { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[kind], ms: kind === 'immediate' ? undefined : delay, id }, this.siteState?.current?.site));
     return id;
   }
   clearTimer(id, op = 'clearTimeout') {
@@ -90,7 +90,7 @@ export class Environment {
     t.queue.splice(i, 1); const j = this.pending.findIndex((e) => e.id === id); if (j >= 0) this.pending.splice(j, 1); // armed and cleared in this run: nothing, as it is to the outside world
   }
   record(op, path, args) {
-    this.trace.push({ op, path, args: args ?? [] });
+    this.trace.push(withSite({ op, path, args: args ?? [] }, this.siteState?.current?.site));
     if (this.trace.length > 20000) throw new BudgetError('more than 20000 environment operations');
   }
   primitive(kind, path) {
@@ -271,4 +271,8 @@ export function renderDrawn(args) {
 
 export function stable(v) { return JSON.stringify(render(v)); }
 // the hash of a function's own source text, comments and whitespace folded
-export function fnHash(f) { try { const src = Function.prototype.toString.call(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' '); return createHash('sha256').update(src).digest('hex').slice(0, 12); } catch { return 'native'; } }
+const functionSources = new Map();
+export function rememberFunctionSource(marked, original) { functionSources.set(marked, original); }
+export function withSite(record, site) { return Object.defineProperty(record, 'site', { value: site ?? null }); }
+
+export function fnHash(f) { try { const emitted = Function.prototype.toString.call(f); const src = (functionSources.get(emitted) ?? emitted).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' '); return createHash('sha256').update(src).digest('hex').slice(0, 12); } catch { return 'native'; } }
