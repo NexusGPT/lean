@@ -506,8 +506,9 @@ export async function runPair(opts) {
     return runNew(opts);
   }
   let spec;
-  try { spec = specOf(candidate, unit, { project }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
+  try { spec = specOf(candidate, unit, { project, usageFrom: parent }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; } // the inputs are shaped by what both versions read and compare against (usage.mjs)
   const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
+  spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];

@@ -19,7 +19,7 @@ const COMPARE = new Set([ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.Ex
 const ORDER = new Set([ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanEqualsToken, ts.SyntaxKind.GreaterThanToken, ts.SyntaxKind.GreaterThanEqualsToken]);
 const ARITH = new Set([ts.SyntaxKind.MinusToken, ts.SyntaxKind.AsteriskToken, ts.SyntaxKind.SlashToken, ts.SyntaxKind.PercentToken, ts.SyntaxKind.AsteriskAsteriskToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken, ts.SyntaxKind.SlashEqualsToken]);
 
-export const newNode = () => ({ fields: {}, elem: null, len: null, compares: [], typeofs: [], includes: [], truthy: false, numeric: false, string: false, array: false, called: null });
+export const newNode = () => ({ fields: {}, elem: null, len: null, compares: [], typeofs: [], includes: [], truthy: false, numeric: false, string: false, array: false, called: null, inTested: false });
 const UNDEF = { undefined: true };
 const sameLit = (a, b) => a === b || (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null && a.undefined && b.undefined);
 const addLit = (xs, v) => { if (!xs.some((x) => sameLit(x, v)) && xs.length < 32) xs.push(v); };
@@ -127,7 +127,7 @@ export function usage(sf, unitName, checker, opts = {}) {
       } else if (ARITH.has(k)) { for (const s of [node.left, node.right]) { const n = nodeOf(s, env); if (n) n.numeric = true; } }
       else if (k === ts.SyntaxKind.PlusToken) { const ll = litOf(node.left), lr = litOf(node.right); if ((ll && typeof ll.v === 'number') || (lr && typeof lr.v === 'number')) for (const s of [node.left, node.right]) { const n = nodeOf(s, env); if (n) n.numeric = true; } }
       else if (k === ts.SyntaxKind.AmpersandAmpersandToken || k === ts.SyntaxKind.BarBarToken) { for (const s of [node.left, node.right]) { const n = nodeOf(s, env); if (n) n.truthy = true; } }
-      else if (k === ts.SyntaxKind.InKeyword) { const lit = litOf(node.left); const n = nodeOf(node.right, env); if (n && lit && typeof lit.v === 'string') field(n, lit.v); }
+      else if (k === ts.SyntaxKind.InKeyword) { const lit = litOf(node.left); const n = nodeOf(node.right, env); if (n && lit && typeof lit.v === 'string') field(n, lit.v).inTested = true; } // a key tested with `in`: its presence is what the unit reads
     }
     if (ts.isPrefixUnaryExpression(node)) { const n = nodeOf(node.operand, env); if (n) { if (node.operator === ts.SyntaxKind.ExclamationToken) n.truthy = true; else if (node.operator === ts.SyntaxKind.MinusToken || node.operator === ts.SyntaxKind.PlusToken) n.numeric = true; } }
     if (ts.isIfStatement(node) || ts.isWhileStatement(node) || ts.isDoStatement(node)) { const n = nodeOf(node.expression, env); if (n) n.truthy = true; }
@@ -200,7 +200,7 @@ export function mergeNodes(a, b) {
   for (const k of new Set([...Object.keys(a.fields), ...Object.keys(b.fields)])) o.fields[k] = mergeNodes(a.fields[k], b.fields[k]);
   o.elem = mergeNodes(a.elem, b.elem); o.len = mergeNodes(a.len, b.len);
   for (const key of ['compares', 'typeofs', 'includes']) { for (const v of a[key]) addLit(o[key], v); for (const v of b[key]) addLit(o[key], v); }
-  for (const key of ['truthy', 'numeric', 'string', 'array']) o[key] = a[key] || b[key];
+  for (const key of ['truthy', 'numeric', 'string', 'array', 'inTested']) o[key] = a[key] || b[key];
   o.called = a.called == null ? b.called : b.called == null ? a.called : Math.max(a.called, b.called);
   return o;
 }
