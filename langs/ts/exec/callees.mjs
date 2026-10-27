@@ -65,6 +65,16 @@ export function calleesOf(sf, checker, unit) {
   return order.map((name) => ({ callee: name, path: seen.get(name) }));
 }
 
+// the units of a file that reach any of `names`, directly or through same-file calls, in file order; the direct
+// graph is read once for the whole file
+export function callersOf(sf, checker, names) {
+  const units = topLevelFunctions(sf); const targets = new Set(names);
+  const called = new Map(); for (const [name, u] of units) called.set(name, directCallees(sf, checker, units, u));
+  const reaches = new Set(); let grew = true;
+  while (grew) { grew = false; for (const [name, cs] of called) if (!reaches.has(name) && cs.some((c) => targets.has(c) || reaches.has(c))) { reaches.add(name); grew = true; } }
+  return [...units.keys()].filter((name) => reaches.has(name) && !targets.has(name));
+}
+
 // one side: its units' texts and the unit's callees
 function sideOf(file, unit) {
   const { sf, checker } = loadProgram(file, { project: false });

@@ -20,7 +20,7 @@ import { check } from './check.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
 import { runPair } from './exec/run.mjs';
-import { calleesOf } from './exec/callees.mjs';
+import { callersOf } from './exec/callees.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const git = (repo, args) => { const r = spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8', maxBuffer: 1 << 28 }); if (r.status !== 0) throw new Error(`git ${args.join(' ')}: ${r.stderr.trim()}`); return r.stdout; };
@@ -51,11 +51,12 @@ function changedUnits(file, ranges, project) {
 }
 
 export async function prReport(opts) {
-  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set(), filesRoot = null } = opts;
+  const { repo, base, head = 'WORKTREE', n = 100, dafnySeconds = 30, project = true, scope = new Set(), filesRoot = null, maxUnits = null } = opts;
   // filesRoot: a tree that mirrors the checkout (an export of it); the temporary files are written there, so a checkout
   // that must stay untouched is only read through git
   const files = changedRanges(repo, base, head);
   const rows = []; const temps = [];
+  let runs = 0, callersChecked = 0; // maxUnits (comment.mjs --max-functions) bounds the unchanged callers: their lane B runs count against it with every changed function's check
   try {
     for (const [rel, ranges] of files) {
       if (!CODE.test(rel) || SKIP.test(rel)) continue;
@@ -72,11 +73,11 @@ export async function prReport(opts) {
       for (const u of units) {
         if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
           // declared in scope: this function was meant to change; its difference is information, not a refusal
-          let b = null; try { b = (await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds: 1 })).certificate?.lanes?.B ?? null; } catch { /* keep */ }
+          let b = null; runs++; try { b = (await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds: 1 })).certificate?.lanes?.B ?? null; } catch { /* keep */ }
           rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'IN-SCOPE', laneB: b?.verdict ?? null, laneA: null, witness: b?.witnesses?.[0] ?? null, reason: b?.verdict === 'WITNESS' ? 'changed as asked: the two versions differ' : b?.verdict === 'PASS-bounded' ? 'declared in scope but no difference found within the bound' : (b?.reason ?? null), advice: [] });
           continue;
         }
-        let res;
+        let res; runs++;
         try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, project, dafnySeconds }); }
         catch (e) { res = { verdict: 'ASK', certificate: { lanes: { A: { verdict: 'ASK', detail: String(e.message).slice(0, 300) } } } }; }
         const lanes = res.certificate?.lanes ?? {};
@@ -90,21 +91,24 @@ export async function prReport(opts) {
       // may show through the callee on the caller's inputs. Lane B alone runs on it; it gets a row only when it is a
       // WITNESS that came through a changed callee (where.cause 'callee')
       const changedNames = new Set(units.map((u) => u.name));
-      if (changedNames.size) {
+      if (changedNames.size && !(maxUnits && runs >= maxUnits)) {
         const { sf, checker } = loadProgram(headFile, { project: false });
-        for (const [name, u] of topLevelFunctions(sf)) {
-          if (changedNames.has(name) || scope.has(name) || scope.has(`${rel}:${name}`)) continue;
-          let reaches = false; try { reaches = calleesOf(sf, checker, name).some((c) => changedNames.has(c.callee)); } catch { /* unread: no row */ }
-          if (!reaches) continue;
+        const all = topLevelFunctions(sf);
+        let callers = []; try { callers = callersOf(sf, checker, [...changedNames]); } catch { /* unread: no caller runs */ }
+        for (const name of callers) {
+          if (scope.has(name) || scope.has(`${rel}:${name}`)) continue;
+          if (maxUnits && runs >= maxUnits) break;
+          runs++; callersChecked++;
           let b = null; try { b = await runPair({ parent: baseFile, candidate: headFile, unit: name, n, project }); } catch { /* no row */ }
           const w = b?.verdict === 'WITNESS' ? b.witnesses?.[0] : null;
-          if (!w || w.where?.cause !== 'callee') continue;
-          const a = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1, e = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
+          if (!w || w.where?.cause !== 'callee') continue; // an ASK or a PASS on a caller adds no row
+          const u = all.get(name); const a = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1, e = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
           rows.push({ file: rel, unit: name, lines: [a, e], verdict: 'WITNESS', laneB: 'WITNESS', laneA: null, caller: true, witness: { input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, reason: null, advice: [] });
         }
       }
     }
   } finally { for (const t of temps) { try { fs.rmSync(t, { force: true }); } catch { /* gone */ } } }
+  rows.callersChecked = callersChecked; // how many unchanged callers lane B ran on, for the table's header
   return rows;
 }
 
@@ -121,7 +125,7 @@ export function calleeNote(r, rows) {
 
 export function markdown(rows, base, head) {
   const count = (v) => rows.filter((r) => r.verdict === v).length;
-  const lines = [`# lean report: ${base} → ${head}`, '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.some((r) => r.caller) ? ` and ${rows.filter((r) => r.caller).length} unchanged caller(s) with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const lines = [`# lean report: ${base} → ${head}`, '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller).length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | lane B | lane A | note |', '|---|---|---|---|---|---|'];
   for (const r of rows) {
     const note = r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');

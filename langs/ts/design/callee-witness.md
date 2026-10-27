@@ -26,7 +26,8 @@ every verdict (from the run, else a parse of both sides). `pr.mjs` carries `thro
 own row: `(changed; its own row is WITNESS)`, or `(changed), whose own row is PASS-bounded: the difference needs the
 caller's inputs`. A caller whose text did not change meets no diff hunk, so `pr.mjs` also runs lane B alone on each
 unchanged unit of a changed file that reaches a changed unit, and adds its row only when that run is a WITNESS with
-`cause: 'callee'`; the header counts these rows apart from the changed functions.
+`cause: 'callee'`. The callers come from one read of the file's call graph; their runs count against
+`maxUnits` (comment.mjs `--max-functions`), and the header says how many were checked.
 
 ## What it does not claim, and soundness
 

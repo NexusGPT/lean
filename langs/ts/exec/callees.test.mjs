@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { ts, loadProgram } from '../common.mjs';
-import { unitText, calleesOf, calleeWitness, unitTextEqual, annotateWitness } from './callees.mjs';
+import { unitText, calleesOf, callersOf, calleeWitness, unitTextEqual, annotateWitness } from './callees.mjs';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-callees-'));
 let k = 0;
@@ -34,6 +34,13 @@ test('callees are transitive, in the order first met, each with the path that re
 test('a method reaches another method of its class through this, and recursion is not a callee', () => {
   const { sf, checker } = program('export class K {\n  step(n: number): number { return n <= 0 ? 0 : this.step(n - 1) + this.unit(); }\n  unit(): number { return 1; }\n}');
   assert.deepEqual(calleesOf(sf, checker, 'K.step').map((x) => x.callee), ['K.unit']);
+});
+
+test('the callers of changed units, directly or through same-file calls, in file order, the changed ones excluded', () => {
+  const { sf, checker } = program('function leaf(x: number) { return x; }\nfunction mid(x: number) { return leaf(x); }\nexport function top(x: number) { return mid(x); }\nexport function other(x: number) { return x; }\nexport function side(x: number) { return leaf(x) + mid(x); }');
+  assert.deepEqual(callersOf(sf, checker, ['leaf']), ['mid', 'top', 'side']);
+  assert.deepEqual(callersOf(sf, checker, ['mid', 'leaf']), ['top', 'side']);
+  assert.deepEqual(callersOf(sf, checker, ['other']), []);
 });
 
 test('a caller whose text is equal names the changed callee behind an unchanged one', () => {
