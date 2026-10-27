@@ -351,3 +351,27 @@ Census (resolved, 39 roots), strict graph 886 -> 901, own syntax 2182 -> 2216; `
 ```text
 {"files":23359,"units":53918,"core":901,"heapOwnFit":2216,"mirrorMismatch":2074,"planErrorCount":0,"seconds":319}
 ```
+
+## 18. Class instances and handles
+
+Reading: a handle is a parameter or local of an object type with methods that is not a record the core reads (an
+interface with methods, a class of another file): a reference with no cell the heap models (no hypothesis, no field
+read). A call of its method, and a call of a method of another instance of a class of this file (`a.deposit(n)` where
+`a` is not `this`), is a transition of the whole heap world, `HCall_<method>_<key>(hw, receiver, args): (HWorld, R)`,
+keyed by the type's name (its own name for a type the file declares, its qualified name otherwise), the method and the
+Dafny types and the file's method code (step 15); the receiver is evaluated first, then the arguments.
+Soundness: a subclass in another file may override the method of an instance handed in, and lane B runs such an
+instance as an outside object and observes the call (pair: `fund` writes the field the method writes; lane B witnesses
+the other trace, and the transition keeps lane A from proving it). A handle has no cell, so it may be the same object as
+any record or another handle: nothing excludes that sharing, and the transition may write every cell. The same
+transitions in the same order on the same world are the proof (`report`).
+A global of the platform (`Math`, `JSON`, `console`) is never a handle: step 14 reads its pure members, the rest stay out. Out: a handle inside a record, an array or a map (handles are values of parameters and locals only), a field read of a
+handle, a method named as a value, a handle call in a loop, a callback, or a file with a discriminated union (step 15).
+A field read of an instance of a class of this file stays the record read of row 1 (lane B traces it as a read of an
+outside object, the ordinary lane's assumption that no subclass replaces a field).
+Pair `heap5_handles`: `fund`, `settle`, `transfer` (WITNESS each, unproved), `audit` and `Account.deposit` (untouched),
+`report` (the balance named first: proved). Lint: unchanged.
+Census (resolved, 39 roots), strict graph 901 -> 917, own syntax 2216 -> 2269; `curve.md` expects 2572 after its step 18:
+```text
+{"files":23359,"units":53918,"core":917,"heapOwnFit":2269,"mirrorMismatch":2127,"planErrorCount":0,"seconds":305}
+```

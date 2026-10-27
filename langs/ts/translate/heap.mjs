@@ -47,6 +47,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const nonNull = (t) => (t.flags & TF.Union ? t.types.filter((x) => !(x.flags & (TF.Undefined | TF.Null))) : [t]);
 
   // ----- shapes: structural, so an alias and the anonymous type it names are one constructor -----
+  // a type's name the same on both sides: a type the file declares by its own name (the file's path differs between the
+  // two versions), any other by its fully qualified name (its module is the environment's)
+  const typeKey = (t) => { const d = t.symbol?.declarations?.[0]; return !t.symbol ? checker.typeToString(t) : d && d.getSourceFile() === sf ? `local:${t.symbol.name}` : checker.getFullyQualifiedName(t.symbol); };
   function shapeOf(t, depth = 0) {
     if (!t || depth > 6) return null;
     if (t.flags & TF.BooleanLike) return { kind: 'prim', d: 'bool' }; // `boolean` is the union true | false: one shape
@@ -85,6 +88,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (symName === 'Date') return { kind: 'date', key: 'D' }; // a Date cell: its time value; getTime and the UTC getters read it, a setter keeps the unit out of the core (it reads the host's time zone)
     if (symName === 'Set' && checker.getTypeArguments(t).length === 1) { const e = shapeOf(checker.getTypeArguments(t)[0], depth + 1); return e && e.kind !== 'opt' && e.kind !== 'union' ? { kind: 'set', elem: e, key: `S_${keyOf(e)}` } : null; } // a Set cell: its items in insertion order, references by identity
     const cd = classDeclOf(t); if (cd) return instanceShape(cd, depth); // an instance of a class of this file: the record of its fields
+    if (depth === 0 && (t.flags & TF.Object) && !t.getCallSignatures().length && !t.getConstructSignatures().length && !checker.isArrayType(t) && !checker.isTupleType(t) && !['Map', 'Set', 'Date', 'Promise', 'RegExp', 'WeakMap', 'WeakSet', 'Error'].includes(t.symbol?.name) && checker.getPropertiesOfType(t).some((p) => p.flags & ts.SymbolFlags.Method)) { // a handle: an object with methods (an interface, a class of another file); its method calls are world transitions, its fields are not read
+      const name = typeKey(t); return { kind: 'handle', name, key: `H_${hash(name)}` };
+    }
     if ((t.flags & TF.Object) && !t.getCallSignatures().length && checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getIndexInfoOfType(t, ts.IndexKind.Number) && !checker.getPropertiesOfType(t).length) { const v = shapeOf(checker.getIndexInfoOfType(t, ts.IndexKind.String).type, depth + 1); return v && v.kind === 'prim' ? { kind: 'dict', v, key: `Dk_${v.d}` } : null; } // a dictionary `Record<string, T>` of primitives: insertion-ordered keys beside a map, and whether its prototype is Object.prototype
     if ((t.flags & TF.Object) || (t.flags & TF.Intersection)) { // an intersection here holds records only (above)
       if (t.getCallSignatures().length || t.getConstructSignatures().length) return null;
@@ -188,7 +194,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const dflt = (s) => (s.kind === 'prim' ? (s.d === 'string' ? '""' : s.d === 'bool' ? 'false' : isReal ? '0.0' : '0') : s.kind === 'opt' ? `Option<${s.inner.d}>.None` : '0');
   const fieldDflt = (s) => (s.kind === 'opt' && s.absent === 'u' ? `Pres<${s.inner.d}>.PMissing` : dflt(s));
   const unions = new Map(); // the unions a core unit reads: a predicate and the common-field reads in the prelude
-  function register(s) { if (!s || s.kind === 'prim') return; if (s.kind === 'opt') { optUsed = true; return; } if (s.kind === 'union') { if (!unions.has(s.key)) { unions.set(s.key, s); for (const a of s.alts) register(a.shape); } return; } if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map') { register(s.k); register(s.v); } else if (s.kind === 'rec') for (const f of s.fields) register(f.shape); } }
+  // a handle has no cell the heap models
+  function register(s) { if (!s || s.kind === 'prim' || s.kind === 'handle') return; if (s.kind === 'opt') { optUsed = true; return; } if (s.kind === 'union') { if (!unions.has(s.key)) { unions.set(s.key, s); for (const a of s.alts) register(a.shape); } return; } if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map') { register(s.k); register(s.v); } else if (s.kind === 'rec') for (const f of s.fields) register(f.shape); } }
   const dateGetters = new Set(); // the UTC getters a core unit reads: each a bodiless function of the time value in the prelude
   const mapInstances = new Set(); // 'K|K2' pairs of Array.prototype.map seen in the core, each its own Map_K_K2
   const typeOf = typeOfIn ?? ((n) => checker.getTypeAtLocation(n)); // the translator's reading of a node's type (its explicit-operand overrides included)
@@ -354,6 +361,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   let codeKeyMemo = null;
   const codeKey = () => { if (codeKeyMemo !== null) return codeKeyMemo; const parts = []; const w = (n) => { if ((ts.isClassDeclaration(n) || ts.isClassExpression(n))) for (const m of n.members) if (!ts.isPropertyDeclaration(m) || (m.initializer && (ts.isArrowFunction(m.initializer) || ts.isFunctionExpression(m.initializer)))) parts.push(m.getText(sf)); if (ts.isObjectLiteralExpression(n)) for (const p of n.properties) if (ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p) || ts.isSetAccessorDeclaration(p) || (ts.isPropertyAssignment(p) && (ts.isArrowFunction(unparen(p.initializer)) || ts.isFunctionExpression(unparen(p.initializer))))) parts.push(p.getText(sf)); ts.forEachChild(n, w); }; w(sf); codeKeyMemo = hash(parts.join('\n')); return codeKeyMemo; };
   function outsideCall(e) {
+    if (ts.isCallExpression(e) && !e.questionDotToken && !e.typeArguments && ts.isPropertyAccessExpression(e.expression) && !e.expression.questionDotToken && !e.arguments.some((a) => ts.isSpreadElement(a)) && ((shapeOf(typeOf(e.expression.expression))?.kind === 'handle' && !(ts.isIdentifier(e.expression.expression) && originOf(checker, e.expression.expression, sf, null).kind === 'global')) || (e.expression.expression.kind !== K.ThisKeyword && classDeclOf(nonNull(typeOf(e.expression.expression))[0]) && fns.has(`${classDeclOf(nonNull(typeOf(e.expression.expression))[0]).name.text}.${e.expression.name.text}`)))) { // a method of a handle, or of another instance of a class of this file (a subclass elsewhere may override it): a transition taking the receiver first
+      const rcv = shapeOf(typeOf(e.expression.expression)); const hs = rcv?.kind === 'handle' ? rcv : { name: `local:${classDeclOf(nonNull(typeOf(e.expression.expression))[0]).name.text}` }; const sig = checker.getResolvedSignature(e); if (!sig) return null;
+      const rt = sig.getReturnType(); const rs = isVoidT(rt) ? { kind: 'void' } : shapeOf(rt); if (!rs) return null;
+      const as = e.arguments.map((a) => (isAbsent(a) ? null : shapeOf(typeOf(a)))); if (as.some((x) => !x)) return null;
+      const ds = ['Ref', ...as.map(valD)], rd = valD(rs); const m = e.expression.name.text;
+      return { key: `HCall_${m.replace(/[^A-Za-z0-9]/g, '_')}_${hash(hs.name + '.' + m + '/' + ds.join(',') + '>' + rd + '#' + codeKey())}`, ds, rd, rs, recv: e.expression.expression };
+    }
     if (!ts.isCallExpression(e) || e.questionDotToken || e.typeArguments || !ts.isIdentifier(e.expression) || e.arguments.some((a) => ts.isSpreadElement(a))) return null;
     const sym = checker.getSymbolAtLocation(e.expression); const d0 = sym?.declarations?.[0];
     if (!d0 || !(ts.isImportSpecifier(d0) || ts.isImportClause(d0)) || d0.isTypeOnly || d0.parent?.isTypeOnly) return null;
@@ -509,7 +523,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return;
       }
       if (calleeOf(e, u)) { for (const a of e.arguments) checkExpr(a); return; }
-      if (outsideCall(e)) { if (lambdaDepth) return no('a call outside the file inside a callback'); callsOut = true; for (const a of e.arguments) checkExpr(a); return; } // a world transition
+      if (outsideCall(e)) { if (lambdaDepth) return no('a call outside the file inside a callback'); callsOut = true; if (outsideCall(e).recv) checkExpr(outsideCall(e).recv); for (const a of e.arguments) checkExpr(a); return; } // a world transition
       if (globalCall(e)) { const g = globalCall(e); if (g === 'Object.keys' && lambdaDepth) return no('allocation inside a callback'); const fd = (g === 'Math.floor' || g === 'Math.trunc') ? floorDiv(e) : null; if (fd) { if (lambdaDepth) return no('division inside a callback'); usesIndex = true; checkExpr(fd.left); return checkExpr(fd.right); } for (const a of e.arguments) checkExpr(a); return; } // a pure global
       if (reCall(e)) { const rc = reCall(e); if (rc.m === 'split' && lambdaDepth) return no('allocation inside a callback'); if (isReal && rc.m === 'search') return no('search in a real file'); checkExpr(rc.s); if (rc.r) checkExpr(rc.r); return; } // a regular expression literal: uninterpreted
       if (strMethod(e)) { if (strMethod(e) === 'split' && lambdaDepth) return no('allocation inside a callback'); checkExpr(e.expression.expression); for (const a of e.arguments) checkExpr(a); return; } // a string method of the ordinary lane's exact readings
@@ -1022,7 +1036,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const ps = fns.get(callee).params; const args = ps.map((p, j) => { const sh = shapeOf(typeOf(p.name)); return e.arguments[j] ? exprAs(e.arguments[j], sh) : `Option<${sh.inner.d}>.None`; }); // an argument not passed is undefined
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(callee)}(${[HW, ...recv, ...args].join(', ')});`); return r;
       }
-      if (outsideCall(e)) { const oc = outsideCall(e); const args = e.arguments.map((a, j) => exprAs(a, shapeOf(typeOf(a)))); callUsed.set(oc.key, [oc.ds, oc.rd]); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${oc.key}(${[HW, ...args].join(', ')});`); return r; } // the arguments in order, then the transition
+      if (outsideCall(e)) { const oc = outsideCall(e); const recvA = oc.recv ? [expr(oc.recv)] : []; const args = [...recvA, ...e.arguments.map((a, j) => exprAs(a, shapeOf(typeOf(a))))]; callUsed.set(oc.key, [oc.ds, oc.rd]); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${oc.key}(${[HW, ...args].join(', ')});`); return r; } // the arguments in order, then the transition
       if (globalCall(e)) { // a pure global: its arguments in order, then the operation
         const g = globalCall(e); const a = e.arguments;
         if (g === 'String') return toStr(a[0]);
@@ -1216,7 +1230,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const lit = (v, sh) => (sh.d === 'string' ? strEsc(v) : isReal ? `${v}.0` : String(v));
     const member = (code, sh) => { if (sh.kind === 'opt') return sh.inner.values ? `((${code}).None? || ${member(`OptOr(${code}, ${dflt(sh.inner)})`, sh.inner)})` : null; return sh.kind === 'prim' && sh.values ? `(${sh.values.map((v) => `${code} == ${lit(v, sh)}`).join(' || ')})` : null; };
     const fieldsIn = (s, r) => (s.kind === 'rec' ? s.fields.map((f) => member(f.shape.kind === 'opt' && f.shape.absent === 'u' ? `PresOpt(Get_${s.key}_${dn(f.name)}(${HW}, ${r}))` : `Get_${s.key}_${dn(f.name)}(${HW}, ${r})`, f.shape)).filter(Boolean) : []); // a literal-union field of a reference parameter: one level, the parameter's own fields
-    const hyp = [`WF(${HW})`, ...(self ? [`Is${self.key}(${HW}, ${dn('this')})`, ...fieldsIn(self, dn('this'))] : []), ...u.params.flatMap((p) => { const s = shapeOf(typeOf(p.name)); const x = dn(p.name.text); return !isRefShape(s) ? [member(x, s)].filter(Boolean) : [`Is${s.key}(${HW}, ${x})`, ...fieldsIn(s, x), ...(s.fixed ? [`Len_${s.key}(${HW}, ${x}) == ${isReal ? `${s.fixed}.0` : s.fixed}`] : [])]; })].join(' && '); // a tuple of one shape has its arity on entry
+    const hyp = [`WF(${HW})`, ...(self ? [`Is${self.key}(${HW}, ${dn('this')})`, ...fieldsIn(self, dn('this'))] : []), ...u.params.flatMap((p) => { const s = shapeOf(typeOf(p.name)); const x = dn(p.name.text); return s.kind === 'handle' ? [] : !isRefShape(s) ? [member(x, s)].filter(Boolean) : [`Is${s.key}(${HW}, ${x})`, ...fieldsIn(s, x), ...(s.fixed ? [`Len_${s.key}(${HW}, ${x}) == ${isReal ? `${s.fixed}.0` : s.fixed}`] : [])]; })].join(' && '); // a tuple of one shape has its arity on entry
     const text = [...helpers.map((h) => `${h}\n`), `function ${fname(u.name)}(${[`${HW}: HWorld`, ...params].join(', ')}): (HWorld, ${valD(rt)})`, '{', indent(body), '}'].join('\n');
     return { text, hyp };
   }
