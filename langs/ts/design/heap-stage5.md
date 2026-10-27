@@ -281,3 +281,30 @@ Census (resolved, 39 roots), strict graph 735 -> 790, own syntax 1853 -> 1994; `
 ```text
 {"files":23359,"units":53918,"core":790,"heapOwnFit":1994,"mirrorMismatch":1852,"planErrorCount":0,"seconds":330}
 ```
+
+## 15. Outside calls
+
+Reading: a call of an imported function is a transition of the whole heap world, a bodiless
+`function Call_<name>_<key>(hw: HWorld, a0: T0, ..): (HWorld, R)` keyed by the module specifier, the exported name and
+the Dafny types of its arguments and result (`()` for a procedure). The arguments are evaluated in order, then the
+transition takes the current world and returns the next one and the result; what follows reads the world it returned.
+Soundness: the transition may write every object, allocate, and return an existing reference (no frame is assumed, so
+a refactor that moves a read across a call is unproved: `price(i.id) * i.qty` reads the quantity after the call). The
+same import on the same world and arguments is the same transition; the environment is a function of its history,
+which the returned world can carry, so two calls never share an answer the lemma did not prove (`twice` calls once for
+twice: unproved). The identity certificate is the proof: the same transitions in the same order. A transition may run a method
+of an object it reaches (an instance of a class of this file, an object literal with methods built here), and the
+world holds fields, not code: so every transition's key also carries a hash of the texts of the file's class members
+and object-literal methods, and a changed method makes every transition another one (unproved), never the same
+transition over different code (found on step 20's pair: a call of a changed decorated method was proved equal).
+Out: a call inside a loop body (it could grow the array the loop walks) or a callback, an imported function named as a
+value, an async or generic call, a spread argument, an argument that is `undefined`, and every outside call in a file
+with a discriminated union (step 12). A call of a method of an imported namespace or a handle is step 18.
+Pair `heap5_outside` (a sibling module `store.ts`, resolved by the suite's reading): `cost` (the call's result named
+first, the same order: proved), `persist` (the save moved before the increment: unproved, WITNESS), `twice` (unproved;
+lane B's fakes answer both calls alike, PASS-bounded), `order` (the save moved before the price: unproved). Lint:
+unchanged.
+Census (resolved, 39 roots), strict graph 790 -> 876, own syntax 1994 -> 2159; `curve.md` expects 2000 after its step 15:
+```text
+{"files":23359,"units":53918,"core":876,"heapOwnFit":2159,"mirrorMismatch":2017,"planErrorCount":0,"seconds":330}
+```
