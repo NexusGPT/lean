@@ -3127,7 +3127,7 @@ export function translate(file, fnName, opts = {}) {
     const rt = retType(u), U = checker.getUndefinedType();
     if ((rt.flags & TF.Void) && !(rt.flags & TF.Union)) return 'Unit';
     if (rt.flags & TF.Undefined) return absentValue(rt);
-    if ((rt.flags & TF.Union) && rt.types.some((x) => x.flags & (TF.Undefined | TF.Void))) { const d = dtype(rt, s); return optionalD(d) ? missingD(d, 'Undef') : convertToD(absentValue(U), U, d, s); }
+    if ((rt.flags & (TF.Any | TF.Unknown)) || ((rt.flags & TF.Union) && rt.types.some((x) => x.flags & (TF.Undefined | TF.Void)))) { const d = dtype(rt, s); return optionalD(d) ? missingD(d, 'Undef') : convertToD(absentValue(U), U, d, s); }
     return fail(s, 'bare return');
   };
   const isAssign = (x) => ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment;

@@ -33,3 +33,9 @@ export function size(s: string) {
   if (s.length === 0) return;
   return s.length;
 }
+
+/** an opaque result, the absent value written out: the same uninterpreted undefined */
+export function loose(n: number): any {
+  if (n < 0) return undefined;
+  return n * 2;
+}
