@@ -20,15 +20,16 @@ const provable = {
     type: 'problem',
     docs: { description: 'what lean cannot prove in this file, at its line, with what to write instead' },
     hasSuggestions: true,
-    schema: [{ type: 'object', properties: { project: { type: ['string', 'boolean'] }, anyType: { type: 'boolean' } }, additionalProperties: false }],
+    schema: [{ type: 'object', properties: { project: { type: ['string', 'boolean'] }, anyType: { type: 'boolean' }, advisory: { type: 'boolean' } }, additionalProperties: false }],
   },
   create(context) {
     const project = context.options[0]?.project ?? true;
     const anyType = context.options[0]?.anyType ?? true;
+    const advisory = context.options[0]?.advisory ?? true;
     return {
       Program() {
         let findings;
-        try { findings = lintFile(context.filename ?? context.getFilename(), null, { project, anyType }); }
+        try { findings = lintFile(context.filename ?? context.getFilename(), null, { project, anyType, advisory }); }
         catch (e) { context.report({ loc: { line: 1, column: 0 }, message: `lean: could not read this file in its project: ${e.message}` }); return; }
         const src = context.sourceCode ?? context.getSourceCode();
         for (const f of findings) {
@@ -42,6 +43,10 @@ const provable = {
           if (f.rule === 'any-type') { // a proposal, not a refusal: the label says what accepting it costs
             if (f.label === 'conditional' && f.fix) { const at = [src.getIndexFromLoc({ line: f.fix.line, column: f.fix.col - 1 }), src.getIndexFromLoc({ line: f.fix.endLine, column: f.fix.endCol - 1 })]; suggest.push({ desc: `annotate ${f.name} as ${f.proposal.length > 80 ? f.proposal.slice(0, 77) + '...' : f.proposal}`, fix: (fixer) => fixer.replaceTextRange(at, f.fix.text) }); }
             context.report({ loc, message: `lean (any-type): ${f.msg}; ${advice}`, suggest });
+            continue;
+          }
+          if (f.advisory) {
+            context.report({ loc, message: `lean advice (${f.rule}): ${f.msg}; ${advice}`, suggest });
             continue;
           }
           context.report({ loc, message: `lean cannot prove this (${f.rule}): ${f.msg}${advice ? ' — ' + advice : ''}`, suggest });
