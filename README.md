@@ -221,13 +221,13 @@ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDiscou
 | file | function | verdict | coverage | lane B | lane A | note |
 |---|---|---|---|---|---|---|
 | pricing.ts | `unitDiscount` | **IN-SCOPE** | checked | PASS-bounded | | declared in scope but no difference found within the bound |
-| pricing.ts | `deliveryFee` | **WITNESS** | checked | WITNESS | | input 11: outcome |
+| pricing.ts | `deliveryFee` | **WITNESS** | checked | WITNESS | | input 11: outcome; `pricing.ts:59` |
 | pricing.ts | `formatCents` | **PASS-proved** | checked | PASS-bounded | PASS-proved | the refactor is a theorem |
 | pricing.ts | `quoteShop` | **WITNESS** | checked | WITNESS | | input 0: through `deliveryFee` (changed; its own row is WITNESS), `unitDiscount` (changed; its own row is IN-SCOPE); this function's text is unchanged |
 | pricing.ts | `quoteAll` | **WITNESS** | checked | WITNESS | | input 52: through `deliveryFee`, `unitDiscount`; this function's text is unchanged |
 | service.ts | `cleanCart` | **PASS-bounded** | checked | PASS-bounded | ASK:identity | the loop was reshaped; the result may share an input, so the value proof is withheld |
 
-Reviewers read the declared scope and the asks, not the diff. A function nobody touched is still in the table when a function it calls changed, with the callee named. **Scope is optional and declared, never inferred:** without it every difference is a `WITNESS`; with it a function named as meant to change reports `IN-SCOPE` with its lane B result, information rather than a finding. The producer of a change is never consulted.
+Reviewers read the declared scope and the asks, not the diff. A function nobody touched is still in the table when a function it calls changed, with the callee named. A `WITNESS` names the statement on each side that produced the first differing effect or the return (`witness.where.lines`, with the file, the lines and the text), and carries the lint's advice when its table has an entry at that statement, so a reader or an agent goes to the line, not to the diff. **Scope is optional and declared, never inferred:** without it every difference is a `WITNESS`; with it a function named as meant to change reports `IN-SCOPE` with its lane B result, information rather than a finding. The producer of a change is never consulted.
 
 **Every changed unit has a row, checked or not.** The `coverage` column says what lean did with it: `checked` (a verdict exists), `refused:<rule>` (the lint's first rule; lane B's verdict is kept in the row), `failed:loader`, `failed:timeout`, `failed:translation-defect` or `failed:harness` (no usable verdict), `skipped:not-typescript`, `skipped:binary` or `skipped:secret-path` (never read: `.env`, keys, certificates). The intake is one pure function, `selectUnits`, used by the run and by `--preview`, which prints the intake table and runs no lane:
 
@@ -394,7 +394,7 @@ sequenceDiagram
   G-->>A: run record id + verdict
 ```
 
-An agent that writes code needs a judge that is not itself. Today the agent has the lint's work list (`--agent`) and `check.mjs` per unit. Planned: the gate as five tools with fixed input and output schemas (`preview` of what the gate will check on a draft, `check_unit`, `check_artifact`, `witnesses`, `submit`), a reference loop with guards (rounds per unit, a time budget per request, a named stop), a `WITNESS` that carries the source line of the first differing effect on each side and the advised rewrite, every claim the agent records about behaviour run through `check_unit` before it may submit, refusals as structured records, and a witness library: a candidate the gate refused and that later passed stores the input that revealed the defect, and every later run replays it. The agent's words never enter the verdict.
+An agent that writes code needs a judge that is not itself. Today the agent has the lint's work list (`--agent`), `check.mjs` per unit, and a `WITNESS` that carries the source line of the first differing effect or the return on each side with the advised rewrite. Planned: the gate as five tools with fixed input and output schemas (`preview` of what the gate will check on a draft, `check_unit`, `check_artifact`, `witnesses`, `submit`), a reference loop with guards (rounds per unit, a time budget per request, a named stop), every claim the agent records about behaviour run through `check_unit` before it may submit, refusals as structured records, and a witness library: a candidate the gate refused and that later passed stores the input that revealed the defect, and every later run replays it. The agent's words never enter the verdict.
 
 ### 7. lean inside a gate
 
@@ -474,7 +474,7 @@ Exit codes: `check.mjs` exits 0 on every verdict and 2 when a run ends with no v
 | the front-end layers: a tree to a stated depth with context from the nearest provider, resolved styles against the pinned Tailwind table | built; a project's own Tailwind theme is not read yet |
 | a row per changed unit in the pull-request table, including the refused and skipped ones, with the reason; `--preview` | built |
 | a run identity and verdict reuse across pushes (`reused`, `--fresh`, `--cache-dir`) | built; the key stops at one import level and does not see module initialization order |
-| a `WITNESS` that names the source line of the first differing effect on each side, with the advised rewrite | planned |
+| a `WITNESS` that names the source line of the first differing effect or the return on each side, with the advised rewrite | built |
 | run-level budgets with a named stop (`--time-budget`, `--unit-budget`, `skipped:budget`, the comment blocks on a stop) | built |
 | the mechanical rules of code review as labelled advice entries, each with a proof where the rewrite is a theorem | planned |
 | a census report grouped by rule and directory, with sums that match the JSON | built |
