@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -590,7 +590,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     return true;
   };
-  const aliasHere = (decl, site) => aliasLocals.has(decl) && aliasAt(decl, site);
+  const aliasHere = (decl, site) => aliasLocals.has(decl) && !bucketMaps(currentFn, checker).locals.has(decl) && aliasAt(decl, site); // a bucket local's push writes its map (common.mjs bucketMaps)
 
   function stmts(list) { for (const s of list) stmt(s); }
   function stmt(s) {
@@ -968,7 +968,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(r) && pr.kind === K.ThisKeyword && thisParam && MUT_NAMES.has(name) && !thisParamPath(checker, r)) return v(e, 'receiver-write', RECEIVER_WRITE);
       if (ts.isPropertyAccessExpression(r) && ts.isIdentifier(pr) && declOf(pr).kind === 'local' && aliasHere(declOf(pr).decl, e) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(pr.text, declOf(pr).decl));
       if ((name === 'push' || name === 'unshift') && isArrayExpr(r)) {
-        if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
+        const bucket = bucketMaps(currentFn, checker).pushes.has(e); // `m.get(k)?.push(x)` on a map this unit built: a write of the map at k
+        if (!localOwned && !pathOwned && !bucket) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array${ts.isCallExpression(unparenX(r)) ? '; a push into an array a Map holds is read on a Map this function builds with `new Map()` and fills with array literals, through `m.get(k)?.push(x)`, while no other name holds its arrays' : ''}`);
         conditionalSpreadArgs(e);
         return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
       }

@@ -30,7 +30,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, countedFor, syncLoopCallback, localProcedure } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, countedFor, syncLoopCallback, localProcedure, bucketMaps } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
@@ -3992,6 +3992,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (isAssign(x) && ts.isElementAccessExpression(x.left) && ts.isIdentifier(x.left.expression)) note(x.left.expression);
       if (isUpdate(x) && ts.isIdentifier(x.operand)) note(x.operand);
       if (isMutCall(x)) { const r = pathRoot(x.expression.expression); if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); }
+      { const bk = ts.isCallExpression(x) ? bucketMaps(currentUnit?.fn ?? null, checker).pushes.get(x) : null; if (bk) note(bk.m.name); } // a push through a bucket map writes the map
       if (isAssignStmt(x)) { const r = pathRoot(x.arguments[0]); if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); } // Object.assign(t, …): t is written, so a parameter t is an output
       if (isUpdate(x) && ts.isPropertyAccessExpression(x.operand)) { const r = pathRoot(x.operand); if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); }
       if (ts.isCallExpression(x)) { // a same-file call that changes what was passed (directly, or through call/apply): the name passed takes the new value back, so the loop carries it
@@ -4179,7 +4180,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const rootName = ownThis ? 'this' : root.text;
       const rootCode = field ? expr(field) : dn(rootName);
       const rootT = field ? typeOf(field) : typeOf(root);
-      if (!chain.length) return [rootName, leaf(dn(rootName), null, typeOf(root)), root];
+      if (!chain.length) { // a local declared optional and narrowed here (`if (l) l.push(x)`): its value is changed inside the Some
+        const sym = ts.isIdentifier(root) ? checker.getSymbolAtLocation(root) : null;
+        const declD = sym && !ownThis ? (letTypeOf(sym) ?? dtype(symType(sym, root), root)) : '';
+        if (declD.startsWith('Option<') && !isOptional(typeOf(root)) && !isAny(typeOf(root))) return [rootName, `Some(${leaf(`${dn(rootName)}.value`, null, typeOf(root))})`, root];
+        return [rootName, leaf(dn(rootName), null, typeOf(root)), root];
+      }
       const build = (i, recvCode, recvT) => {
         const pa = chain[i]; const fname_ = pa.name.text;
         if (!isRecordish(recvT) || !checker.getPropertyOfType(recvT, fname_)) fail(pa, `field ${fname_} is not a declared field of a record`);
@@ -4338,6 +4344,22 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (isAssignStmt(e)) { // 20.1.2.1: every own enumerable key of each source, in order, written onto the target; later sources win. The lint admits plain records only, so the keys are the declared fields
       const srcs = e.arguments.slice(1);
       return pathUpdate(e.arguments[0], (cur) => srcs.reduce((acc, s) => { const props = checker.getPropertiesOfType(baseOf(typeOf(s))).filter((p) => !(p.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor | ts.SymbolFlags.Method))); const sc = outerParens(expr(s)); return props.length ? `${acc}.(${props.map((p) => `${dn(p.name)} := ${sc}.${dn(p.name)}`).join(', ')})` : acc; }, cur));
+    }
+    { // a push into an array a bucket map holds (common.mjs bucketMaps): the map changes at k when k is present
+      const bk = bucketMaps(currentUnit?.fn ?? null, checker).pushes.get(e);
+      if (bk) {
+        if (!core) fail(e, 'a push through a bucket map is read in --core mode');
+        const mId = bk.m.name, mt = baseOf(typeOf(mId)), [kt, vt] = checker.getTypeArguments(mt);
+        const M = dn(mId.text), key = `bk${tempCount++}_`;
+        const piece = callSequence([...e.arguments], dtype(checker.getTypeArguments(baseOf(vt))[0] ?? vt, e)).code;
+        pending.push(`var ${key} := ${outerParens(expr(bk.key, kt))};`);
+        if (!bk.local) return [mId.text, `if ${key} in ${M}.m then OMapPut(${M}, ${key}, ${M}.m[${key}] + ${piece}) else ${M}`, mId];
+        const l = bk.local.name, lsym = checker.getSymbolAtLocation(l), LD = letTypeOf(lsym) ?? dtype(symType(lsym, l), l), opt = LD.startsWith('Option<');
+        const nl = `bl${tempCount++}_`;
+        pending.push(`var ${nl} := ${opt ? `${dn(l.text)}.value` : dn(l.text)} + ${piece};`);
+        pending.push(`var ${M} := if ${key} in ${M}.m then OMapPut(${M}, ${key}, ${nl}) else ${M};`); // the local is the map's array at k when k is present
+        return [l.text, opt ? `Some(${nl})` : nl, l];
+      }
     }
     if (isMutCall(e)) {
       // push/unshift/add/set/delete on a local, a parameter, or a path on one: the path is rebuilt with the new contents
