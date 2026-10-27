@@ -458,3 +458,30 @@ Coyote are references). No bisimulation up-to engine in this cycle. No conforman
 corpus for validation only. No browser layer (DOM, styles, layout, pixels, accessibility tree): lean decides
 the tree, the effect trace and the schedule class, and names that layer in every front-end verdict
 (section 10); an accessibility projection waits for the owner's ask.
+
+## 11. The four worlds (the owner's research, 2026-10-27)
+
+Source: `lean-v3/research/four-worlds/owner-research-2026-10-27.md` (the owner's bibliography work on the
+challenge's four limits, from `lean-v3/challenge/research-brief-limits.md`; the challenge's measurements on the
+Nexus monorepo are in `lean-v3/challenge/dossier-limits-nexus.md`). Its reading: the four limits are four worlds
+lean does not yet thread: framework metadata is shared world state, concurrency adds a schedule, UI comparison
+chooses an observation layer, a refactor needs a relation between old and new callees. The remedy is one explicit,
+testable contract at a time, each with a bound or a layer in the certificate, and `unknown` where the contract does
+not apply. Its build order, kept here: decorator rows with runtime fixtures; two-caller schedules with replay and a
+small bound; tree depth and context then style resolution, before any browser layout; mutual summaries and
+adapters.
+
+| World | lean today (heap/stage1, 2026-10-27) | The mechanism the research names | The certificate boundary it demands |
+|---|---|---|---|
+| Framework | `Reflect`, `Proxy`, the prototype chain refused; a decorator is text in the signature (`ASK:interface` when changed, ignored when not); the hook table (section 10) is the one boundary table lean has | a versioned DECORATOR CONTRACT table keyed by package and export (wrapper relation: the body mapping, a guard branch, a pipe transform, an injected value, thrown errors, side effects), each row with a fixture run against the real framework version; a METADATA CELL in the world keyed by (key, class, method) written by a decorator and read by a guard; a whitelist of two prototype idioms on record types (the plain-object test, the own-key test) | only listed exports and metadata operations are modelled; an unknown decorator stays `ASK:interface`; a row is trusted for its framework version only; general prototype traversal, `Proxy` and prototype writes stay refused |
+| Concurrency | one microtask order; a fake promise resolves at once in call order; timers due at one instant fire in every order of up to three (section 10, moonshot 9); one unit never runs twice at once on one receiver | SCHEDULED FAKE PROMISES (fast-check's scheduler, vendored: release order drawn and replayable); TWO-CALLER PROGRAMS (a second call of the unit on the same receiver before the first settles, so check-then-act across an `await` is reachable); bounded DYNAMIC PARTIAL-ORDER REDUCTION over shared-cell conflicts (only orders that swap two dependent accesses are run); an operational definition of an event race written into the test contract; no-race controls in the benchmark | complete only within the declared bound (k live calls, b preemptions, the event model); the DPOR completeness result holds for acyclic spaces and is not transferred to arbitrary promises without a proof; randomised delays are never called exhaustive |
+| Front end | the element tree; `--deep` renders a same-package child one level down, no context; pixels, styles, layout and accessibility named as not observed | a LAYERED UI CERTIFICATE: tree to depth k with context from the nearest provider (hook frame per component); RESOLVED STYLES against the project's pinned Tailwind configuration (declarations, not token sets); LAYOUT as a separate solver-backed verdict over a named CSS subset (Cassius-class: a CSS 2.1 fragment, no font metrics); pixels and accessibility apart | each layer its own result with its assumptions (depth, provider, config version, viewport, browser, fonts); an unsupported style is `unknown`, never equal; no literature gives a browser-free Tailwind class-list equivalence: style resolution only against the pinned config |
+| Refactors | a changed signature is `ASK:interface` (names no longer count since 607de20); a caller's WITNESS names its changed callee (cacf8c7); each function proved alone | MUTUAL SUMMARIES: prove a relational summary R_g for each paired callee and use it at aligned call sites instead of the bodies; an explicit ADAPTER A for a changed signature, the theorem `f_new(A(x)) ~ f_old(x)` over effects too, `ASK:interface` without one; GENERATED MODULES compared through the schema and generator version, never through generated text; recursion by the relational summary as the induction premise, relative termination apart | a caller's proof is conditional on the proved callee relations and the declared mappings; summary reuse is the mechanism, adaptation an explicit proof input, never a heuristic |
+
+What this cycle builds from it, as rows on the board (their numbers are measured by the pairs and the estate scans,
+never assumed): a decorator table with its fixtures and the metadata cell; scheduled promises with two-caller
+programs and the conflict-bounded order set; tree depth k with context and style resolution against the pinned
+config; mutual summaries with adapters. The benchmarks the research calls the missing deliverable (race cases with
+no-race controls, UI regressions labelled by layer, multi-function refactoring commits with adapters) are the
+measurement of each row. Days per row are CLAIM until the row's brief states them. Stays out, as section 9 says:
+a browser in the sandbox, pixels inside an equality verdict, a learned anything.
