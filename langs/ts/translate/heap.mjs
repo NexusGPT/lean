@@ -214,6 +214,34 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if ((m === 'split' || m === 'search') && a.length === 1) return { m, re, s: recv };
     return null;
   };
+  // a name declared outside the unit, read as a value. A module-level `const` of a primitive shape whose initializer is
+  // a constant expression (literals, the core's operators, a template, a conditional, other such constants, imported
+  // bindings) is read by its initializer: exact, and a changed initializer is a changed value. An imported binding of a
+  // primitive shape is a bodiless constant keyed by its module specifier and its exported name: the same import on both
+  // sides is the same value (the module is the environment's, read once), another import is another constant. Out: a
+  // `let` or `var` of the module (a cell the world would carry), a constant whose initializer calls or allocates (a
+  // changed callee would change it under the same text), an object-valued constant (a shared heap object).
+  const importKey = (d0) => { let imp = d0; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent; if (!imp || !ts.isStringLiteral(imp.moduleSpecifier)) return null; const name = ts.isImportSpecifier(d0) ? (d0.propertyName ?? d0.name).text : ts.isImportClause(d0) ? 'default' : null; return name === null ? null : `Imp_${name.replace(/[^A-Za-z0-9]/g, '_')}_${hash(imp.moduleSpecifier.text + '\0' + name)}`; };
+  function outsideValue(id, depth = 0) {
+    if (depth > 8) return null;
+    const sh = shapeOf(typeOf(id)); if (!sh || sh.kind !== 'prim') return null;
+    const sym = checker.getSymbolAtLocation(id); const d0 = sym?.declarations?.[0];
+    if (d0 && (ts.isImportSpecifier(d0) || ts.isImportClause(d0))) { if (d0.isTypeOnly || d0.parent?.isTypeOnly) return null; const key = importKey(d0); return key ? { kind: 'import', key, sh } : null; }
+    const d = sym?.valueDeclaration;
+    if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || d.getSourceFile() !== sf || d.parent?.parent?.parent !== sf || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) || !d.initializer || (ts.getCombinedModifierFlags(d) & ts.ModifierFlags.Ambient)) return null;
+    return constExpr(d.initializer, depth + 1) ? { kind: 'const', init: d.initializer, sh } : null;
+  }
+  function constExpr(x, depth) {
+    x = unparen(x);
+    if (ts.isNumericLiteral(x) || ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword) return true;
+    if (ts.isPrefixUnaryExpression(x)) return (x.operator === K.MinusToken && ts.isNumericLiteral(unparen(x.operand)) && Number(unparen(x.operand).text.replace(/_/g, '')) !== 0) || (x.operator === K.ExclamationToken && constExpr(x.operand, depth)); // -0 is not a value the reading holds
+    if (ts.isIdentifier(x)) return !!outsideValue(x, depth);
+    if (ts.isTemplateExpression(x)) return x.templateSpans.every((sp) => shapeOf(typeOf(sp.expression))?.kind === 'prim' && constExpr(sp.expression, depth));
+    if (ts.isConditionalExpression(x)) return isBoolT(typeOf(x.condition)) && constExpr(x.condition, depth) && constExpr(x.whenTrue, depth) && constExpr(x.whenFalse, depth);
+    if (ts.isBinaryExpression(x)) { const k = x.operatorToken.kind; if (!BINOPS.has(k)) return false; if ((k === K.AmpersandAmpersandToken || k === K.BarBarToken) && !(isBoolT(typeOf(x.left)) && isBoolT(typeOf(x.right)))) return false; if (k === K.PlusToken && !((typeOf(x.left).flags & TF.NumberLike) && (typeOf(x.right).flags & TF.NumberLike)) && !((typeOf(x.left).flags & TF.StringLike) && (typeOf(x.right).flags & TF.StringLike))) return false; return constExpr(x.left, depth) && constExpr(x.right, depth); }
+    return false;
+  }
+  const impUsed = new Map(); // key -> Dafny type of each imported constant a core unit reads
   const strUsed = new Set();
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
   // an expression with no call, allocation or element access: it reads the heap and nothing else, so reading it eagerly is exact
@@ -264,7 +292,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (!ok) return;
       const e = unparen(e0);
       if (isAbsent(e)) return absentOk(e) ? undefined : no('undefined or null outside an optional place');
-      if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!declaredInside(e)) no(`outside name ${e.text}`); else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
+      if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!declaredInside(e)) { if (!outsideValue(e)) no(`outside name ${e.text}`); } else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
       if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return;
       if (ts.isConditionalExpression(e)) { if (!shapeOf(typeOf(e))) return no(`conditional type: ${shapeWhy(typeOf(e))}`); checkCond(e.condition); checkExpr(e.whenTrue); return checkExpr(e.whenFalse); } // c ? a : b: only the selected operand is evaluated
       if (ts.isTemplateExpression(e)) { for (const sp of e.templateSpans) { const sh = shapeOf(typeOf(sp.expression)); if (!sh || isRefShape(sh)) return no('template hole of a reference (it reads the object through toString)'); checkExpr(sp.expression); } return; } // a string concatenation, each hole by ToString
@@ -537,6 +565,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (strUsed.has('replace')) out.push('function StrReplace(s: string, a: string, b: string): string'); // replace with a string pattern: the first match, the replacement's $ patterns included, a function of the three
     if (strUsed.has('join_string')) out.push('function JoinStr(xs: seq<string>, sep: string): string decreases |xs| { if |xs| == 0 then "" else if |xs| == 1 then xs[0] else xs[0] + sep + JoinStr(xs[1..], sep) }');
     for (const d of ['int', 'real']) if (strUsed.has(`join_${d}`)) out.push(`function JoinNum_${d}(xs: seq<${d}>, sep: string): string`); // numbers are formatted first: bodiless
+    for (const [key, d] of [...impUsed].sort()) out.push(`function ${key}(): ${d}`); // an imported constant: the environment's value, the same on both sides
     if (strUsed.has('re_test')) out.push('function ReTest(re: string, s: string): bool'); // RegExp.prototype.test of a literal: a function of its text and the input
     if (strUsed.has('re_replace')) out.push('function ReReplace(re: string, s: string, r: string): string'); // replace by a literal regular expression, the replacement's $ patterns included
     if (strUsed.has('re_split')) out.push('function ReSplit(re: string, s: string): seq<string>'); // split by a literal regular expression: the pieces (captures included)
@@ -655,6 +684,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // narrowed soundly: nothing else writes it), a narrowed field read marks the world when it finds no value (another
     // name of the same record, or a call, may have cleared it since the test)
     const locShape = (x) => shapeOf(typeOf(x));
+    const inUnit = (id) => { const sym = checker.getSymbolAtLocation(id); const d = sym?.valueDeclaration ?? sym?.declarations?.[0]; return !!d && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end; }; // a name of the unit (a parameter, a local), else one from outside it
     const declShape = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; return d && (ts.isParameter(d) || ts.isVariableDeclaration(d)) && ts.isIdentifier(d.name) ? shapeOf(typeOf(d.name)) : null; };
     const absentCode = (x, to) => `Option<${to.inner.d}>.None`;
     function exprAs(x, to) { // x as a value of shape `to`
@@ -679,6 +709,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     function expr(e0) {
       const e = unparen(e0);
       if (isAbsent(e)) return absentCode(e, shapeOf(checker.getContextualType(e)));
+      if (ts.isIdentifier(e) && !inUnit(e)) { const ov = outsideValue(e); if (ov.kind === 'const') return `(${expr(ov.init)})`; impUsed.set(ov.key, ov.sh.d); return `${ov.key}()`; } // a module constant by its initializer, an import by its key
       if (ts.isIdentifier(e)) { const ds = declShape(e), ls = locShape(e); if (ds?.kind === 'opt' && ls && ls.kind !== 'opt') return `OptOr(${dn(e.text)}, ${dflt(ls)})`; return dn(e.text); }
       if (e.kind === K.ThisKeyword) return dn('this');
       if (ts.isNumericLiteral(e)) return num(e.text);

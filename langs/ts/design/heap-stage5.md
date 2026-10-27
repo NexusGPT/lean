@@ -168,3 +168,25 @@ Census (resolved, 39 roots), strict graph 572 -> 572, own syntax 1471 -> 1471:
 ```text
 {"files":23359,"units":53918,"core":572,"heapOwnFit":1471,"mirrorMismatch":1329,"planErrorCount":0,"seconds":427}
 ```
+
+## 9. Module scope
+
+Reading: a name declared outside the unit, read as a value. A module-level `const` of a primitive shape whose
+initializer is a constant expression (literals, the core's operators, a template, a conditional, other such
+constants, imported bindings) is read by its initializer, in place: `const MAX = 10` makes `i.id < MAX` the Dafny
+`i.id < (10)`. An imported binding of a primitive shape is a bodiless constant keyed by its module specifier and its
+exported name, `function Imp_LIMIT_<hash>(): int`.
+Soundness: a constant's initializer is evaluated once and the binding never changes, so reading it in place is exact,
+and a changed initializer is a changed value (never a constant named by its text alone, which a changed callee inside
+the initializer would change under the same text). An import is the environment's value, the same on both sides for
+the same module and name; another module or another name is another constant, never assumed equal (probe: parent
+`import { LIMIT }`, candidate `import { OTHER as LIMIT }`, unproved; the same import, proved).
+Out: a module `let` or `var` (a cell the world would carry), a constant whose initializer calls or allocates, an
+object-valued constant (a shared heap object), an import of a reference or a function.
+Pair `heap5_module`: `key` (the literal for the constant: proved), `capped` (WITNESS), `room` (`MAX + MAX` for the
+dropped constant `DOUBLE`: proved), `tagged` (untouched, a template constant); the import reading is the probe
+above. Lint: unchanged.
+Census (resolved, 39 roots), strict graph 572 -> 647, own syntax 1471 -> 1609; `curve.md` expects 849 after its step 9:
+```text
+{"files":23359,"units":53918,"core":647,"heapOwnFit":1609,"mirrorMismatch":1467,"planErrorCount":0,"seconds":427}
+```
