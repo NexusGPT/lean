@@ -40,7 +40,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | JsxAttribute | 5979 | 9.5% | no case (refused by default, or reached through its parent) | exact as a boxed prop; a handler as a descriptor or opaque value | same |
 | TryStatement | 5893 | 9.4% | admitted | exact (try/catch/finally with the fault channel) | same |
 | FalseKeyword | 5564 | 8.9% | admitted | exact | same |
-| ObjectBindingPattern | 5564 | 8.9% | no case (refused by default, or reached through its parent) | exact | same |
+| ObjectBindingPattern | 5564 | 8.9% | no case (refused by default, or reached through its parent) | exact; the record rest of a parameter, any field types, an uninterpreted function of the source named by the excluded keys (record-rest-any, done (lane)) | same |
 | CatchClause | 5517 | 8.8% | no case (refused by default, or reached through its parent) | exact (part of TryStatement) | same |
 | ForOfStatement | 5511 | 8.8% | admitted | exact over sequences (loop forms); over an opaque iterable refused | same, plus Map and Set iteration from the library table |
 | JsxExpression | 5495 | 8.8% | admitted | exact as a child or attribute value | same |

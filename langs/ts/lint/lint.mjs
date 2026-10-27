@@ -414,12 +414,25 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (pattern.elements.some((el) => el.initializer || (!el.dotDotDotToken && (!ts.isIdentifier(el.name) || (el.propertyName && !ts.isIdentifier(el.propertyName) && !ts.isStringLiteral(el.propertyName)))))) return false;
     return checker.getPropertiesOfType(src).every((p) => !p.name.startsWith('__@') && !p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)) && scalar(checker.getTypeOfSymbolAtLocation(p, pattern)));
   }
+  // the record rest of a parameter, any field types: an uninterpreted function of the source record named by the
+  // excluded keys; the source is a plain record, an intersection of plain records or untyped, the keys are written names
+  function paramRecordRest(pattern, rest) {
+    let p = pattern; while (p && (ts.isObjectBindingPattern(p) || ts.isArrayBindingPattern(p) || ts.isBindingElement(p))) p = p.parent;
+    if (!p || !ts.isParameter(p) || !ts.isIdentifier(rest.name)) return false;
+    const src = tOf(pattern), dst = tOf(rest.name);
+    const plain = (t) => !!(t.flags & TF.Object) && !(t.objectFlags & ts.ObjectFlags.Class) && !t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) || ts.isClassExpression(d)) && !isArrayLike(checker, t) && !checker.getSignaturesOfType(t, ts.SignatureKind.Call).length && !checker.getIndexInfosOfType(t).length;
+    const plainAll = (t) => (t.flags & TF.Intersection ? t.types.every(plain) : plain(t));
+    const anyT = (t) => !!(t.flags & TF.Any); // an unresolved or untyped source: the remainder is as opaque as the source
+    if (!(anyT(src) && anyT(dst)) && (!plainAll(src) || !plain(dst))) return false;
+    if (pattern.elements.some((el) => !el.dotDotDotToken && el.propertyName ? !ts.isIdentifier(el.propertyName) && !ts.isStringLiteral(el.propertyName) : !el.dotDotDotToken && !ts.isIdentifier(el.name))) return false;
+    return checker.getPropertiesOfType(src).every((q) => !q.name.startsWith('__@') && !q.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)));
+  }
   function bindingNames(name, outNames) {
     if (ts.isIdentifier(name)) { outNames.push(name); return; }
     if (ts.isObjectBindingPattern(name) && localMethodLiteral(tOf(name))) v(name, 'object-method-mutation', 'read named fields on the literal object; copying accessors or detached methods needs a receiver');
     for (const el of name.elements) {
       if (ts.isOmittedExpression(el)) continue;
-      if (el.dotDotDotToken) { if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el)) { v(el, 'record-rest', 'record rest needs a fixed nonempty scalar record without defaults; copy named fields explicitly'); continue; } bindingNames(el.name, outNames); continue; } // `[a, ...rest]`: the tail of the sequence
+      if (el.dotDotDotToken) { if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el) && !paramRecordRest(name, el)) { v(el, 'record-rest', 'record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without defaults; copy named fields explicitly'); continue; } if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el)) aliasLocals.add(el); bindingNames(el.name, outNames); continue; } // `[a, ...rest]`: the tail of the sequence
       if (el.initializer) { expr(el.initializer); } // `{ a = d }` / `[a = d]`: the default applies when the field is absent
       bindingNames(el.name, outNames);
     }

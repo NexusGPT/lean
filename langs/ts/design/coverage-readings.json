@@ -129,7 +129,7 @@
   "faithful": "same"
  },
  "ObjectBindingPattern": {
-  "today": "exact",
+  "today": "exact; the record rest of a parameter, any field types, an uninterpreted function of the source named by the excluded keys (record-rest-any, done (lane))",
   "faithful": "same"
  },
  "CatchClause": {

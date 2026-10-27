@@ -2350,7 +2350,15 @@ export function translate(file, fnName, opts = {}) {
         if (el.dotDotDotToken) {
           const rt = typeOf(el.name), rd = dtype(rt, el);
           const props = checker.getPropertiesOfType(rt).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-          if (!props.length || rd.startsWith('Ext_') || rd === 'Any') fail(el, 'record rest needs a fixed nonempty scalar field set');
+          const scalarField = (p) => { const ft = checker.getTypeOfSymbolAtLocation(p, el); return (ft.flags & TF.Union ? ft.types : [ft]).every((x) => !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.Null | TF.Undefined))); };
+          const exact = props.length && !rd.startsWith('Ext_') && rd !== 'Any' && (srcType ? checker.getPropertiesOfType(baseOf(srcType)) : props).every(scalarField) && !pattern.elements.some((x) => x.initializer); // the lint's scalar record rest
+          if (!exact) { // the record rest of a parameter: an uninterpreted function of the source named by the excluded keys, so equal sources give equal remainders and excess properties are never read
+            if (!srcType || !ts.isIdentifier(el.name)) fail(el, 'record rest needs a typed source record');
+            const sd = dtype(baseOf(srcType), el);
+            const keys = pattern.elements.filter((x) => !x.dotDotDotToken).map((x) => { const k = x.propertyName ?? x.name; if (!ts.isIdentifier(k) && !ts.isStringLiteral(k)) fail(x, 'a computed key in a record rest pattern is not translated'); return k.text; }).sort();
+            out.push(`var ${dn(el.name.text)} := ${external(`rest_${keys.map(mangle).join('_')}_${hash(JSON.stringify(keys))}_to_${mangle(rd)}`, [sd], rd)}(${sourceCode});`);
+            continue;
+          }
           out.push(`var ${dn(el.name.text)} := ${rd}(${props.map((p) => `${sourceCode}.${dn(p.name)}`).join(', ')});`);
           continue;
         }
@@ -2358,7 +2366,11 @@ export function translate(file, fnName, opts = {}) {
         const pt = srcType ? checker.getTypeOfPropertyOfType(baseOf(srcType), prop) : null;
         let code = `${sourceCode}.${dn(prop)}`;
         if (srcType) { const sd = (() => { try { return dtype(baseOf(srcType), el); } catch { return null; } })(); if (sd === 'Any' || (sd && sd.startsWith('Ext_'))) { const fd = pt ? (() => { try { return dtype(pt, el); } catch { return anyType(); } })() : anyType(); code = sd === 'Any' ? `${external(`Any_${prop}`, [anyType()], fd)}(${sourceCode})` : `${external(`${sd}_${prop}`, [sd], fd)}(${sourceCode})`; } } // a field of an opaque value: an accessor
-        if (el.initializer) {
+        if (el.initializer && srcType && isAny(baseOf(srcType)) && !pt) { // `{ a = d }` of an untyped source: the field or the default, one uninterpreted function of both, so a changed default is never proved equal
+          const dT = typeOf(el.initializer), dD = dtype(dT, el.initializer), target = typeOf(el.name), fd = isAny(target) ? anyType() : dtype(target, el);
+          code = `${external(`Any_${prop}_or`, [anyType(), dD], fd)}(${sourceCode}, ${outerParens(expr(el.initializer, dT))})`;
+        }
+        else if (el.initializer) {
           // `{ a = d }`: the field's value when present, the default when the field is absent or undefined
           const pd = pt ? dtype(pt, el) : null;
           if (pd && optionalD(pd)) {

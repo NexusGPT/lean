@@ -72,6 +72,7 @@ export const ADVICE = {
   'effect': { label: 'migration', text: 'This global is an effect; pass what you need as an argument.' },
   'non-null': { label: 'migration', text: '`x!` is translated as an uninterpreted value when absent; prefer an explicit check.' },
   'any-type': { label: 'conditional', precondition: 'every use of the value is covered by the proposed type', text: 'Annotate the value with the type its uses need. The finding decides the label at the site: conditional with the evidence, migration when the evidence conflicts or is absent; a proposed type is a claim about intent, never proved.' },
+  'record-rest': { label: 'migration', text: 'Take the rest in a parameter of a plain record or of an untyped value, with written keys (`function Card({ title, ...rest }: CardProps)`), or copy the fields you need by name; a copy by name drops the properties the type does not declare, which the rest keeps.' },
 };
 
 // the label in one bracket, as the --json advice, the agent report and the ESLint message print it
