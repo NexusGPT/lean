@@ -572,7 +572,7 @@ export function translate(file, fnName, opts = {}) {
   // the class used as a value); otherwise a constant of its initializer. A static method `C.m` is the unit `C.m` -----
   const staticOf = (n) => {
     if (!n || !ts.isPropertyAccessExpression(n) || !ts.isIdentifier(n.name)) return null;
-    const cls = classRef(n.expression); if (!cls) return null;
+    const cls = classRef(n.expression); if (!cls || cls.members.some(ts.isClassStaticBlockDeclaration)) return null;
     const own = cls.members.filter((m) => m.name && ts.isIdentifier(m.name) && m.name.text === n.name.text && m.modifiers?.some((k) => k.kind === K.StaticKeyword));
     return own.length === 1 && ts.isPropertyDeclaration(own[0]) ? { cls, decl: own[0] } : null;
   };

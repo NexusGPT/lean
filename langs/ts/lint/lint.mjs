@@ -322,11 +322,22 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (!ts.isPropertyAccessExpression(e) || !ts.isIdentifier(e.expression) || !ts.isIdentifier(e.name)) return null;
     const o = declOf(e.expression);
     if (o.kind !== 'module-mutable' || !o.decl || !ts.isClassDeclaration(o.decl) || o.decl.parent !== sf || !o.decl.name) return null;
+    if (o.decl.members.some(ts.isClassStaticBlockDeclaration)) return null; // a static block sets statics on import, outside every unit
     const own = o.decl.members.filter((m) => m.name && ts.isIdentifier(m.name) && m.name.text === e.name.text && m.modifiers?.some((k) => k.kind === K.StaticKeyword));
     if (!own.length) return null;
     if (own.every(ts.isMethodDeclaration)) return units.get(`${o.decl.name.text}.${e.name.text}`)?.isStatic ? { cls: o.decl, member: own.find((m) => m.body) ?? own[0], kind: 'method' } : null;
     if (own.length === 1 && ts.isPropertyDeclaration(own[0]) && !own[0].modifiers?.some((k) => k.kind === K.DeclareKeyword || k.kind === K.AbstractKeyword)) return { cls: o.decl, member: own[0], kind: 'field' };
     return null;
+  }
+  // `this` and `super` in a static method name whichever class the call went through (a subclass too), not the class
+  // that declares the method; arrows inherit them, nested functions and classes bind their own
+  function staticThis(body) {
+    const w = (x) => {
+      if (ts.isFunctionDeclaration(x) || ts.isFunctionExpression(x) || ts.isClassLike(x)) return;
+      if (x.kind === K.ThisKeyword || x.kind === K.SuperKeyword) v(x, 'static-this', `\`${x.kind === K.ThisKeyword ? 'this' : 'super'}\` in a static method is the class the call names, a subclass too; name the class itself`);
+      ts.forEachChild(x, w);
+    };
+    w(body);
   }
   // a static field read: refused when it holds a function (a call through it has no unit) or is the receiver of an in-place mutator
   function staticFieldRead(e) {
@@ -1387,6 +1398,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const obj = localMethodLiteral(tOf(e.expression));
     const method = obj?.properties.find((p) => ts.isMethodDeclaration(p) && p.name?.text === name);
     if (method && !(e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e)) return v(e, 'object-method-mutation', 'call a literal method on its object; detached methods need an explicit receiver');
+    if (e.expression.kind === K.ThisKeyword && name === 'constructor') return v(e, 'prototype', '`this.constructor` is the run-time class of the receiver; name the class to read its statics'); // a static through the receiver's class
     if (e.expression.kind === K.ThisKeyword) return; // a field or method of the receiver: read through an accessor
     if (name === 'prototype' || name === '__proto__' || name === 'constructor') return v(e, 'prototype', `\`.${name}\` reaches the prototype chain`);
     { const st = sameFileStatic(e); if (st) { if (st.kind === 'field') return staticFieldRead(e); if (!(e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e)) return v(e, 'global-read', `\`${e.getText(sf)}\` is a static method used as a value; call it, or pass an arrow that calls it`); return; } } // a static of a same-file class
@@ -1509,6 +1521,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           checkType(tOf(p.name), p);
         }
         checkStringLiterals(u.node);
+        if (u.isStatic) staticThis(u.body);
         stmts(u.body.statements);
         current = null; currentFn = null; currentClass = null; thisParam = null;
       }

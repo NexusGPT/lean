@@ -71,6 +71,7 @@ export const ADVICE = {
   'inheritance': { label: 'migration', text: 'A class that extends another is outside the subset in this version.' },
   'effect': { label: 'migration', text: 'This global is an effect; pass what you need as an argument.' },
   'non-null': { label: 'migration', text: '`x!` is translated as an uninterpreted value when absent; prefer an explicit check.' },
+  'static-this': { label: 'conditional', precondition: 'the method is never called through a subclass (every call names this class, or the class has no subclass)', text: 'In a static method `this` is the class the call went through. Name the declaring class instead: `C.m()` for `this.m()`, `C.K` for `this.K`.' },
 };
 
 // the label in one bracket, as the --json advice, the agent report and the ESLint message print it
