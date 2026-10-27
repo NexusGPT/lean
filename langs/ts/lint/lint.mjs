@@ -6,7 +6,7 @@
 // array and string methods, integer division under Math.floor, and `%`. What stays refused is what no
 // deterministic translation can model: any, casts, prototype access, dynamic keys, mutation of what the
 // function does not own, effects reached through globals, throw, generics on the function itself.
-// Usage: node lint.mjs <file.ts> [--changed <ranges.json>] [--json] [--project <tsconfig>|--no-project]
+// Usage: node lint.mjs <file.ts> [--changed <ranges.json>] [--json] [--any-type] [--project <tsconfig>|--no-project]
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -15,6 +15,7 @@ import { fileUsesReals } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
+import { anyTypeFindings } from './any-type.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 
@@ -1481,6 +1482,9 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (f.label === 'conditional') f.precondition = site?.precondition ?? a.precondition;
     f.advice = a ? `${labelTag(f.label, f.precondition)} ${a.text}` : null;
   }
+  // any-type, when asked (opts.anyType): every value typed any or unknown in a checked unit, with a type proposed from
+  // its uses; an advisory finding beside the refusals, so the gate, the census and the pull-request table never ask for it
+  if (opts.anyType) { out.push(...anyTypeFindings(sf, checker, { file, ranges, unitSpans })); out.sort((a, b) => a.line - b.line || a.col - b.col); }
   return out;
 }
 
@@ -1516,7 +1520,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   }
 
   const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--changed' && args[i - 1] !== '--project');
-  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--project <tsconfig>|--no-project]'); process.exit(2); }
+  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--any-type] [--project <tsconfig>|--no-project]'); process.exit(2); }
   const ci = args.indexOf('--changed');
   let ranges = null;
   if (ci >= 0) {
@@ -1525,7 +1529,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   }
   const pi = args.indexOf('--project');
   const project = args.includes('--no-project') ? false : pi >= 0 ? args[pi + 1] : true;
-  const res = lintFile(file, ranges, { project });
+  const res = lintFile(file, ranges, { project, anyType: args.includes('--any-type') });
   if (args.includes('--json')) console.log(JSON.stringify(res, null, 2));
   else if (args.includes('--agent')) console.log(agentReport(file, res));
   else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
