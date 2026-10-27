@@ -66,7 +66,7 @@
   <text x="976" y="516" font-size="18" fill="#c9d4e0">the time limit</text>
   <line x1="976" y1="610" x2="1218" y2="610" stroke="#3c5272" stroke-width="1"/>
   <text x="976" y="640" font-size="14" fill="#c7d9ea" letter-spacing="2">A REAL RUN</text>
-  <text x="976" y="672" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">100 inputs, seed 1:</text>
+  <text x="976" y="672" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">30 inputs, seed 1:</text>
   <text x="976" y="698" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">no difference</text>
   <text x="976" y="776" font-size="17" fill="#8a9bb0" font-style="italic">from lane B</text>
   <rect x="1256" y="264" width="278" height="532" fill="#0b1422" stroke="#8a7540" stroke-width="1.5"/>

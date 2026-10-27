@@ -166,17 +166,17 @@ patch: 1 insert
 
 An agent that writes code needs a judge that is not itself. Today it has the lint's work list (`--agent`, mutations first), `check.mjs` per function, and a `WITNESS` that carries the source line of the first differing effect on each side with the advised rewrite. **Impact:** the agent fixes against an input it can replay, and its own account of the change never enters the verdict.
 
-### 6. Around lean
-
-lean is one check inside a larger, mostly planned architecture: a ledger of obligations both lanes share, four worlds (frameworks, concurrency, the front end, refactors) it threads one contract at a time, and a gate that would use it as one of six checks. That layer is a higher level of abstraction, so it lives on its own page: [`docs/around-lean.md`](docs/around-lean.md).
-
-### 7. Another language
+### 6. Another language
 
 Python is the second language, at its first milestone: typed functions, dataclasses and plain classes over ints, strings, lists, tuples, dicts and optionals, with calls into the outside as transitions and raised exceptions as faults. [`langs/_template/`](langs/_template/) is the start point for the next.
 
+## Around lean
+
+lean is one check inside a larger, mostly planned architecture: a ledger of obligations both lanes share, four worlds (frameworks, concurrency, the front end, refactors) it threads one contract at a time, and a gate that would use it as one of six checks. That layer is a higher level of abstraction, so it lives on its own page: [`docs/around-lean.md`](docs/around-lean.md).
+
 ## Writing code lean can prove
 
-The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.** Code written that way gets more than a test: the next change to it is a theorem. Three pairs: a function written the usual way, then the same function written lean-style. Each version then gets the same later refactor (`*.next.ts`), and lean checks that refactor on both. Every check ran with `--no-project --n 30 --dafny-seconds 30`; the `#` lines are read from the certificate.
+The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.** Code written that way gets more than a test: the next change to it is a theorem. Three pairs: a function written the usual way, then the same function written lean-style. Each version then gets the same later refactor (`*.next.ts`), and lean checks that refactor on both. Every check ran with `--no-project --n 30 --dafny-seconds 30`; the `#` lines are read from the certificate. The six files are under [`examples/showcase/`](examples/showcase/); the commands run from that folder.
 
 **1. A cart: change what you were handed through its own name, not a second one.** `addLine(cart: Cart, price: number): number`; the refactor computes the new total once (`const net = … + price`) and returns it.
 ```ts

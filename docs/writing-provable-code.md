@@ -104,7 +104,7 @@ What this buys: a candidate that drops the empty-state paragraph, renders the wr
 
 Everything else is yours: `async`/`await`, `try`/`catch` (a fault flag on the world: every transition inside the body may fault, the catch path runs with the fault value), `switch`, destructuring with defaults, optional chaining, template strings, `Set`, `Map`, generics, recursion, early returns, callbacks to array methods, local lambdas, JSX. [`langs/ts/subset.md`](../langs/ts/subset.md) lists every construct and whether it is exact, uninterpreted, or refused.
 
-**How much real code is inside.** Measured on 39 repositories, private and public (48,696 functions and methods written before this style existed): 60.0 percent of all units are inside the subset as written. The rest get lane B and the rule that stopped the proof lane. Code written with the lint on is inside from the first line.
+**How much real code is inside.** Measured on a census of private and public repositories, on code written before this style existed: most units are inside the subset as written. The rest get lane B and the rule that stopped the proof lane. Code written with the lint on is inside from the first line.
 
 **In the editor.** lean ships an ESLint plugin (`langs/ts/eslint`) with one rule, `lean/provable`. It runs lean's own lint on the file inside its project, so what the editor underlines is exactly what the proof lane will refuse: the line, the rule, and what to write instead. Where a rewrite keeps your meaning (`n / 2` to `Math.floor(n / 2)`, `==` to `===`) it is offered as a suggestion; where it does not (a mutation that must become a returned value), the message gives the shape and leaves the edit to you.
 
@@ -159,7 +159,7 @@ stated axiom; lane B does not yet pass one object twice, see the heap design not
 (`alias-mutation`), because the value reading has one value per name. Layer 2, planned: objects that come from the
 world (a row from a repository, a node in a tree, a shared cache) are references into a heap carried by the world;
 reads and writes go through it; two versions are equal when results and final heaps agree up to a renaming of fresh
-allocations. The census counts 4,620 units that change an object through an alias; layer 2 is what makes them
+allocations. The census finds many units that change an object through an alias; layer 2 is what makes them
 provable without rewriting them.
 
 **Reading 3: control is data.** A loop is a recursive helper over the variables it changes, with its own
