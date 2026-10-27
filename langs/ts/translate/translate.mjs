@@ -4639,6 +4639,25 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   if (core) computeMutations();
   // ----- emit functions -----
   for (const u of order) kindOf.set(u, hasLoopOrMutation(u.body) ? 'method' : 'function');
+  // param-rebind: a parameter the unit reassigns by name in its own body (never inside a callback; the lint refuses that)
+  // is a local that starts as the argument. The core reading rebinds it as any local (`var p := v` shadows the
+  // parameter); the proof shape declares the local first. A parameter both rebound and changed in place would hand the
+  // rebound object back to the caller as an output, so it is refused here as in the lint.
+  function reassignedParams(u) {
+    const out = new Set();
+    const w = (n) => {
+      if (ts.isFunctionLike(n) && n !== u.fn) return;
+      let t = isAssign(n) ? n.left : isUpdate(n) ? n.operand : null;
+      while (t && ts.isParenthesizedExpression(t)) t = t.expression;
+      const d = t && ts.isIdentifier(t) ? checker.getSymbolAtLocation(t)?.valueDeclaration : null;
+      if (d && ts.isParameter(d) && d.parent === u.fn) out.add(d);
+      ts.forEachChild(n, w);
+    };
+    if (u.body) w(u.body);
+    const both = [...out].filter((d) => mutatedOf(u).includes(d.name.text));
+    if (both.length) fail(u.node, `param-assign: parameter \`${both[0].name.text}\` is rebound and also changed in place`);
+    return [...out].filter((d) => !d.initializer).map((d) => d.name.text); // a defaulted parameter is already a local (sigParams)
+  }
   function sigParams(u) {
     const parts = []; const lets = [];
     const opaqueDefaults = core && moduleUnitShape(u).opaque;
@@ -4749,6 +4768,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (numericOpaque.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
     const sp = sigParams(u);
     const bodyList = ts.isBlock(u.body) ? [...u.body.statements] : null;
+    reassignedParams(u); // refuses a parameter both rebound and changed in place
     if (core) {
       const eff = effectfulUnits.has(u.name);
       if (eff) addPrelude('World', 'type World');
@@ -4814,6 +4834,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     } else {
       const lines = [];
       for (const l of sp.lets) lines.push('  ' + l);
+      for (const m of reassignedParams(u)) lines.push(`  var ${dn(m)} := ${dn(m)};`); // a rebound parameter: a local that starts as the argument
       stmts(bodyList, 1, u, lines);
       chunks.push([`method ${name}(${sp.text}) returns (result: ${rt})`, ...specs, '{', ...lines, '}'].join('\n'));
     }

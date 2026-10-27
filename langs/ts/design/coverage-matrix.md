@@ -25,7 +25,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | ParenthesizedExpression | 16252 | 25.9% | admitted | exact | same |
 | TemplateExpression | 16167 | 25.8% | admitted | exact (string concatenation of converted parts) | same |
 | AwaitExpression | 15997 | 25.5% | admitted | exact as a settled source with the try fault channel (promise forms) | same, with pending reactions on the ledger |
-| Parameter | 15777 | 25.2% | no case (refused by default, or reached through its parent) | exact; rest parameters and defaults by the param-form rule | same, rest parameters admitted |
+| Parameter | 15777 | 25.2% | no case (refused by default, or reached through its parent) | exact; rest parameters and defaults by the param-form rule; a parameter the unit reassigns in its own body is a local that starts as the argument (param-rebind), refused inside a callback, as an output or under an earlier closure (param-assign) | same, rest parameters admitted |
 | ConditionalExpression | 14656 | 23.4% | admitted | exact | same |
 | ArrayLiteralExpression | 14558 | 23.2% | admitted | exact as a sequence; holes refused; in the heap core a fresh node | fresh heap node |
 | PrefixUnaryExpression | 13715 | 21.9% | admitted | exact for !, unary minus on numbers, ++/-- on a name; -0 refused from the heap core | same |
