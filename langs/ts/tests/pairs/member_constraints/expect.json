@@ -1,0 +1,21 @@
+{
+ "scope": [
+  "id_of",
+  "total",
+  "box_flag",
+  "tag_of"
+ ],
+ "equal": {
+  "id_of": true,
+  "total": false,
+  "box_flag": false,
+  "tag_of": true
+ },
+ "why": "Stage 5 rank 17: a member read on a value whose type is a type parameter is read through the parameter's declared constraint as one uninterpreted field read, generic in the parameter (the same function on both sides); a read on an indexed this type (this[\"options\"]) takes the opaque path, an uninterpreted accessor; a read on never is unreachable (strict mode refuses it as a TypeScript error, so no pair unit holds one). idOf reads the id once into a local (proved: the same read). total adds one per element (unproved; lane B WITNESS on any non-empty array). Box.flag negates the flag (unproved; WITNESS on any box). tagOf is untouched.",
+ "b": {
+  "idOf": "PASS-bounded",
+  "total": "WITNESS",
+  "Box.flag": "WITNESS",
+  "tagOf": "PASS-bounded"
+ }
+}

@@ -25,6 +25,7 @@ export function specOf(file, unitName, opts = {}) {
     if (f & TF.Null) return { kind: 'null' };
     if (f & (TF.Undefined | TF.Void)) return { kind: 'undefined' };
     if (depth > 5 || budget-- <= 0) return { kind: 'opaque' };
+    if (f & TF.TypeParameter) { const c = checker.getBaseConstraintOfType(t); return c && !(c.flags & (TF.Any | TF.Unknown)) ? spec(c, depth + 1) : { kind: 'opaque' }; } // stage 5 rank 17: a type parameter is drawn as its declared constraint (every value of T has the constraint's members); unconstrained, opaque
     if (f & TF.StringLiteral) return { kind: 'literal', values: [t.value] };
     if (f & TF.NumberLiteral) return { kind: 'literal', values: [t.value] };
     if (f & TF.BooleanLiteral) return { kind: 'literal', values: [t.intrinsicName === 'true'] };
