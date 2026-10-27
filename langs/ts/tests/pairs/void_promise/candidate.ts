@@ -1,5 +1,5 @@
 export interface Jobs { start(id: string): Promise<void>; stop(id: string): Promise<void>; track(p: Promise<void>): void; both(p: Promise<void>, q: Promise<void>): void; note(text: string): void; }
-export interface Slots { open(id: string): Promise<undefined>; close(id: string): Promise<undefined>; keep(p: Promise<undefined>): void; last: Promise<undefined> | null; }
+export interface Slots { open(id: string): Promise<undefined>; close(id: string): Promise<undefined>; keep(p: Promise<undefined>): void; put(id: string, p: Promise<undefined>): void; }
 export interface Gates { lift(id: string): Promise<null>; drop(id: string): Promise<null>; hold(p: Promise<null>): void; }
 // changed: the candidate awaits the two handles in the other order, so a double rejection throws the other error
 export async function order(jobs: Jobs, id: string): Promise<void> {
@@ -32,11 +32,11 @@ export function swap(jobs: Jobs, id: string): void {
   const b = jobs.stop(id);
   jobs.both(b, a);
 }
-// changed: the candidate stores the other promise of undefined on the outside object
+// changed: the candidate hands the outside the other promise of undefined, beside a key
 export function stash(slots: Slots, id: string): void {
   const a = slots.open(id);
   const b = slots.close(id);
-  slots.last = b;
+  slots.put(id, b);
 }
 // changed: the candidate hands the outside the other promise of null
 export function gate(gates: Gates, id: string): void {

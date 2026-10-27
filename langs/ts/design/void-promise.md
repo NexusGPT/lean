@@ -102,7 +102,8 @@ observe which promise a unit awaits. It sees the await order only through the se
 **Pair void_promise, added units** (both sides are inside the subset):
 - `handout`: a held void promise returned in a record, `{ done: a }` against `{ done: b }`.
 - `swap`: `both(a, b)` against `both(b, a)`.
-- `stash`: a `Promise<undefined>` stored on an outside field.
+- `stash`: a `Promise<undefined>` passed as the second argument of an outside call. A field store is left out: lane A
+  reads `this.last = a` into a `Promise<undefined> | null` field as the absent constant (reported to the lead).
 - `gate`: a `Promise<null>` passed to an outside call.
 
 All four are changed units. On the base, lane B read each one PASS-bounded. With the reading, each is a WITNESS at
