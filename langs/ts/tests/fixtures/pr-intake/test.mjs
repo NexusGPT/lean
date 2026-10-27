@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { intakeRepo } from './build.mjs';
-import { secretPath, selectUnits, coverageOf, budgetValue } from '../../../pr.mjs';
+import { secretPath, selectUnits, coverageOf, budgetValue, runIdentity, unitKey } from '../../../pr.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pr = path.resolve(here, '../../../pr.mjs');
@@ -115,10 +116,122 @@ export function testIntake() {
     assert.deepEqual(orderedReport.stop, { reason: 'unit-budget', reached: 0, total: 3 });
     assert.ok(orderedReport.rows.some((r) => r.unit === 'caller' && r.caller && r.coverage === 'skipped:budget'));
     console.log('Order: changed inside,last; callers caller; heap empty; all three rows skipped at zero units');
+    const identityParts = { base: 'base', head: 'head', unitSet: [{ file: 'a.ts', unit: 'a' }, { file: 'b.ts', unit: 'b' }],
+      leanVersion: 'lean', libraryTableHash: 'library', adviceTableHash: 'advice', dafnyVersion: 'dafny' };
+    assert.equal(runIdentity(identityParts), runIdentity({ ...identityParts, unitSet: [...identityParts.unitSet].reverse() }));
+    for (const key of ['base', 'head', 'leanVersion', 'libraryTableHash', 'adviceTableHash', 'dafnyVersion']) {
+      assert.notEqual(runIdentity(identityParts), runIdentity({ ...identityParts, [key]: 'changed' }), key);
+    }
+    const keyParts = { parentText: 'parent', candidateText: 'candidate', calleeSummaries: { parent: [], candidate: [] }, fileContext: {}, imports: {}, tsconfig: {},
+      flags: { n: 100, seed: 1, dafnySeconds: 30, project: true, deep: false, scope: false, adapters: {} } };
+    for (const key of ['parentText', 'candidateText', 'calleeSummaries', 'fileContext', 'imports', 'tsconfig']) {
+      assert.notEqual(unitKey(keyParts), unitKey({ ...keyParts, [key]: 'changed' }), key);
+    }
+    for (const key of Object.keys(keyParts.flags)) {
+      assert.notEqual(unitKey(keyParts), unitKey({ ...keyParts, flags: { ...keyParts.flags, [key]: 'changed' } }), key);
+    }
+    testRunIdentity();
     return '6 rows; 6 coverage values; preview has no lane process; refusal keeps WITNESS; budgets and comment stops pass';
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try { console.log('PASS pr intake: ' + testIntake()); }
   catch (e) { console.error(e.stack); process.exitCode = 1; }
+}
+
+// This fixture keeps one unrelated unit beside a chain of callers.
+export function testRunIdentity() {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-identity-test-'));
+  const program = process.env.LEAN_IDENTITY_PR ? fs.realpathSync(process.env.LEAN_IDENTITY_PR) : pr;
+  try {
+    const refs = intakeRepo(path.join(tmp, 'repo'));
+    const git = (...args) => {
+      const result = spawnSync('git', ['-C', refs.repo, ...args], { encoding: 'utf8', env: { ...process.env,
+        GIT_AUTHOR_NAME: 'lean', GIT_AUTHOR_EMAIL: 'lean@localhost', GIT_COMMITTER_NAME: 'lean',
+        GIT_COMMITTER_EMAIL: 'lean@localhost', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' } });
+      assert.equal(result.status, 0, result.stderr);
+      return result.stdout.trim();
+    };
+    const source = path.join(refs.repo, 'chain.ts');
+    fs.writeFileSync(path.join(refs.repo, 'types.ts'), 'export type Marker = number;\n');
+    const config = path.join(refs.repo, 'tsconfig.json');
+    fs.writeFileSync(config, JSON.stringify({ compilerOptions: { baseUrl: '.', paths: { '@local/*': ['./*'] } } }));
+    fs.writeFileSync(source, [
+      "import type { Marker } from '@local/types';",
+      'type Local = number;',
+      'const offset: Local = 0;',
+      'export function leaf(x: number): number { return x + 1; }',
+      'export function middle(x: number): number { return leaf(x); }',
+      'export function caller(x: number): number { return middle(x); }',
+      'export function other(x: number): number { return x + 1; }',
+      '',
+    ].join('\n'));
+    git('add', 'chain.ts', 'types.ts', 'tsconfig.json');
+    git('commit', '-qm', 'Read the original call chain');
+    const base = git('rev-parse', 'HEAD');
+    fs.writeFileSync(source, fs.readFileSync(source, 'utf8').replace('x + 1', 'x + 2').replace('x + 1', 'x + 3'));
+    git('add', 'chain.ts');
+    git('commit', '-qm', 'Read the changed leaf and unrelated unit');
+    const cache = path.join(tmp, 'cache');
+    const run = (label, extra = []) => {
+      const json = path.join(tmp, label + '.json');
+      const start = performance.now();
+      const result = spawnSync(process.execPath, [program, '--repo', refs.repo, '--base', base, '--head', 'HEAD',
+        '--n', '10', '--dafny-seconds', '1', '--cache-dir', cache, '--json', json, ...extra], { encoding: 'utf8' });
+      const ms = performance.now() - start;
+      assert.equal(result.status, 0, result.stderr + result.stdout);
+      if (result.stderr) console.log(result.stderr.trim());
+      const report = JSON.parse(fs.readFileSync(json, 'utf8'));
+      console.log('Identity ' + label + ' rows: ' + report.rows.map((r) => r.unit + '=' + r.coverage).join(', '));
+      console.log('Identity ' + label + ' wall ms: ' + ms.toFixed(3));
+      assert.match(report.identity, /^[a-f0-9]{64}$/);
+      assert.ok(result.stdout.includes('Identity: ' + report.identity));
+      for (const row of report.rows) assert.ok(row.certificate?.identity);
+      return { report, ms };
+    };
+    const cacheBytes = () => Object.fromEntries(fs.readdirSync(cache).filter((name) => name.endsWith('.json')).sort().map((name) => [name, fs.readFileSync(path.join(cache, name), 'utf8')]));
+    const first = run('first');
+    assert.deepEqual(first.report.rows.map((r) => r.unit), ['leaf', 'other', 'middle', 'caller']);
+    assert.ok(first.report.rows.every((r) => r.coverage === 'checked'));
+    assert.ok(first.report.rows.every((r) => r.certificate.identity === first.report.identity));
+    const bytes = cacheBytes();
+    const second = run('second', ['--reuse']);
+    assert.equal(first.report.identity, second.report.identity);
+    assert.ok(second.report.rows.every((r) => r.coverage === 'reused'));
+    assert.deepEqual(cacheBytes(), bytes, 'cache files must remain byte identical on a hit');
+    for (const row of first.report.rows) {
+      const reused = second.report.rows.find((r) => r.unit === row.unit);
+      assert.equal(JSON.stringify(reused.certificate), JSON.stringify(row.certificate));
+      console.log('Identity certificate ' + row.unit + ': ' + createHash('sha256').update(JSON.stringify(row.certificate)).digest('hex') + ' byte identical');
+      assert.match(reused.note, /^reused from [a-f0-9]{12}$/);
+    }
+    console.log('Identity first report and certificates: ' + first.report.identity);
+    console.log('Identity certificates: 4 byte identical; cache files: 4 byte identical');
+    console.log('Identity second percent of first: ' + (100 * second.ms / first.ms).toFixed(3));
+    fs.writeFileSync(source, fs.readFileSync(source, 'utf8').replace('x + 2', 'x + 4'));
+    git('add', 'chain.ts');
+    git('commit', '-qm', 'Read the next leaf change');
+    const changed = run('callee');
+    assert.notEqual(changed.report.identity, first.report.identity);
+    const actual = Object.fromEntries(changed.report.rows.map((r) => [r.unit, r.coverage]));
+    assert.deepEqual(actual, { leaf: 'checked', other: 'reused', middle: 'checked', caller: 'checked' },
+      'Changed callee texts must invalidate both direct and transitive callers');
+    const fresh = run('fresh', ['--fresh']);
+    assert.ok(fresh.report.rows.every((r) => r.coverage === 'checked'));
+    assert.ok(fresh.report.rows.every((r) => r.certificate.identity === fresh.report.identity));
+    console.log('Identity fresh: 0 reused; report and new certificate identities agree');
+    fs.writeFileSync(path.join(refs.repo, 'types.ts'), 'export type Marker = string;\n');
+    const imported = run('import');
+    assert.ok(imported.report.rows.every((r) => r.coverage === 'checked'), 'a direct project import must invalidate the file');
+    fs.appendFileSync(config, '\n');
+    const configured = run('config');
+    assert.ok(configured.report.rows.every((r) => r.coverage === 'checked'), 'resolved config contents must invalidate the file');
+    fs.writeFileSync(source, fs.readFileSync(source, 'utf8').replace('offset: Local = 0', 'offset: Local = 1'));
+    git('add', 'chain.ts');
+    git('commit', '-qm', 'Read the changed module constant');
+    const outside = run('outside');
+    assert.ok(outside.report.rows.every((r) => r.coverage === 'checked'), 'text outside functions must invalidate the file');
+    console.log('Identity dependency guards: direct import, resolved config and module constant each invalidate all 4 rows');
+    return 'run identity and cache pass';
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
