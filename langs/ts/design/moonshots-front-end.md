@@ -214,6 +214,13 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   useCallback dependency, a list or text inside a branch the inputs never take.
 - Kill: none; this is the measure the other nine are judged on.
 
+## Class components, counted (2026-10-27)
+
+Over the 39 census roots (31,106 source files walked, `node_modules`, `dist`, `build`, `.next` and `out` skipped),
+6 classes extend `Component` or `PureComponent`, in 4 files: two sign-in views and two error boundaries. Decision:
+no lifecycle machine in the fake runtime. A class component stays a unit of methods (its `render` a method of an
+explicit receiver, its fields in the world), never a machine; the hook runtime is where the components are.
+
 ## Two more, cheaper, waiting for the owner
 
 - An accessibility projection as a Dafny function over `JsxNode` (roles and names from the HTML-AAM tables):

@@ -1,6 +1,6 @@
 {
- "version": 1,
- "about": "The library transition table of the heap core (references, layer 2): one row per built-in operation lean reads through the heap. Each row states what ECMA-262 (edition 2027, section ids as on tc39.es/ecma262) or the HTML standard fixes about the operation, at the level the proof needs: does it allocate, does it change its receiver, what identity it returns, in what order it visits, what a callback may do, and when it throws. heap.mjs generates one total Dafny function per row and per shape from the `dafny` template (`<K>` the shape key, `<E>` the element Dafny type); design/library-ops.dfy holds the monomorphic forms verified with dafny 4.11.0 (23 verified, 0 errors). A row whose `status` is `draft` is not generated. Lane B's call recorder (exec/transitions.mjs) checks every observed call against its row; a mismatch refuses the row's proofs until the row is fixed.",
+ "version": 2,
+ "about": "The library transition table of the heap core (references, layer 2): one row per built-in operation lean reads through the heap. Each row states what ECMA-262 (edition 2027, section ids as on tc39.es/ecma262) or the HTML standard fixes about the operation, at the level the proof needs: does it allocate, does it change its receiver, what identity it returns, in what order it visits, what a callback may do, and when it throws. heap.mjs generates one total Dafny function per row and per shape from the `dafny` template (`<K>` the shape key, `<E>` the element Dafny type); design/library-ops.dfy holds the monomorphic forms verified with dafny 4.11.0 (23 verified, 0 errors). A row whose `status` is `draft` is not generated. Lane B's call recorder (exec/transitions.mjs) checks every observed call against its row; a mismatch refuses the row's proofs until the row is fixed. Version 2 (2026-10-27): the Map cell is (keys, m), an insertion-ordered key list beside a Dafny map, so repeated writes are idempotent by the map's laws.",
  "operations": [
   {
    "op": "Array.prototype.push",
@@ -170,7 +170,8 @@
    "throws": "TypeError on a non-Map receiver (the type excludes it)",
    "keyRule": "CanonicalizeKeyedCollectionKey (24.5.1: -0 becomes +0) then SameValue; object keys by identity",
    "status": "generated",
-   "dafny": "function MapSet_<K>(hw: HWorld, r: Ref, k: <KT>, v: <E>): (HWorld, Ref) { (if Is<K>(hw, r) then hw.(heap := hw.heap[r := <K>(SetEntry_<K>(hw.heap[r].entries, k, v))]) else hw, r) }"
+   "dafny": "function MapSet_<K>(hw: HWorld, r: Ref, k: <KT>, v: <E>): (HWorld, Ref) { (if Is<K>(hw, r) && !(k in hw.heap[r].m && hw.heap[r].m[k] == v) then hw.(heap := hw.heap[r := <K>(if k in hw.heap[r].m then hw.heap[r].keys else hw.heap[r].keys + [k], hw.heap[r].m[k := v])]) else hw, r) }",
+   "note": "A Map cell is its insertion-ordered key list and a Dafny map (version 2 of the cell, 2026-10-27): a repeated set of one key to one value is the same cell by the map update laws, so idempotent writes prove without a lemma; the entry list of version 1 needed an induction the theorem never writes. A write that changes nothing (a key already holding the value, a member already present, an absent key or member deleted) returns the world itself, so a repeated write is the same term and proves equal without map or sequence extensionality (2026-10-27)."
   },
   {
    "op": "Map.prototype.get",
@@ -185,7 +186,8 @@
    "throws": "none for a Map receiver",
    "keyRule": "as Map.prototype.set",
    "status": "generated",
-   "dafny": "function MapGet_<K>(hw: HWorld, r: Ref, k: <KT>): Option<<E>> { if Is<K>(hw, r) then Lookup_<K>(hw.heap[r].entries, k) else None }"
+   "dafny": "function MapGet_<K>(hw: HWorld, r: Ref, k: <KT>): Option<<E>> { if Is<K>(hw, r) && k in hw.heap[r].m then Some(hw.heap[r].m[k]) else None }",
+   "note": "A Map cell is its insertion-ordered key list and a Dafny map (version 2 of the cell, 2026-10-27): a repeated set of one key to one value is the same cell by the map update laws, so idempotent writes prove without a lemma; the entry list of version 1 needed an induction the theorem never writes."
   },
   {
    "op": "Map.prototype.has",
@@ -200,7 +202,8 @@
    "throws": "none for a Map receiver",
    "keyRule": "as Map.prototype.set",
    "status": "generated",
-   "dafny": "function MapHas_<K>(hw: HWorld, r: Ref, k: <KT>): bool { Is<K>(hw, r) && Lookup_<K>(hw.heap[r].entries, k).Some? }"
+   "dafny": "function MapHas_<K>(hw: HWorld, r: Ref, k: <KT>): bool { Is<K>(hw, r) && k in hw.heap[r].m }",
+   "note": "A Map cell is its insertion-ordered key list and a Dafny map (version 2 of the cell, 2026-10-27): a repeated set of one key to one value is the same cell by the map update laws, so idempotent writes prove without a lemma; the entry list of version 1 needed an induction the theorem never writes."
   },
   {
    "op": "Map.prototype.delete",
@@ -215,7 +218,8 @@
    "throws": "none for a Map receiver",
    "keyRule": "as Map.prototype.set",
    "status": "generated",
-   "dafny": "function MapDelete_<K>(hw: HWorld, r: Ref, k: <KT>): HWorld { if Is<K>(hw, r) then hw.(heap := hw.heap[r := <K>(RemoveKey_<K>(hw.heap[r].entries, k))]) else hw }"
+   "dafny": "function MapDelete_<K>(hw: HWorld, r: Ref, k: <KT>): HWorld { if Is<K>(hw, r) && k in hw.heap[r].m then hw.(heap := hw.heap[r := <K>(RemoveKey_<K>(hw.heap[r].keys, k), hw.heap[r].m - {k})]) else hw }",
+   "note": "A Map cell is its insertion-ordered key list and a Dafny map (version 2 of the cell, 2026-10-27): a repeated set of one key to one value is the same cell by the map update laws, so idempotent writes prove without a lemma; the entry list of version 1 needed an induction the theorem never writes. A write that changes nothing (a key already holding the value, a member already present, an absent key or member deleted) returns the world itself, so a repeated write is the same term and proves equal without map or sequence extensionality (2026-10-27)."
   },
   {
    "op": "Set.prototype.add",
@@ -230,7 +234,8 @@
    "throws": "TypeError on a non-Set receiver (the type excludes it)",
    "keyRule": "CanonicalizeKeyedCollectionKey then SameValue",
    "status": "generated",
-   "dafny": "function SetAdd_<K>(hw: HWorld, r: Ref, v: <E>): (HWorld, Ref) { (if Is<K>(hw, r) then hw.(heap := hw.heap[r := <K>(if v in hw.heap[r].items then hw.heap[r].items else hw.heap[r].items + [v])]) else hw, r) }"
+   "dafny": "function SetAdd_<K>(hw: HWorld, r: Ref, v: <E>): (HWorld, Ref) { (if Is<K>(hw, r) && v !in hw.heap[r].items then hw.(heap := hw.heap[r := <K>(hw.heap[r].items + [v])]) else hw, r) }",
+   "note": "A write that changes nothing (a key already holding the value, a member already present, an absent key or member deleted) returns the world itself, so a repeated write is the same term and proves equal without map or sequence extensionality (2026-10-27)."
   },
   {
    "op": "Set.prototype.has",
@@ -260,7 +265,8 @@
    "throws": "none for a Set receiver",
    "keyRule": "as Set.prototype.add",
    "status": "generated",
-   "dafny": "function SetDelete_<K>(hw: HWorld, r: Ref, v: <E>): HWorld { if Is<K>(hw, r) then hw.(heap := hw.heap[r := <K>(RemoveItem_<K>(hw.heap[r].items, v))]) else hw }"
+   "dafny": "function SetDelete_<K>(hw: HWorld, r: Ref, v: <E>): HWorld { if Is<K>(hw, r) && v in hw.heap[r].items then hw.(heap := hw.heap[r := <K>(RemoveItem_<K>(hw.heap[r].items, v))]) else hw }",
+   "note": "A write that changes nothing (a key already holding the value, a member already present, an absent key or member deleted) returns the world itself, so a repeated write is the same term and proves equal without map or sequence extensionality (2026-10-27)."
   },
   {
    "op": "Object.assign",
@@ -325,9 +331,7 @@
   "Clamp": "function Clamp(i: int, lo: int, hi: int): int { if i < lo then lo else if i > hi then hi else i }",
   "Rev_<K>": "function Rev_<K>(xs: seq<<E>>): seq<<E>> decreases |xs| { if |xs| == 0 then [] else Rev_<K>(xs[1..]) + [xs[0]] }",
   "Keep_<K>": "function Keep_<K>(xs: seq<<E>>, p: <E> -> bool): seq<<E>> decreases |xs| { if |xs| == 0 then [] else (if p(xs[0]) then [xs[0]] else []) + Keep_<K>(xs[1..], p) }",
-  "SetEntry_<K>": "function SetEntry_<K>(es: seq<Entry_<K>>, k: <KT>, v: <E>): seq<Entry_<K>> { if exists i :: 0 <= i < |es| && es[i].k == k then seq(|es|, i requires 0 <= i < |es| => if es[i].k == k then Entry_<K>(k, v) else es[i]) else es + [Entry_<K>(k, v)] }",
-  "Lookup_<K>": "function Lookup_<K>(es: seq<Entry_<K>>, k: <KT>): Option<<E>> decreases |es| { if |es| == 0 then None else if es[0].k == k then Some(es[0].v) else Lookup_<K>(es[1..], k) }",
-  "RemoveKey_<K>": "function RemoveKey_<K>(es: seq<Entry_<K>>, k: <KT>): seq<Entry_<K>> decreases |es| { if |es| == 0 then [] else (if es[0].k == k then [] else [es[0]]) + RemoveKey_<K>(es[1..], k) }",
+  "RemoveKey_<K>": "function RemoveKey_<K>(ks: seq<<KT>>, k: <KT>): seq<<KT>> decreases |ks| { if |ks| == 0 then [] else (if ks[0] == k then [] else [ks[0]]) + RemoveKey_<K>(ks[1..], k) }",
   "RemoveItem_<K>": "function RemoveItem_<K>(xs: seq<<E>>, v: <E>): seq<<E>> decreases |xs| { if |xs| == 0 then [] else (if xs[0] == v then [] else [xs[0]]) + RemoveItem_<K>(xs[1..], v) }"
  }
 }

@@ -162,9 +162,14 @@ zones: obligations unmet; `structuredClone` of unsupported values: refused by na
   Map_<K>_<K2> and Filter_<K> (Keep_<K>); each map instance is generated for its (source, result) shape pair.
 - Pair `tests/pairs/library_cells`: a renamed callback parameter proved; a changed filter bound and a skipped delete
   refuted (the delete only by lane A: lane B's generated keys never meet a generated entry, a generator gap); three
-  idempotent double writes (set twice, add twice) unproved: the second write is a no-op update of the heap map and
-  the prover does not reach `m[r := m[r]] == m` without a lemma body, which theorem.py never writes. The idempotence
-  of cell writes is the next proof obligation; a fuel attribute does not reach it (tried).
+  idempotent double writes (set twice, add twice) were unproved on 2026-10-27 morning: the second write was a no-op
+  update of the heap map and the prover did not reach `m[r := m[r]] == m` without a lemma body, which theorem.py never
+  writes; a fuel attribute did not reach it either. Solved the same day, two ways at once (version 2 of the table):
+  the Map cell is its insertion-ordered key list beside a Dafny map (`M_<K>(keys, m)`), so `set` is a map update and
+  `has`, `get`, `size` read the map and the key list; and every write that changes nothing (a key already holding the
+  value, a member already present, an absent key or member deleted) returns the world itself, so a repeated write is
+  the same term and proves without map or sequence extensionality. tally, remember and freshMap of `library_cells`
+  prove; the entry list and its `SetEntry_`/`Lookup_` helpers are gone from the table.
 - Still out of the table: sort (its comparator), Object.assign (the lint's assign-target refusal stands until the
   ordinary lane also writes the target), the drafts (freeze, structuredClone, Date).
 
