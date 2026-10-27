@@ -401,13 +401,16 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
   // run one command path on one side; returns the observation after every command
   const runPath = async (name, labels) => {
     const s = await mount(name); const obs = [];
-    let tree = await commit(s); if (s.env.timers.queue.length) { await runTimers(s.env, ms); tree = await commit(s); } // the mount, its effects, the re-renders they cause, and the timers they armed
+    const harness = (e) => e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop || e instanceof CallTimeout; // the harness's own stops end the sequence run as ASK; anything else a render throws is an observation
+    const settle = async () => { let t = await commit(s); if (s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and the timers they armed
+    let tree;
+    try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: 'mount', threw: render(e), trace: s.env.trace.map((x) => render(x)) }); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
     for (const label of labels) {
       const from = s.env.trace.length;
       const h = treeHandlers(tree).find((x) => x.label === label);
       if (!h) { obs.push({ command: label, missing: true, handlers: treeHandlers(tree).map((x) => x.label) }); return { obs, s }; }
-      try { const r = guardedCall(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('handler-throw', label, [render(e)]); }
-      tree = await commit(s); if (s.env.timers.queue.length) { await runTimers(s.env, ms); tree = await commit(s); }
+      try { const r = guardedCall(s.env, () => h.fn(s.env.fake(`react:event:${label}`)), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (harness(e)) throw e; s.env.record('handler-throw', label, [render(e)]); }
+      try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
       obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
     }
     // unmount: every cleanup, in slot order

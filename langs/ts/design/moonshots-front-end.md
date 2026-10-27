@@ -204,6 +204,14 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   an effect that calls `requestAnimationFrame` or `window.addEventListener` throws in the sandbox on both
   sides before its cleanup (two globals to add); a list or text inside a branch the generated inputs never
   take. The bar stands: concepts 5 and 9 are sized by the 17 misses on deps, cleanup and setters.
+- Measured again (2026-10-27, the same 30 components and operators, lane B with the re-render sequences, effects as
+  slots and the virtual clock): 71 applicable, 44 caught (62%). Per operator: change-text 15 of 20, flip-conditional
+  14 of 16, key-index 9 of 10, remove-cleanup 2 of 5, drop-dep 3 of 11, swap-setters 1 of 9. Swap-setters fell from 4
+  because two setters reordered inside one handler are React's batching and no longer an observation (10.2b); the
+  three it still catches move a value through pending work. The first re-run lost 15 verdicts: a render that threw
+  on a later click crashed lane B; fixed the same night (a throwing render along a path is an observation, the
+  path ends there, both sides compared). The remaining misses are the ones named above: a dropped useMemo or
+  useCallback dependency, a list or text inside a branch the inputs never take.
 - Kill: none; this is the measure the other nine are judged on.
 
 ## Two more, cheaper, waiting for the owner
