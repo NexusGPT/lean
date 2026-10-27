@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -1317,8 +1317,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       return;
     }
     if (op === K.InKeyword) { // required properties and dictionaries are exact (an own key or a name of Object.prototype); open-record absence stays uninterpreted
-      const pm = prototypeMaker(checker, sf);
-      if (pm) return v(e, 'prototype', `this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pm.getStart(sf))}), and \`in\` reads the prototype; test an own key with \`Object.prototype.hasOwnProperty.call(o, k)\``);
+      const pr = inPrototypeReach(checker, sf, e); // the made object reaches this unit (common.mjs prototypeReach); other units keep the reading
+      if (pr) return v(e, 'prototype', `this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pr.maker.getStart(sf))}), and ${pr.why}; \`in\` reads the prototype; test an own key with \`Object.prototype.hasOwnProperty.call(o, k)\``);
       expr(e.left); expr(e.right); return;
     }
     if (op === K.CommaToken) return commaValue(e);

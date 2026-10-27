@@ -537,26 +537,33 @@ export const OBJECT_PROTO_NAMES = Object.getOwnPropertyNames(Object.prototype).s
 // a `__proto__: v` member of an object literal (not computed, not shorthand) sets the new object's prototype (ECMA-262
 // B.3.1, __proto__ property names in object initializers); a value read as a record or a dictionary never carries it
 export function literalProtoMember(p) { return ts.isPropertyAssignment(p) && ts.isObjectLiteralExpression(p.parent) && !!p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) && p.name.text === '__proto__'; }
-const prototypeMakers = new WeakMap();
-export function prototypeMaker(checker, sf) {
-  if (prototypeMakers.has(sf)) return prototypeMakers.get(sf);
+// every such maker of the file in source order, each with what it makes: `value` an expression whose value is the made
+// object (Object.create, Object.setPrototypeOf's result, a literal with a `__proto__:` member), `target` an expression
+// whose object it changes (setPrototypeOf's first argument, the object of `.__proto__ = p` or of a dynamic write whose
+// key may be '__proto__'), `protos` the operands that become a prototype (or Object.create's property descriptors)
+const makerLists = new WeakMap();
+export function prototypeMakers(checker, sf) {
+  if (makerLists.has(sf)) return makerLists.get(sf);
   const K = ts.SyntaxKind;
   const globalMember = (x, objects, names) => ts.isPropertyAccessExpression(x) && ts.isIdentifier(x.expression) && objects.includes(x.expression.text) && names.includes(x.name.text) && originOf(checker, x.expression, sf, null).kind === 'global';
-  let found = null;
+  const out = [];
   const walk = (n) => {
-    if (found) return;
-    if (ts.isCallExpression(n) && (globalMember(n.expression, ['Object'], ['create', 'setPrototypeOf']) || globalMember(n.expression, ['Reflect'], ['setPrototypeOf']))) { found = n; return; }
-    if (literalProtoMember(n)) { found = n; return; }
-    if (ts.isBinaryExpression(n) && n.operatorToken.kind === K.EqualsToken) {
+    if (ts.isCallExpression(n) && globalMember(n.expression, ['Object'], ['create'])) out.push({ node: n, value: n, target: null, protos: [...n.arguments] });
+    else if (ts.isCallExpression(n) && (globalMember(n.expression, ['Object'], ['setPrototypeOf']) || globalMember(n.expression, ['Reflect'], ['setPrototypeOf']))) out.push({ node: n, value: n.expression.expression.text === 'Object' ? n : null, target: n.arguments[0] ?? null, protos: n.arguments.slice(1) });
+    else if (literalProtoMember(n)) out.push({ node: n, value: n.parent, target: null, protos: [n.initializer] });
+    else if (ts.isBinaryExpression(n) && n.operatorToken.kind === K.EqualsToken) {
       const l = n.left;
-      if ((ts.isPropertyAccessExpression(l) && l.name.text === '__proto__') || (ts.isElementAccessExpression(l) && ts.isStringLiteral(l.argumentExpression) && l.argumentExpression.text === '__proto__')) { found = n; return; }
-      if (ts.isElementAccessExpression(l) && protoKeyWrite(checker, l.argumentExpression, n.right) === 'prototype') { found = n; return; } // a key that may be '__proto__' with an object or null value
+      if ((ts.isPropertyAccessExpression(l) && l.name.text === '__proto__') || (ts.isElementAccessExpression(l) && ts.isStringLiteral(l.argumentExpression) && l.argumentExpression.text === '__proto__')) out.push({ node: n, value: null, target: l.expression, protos: [n.right] });
+      else if (ts.isElementAccessExpression(l) && protoKeyWrite(checker, l.argumentExpression, n.right) === 'prototype') out.push({ node: n, value: null, target: l.expression, protos: [n.right] }); // a key that may be '__proto__' with an object or null value
     }
     ts.forEachChild(n, walk);
   };
   walk(sf);
-  prototypeMakers.set(sf, found);
-  return found;
+  makerLists.set(sf, out);
+  return out;
+}
+export function prototypeMaker(checker, sf) {
+  return prototypeMakers(checker, sf)[0]?.node ?? null;
 }
 // A write `o[k] = v` through a key that may be '__proto__'. ECMA-262 10.1.9 OrdinarySet finds no own key of that name
 // on a plain object and reaches the accessor of Object.prototype (B.2.2.1.2); its setter replaces the prototype when v
@@ -578,4 +585,329 @@ export function protoKeyWrite(checker, key, value) {
   const vt = checker.getTypeAtLocation(value);
   const primitive = (t) => !!(t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.EnumLike | TF.ESSymbolLike | TF.Undefined | TF.Void | TF.Never));
   return (vt.flags & TF.Union ? vt.types : [vt]).every(primitive) ? 'primitive' : 'prototype';
+}
+
+// The reach of a made prototype (design/narrow-in.md). An object whose prototype is not Object.prototype can be the right
+// operand of an `in` only in a unit it reaches; every other unit keeps the `in` reading of a plain object. It reaches the
+// unit that makes it, and then follows the paths a value has between the units of one file, until nothing changes:
+//   - an argument of a call to a unit of the file is that unit's parameter;
+//   - a unit that returns it (or yields it) hands it to every unit calling it, as the call's value;
+//   - a unit that changes its parameter's object (the caller's object) hands it to the argument of every call to it;
+//   - a module cell that holds it reaches every unit reading the cell;
+//   - inside a unit it follows bindings, assignments, field and element reads (deep: a value read off a carrier carries),
+//     literals and closures that hold it, and the built-in calls of the default library, which keep no reference beyond
+//     their arguments, their receiver and their result (a mutator such as push or Object.assign writes it into its
+//     receiver or first argument; a callback receives it as a parameter).
+// The wide rule (every unit refused) stands when it leaves what the file can follow: a call the file does not read (an
+// import, a parameter's function), code outside the file through a returned value or a changed argument of an exported
+// unit or of a class method, a field of `this`, a thrown value, an element, an exported module cell or module code, and a
+// new prototype that may hold functions (they run with the made object as `this`) in a file that uses `this`.
+const reachCache = new WeakMap();
+export function prototypeReach(checker, sf) {
+  if (reachCache.has(sf)) return reachCache.get(sf);
+  const makers = prototypeMakers(checker, sf);
+  const r = makers.length ? reachOf(checker, sf, makers) : null;
+  reachCache.set(sf, r);
+  return r;
+}
+// the refusal of an `in` at `node`: null when no made object reaches the unit holding it, else { maker, why }
+export function inPrototypeReach(checker, sf, node) {
+  const r = prototypeReach(checker, sf);
+  if (!r) return null;
+  const maker = r.makers[0].node;
+  if (r.wide) return { maker, why: r.wide };
+  const u = r.unitOf(node);
+  if (!u) return { maker, why: 'this `in` is in module code, which the reach does not follow' };
+  const why = r.reached.get(u.name);
+  return why ? { maker, why } : null;
+}
+const LIB_FILE = /[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]*\.d\.ts$/;
+const CALLBACK_CONSUMERS = new Set(['then', 'catch', 'finally', 'map', 'flatMap', 'forEach', 'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'some', 'every', 'reduce', 'reduceRight', 'sort', 'toSorted']);
+const RECEIVER_WRITERS = new Set(['push', 'unshift', 'splice', 'fill', 'copyWithin', 'set', 'add', 'register']);
+const FIRST_ARG_WRITERS = new Set(['Object.assign', 'Object.defineProperty', 'Object.defineProperties', 'Object.setPrototypeOf', 'Reflect.set', 'Reflect.defineProperty', 'Reflect.setPrototypeOf']);
+function reachOf(checker, sf, makers) {
+  const K = ts.SyntaxKind, TF = ts.TypeFlags;
+  const units = [];
+  for (const st of sf.statements) { const u = unitOf(st); if (u?.body) units.push(u); units.push(...classMethodUnits(st)); } // a bodiless declaration (an overload, `declare`) is code outside the file
+  const byFn = new Map(units.map((u) => [u.fn, u]));
+  const inside = (n, root) => { for (let p = n; p; p = p.parent) if (p === root) return true; return false; };
+  const unitOfNode = (n) => { for (let p = n; p; p = p.parent) { const u = byFn.get(p); if (u) return u; } return null; };
+  const line = (n) => lineOf(sf, n.getStart(sf));
+  const carriers = new Map(units.map((u) => [u.name, new Set()])), paramOut = new Map(units.map((u) => [u.name, new Set()])), paramHold = new Map(units.map((u) => [u.name, new Set()]));
+  const reached = new Map(), returns = new Set(), cells = new Set(), mutated = new Set(), madeOnly = new Set(), thisCarrier = new Set();
+  let wide = null, changed = true, deep = false, thisWide = false;
+  // a property read yields a made object only when some object holds one (a store, a literal, a built-in's result, the
+  // arguments object, a rest parameter): until then a read off a carrier is a plain value, after it every read carries
+  const container = () => { if (!deep) { deep = true; changed = true; } };
+  const goWide = (why) => { if (!wide) wide = why; };
+  const reach = (u, why) => { if (!reached.has(u.name)) { reached.set(u.name, why); changed = true; } };
+  const add = (set, x) => { if (!set.has(x)) { set.add(x); changed = true; } };
+  const strip = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e) || ts.isTypeAssertionExpression(e) || ts.isSatisfiesExpression(e) || ts.isAwaitExpression(e) || ts.isSpreadElement(e))) e = e.expression; return e; };
+  const symOf = (id) => { const p = id.parent; let s = p && ts.isShorthandPropertyAssignment(p) && p.name === id ? checker.getShorthandAssignmentValueSymbol(p) : checker.getSymbolAtLocation(id); if (s && s.flags & ts.SymbolFlags.Alias) { try { s = checker.getAliasedSymbol(s); } catch { /* unresolved */ } } return s ?? null; };
+  const declOf = (s) => s?.valueDeclaration ?? s?.declarations?.[0] ?? null;
+  const ownFn = (n) => { for (let p = n.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; };
+  const thisFn = (n) => { for (let p = n.parent; p; p = p.parent) if (ts.isFunctionLike(p) && !ts.isArrowFunction(p)) return p; return null; };
+  const moduleLevel = (d) => { if (!d || d.getSourceFile() !== sf) return false; for (let p = d.parent; p; p = p.parent) if (ts.isFunctionLike(p) || ts.isClassLike(p)) return false; return true; };
+  const exported = (d) => { if (d && ts.isVariableStatement(d)) d = d.declarationList.declarations[0]; return !!d && !!(ts.getCombinedModifierFlags(d) & (ts.ModifierFlags.Export | ts.ModifierFlags.Default)); };
+  const unitSym = new Map();
+  for (const u of units) { const nm = u.cls ? u.fn.name : ts.isFunctionDeclaration(u.node) ? u.node.name : u.node.declarationList?.declarations[0]?.name; const s = nm && checker.getSymbolAtLocation(nm); if (s) unitSym.set(s, u); }
+  // the references of every name outside the units (module code) and the value uses of each unit's name
+  const moduleRefs = new Set(), valueUse = new Set();
+  const refs = (n) => {
+    if (ts.isIdentifier(n)) {
+      const s = symOf(n); const p = n.parent;
+      const isDeclName = p && (ts.isVariableDeclaration(p) || ts.isFunctionDeclaration(p) || ts.isClassDeclaration(p) || ts.isParameter(p) || ts.isBindingElement(p) || ts.isMethodDeclaration(p) || ts.isPropertyDeclaration(p) || ts.isGetAccessorDeclaration(p) || ts.isSetAccessorDeclaration(p)) && p.name === n;
+      const member = p && ((ts.isPropertyAccessExpression(p) && p.name === n) || (ts.isPropertyAssignment(p) && p.name === n));
+      if (s && !isDeclName && !member) {
+        const owner = unitOfNode(n);
+        if (!owner) moduleRefs.add(s);
+        const u = unitSym.get(s);
+        if (u && (!owner || !(ts.isCallExpression(p) && p.expression === n))) valueUse.add(u.name); // a unit's name as a value or called from module code
+      }
+    }
+    if (ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && ts.isCallExpression(n.parent) && n.parent.expression === n) { /* a method call on this: an ordinary call */ }
+    ts.forEachChild(n, refs);
+  };
+  refs(sf);
+  const outsideCallable = (u) => !!u.cls || exported(u.node) || valueUse.has(u.name);
+  let usesThis = false; const thisScan = (n) => { if (usesThis) return; if (n.kind === K.ThisKeyword) { usesThis = true; return; } ts.forEachChild(n, thisScan); }; thisScan(sf);
+  const primitiveOnly = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.EnumLike | TF.ESSymbolLike | TF.Null | TF.Undefined | TF.Void | TF.Never)));
+  const callable = (t) => (t.flags & TF.Union ? t.types : [t]).some((x) => checker.getSignaturesOfType(x, ts.SignatureKind.Call).length > 0);
+  const fromLib = (d) => !!d && LIB_FILE.test(d.getSourceFile().fileName);
+  const mayCall = (t) => (t.flags & TF.Union ? t.types : [t]).some((x) => !!(x.flags & (TF.Any | TF.Unknown | TF.TypeParameter | TF.NonPrimitive | TF.Index | TF.IndexedAccess | TF.Conditional | TF.Substitution)) || checker.getSignaturesOfType(x, ts.SignatureKind.Call).length > 0 || checker.getSignaturesOfType(x, ts.SignatureKind.Construct).length > 0);
+  // a new prototype whose own members are data: its functions are Object.prototype's, which never read the made object's keys as `this` code of the file
+  const functionFree = (p) => {
+    p = strip(p);
+    if (!p || p.kind === K.NullKeyword) return true;
+    const t = checker.getTypeAtLocation(p);
+    return (t.flags & TF.Union ? t.types : [t]).every((x) => {
+      if (primitiveOnly(x)) return true;
+      if (mayCall(x) || !(x.flags & TF.Object) || (x.objectFlags & ts.ObjectFlags.Class) || x.symbol?.declarations?.some((d) => ts.isClassLike(d))) return false;
+      if (checker.getIndexInfosOfType(x).some((ii) => mayCall(ii.type))) return false;
+      return checker.getPropertiesOfType(x).every((ps) => !ps.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d) || ts.isMethodDeclaration(d) || ts.isMethodSignature(d)) && !mayCall(checker.getTypeOfSymbolAtLocation(ps, p)));
+    });
+  };
+  const makerValues = new Set(makers.map((m) => m.value).filter(Boolean));
+  const makerOf = new Map(makers.map((m) => [m.node, m]));
+  for (const m of makers) {
+    if (m.protos.some((p, i) => !functionFree(p) || (i > 0 && ts.isCallExpression(m.node) && m.value === m.node))) thisWide = thisWide || `its new prototype (line ${line(m.node)}) may hold functions, which may run here with the made object as \`this\``;
+    if (unitOfNode(m.node)) continue;
+    // module code: a module cell's initializer, or a change of a module cell's object
+    const host = m.value ? (() => { let x = m.value; while (x.parent && (ts.isParenthesizedExpression(x.parent) || ts.isAsExpression(x.parent) || ts.isNonNullExpression(x.parent) || ts.isSatisfiesExpression(x.parent))) x = x.parent; return x.parent && ts.isVariableDeclaration(x.parent) && x.parent.initializer === x && ts.isIdentifier(x.parent.name) && moduleLevel(x.parent) ? x.parent.name : null; })() : (() => { let t = strip(m.target); while (t && (ts.isPropertyAccessExpression(t) || ts.isElementAccessExpression(t))) t = strip(t.expression); return t && ts.isIdentifier(t) && moduleLevel(declOf(symOf(t))) ? t : null; })();
+    const s = host && symOf(host);
+    if (s) cells.add(s); else goWide(`it is made in module code (line ${line(m.node)}) outside a module cell`);
+  }
+  const target = (call, u) => {
+    let d = null; try { d = checker.getResolvedSignature(call)?.declaration ?? null; } catch { /* no signature */ }
+    if (d && byFn.has(d)) return { kind: 'unit', u: byFn.get(d) };
+    if (d && ts.isFunctionLike(d) && d.body && inside(d, u.fn)) return { kind: 'local', fn: d }; // a function written inside the unit (a function type is no code)
+    if (fromLib(d)) return { kind: 'lib' };
+    const callee = strip(call.expression ?? call.tag);
+    if (ts.isNewExpression(call) && callee && ts.isIdentifier(callee)) { const cd = declOf(symOf(callee)); if (cd && ts.isClassDeclaration(cd) && cd.getSourceFile() === sf && !cd.heritageClauses?.length && !cd.members.some(ts.isConstructorDeclaration)) return { kind: 'none' }; }
+    let root = callee; while (root && (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root))) root = strip(root.expression);
+    if (root && ts.isIdentifier(root) && root.text === 'console' && originOf(checker, root, sf, null).kind === 'global') return { kind: 'lib' };
+    return { kind: 'other' };
+  };
+  const argsOf = (call) => call.arguments ? [...call.arguments] : ts.isTaggedTemplateExpression(call) && ts.isTemplateExpression(call.template) ? call.template.templateSpans.map((x) => x.expression) : [];
+  const receiverOf = (call) => { const c = strip(call.expression ?? call.tag); return c && (ts.isPropertyAccessExpression(c) || ts.isElementAccessExpression(c)) ? c.expression : null; };
+  const libName = (call) => { const c = strip(call.expression); return c && ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.expression) ? `${c.expression.text}.${c.name.text}` : ''; };
+  // does the value of `e` (in unit u) hold a made object, or is it one
+  const busy = new Set();
+  const returnsCarry = (fn, u) => {
+    if (busy.has(fn)) return false; busy.add(fn);
+    try {
+      if (fn.body && !ts.isBlock(fn.body)) return carry(fn.body, u);
+      let hit = false; const w = (n) => { if (hit) return; if ((ts.isReturnStatement(n) || ts.isYieldExpression(n)) && n.expression && ownFn(n) === fn && carry(n.expression, u)) { hit = true; return; } ts.forEachChild(n, w); }; if (fn.body) w(fn.body);
+      return hit;
+    } finally { busy.delete(fn); }
+  };
+  const captures = (fn, u) => { const C = carriers.get(u.name); let hit = false; const w = (n) => { if (hit) return; if (ts.isIdentifier(n)) { const s = symOf(n); if (s && (C.has(s) || cells.has(s) || (unitSym.has(s) && returns.has(unitSym.get(s).name)))) { hit = true; return; } } if (makerValues.has(n)) { hit = true; return; } ts.forEachChild(n, w); }; ts.forEachChild(fn, w); return hit; };
+  const carry = (e, u) => {
+    e = strip(e); if (!e) return false;
+    if (makerValues.has(e)) return true;
+    if (ts.isExpression(e) && !ts.isFunctionLike(e) && primitiveOnly(checker.getTypeAtLocation(e))) return false; // a primitive value holds no object
+    const C = carriers.get(u.name);
+    if (ts.isIdentifier(e)) {
+      const s = symOf(e); if (!s) return false;
+      if (C.has(s) || cells.has(s)) return true;
+      if (e.text === 'arguments' && (!declOf(s) || fromLib(declOf(s)))) return [...C].some((x) => { let d = declOf(x); while (d && ts.isBindingElement(d)) d = d.parent?.parent; return !!d && ts.isParameter(d); }) && (container(), true); // the arguments object holds the parameters
+      const fu = unitSym.get(s); return !!fu && returns.has(fu.name); // a unit that returns one, as a value
+    }
+    if (e.kind === K.ThisKeyword || e.kind === K.SuperKeyword) { const f = thisFn(e); if (f === u.fn) return thisCarrier.has(u.name); return !!f && inside(f, u.fn) && (!!thisWide || reached.has(u.name)); } // a method's receiver, a nested function's `this`
+    if (ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) return deep && carry(e.expression, u);
+    if (ts.isCallExpression(e) || ts.isNewExpression(e) || ts.isTaggedTemplateExpression(e)) {
+      const t = target(e, u);
+      if (t.kind === 'unit') return returns.has(t.u.name);
+      if (t.kind === 'local') return returnsCarry(t.fn, u);
+      const callee = strip(e.expression ?? e.tag);
+      if (callee && carry(callee, u)) return true;
+      if (t.kind === 'lib') { const consumer = callee && ts.isPropertyAccessExpression(callee) && CALLBACK_CONSUMERS.has(callee.name.text); const hit = argsOf(e).some((a) => { const y = strip(a); return consumer && y && (ts.isArrowFunction(y) || ts.isFunctionExpression(y)) ? returnsCarry(y, u) : carry(a, u); }) || (!!receiverOf(e) && carry(receiverOf(e), u)); if (hit) container(); return hit; } // a callback a method only calls gives the result its returns, never itself
+      return false;
+    }
+    if (ts.isConditionalExpression(e)) return carry(e.whenTrue, u) || carry(e.whenFalse, u);
+    if (ts.isBinaryExpression(e)) {
+      const op = e.operatorToken.kind;
+      if (op === K.CommaToken || (op >= K.FirstAssignment && op <= K.LastAssignment)) return carry(e.right, u);
+      if (op === K.BarBarToken || op === K.AmpersandAmpersandToken || op === K.QuestionQuestionToken) return carry(e.left, u) || carry(e.right, u);
+      return false;
+    }
+    if (ts.isObjectLiteralExpression(e)) { const hit = e.properties.some((p) => ts.isPropertyAssignment(p) ? carry(p.initializer, u) : ts.isShorthandPropertyAssignment(p) ? carry(p.name, u) : ts.isSpreadAssignment(p) ? carry(p.expression, u) : captures(p, u) || returnsCarry(p, u)); if (hit) container(); return hit || e.properties.some(literalProtoMember); }
+    if (ts.isArrayLiteralExpression(e)) { const hit = e.elements.some((x) => carry(x, u)); if (hit) container(); return hit; }
+    if (ts.isArrowFunction(e) || ts.isFunctionExpression(e)) return captures(e, u) || returnsCarry(e, u);
+    if (ts.isClassExpression(e)) return captures(e, u);
+    if (ts.isLiteralExpression(e) || ts.isTemplateExpression(e) || ts.isNoSubstitutionTemplateLiteral(e) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e) || ts.isTypeOfExpression(e) || ts.isVoidExpression(e) || ts.isDeleteExpression(e) || ts.isYieldExpression(e) || [K.TrueKeyword, K.FalseKeyword, K.NullKeyword].includes(e.kind) || ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e) || ts.isJsxFragment(e)) return false;
+    let hit = false; ts.forEachChild(e, (c) => { if (!hit && ts.isExpression(c) && carry(c, u)) hit = true; }); return hit; // another form: any operand that holds one
+  };
+  const bindNames = (name, u) => { if (!name) return; if (ts.isIdentifier(name)) { const s = symOf(name); if (s) add(carriers.get(u.name), s); return; } if (ts.isObjectBindingPattern(name) || ts.isArrayBindingPattern(name)) for (const el of name.elements) if (ts.isBindingElement(el)) bindNames(el.name, u); };
+  const bindParams = (fn, u, idx) => { const ps = fn.parameters ?? []; (idx === null ? ps : [ps[idx] ?? ps.find((p) => p.dotDotDotToken)].filter(Boolean)).forEach((p) => { if (p.dotDotDotToken) container(); bindNames(p.name, u); }); }; // a rest parameter is an array holding the arguments
+  // the object `x` evaluates to now holds (or is) a made object: the names that may share it carry it too
+  const sinking = new Set();
+  const returnsOf = (fn) => { if (fn.body && !ts.isBlock(fn.body)) return [fn.body]; const out = []; const w = (n) => { if ((ts.isReturnStatement(n) || ts.isYieldExpression(n)) && n.expression && ownFn(n) === fn) out.push(n.expression); ts.forEachChild(n, w); }; if (fn.body) w(fn.body); return out; };
+  const libNamespace = (o) => { o = strip(o); if (!o || !ts.isIdentifier(o)) return false; const d = declOf(symOf(o)); return fromLib(d) && !ts.isParameter(d); }; // Object, Array, JSON: a built-in namespace, never an operand that holds data
+  // holds: the object now holds a made object (a store); otherwise it is made (its own prototype changed)
+  const sinkMut = (x, u, site, holds = true) => {
+    x = strip(x); if (!x || wide) return;
+    if (ts.isExpression(x) && primitiveOnly(checker.getTypeAtLocation(x))) return; // a primitive (undefined, null, a string) holds no object
+    if (holds) container();
+    if (ts.isIdentifier(x)) {
+      const s = symOf(x), d = declOf(s);
+      if (!s || !d || d.getSourceFile() !== sf) return goWide(`it is stored into \`${x.text}\`, which lives outside the file (line ${line(site)})`);
+      if (moduleLevel(d) && (ts.isClassDeclaration(d) || ts.isFunctionDeclaration(d))) return goWide(`it is stored on \`${x.text}\` (line ${line(site)}), whose \`this\` code the reach does not follow`);
+      if (moduleLevel(d)) { add(cells, s); return; }
+      if (!inside(d, u.fn)) return goWide(`it is stored into \`${x.text}\`, a name of another function (line ${line(site)})`);
+      add(carriers.get(u.name), s);
+      if (mutated.has(s) || (!holds && madeOnly.has(s))) return; (holds ? mutated : madeOnly).add(s); changed = true; // followed once as made, once more if it comes to hold one
+      let p = d; while (p && ts.isBindingElement(p)) p = p.parent?.parent;
+      if (p && ts.isParameter(p)) {
+        if (p.parent === u.fn) { const i = u.fn.parameters.indexOf(p); if (holds || p !== d) add(paramHold.get(u.name), i); return add(paramOut.get(u.name), i); } // the caller's object (a part of it when destructured)
+        const f = p.parent, call = f.parent;
+        if (call && ts.isCallExpression(call) && call.arguments.includes(f) && target(call, u).kind === 'lib') { for (const o of [receiverOf(call), ...call.arguments]) if (o && o !== f && !primitiveOnly(checker.getTypeAtLocation(o))) sinkMut(o, u, site); return; } // a callback of a built-in: its parameter is an element or an argument of that call
+        return goWide(`it is stored into the parameter \`${x.text}\` of a nested function (line ${line(site)})`);
+      }
+      if (p && ts.isVariableDeclaration(p) && ts.isCatchClause(p.parent)) return goWide(`it is stored into the caught value \`${x.text}\` (line ${line(site)})`);
+      if (p && ts.isVariableDeclaration(p)) {
+        const loop = p.parent?.parent;
+        if (loop && ts.isForOfStatement(loop) && loop.initializer === p.parent) sinkMut(loop.expression, u, site);
+        else if (p.initializer) sinkMut(p.initializer, u, site, holds || p !== d);
+        const w = (n) => { if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(strip(n.left)) && symOf(strip(n.left)) === s) sinkMut(n.right, u, site, holds); ts.forEachChild(n, w); }; w(u.fn);
+        return;
+      }
+      if (p && (ts.isFunctionDeclaration(p) || ts.isClassDeclaration(p))) return;
+      return goWide(`it is stored into \`${x.text}\` (line ${line(site)}), a name the reach does not follow`);
+    }
+    if (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) return sinkMut(x.expression, u, site);
+    if (x.kind === K.ThisKeyword) return goWide(`it is stored into a field of \`this\` (line ${line(site)}), which every holder of the receiver reads`);
+    if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x) || ts.isArrowFunction(x) || ts.isFunctionExpression(x) || makerValues.has(x) || ts.isLiteralExpression(x)) return; // a fresh object: no other name holds it
+    if (ts.isConditionalExpression(x)) { sinkMut(x.whenTrue, u, site, holds); sinkMut(x.whenFalse, u, site, holds); return; }
+    if (ts.isBinaryExpression(x)) { const op = x.operatorToken.kind; if (op === K.CommaToken || (op >= K.FirstAssignment && op <= K.LastAssignment)) return sinkMut(x.right, u, site, holds); if (op === K.BarBarToken || op === K.AmpersandAmpersandToken || op === K.QuestionQuestionToken) { sinkMut(x.left, u, site, holds); sinkMut(x.right, u, site, holds); return; } }
+    if (ts.isNewExpression(x) && target(x, u).kind === 'lib') return; // a fresh built-in object
+    if (ts.isCallExpression(x) && target(x, u).kind === 'lib') { for (const o of [receiverOf(x), ...x.arguments]) if (o && !primitiveOnly(checker.getTypeAtLocation(o)) && !libNamespace(o)) sinkMut(o, u, site); return; } // a built-in's result is fresh or one of its operands (an element, the receiver)
+    if (ts.isCallExpression(x) || ts.isNewExpression(x)) { const t = target(x, u); if (t.kind === 'unit' && !sinking.has(t.u.name)) { sinking.add(t.u.name); try { returnsOf(t.u.fn).forEach((r) => sinkMut(r, t.u, site, holds)); } finally { sinking.delete(t.u.name); } return; } if (t.kind === 'unit') return; } // a unit's result is what its returns name: a fresh object, its parameter, a module cell
+    return goWide(`it is stored into a value the reach does not follow (line ${line(site)})`);
+  };
+  const assignTo = (left, u, site) => {
+    left = strip(left); if (!left) return;
+    if (ts.isIdentifier(left)) {
+      const s = symOf(left), d = declOf(s);
+      if (!s || !d || d.getSourceFile() !== sf) return goWide(`it is assigned to \`${left.text}\`, outside the file (line ${line(site)})`);
+      if (moduleLevel(d)) return add(cells, s);
+      return add(carriers.get(u.name), s);
+    }
+    if (ts.isPropertyAccessExpression(left)) {
+      const ps = checker.getSymbolAtLocation(left.name), setter = ps?.declarations?.find(ts.isSetAccessorDeclaration);
+      if (setter) { const su = byFn.get(setter); if (su) { bindParams(setter, su, 0); reach(su, `a setter call from \`${u.name}\` hands it here (line ${line(site)})`); } else if (!fromLib(setter)) goWide(`it is passed to a setter the file does not read (line ${line(site)})`); }
+    }
+    if (ts.isPropertyAccessExpression(left) || ts.isElementAccessExpression(left)) return sinkMut(left.expression, u, site);
+    if (ts.isObjectLiteralExpression(left)) { for (const p of left.properties) assignTo(ts.isPropertyAssignment(p) ? p.initializer : ts.isShorthandPropertyAssignment(p) ? p.name : ts.isSpreadAssignment(p) ? p.expression : null, u, site); return; }
+    if (ts.isArrayLiteralExpression(left)) { for (const el of left.elements) assignTo(el, u, site); return; }
+  };
+  const handOver = (x, u, site) => { // an operand of a built-in call that carries something: a callback receives it
+    x = strip(x); if (!x) return;
+    if (ts.isArrowFunction(x) || ts.isFunctionExpression(x)) return bindParams(x, u, null);
+    const t = checker.getTypeAtLocation(x);
+    if (!callable(t) || carry(x, u)) return;
+    const id = ts.isIdentifier(x) ? x : ts.isPropertyAccessExpression(x) ? x.name : null;
+    const s = id && symOf(id), d = declOf(s);
+    const fu = s && unitSym.get(s);
+    if (fu) { bindParams(fu.fn, fu, null); reach(fu, `a built-in call in \`${u.name}\` calls this unit with it (line ${line(site)})`); if (fu.cls && !fu.isStatic) goWide(`a method value is handed to a built-in call with it (line ${line(site)})`); return; }
+    if (d && ts.isFunctionLike(d) && d.body && inside(d, u.fn)) return bindParams(d, u, null);
+    if (d && ts.isVariableDeclaration(d) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer)) && inside(d, u.fn)) return bindParams(d.initializer, u, null);
+    if (fromLib(d)) return;
+    goWide(`it is handed with a function value the file does not read to a built-in call (line ${line(site)})`);
+  };
+  const call = (n, u) => {
+    const t = target(n, u), args = argsOf(n), recv = receiverOf(n), callee = strip(n.expression ?? n.tag);
+    if (t.kind === 'unit') {
+      if (returns.has(t.u.name)) reach(u, `\`${t.u.name}\` returns it here (line ${line(n)})`);
+      for (const i of paramOut.get(t.u.name)) { if (!args[i] || args.slice(0, i + 1).some(ts.isSpreadElement)) { goWide(`a call to \`${t.u.name}\` changes an argument the reach cannot name (line ${line(n)})`); continue; } reach(u, `a call to \`${t.u.name}\` (line ${line(n)}) changes the prototype of an object here`); sinkMut(args[i], u, n, paramHold.get(t.u.name).has(i)); }
+    }
+    const carried = args.map((a) => carry(a, u)), recvC = !!recv && carry(recv, u), calleeC = !recv && !!callee && carry(callee, u);
+    if (!carried.some(Boolean) && !recvC) return; // a carried function value called with nothing made: its result carries (carry), its code is a unit's
+    if (t.kind === 'unit') {
+      if (recvC && t.u.cls && !t.u.isCtor) { add(thisCarrier, t.u.name); reach(t.u, `it is the receiver of a call from \`${u.name}\` (line ${line(n)})`); } // the method's `this`
+      carried.forEach((c, i) => { if (c) bindParams(t.u.fn, t.u, ts.isSpreadElement(args[i]) ? null : i); });
+      if (carried.some(Boolean)) reach(t.u, `it reaches this unit as an argument from \`${u.name}\` (line ${line(n)})`);
+      return;
+    }
+    if (t.kind === 'local') { carried.forEach((c, i) => { if (c) bindParams(t.fn, u, ts.isSpreadElement(args[i]) ? null : i); }); if (recvC) goWide(`it is the receiver of a nested function (line ${line(n)})`); return; }
+    if (t.kind === 'none') return;
+    if (callee?.kind === K.SuperKeyword) return goWide(`it is passed to the constructor of a class the file does not read (line ${line(n)}), which may keep it in the new object`);
+    if (t.kind === 'lib') {
+      // a built-in hands a callback only values of its operands: a callback whose own captures carry receives nothing made, unless another operand carries or another function could be handed to it
+      const ops = [...args, ...(recv ? [recv] : [])], opC = [...carried, ...(recv ? [recvC] : [])];
+      const fnOps = ops.filter((x) => { const y = strip(x); return !!y && (ts.isArrowFunction(y) || ts.isFunctionExpression(y) || callable(checker.getTypeAtLocation(y))); }).length;
+      ops.forEach((x, i) => { if (ops.some((_, j) => j !== i && opC[j]) || (opC[i] && fnOps > 1)) handOver(x, u, n); });
+      const lib = libName(n), m = callee && ts.isPropertyAccessExpression(callee) ? callee.name.text : '';
+      if (carried.some(Boolean) && (lib === 'Promise.reject' || ['reject', 'abort', 'error', 'throw'].includes(m))) return goWide(`it is handed to \`${callee.getText(sf).slice(0, 40)}\` (line ${line(n)}), which may throw it, and a handler anywhere may catch it`);
+      const written = FIRST_ARG_WRITERS.has(lib) ? [args[0]] : recv && RECEIVER_WRITERS.has(m) ? [recv] : ['call', 'apply', 'bind'].includes(m) || lib.startsWith('Reflect.') ? args.filter((a) => !primitiveOnly(checker.getTypeAtLocation(a))) : []; // call, apply and Reflect hand their object operands to another function as `this` or arguments
+      for (const w of written) if (w && !carry(w, u)) sinkMut(w, u, n);
+      return;
+    }
+    goWide(`it is passed to a call the file does not read (\`${(callee ?? n).getText(sf).slice(0, 60)}\`, line ${line(n)}), which may hand it to any unit`);
+  };
+  const scan = (u) => {
+    const visit = (n) => {
+      if (wide) return;
+      const m = makerOf.get(n);
+      if (m) { reach(u, `it is made in this unit (line ${line(n)})`); if (m.target) sinkMut(m.target, u, n, false); }
+      if (ts.isIdentifier(n)) { const s = symOf(n); if (s && cells.has(s)) { add(carriers.get(u.name), s); reach(u, `this unit reads the module cell \`${n.text}\`, which holds it`); } }
+      if (ts.isVariableDeclaration(n) && n.initializer && carry(n.initializer, u)) bindNames(n.name, u);
+      if (ts.isForOfStatement(n) && carry(n.expression, u)) { if (ts.isVariableDeclarationList(n.initializer)) n.initializer.declarations.forEach((d) => bindNames(d.name, u)); else assignTo(n.initializer, u, n); }
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && carry(n.right, u)) assignTo(n.left, u, n);
+      if ((ts.isReturnStatement(n) || ts.isYieldExpression(n)) && n.expression && ownFn(n) === u.fn && carry(n.expression, u)) add(returns, u.name);
+      if (thisWide && (ts.isReturnStatement(n) || ts.isYieldExpression(n)) && n.expression && ownFn(n) !== u.fn && ownFn(n) && !ts.isArrowFunction(ownFn(n)) && carry(n.expression, u)) goWide(`${thisWide}, and a function that may run implicitly returns it (line ${line(n)})`);
+      if (n === u.fn.body && !ts.isBlock(n) && carry(n, u)) add(returns, u.name);
+      if (ts.isThrowStatement(n) && carry(n.expression, u)) goWide(`it is thrown (line ${line(n)}), and a handler anywhere may catch it`);
+      if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n)) call(n, u);
+      if ((ts.isJsxExpression(n) || ts.isJsxSpreadAttribute(n)) && n.expression && carry(n.expression, u)) goWide(`it is passed to an element (line ${line(n)}), which the reach does not follow`);
+      if (ts.isDecorator(n)) return;
+      ts.forEachChild(n, visit);
+    };
+    visit(u.fn);
+    if ((carriers.get(u.name).size || returns.has(u.name)) && !reached.has(u.name)) reach(u, 'it reaches this unit');
+  };
+  for (const s of cells) { const d = declOf(s); if (d && exported(d)) goWide(`it is held in the exported module cell \`${s.name}\``); }
+  // a prototype that may hold functions: the file's code that can run with the made object as `this` (a method, an
+  // accessor, a function that is not an arrow) is reached, and its `this` carries it; such code outside the units is wide
+  if (thisWide) {
+    const mark = (n) => {
+      if (wide) return;
+      if (n.kind === K.ThisKeyword || n.kind === K.SuperKeyword) {
+        const f = thisFn(n), owner = unitOfNode(n);
+        if (f && !owner) goWide(`${thisWide}, and a function outside the units uses \`this\` (line ${line(n)})`);
+        else if (f && owner && !(f === owner.fn && owner.isCtor)) { if (f === owner.fn) add(thisCarrier, owner.name); reach(owner, thisWide); }
+      }
+      ts.forEachChild(n, mark);
+    };
+    mark(sf);
+  }
+  for (let pass = 0; changed && !wide && pass < 200; pass++) {
+    changed = false;
+    if (thisWide && deep) for (const u of units) if (u.accessor === 'set') { bindParams(u.fn, u, null); reach(u, `${thisWide}; a setter of it receives what is stored`); } // a store into the made object may run a setter of its prototype
+    for (const u of units) { scan(u); if (wide) break; }
+    for (const s of cells) { const d = declOf(s); if (d && exported(d)) goWide(`it is held in the exported module cell \`${s.name}\``); else if (moduleRefs.has(s)) goWide(`module code reads the module cell \`${s.name}\`, which holds it`); }
+    for (const u of units) if (outsideCallable(u) && (returns.has(u.name) || paramOut.get(u.name).size)) goWide(`\`${u.name}\` hands it to code outside the file (it ${returns.has(u.name) ? 'returns it' : 'changes the prototype of an argument'}), which may pass it to any unit`);
+  }
+  if (changed && !wide) goWide('the reach did not settle');
+  return { makers, wide, reached, unitOf: unitOfNode };
 }
