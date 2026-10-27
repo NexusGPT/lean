@@ -449,7 +449,8 @@ export async function runPair(opts) {
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
-  for (let i = 0; i < n; i++) {
+  let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
+  const mountSides = async (i) => { // a fresh environment per side for input i, the unit picked, the inputs drawn
     const sides = {};
     for (const [name, file] of [['parent', parent], ['candidate', candidate]]) {
       const env = new Environment(seed * 7919 + i);
@@ -464,8 +465,16 @@ export async function runPair(opts) {
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
       sides[name] = { env, unit: u, inputs };
     }
+    return sides;
+  };
+  const observeBoth = (sides, record) => (record ? recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]) : (async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)])());
+  for (let i = 0; i < n; i++) {
+    let sides = await mountSides(i);
     if (harnessAsk) break;
-    const [oP, oC] = await recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]);
+    let [oP, oC] = await observeBoth(sides, true);
+    if (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout') { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
+      recorderRetries++; sides = await mountSides(i); if (harnessAsk) break; [oP, oC] = await observeBoth(sides, false);
+    }
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
     if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, args: sides.parent.inputs.map((a) => render(a)), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
     if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
@@ -477,7 +486,7 @@ export async function runPair(opts) {
     }
   }
   const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
-  Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); return sm; } }); // read when the result is written, after every rung
+  Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop); the input proves nothing' };
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
   if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };
