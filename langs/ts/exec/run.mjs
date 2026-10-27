@@ -29,7 +29,7 @@ import { runNew } from './new-unit.mjs';
 import { Graph } from './graph.mjs';
 import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
 import { witnessPatch, statementMarks } from '../patch.mjs';
-import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
+import { descriptorsOf, interpretFire, newHandlerStats, keyHandlers, handlerDifference, heldTextOnly } from './handlers-interp.mjs';
 import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
 import { stylesLayer, projectConfig } from './styles.mjs';
@@ -57,7 +57,7 @@ const libraryCases = (summary) => {
 
 const COMPILE = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, experimentalDecorators: true, emitDecoratorMetadata: false, esModuleInterop: true, importHelpers: false, strict: false, sourceMap: false, removeComments: true, jsx: ts.JsxEmit.ReactJSX, allowJs: true, moduleDetection: ts.ModuleDetectionKind.Force };
 
-// the loader's marks: every `on[A-Z]` JSX attribute value becomes `__lean_h(pos, value, file)` and every `useState(...)`
+// the loader's marks: every JSX attribute value becomes `__lean_h(pos, value, file)` and every `useState(...)`
 // or `x.useState(...)` call `__lean_s(pos, call, file)`, where pos is the node's position in the source; both return
 // their value unchanged and record the function or the slot under that position (handlers-interp.mjs meets them with
 // the static descriptors there). The positions are the source file's unless the file uses import.meta before the node
@@ -65,7 +65,7 @@ const COMPILE = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020
 const leanMarks = (file) => (context) => {
   const f = context.factory;
   const visit = (node) => {
-    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && /^on[A-Z]/.test(node.name.text) && node.initializer && ts.isJsxExpression(node.initializer) && node.initializer.expression) {
+    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && node.initializer && ts.isJsxExpression(node.initializer) && node.initializer.expression) { // an `on[A-Z]` value meets its descriptor at a fire; any other function value is keyed by its descriptor in the tree (handlers-interp.mjs keyHandlers)
       const e = node.initializer.expression;
       return f.updateJsxAttribute(node, node.name, f.updateJsxExpression(node.initializer, f.createCallExpression(f.createIdentifier('__lean_h'), undefined, [f.createNumericLiteral(e.pos), ts.visitNode(e, visit), f.createStringLiteral(file)])));
     }
@@ -86,7 +86,7 @@ function compileWithSites(src, tsName, abs) {
   let stateName = '__lean_site';
   while (src.includes(stateName)) stateName += '_';
   const emit = (before) => ts.transpileModule(src, { compilerOptions: COMPILE, fileName: tsName, transformers: { before } }).outputText;
-  const original = emit([leanMarks(abs)]);
+  const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
   const marked = emit([statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
@@ -583,6 +583,7 @@ export async function observe(side, spec, args, ms) {
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
     if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
+    if (isJsxValue(v) && env.react) v = keyHandlers(v, { env, props: args[0], unit: spec.unit }); // a function the tree holds and lane B never fires is compared by its descriptor, not its text (design/handler-identity.md)
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
     if (env.timers.queue.length) await runTimers(env, ms); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
@@ -726,7 +727,9 @@ export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
 export async function runPair(opts) {
   const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
+  const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
   for (const witness of res.witnesses ?? []) {
+    const hd = handlerDifference(witness.parent?.outcome?.returned, witness.candidate?.outcome?.returned); if (hd) witness.where = { ...(witness.where ?? {}), handler: hd }; // a held handler's keys differ: the prop and the first differing step, or the escape that kept a text key
     if (witness.where?.lines || !witness.parent || !witness.candidate) continue;
     const a = witness.parent, b = witness.candidate;
     if (JSON.stringify(a.threw) !== JSON.stringify(b.threw) && (a.site || b.site)) {
@@ -832,11 +835,13 @@ async function runPairOnce(opts) {
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
-      diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) });
-      if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } // a rendered unit keeps running for the styles layer
+      const held = heldTextOnly(oP, oC); // the sides differ only in a held function lean cannot read: its text is no difference lean can show on a run
+      if (held) (diffs.heldText ??= []).push({ input: i, escapes: held });
+      else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
     }
   }
   const bound = { n, seed, ms, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  if (diffs.heldText && !diffs.length) bound.heldText = { inputs: diffs.heldText.length, first: diffs.heldText[0] }; // runPair turns a PASS into ASK naming the escape
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing' };
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
