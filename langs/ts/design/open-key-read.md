@@ -4,12 +4,10 @@
 `TABLE` is one plain record with declared data fields (`const KIND = { email: "EMAIL", web: "USER_ID" }`,
 `row: Row`), or a number-keyed dictionary (`Record<number, T>`). The finite-key reading (dynamic-record-reads.md)
 and the string dictionary reading are unchanged.
-
 ## Its JavaScript meaning
 The receiver is evaluated, then the key, once each. The key becomes a property name (a number `1` is `"1"`); the
 name is looked up on the object, then its prototype chain. A declared field returns its value; a name the object
 does not hold returns undefined; `"toString"`, `"constructor"` or `"__proto__"` return members of Object.prototype.
-
 ## The reading
 One bodiless function of the receiver value and the key, named by the receiver, key and result Dafny types:
 `ext_open_key_read_to_<R>_<D>_<K>(r, k): R`, pure (a record is a value). `KIND[s] === "USER_ID"`, `s: string`:
@@ -44,6 +42,9 @@ predicates `x == null` uses). At 67b8201 both read the left alone, and the pair'
 (`(x ?? "A") === "A"` against `(x ?? "B") === "A"`) and lengthOf (`x?.length` against `x.length`) were PASS-proved.
 Still incomplete, never unsound: in `x?.a.b` the outer read is not cut short, so it proves less than it could.
 
+## Measured (`node langs/ts/census.mjs <root>`, base export 67b8201 against this branch's lint)
+- nexus (work/bench/nexus/tree): 22921 of 26520 inside (86.4 percent) to 22969 (86.6); dynamic-key 303 to 232 units.
+- n8n (work/bench/n8n/tree): 3488 of 6337 inside (55 percent) to 3494 (55.1); dynamic-key 133 to 123 units.
 ## Lint and lane B
 lint.mjs `openKeyRefusal`, translate.mjs `openKeyRead` beside `elemAccess`; an any key takes `Any_index`. Lane B runs
 the JavaScript on generated records and keys, absent keys included. exec/usage.mjs records `x?.f` as a null and
@@ -53,8 +54,7 @@ orDefault and lengthOf WITNESS; isText and hasMedia PASS-bounded.
 ## Instances (W/architecture/estate-coverage/units.jsonl, lint at this branch)
 - nexus packages/types/src/shared/domain/customer/customer-identity.config.ts:92 usesUserIdIdentifier: enters.
 - nexus apps/backend/src/_common/utils/twilio-attachment.helper.ts:52 extractTwilioAttachments: enters.
-- nexus apps/backend/src/public/v1/infrastructure/filters/http-exception.filter.ts:146 codeForStatus: stays out,
-  `Record<number, string>` read as string (absent key).
+- nexus apps/backend/src/public/v1/infrastructure/filters/http-exception.filter.ts:146: stays out (absent key).
 - langchainjs .../langchain-ibm/src/chat_models/ibm.ts:218 getRole: stays out, read typed string.
 - nexus apps/backend/src/workspaces/domain/value-objects/unnarrowed-workspace.ts:69: stays out, symbol key.
 - n8n packages/editor-ui/src/utils/templates/templateTransforms.ts:80: stays out (template-pattern index).
