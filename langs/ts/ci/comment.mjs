@@ -18,7 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prReport, markdown } from '../pr.mjs';
+import { prReport, markdown, intakeMarkdown } from '../pr.mjs';
 
 export const MARKER = '<!-- lean-report -->';
 // a GitHub comment body holds at most 65,536 characters; the table is cut at a row boundary below that
@@ -42,8 +42,14 @@ export function blockingRows(rows, block = 'none') {
 }
 
 // the comment: the marker, the table, one line on what produced it; cut at a line boundary if it is too long
-export function commentBody(md, { block = 'none', capped = false, extra = [] } = {}) {
-  const tail = ['', `<sub>lean, blocking: ${block === 'none' ? 'off' : block}${capped ? '; the function cap was reached, any later function is not in this table' : ''}. This comment is updated on every push.</sub>`, ...extra];
+export function commentBody(md, { block = 'none', capped = false, extra = [], rows = null } = {}) {
+  if (rows) {
+    const firstBreak = md.indexOf('\n');
+    const title = firstBreak < 0 ? md : md.slice(0, firstBreak);
+    const verdicts = firstBreak < 0 ? '' : md.slice(firstBreak + 1);
+    md = [title, '', intakeMarkdown(rows), '', '## Verdicts', verdicts].join('\n');
+  }
+  const tail = ['', `<sub>lean, blocking: ${block === 'none' ? 'off' : block}${capped ? '; the function cap was reached; the verdict table is capped and intake lists the change set' : ''}. This comment is updated on every push.</sub>`, ...extra];
   let body = [MARKER, md, ...tail].join('\n');
   if (body.length <= MAX_BODY) return body;
   const note = '\n\n(the table is longer than one comment holds; the full report is the job artifact)';
@@ -106,10 +112,11 @@ export async function main(argv, env = process.env, log = console.log, warn = co
   } catch (e) { error = String(e?.message ?? e).split('\n')[0].slice(0, 300); }
   // the cap: a prReport that honours maxUnits stops there; one that does not has checked every function, and the
   // table still shows the first maxFunctions only, so the comment's length is bounded either way
+  const intakeRows = rows;
   const capped = !!(rows && maxFunctions && rows.length >= maxFunctions);
   if (capped) rows = rows.slice(0, maxFunctions);
   const md = rows ? markdown(rows, short(base), short(head)) : `# lean report: ${short(base)} → ${short(head)}\n\nlean could not produce the table: ${error}`;
-  const body = commentBody(md, { block, capped });
+  const body = commentBody(md, { block, capped, rows: intakeRows });
   if (opt('--out')) { fs.writeFileSync(opt('--out'), body); log(`${rows ? rows.length : 0} function(s) -> ${opt('--out')}`); } else log(body);
   if (opt('--json') && rows) fs.writeFileSync(opt('--json'), JSON.stringify(rows, null, 1));
   if (error) warn(`::warning::lean could not produce the table: ${error}`);

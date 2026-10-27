@@ -440,6 +440,13 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
   add('repo', 'conformance/run.py ts', 'runner', c.status === 0, last);
 }
 
+// The intake fixture covers every changed unit and proves that preview runs no lane.
+{
+  const r = run('node', [path.join(here, 'fixtures/pr-intake/test.mjs')]);
+  const text = (r.stdout ?? '') + (r.stderr ?? '');
+  add('repo', 'pr intake', 'coverage and preview', r.status === 0, text.trim().split('\n').pop());
+}
+
 // ----- table -----
 const w = (k, s) => Math.max(s.length, ...rows.map((r) => String(r[k]).length));
 const cols = ['kind', 'name', 'check'];

@@ -12,6 +12,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { main, MARKER, MAX_BODY, commentBody, inPaths, blockingRows, prNumber } from './comment.mjs';
 import { pairsRepo } from './pairs-repo.mjs';
+import { intakeRepo } from '../tests/fixtures/pr-intake/build.mjs';
 
 let passed = 0; const failed = [];
 const printed = []; // every line any run printed, searched for the token at the end
@@ -64,6 +65,21 @@ const git = (repo, args) => {
 };
 
 try {
+  const fixture = intakeRepo(path.join(tmp, 'intake'));
+  const intakeOut = path.join(tmp, 'intake.md');
+  const intakeRun = await run(['--repo', fixture.repo, '--base', fixture.base, '--head', fixture.head, '--dafny-seconds', '1', '--out', intakeOut]);
+  const intakeBody = fs.readFileSync(intakeOut, 'utf8');
+  const intakeTable = intakeBody.split('## Intake')[1]?.split('## Verdicts')[0] ?? '';
+  ok(intakeRun.code === 0 && intakeBody.startsWith(MARKER) && intakeBody.length <= MAX_BODY, 'intake comment has marker and fits the cap');
+  ok(intakeBody.indexOf('## Intake') < intakeBody.indexOf('## Verdicts'), 'intake comes before verdicts');
+  ok((intakeTable.match(/^\| \x60/gm) ?? []).length === 6, 'intake comment has all six units');
+  ok(['checked', 'refused:alias-mutation', 'failed:loader', 'skipped:not-typescript', 'skipped:binary', 'skipped:secret-path'].every((c) => intakeTable.includes(c)), 'intake comment has all six coverage values');
+  const longIntake = commentBody('# lean report', { rows: Array.from({ length: 4000 }, (_, i) => ({ file: `source${i}.ts`, unit: 'f', coverage: 'checked' })) });
+  ok(longIntake.length <= MAX_BODY && longIntake.includes('longer than one comment holds'), 'long intake respects the character cap');
+  const cappedIntake = commentBody('# lean report\n\none verdict', { capped: true, rows: [{ file: 'later.ts', unit: 'later', coverage: 'checked' }] });
+  ok(cappedIntake.includes('later.ts') && cappedIntake.includes('intake lists the change set'), 'the verdict cap keeps the intake rows');
+  console.log('intake comment: ' + (failed.length ? 'FAIL' : '6 checks pass'));
+  if (!process.argv.includes('--intake-only')) {
   // the pure parts
   ok(inPaths('src/a/b.ts', '') && inPaths('src/a/b.ts', 'src/**') && !inPaths('lib/b.ts', 'src/**,test/**') && inPaths('lib/b.ts', 'src/**\nlib/*.ts'), 'paths globs');
   const rowsOf = (...v) => v.map((verdict) => ({ verdict }));
@@ -144,6 +160,7 @@ try {
 
   const written = fs.readdirSync(tmp).filter((f) => f.endsWith('.md')).map((f) => fs.readFileSync(path.join(tmp, f), 'utf8')).join('\n');
   ok(printed.length > 20 && ![...printed, written].some((s) => s.includes(TOKEN)), 'the token is in no output and no file');
+  }
 } catch (e) {
   failed.push(`threw: ${e.message}`);
 } finally {
