@@ -51,7 +51,7 @@
     "and_absence": true,
     "append_absence": false
   },
-  "why": "Null clears a patch, undefined preserves it; defaults apply only to undefined; both tags coalesce and optional-chain; single-absence Option interfaces stay unchanged.",
+  "why": "Null clears a patch, undefined preserves it; defaults apply only to undefined; both tags coalesce and optional-chain; single-absence Option interfaces stay unchanged. andAbsence: x && undefined returns NaN for NaN, the candidate undefined: lane B WITNESS since lane B draws NaN (design/special-numbers.md).",
   "b": {
     "patchMerge": "WITNESS",
     "nullishRefactor": "PASS-bounded",
@@ -75,7 +75,7 @@
     "nullableAt": "WITNESS",
     "nullEcho": "PASS-bounded",
     "boundaryResult": "PASS-bounded",
-    "andAbsence": "PASS-bounded",
+    "andAbsence": "WITNESS",
     "appendAbsence": "WITNESS"
   }
 }
