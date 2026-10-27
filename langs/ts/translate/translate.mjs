@@ -81,6 +81,10 @@ export function translate(file, fnName, opts = {}) {
   const classOfType = (t) => { const sym = t && t.symbol; const d = sym?.declarations?.[0]; return d && ts.isClassDeclaration(d) && d.getSourceFile() === sf && d.name ? (classDecls.get(d.name.text) ?? null) : null; };
   // accessors retain an opaque unit when their body is outside the subset
   const accessorOpaque = new Set();
+  // a static method whose body names `this` or `super` (the class the call went through, a subclass too) is one opaque
+  // unit keyed by the file's text, as a static accessor naming `this` is; arrows inherit `this`, nested functions do not
+  const staticReceiver = (u) => { let found = false; const walk = (n) => { if (ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isClassLike(n)) return; if (n.kind === K.ThisKeyword || n.kind === K.SuperKeyword) found = true; ts.forEachChild(n, walk); }; walk(u.body); return found; };
+  for (const u of fns.values()) if (u.isStatic && !u.accessor && u.params.every((p) => ts.isIdentifier(p.name)) && staticReceiver(u)) accessorOpaque.add(u.name);
   if ([...fns.values()].some((u) => u.accessor)) {
     const findings = lintFile(file, null, { project, loaded, accessorBodies: true }).filter((g) => !g.env);
     for (const u of fns.values()) if (u.accessor) { let staticThis = false; const walk = (n) => { if (u.isStatic && n.kind === K.ThisKeyword) staticThis = true; ts.forEachChild(n, walk); }; walk(u.body); if (staticThis || findings.some((g) => g.line >= lineOf(sf, u.node.getStart(sf)) && g.line <= lineOf(sf, u.node.getEnd()))) accessorOpaque.add(u.name); }
@@ -174,6 +178,7 @@ export function translate(file, fnName, opts = {}) {
         if (moduleState(checker, n, sf)) touch('module', n.text, isWrite(n) ? 'write' : isMutated(n) ? 'mutator' : 'read');
         else if (outsideRoot(checker, n, sf, u.node) && n.text !== 'require') touch('outside', n.text, isWrite(n) ? 'write' : 'read');
       }
+      if (ts.isPropertyAccessExpression(n) && staticCell(n)) touch('module', `${n.expression.text}_${n.name.text}`, isWrite(n) ? 'write' : isMutated(n) ? 'mutator' : 'read'); // a static cell of a same-file class
       if (ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && u.cls && !constantField(n.name.text) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n && fns.get(`${u.className}.${n.name.text}`)?.method === n.name.text)) touch('this', n.name.text, isWrite(n) ? 'write' : isMutated(n) ? 'mutator' : 'read');
       ts.forEachChild(n, walk);
     };
@@ -559,7 +564,7 @@ export function translate(file, fnName, opts = {}) {
   // a lib or runtime global read as a value (not a callee, not the receiver of a called method, not a type): a world read
   const libValueRead = (x) => { if (!ts.isIdentifier(x) || !x.parent || ts.isTypeNode(x.parent) || ts.isQualifiedName(x.parent)) return false; const p = x.parent; if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && p.expression === x) return false; if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return false; if (ts.isBinaryExpression(p) && p.right === x && p.operatorToken.kind === K.InstanceOfKeyword) return false; return libGlobalRoot(checker, x, sf, currentUnit?.node ?? null); };
   const libWorldRead = (n) => { if (!n || !(ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n))) return false; let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root) || ts.isAsExpression(root) || ts.isNonNullExpression(root)) root = root.expression; return libGlobalRoot(checker, root, sf, currentUnit?.node ?? null); };
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || staticCell(x) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -738,6 +743,61 @@ export function translate(file, fnName, opts = {}) {
   const sameFileClassOf = (t) => (t ? classOfType(isOptional(t) ? baseOf(t) : t) : null);
   const classRef = (e) => (ts.isIdentifier(e) && classDecls.has(e.text) && originOf(checker, e, sf, currentUnit?.node ?? null).kind !== 'local' ? classDecls.get(e.text) : null); // the class itself, named (a static call, `new`)
   const classTypeD = (cls) => dtype(checker.getTypeAtLocation(cls.name), cls);
+  // ----- class statics: `C.K` for a static field of a same-file class is a module cell of the field's declaration. It is a
+  // world cell, as a module `let` is, when the file writes it (`C.K = v`, `this.K = v` in a static member, a mutator on
+  // it), when it holds an object, or when it is not readonly and code outside the file may reach the class (exported, or
+  // the class used as a value); otherwise a constant of its initializer. A static method `C.m` is the unit `C.m` -----
+  const staticOf = (n) => {
+    if (!n || !ts.isPropertyAccessExpression(n) || !ts.isIdentifier(n.name)) return null;
+    const cls = classRef(n.expression); if (!cls || cls.members.some(ts.isClassStaticBlockDeclaration)) return null;
+    const own = cls.members.filter((m) => m.name && ts.isIdentifier(m.name) && m.name.text === n.name.text && m.modifiers?.some((k) => k.kind === K.StaticKeyword));
+    return own.length === 1 && ts.isPropertyDeclaration(own[0]) ? { cls, decl: own[0] } : null;
+  };
+  const staticCellMemo = new Map();
+  function staticCellDecl(cls, decl) {
+    const name = decl.name.text, sym = checker.getSymbolAtLocation(cls.name);
+    const t = checker.getTypeAtLocation(decl.name);
+    if (nonNull(t).some((p) => p.flags & (TF.Object | TF.Any | TF.Unknown | TF.NonPrimitive))) return true; // an object: its contents change in place
+    let written = false, escapes = false;
+    const inStatic = (x) => { for (let p = x.parent; p; p = p.parent) { if (p.parent === cls) return !!p.modifiers?.some((k) => k.kind === K.StaticKeyword) && !ts.isPropertyDeclaration(p); if (ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p) || ts.isClassDeclaration(p) || ts.isClassExpression(p)) return false; } return false; };
+    const walk = (x) => {
+      if (ts.isPropertyAccessExpression(x) && x.name.text === name && ((ts.isIdentifier(x.expression) && checker.getSymbolAtLocation(x.expression) === sym) || (x.expression.kind === K.ThisKeyword && inStatic(x)))) {
+        const p = x.parent;
+        if (propertyWrite(x) || (p && ts.isDeleteExpression(p)) || (p && ts.isPropertyAccessExpression(p) && p.expression === x && MUTATORS.has(p.name.text))) written = true;
+      }
+      if (ts.isIdentifier(x) && x !== cls.name && checker.getSymbolAtLocation(x) === sym) {
+        const p = x.parent;
+        const named = (p && ts.isPropertyAccessExpression(p) && p.expression === x) || (p && ts.isNewExpression(p) && p.expression === x) || (p && (ts.isTypeReferenceNode(p) || ts.isTypeQueryNode(p) || ts.isQualifiedName(p) || (ts.isExpressionWithTypeArguments(p) && p.parent && ts.isHeritageClause(p.parent))));
+        if (!named) escapes = true;
+      }
+      ts.forEachChild(x, walk);
+    };
+    walk(sf);
+    if (written) return true;
+    const readonly = !!(ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Readonly);
+    const exported = !!(ts.getCombinedModifierFlags(cls) & ts.ModifierFlags.Export);
+    return !readonly && (exported || escapes);
+  }
+  const staticCell = (n) => { const st = staticOf(n); if (!st) return null; if (!staticCellMemo.has(st.decl)) staticCellMemo.set(st.decl, staticCellDecl(st.cls, st.decl)); return staticCellMemo.get(st.decl) ? st : null; };
+  function staticAccessor(st, kind, d) {
+    addPrelude('World', 'type World');
+    return external(`Module_file_${kind}_${st.cls.name.text}_${st.decl.name.text}_${hash(iteratorProgram(st.decl))}`, kind === 'get' ? ['World'] : ['World', d], `(World, ${kind === 'get' ? d : 'Unit'})`);
+  }
+  // a read of a static field: the world cell's getter, or the constant (its literal, else a bodiless constant named by the
+  // declaration and its same-file dependencies, so a changed initializer is another constant)
+  function staticRead(n, st) {
+    const dt = checker.getTypeAtLocation(st.decl.name);
+    if (staticCell(n)) {
+      if (!unitEffectful()) fail(n, 'internal: a static cell read in a pure unit');
+      const d = dtype(dt, n);
+      const code = hoist(`${staticAccessor(st, 'get', d)}(${WORLD})`, d);
+      return isOptional(dt) && !isOptional(typeOf(n)) && !isNullish(typeOf(n)) ? `${code}.value` : code;
+    }
+    const init = st.decl.initializer;
+    if (init && (ts.isLiteralExpression(init) || [K.TrueKeyword, K.FalseKeyword].includes(init.kind) || (ts.isPrefixUnaryExpression(init) && init.operator === K.MinusToken && ts.isNumericLiteral(init.operand)))) return expr(init, typeOf(n));
+    const d = dtype(typeOf(n), n);
+    return `${external(`Static_${st.cls.name.text}_${st.decl.name.text}_${hash(iteratorProgram(st.decl))}`, [], d)}()`;
+  }
   const fieldAccessor = (Tn, field, kind, d) => { addPrelude('World', 'type World'); return external(`${Tn}_${kind}_${field}`, kind === 'get' ? ['World', Tn] : ['World', Tn, d], kind === 'get' ? `(World, ${d})` : '(World, Unit)'); };
 
   // ----- types -----
@@ -1592,10 +1652,13 @@ export function translate(file, fnName, opts = {}) {
     if (!update && op !== K.EqualsToken && !symbol) fail(n, 'assignment-expression: write this assignment as a statement');
     const value = valueBind(symbol ? `${old} ${symbol} ${rhs}` : rhs);
     const storedAs = (d) => convertToD(value, typeOf(n), d, n);
-    const moduleDecl = moduleState(checker, target, sf);
+    const moduleDecl = moduleState(checker, target, sf), staticDecl = staticCell(target);
     if (moduleDecl) {
       const d = dtype(typeOf(moduleDecl.name), target);
       hoist(`${moduleAccessor(target, 'set', d)}(${WORLD}, ${storedAs(d)})`, 'Unit');
+    } else if (staticDecl) { // a static field of a same-file class: its world cell's setter
+      const d = dtype(checker.getTypeAtLocation(staticDecl.decl.name), target);
+      hoist(`${staticAccessor(staticDecl, 'set', d)}(${WORLD}, ${storedAs(d)})`, 'Unit');
     } else if (setter) {
       accessorCall(setter, target, [storedAs(dtype(typeOf(setter.params[0].name), target))]);
     } else if (world) {
@@ -1667,6 +1730,20 @@ export function translate(file, fnName, opts = {}) {
       default: return coerce(rawExpr(n, expected), n, expected);
     }
   }
+  // a module const initializer built from literals and other such consts with + - * (unary minus, parentheses): read as
+  // its value, so the dependency is in the proof and a refactor of the expression with the same value is proved
+  function constArithmetic(e, seen) {
+    if (ts.isParenthesizedExpression(e)) return constArithmetic(e.expression, seen);
+    if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || [K.TrueKeyword, K.FalseKeyword].includes(e.kind)) return !(ts.isNumericLiteral(e) && /[.eE]/.test(e.text) && !/^0[xXoObB]/.test(e.text));
+    if (ts.isPrefixUnaryExpression(e) && e.operator === K.MinusToken) return constArithmetic(e.operand, seen);
+    if (ts.isBinaryExpression(e) && [K.PlusToken, K.MinusToken, K.AsteriskToken].includes(e.operatorToken.kind)) return constArithmetic(e.left, seen) && constArithmetic(e.right, seen);
+    if (ts.isIdentifier(e)) {
+      const o = originOf(checker, e, sf, null);
+      if (o.kind !== 'module' || !o.decl || !ts.isVariableDeclaration(o.decl) || !o.decl.initializer || seen.has(o.decl) || moduleState(checker, e, sf)) return false;
+      return constArithmetic(o.decl.initializer, new Set([...seen, o.decl]));
+    }
+    return false;
+  }
   function ident(n) {
     if (n.text === 'undefined') return absentValue(typeOf(n));
     const o = originOf(checker, n, sf, currentUnit?.node ?? null);
@@ -1679,7 +1756,10 @@ export function translate(file, fnName, opts = {}) {
     if (outsideRoot(checker, n, sf, currentUnit?.node) && n.text !== 'require') { const d = dtype(typeOf(n), n); addPrelude('World', 'type World'); return hoist(`${external(`global_read_${n.text}`, ['World'], `(World, ${d})`)}(${WORLD})`, d); }
     if (libGlobalRoot(checker, n, sf, currentUnit?.node ?? null)) { if (isCallable(typeOf(n))) fail(n, `${n.text} is a function value; call it`); const d = dtype(typeOf(n), n); addPrelude('World', 'type World'); return hoist(`${external(`global_read_${n.text}`, ['World'], `(World, ${d})`)}(${WORLD})`, d); } // a lib or runtime global: a world read
     if (o.kind === 'module' && o.decl?.initializer && (ts.isLiteralExpression(o.decl.initializer) || [K.TrueKeyword, K.FalseKeyword].includes(o.decl.initializer.kind) || (ts.isPrefixUnaryExpression(o.decl.initializer) && o.decl.initializer.operator === K.MinusToken && ts.isNumericLiteral(o.decl.initializer.operand))) && !(typeOf(n).flags & TF.Object)) return expr(o.decl.initializer);
-    if (o.kind === 'module' && o.decl?.initializer && !isCallable(typeOf(n))) return `${external(`${n.text}_${hash(o.decl.getText(sf))}`, [], dtype(typeOf(n), n))}()`;
+    if (o.kind === 'module' && o.decl?.initializer && !(typeOf(n).flags & TF.Object) && constArithmetic(o.decl.initializer, new Set([o.decl]))) return `(${expr(o.decl.initializer, typeOf(n))})`; // literals and other such consts under + - *: the value itself
+    // any other module const: a bodiless constant keyed by its declaration and the same-file declarations it reads, so a
+    // changed dependency (\`const B = A + 1\` when A changes) is another constant
+    if (o.kind === 'module' && o.decl?.initializer && !isCallable(typeOf(n))) return `${external(`${n.text}_${hash(iteratorProgram(o.decl))}`, [], dtype(typeOf(n), n))}()`;
     if (o.kind === 'import' || o.kind === 'other' || o.kind === 'module') return externalValue(n);
     if (o.kind === 'global') return externalValue(n);
     let code = dn(n.text);
@@ -2630,6 +2710,7 @@ export function translate(file, fnName, opts = {}) {
   function propAccess(n, keepOption = false) {
     { const rb = hookBinding(n.expression); if (rb && !rb.field && Object.hasOwn(rb.row.result, n.name.text) && !rb.row.result['*']) return `${expr(n.expression)}.${n.name.text}`; } // a field of a hook result: the table's datatype
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
+    { const st = staticOf(n); if (st) return staticRead(n, st); } // a static field of a same-file class
     if (libWorldRead(n)) return globalRead(n); // a path rooted at a lib or runtime global: a world read
     const name = n.name.text;
     if (objectData && n.expression.kind === K.ThisKeyword && objectData.has(name)) return objectData.get(name).code;
@@ -3443,6 +3524,7 @@ export function translate(file, fnName, opts = {}) {
     if (node.__collect) names.push(node.__collect); // the callback's result state
     const note = (id) => {
       if (moduleState(checker, id, sf)) return; // module writes travel through the world
+      if (classRef(id)) return; // so do writes to a static field of a same-file class
       if (outsideRoot(checker, id, sf, currentUnit?.node) && id.text !== 'require') return; // so do writes to a field of an outside root
       if (names.some((m) => m.name === id.text)) return;
       const sym = checker.getSymbolAtLocation(id);
@@ -3656,6 +3738,17 @@ export function translate(file, fnName, opts = {}) {
       else if ([K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) value = `${expr(moduleTarget)} ${e.operatorToken.kind === K.PlusEqualsToken ? '+' : e.operatorToken.kind === K.MinusEqualsToken ? '-' : '*'} ${expr(e.right)}`;
       else fail(e, 'a logical module assignment uses the opaque unit reading');
       hoist(`${moduleAccessor(moduleTarget, 'set', d)}(${WORLD}, ${outerParens(value)})`, 'Unit');
+      return null;
+    }
+    const staticTarget = staticCell(moduleTarget);
+    if (staticTarget) { // a static field of a same-file class: a world cell written as a module \`let\` is
+      const dt = checker.getTypeAtLocation(staticTarget.decl.name), d = dtype(dt, moduleTarget);
+      let value;
+      if (isUpdate(e)) value = `${expr(moduleTarget)} ${e.operator === K.PlusPlusToken ? '+' : '-'} ${one()}`;
+      else if (e.operatorToken.kind === K.EqualsToken) value = expr(e.right, dt);
+      else if ([K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) value = `${expr(moduleTarget)} ${e.operatorToken.kind === K.PlusEqualsToken ? '+' : e.operatorToken.kind === K.MinusEqualsToken ? '-' : '*'} ${expr(e.right)}`;
+      else fail(e, 'a logical static assignment is outside the reading');
+      hoist(`${staticAccessor(staticTarget, 'set', d)}(${WORLD}, ${outerParens(value)})`, 'Unit');
       return null;
     }
     if (ts.isBinaryExpression(e) && ts.isElementAccessExpression(e.left) && ts.isIdentifier(e.left.expression)) {
@@ -4182,6 +4275,7 @@ export function translate(file, fnName, opts = {}) {
     const w = (x) => {
       const binding = moduleState(checker, x, sf);
       if (binding) moduleBindings.add(binding.getText(sf));
+      { const sb = staticCell(x); if (sb) moduleBindings.add(sb.decl.getText(sf)); }
       if (x.kind === K.ThisKeyword) usesSelf = true;
       if (ts.isCallExpression(x) || ts.isNewExpression(x)) { const name = unitNameOfCall(x); if (name) calls.add(name); }
       if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && fns.has(x.expression.text) && originOf(checker, x.expression, sf, currentUnit?.node ?? null).kind === 'unit') calls.add(x.expression.text);
@@ -4595,12 +4689,13 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const state = moduleState(checker, n, sf), global = worldRead(checker, n, sf, u.node) || (outsideRoot(checker, n, sf, u.node) && n.text !== 'require');
       if (state || global || moduleLoader(checker, n, sf, u.node)) { reads = true; if (nested) nestedRead = true; }
       if (state && reference(typeOf(state.name))) collection = true;
+      { const sc = staticCell(n); if (sc) { reads = true; if (nested) nestedRead = true; if (reference(checker.getTypeAtLocation(sc.decl.name))) collection = true; } } // a static cell of a same-file class is module state
       if (state && checker.getPropertiesOfType(baseOf(typeOf(state.name))).some((p) => p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)))) guarded = true;
       if (global && (n.questionDotToken || (n.flags & ts.NodeFlags.OptionalChain))) guarded = true;
       if (ts.isVariableDeclaration(n) && n.initializer) {
         const init = unwrap(n.initializer);
         if (reference(typeOf(init))) {
-          if (moduleState(checker, init, sf)) alias = true;
+          if (moduleState(checker, init, sf) || staticCell(init)) alias = true;
           if (worldRead(checker, init, sf, u.node) || outsideRoot(checker, init, sf, u.node)) globalAlias = true;
         }
       }
@@ -4670,7 +4765,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { body0 = moduleShape.opaque ? opaqueModuleBody(u) : u.accessor && accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
+      try { body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
       catch (e) { if (!(e instanceof Unsupported) || !moduleShape.reads || !eff || u.isCtor) throw e; pending = savedPending; coreHelpers.length = savedHelpers; usedModuleOpaque = true; body0 = opaqueModuleBody(u); }
       const cleared = exceptionUnits.has(u.name) ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
       const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : yieldState ? `var ${yieldState.name}: ${yieldState.d} := [];\n${cleared}` : cleared;

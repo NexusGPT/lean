@@ -342,6 +342,41 @@ export function lintFile(file, ranges = null, opts = {}) {
     return v(id, 'global-read', `\`${name}\` cannot be resolved`);
   }
 
+  // ---------- class statics ----------
+  // `C.m(x)` and `C.K` for a class C declared at the top of this file: the class is named by its declaration, not a
+  // module cell. A static method is the unit `C.m`; a static field is a module cell (a constant, or a world cell when it is
+  // written or holds an object). Static accessors, function-valued fields, private names and inherited statics stay out.
+  function sameFileStatic(e) {
+    if (!ts.isPropertyAccessExpression(e) || !ts.isIdentifier(e.expression) || !ts.isIdentifier(e.name)) return null;
+    const o = declOf(e.expression);
+    if (o.kind !== 'module-mutable' || !o.decl || !ts.isClassDeclaration(o.decl) || o.decl.parent !== sf || !o.decl.name) return null;
+    if (o.decl.members.some(ts.isClassStaticBlockDeclaration)) return null; // a static block sets statics on import, outside every unit
+    const own = o.decl.members.filter((m) => m.name && ts.isIdentifier(m.name) && m.name.text === e.name.text && m.modifiers?.some((k) => k.kind === K.StaticKeyword));
+    if (!own.length) return null;
+    if (own.every(ts.isMethodDeclaration)) return units.get(`${o.decl.name.text}.${e.name.text}`)?.isStatic ? { cls: o.decl, member: own.find((m) => m.body) ?? own[0], kind: 'method' } : null;
+    if (own.length === 1 && ts.isPropertyDeclaration(own[0]) && !own[0].modifiers?.some((k) => k.kind === K.DeclareKeyword || k.kind === K.AbstractKeyword)) return { cls: o.decl, member: own[0], kind: 'field' };
+    return null;
+  }
+  // `this` and `super` in a static method name whichever class the call went through (a subclass too), not the class
+  // that declares the method, so the unit is read as one opaque transition keyed by the file's text; that reading names
+  // each parameter, so a destructured parameter beside them is refused. Arrows inherit them, nested functions do not
+  function staticThis(body) {
+    const w = (x) => {
+      if (ts.isFunctionDeclaration(x) || ts.isFunctionExpression(x) || ts.isClassLike(x)) return;
+      if (x.kind === K.ThisKeyword || x.kind === K.SuperKeyword) v(x, 'static-this', `\`${x.kind === K.ThisKeyword ? 'this' : 'super'}\` in a static method is the class the call names, a subclass too; name the class itself, or give the method plain parameter names`);
+      ts.forEachChild(x, w);
+    };
+    w(body);
+  }
+  // a static field read: refused when it holds a function (a call through it has no unit) or is the receiver of an in-place mutator
+  function staticFieldRead(e) {
+    const t = tOf(e);
+    if (nonNull(t).some((x) => checker.getSignaturesOfType(x, ts.SignatureKind.Call).length)) return v(e, 'global-read', `\`${e.getText(sf)}\` holds a function; call a static method of the class instead`);
+    const p = e.parent;
+    if (p && ts.isPropertyAccessExpression(p) && p.expression === e && MUT_NAMES.has(p.name.text) && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return v(p.parent, 'global-read', `\`.${p.name.text}()\` changes the static \`${e.getText(sf)}\` in place; assign a new value to the field instead`);
+    checkType(t, e);
+  }
+
   // ---------- statements ----------
   const isParam = (decl) => !!decl && ts.isParameter(decl);
   const declOf = (id) => originOf(checker, id, sf, current);
@@ -623,6 +658,10 @@ export function lintFile(file, ranges = null, opts = {}) {
           else if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
           else if (dict && !nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
           expr(l.argumentExpression);
+        } else if (ts.isPropertyAccessExpression(l) && sameFileStatic(l)?.kind === 'field') {
+          // a write of a static field of a same-file class: the field is a world cell, written as a module \`let\` is
+          if (nonNull(tOf(l)).some((x) => checker.getSignaturesOfType(x, ts.SignatureKind.Call).length)) v(l, 'global-read', `\`${l.getText(sf)}\` holds a function; call a static method of the class instead`);
+          else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a static field');
         } else if (ts.isPropertyAccessExpression(l)) {
           let root = l; while (ts.isPropertyAccessExpression(root)) root = root.expression;
           if (root.kind === K.ThisKeyword && !thisParam) { if (objectMethod) return v(l, 'object-method-mutation', 'literal methods keep immutable data fields; use a class for mutable receiver state'); if (l.expression.kind !== K.ThisKeyword && !receiverRecordPath(checker, l)) return v(l, 'receiver-mutation', 'a receiver path needs nonoptional data records; assign a field itself for class or opaque handles'); if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) return v(l, 'receiver-mutation', 'only =, +=, -=, *= on a field of `this`'); return expr(e.right); } // a receiver write checks its right side, including exact promise forms
@@ -652,6 +691,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if ((ts.isPostfixUnaryExpression(e) || ts.isPrefixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken)) {
       if (ts.isPropertyAccessExpression(e.operand)) { let root = e.operand; while (ts.isPropertyAccessExpression(root)) root = root.expression; if ((root.kind === K.ThisKeyword && objectMethod) || methodLiteralPath(e.operand)) return v(e, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); if (root.kind === K.ThisKeyword && !thisParam && e.operand.expression.kind !== K.ThisKeyword) return receiverRecordPath(checker, e.operand) ? undefined : v(e, 'receiver-mutation', 'a receiver path needs nonoptional data records'); }
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
+      if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
       if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasLocals.has(o.decl) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
@@ -1227,6 +1267,16 @@ export function lintFile(file, ranges = null, opts = {}) {
         return argsOf(e);
       }
       if (ts.isIdentifier(recv) && PURE_GLOBALS.has(recv.text) && declOf(recv).kind === 'global') { const refused = objectCallRefusal(e, recv, f.name.text); if (refused) return refused; return argsOf(e); }
+      { // `C.m(args)`: a static method of a same-file class is the unit `C.m`, called as a top-level unit is
+        const st = sameFileStatic(f);
+        if (st?.kind === 'method') {
+          const u = units.get(`${st.cls.name.text}.${name}`);
+          if (!e.arguments.some(ts.isSpreadElement) && !u.params.some((p) => p.dotDotDotToken)) { const req = u.params.filter((p) => !p.initializer && !p.questionToken && !p.dotDotDotToken).length; if (e.arguments.length < req || e.arguments.length > u.params.length) v(e, 'unsupported-call', `${st.cls.name.text}.${name} takes ${req === u.params.length ? req : `${req} to ${u.params.length}`} arguments`); }
+          if (u.fn.asteriskToken) return v(e, 'generator-use', 'consume a static generator through a top-level generator function');
+          if (u.isAsync && !(e.parent && ts.isAwaitExpression(e.parent)) && !promiseConsumed(e, checker, sf)) v(e, 'async', 'an async unit is called without await');
+          return argsOf(e);
+        }
+      }
       const parts = nonNull(rt);
       if (parts.some(isAny)) {
         // an opaque receiver: the call is an uninterpreted external of (receiver, arguments); no callbacks, no mutation names
@@ -1558,8 +1608,14 @@ export function lintFile(file, ranges = null, opts = {}) {
     const obj = localMethodLiteral(tOf(e.expression));
     const method = obj?.properties.find((p) => ts.isMethodDeclaration(p) && p.name?.text === name);
     if (method && !(e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e)) return v(e, 'object-method-mutation', 'call a literal method on its object; detached methods need an explicit receiver');
+    if (e.expression.kind === K.ThisKeyword && name === 'constructor') { // the receiver's run-time class: its name, or a value passed on, is opaque; a member read through it is a static of an unknown class
+      let u = e; while (u.parent && (ts.isParenthesizedExpression(u.parent) || ts.isAsExpression(u.parent) || ts.isNonNullExpression(u.parent) || ts.isTypeAssertionExpression(u.parent) || ts.isSatisfiesExpression(u.parent))) u = u.parent;
+      const p = u.parent;
+      if (p && (ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === u && !(ts.isPropertyAccessExpression(p) && p.name.text === 'name')) return v(p, 'prototype', '`this.constructor` is the run-time class of the receiver, a subclass too; name the class to read its statics');
+    }
     if (e.expression.kind === K.ThisKeyword) return; // a field or method of the receiver: read through an accessor
     if (name === 'prototype' || name === '__proto__' || name === 'constructor') return v(e, 'prototype', `\`.${name}\` reaches the prototype chain`);
+    { const st = sameFileStatic(e); if (st) { if (st.kind === 'field') return staticFieldRead(e); if (!(e.parent && ts.isCallExpression(e.parent) && e.parent.expression === e)) return v(e, 'global-read', `\`${e.getText(sf)}\` is a static method used as a value; call it, or pass an arrow that calls it`); return; } } // a static of a same-file class
     const rt = tOf(e.expression);
     if (ts.isIdentifier(e.expression)) {
       const o = declOf(e.expression);
@@ -1722,6 +1778,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           checkType(tOf(p.name), p);
         }
         checkStringLiterals(u.node);
+        if (u.isStatic && !u.params.every((p) => ts.isIdentifier(p.name))) staticThis(u.body); // with plain parameters the unit is one opaque transition keyed by the file
         stmts(u.body.statements);
         current = null; currentFn = null; currentClass = null; thisParam = null;
       }

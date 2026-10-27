@@ -83,8 +83,8 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | MethodSignature | 15 | 0% | no case (refused by default, or reached through its parent) |  |  |
 | LabeledStatement | 10 | 0% | admitted | refused (unsupported-syntax) | same as the loop it labels |
 | InterfaceDeclaration | 9 | 0% | no case (refused by default, or reached through its parent) |  |  |
-| PropertyDeclaration | 7 | 0% | no case (refused by default, or reached through its parent) |  |  |
-| ClassDeclaration | 7 | 0% | admitted | exact as units Class.method with a receiver; inheritance across files refused (class) | same, with a proto edge |
+| PropertyDeclaration | 7 | 0% | no case (refused by default, or reached through its parent) | a static field of a same-file class read as `C.K`: a constant, or a world cell when written, holding an object or reachable from outside ([class statics](class-statics.md)) |  |
+| ClassDeclaration | 7 | 0% | admitted | exact as units Class.method with a receiver; a static method called as `C.m(x)` is the unit `C.m` ([class statics](class-statics.md)); inheritance across files refused (class) | same, with a proto edge |
 | ClassExpression | 5 | 0% | admitted | refused (class) | allocation of a class value |
 | Constructor | 5 | 0% | no case (refused by default, or reached through its parent) |  |  |
 | EmptyStatement | 4 | 0% | admitted | exact | same |
