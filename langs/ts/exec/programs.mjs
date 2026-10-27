@@ -8,6 +8,7 @@ import { Environment, render, makeRng } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
 import { loadProgram, topLevelFunctions } from '../common.mjs';
+import { exploreRaces, hiddenStateOf } from './program.mjs';
 
 export async function runPrograms({ files, roots, spec, seed, ms, rt, project, programs = 12, maxLen = 5 }) {
   const className = spec.className;
@@ -75,4 +76,37 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, p
     return { verdict: 'WITNESS', program: last.steps, divergence: { command: last.diverged, method: last.steps[last.diverged].method, where: last.where, parent: last.parent, candidate: last.candidate }, seed, programIndex: p, programs: ran, commands, methods: cmds };
   }
   return { verdict: 'PASS-bounded', programs: ran, commands, methods: cmds };
+}
+
+// Races on retained state (design/schedules.md): two calls of an async method on ONE instance per side, the second
+// arriving while the first is pending, under the conflict-bounded order set of program.mjs. The instance is the
+// class's own construction; a field read or write goes through a proxy that names the cell for the dependency relation.
+export async function runClassRaces({ files, roots, spec, seed, ms, rt, project }) {
+  const className = spec.className, member = spec.member ?? spec.unit.split('.')[1];
+  if (!spec.isAsync || !className || spec.isStatic || spec.accessor || member === 'constructor') return null;
+  const hidden = hiddenStateOf(files.parent, project) ?? hiddenStateOf(files.candidate, project);
+  if (hidden === 'private') return { verdict: 'PASS-bounded', stats: null, skipped: 'a private name (#field): the receiver cannot be observed through a proxy' };
+  const fold = (u) => (u ? u.fn.getText().replace(/\s+/g, ' ') : null);
+  const ctorText = (name) => { try { const { sf } = loadProgram(files[name], { project }); return fold(topLevelFunctions(sf).get(`${className}.constructor`)); } catch { return null; } };
+  if (ctorText('parent') !== ctorText('candidate')) return { verdict: 'PASS-bounded', stats: null, skipped: 'the constructor changed, so the instances differ before any call; its own unit reports it' };
+  let ctorSpec = null; try { ctorSpec = specOf(files.candidate, `${className}.constructor`, { project }); } catch { ctorSpec = null; }
+  const mount = async (name, p) => {
+    const env = new Environment(seed * 7919 + 5151 + p); env.shapes = spec;
+    const exportsObj = rt.sandbox(env, roots[name]).load(files[name]);
+    const Cls = (exportsObj.__lean_units ?? {})[className] ?? exportsObj[className];
+    if (typeof Cls !== 'function') throw new Error(`${name}: class ${className} not exported`);
+    const inst = rt.guardedCall(env, () => Reflect.construct(Cls, ctorSpec ? inputsFor(ctorSpec, seed, 0, env) : []), ms);
+    await new Promise((r) => setImmediate(r));
+    env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the constructor did is the starting state
+    const method = Cls.prototype[member];
+    if (typeof method !== 'function') throw new Error(`${name}: ${member} is not a method`);
+    const owned = (t, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(t, k);
+    const self = new Proxy(inst, { // a field holding an object escapes to its reader: whoever holds it may change it later
+      get(t, k, r) { if (owned(t, k)) { const v = t[k]; env.access?.(`this.${k}`, v !== null && (typeof v === 'object' || typeof v === 'function') && !v.__isFake ? 'object' : 'r'); } return Reflect.get(t, k, r); },
+      set(t, k, v) { if (typeof k === 'string') env.access?.(`this.${k}`, 'w'); return Reflect.set(t, k, v); },
+    });
+    const args = [inputsFor(spec, seed, p, env), inputsFor(spec, seed, p, env)];
+    return { env, start: [() => method.apply(self, args[0]), () => method.apply(self, args[1])], own: () => ({ ...inst }) };
+  };
+  return exploreRaces({ mount, seed, ms, rt, hidden });
 }

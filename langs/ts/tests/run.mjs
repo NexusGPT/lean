@@ -280,6 +280,15 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort() : [
     const ok = !!sc && got.verdict === want.verdict && (want.sequence === undefined || JSON.stringify(w?.sequence ?? null) === JSON.stringify(want.sequence)) && (want.timers === undefined || sc.timers === want.timers);
     add('pair', name, `schedules ${unit} ${want.verdict}${want.sequence ? ' by ' + want.sequence.join(', ') : ''}`, ok, sc ? `${sc.timers} timer(s), ${sc.paths ?? '?'} paths${w ? `; witness ${w.sequence.join(', ')} at step ${w.step}` : ''}` : 'no schedules summary');
   }
+  // races (design/schedules.md): two callers on one receiver, every promise the world answers held by the scheduler, the
+  // orders bounded by conflicts; a WITNESS carries both orders, the dependent pair and its replay; a clean run its order count
+  for (const [unit, want] of Object.entries(exp.races ?? {})) {
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    const rc = got?.bound?.races ?? null; const w = got?.witnesses?.find((x) => x.race) ?? null; const runs = rc?.orders ? rc.orders.parent + rc.orders.candidate : null;
+    const pairOk = (x) => !!x && (want.pair === undefined || (x.dependentPair?.moved === want.pair[0] && x.dependentPair?.before === want.pair[1])) && (want.cells === undefined || JSON.stringify(x.dependentPair?.cells) === JSON.stringify(want.cells));
+    const ok = !!rc && got.verdict === want.verdict && rc.liveCalls === 2 && /complete only within the stated bound/.test(rc.bound ?? '') && (want.verdict === 'WITNESS' ? pairOk(w) && w.replayed === true && w.orders?.default?.order?.length > 0 && JSON.stringify(w.orders.default.order) !== JSON.stringify(w.orders.distinguishing?.order) && (want.side === undefined || w.side === want.side) : !w && rc.complete === true && (want.orders === undefined || runs === want.orders));
+    add('pair', name, `races ${unit} ${want.verdict}${want.pair ? ' by ' + want.pair.join(' before ') : ''}${want.orders ? ' in ' + want.orders + ' orders' : ''}`, ok, rc ? (w ? `${w.side}: ${w.orders.distinguishing.order.join(', ')} against ${w.orders.default.order.join(', ')}; pair ${w.dependentPair.moved} before ${w.dependentPair.before} on ${w.dependentPair.cells.join(', ')}; replayed ${w.replayed}` : `${runs} orders over ${rc.programs} programs (b ${rc.preemptions}, ${rc.dependentPairs} dependent pairs, ${rc.drawn} drawn), complete ${rc.complete}${rc.ask ? '; ' + rc.ask : ''}`) : 'no races summary');
+  }
   // the element-tree patch a front-end WITNESS carries (patch.mjs): the kinds of its ops, in order, and its summary line
   for (const [unit, want] of Object.entries(exp.patch ?? {})) {
     let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }

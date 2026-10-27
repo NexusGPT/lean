@@ -38,6 +38,7 @@ export class Environment {
     this.loading = false;   // true while modules load: every answer is a handle
     this.cbDepth = 0;       // nesting of callbacks the environment is running
     this.shapes = null;     // the unit's spec (defs, literals, strings, regexes, receiver, imports): typed answers draw from it
+    this.scheduler = null;  // the race explorer's hold (program.mjs): every promise the world answers waits for its release; null is the default schedule
   }
   // clock answers advance with the seeded history and are recorded beside port requests
   clock(path, args = [], op = 'call') {
@@ -50,7 +51,7 @@ export class Environment {
   // has the same answer on both sides and in any order. A method member is a callable fake that answers its return
   // type; a service is a fake with typed members.
   typed(path, tspec, optional = false) {
-    if (tspec?.kind === 'promise') return Promise.resolve(this.typed(path, tspec.of));
+    if (tspec?.kind === 'promise') { const v = Promise.resolve(this.typed(path, tspec.of)); return this.scheduler ? this.scheduler.hold(v, path) : v; } // under the race explorer a promise the world answers is held until the scheduler releases it; otherwise it resolves at once, in call order
     if (this.cache.has(path)) return this.cache.get(path);
     if (!tspec) return this.answer(path);
     if (tspec.kind === 'service' && tspec.awaits) return this.typed(path, tspec.awaits); // a thenable answers what awaiting it yields
@@ -164,7 +165,7 @@ export class Environment {
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
         // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
-        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') return Promise.reject(error); throw error; }
+        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r; } throw error; }
         // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
         if (!env.loading) {
           const cbs = [];
