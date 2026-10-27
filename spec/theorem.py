@@ -231,6 +231,16 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             if not name.endswith(suffix):
                 raise Refusal(f'{label}: hypothesis for {name} does not end in {suffix}')
             hyps.setdefault(name[: -len(suffix)], {})[label] = re.sub(r'\s+', ' ', m.group(2).strip())
+    # a heap-core unit that accesses an element (itself or through a callee) carries `// INRANGE <name>`: an access out of
+    # range sets the world's oob flag, where JavaScript reads undefined or writes a property; the unit's answer is not
+    # modelled from there, so its lemmas also require that neither side ever sets the flag
+    inrange = set()
+    for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
+        for m in re.finditer(r'^// INRANGE ([A-Za-z_][A-Za-z0-9_]*)$', text, flags=re.M):
+            name = m.group(1)
+            if not name.endswith(suffix):
+                raise Refusal(f'{label}: in-range mark for {name} does not end in {suffix}')
+            inrange.add(name[: -len(suffix)])
     for f, h in hyps.items():  # compared with the parameters by position: the lemma states the parent's, over the parent's names
         if f in funcs and (h.get('parent') is None or h.get('candidate') is None or not equal_by_position(h['parent'], h['candidate'], pf[f]['params'], cf[f]['params'])):
             raise Refusal(f'{f}: hypothesis differs between parent and candidate')
@@ -334,6 +344,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         out.append(f'  requires !InScope_{f}({names})')
         if f in hyps:
             out.append(f'  requires {hyps[f]["parent"]}')
+        if f in inrange and f in hyps and f not in aliased:
+            out.append(f'  ensures !{f}_parent({names}).0.oob && !{f}_candidate({names}).0.oob')
         out.append(f'  ensures {f}_parent({names}) == {f}_candidate({names})')
         out.append('{ // PROOF Equal_' + f)
         out.append('} // END Equal_' + f)
@@ -354,6 +366,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             }
             if not ret_ref:
                 parts['result'] = f'{f}_parent({names}).1 == {f}_candidate({names}).1'
+            if f in inrange:
+                parts['inrange'] = f'!{hp}.oob && !{hc}.oob'
             out.append(f'// CANONICAL EqualCanon_{f}: {len(parts)} parts, together CanonEqual({hw}, {n0}, {hp}, [{rp}], {hc}, [{rc}])' + ('' if ret_ref else ' and the primitive result'))
             for part, ens in parts.items():
                 out.append(f'lemma {fuel} EqualCanon_{f}_{part}{tp}({params})')

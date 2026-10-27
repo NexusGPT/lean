@@ -24,3 +24,20 @@ of its field reads. Out: constructors, accessors, static methods, `class: <why>`
 core when a refactor inlines a same-file callee (`ASK:interface`, the base does the same on a free function).
 Reach: 46 -> 94 of 53,866 units. The method bucket (21,519) splits: abstract or decorated class 8,618, constructor
 4,379, extends a class 3,465, a field without a shape 1,703, static 906, accessor 842, a field not initialized 568.
+
+## 2. Array element access
+
+Reading: `a[i]` on an array path, `i` a number, is `Idx_<K>(hw_, a, i)` after `var hw_ := Oob_<K>(hw_, a, i)`;
+`a[i] = v` is `SetIdx_<K>`. All three are total: in range they read or replace the item; out of range `Idx_` reads
+the default and `Oob_`/`SetIdx_` set the world's new `oob` flag, leaving the heap as it is. A write target is
+evaluated in JavaScript order: receiver, index, the right side, the store (a compound write reads the target first).
+Soundness: out of range JavaScript reads `undefined` (and a write makes a hole or a property), which no element value
+models; a default alone would prove `a[i] + ""` equal to `a[i]`. So `WF` requires `!oob` on entry, every unit that
+indexes (itself or through a callee) carries `// INRANGE <unit>`, and its lemmas, whole and canonical (part
+`inrange`), also require that neither side sets the flag. Equality is proved only where the code keeps its index in
+range (a length test, a loop guard); an unchecked index is `ASK:unproved` even when both sides read it alike, and lane
+B decides. A text-identical unit is aliased and needs nothing.
+Out: an index in a real file, a negative literal index, `?.[ ]`, an access inside a callback, a non-array receiver.
+Pair `heap_index`: `first`, `setFirst` under the length test (proved); `get` unchecked (unproved, PASS-bounded);
+`label` (`a[i] + ""` for `a[i]`, unproved, WITNESS at index -1); `bump` (WITNESS); `size` (proved).
+Reach: 94 -> 95 (element access was the first reason of 44 units; loops and other reasons hold the rest).
