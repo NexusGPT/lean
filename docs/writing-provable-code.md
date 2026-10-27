@@ -86,11 +86,11 @@ export function ItemList(props: { items: readonly Item[]; onPick: (id: string) =
 }
 ```
 
-What this buys: a candidate that drops the empty-state paragraph, renders the wrong field, moves a button or wires another handler produces a different tree, and lane B shows the props on which the trees differ; a refactor from `cond ? <A/> : null` to `cond && <A/>` is proved equal. What it does not judge: pixels, CSS and layout, which stay with the recording gate. Measured on three React front ends written before this rule (nexus-landing, nexus-ui, the apps starter): 13.7, 9.3 and 33.7 percent of units inside before JSX was read as a value; 67.5, 87.8 and 48.8 percent after.
+What this buys: a candidate that drops the empty-state paragraph, renders the wrong field, moves a button or wires another handler produces a different tree, and lane B shows the props on which the trees differ; a refactor from `cond ? <A/> : null` to `cond && <A/>` is proved equal. What it does not judge: pixels, CSS and layout, which stay with the recording gate. Measured on three React front ends written before this rule, the share of units inside rose several-fold once JSX was read as a value.
 
 Everything else is yours: `async`/`await`, `try`/`catch` (a fault flag on the world: every transition inside the body may fault, the catch path runs with the fault value), `switch`, destructuring with defaults, optional chaining, template strings, `Set`, `Map`, generics, recursion, early returns, callbacks to array methods, local lambdas, JSX. [`langs/ts/subset.md`](langs/ts/subset.md) lists every construct and whether it is exact, uninterpreted, or refused.
 
-**How much real code is inside.** Measured on 39 repositories (nexus, n8n, langchainjs, driftbench, pipedream, nutshell, pyka and 32 smaller ones; 48,696 functions and methods written before this style existed): 60.0 percent of all units are inside the subset as written, 71.5 percent of the nexus backend. The rest get lane B and the rule that stopped the proof lane. Code written with the lint on is inside from the first line.
+**How much real code is inside.** Measured on 39 repositories, private and public (48,696 functions and methods written before this style existed): 60.0 percent of all units are inside the subset as written. The rest get lane B and the rule that stopped the proof lane. Code written with the lint on is inside from the first line.
 
 **In the editor.** lean ships an ESLint plugin (`langs/ts/eslint`) with one rule, `lean/provable`. It runs lean's own lint on the file inside its project, so what the editor underlines is exactly what the proof lane will refuse: the line, the rule, and what to write instead. Where a rewrite keeps your meaning (`n / 2` to `Math.floor(n / 2)`, `==` to `===`) it is offered as a suggestion; where it does not (a mutation that must become a returned value), the message gives the shape and leaves the edit to you.
 
@@ -133,7 +133,7 @@ drops a `key`, renders a `null` child where the parent rendered `false`, or swap
 the props that show it. A handler attribute (`onClick={() => save(id)}`) is a value: when its body is in the subset
 it is a lambda the verifier reads; otherwise it is an opaque value keyed by its text, so the same handler on both
 sides is the same value and a changed one differs. Lane B renders the tree by React's own children rules. Measured:
-67.5 percent of nexus-landing's units and 87.8 percent of nexus-ui's are inside as written. What is not yet read:
+What is not yet read:
 the bodies of `useEffect` and `useMemo` callbacks as the functions they are (today opaque values), and a handler
 whose body reaches a store.
 

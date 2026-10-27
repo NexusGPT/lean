@@ -277,16 +277,12 @@ Scope is declared, never inferred: function names, input predicates over the par
 
 ## Numbers
 
-Measured on private corpora of production TypeScript. Numbers, not code, are published; every row names its date and its source.
+Measured on a corpus of 39 production TypeScript repositories, private and public. Numbers, not code and not names, are published; every row names its date and its source.
 
 | measurement | result |
 |---|---|
-| real functions inside the subset as written (39 repositories, 48,696 units, 2026-10-26) | **60.0 percent** |
-| React front ends with JSX read as a value tree (nexus-landing 1,318 units, nexus-ui 353, the apps starter 86) | **67.5**, **87.8**, **48.8 percent** inside |
+| real functions inside the subset as written (39 repositories, 48,696 units, 2026-10-26) | **60.0 percent**; the rest get lane B and the rule that stopped the proof |
 | the concept bench: 205 language concepts, 10 real units each from the corpus, planted mutants per unit (master `03ec3bc`, 2026-10-26) | 1,796 instances, 849 inside, 770 translated; **1,481 of 2,031 mutants witnessed** (72.9 percent); 1,494 of 2,034 on the development head `bf578a0` |
-| planted behaviour changes in real nexus units (143 type-checked mutants: flipped operators, shifted boundaries, negated conditions, swapped arguments, dropped calls, changed returns; 2026-10-26) | found by lane B with a concrete input **120 of 143**; wrongly proved equal **0 of 143** |
-| pairs of real commits that kept behaviour (145 untouched functions, parent against the defective commit) | **132 PASS** (39 proved, 93 bounded), 12 ASK, 1 wrong WITNESS through a changed callee |
-| 43 repaired production defects, scored only when the witness lands on a function the repair touched (master `03ec3bc`) | 34 ran, **12 caught for the right reason**; the study's other detector caught 22 of the 43, the two together 28; 6 of lean's catches are defects that detector missed. Held out, 101 more defects: 61 ran, 18 caught |
 | the front-end mutation benchmark (30 corpus components with hooks, 6 mutation operators, 2026-10-26) | 71 applicable mutants, **40 caught at one render**; per operator: text 14 of 20, conditional 11 of 16, key-by-index 7 of 10, swapped setters 4 of 9, dropped dep 3 of 11, removed cleanup 1 of 5 |
 | finite components in the corpus (1,037 components with `useState`) | 265 with every slot finite (26 percent); 98 to 100 finite in slots and props |
 | the library transition table against the engine (Test262, 19 directories, 2026-10-26) | 996 files, 12,459 in-model records, **0 disagreements**; 2,814 records outside the model, named |
