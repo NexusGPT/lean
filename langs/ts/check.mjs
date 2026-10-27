@@ -18,7 +18,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { runPair } from './exec/run.mjs';
+import { runPair, crumb, crumbText, verdictGuard } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 
@@ -32,6 +32,7 @@ export async function check(opts) {
   const cert = { tool: 'lean-ts v3', unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {} };
   // ---- lane B ----
   const b = await runPair({ parent, candidate, unit, n, seed, project, deep });
+  crumb.phase = 'lane A'; crumb.input = null;
   cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where, ...(w.through ? { through: w.through } : {}) })) : null };
   try { cert.unitTextEqual = b.unitTextEqual ?? unitTextEqual(parent, candidate, unit); } catch { cert.unitTextEqual = null; } // the unit's own text, comments and whitespace dropped, equal on both sides or not: beside the file hashes, it says whether a difference came through this function's text or through what it calls
   cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
@@ -88,11 +89,16 @@ export async function check(opts) {
   return finish((b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK', cert, {});
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
+// a run that ends without a verdict, or a harness error that escapes a lane: ASK:harness, the phase named
+const harnessAsk = (reason, opts) => finish('ASK', { tool: 'lean-ts v3', unit: opts.unit, parent: { file: opts.parent, sha256: sha(opts.parent) }, candidate: { file: opts.candidate, sha256: sha(opts.candidate) }, lanes: { B: { verdict: 'ASK:harness', reason } } }, { reason });
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
-  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), deep: a.includes('--deep') });
+  const files = { parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit') };
+  const guard = verdictGuard(opt('--out', null), (r) => harnessAsk(r.reason, files));
+  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), deep: a.includes('--deep') }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
+  guard.settle();
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);
   if (out) { fs.writeFileSync(out, text); console.log(`${res.verdict} -> ${out}`); } else console.log(text);
