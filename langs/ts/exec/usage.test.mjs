@@ -91,3 +91,9 @@ test('a key written, assigned or deleted is not a read', () => {
   assert.deepEqual(Object.keys(u.params[0].node.fields), []);
   assert.deepEqual(Object.keys(u.params[1].node.fields), ['count']);
 });
+
+test('a default, in a destructuring or on a parameter, is a comparison against undefined', () => {
+  const u = of(`export function sized({ size = 1, ...rest }: any, n = 3) { return [size, rest, n]; }`, 'sized');
+  assert.deepEqual(at(u.params[0].node, 'size').compares, [{ undefined: true }, 1]);
+  assert.deepEqual(u.params[1].node.compares, [{ undefined: true }]);
+});

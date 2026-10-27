@@ -61,8 +61,7 @@ The refinement is general: it reads comparisons, chains and lengths, never a nam
 - A Map or a Set the unit reads by `has`/`get`: no key is drawn equal to a string drawn elsewhere in the same input
   (928's voice mode needs a tool map holding the block's `collectionId`).
 - Chains two calls deep, values a fake service answers (`this.repo.find(...)` results), keys computed at run time.
-- The receiver's fields are refined, but they are drawn through the fake's typed answers, which mix the boundary in at
-  random and do not walk it.
+- The receiver's fields are refined but drawn through the fake's typed answers: the boundary is mixed in, not walked.
 
 ## What lane B sees
 
@@ -72,10 +71,10 @@ a block `{ type: "collection-mention", attrs: { isActive: false, ... } }` with n
 string compared against a literal the candidate changes, a `<=` against `<` on a length bound by a module constant,
 a refactor of two branches into one conditional, and an untouched unit. It also reaches `callee_witness` padded (a length
 compared against 8 draws nine) and `mutual_summaries` rare and useRare (7919 drawn first). A write through a key names
-no field, and the declared draw keeps one turn in three of the walk (`heap_dicts` both).
+no field, the declared draw keeps one turn in three of the walk (`heap_dicts` both), and a default (`{ k = d }`, `x = d`)
+separates at undefined (`record_rest_any` Sized).
 
 ## Lane A
-
 Unchanged. One finding for the translator's owners: `attrs?: Record<string, any>` read as `node.attrs?.isNotFound ===
 true` translates to a Dafny comparison of `Option<Any>` with `Any` that does not resolve, so the pair uses
 `Record<string, string | boolean>`.

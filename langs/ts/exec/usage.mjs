@@ -67,7 +67,7 @@ export function usage(sf, unitName, checker, opts = {}) {
       const key = el.propertyName ? (ts.isIdentifier(el.propertyName) || ts.isStringLiteral(el.propertyName) ? el.propertyName.text : null) : (ts.isIdentifier(el.name) ? el.name.text : null);
       if (key == null) continue;
       const child = field(node, key);
-      if (el.initializer) { const l = litOf(el.initializer); if (l) addLit(child.compares, l.v); }
+      if (el.initializer) { addLit(child.compares, UNDEF); const l = litOf(el.initializer); if (l) addLit(child.compares, l.v); } // a default separates at undefined
       bind(env, el.name, child);
     }
     else if (ts.isArrayBindingPattern(name)) for (const el of name.elements) if (ts.isBindingElement(el) && !el.dotDotDotToken) bind(env, el.name, elemOf(node));
@@ -194,7 +194,7 @@ export function usage(sf, unitName, checker, opts = {}) {
   }
 
   const env = new Map();
-  u.params.forEach((p, i) => bind(env, p.name, roots[i]));
+  u.params.forEach((p, i) => { bind(env, p.name, roots[i]); if (p.initializer) addLit(roots[i].compares, UNDEF); }); // a parameter default separates at undefined
   if (thisNode) env.set('this', thisNode);
   if (u.body) walk(u.body, env, 0);
   return { unit: unitName, params: u.params.map((p, i) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), node: roots[i] })), this: thisNode };
