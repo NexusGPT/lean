@@ -4,6 +4,7 @@
 //    |'record'(fields:{name:{spec,optional}})|'union'(options)|'opaque'|'function'(arity)|'set'(of)|'map'(key,value)|'date'}
 // Usage: node spec.mjs <file.ts> --unit <name> [--project <tsconfig>|--no-project]   -> JSON on stdout
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
+import { hookTable, hookRecordSpec } from '../hooks.mjs';
 
 export function specOf(file, unitName, opts = {}) {
   const { sf, checker } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
@@ -127,7 +128,7 @@ export function specOf(file, unitName, opts = {}) {
   for (const st of sf.statements) {
     if (!ts.isImportDeclaration(st) || !st.importClause || !ts.isStringLiteral(st.moduleSpecifier)) continue;
     const members = {};
-    const add = (name, node) => { try { const t = checker.getTypeAtLocation(node); const sg = checker.getSignaturesOfType(t, ts.SignatureKind.Call); members[name] = sg.length ? { kind: 'method', returns: spec(sg[0].getReturnType(), 1) } : { kind: 'field', spec: spec(t, 1), optional: false }; } catch {} };
+    const add = (name, node) => { const row = hookTable().hooks.find((h) => h.package === st.moduleSpecifier.text && h.hook === name); if (row) { members[name] = { kind: 'method', returns: hookRecordSpec(row), hook: row.hook }; return; } try { const t = checker.getTypeAtLocation(node); const sg = checker.getSignaturesOfType(t, ts.SignatureKind.Call); members[name] = sg.length ? { kind: 'method', returns: spec(sg[0].getReturnType(), 1) } : { kind: 'field', spec: spec(t, 1), optional: false }; } catch {} };
     if (st.importClause.name) add('default', st.importClause.name);
     const nb = st.importClause.namedBindings;
     if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) add((el.propertyName ?? el.name).text, el.name);

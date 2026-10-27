@@ -181,6 +181,18 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   `useQuery` sites and count how many become exact.
 - Pass: at least 30 of 42 exact. Census: the top 10 non-React hooks are 305 calls (9%); the long tail of
   custom hooks is 1,057 (32%), which the table never reaches and the census says so.
+- Built, 2026-10-27: `translate/hooks.json` (five rows: `useQuery`, `useMutation` of react-query, `useRouter`,
+  `useParams` of next/navigation, `useTranslation` of react-i18next: result shape, effect class, what a callback may
+  do) and `langs/ts/hooks.mjs`. Lane A reads a listed call as a transition of the world returning a datatype of the
+  row's shape (`Hook_useQuery`, primitive fields exact, handles and `data` opaque), types the names bound to it
+  (a variable, a destructured field) by the table where the checker says `any`, and reads their fields as the
+  datatype's; lane B's fake answers a record of that shape with typed fields. Pair `library_hooks` (the module declared
+  as `any`): the swapped-branches candidate is WITNESS, the untouched one PASS-proved.
+- Measured over the census's 226 `.tsx` files that call one of the five (the owner's product repositories): 68 calls
+  become exact (useQuery 24 of 44 sites, useTranslation 23 of 50, useRouter 10 of 156, useParams 8 of 14,
+  useMutation 3 of 15); the rest sit in units the lint keeps out (177 of 371 units) or that fail to translate (6).
+  The bar of 30 of 42 useQuery calls is not met: the limit is the subset the surrounding units fall in, not the
+  table. Custom hooks (the census's long tail) stay opaque transitions.
 - Kill: the result shapes hang on generics the type reader cannot resolve at most sites.
 
 ## 9. A schedule explorer for timers and frames in a component
@@ -192,7 +204,16 @@ setTimeout, setInterval or requestAnimationFrame. Brief 18: 1,560 handler attrib
   effect; candidate 0 ms; commands `set(q, 'a')`, `tick(100)`, `settle`.
 - Pass: WITNESS with the clock trace; equal delays PASS-bounded with the bound "3 timers" in the certificate.
   Census: 87 `.tsx` files hold a timer or a frame.
-- Kill: none; the bound is stated.
+- Built, 2026-10-27: the sequence runner gains the clock as a command. In schedule mode a settle fires no timer; a
+  `tick@k` command advances the clock to the next due instant and fires what is due there in the k-th order of their
+  arm order (every order of up to three timers at one instant, `runTimers` with `until` and `perm`); the clock step's
+  observation carries the instants reached, the tree, the requests and the pending work; a handler may arrive before
+  a timer fires. The explorer runs after the plain sequences when the mount armed one to three timers; a divergence is
+  a WITNESS with the sequence (`tick@1` for the order the arm order hides), a clean run states the timer bound and the
+  paths (`bound.schedules`). The fire record already carries the instant, so a delay change (300 ms to 0) is a WITNESS
+  at the first render with the clock in the trace. Pair `schedule_explorer`: SearchBox (the delay), Order (a timer
+  whose report depends on which of two equal timers fired first: witnessed by `tick@1` alone), Twin (two equal timers
+  the same on both sides: nine paths agree, two timers in the bound).
 
 ## 10. The front-end mutation benchmark nobody has
 

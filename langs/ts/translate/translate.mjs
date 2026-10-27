@@ -31,6 +31,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
+import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
@@ -597,6 +598,7 @@ export function translate(file, fnName, opts = {}) {
 
   function dtype(t, n, depth = 0) {
     if (depth > 8) fail(n, 'type nesting too deep');
+    { const id = n && ts.isIdentifier(n) ? n : n && ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) ? n.name : null; const hb = id && hookBinding(id); if (hb && !hb.field) return hookDatatype(hb.row, NUM).name; } // a name bound to a hook result: the table's datatype, whatever the checker says
     const f = t.flags;
     if (f & (TF.Any | TF.Unknown)) return anyType();
     if (isNodeT(t)) return jsxType();
@@ -825,6 +827,19 @@ export function translate(file, fnName, opts = {}) {
   const argumentsParam = (n) => { if (!(ts.isElementAccessExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'arguments' && ts.isNumericLiteral(n.argumentExpression) && currentUnit && currentUnit.params)) return null; if (originOf(checker, n.expression, sf, currentUnit.node ?? null).kind !== 'global') return null; const k = Number(n.argumentExpression.text); const ps = currentUnit.params.filter((p) => !(ts.isIdentifier(p.name) && p.name.text === 'this')); const q = ps[k]; return Number.isInteger(k) && q && ts.isIdentifier(q.name) && !q.dotDotDotToken && !q.questionToken && !q.initializer && !ps.slice(0, k).some((x) => x.dotDotDotToken) ? q : null; };
   const isNullCreate = (n) => ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'create' && n.arguments.length === 1 && n.arguments[0].kind === K.NullKeyword && originOf(checker, n.expression.expression, sf, currentUnit?.node ?? null).kind === 'global';
   const dictionaryT = (t) => !!t && !!(t.flags & TF.Object) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && checker.getPropertiesOfType(t).length === 0;
+  // the hook table (moonshot 8): a listed library hook call is a transition of the world returning the table's record;
+  // the names bound to its result (a variable, a destructured field) carry the fields' kinds, which the type reading
+  // below answers where the checker says any
+  const hookBound = new Map(); // symbol -> { row, field | null }
+  const hookResultOf = new Map(); // call node -> row
+  { const walk = (n) => { if (ts.isVariableDeclaration(n) && n.initializer) { let init = n.initializer; while (ts.isParenthesizedExpression(init) || ts.isAsExpression(init) || ts.isNonNullExpression(init)) init = init.expression; const h = libraryHook(checker, init); if (h) { hookResultOf.set(init, h.row); if (ts.isIdentifier(n.name)) { const sy = checker.getSymbolAtLocation(n.name); if (sy) hookBound.set(sy, { row: h.row, field: null }); } else if (ts.isObjectBindingPattern(n.name)) for (const el of n.name.elements) { if (!ts.isIdentifier(el.name) || el.dotDotDotToken) continue; const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text; const sy = checker.getSymbolAtLocation(el.name); if (sy && Object.hasOwn(h.row.result, prop)) hookBound.set(sy, { row: h.row, field: prop }); } } } ts.forEachChild(n, walk); }; walk(sf); }
+  const hookTsType = (row, field) => { const k = fieldKind(row.result[field] ?? ''); return k === 'boolean' ? checker.getBooleanType() : k === 'string' ? checker.getStringType() : k === 'number' ? checker.getNumberType() : null; };
+  const hookBinding = (n) => { if (!ts.isIdentifier(n)) return null; const sy = checker.getSymbolAtLocation(n); return sy && hookBound.get(sy) || null; };
+  const hookType = (n) => { // the table's type for a name bound to a hook result, or a field read on one
+    const b = hookBinding(n); if (b && b.field) return hookTsType(b.row, b.field);
+    if (ts.isPropertyAccessExpression(n)) { const rb = hookBinding(n.expression); if (rb && !rb.field && Object.hasOwn(rb.row.result, n.name.text)) return hookTsType(rb.row, n.name.text); }
+    return null;
+  };
   const anyRetype = (n) => { // an any-typed expression whose operands the program types (an `arguments[k]` read among them): typed by its operator
     const anyT = (t) => !!(t.flags & (TF.Any | TF.Unknown));
     if (ts.isParenthesizedExpression(n)) return typeOf(n.expression);
@@ -838,7 +853,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isPrefixUnaryExpression(n)) { const T = typeOf(n.operand); if (anyT(T)) return null; if (n.operator === K.ExclamationToken) return checker.getBooleanType(); if (n.operator === K.MinusToken || n.operator === K.PlusToken) return (T.flags & TF.NumberLike) ? checker.getNumberType() : null; }
     return null;
   };
-  const typeOf = (n) => { const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const r = anyRetype(n); if (r) return r; } return t; };
+  const typeOf = (n) => { const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
   if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
   const anyTarget = () => checker.getAnyType();
   const symType = (sym, n) => (checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n));
@@ -1633,7 +1648,7 @@ export function translate(file, fnName, opts = {}) {
         return capture(() => {
           const t = typeOf(d.name), D = dtype(t, d);
           const value = d.initializer ? outerParens(expr(d.initializer, t)) : `${external(`uninit_${mangle(D)}`, [], D)}()`;
-          const line = ts.isIdentifier(d.name) ? `var ${dn(d.name.text)}: ${D} := ${value};` : destructure(d.name, value, typeOf(d.initializer)).join('\n');
+          const line = ts.isIdentifier(d.name) ? `var ${dn(d.name.text)}${hookResultOf.has(d.initializer) ? '' : `: ${D}`} := ${value};` : destructure(d.name, value, typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n');
           return `${line}\n${d.initializer && containsEffect(d.initializer) ? promiseGuard(bind(i + 1), R) : bind(i + 1)}`;
         });
       };
@@ -2296,9 +2311,13 @@ export function translate(file, fnName, opts = {}) {
   }
   // `const {a, b: c} = e` → let-lines binding each name
   // srcType: the TypeScript type of the value being taken apart (so a default applies where the field is optional)
-  function destructure(pattern, sourceCode, srcType = null) {
+  function destructure(pattern, sourceCode, srcType = null, hookRow = null) {
     const out = [];
     if (ts.isIdentifier(pattern)) return [`var ${dn(pattern.text)} := ${sourceCode};`];
+    if (ts.isObjectBindingPattern(pattern) && hookRow && !hookRow.result['*']) { // the table's record: each field as the datatype carries it
+      for (const el of pattern.elements) { if (el.dotDotDotToken || !ts.isIdentifier(el.name)) fail(el, 'a hook result is taken apart field by field'); const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text; if (!Object.hasOwn(hookRow.result, prop)) fail(el, `${prop} is not a field the hook table declares for ${hookRow.hook}`); out.push(`var ${dn(el.name.text)} := ${sourceCode}.${prop};`); }
+      return out;
+    }
     if (ts.isObjectBindingPattern(pattern)) {
       for (const el of pattern.elements) {
         if (el.dotDotDotToken) {
@@ -2347,6 +2366,7 @@ export function translate(file, fnName, opts = {}) {
   }
   const elemType = (arrNode) => { const t = baseOf(typeOf(arrNode)); return checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); };
   function propAccess(n, keepOption = false) {
+    { const rb = hookBinding(n.expression); if (rb && !rb.field && Object.hasOwn(rb.row.result, n.name.text) && !rb.row.result['*']) return `${expr(n.expression)}.${n.name.text}`; } // a field of a hook result: the table's datatype
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
     const name = n.name.text;
     if (objectData && n.expression.kind === K.ThisKeyword && objectData.has(name)) return objectData.get(name).code;
@@ -2776,6 +2796,12 @@ export function translate(file, fnName, opts = {}) {
       if (!hasThis) { expr(argNodes[0]); argNodes = argNodes.slice(1); }
       return unitCall(f.expression, callee, n, argNodes, checker.getSignatureFromDeclaration(callee.fn), hasThis ? 1 : 0);
     }
+    { const h = libraryHook(checker, n); if (h) { // a listed library hook: a transition of the world returning the table's record (translate/hooks.json)
+      const dt = hookDatatype(h.row, NUM); addPrelude(dt.name, dt.text); addPrelude('World', 'type World');
+      if (!unitEffectful()) fail(n, `hook ${h.name} is a world transition in a unit not marked effectful`);
+      const args = n.arguments.map((a) => expr(a, anyTarget())); const pts = n.arguments.map(() => anyType());
+      return hoist(`${external(`hook_${h.name}`, ['World', ...pts], `(World, ${dt.name})`)}(${[WORLD, ...args].join(', ')})`, dt.name);
+    } }
     if (isNullCreate(n) && dictionaryT(checker.getContextualType(n))) return 'map[]'; // `Object.create(null)` as a dictionary: empty, no prototype to read
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
@@ -3122,9 +3148,9 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isReturnStatement(s)) return expr(s.expression, retType(u));
     if (ts.isVariableStatement(s)) {
       const d = s.declarationList.declarations[0];
-      if (!ts.isIdentifier(d.name)) return `${destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer)).join('\n')}\n${bodyExpr(rest, u)}`;
+      if (!ts.isIdentifier(d.name)) return `${destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n')}\n${bodyExpr(rest, u)}`;
       const t = typeOf(d.name);
-      return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};\n${bodyExpr(rest, u)}`;
+      return `var ${dn(d.name.text)}${hookResultOf.has(d.initializer) ? '' : `: ${dtype(t, d)}`} := ${outerParens(expr(d.initializer, t))};\n${bodyExpr(rest, u)}`;
     }
     if (ts.isIfStatement(s)) {
       const thenL = [...flatten(s.thenStatement), ...(terminates(s.thenStatement) ? [] : rest)];
@@ -3146,8 +3172,8 @@ export function translate(file, fnName, opts = {}) {
       case K.VariableStatement: {
         const d = s.declarationList.declarations[0];
         const t = typeOf(d.name);
-        if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer)).forEach(emit);
-        return emit(`var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};`);
+        if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).forEach(emit);
+        return emit(`var ${dn(d.name.text)}${hookResultOf.has(d.initializer) ? '' : `: ${dtype(t, d)}`} := ${outerParens(expr(d.initializer, t))};`);
       }
       case K.ExpressionStatement: return emit(assignText(s.expression));
       case K.ThrowStatement: return fail(s, 'throw is translated in --core mode only');
@@ -3627,7 +3653,7 @@ export function translate(file, fnName, opts = {}) {
           if (!ds.length) return next();
           const [d, ...tail] = ds;
           const more = () => bind(tail);
-          if (!ts.isIdentifier(d.name)) return faultEval(() => expr(d.initializer), (code) => `${destructure(d.name, outerParens(code), typeOf(d.initializer)).join('\n')}\n${more()}`, ctx);
+          if (!ts.isIdentifier(d.name)) return faultEval(() => expr(d.initializer), (code) => `${destructure(d.name, outerParens(code), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n')}\n${more()}`, ctx);
           const t = typeOf(d.name);
           if (!d.initializer) {
             if (!d.type) {
@@ -3638,7 +3664,7 @@ export function translate(file, fnName, opts = {}) {
             const D = dtype(t, d);
             return `var ${dn(d.name.text)}: ${D} := ${external(`uninit_${mangle(D)}`, [], D)}();\n${more()}`;
           }
-          return faultEval(() => expr(d.initializer, t), (code) => `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(code)};\n${more()}`, ctx);
+          return faultEval(() => expr(d.initializer, t), (code) => `var ${dn(d.name.text)}${hookResultOf.has(d.initializer) ? '' : `: ${dtype(t, d)}`} := ${outerParens(code)};\n${more()}`, ctx);
         };
         return bind([...s.declarationList.declarations]);
       }
@@ -3681,7 +3707,7 @@ export function translate(file, fnName, opts = {}) {
         const out = [];
         for (const d of s.declarationList.declarations) {
           out.push(capture(() => {
-            if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer)).join('\n');
+            if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n');
             const t = typeOf(d.name);
             if (!d.initializer) {
               if (!d.type) { // `let x;`: absent until its first assignment; Option of the first assigned type, or opaque
