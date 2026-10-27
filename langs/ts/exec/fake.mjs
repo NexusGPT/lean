@@ -144,7 +144,8 @@ export class Environment {
         if (prop === Symbol.iterator) return function* () { const n = depthOf(path) > 8 ? 0 : 2; for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
         if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return env.member(path, prop, tspec); }
-        if (prop === 'length') { env.record('get', `${path}.length`); return depthOf(path) > 8 ? 0 : 2; }
+        if (typeof prop === 'string' && Object.hasOwn(ITERATION, prop) && !env.loading) return iterationMethod(env, receiver, path, prop); // an iteration method: the fake is read as an array when the call hands it a callback
+        if (prop === 'length') return depthOf(path) > 8 ? 0 : 2; // the length of the array a fake stands for is its drawn shape and asks nothing of the world, as the iterator asks nothing: a loop that reads it once (forEach) and one that reads it per step (a counted for) make the same requests
         if (prop === 'constructor') return Object;
         if (typeof prop === 'symbol') return undefined;
         env.record('get', `${path}.${String(prop)}`);
@@ -197,6 +198,44 @@ export class Environment {
   }
   // the module fake: `require('x')` gives a fake whose members are fakes; default export is itself
   module(name) { return this.fake(`module:${name}`, this.shapes?.imports?.[name] ?? null); }
+}
+
+// The iteration methods a fake answers like an array. Called with a function, the fake is read as an array: its length
+// and its elements are reads of the fake (`get X.length`, `get X.0`, ...), the same reads an indexed loop over it makes,
+// and the callback runs over those elements in order, as Array.prototype runs it over an array-like. A throw inside the
+// callback is the unit's throw, never caught here; `some`, `every` and `find` stop where a real array stops. Called
+// otherwise (a service's `find(query)`), the member is the fake's plain answer, read and called as before. While a
+// module loads the member is the plain answer too.
+const elementsOf = (self) => { const n = Number(self.length); return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };
+const ITERATION = {
+  forEach(self, [cb, thisArg]) { const n = elementsOf(self); for (let k = 0; k < n; k++) Reflect.apply(cb, thisArg, [self[k], k, self]); return undefined; },
+  map(self, [cb, thisArg]) { const n = elementsOf(self), out = []; for (let k = 0; k < n; k++) out.push(Reflect.apply(cb, thisArg, [self[k], k, self])); return out; },
+  filter(self, [cb, thisArg]) { const n = elementsOf(self), out = []; for (let k = 0; k < n; k++) { const v = self[k]; if (Reflect.apply(cb, thisArg, [v, k, self])) out.push(v); } return out; },
+  some(self, [cb, thisArg]) { const n = elementsOf(self); for (let k = 0; k < n; k++) if (Reflect.apply(cb, thisArg, [self[k], k, self])) return true; return false; },
+  every(self, [cb, thisArg]) { const n = elementsOf(self); for (let k = 0; k < n; k++) if (!Reflect.apply(cb, thisArg, [self[k], k, self])) return false; return true; },
+  find(self, [cb, thisArg]) { const n = elementsOf(self); for (let k = 0; k < n; k++) { const v = self[k]; if (Reflect.apply(cb, thisArg, [v, k, self])) return v; } return undefined; },
+  flatMap(self, [cb, thisArg]) { const n = elementsOf(self), out = []; for (let k = 0; k < n; k++) { const r = Reflect.apply(cb, thisArg, [self[k], k, self]); if (Array.isArray(r)) out.push(...r); else out.push(r); } return out; },
+  reduce(self, args) {
+    const [cb] = args; const n = elementsOf(self); let k = 0, acc;
+    if (args.length >= 2) acc = args[1];
+    else { if (n === 0) throw new TypeError('Reduce of empty array with no initial value'); acc = self[0]; k = 1; }
+    for (; k < n; k++) acc = Reflect.apply(cb, undefined, [acc, self[k], k, self]);
+    return acc;
+  },
+};
+function iterationMethod(env, self, path, name) {
+  const key = `${path}.${name}`;
+  const memo = (env.iterationMethods ??= new Map()); // one function per member, so a member read twice is one value
+  if (memo.has(key)) return memo.get(key);
+  const method = function (...args) {
+    if (typeof args[0] === 'function' && !args[0].__isFake) return ITERATION[name](self, args);
+    env.record('get', key);
+    const member = env.answer(key);
+    if (typeof member !== 'function') throw new TypeError(`${name} is not a function`);
+    return Reflect.apply(member, this, args);
+  };
+  memo.set(key, method);
+  return method;
 }
 
 // A promise object the world answers (a typed call or field, a faulted call) or the input holds is named by its
