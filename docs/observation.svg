@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="470" viewBox="0 0 1200 470" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1b2d"/><stop offset="1" stop-color="#1c2f4a"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/></pattern>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9fb3c8"/></marker>
+  </defs>
+  <rect width="1200" height="470" fill="url(#bg)"/><rect width="1200" height="470" fill="url(#grid)"/>
+  <text x="48" y="46" font-size="22" fill="#f3efe6">What "equal" means: one call, four observations, one axiom.</text>
+
+  <!-- the call -->
+  <g transform="translate(48,84)">
+    <rect x="0" y="0" width="300" height="226" fill="#0b1422" stroke="#3c5272"/>
+    <text x="16" y="30" font-size="13" fill="#9fb3c8" letter-spacing="1">ONE CALL</text>
+    <text x="16" y="66" font-size="24" fill="#f3efe6" font-style="italic">f</text>
+    <text x="32" y="66" font-size="22" fill="#f3efe6">(args, world)</text>
+    <text x="16" y="100" font-size="14" fill="#c9d4e0">the arguments, the receiver, and the</text>
+    <text x="16" y="120" font-size="14" fill="#c9d4e0">world the function is called in</text>
+  </g>
+  <line x1="348" y1="197" x2="404" y2="197" stroke="#9fb3c8" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- four observations -->
+  <g transform="translate(410,84)" font-size="14">
+    <rect x="0" y="0" width="348" height="40" fill="#13223a" stroke="#3c5272"/>
+    <text x="12" y="25" fill="#f3efe6"><tspan font-weight="bold">1  outcome</tspan>   the value returned, or thrown</text>
+    <rect x="0" y="48" width="348" height="54" fill="#13223a" stroke="#3c5272"/>
+    <text x="12" y="70" fill="#f3efe6"><tspan font-weight="bold">2  reachable graph</tspan>   every object reachable from</text>
+    <text x="12" y="90" fill="#c9d4e0" font-size="12.5">the arguments and the receiver, after the call; sharing counts</text>
+    <rect x="0" y="110" width="348" height="54" fill="#13223a" stroke="#3c5272"/>
+    <text x="12" y="132" fill="#f3efe6"><tspan font-weight="bold">3  effect trace</tspan>   every request to the world, in order,</text>
+    <text x="12" y="152" fill="#c9d4e0" font-size="12.5">with its answer: calls, clock reads, library writes</text>
+    <rect x="0" y="172" width="348" height="54" fill="#13223a" stroke="#3c5272"/>
+    <text x="12" y="194" fill="#f3efe6"><tspan font-weight="bold">4  pending work</tspan>   timers armed, promises unsettled,</text>
+    <text x="12" y="214" fill="#c9d4e0" font-size="12.5">effect cleanups, jobs queued</text>
+  </g>
+
+  <!-- equality -->
+  <g transform="translate(800,84)">
+    <rect x="0" y="0" width="352" height="226" fill="#0b1422" stroke="#3d7a62"/>
+    <text x="16" y="30" font-size="13" fill="#bfe3d0" letter-spacing="1">EQUAL OUTSIDE THE SCOPE S</text>
+    <text x="16" y="62" font-size="14" fill="#f3efe6">for every input outside S and every world,</text>
+    <text x="16" y="84" font-size="14" fill="#f3efe6">all four observations are identical,</text>
+    <text x="16" y="106" font-size="14" fill="#f3efe6">up to a renaming of fresh objects.</text>
+    <text x="16" y="134" font-size="13" fill="#9fb3c8">Addresses never count. Aliasing counts.</text>
+  </g>
+
+  <!-- the axiom -->
+  <g transform="translate(48,336)">
+    <rect x="0" y="0" width="1104" height="118" fill="#0b1422" stroke="#3c5272"/>
+    <text x="16" y="28" font-size="13" fill="#9fb3c8" letter-spacing="1">THE ONE AXIOM</text>
+    <text x="16" y="60" font-size="21" fill="#f3efe6" font-family="Menlo, Consolas, monospace">effect(world, op, args) = (world', result)</text>
+    <text x="16" y="88" font-size="14" fill="#c9d4e0">The same request in the same world gives the same answer; in a different world it may not. Two reads of a clock are two transitions.</text>
+    <text x="16" y="108" font-size="14" fill="#c9d4e0">A candidate that asks the world something the parent never asked cannot be proved equal. Nothing is pretended pure.</text>
+  </g>
+</svg>

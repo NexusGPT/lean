@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1b2d"/><stop offset="1" stop-color="#1c2f4a"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/></pattern>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9fb3c8"/></marker>
+    <marker id="arrRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#d98c8c"/></marker>
+    <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8fd1b0"/></marker>
+  </defs>
+  <rect width="1200" height="560" fill="url(#bg)"/><rect width="1200" height="560" fill="url(#grid)"/>
+  <text x="48" y="46" font-size="22" fill="#f3efe6">How a verdict is reached: run both, then prove; a component gets a third rung.</text>
+
+  <!-- inputs -->
+  <g transform="translate(48,86)">
+    <rect x="0" y="0" width="150" height="56" fill="#0b1422" stroke="#3c5272"/>
+    <text x="75" y="24" font-size="15" fill="#f3efe6" text-anchor="middle" font-family="Menlo, Consolas, monospace">parent.ts</text>
+    <text x="75" y="44" font-size="12" fill="#9fb3c8" text-anchor="middle">before the change</text>
+    <rect x="0" y="72" width="150" height="56" fill="#0b1422" stroke="#3c5272"/>
+    <text x="75" y="96" font-size="15" fill="#f3efe6" text-anchor="middle" font-family="Menlo, Consolas, monospace">candidate.ts</text>
+    <text x="75" y="116" font-size="12" fill="#9fb3c8" text-anchor="middle">after the change</text>
+    <rect x="0" y="144" width="150" height="56" fill="#0b1422" stroke="#3c5272"/>
+    <text x="75" y="168" font-size="15" fill="#f3efe6" text-anchor="middle" font-family="Menlo, Consolas, monospace">--scope</text>
+    <text x="75" y="188" font-size="12" fill="#9fb3c8" text-anchor="middle">what was meant to change</text>
+    <text x="75" y="226" font-size="12" fill="#8a9bb0" text-anchor="middle">read inside their project:</text>
+    <text x="75" y="244" font-size="12" fill="#8a9bb0" text-anchor="middle">tsconfig, imports, types</text>
+  </g>
+  <line x1="198" y1="150" x2="254" y2="150" stroke="#9fb3c8" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- lane B -->
+  <g transform="translate(260,86)">
+    <rect x="0" y="0" width="400" height="190" fill="#0b1422" stroke="#4f7391" stroke-width="1.5"/>
+    <rect x="0" y="0" width="400" height="36" fill="#2a4256"/>
+    <text x="14" y="24" font-size="15" fill="#f3efe6" letter-spacing="1">LANE B · RUN BOTH</text>
+    <text x="370" y="24" font-size="12" fill="#c7d9ea" text-anchor="end">seconds</text>
+    <text x="14" y="62" font-size="13.5" fill="#c9d4e0">one process, two sandboxes, the same fakes</text>
+    <text x="14" y="82" font-size="13.5" fill="#c9d4e0">inputs drawn from the types, boundaries first, shared objects</text>
+    <text x="14" y="102" font-size="13.5" fill="#c9d4e0">seeded answers, a virtual clock, a heap graph after each call</text>
+    <text x="14" y="122" font-size="13.5" fill="#c9d4e0">a component: double render, effects, timers, click sequences</text>
+    <text x="14" y="142" font-size="13.5" fill="#c9d4e0">every library call checked against its transition row</text>
+    <text x="14" y="172" font-size="12.5" fill="#9fb3c8">compares all four observations after every call and every click</text>
+  </g>
+  <!-- witness out -->
+  <line x1="660" y1="140" x2="724" y2="140" stroke="#d98c8c" stroke-width="1.5" marker-end="url(#arrRed)"/>
+  <g transform="translate(730,118)">
+    <rect x="0" y="0" width="130" height="44" fill="#5a2a2a" stroke="#8a4a4a"/>
+    <text x="65" y="27" font-size="15" fill="#f3efe6" text-anchor="middle" font-weight="bold">WITNESS</text>
+  </g>
+  <text x="870" y="134" font-size="12.5" fill="#c9d4e0">a difference ends the question:</text>
+  <text x="870" y="152" font-size="12.5" fill="#c9d4e0">the input or the click sequence</text>
+
+  <!-- no difference, down -->
+  <line x1="460" y1="276" x2="460" y2="316" stroke="#9fb3c8" stroke-width="1.2" marker-end="url(#arr)"/>
+  <text x="474" y="302" font-size="12.5" fill="#9fb3c8">no difference found</text>
+
+  <!-- lane A -->
+  <g transform="translate(260,322)">
+    <rect x="0" y="0" width="400" height="150" fill="#0b1422" stroke="#3d7a62" stroke-width="1.5"/>
+    <rect x="0" y="0" width="400" height="36" fill="#1f4a3a"/>
+    <text x="14" y="24" font-size="15" fill="#f3efe6" letter-spacing="1">LANE A · PROVE</text>
+    <text x="370" y="24" font-size="12" fill="#bfe3d0" text-anchor="end">seconds to a minute</text>
+    <text x="14" y="62" font-size="13.5" fill="#c9d4e0">lint: is every construct readable as mathematics?</text>
+    <text x="14" y="82" font-size="13.5" fill="#c9d4e0">translate both sides to Dafny: values, a threaded world,</text>
+    <text x="14" y="102" font-size="13.5" fill="#c9d4e0">a heap for references, cells for Map and Set, hook slots</text>
+    <text x="14" y="122" font-size="13.5" fill="#c9d4e0">one theorem: equal outside S; unchanged code is aliased, not proved</text>
+    <text x="14" y="142" font-size="12.5" fill="#9fb3c8">Z3 decides; the certificate carries every hash and every lemma</text>
+  </g>
+  <line x1="660" y1="372" x2="724" y2="372" stroke="#8fd1b0" stroke-width="1.5" marker-end="url(#arrGreen)"/>
+  <g transform="translate(730,350)">
+    <rect x="0" y="0" width="130" height="44" fill="#1f4a3a" stroke="#3d7a62"/>
+    <text x="65" y="27" font-size="15" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-proved</text>
+  </g>
+  <line x1="660" y1="430" x2="724" y2="430" stroke="#9fb3c8" stroke-width="1.2" marker-end="url(#arr)"/>
+  <g transform="translate(730,408)">
+    <rect x="0" y="0" width="130" height="44" fill="#4a3f1f" stroke="#8a7540"/>
+    <text x="65" y="27" font-size="15" fill="#f3efe6" text-anchor="middle" font-weight="bold">ASK</text>
+  </g>
+  <text x="870" y="376" font-size="12.5" fill="#c9d4e0">a theorem, for every input</text>
+  <text x="870" y="434" font-size="12.5" fill="#c9d4e0">the lemma that did not close,</text>
+  <text x="870" y="452" font-size="12.5" fill="#c9d4e0">or the construct that stopped the lane</text>
+
+  <!-- the third rung -->
+  <g transform="translate(730,196)">
+    <rect x="0" y="0" width="422" height="130" fill="#0b1422" stroke="#4f7391" stroke-dasharray="4 3"/>
+    <text x="14" y="24" font-size="13" fill="#c7d9ea" letter-spacing="1">A COMPONENT, THREE RUNGS</text>
+    <text x="14" y="50" font-size="13" fill="#c9d4e0"><tspan fill="#8fd1b0">proved</tspan>  when its handlers read as slot transitions (lane A)</text>
+    <text x="14" y="72" font-size="13" fill="#c9d4e0"><tspan fill="#9fc7ea">decided</tspan>  when state and props are finite by type: every click</text>
+    <text x="14" y="90" font-size="13" fill="#c9d4e0">    order from every prop assignment, explored to the end</text>
+    <text x="14" y="112" font-size="13" fill="#c9d4e0"><tspan fill="#c7d9ea">bounded</tspan>  otherwise: click sequences to a stated depth</text>
+  </g>
+
+  <!-- certificate -->
+  <g transform="translate(48,490)">
+    <rect x="0" y="0" width="1104" height="50" fill="#0b1422" stroke="#3c5272"/>
+    <text x="14" y="21" font-size="12" fill="#9fb3c8" letter-spacing="1">THE CERTIFICATE, WITH EVERY VERDICT</text>
+    <text x="14" y="40" font-size="12.5" fill="#c9d4e0">file hashes · the unit · the bound (n, seed, depth, time) · theorem and prelude hashes · Dafny and Z3 versions · each lemma's result · the observation layer · library records · what was not observed</text>
+  </g>
+</svg>
