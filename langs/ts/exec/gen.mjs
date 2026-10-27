@@ -7,9 +7,27 @@ const NUM_EDGE = [0, 1, -1, 2, 10, 100, -100, 0.5, 1e9, Number.MAX_SAFE_INTEGER]
 
 // the number of inputs, from the first generated one, that walk the boundaries of a shaped spec (spec.mjs) in order
 export const WALK = 48;
+// NaN and the two infinities are numbers (ECMA-262 6.1.6.1): a declared number admits them, and lane A's finite model
+// leaves them out, so lane B draws them. Every SPECIAL-th generated input is a special-number input (the first one
+// after the inputs that lean on 0, 1 and -1): in it the first number leaf, walked or drawn, is replaced by a special
+// value, and every later one too (one time in two in every other special-number input), NaN, then Infinity, then
+// -Infinity, turning from one special-number input to the next; the decisions use a stream of their own, so every
+// other value of every input is the one drawn before
+export const SPECIAL = 4;
+const NUM_SPECIAL = [NaN, Infinity, -Infinity];
+// whether a spec admits a number of any value: a number, or a union with a number option (a literal type does not)
+const admitsNumber = (spec) => !!spec && (spec.kind === 'number' || (spec.kind === 'union' && spec.options.some((o) => o && o.kind === 'number')));
 
-export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null) {
+export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null, special = null) {
   const rng = makeRng(seed);
+  // a special-number input (`special` its turn: 0 for the first one, 1 for the next, ...): its own stream decides
+  const srng = special != null ? makeRng((seed ^ 0x2545f491) >>> 0) : null;
+  let replaced = 0; // number leaves of this input made special so far
+  const specialOf = (spec, x) => {
+    if (!srng || typeof x !== 'number' || !admitsNumber(spec)) return x;
+    if (replaced > 0 && special % 2 === 1 && srng() < 0.5) return x; // every other special-number input keeps some later leaves finite
+    return NUM_SPECIAL[(special + replaced++) % NUM_SPECIAL.length];
+  };
   // a shaped spec's boundaries: in the walk (input `walk` < WALK) each boundary takes its digit of the walk index,
   // the first boundary turning fastest; after it, a boundary value is mixed in at random. The declared draw is made
   // first in every case and the boundary decisions use their own stream, so the declared draws of every other leaf
@@ -37,10 +55,10 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   };
   function gen(spec, depth = 0, env = null, path = 'in', leaf = false) {
     const v = gen0(spec, depth, env, path, leaf);
-    const b = spec && spec.boundary; if (!b) return v;
-    const c = choose(b); if (c >= 0) return materialize(b.cmp[c], v, env, path);
+    const b = spec && spec.boundary; if (!b) return spec && spec.kind === 'number' ? specialOf(spec, v) : v;
+    const c = choose(b); if (c >= 0) { const x = materialize(b.cmp[c], v, env, path); return typeof b.cmp[c] === 'number' ? specialOf(spec, x) : x; } // a compared number may be NaN or infinite in a special-number input
     if (b.falsy && b.falsy.length && brng() < (walking ? 0.5 : 0.25)) return materialize(b.falsy[Math.floor(brng() * b.falsy.length)], v, env, path);
-    return v;
+    return spec.kind === 'number' ? specialOf(spec, v) : v;
   }
   function gen0(spec, depth = 0, env = null, path = 'in', leaf = false) {
     if (!spec || depth > 8) return env ? env.fake(path) : null;
@@ -94,7 +112,8 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
 export function inputsFor(spec, seed, i, env) {
   // a shaped spec walks its boundaries from its first generated input (`walkFrom`: the inputs before it are enumerated heaps)
   const walk = spec.shaped && i >= (spec.walkFrom ?? 0) ? i - (spec.walkFrom ?? 0) : null;
-  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk);
+  const generated = i - (spec.walkFrom ?? 0); // the index among the generated inputs (the enumerated heaps come first)
+  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null);
   return spec.params.map((p, k) => (p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`)));
 }
 
