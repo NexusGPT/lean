@@ -71,6 +71,7 @@ export const ADVICE = {
   'inheritance': { label: 'migration', text: 'A class that extends another is outside the subset in this version.' },
   'effect': { label: 'migration', text: 'This global is an effect; pass what you need as an argument.' },
   'non-null': { label: 'migration', text: '`x!` is translated as an uninterpreted value when absent; prefer an explicit check.' },
+  'mutator-value': { label: 'conditional', precondition: 'the call runs on every path of its statement, and nothing evaluated before it in that statement reads the array or can throw', text: 'pop, shift and splice used as values are read where the call runs on every path of its statement and nothing else in the statement reads the array. Bind the removed element in its own statement first (`const last = xs.pop();`), then use `last`.' },
 };
 
 // the label in one bracket, as the --json advice, the agent report and the ESLint message print it

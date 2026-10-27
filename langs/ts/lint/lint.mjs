@@ -1178,8 +1178,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (aliasLocals.has(o.decl)) return refuse('alias-mutation', `\`${r.text}\` is another name for a value this function was handed; copy it first`);
       if (!ownedHere(o.decl) || callbackStack.length || forEachDepth) return refuse('closure-mutation', `.${name}() as a value inside a callback changes \`${r.text}\`; use a for-of loop`);
       const site = unconditionalSite(e);
-      if (!site) return refuse('unsupported-call', `.${name}() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind it to a const in its own statement first`);
-      if (readsOf(checker, site.scope, checker.getSymbolAtLocation(r)) !== 1) return refuse('unsupported-call', `\`${r.text}\` is read again in the statement that calls .${name}() on it; read it in its own statement`);
+      if (!site) return refuse('mutator-value', `.${name}() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind it to a const in its own statement first`);
+      if (readsOf(checker, site.scope, checker.getSymbolAtLocation(r)) !== 1) return refuse('mutator-value', `\`${r.text}\` is read again in the statement that calls .${name}() on it; read it in its own statement`);
       return admit();
     }
     if (arr && name === 'fill') {
