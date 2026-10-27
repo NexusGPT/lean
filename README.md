@@ -254,7 +254,7 @@ The rule in one line: **a function owns what it creates, and everything else flo
 
 Everything else is yours: `async`/`await`, `try`/`catch`, `switch`, destructuring with defaults, optional chaining, template strings, `Set`, `Map`, generics, recursion, early returns, callbacks to array methods, local lambdas, JSX. The long form, the eight habits with what each one buys and why screens and pointers read as mathematics, is [`docs/writing-provable-code.md`](docs/writing-provable-code.md).
 
-**In the editor.** The ESLint plugin (`langs/ts/eslint`) ships one rule, `lean/provable`. It runs lean's own lint on the file inside its project, so what the editor underlines is exactly what the proof lane will refuse: the line, the rule, what to write instead; a rewrite that keeps your meaning is offered as a suggestion. The same lint runs from the command line, and `--agent` prints a work list a coding agent can act on, item by item.
+**In the editor.** The ESLint plugin (`langs/ts/eslint`) ships one rule, `lean/provable`. It runs lean's own lint on the file inside its project, so what the editor underlines is exactly what the proof lane will refuse: the line, the rule, what to write instead; a rewrite that keeps your meaning is offered as a suggestion. A value typed `any` is shown with the type its uses and same-file callers propose, and the label of that proposal; when the evidence agrees, the annotation is the quick fix. The same lint runs from the command line, and `--agent` prints a work list a coding agent can act on, item by item.
 
 ```
 $ node langs/ts/lint/lint.mjs src/users.ts

@@ -6,6 +6,7 @@ blind, so each rewrite carries one of three labels.
 - `proved`: the rewrite keeps behaviour on every input, and lean's own reading shows it.
 - `conditional`: it keeps behaviour when a precondition holds; the entry states it in one sentence a reader can check.
 - `migration`: it changes the meaning on some input; a person decides. A rule that suggests no rewrite is a migration.
+- `flag-only` (any-type only): no rewrite is proposed; the finding marks a value no evidence types (design/any-advice.md).
 
 `--json` gives every finding `label`, `labelDecided` and, when conditional, `precondition`; its `advice` string, the
 `--agent` report and the ESLint message start with the label in brackets: `[proved]`,

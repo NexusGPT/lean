@@ -4,8 +4,12 @@ One rule, `lean/provable`. It runs lean's own lint (`langs/ts/lint/lint.mjs`) on
 reports every construct the proof lane refuses, at its line, with what to write instead. Three rewrites that keep the
 author's meaning are offered as suggestions: `var` to `let`, `==` to `===`, a division under `Math.floor`.
 
-The rule takes one option, `{ project }`: a tsconfig path, `true` for the nearest `tsconfig.json` (the default), or
-`false` to read the file alone.
+The rule takes two options. `project`: a tsconfig path, `true` for the nearest `tsconfig.json` (the default), or
+`false` to read the file alone. `anyType` (default `true`): every declaration typed `any` or `unknown` is shown with
+the type its uses and same-file callers propose and the label of that proposal, `lean (any-type): <finding>; [label]
+<advice>`. A `conditional` proposal comes with a quick fix (a suggestion) that writes the annotation at the declaration
+and changes nothing else; `migration` (conflicting evidence, a run-time type test) and `flag-only` (no evidence) offer
+none. See `langs/ts/design/any-advice.md`.
 
 ## On every file
 
@@ -50,6 +54,7 @@ ESLint is not vendored with lean, so the rule is checked the way ESLint drives i
 `Program` visitor, with a context that records each report.
 
     node langs/ts/ci/new-code.test.mjs     # last line: "new-code.test: N of N checks pass"
+    node langs/ts/eslint/any-type.test.mjs # last line: "any-type.test: N of N checks pass"
 
 It builds a scratch repository with a boundary tag, an untouched file, an edited file, a new file and an untracked
 file; checks which files each boundary selects; checks the entry's shape and rule id; and runs the rule on a new file
