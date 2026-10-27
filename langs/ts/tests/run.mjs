@@ -363,7 +363,7 @@ for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) 
 const advDir = path.join(here, 'fixtures/advice');
 for (const f of fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.endsWith('.ts')).sort() : []) {
   const src = fs.readFileSync(path.join(advDir, f), 'utf8');
-  const [, rule, label] = src.match(/^\/\/ expect:\s*(\S+)\s+(proved|conditional|migration)\b/m) ?? [];
+  const [, rule, label] = src.match(/^\/\/ expect:\s*(\S+)\s+(proved|conditional|migration|flag-only)(?![\w-])/m) ?? [];
   const name = f.replace(/\.ts$/, '');
   if (!rule) { add('advice', name, 'expect line', false, 'missing `// expect: <rule> <label>`'); continue; }
   // an any_* fixture runs with --any-type; `// expect-none: <rule>` names a rule that must not fire (an any from an
