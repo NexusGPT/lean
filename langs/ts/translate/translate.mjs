@@ -240,6 +240,7 @@ export function translate(file, fnName, opts = {}) {
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
   const localEffectScan = new Set();
   function isEffectCall(n) {
+    if (n.__namedStep) return true; // one step of a named callback loop calls a function that makes a transition
     if (mayFaultPure(n, checker, sf)) return true;
     if (ts.isCallExpression(n) && ownKeyTest(checker, n, sf)?.kind) return false; // the own-key test reads its operands only
     if (ts.isPropertyAccessExpression(n)) {
@@ -266,6 +267,7 @@ export function translate(file, fnName, opts = {}) {
     }
     if (ts.isPropertyAccessExpression(f)) {
       const recv = f.expression;
+      if (namedCallbackShape(n)) return true; // an array method over a named callback whose call makes a transition
       // clock methods read the world even when their result is a primitive
       if (ts.isIdentifier(recv) && ((recv.text === 'Date' || recv.text === 'performance') && f.name.text === 'now' || recv.text === 'process' && f.name.text === 'hrtime') && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return true;
       const om = literalMethod(f);
@@ -369,6 +371,119 @@ export function translate(file, fnName, opts = {}) {
     if (e.arguments.length !== (method === 'reduce' ? 2 : 1) || !isArrayLike(checker, baseOf(typeOf(e.expression.expression)))) return null;
     return { call: e, cb, method };
   };
+  // a named function passed to an array method is the arrow JavaScript calls: `xs.map(f)` is `xs.map((x, i, a) => f(x, i, a))`,
+  // and `reduce` passes the accumulator first. A body read here (a same-file unit, a local arrow) takes the arguments its
+  // declared parameters name (it cannot read `arguments`); a body read nowhere (an import, a function-typed value) takes
+  // every argument JavaScript passes. Five globals have the reading of their direct call and make no transition.
+  const NAMED_GLOBALS = new Set(['Boolean', 'String', 'Number', 'parseInt', 'parseFloat']);
+  function namedCallee(cb, method) {
+    const full = method === 'reduce' ? 4 : 3;
+    const o = originOf(checker, cb, sf, currentUnit?.node ?? null);
+    if (o.kind === 'global') return NAMED_GLOBALS.has(cb.text) ? { kind: 'global', count: cb.text === 'parseInt' ? 2 : 1, effect: false } : null;
+    if (o.kind === 'unit') {
+      const u = fns.get(cb.text); if (!u) return null;
+      return { kind: 'unit', u, count: Math.min(u.params.length, full), effect: effectfulUnits.has(u.name), ret: () => checker.getSignatureFromDeclaration(u.fn).getReturnType() };
+    }
+    const d = o.decl;
+    if (o.kind === 'local' && d && ts.isVariableDeclaration(d) && d.initializer && ts.isArrowFunction(d.initializer)) {
+      const init = d.initializer; let effect = true;
+      if (!localEffectScan.has(d)) { localEffectScan.add(d); try { effect = containsEffect(init.body); } finally { localEffectScan.delete(d); } }
+      return { kind: 'local', count: Math.min(init.parameters.length, full), effect, ret: () => checker.getSignatureFromDeclaration(init).getReturnType() };
+    }
+    if (o.kind === 'local') return d && ts.isParameter(d) ? { kind: 'local', count: full, effect: true, ret: null } : null; // a function-typed parameter: a body read nowhere
+    return { kind: 'outside', count: full, effect: true, ret: null };
+  }
+  const namedCallbackShape = (e0) => {
+    let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || !callbackMethods.has(e.expression.name.text)) return null;
+    const method = e.expression.name.text, cb = e.arguments[0];
+    if (!cb || !ts.isIdentifier(cb) || e.arguments.length !== (method === 'reduce' ? 2 : 1)) return null;
+    let recvT; try { recvT = baseOf(typeOf(e.expression.expression)); } catch { return null; }
+    if (!isArrayLike(checker, recvT)) return null;
+    const named = namedCallee(cb, method);
+    if (!named || !named.effect) return null;
+    return { call: e, cb, method, named };
+  };
+  // the result type of a named callback: its own declared result, or the one the array method's signature instantiates
+  function namedResult(shape) {
+    const { named, cb, call } = shape;
+    if (named.ret) return named.ret();
+    const sigs = checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call);
+    if (sigs.length === 1 && !sigs[0].typeParameters?.length) return sigs[0].getReturnType();
+    const rs = checker.getResolvedSignature(call), p = rs?.getParameters()[0];
+    const cs = p && checker.getSignaturesOfType(checker.getTypeOfSymbolAtLocation(p, call), ts.SignatureKind.Call)[0];
+    if (!cs) fail(cb, `${cb.text} has no call signature to read as a callback`);
+    return cs.getReturnType();
+  }
+  // the loop over a named callback: the element takes the name the callee gives its parameter (so `xs.map(f)` and
+  // `xs.map((x) => f(x))` with f's own parameter name read as the same loop), the body one step that calls the function
+  function namedElementName(fe) {
+    const { named, cb, method } = fe, k = method === 'reduce' ? 1 : 0;
+    const o = originOf(checker, cb, sf, currentUnit?.node ?? null);
+    let p = null;
+    if (named.kind === 'unit') p = named.u.params[k]?.name;
+    else if (o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer)) p = o.decl.initializer.parameters[k]?.name;
+    const text = p ? (ts.isIdentifier(p) ? p.text : null) : checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call)[0]?.getParameters()[k]?.name ?? null;
+    return text && /^[A-Za-z]\w*$/.test(text) && text !== cb.text && text !== 'this' ? text : 'el_';
+  }
+  function namedForOf(st, fe, collect) {
+    const { call, cb } = fe;
+    const name = { kind: K.Identifier, text: namedElementName(fe), escapedText: '', pos: cb.pos, end: cb.pos, parent: null, __type: elemType(call.expression.expression), getText: () => '', getStart: () => cb.getStart(sf), getEnd: () => cb.getStart(sf) };
+    name.escapedText = name.text;
+    const body = { kind: K.ReturnStatement, expression: cb, parent: cb.parent, pos: cb.pos, end: cb.end, getStart: () => cb.getStart(sf), getEnd: () => cb.getEnd(), getText: () => cb.getText(sf), getFullStart: () => cb.getFullStart(), __namedStep: true };
+    const decl = { kind: K.VariableDeclaration, name, pos: name.pos, end: name.end, parent: null };
+    name.parent = decl;
+    const list = { kind: K.VariableDeclarationList, declarations: [decl], flags: ts.NodeFlags.Const, pos: name.pos, end: name.end, parent: null };
+    decl.parent = list;
+    const fake = { kind: K.ForOfStatement, expression: call.expression.expression, initializer: list, statement: body, parent: st.parent, pos: st.pos, end: st.end, getStart: () => st.getStart(sf), getEnd: () => st.getEnd(), getText: () => st.getText(sf), getFullStart: () => st.getFullStart(), __forEach: true, __collect: collect, __named: fe };
+    list.parent = fake;
+    return fake;
+  }
+  // one step of a named callback loop: the call with the arguments JavaScript passes, cut to what the callee reads
+  function namedStepCall(c) {
+    const shape = c.named, { named, cb, method } = shape;
+    const ix = c.index, sq = ix.replace(/^idx/, 'seq'); // the loop's sequence and index share its id
+    const numT = checker.getNumberType();
+    const passed = [...(method === 'reduce' ? [[dn(c.name), c.resultType]] : []), [c.element, c.elementType], [real ? `(${ix} as real)` : ix, numT], [sq, typeOf(shape.call.expression.expression)]].slice(0, named.count);
+    const ret = namedResult(shape);
+    if (isPromiseT(ret)) fail(cb, `${cb.text} returns a promise; an async callback needs an inline arrow under Promise.all`);
+    const rd = dtype(ret, cb);
+    if (named.kind === 'unit') {
+      const u = named.u;
+      if (failedUnits.has(u.name)) fail(cb, `callee ${u.name} was not translated`);
+      if (mutatedOf(u).length) fail(cb, `${cb.text} changes its argument; a callback's argument is the array's element`);
+      if (u.generics?.length) fail(cb, `${cb.text} is generic; pass it through an inline arrow`);
+      const args = passed.map(([code, t], i) => convert(code, t, typeOf(u.params[i].name), cb));
+      const value = hoist(`${fname(u.name)}(${[WORLD, ...fuelArg(u), ...args].join(', ')})`, rd);
+      if (!faultMode && completionMode && exceptionUnits.has(u.name)) pending.push(FAULT_CHECK);
+      return { code: value, type: ret };
+    }
+    addPrelude('World', 'type World');
+    const argDs = passed.map(([, t]) => dtype(t, cb));
+    if (named.kind === 'local') {
+      const FD = dtype(typeOf(cb), cb);
+      return { code: hoist(`${external('call_args_invoke', ['World', FD, ...argDs], `(World, ${rd})`)}(${[WORLD, ident(cb), ...passed.map(([code]) => code)].join(', ')})`, rd), type: ret };
+    }
+    return { code: hoist(`${external(`call_args_${cb.text}`, ['World', ...argDs], `(World, ${rd})`)}(${[WORLD, ...passed.map(([code]) => code)].join(', ')})`, rd), type: ret };
+  }
+  // a pure named global as a callback: the reading its direct call has, of the element (and the index for parseInt)
+  function namedGlobalLambda(cb, arity, paramTypes) {
+    const et = paramTypes[0] ?? checker.getAnyType(), D = dtype(et, cb), numT = checker.getNumberType();
+    const names = [`a0_: ${D}`]; for (let i = 1; i < arity; i++) names.push(`a${i}_: ${dtype(paramTypes[i] ?? numT, cb)}`);
+    const prim = et.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike);
+    let body;
+    switch (cb.text) {
+      case 'Boolean': body = `${external('call_args_Boolean', [D], 'bool')}(a0_)`; break;
+      case 'String': body = !prim ? `${external('call_args_String', [D], 'string')}(a0_)` : et.flags & TF.StringLike ? 'a0_' : et.flags & TF.BooleanLike ? '(if a0_ then "true" else "false")' : `${external('to_string', [D], 'string')}(a0_)`; break;
+      case 'Number': body = et.flags & TF.NumberLike ? 'a0_' : et.flags & TF.BooleanLike ? `(if a0_ then ${real ? '1.0' : '1'} else ${real ? '0.0' : '0'})` : `${external('call_args_Number', [D], NUM)}(a0_)`; break;
+      case 'parseFloat': body = `${external('call_args_parseFloat', ['string'], NUM)}(${convertToD('a0_', et, 'string', cb)})`; break;
+      case 'parseInt': if (arity < 2) fail(cb, 'parseInt reads the index JavaScript passes as its radix'); body = `${external('call_args_parseInt', ['string', NUM], NUM)}(${convertToD('a0_', et, 'string', cb)}, a1_)`; break;
+      default: fail(cb, `${cb.text} has no reading as a callback`);
+    }
+    return `((${names.join(', ')}) => ${body})`;
+  }
+  // a named callback that reads the index JavaScript passes
+  const namedTakesIndex = (cb) => { if (!ts.isIdentifier(cb)) return false; const o = originOf(checker, cb, sf, currentUnit?.node ?? null); if (o.kind === 'global') return cb.text === 'parseInt'; if (o.kind === 'unit') return (fns.get(cb.text)?.params.length ?? 0) >= 2; return !!(o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer) && o.decl.initializer.parameters.length >= 2); };
   // Promise.all collects results by index; the lint excludes observable work after suspension
   const promiseAllMapShape = (e0) => {
     let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;
@@ -383,6 +498,7 @@ export function translate(file, fnName, opts = {}) {
   };
   const isLoopCallback = (x) => !!(x && x.parent && ts.isCallExpression(x.parent) && x.parent.arguments[0] === x && (arrayCallbackShape(x.parent) || forEachShape({ kind: K.ExpressionStatement, expression: x.parent })));
   function fakeForOf(st, fe, collect = null) {
+    if (fe.named) return namedForOf(st, fe, collect);
     const { call, cb } = fe; const name = cb.parameters[fe.method === 'reduce' ? 1 : 0].name;
     const body = ts.isBlock(cb.body) ? cb.body : { kind: collect ? K.ReturnStatement : K.ExpressionStatement, expression: cb.body, parent: cb, pos: cb.body.pos, end: cb.body.end, getStart: () => cb.body.getStart(sf), getEnd: () => cb.body.getEnd(), getText: () => cb.body.getText(sf), getFullStart: () => cb.body.getFullStart() };
     const decl = { kind: K.VariableDeclaration, name, pos: name.pos, end: name.end, parent: null };
@@ -2383,6 +2499,7 @@ export function translate(file, fnName, opts = {}) {
         return `((${names.join(', ')}) => ${fname(cb.text)}(${[...fuelArg(fns.get(cb.text)), argList].filter(Boolean).join(', ')}))`;
       }
       if (o.kind === 'local') return `((${names.join(', ')}) => ${ident(cb)}(${argList}))`;
+      if (o.kind === 'global' && NAMED_GLOBALS.has(cb.text)) return namedGlobalLambda(cb, arity, paramTypes);
       fail(cb, `${cb.text} is not a same-file function or a local function value`);
     }
     if (containsEffect(cb.body)) fail(cb, 'an effect inside a callback; the order of its world transitions is not defined');
@@ -3138,6 +3255,7 @@ export function translate(file, fnName, opts = {}) {
     if (isArrayLike(checker, base)) {
       const shape = arrayCallbackShape(n);
       if (shape && containsEffect(shape.cb.body)) return callbackValue(n, shape);
+      { const named = namedCallbackShape(n); if (named) return callbackValue(n, named); }
       const A = () => dtype(elemType(recv), n);
       const R = expr(recv);
       const cb0 = n.arguments[0];
@@ -3145,7 +3263,7 @@ export function translate(file, fnName, opts = {}) {
       const et = () => elemType(recv);
       const lambda1 = (c, k) => lambda(c, k, [et()]);
       // a callback that also takes the index: the indexed helper, the lambda typed (A, int)
-      const withIdx = cb && ts.isArrowFunction(cb) && cb.parameters.length === 2 && ['map', 'filter', 'some', 'every', 'find', 'findIndex', 'flatMap'].includes(name);
+      const withIdx = cb && ((ts.isArrowFunction(cb) && cb.parameters.length === 2) || namedTakesIndex(cb)) && ['map', 'filter', 'some', 'every', 'find', 'findIndex', 'flatMap'].includes(name);
       const lambda2 = (c) => lambda(c, 2, [et(), checker.getNumberType ? checker.getNumberType() : typeOf(c.parameters[1].name)]);
       if (withIdx) {
         switch (name) {
@@ -4067,7 +4185,8 @@ export function translate(file, fnName, opts = {}) {
     return capture(() => {
       const c = top.collect, name = dn(c.name), method = c.method;
       const predicate = ['filter', 'find', 'findIndex', 'some', 'every'].includes(method);
-      const code = value ? outerParens(predicate ? truthy(value) : expr(value, c.valueType)) : (predicate ? 'false' : c.valueD === 'Unit' ? 'Unit' : 'None');
+      const step = c.named && value === c.named.cb ? namedStepCall(c) : null; // a named callback's step: its call, then its value as the method reads it
+      const code = step ? outerParens(predicate ? valueTruth(step.code, dtype(step.type, value)) : convert(step.code, step.type, c.valueType, value)) : value ? outerParens(predicate ? truthy(value) : expr(value, c.valueType)) : (predicate ? 'false' : c.valueD === 'Unit' ? 'Unit' : 'None');
       if (method === 'map' || method === 'flatMap') return `var ${name}: ${c.d} := ${name} + ${method === 'map' || !c.flatSequence ? `[${code}]` : code};\n${top.cont()}`;
       if (method === 'reduce') return `var ${name} := ${code};\n${top.cont()}`;
       const hit = method === 'every' ? `!(${code})` : code;
@@ -4077,10 +4196,10 @@ export function translate(file, fnName, opts = {}) {
   }
   function callbackLoop(node, shape, name, resultType, rest, fin, u) {
     const D = dtype(resultType, node), method = shape.method;
-    const rt = checker.getSignatureFromDeclaration(shape.cb).getReturnType();
+    const rt = shape.named ? namedResult(shape) : checker.getSignatureFromDeclaration(shape.cb).getReturnType();
     const valueType = shape.all && checker.getAwaitedType ? checker.getAwaitedType(rt) : rt;
     const valueD = dtype(valueType, shape.cb);
-    const collect = { name, node, sym: null, synthetic: true, d: D, method, valueType, valueD, flatSequence: isArrayLike(checker, baseOf(valueType)), elementType: elemType(shape.call.expression.expression), resultType };
+    const collect = { name, node, sym: null, synthetic: true, d: D, method, valueType, valueD, flatSequence: isArrayLike(checker, baseOf(valueType)), elementType: elemType(shape.call.expression.expression), resultType, named: shape.named ? shape : null };
     const fake = fakeForOf(shape.call, shape, collect);
     if (method === 'find') usesOption = true;
     // the receiver is evaluated before reduce's initial value
@@ -4218,7 +4337,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       else if (itT.flags & TF.StringLike) { T = 'string'; src = `${helper('Map', ['char', 'string'])}(${expr(s.expression)}, ((c: char) => [c]))`; }
       else if (isSetT(itT)) { T = dtype(checker.getTypeArguments(itT)[0], s); src = seqOf(s.expression); }
       else if (isMapT(itT)) { const [kt, vt] = checker.getTypeArguments(itT); const Kd = dtype(kt, s), Vd = dtype(vt, s); T = `(${Kd}, ${Vd})`; src = `${external('map_entries', [`map<${Kd}, ${Vd}>`], `seq<(${Kd}, ${Vd})>`)}(${expr(s.expression)})`; }
-      else { T = dtype(typeOf(x), x); src = s.__source ?? outerParens(expr(s.expression)); }
+      else { T = x.__type ? dtype(x.__type, s.expression) : dtype(typeOf(x), x); src = s.__source ?? outerParens(expr(s.expression)); }
       const sq = `seq${id}`, ix = `idx${id}`;
       lead = [`${sq}: seq<${T}>`, `${ix}: int`];
       leadArgsNext = [sq, `${ix} + 1`];
@@ -4319,6 +4438,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
         if (other && other !== u) deps.add(other.name);
         if (d && ts.isVariableDeclaration(d) && d.parent?.parent?.parent === sf && d.initializer && !other) { sources.add(d.getText(sf)); scan(d.initializer); }
         if (['NaN', 'Infinity'].includes(n.text) && originOf(checker, n, sf, u.node).kind === 'global') numericOpaque.add(u.name);
+        if (['parseInt', 'parseFloat', 'Number'].includes(n.text) && n.parent && ts.isCallExpression(n.parent) && n.parent.arguments[0] === n && ts.isPropertyAccessExpression(n.parent.expression) && originOf(checker, n, sf, u.node).kind === 'global' && (n.text !== 'Number' || !((() => { try { return elemType(n.parent.expression.expression)?.flags ?? 0; } catch { return 0; } })() & (TF.NumberLike | TF.BooleanLike)))) numericOpaque.add(u.name); // a named numeric parse as an array callback, as its direct call
       }
       if (ts.isBinaryExpression(n) && [K.SlashToken, K.PercentToken].includes(n.operatorToken.kind)) {
         const divisor = finiteLiteral(n.right);

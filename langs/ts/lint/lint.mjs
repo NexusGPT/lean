@@ -1109,7 +1109,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (asyncCb && name === 'reduce') return v(e, 'async-reduce', 'reduce passes a Promise accumulator without waiting; use a for-of loop with await');
           if (asyncCb && !underPromiseAll(e)) return v(e, 'async-callback', `${name} does not await its callbacks; use await Promise.all(xs.${name}(...))`);
           if (e.arguments.length > (name === 'reduce' ? 2 : 1)) return v(e, 'callback-form', 'a callback thisArg is outside the subset; capture the receiver in an arrow');
-          if (cb && ts.isIdentifier(cb) && callbackNeedsLoop(cb)) return v(cb, 'callback-form', 'an effectful array callback needs an inline arrow so its world transitions are read in array order');
+          if (cb && ts.isIdentifier(cb) && (!['unit', 'local'].includes(declOf(cb).kind) || callbackNeedsLoop(cb))) return namedCallback(e, cb, name, recv, asyncCb); // a body read elsewhere is a transition
           if (cb && ts.isArrowFunction(cb)) {
             if (cb.type && ts.isTypePredicateNode(cb.type) && callbackNeedsLoop(cb)) return v(cb, 'callback-result', 'an effectful type-predicate callback needs an explicit for-of loop with a type guard');
             if (sig.getReturnType().symbol?.name === 'PromiseLike') return v(cb, 'callback-result', 'a thenable callback needs an async arrow with an explicit await');
@@ -1178,6 +1178,61 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
   // `.map(cb)` directly under an awaited `Promise.all(...)`: the callback is a loop body (its returns are collected values)
   const underPromiseAll = (call) => { let arg = call; while (arg.parent && ts.isParenthesizedExpression(arg.parent)) arg = arg.parent; const p = arg.parent; if (!(p && ts.isCallExpression(p) && p.arguments.length === 1 && p.arguments[0] === arg && ts.isPropertyAccessExpression(p.expression) && p.expression.name.text === 'all' && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Promise')) return false; let q = p.parent; while (q && ts.isParenthesizedExpression(q)) q = q.parent; return !!(q && ts.isAwaitExpression(q)); };
+  // a named function passed to an array method is the arrow JavaScript calls with (element, index, array), or with the
+  // accumulator first for reduce: the translator reads it as that eta-expansion, an effectful callback loop when the
+  // call makes a transition. Boolean, String, Number, parseInt and parseFloat read as their direct calls do.
+  const NAMED_GLOBALS = new Set(['Boolean', 'String', 'Number', 'parseInt', 'parseFloat']);
+  function namedCallback(e, cb, name, recv, asyncCb) {
+    const o = declOf(cb);
+    if (o.kind === 'global') {
+      if (!NAMED_GLOBALS.has(cb.text)) return v(cb, 'callback-form', `${cb.text} is read as a callback only through an arrow; write \`(x) => ${cb.text}(x)\` with the arguments it reads`);
+      if (!(name === 'map' || (cb.text === 'Boolean' && ['filter', 'find', 'findIndex', 'some', 'every'].includes(name)))) return v(cb, 'callback-form', `${cb.text} as a callback is read for map${cb.text === 'Boolean' ? ' and the predicate methods' : ''}; write an inline arrow for ${name}`);
+      return expr(recv);
+    }
+    checkIdent(cb, true);
+    if (o.kind === 'unit' && exceptionUnits.has(cb.text) && !enclosingOpaqueTry(cb)) return v(cb, 'exception-callback', 'call the throwing unit directly; a function value has no fault channel');
+    if (asyncCb) return v(cb, 'async-callback', `Promise.all over the named async function \`${cb.text}\` needs an inline async arrow so its awaits are read in order`);
+    const full = name === 'reduce' ? 4 : 3;
+    const plain = (ps) => ps.length <= full && ps.every((p) => ts.isIdentifier(p.name) && p.name.text !== 'this' && !p.initializer && !p.dotDotDotToken && !p.questionToken);
+    let fn = null;
+    if (o.kind === 'unit') {
+      const u = units.get(cb.text);
+      if (!u) return v(cb, 'callback-form', 'a class method passed as a callback loses its receiver; write an inline arrow');
+      if (u.isAsync) return v(cb, 'async', 'an async function cannot be a callback');
+      if (u.fn.asteriskToken) return v(cb, 'callback-form', 'a generator passed as a callback returns its iterator; write an inline arrow');
+      if (u.generics?.length || u.fn.typeParameters?.length) return v(cb, 'callback-form', `\`${cb.text}\` is generic; pass it through an inline arrow so its type arguments are fixed`);
+      if (!plain(u.params)) return v(cb, 'callback-form', `a named effectful callback takes plain parameters, at most ${full} (what ${name} passes); write an inline arrow`);
+      if (mutatesParam(u)) return v(cb, 'callback-form', `\`${cb.text}\` changes its argument, which here is the array's element; write an inline arrow that copies it`);
+      fn = u.fn;
+    } else if (o.kind === 'local' && o.decl && ts.isVariableDeclaration(o.decl) && o.decl.initializer && ts.isArrowFunction(o.decl.initializer)) {
+      fn = o.decl.initializer;
+      if (!plain(fn.parameters)) return v(cb, 'callback-form', `a named effectful callback takes plain parameters, at most ${full} (what ${name} passes); write an inline arrow`);
+    } else if (o.kind === 'local' && !(o.decl && ts.isParameter(o.decl))) return v(cb, 'callback-form', 'an effectful array callback needs an inline arrow so its world transitions are read in array order'); // a local function value built here: its effects are not read by name
+    const sig = checker.getSignaturesOfType(tOf(cb), ts.SignatureKind.Call);
+    if (fn?.type && ts.isTypePredicateNode(fn.type)) return v(cb, 'callback-result', 'an effectful type-predicate callback needs an explicit for-of loop with a type guard');
+    if (name === 'flatMap' && sig.length) { const parts = nonNull(sig[0].getReturnType()); if (parts.some((t) => isArrayLike(checker, t)) && !parts.every((t) => isArrayLike(checker, t))) return v(cb, 'callback-result', 'an effectful flatMap callback returns either arrays on every path or scalar values on every path; use a for-of loop for mixed results'); }
+    expr(recv);
+    if (name === 'reduce') { if (e.arguments.length !== 2) return v(e, 'unsupported-call', 'reduce needs a callback and an initial value'); expr(e.arguments[1]); }
+  }
+  // a same-file unit that writes through one of its parameters (the translator returns the new value beside the result)
+  function mutatesParam(u, seen = new Set()) {
+    if (seen.has(u)) return false; seen.add(u);
+    const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
+    const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+    const through = (x) => { const r = rootOf(x); return r !== x && ts.isIdentifier(r) && params.has(r.text); };
+    let found = false;
+    const w = (n) => {
+      if (found || ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return;
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && through(n.left)) found = true;
+      if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && through(n.operand)) found = true;
+      if (ts.isDeleteExpression(n) && through(n.expression)) found = true;
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) { const r = rootOf(n.expression.expression); if (ts.isIdentifier(r) && params.has(r.text) && MUT_NAMES.has(n.expression.name.text)) found = true; if (ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'assign' && n.arguments[0]) { const t = rootOf(n.arguments[0]); if (ts.isIdentifier(t) && params.has(t.text)) found = true; } }
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && units.has(n.expression.text) && n.arguments.some((a) => ts.isIdentifier(a) && params.has(a.text)) && mutatesParam(units.get(n.expression.text), seen)) found = true;
+      ts.forEachChild(n, w);
+    };
+    if (u.body) w(u.body);
+    return found;
+  }
   // named effectful callbacks must enter the loop reading through an inline arrow
   function callbackNeedsLoop(cb, seen = new Set()) {
     if (seen.has(cb)) return false;

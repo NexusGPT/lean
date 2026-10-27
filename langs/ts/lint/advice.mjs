@@ -55,7 +55,7 @@ export const ADVICE = {
   'update-expression': { label: 'migration', text: '`x++` is a statement, not a value.' },
   'assignment-expression': { label: 'migration', text: 'Assignment is a statement, not a value.' },
   'comma': { label: 'migration', text: 'The comma operator is outside the subset.' },
-  'callback-form': { label: 'conditional', precondition: 'the function has no `this`, `arguments` or `new.target` in it and is never called with `new`', text: 'The callback must be an arrow function with plain parameters.' },
+  'callback-form': { label: 'conditional', precondition: 'the function has no `this`, `arguments` or `new.target` in it and is never called with `new`', text: 'The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads.' },
   'function-value': { label: 'migration', text: 'A function value is accepted only as a call argument; name it as a top-level function.' },
   'nested-function': { label: 'migration', text: 'A nested function is a local function value; it may not change variables declared outside it.' },
   'template': { label: 'migration', text: 'The tag must be a name.' },
