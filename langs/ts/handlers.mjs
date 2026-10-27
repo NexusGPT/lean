@@ -44,6 +44,10 @@ export function readHandler(checker, sf, cb, ctx) {
   const isSetter = (id) => { if (!ts.isIdentifier(id)) return null; const s = checker.getSymbolAtLocation(id); const k = s ? ctx.isSetter(s) : null; return k === undefined ? null : k; };
   const body = ts.isBlock(cb.body) ? [...cb.body.statements] : [{ kind: K.ReturnStatement, expression: cb.body }];
   const steps = [];
+  const declaredAt = new Map(); // a local -> the number of steps before its declaration
+  // a local stands for its initializer only where no call step ran between the two: a call of the world may change
+  // what the initializer reads (a field of the event, of the props), so moving the read past it would change the value
+  const readsMovedPastCall = (nodes) => { for (const n of nodes) { if (!n) continue; for (const s of mentions(checker, n, locals)) if (declaredAt.has(s) && steps.slice(declaredAt.get(s)).some((x) => x.kind === 'call')) return true; } return false; };
   for (const st of body) {
     if (ts.isVariableStatement(st)) { // a `const` local of the handler: later references stand for its initializer
       const dl = st.declarationList;
@@ -51,11 +55,13 @@ export function readHandler(checker, sf, cb, ctx) {
       const d = dl.declarations[0];
       if (!ts.isIdentifier(d.name) || !d.initializer || !renderPure(checker, d.initializer)) return null;
       const s = checker.getSymbolAtLocation(d.name); if (!s) return null;
-      locals.set(s, d.initializer);
+      if (readsMovedPastCall([d.initializer])) return null;
+      locals.set(s, d.initializer); declaredAt.set(s, steps.length);
       continue;
     }
     if (!ts.isExpressionStatement(st) && !ts.isReturnStatement(st)) return null;
     const e = st.expression;
+    if (e && readsMovedPastCall([e])) return null;
     const returns = ts.isReturnStatement(st);
     const setterKey = e && ts.isCallExpression(e) ? isSetter(e.expression) : null;
     if (e && ts.isCallExpression(e) && !e.questionDotToken && (e.arguments.every((a) => renderPure(checker, a)) || (setterKey !== null && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])))) {
