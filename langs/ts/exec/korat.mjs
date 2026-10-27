@@ -31,7 +31,8 @@ export function enumerateHeaps(spec, k = 2, seed = 1, cap = 48, maxAssignments =
       const entry = { spec: r, slots: [], prims: [] }; shapes.set(key, entry);
       for (const [name, f] of Object.entries(r.fields)) {
         const fs = f.spec ?? f; const fr = inner(fs);
-        if (fr && fr.kind === 'record') { entry.slots.push({ name, kind: 'ref', shape: shapeKey(fs), nullable: nullable(resolve(fs)) || !!f.optional }); visit(fs, d + 1); }
+        if (d + 1 > DEPTH) entry.prims.push(name); // past the depth the field is no pool slot (its shape is never enumerated): the seeded generator draws it, as a primitive field
+        else if (fr && fr.kind === 'record') { entry.slots.push({ name, kind: 'ref', shape: shapeKey(fs), nullable: nullable(resolve(fs)) || !!f.optional }); visit(fs, d + 1); }
         else if (fr && fr.kind === 'array' && inner(fr.of) && inner(fr.of).kind === 'record') { entry.slots.push({ name, kind: 'list', shape: shapeKey(fr.of) }); visit(fr.of, d + 1); }
         else entry.prims.push(name);
       }
@@ -56,7 +57,9 @@ export function enumerateHeaps(spec, k = 2, seed = 1, cap = 48, maxAssignments =
   // shape, so every object of a shape carries the same values and two assignments with the same structure draw the
   // same picture; drawn afresh for every build, so no array, Map or Date is shared between two copies (a side's
   // mutation would otherwise reach the other side: measured on a push into a shared field)
-  const primsFor = (key, env) => { const g = generator(seed * 7 + keys.indexOf(key) * 97, defs, spec.literals ?? [], 0, spec.strings ?? [], spec.regexes ?? []); const vals = {}; for (const name of shapes.get(key).prims) vals[name] = g.gen(shapes.get(key).spec.fields[name].spec ?? shapes.get(key).spec.fields[name], 1, env, `${key}.${name}`); return vals; };
+  // a generated field's path names its shape by its index (heapN): the shape key is the record's field list, thousands of
+  // characters on a wide record, and a fake's path past 400 characters is a budget stop
+  const primsFor = (key, env) => { const g = generator(seed * 7 + keys.indexOf(key) * 97, defs, spec.literals ?? [], 0, spec.strings ?? [], spec.regexes ?? []); const vals = {}; for (const name of shapes.get(key).prims) vals[name] = g.gen(shapes.get(key).spec.fields[name].spec ?? shapes.get(key).spec.fields[name], 1, env, `heap${keys.indexOf(key)}.${name}`); return vals; };
   const build = (choice, env) => { // fresh objects for one assignment
     const objs = new Map(); for (const key of keys) objs.set(key, Array.from({ length: k }, () => primsFor(key, env)));
     const g = generator(seed * 1000003, defs, spec.literals ?? [], 0, spec.strings ?? [], spec.regexes ?? []);

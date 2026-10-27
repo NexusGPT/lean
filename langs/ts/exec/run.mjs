@@ -20,7 +20,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
+import { ts, loadProgram, loadProgramOptions, topLevelFunctions } from '../common.mjs';
 import { Environment, render, BudgetError } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor, aliasInputs } from './gen.mjs';
@@ -82,6 +82,22 @@ function unitShim(src, abs) {
     else if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) names.push(d.name.text);
   }
   return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n`;
+}
+
+// A non-relative import the project's own `paths` map to a source file of this tree: the file, else null (a package, a
+// builtin, a name no `paths` key matches, a declaration file, anything under node_modules). A copy of common.mjs's
+// aliasTarget (lane paths-alias, c26a20b) under the same name, until that export is merged; then this import is that one.
+const pathsKeyMatches = (keys, name) => keys.some((k) => { const i = k.indexOf('*'); if (i < 0) return k === name; const pre = k.slice(0, i), suf = k.slice(i + 1); return name.length >= pre.length + suf.length && name.startsWith(pre) && name.endsWith(suf); });
+const aliasOptions = new Map(); // tsconfig -> its compiler options
+function aliasTarget(fromAbs, spec) {
+  const cfg = ts.findConfigFile(path.dirname(fromAbs), ts.sys.fileExists, 'tsconfig.json');
+  if (!cfg) return null;
+  if (!aliasOptions.has(cfg)) aliasOptions.set(cfg, loadProgramOptions(fromAbs, cfg).options);
+  const options = aliasOptions.get(cfg);
+  if (!options.paths || !pathsKeyMatches(Object.keys(options.paths), spec)) return null;
+  const r = ts.resolveModuleName(spec, fromAbs, options, ts.sys).resolvedModule;
+  if (!r || r.isExternalLibraryImport || /\.d\.[mc]?ts$/.test(r.resolvedFileName) || /[\\/]node_modules[\\/]/.test(r.resolvedFileName)) return null;
+  return r.resolvedFileName;
 }
 
 function resolveRelative(fromFile, spec) {
@@ -288,7 +304,9 @@ export function sandbox(env, root) {
       }
       if (spec === 'react') return react;
       if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
-      return env.module(spec); // packages, builtins, path aliases: the environment
+      const alias = aliasTarget(abs, spec); // the project's own `paths` alias to a file of this package is code, loaded like a relative import
+      if (alias && (!root || alias.startsWith(root + path.sep))) return load(alias);
+      return env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
