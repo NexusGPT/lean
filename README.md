@@ -40,31 +40,7 @@ That is a ledger function whose candidate rejects an event that lands exactly on
 
 ## How it works
 
-```mermaid
-flowchart LR
-  P["parent version<br/>of one function"] --> LINT
-  C["candidate version"] --> LINT
-  S["scope: what was<br/>meant to change"] --> V
-  LINT{"lint: every construct<br/>has a reading?"}
-  LINT -- "no: the rule, the line,<br/>what to write instead" --> B
-  LINT -- "yes" --> A
-  LINT -- "yes" --> B
-  subgraph A ["lane A, the proof"]
-    direction TB
-    T["translate both sides<br/>to Dafny"] --> TH["one lemma per function:<br/>equal outside the scope"] --> D["Dafny and Z3"]
-  end
-  subgraph B ["lane B, bounded execution"]
-    direction TB
-    F["load both under<br/>recording fakes"] --> G["draw inputs from the types,<br/>boundary values first"] --> O["compare outcome, object graph,<br/>effect trace, pending work"]
-  end
-  subgraph FE ["finite lane, components"]
-    direction TB
-    X["every click order from<br/>every prop assignment"]
-  end
-  A --> V["one verdict<br/>+ a certificate"]
-  B --> V
-  B -. "state finite<br/>by its types" .-> FE --> V
-```
+<p align="center"><img src="docs/pipeline.svg" width="100%" alt="How lean reaches a verdict: the lint, then lane B runs both versions and lane A proves them equal; a finite component gets a third rung"></p>
 
 **The lint decides what has a reading.** A function is inside the subset when every construct in it has a meaning as mathematics. The lint names the first construct that does not, with its line, its rule and what to write instead. A function outside the subset still runs in lane B; only the proof is withheld.
 
@@ -80,24 +56,7 @@ flowchart LR
 
 ## The verdicts
 
-```mermaid
-flowchart TB
-  W["WITNESS<br/>an input or a click sequence<br/>on which the two versions differ"]
-  PP["PASS-proved<br/>equal on every input, every world,<br/>every fuel: a theorem Dafny checked"]
-  PD["PASS-decided<br/>a finite component: equal on every<br/>click order, explored to the end"]
-  PB["PASS-bounded<br/>no difference on n inputs<br/>under a frozen world"]
-  ASK["ASK<br/>undecided, and exactly why"]
-  R["REFUSE<br/>a construct with no faithful reading,<br/>named with the line"]
-  W -->|"else"| PP -->|"else"| PD -->|"else"| PB -->|"else"| ASK
-  R -.-> ASK
-  classDef bad fill:#fde8e8,stroke:#c0392b,color:#111
-  classDef good fill:#e8f5e9,stroke:#2e7d32,color:#111
-  classDef mid fill:#fff8e1,stroke:#f9a825,color:#111
-  class W bad
-  class PP,PD good
-  class PB mid
-  class ASK,R mid
-```
+<p align="center"><img src="docs/verdicts.svg" width="100%" alt="The five verdicts, each with what backs it and a real run"></p>
 
 | verdict | what it means | what backs it |
 |---|---|---|
@@ -194,21 +153,7 @@ The slip comes with the input that shows it and the effect trace that differs (`
 
 ### 2. A pull request
 
-```mermaid
-flowchart LR
-  PR["pull request:<br/>base and head commits"] --> IN["intake: one row per changed function<br/>checked, reused, refused, failed, skipped"]
-  IN --> RE{"certificate cached<br/>for this unit key?"}
-  RE -- "yes" --> ROW["row: reused"]
-  RE -- "no" --> CK["check the unit:<br/>lane B, then lane A"]
-  CK --> ROW2["row: verdict + certificate"]
-  ROW --> TBL["one table"]
-  ROW2 --> TBL
-  BUD["budget: time, units<br/>a named stop"] -.-> CK
-  TBL --> CM["one sticky comment,<br/>updated on every push"]
-  TBL --> BL{"block on<br/>WITNESS? ASK?"}
-  BL -- "yes" --> RED["the check fails,<br/>each row annotated at its line"]
-  BL -- "no" --> GREEN["green"]
-```
+<p align="center"><img src="docs/pull-request.svg" width="100%" alt="A pull request becomes one table: intake, cache, check, one comment and an optional blocking check"></p>
 
 [`examples/booking/`](examples/booking/) is a pricing core and a quote service at the shape of a real price-comparison app: shops in zones, per-shop prices with validity days, two kinds of promotion, carts, delivery fees, a service with injected ports. Commit `85136f1` changed it the way a real pull request does: one asked rule (percent promotions capped at half the unit price), one slip while there (`>=` became `>` in the free-delivery test), two refactors that keep behaviour.
 
@@ -301,17 +246,7 @@ The order that worked for us: a shadow run on the last few dozen merged pull req
 
 ### 5. The front end
 
-```mermaid
-flowchart LR
-  IN["props +<br/>hook slots"] --> RENDER["render<br/>(twice, Strict Mode)"]
-  RENDER --> OUT["element tree +<br/>effect and request trace +<br/>pending work"]
-  OUT --> CMD{"command"}
-  CMD -- "fire a handler" --> IN
-  CMD -- "settle effects<br/>(deps by Object.is)" --> IN
-  CMD -- "tick the virtual clock<br/>(timers in due order)" --> IN
-  CMD -- "unmount" --> END["cleanups run"]
-  OUT -. "compared on both sides<br/>after every command" .-> VER["WITNESS as a patch<br/>of the tree, or PASS"]
-```
+<p align="center"><img src="docs/component.svg" width="100%" alt="A React component as a machine: props and hook slots in, a tree out, one step per command"></p>
 
 **A component is a machine.** Its state is the hook slots in call order plus the props; a command is a fired handler, a settle of the effects, a tick of the clock or an unmount; its output after each command is the element tree, the effect and request trace, and the pending work. lean decides at the element-tree layer and says so in every front-end certificate (`observation.layer`, what was rendered, what was not observed). A `WITNESS` is printed as the patch from the parent's tree to the candidate's.
 
@@ -390,50 +325,13 @@ Pixels, layout and the accessibility tree need a browser; no proof exists for th
 
 ### 6. A coding agent's loop
 
-```mermaid
-sequenceDiagram
-  participant A as coding agent
-  participant G as gate tools
-  participant L as lean
-  A->>G: preview(draft)
-  G-->>A: intake table, refusals, relations, witnesses that touch these files
-  loop until PASS or a named stop
-    A->>A: edit
-    A->>G: check_unit(file, unit)
-    G->>L: parent vs candidate
-    L-->>G: verdict + certificate
-    G-->>A: WITNESS with the input, the source lines, the advised rewrite
-  end
-  A->>G: submit(candidate)
-  G-->>A: run record id + verdict
-```
+<p align="center"><img src="docs/agent-loop.svg" width="100%" alt="A coding agent edits, lean checks each changed function and answers with an input, a line and a rewrite"></p>
 
 An agent that writes code needs a judge that is not itself. Today the agent has the lint's work list (`--agent`), `check.mjs` per unit, and a `WITNESS` that carries the source line of the first differing effect or the return on each side with the advised rewrite. Planned: the gate as five tools with fixed input and output schemas (`preview` of what the gate will check on a draft, `check_unit`, `check_artifact`, `witnesses`, `submit`), a reference loop with guards (rounds per unit, a time budget per request, a named stop), every claim the agent records about behaviour run through `check_unit` before it may submit, refusals as structured records, and a witness library: a candidate the gate refused and that later passed stores the input that revealed the defect, and every later run replays it. The agent's words never enter the verdict.
 
 ### 7. lean inside a gate
 
-```mermaid
-flowchart TB
-  REQ["requester: scope S and edit E<br/>on real screens of the parent"] --> REF["reference store<br/>(sealed by hash, read-only)"]
-  PROD["producer: candidate C"] --> BUILD["C2 build with a fixed recipe"]
-  BUILD --> REC["record C twice under the stimuli<br/>every effect through a proxy"]
-  REC --> C3{"C3 reproducible?"}
-  C3 -- "no" --> REFUSE["REFUSE at its location"]
-  C3 -- "yes" --> CHK
-  subgraph CHK ["the checks"]
-    direction LR
-    C4b["C4b every function outside S:<br/>lean proves or finds equal"]
-    C5b["C5b every artifact:<br/>its declared relations hold"]
-    C4a["C4a recordings:<br/>no difference outside S"]
-    C1["C1 generated parts regenerated"]
-    C5a["C5a two places agree"]
-    C6["C6 past witnesses replay"]
-  end
-  REF --> CHK
-  CHK -- "a WITNESS, a broken relation" --> REFUSE
-  CHK -- "difference inside S differs from E" --> ASK["ASK: the requester picks<br/>between E and C's render"]
-  CHK -- "all hold" --> PASS["PASS: a sealed image<br/>and a one-use token"]
-```
+<p align="center"><img src="docs/gate.svg" width="100%" alt="The planned gate around lean: requester, producer, build and record, six checks, and three outcomes"></p>
 
 lean judges functions. A change to a system also touches what is not a function: a job on a runner too small for it, a cache key that omits an input, a file missing from an asset list, a partial locale, a view that replaces a value, a committed symlink, a credential copied without its refresh token. The gate is the acceptance procedure around lean: the requester states the scope and the wanted outcome on real screens of the old build; the producer (a person or an agent) writes the candidate; the gate builds it with a fixed recipe, records it twice under a fixed stimulus set with every effect through a proxy, and applies six checks, two of which are lean (every function outside the scope, C4b) and the artifact lane (every declared relation between artifacts, C5b). A pass seals a read-only image with a one-use token; a refusal names its location and its witness; a difference inside the scope that is not the wanted outcome goes back to the requester as two real renders to pick from. The selection is the only human judgment in the procedure.
 

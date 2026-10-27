@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1b2d"/><stop offset="1" stop-color="#1c2f4a"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/></pattern>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fb3c8"/></marker>
+    <marker id="arrRed" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d98c8c"/></marker>
+    <marker id="arrGreen" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8fd1b0"/></marker>
+    <marker id="arrAmber" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d9c08c"/></marker>
+    <marker id="arrBlue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fc7ea"/></marker>
+    <marker id="arrPale" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c7d9ea"/></marker>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <text x="64" y="80" font-size="40" fill="#f3efe6" letter-spacing="-0.5">lean inside a gate</text>
+  <text x="66" y="120" font-size="22" fill="#9fb3c8">lean judges functions. The gate is a planned acceptance procedure around it; lean is one of its six checks.</text>
+  <rect x="64" y="160" width="300" height="170" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="84" y="194" font-size="15" fill="#9fb3c8" letter-spacing="2">THE REQUESTER</text>
+  <text x="84" y="232" font-size="19" fill="#f3efe6">states the scope S and</text>
+  <text x="84" y="259" font-size="19" fill="#f3efe6">the wanted edit E on</text>
+  <text x="84" y="286" font-size="19" fill="#f3efe6">real screens of the old</text>
+  <text x="84" y="313" font-size="19" fill="#f3efe6">build</text>
+  <polyline points="214,330 214,376" fill="none" stroke="#9fb3c8" stroke-width="1.4" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+  <rect x="64" y="380" width="300" height="150" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="84" y="414" font-size="15" fill="#9fb3c8" letter-spacing="2">REFERENCE STORE</text>
+  <text x="84" y="452" font-size="19" fill="#f3efe6">sealed by hash,</text>
+  <text x="84" y="479" font-size="19" fill="#f3efe6">read-only</text>
+  <polyline points="364,455 710,455" fill="none" stroke="#9fb3c8" stroke-width="1.4" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+  <rect x="64" y="580" width="300" height="150" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="84" y="614" font-size="15" fill="#9fb3c8" letter-spacing="2">THE PRODUCER</text>
+  <text x="84" y="652" font-size="19" fill="#f3efe6">a person or an agent</text>
+  <text x="84" y="679" font-size="19" fill="#f3efe6">writes the candidate C</text>
+  <polyline points="364,655 410,655" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <rect x="414" y="580" width="250" height="150" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="434" y="614" font-size="15" fill="#9fb3c8" letter-spacing="2">BUILD AND RECORD</text>
+  <text x="434" y="652" font-size="19" fill="#f3efe6">a fixed recipe; run</text>
+  <text x="434" y="679" font-size="19" fill="#f3efe6">twice, every effect</text>
+  <text x="434" y="706" font-size="19" fill="#f3efe6">through a proxy</text>
+  <polyline points="664,655 710,655" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <rect x="714" y="160" width="520" height="570" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="734" y="194" font-size="15" fill="#9fb3c8" letter-spacing="2">THE SIX CHECKS</text>
+  <rect x="734" y="214" width="480" height="72" fill="#13223a" stroke="#3d7a62" stroke-width="1.5"/>
+  <text x="752" y="258" font-size="19" fill="#8fd1b0" font-weight="bold">C4b</text>
+  <text x="820" y="244" font-size="18" fill="#f3efe6">lean: every function outside S</text>
+  <text x="820" y="270" font-size="18" fill="#c9d4e0">proved equal or found equal</text>
+  <rect x="734" y="298" width="480" height="72" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="752" y="342" font-size="19" fill="#9fb3c8" font-weight="bold">C5b</text>
+  <text x="820" y="328" font-size="18" fill="#f3efe6">every artifact: its declared</text>
+  <text x="820" y="354" font-size="18" fill="#c9d4e0">relations hold</text>
+  <rect x="734" y="382" width="480" height="72" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="752" y="426" font-size="19" fill="#9fb3c8" font-weight="bold">C4a</text>
+  <text x="820" y="412" font-size="18" fill="#f3efe6">the recordings: no difference</text>
+  <text x="820" y="438" font-size="18" fill="#c9d4e0">outside S</text>
+  <rect x="734" y="466" width="480" height="72" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="752" y="510" font-size="19" fill="#9fb3c8" font-weight="bold">C1</text>
+  <text x="820" y="496" font-size="18" fill="#f3efe6">generated parts regenerated</text>
+  <text x="820" y="522" font-size="18" fill="#c9d4e0">from their sources</text>
+  <rect x="734" y="550" width="480" height="72" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="752" y="594" font-size="19" fill="#9fb3c8" font-weight="bold">C5a</text>
+  <text x="820" y="580" font-size="18" fill="#f3efe6">two places that must agree</text>
+  <text x="820" y="606" font-size="18" fill="#c9d4e0">do agree</text>
+  <rect x="734" y="634" width="480" height="72" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="752" y="678" font-size="19" fill="#9fb3c8" font-weight="bold">C6</text>
+  <text x="820" y="664" font-size="18" fill="#f3efe6">every past witness replays</text>
+  <text x="820" y="690" font-size="18" fill="#c9d4e0">and still fails</text>
+  <polyline points="1234,300 1286,300" fill="none" stroke="#8fd1b0" stroke-width="1.4" marker-end="url(#arrGreen)"/>
+  <polyline points="1234,470 1286,470" fill="none" stroke="#d98c8c" stroke-width="1.4" marker-end="url(#arrRed)"/>
+  <polyline points="1234,640 1286,640" fill="none" stroke="#d9c08c" stroke-width="1.4" marker-end="url(#arrAmber)"/>
+  <rect x="1290" y="240" width="246" height="130" fill="#0b1422" stroke="#3d7a62" stroke-width="1.5"/>
+  <rect x="1290" y="240" width="246" height="40" fill="#1f4a3a"/>
+  <text x="1310" y="268" font-size="19" fill="#f3efe6" font-weight="bold">PASS</text>
+  <text x="1310" y="310" font-size="17" fill="#f3efe6">a sealed image and</text>
+  <text x="1310" y="335" font-size="17" fill="#f3efe6">a one-use token</text>
+  <rect x="1290" y="410" width="246" height="130" fill="#0b1422" stroke="#8a4a4a" stroke-width="1.5"/>
+  <rect x="1290" y="410" width="246" height="40" fill="#5a2a2a"/>
+  <text x="1310" y="438" font-size="19" fill="#f3efe6" font-weight="bold">REFUSE</text>
+  <text x="1310" y="480" font-size="17" fill="#f3efe6">at its location,</text>
+  <text x="1310" y="505" font-size="17" fill="#f3efe6">with its witness</text>
+  <rect x="1290" y="580" width="246" height="150" fill="#0b1422" stroke="#8a7540" stroke-width="1.5"/>
+  <rect x="1290" y="580" width="246" height="40" fill="#4a3f1f"/>
+  <text x="1310" y="608" font-size="19" fill="#f3efe6" font-weight="bold">ASK</text>
+  <text x="1310" y="650" font-size="17" fill="#f3efe6">a difference inside S is</text>
+  <text x="1310" y="675" font-size="17" fill="#f3efe6">not E: the requester</text>
+  <text x="1310" y="700" font-size="17" fill="#f3efe6">picks between two renders</text>
+  <line x1="64" y1="836" x2="1536" y2="836" stroke="#3c5272" stroke-width="1"/>
+  <text x="64" y="868" font-size="18" fill="#8a9bb0">Planned: the run record, the predicate registry, sibling relations, the producer preview, the assurance case. See docs/around-lean.md.</text>
+</svg>
