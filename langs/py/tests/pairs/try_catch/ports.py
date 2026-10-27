@@ -1,0 +1,9 @@
+from typing import Protocol
+
+
+class Port(Protocol):
+    def get(self, id: str) -> str: ...
+
+    def count(self, id: str) -> int: ...
+
+    def log(self, m: str) -> None: ...

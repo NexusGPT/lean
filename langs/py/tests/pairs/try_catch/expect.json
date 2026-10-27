@@ -1,0 +1,6 @@
+{
+ "scope": ["fetcher_load", "fetcher_load_or_throw", "parse", "fetcher_constructor"],
+ "equal": { "fetcher_load": false, "fetcher_load_or_throw": true, "parse": true, "fetcher_constructor": true },
+ "why": "the candidate changes what load returns on the except path: lane A does not prove it, lane B reaches the handler through a faulting call; load_or_throw and parse are untouched",
+ "b": { "Fetcher.load": "WITNESS", "Fetcher.load_or_throw": "PASS-bounded", "parse": "PASS-bounded" }
+}

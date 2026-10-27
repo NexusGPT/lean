@@ -65,6 +65,43 @@ def mangle(t):
     return re.sub(r'[^A-Za-z0-9]+', '_', t).strip('_')
 
 
+def subst(t, sb):
+    """A type with its type parameters replaced by the types a call binds them to."""
+    if t is None:
+        return t
+    k = t[0]
+    if k == 'tvar':
+        return sb.get(t[1], t)
+    if k in ('list', 'opt'):
+        return (k, subst(t[1], sb))
+    if k == 'tuple':
+        return (k, [subst(x, sb) for x in t[1]])
+    if k == 'dict':
+        return (k, subst(t[1], sb), subst(t[2], sb))
+    return t
+
+
+def match(pt, at, sb):
+    """Bind the type parameters of a parameter type from an argument type (first binding wins)."""
+    if pt is None or at is None:
+        return
+    if pt[0] == 'tvar':
+        if pt[1] not in sb and at not in (('nonelit',),) and not (at[0] in ('list', 'dict') and at[1] is None):
+            sb[pt[1]] = at
+        return
+    if pt[0] == at[0]:
+        if pt[0] in ('list', 'opt'):
+            match(pt[1], at[1], sb)
+        elif pt[0] == 'dict':
+            match(pt[1], at[1], sb)
+            match(pt[2], at[2], sb)
+        elif pt[0] == 'tuple' and len(pt[1]) == len(at[1]):
+            for a, b in zip(pt[1], at[1]):
+                match(a, b, sb)
+    elif pt[0] == 'opt':
+        match(pt[1], at, sb)
+
+
 class Env:
     """What is defined at a point of a function: name -> type; the narrowed optionals; list facts."""
 
@@ -132,6 +169,9 @@ class Translator:
 
     def fault_result(self, t):
         d = self.dtype(t)
+        if self.tvars_in(d):
+            self.block('ext_fault_result_any', 'function ext_fault_result_any<T>(): T')
+            return f'ext_fault_result_any<{d}>()'
         return self.external(f'ext_fault_result_{mangle(d)}', [], d) + '()'
 
     def exc_value(self, cls, msg_text):
@@ -463,6 +503,7 @@ class Translator:
     def emit_unit(self, u):
         self.counter = 0
         self.loop_counter = 0
+        self.loop_depth = 1
         self.helpers = []
         self.cur = u
         world = self.is_world(u.name)
@@ -503,10 +544,14 @@ class Translator:
         if world:
             text = 'var wld := ext_clear_fault_World(wld);\n' + text
         if fuel:
-            out = self.external(f'ext_fuel_out_{mangle(rd)}', [], rd) + '()'
+            if self.tvars_in(rd):
+                self.block('ext_fuel_out_any', 'function ext_fuel_out_any<T>(): T')
+                out = f'ext_fuel_out_any<{rd}>()'
+            else:
+                out = self.external(f'ext_fuel_out_{mangle(rd)}', [], rd) + '()'
             text = f'if fuel == 0 then {"(wld, " + out + ")" if world else out} else\n{indent(wrap(text))}'
         head = f'function {name}{tclause}({", ".join(params)}): {RT}'
-        spec = '  decreases fuel\n' if fuel else ''
+        spec = '  decreases fuel, 10, 0\n' if fuel else ''
         sig = self.sig_line(u, name)
         return '\n\n'.join(self.helpers + [f'{sig}\n{head}\n{spec}{{\n{indent(text)}\n}}'])
 
@@ -589,11 +634,11 @@ class Translator:
             if st[0] == 'let':
                 body = f'var {st[1]} := {st[2]};\n{body}'
             elif st[0] == 'check':
-                body = f'if ext_faulted_World(wld) then\n{indent(wrap(st[1]))}\nelse\n{indent(wrap(body))}'
+                body = f'if ext_faulted_World(wld) then\n{indent(wrap(ctx.fault(env)))}\nelse\n{indent(wrap(body))}'
         return body
 
     def check_step(self, ctx, env):
-        return ('check', ctx.fault(env))
+        return ('check',)  # the fault exit is the one of the context the steps are emitted in
 
     def assign(self, s, env, ctx, R):
         if isinstance(s, ast.AugAssign):
@@ -985,7 +1030,11 @@ class Translator:
         inner_env.narrowed = {n for n in env.narrowed if n in free}
         lctx = Ctx(world, ret=lambda e, v: exit_val(e, f'Some({v})'), fault=lambda e: exit_val(e), brk=lambda e: exit_val(e),
                    cont=call_next, rtype=ctx.rtype)
-        body = self.tr(s.body, inner_env, lctx, call_next)
+        self.loop_depth += 1
+        try:
+            body = self.tr(s.body, inner_env, lctx, call_next)
+        finally:
+            self.loop_depth -= 1
         if isinstance(s, ast.While):
             _, hd, ht = self.ex(self._hint_node, body_env, Ctx(False, None, None))
             decreases = hd
@@ -996,10 +1045,11 @@ class Translator:
         for n in M:
             if env.types[n] == INT and self.keeps_nonneg(n, s.body, facts):
                 hints.append(f'{dn(n)} >= 0')
-        specs = [f'  requires {r}' for r in requires] + [f'  ensures ({h}) ==> (var {tup(stateN)} := {call_self}; {h})' for h in hints] + [f'  decreases {decreases}']
+        meas = f'fuel, {10 - self.loop_depth}, {decreases}' if fuel else decreases
+        specs = [f'  requires {r}' for r in requires] + [f'  ensures ({h}) ==> (var {tup(stateN)} := {call_self}; {h})' for h in hints] + [f'  decreases {meas}']
         helper = '\n'.join([f'function {hn}{tcl}({", ".join(params)}): {resT}'] + specs + ['{', indent(f'if {exit_} then {exit_val(None)}\nelse\n{indent(wrap(bind + body))}'), '}'])
         self.helpers.append(helper)
-        first = f'{hn}({", ".join(lead_first + const_a + stateN)})'
+        first = f'{hn}({", ".join(lead_first + const_a + [("None" if x == f"ret{lid - 1}" else x) for x in stateN])})'
         after = env.copy()
         for n in assigned - set(M):
             after.types.pop(n, None)
@@ -1492,8 +1542,10 @@ class Translator:
         fail(n, 'unsupported-member', f'.{n.attr} of a {tstr(t)} has no reading')
 
     # ----- calls -----
-    def bind_args(self, call, params, rest, defaults, env, ctx, node_name):
-        """The arguments of a call in parameter order, coerced: (steps, [text])."""
+    def bind_args(self, call, params, rest, defaults, env, ctx, node_name, sb=None):
+        """The arguments of a call in parameter order, coerced: (steps, [text]). `sb` collects the type
+        parameters the arguments bind (a generic callee)."""
+        sb = {} if sb is None else sb
         steps, out = [], {}
         names = [p[0] for p in params if p[0] != rest]
         pos = list(call.args)
@@ -1511,9 +1563,10 @@ class Translator:
                 continue
             if i < len(names):
                 pt = params[i][1]
-                s, v, t = self.ex(a, env, ctx, pt)
+                s, v, t = self.ex(a, env, ctx, subst(pt, sb))
                 steps += s
-                out[names[i]] = self.coerce(v, t, pt, a)
+                match(pt, t, sb)
+                out[names[i]] = self.coerce(v, t, subst(pt, sb), a)
             elif rest is not None:
                 rt = dict((p[0], p[1]) for p in params)[rest]
                 s, v, t = self.ex(a, env, ctx, rt[1])
@@ -1527,9 +1580,10 @@ class Translator:
             if kw.arg not in names:
                 fail(kw, 'param-form', f'{node_name} has no parameter {kw.arg}')
             pt = dict((p[0], p[1]) for p in params)[kw.arg]
-            s, v, t = self.ex(kw.value, env, ctx, pt)
+            s, v, t = self.ex(kw.value, env, ctx, subst(pt, sb))
             steps += s
-            out[kw.arg] = self.coerce(v, t, pt, kw.value)
+            match(pt, t, sb)
+            out[kw.arg] = self.coerce(v, t, subst(pt, sb), kw.value)
         vals = []
         for nm, pt, _ in [p for p in params if p[0] != rest]:
             if nm in out:
@@ -1557,7 +1611,9 @@ class Translator:
     def call_unit(self, call, uname, recv_text, env, ctx):
         u = self.units[uname]
         ps, rt, rest = self.unit_sig(u)
-        steps, vals = self.bind_args(call, ps, rest, self.defaults(u), env, ctx, uname)
+        sb = {}
+        steps, vals = self.bind_args(call, ps, rest, self.defaults(u), env, ctx, uname, sb)
+        rt = subst(rt, sb)
         callee_world = self.is_world(uname)
         args = []
         if uname in self.recursive:

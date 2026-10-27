@@ -1,0 +1,6 @@
+{
+ "scope": ["notify", "label_of"],
+ "equal": { "notify": true, "label_of": false },
+ "why": "the candidate changes the separator in label_of; notify is untouched",
+ "b": { "notify": "PASS-bounded", "label_of": "WITNESS" }
+}

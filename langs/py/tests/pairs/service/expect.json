@@ -1,0 +1,6 @@
+{
+ "scope": ["chat_service_label", "chat_service_regenerate", "chat_service_dto", "chat_service_constructor"],
+ "equal": { "chat_service_label": false, "chat_service_regenerate": false, "chat_service_dto": true, "chat_service_constructor": true },
+ "why": "the candidate changes the separator in label; regenerate calls label so it differs too; dto and the constructor are untouched",
+ "b": { "ChatService.label": "WITNESS", "ChatService.regenerate": "WITNESS", "ChatService.dto": "PASS-bounded" }
+}
