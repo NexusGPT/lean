@@ -20,7 +20,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | ExpressionStatement | 24981 | 39.9% | admitted | exact for assignments, ++/--, calls and awaits; a `=` into a field of `process` a world transition (process-write, done (lane)); anything else refused (unsupported-syntax) | same |
 | IfStatement | 23894 | 38.1% | admitted | exact | same |
 | NumericLiteral | 18802 | 30% | admitted | exact as int or real by file; -0 witnessed in lane B, refused from the heap core | same |
-| ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; a synchronous array-method callback writing outer cells as a loop body (stage 5 rank 19); otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
+| ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; a synchronous array-method callback writing outer cells as a loop body (stage 5 rank 19); a const arrow only ever called as a statement spliced at each call (stage 5 rank 21); otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
 | ThisKeyword | 17059 | 27.2% | admitted | exact as the receiver (self) of a class unit; a field read a world read; a write a world write | the receiver as a heap node |
 | ParenthesizedExpression | 16252 | 25.9% | admitted | exact | same |
 | TemplateExpression | 16167 | 25.8% | admitted | exact (string concatenation of converted parts) | same |
@@ -68,7 +68,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | DeleteExpression | 524 | 0.8% | admitted | refused (delete) | heap key removal on the ledger |
 | YieldExpression | 295 | 0.5% | admitted | generators: a bounded reading; most forms refused (generator-use) | a state machine on the ledger |
 | MethodDeclaration | 285 | 0.5% | no case (refused by default, or reached through its parent) | exact for class methods as units Class.method and immutable object-literal methods as function fields; a mutating literal method refused (object-method-mutation) | a callable record on the object's proto |
-| FunctionDeclaration | 248 | 0.4% | admitted | exact as a unit; nested declarations as local function values | same |
+| FunctionDeclaration | 248 | 0.4% | admitted | exact as a unit; nested declarations as local function values, or spliced at each call statement when only ever called (stage 5 rank 21) | same |
 | OmittedExpression | 217 | 0.3% | no case (refused by default, or reached through its parent) |  |  |
 | DoStatement | 196 | 0.3% | admitted | exact for the admitted forms | same |
 | TaggedTemplateExpression | 186 | 0.3% | admitted | refused (unsupported-syntax) unless the tag is a known pure tag | a call with the strings array |

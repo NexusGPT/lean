@@ -842,5 +842,75 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "local_procedures_countWords",
+  "file": "local_procedures.ts",
+  "fn": "countWords",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "a b",
+     "c"
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     "one two three"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "local_procedures_gather",
+  "file": "local_procedures.ts",
+  "fn": "gather",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     -2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     0
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "local_procedures_tagged",
+  "file": "local_procedures.ts",
+  "fn": "tagged",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     5
+    ]
+   ]
+  ]
  }
 ]

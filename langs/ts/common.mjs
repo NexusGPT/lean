@@ -438,3 +438,58 @@ export function syncLoopCallback(n, checker) {
   if (!n || !ts.isArrowFunction(n) || !n.parent || n.parent.arguments?.[0] !== n || n.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword)) return false;
   return syncLoopCall(n.parent, checker);
 }
+
+// Stage 5 rank 21. A local procedure: a function declared inside a unit (a const arrow with a block body, or a nested
+// function declaration) whose name is used only as the callee of plain calls of its arity, whose body never returns a
+// value, throws, tries, awaits, yields, reads `this` or `arguments` or names itself, and whose declared names (its
+// parameters and locals) collide with no name the unit declares outside it. Each call is read as the body spliced at the
+// call site with the parameters bound to the arguments, so an outer cell the body writes threads like any statement.
+export function localProcedure(decl, checker, unitFn) {
+  const K = ts.SyntaxKind;
+  let fn, name;
+  if (ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && decl.initializer && ts.isArrowFunction(decl.initializer) && ts.isBlock(decl.initializer.body)) { fn = decl.initializer; name = decl.name; }
+  else if (ts.isFunctionDeclaration(decl) && decl.name && decl.body) { fn = decl; name = decl.name; }
+  else return null;
+  if (!unitFn || !(decl.pos >= unitFn.pos && decl.end <= unitFn.end) || decl === unitFn) return null;
+  if (fn.modifiers?.some((m) => m.kind === K.AsyncKeyword) || fn.asteriskToken || fn.typeParameters) return null;
+  if (!fn.parameters.every((p) => ts.isIdentifier(p.name) && !p.dotDotDotToken && !p.questionToken && !p.initializer)) return null;
+  const sym = checker.getSymbolAtLocation(name);
+  if (!sym) return null;
+  let bad = false, calls = 0;
+  const inBody = (n) => {
+    if (bad) return;
+    if (ts.isReturnStatement(n) || ts.isThrowStatement(n) || ts.isTryStatement(n) || ts.isAwaitExpression(n) || ts.isYieldExpression(n) || n.kind === K.ThisKeyword || (ts.isIdentifier(n) && n.text === 'arguments')) { bad = true; return; }
+    if (ts.isIdentifier(n) && checker.getSymbolAtLocation(n) === sym) { bad = true; return; }
+    ts.forEachChild(n, inBody);
+  };
+  inBody(fn.body);
+  if (bad) return null;
+  const refs = (n) => {
+    if (bad || n === decl) return;
+    if (ts.isIdentifier(n) && n !== name && checker.getSymbolAtLocation(n) === sym) {
+      const p = n.parent;
+      if (!(p && ts.isCallExpression(p) && p.expression === n && !p.questionDotToken && p.arguments.length === fn.parameters.length && !p.arguments.some(ts.isSpreadElement) && p.parent && ts.isExpressionStatement(p.parent))) { bad = true; return; }
+      calls++;
+    }
+    ts.forEachChild(n, refs);
+  };
+  refs(unitFn);
+  if (bad || !calls) return null;
+  // a name the body declares that the unit also declares outside it would shadow the unit's after the splice: refused,
+  // except a parameter the body never assigns that every call passes under that same name (`keep(x)` in `for (const x of xs)`)
+  const inside = new Map(), outside = new Set();
+  const declNames = (n, add, skip) => { if (n === skip) return; if ((ts.isParameter(n) || ts.isVariableDeclaration(n) || ts.isBindingElement(n) || ts.isFunctionDeclaration(n)) && n.name && ts.isIdentifier(n.name)) add(n.name.text, n); ts.forEachChild(n, (c) => declNames(c, add, skip)); };
+  declNames(fn, (k, n) => inside.set(k, n), null);
+  declNames(unitFn, (k) => outside.add(k), fn);
+  outside.delete(name.text);
+  const assigned = new Set();
+  const writes = (n) => { if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(n.left)) assigned.add(n.left.text); if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) && ts.isIdentifier(n.operand)) assigned.add(n.operand.text); ts.forEachChild(n, writes); };
+  writes(fn.body);
+  const callArgs = []; const collect = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression !== name && checker.getSymbolAtLocation(n.expression) === sym) callArgs.push(n.arguments); ts.forEachChild(n, collect); }; collect(unitFn);
+  for (const [k, n] of inside) {
+    if (!outside.has(k)) continue;
+    const i = ts.isParameter(n) ? fn.parameters.indexOf(n) : -1;
+    if (i < 0 || assigned.has(k) || !callArgs.every((as) => ts.isIdentifier(as[i]) && as[i].text === k)) return null;
+  }
+  return { decl, fn, name: name.text, sym };
+}
