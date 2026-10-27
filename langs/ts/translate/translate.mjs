@@ -32,7 +32,8 @@ import { createHash } from 'node:crypto';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, countedFor, syncLoopCallback, localProcedure } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind } from '../hooks.mjs';
-import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable } from '../decorators.mjs';
+import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
+import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember } from '../common.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
@@ -1491,6 +1492,7 @@ export function translate(file, fnName, opts = {}) {
       case 'SetOf': text = `function ${name}(s: seq<${A}>): set<${A}> { set x | x in s }`; break;
       case 'Repeat': text = `function ${name}(s: string, n: int): string decreases n { if n <= 0 then "" else s + ${name}(s, n - 1) }`; break;
       case 'Reverse': text = `function ${name}(s: seq<${A}>): seq<${A}> decreases |s| { if |s| == 0 then [] else ${name}(s[1..]) + [s[0]] }`; break;
+      case 'ObjectProtoNames': text = `const ${name}: set<string> := {${OBJECT_PROTO_NAMES.map((x) => JSON.stringify(x)).join(', ')}}`; break; // Object.getOwnPropertyNames(Object.prototype): the names \`in\` finds on every plain object
       default: fail(sf, `no helper ${kind}`);
     }
     prelude.set(name, text);
@@ -2223,7 +2225,9 @@ export function translate(file, fnName, opts = {}) {
         else if (isNullish(vt)) hit = loose || hasAbsence(vt, kind === 'Null' ? TF.Null : TF.Undefined) ? 'true' : 'false';
         else if (bothAbsent(vt)) hit = loose ? `!${value}.Some?` : `${value}.${kind}?`;
         else if (isOptional(vt) && (loose || hasAbsence(vt, kind === 'Null' ? TF.Null : TF.Undefined))) hit = `${value}.None?`;
-        test = `(if ${present} then ${hit} else ${loose || kind === 'Undef'})`;
+        // a key the dictionary does not own reads through Object.prototype: a name of it is a function (or the prototype itself for __proto__), neither undefined nor null; a file that makes another prototype keeps the own-key reading
+        const inherited = !prototypeMaker(checker, sf) && (loose || kind === 'Undef') ? ` && !(${dict.key} in ${helper('ObjectProtoNames', [])})` : '';
+        test = `(if ${present} then ${hit} else ${loose || kind === 'Undef'}${inherited})`;
       } else if (isAny(t) || isAny(dt)) {
         const value = isAny(dt) ? rawOperand(other) : expr(other), id = `na${tempCount++}_`;
         const N = external('is_null_Any', ['Any'], 'bool'), U = external('is_undefined_Any', ['Any'], 'bool');
@@ -2288,12 +2292,19 @@ export function translate(file, fnName, opts = {}) {
       return staticTest(n.left, (t) => target ? instanceDecision(t, target, n) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}`, [d], 'bool')}(${v})`);
     }
     if (op === K.InKeyword) {
+      { const pm = prototypeMaker(checker, sf); if (pm) fail(n, `prototype: this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pm.getStart(sf))}), and \`in\` reads the prototype; test an own key with Object.prototype.hasOwnProperty.call(o, k)`); }
       const rt0 = typeOf(n.right); const rd = (() => { try { return isAny(rt0) ? 'Any' : dtype(rt0, n); } catch { return 'Any'; } })();
       if (assertionDerived(n.left) || assertionDerived(n.right)) return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
-      if (rd.startsWith('map<string') && (typeOf(n.left).flags & TF.StringLike)) return `(${expr(n.left)} in ${expr(n.right)})`; // a key test on a dictionary is exact
+      if (rd.startsWith('map<string') && (typeOf(n.left).flags & TF.StringLike)) {
+        // a key test on a dictionary (a plain object): an own key, or a name of Object.prototype; a Map's entries are no properties, so `in` on a Map is an uninterpreted test of the Map and the key
+        if (!isDictionary(checker, baseOf(rt0))) return `${external('in_object', ['string', rd], 'bool')}(${expr(n.left)}, ${expr(n.right)})`;
+        const k = `ik${tempCount++}_`;
+        return `(var ${k} := ${expr(n.left)}; ${k} in ${expr(n.right)} || ${k} in ${helper('ObjectProtoNames', [])})`;
+      }
       if (ts.isStringLiteral(n.left)) {
         const key = n.left.text;
-        return staticTest(n.right, (t) => { const p = checker.getPropertyOfType(t, key); return p && !(p.flags & ts.SymbolFlags.Optional) ? 'true' : null; }, (v, d) => `${external('in_record', [d, 'string'], 'bool')}(${v}, ${strEsc(key)})`);
+        // a declared required key, or a name of Object.prototype on a plain object (a record or a dictionary), is present
+        return staticTest(n.right, (t) => { const p = checker.getPropertyOfType(t, key); if (p && !(p.flags & ts.SymbolFlags.Optional)) return 'true'; return OBJECT_PROTO_NAMES.includes(key) && (recordKeys(checker, t) || isDictionary(checker, t)) ? 'true' : null; }, (v, d) => `${external('in_record', [d, 'string'], 'bool')}(${v}, ${strEsc(key)})`);
       }
       return `${external('in_Any', [anyType(), anyType()], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
     }
@@ -2428,6 +2439,7 @@ export function translate(file, fnName, opts = {}) {
     } finally { objectData = prev; }
   }
   function objectLit(n, expected) {
+    { const pp = n.properties.find(literalProtoMember); if (pp) fail(pp, 'prototype: `__proto__:` in a literal sets the prototype, not a key'); }
     if (literalRecord(typeOf(n))) {
       const t = typeOf(n), d = dtype(t, n), fields = new Map();
       for (const p of n.properties) if (!ts.isMethodDeclaration(p) && !ts.isGetAccessorDeclaration(p)) {
@@ -3396,7 +3408,7 @@ export function translate(file, fnName, opts = {}) {
       const key = expr(ok.key, typeOf(ok.key));
       return ok.kind === 'dict' ? `(${key} in ${expr(ok.obj)})` : `(${key} in {${ok.keys.map(strEsc).join(', ')}})`;
     } }
-    if (isNullCreate(n) && dictionaryT(checker.getContextualType(n))) return 'map[]'; // `Object.create(null)` as a dictionary: empty, no prototype to read
+    if (isNullCreate(n)) fail(n, 'prototype: `Object.create(null)` makes an object without a prototype; a plain object reads through Object.prototype and a dictionary is one map for both'); // the heap core's prototype bit (design/heap-stage4.md section 6) is the reading that would admit it
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       const callee = fns.get(f.text);
