@@ -11,8 +11,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts } from '../common.mjs';
-import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore } from '../check.mjs';
+import { ts, dn } from '../common.mjs';
+import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf } from '../check.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -128,7 +128,7 @@ function differential(label, tsFile, entries) {
   if (t.status !== 0) { add('differential', label, 'translate --core', false, (t.stderr || t.stdout).trim().split('\n')[0]); return; }
   const lines = [], want = [];
   for (const { fn, samples } of entries) for (const args of samples) {
-    lines.push(`  print ${snake(fn)}(${args.map(dfyLit).join(', ')}), "\\n";`);
+    lines.push(`  print ${dn(snake(fn))}(${args.map(dfyLit).join(', ')}), "\\n";`); // the unit's Dafny name as the translator writes it (common.mjs dn)
     want.push(show(mod.exports[fn](...args)));
   }
   fs.appendFileSync(dfy, `\nmethod Main() {\n${lines.join('\n')}\n}\n`);
@@ -230,7 +230,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     const viaRests = provedLemma(`Equal_${f}`, spanClean, rests);
     const through = viaRests || !spanClean(`Equal_${f}`) ? [] : restsClosure(rests, `Equal_${f}`).filter((k) => !provedLemma(k, spanClean, rests));
     const whole = finished && !!sp && viaRests;
-    const parts = Object.keys(spans).filter((k) => k.startsWith(`EqualCanon_${f}_`)); // the canonical-heap certificate: every part must hold
+    const parts = canonPartsOf(Object.keys(spans), f); // the canonical-heap certificate: every part must hold (check.mjs canonPartsOf: this unit's parts only)
     const canon = finished && parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]));
     const proved = whole || canon;
     const withheld = lines.find((ln) => ln.startsWith(`// UNGUARDED Equal_${f}: `));

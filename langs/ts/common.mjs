@@ -28,6 +28,19 @@ export const COMPILER_OPTIONS = {
 // they would hide the real verdict behind missing modules, so they are reported under their own rule.
 export const RESOLUTION_CODES = new Set([2307, 2305, 2306, 2792, 7016, 2688, 6053, 6059, 5083, 2300, 2724, 2875, 2705, 2580, 2583, 2584, 2304, 2503, 1700, 2591, 2694]); // what the checkout failed to resolve or provide (a module, a lib, a global type, the JSX runtime), never a defect of the function
 
+// A name's Dafny identifier: every character outside [A-Za-z0-9_] becomes `_`, a leading `_` takes a `u` before it, and a
+// Dafny keyword or a name the prelude declares takes a trailing `_` (a unit `label` is the Dafny function `label_`, its
+// lemma `Equal_label_`). The translator names every unit, local and field through it, and check.mjs and the suite name
+// a unit's lemmas through it, so a lemma name is never recomputed by a second rule.
+export const RESERVED = new Set(['abstract', 'allocated', 'as', 'assert', 'assume', 'bool', 'break', 'by', 'calc', 'case', 'char', 'class', 'codatatype',
+  'const', 'constructor', 'datatype', 'decreases', 'else', 'ensures', 'exists', 'expect', 'export', 'extends', 'false', 'forall', 'fp', 'function',
+  'ghost', 'if', 'import', 'in', 'include', 'inductive', 'int', 'invariant', 'is', 'iterator', 'label', 'lemma', 'map', 'match', 'method', 'modifies',
+  'modify', 'module', 'multiset', 'nameonly', 'nat', 'new', 'newtype', 'null', 'object', 'old', 'opaque', 'predicate', 'print', 'provides', 'reads',
+  'real', 'refines', 'requires', 'return', 'returns', 'reveal', 'seq', 'set', 'static', 'string', 'then', 'this', 'trait', 'true', 'type', 'unchanged',
+  'var', 'while', 'witness', 'yield', 'yields', 'result', 'Option', 'None', 'Some', 'value', 'Nullish', 'Absent', 'Null', 'Undef', 'PromiseHandle',
+  'fresh', 'twostate', 'ORDINAL', 'array', 'iset', 'imap', 'bv', 'least', 'greatest', 'continue', 'default', 'extern', 'exports', 'synthesize']);
+export const dn = (name) => { let n = name.replace(/[^A-Za-z0-9_]/g, '_'); if (n.startsWith('_')) n = 'u' + n; return RESERVED.has(n) ? `${n}_` : n; };
+
 /**
  * loadProgram(file, {project}) — project: a tsconfig path, true (search upward from the file), or false
  * (single file, strict). Returns {program, sf, checker, diagnostics, abs, projectFile}.

@@ -21,12 +21,18 @@ import { fileURLToPath } from 'node:url';
 import { runPair, crumb, crumbText, verdictGuard } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
-import { ts, loadProgram, topLevelFunctions } from './common.mjs';
+import { ts, loadProgram, topLevelFunctions, dn } from './common.mjs';
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
 const snake = (n) => n.replace('.', '_').replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
+// a unit's Dafny name, the one the translator gives its function and theorem.py its lemmas: `Class.method` and camelCase
+// in snake case, then common.mjs dn (a Dafny keyword takes a trailing `_`: the unit `label` has the lemma `Equal_label_`)
+export const dafnyName = (unit) => dn(snake(unit));
+// the parts of the canonical-heap certificate of the unit whose Dafny name is f: `EqualCanon_<f>_<part>`, a part one
+// lower-case word (spec/theorem.py), so the parts of a unit `f_g` are never read as parts of a unit `f`
+export const canonPartsOf = (keys, f) => keys.filter((k) => k.startsWith(`EqualCanon_${f}_`) && /^[a-z]+$/.test(k.slice(`EqualCanon_${f}_`.length)));
 const run = (cmd, args, timeoutMs) => { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: !!r.error && r.error.code === 'ETIMEDOUT' }; };
 
 export async function check(opts) {
@@ -36,7 +42,7 @@ export async function check(opts) {
   // answer that claim and never ends the question
   const scopeFile = scope ? JSON.parse(fs.readFileSync(scope, 'utf8')) : null;
   const declared = { ...(() => { try { return commentAdapters(candidate); } catch { return {}; } })(), ...(adapters ?? {}), ...(scopeFile?.adapters ?? {}) };
-  const adapter = declared[snake(unit)] ? { name: snake(unit), ...declared[snake(unit)], door: declared[snake(unit)].door ?? 'scope' } : null;
+  const adapter = declared[dafnyName(unit)] ? { name: dafnyName(unit), ...declared[dafnyName(unit)], door: declared[dafnyName(unit)].door ?? 'scope' } : null;
   const cert = { tool: 'lean-ts v3', unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {} };
   // ---- lane B ----
   const b = await runPair({ parent, candidate, unit, n, seed, project, deep });
@@ -79,7 +85,7 @@ export async function check(opts) {
     cert.lanes.A = { verdict: iface ? 'ASK:interface' : 'ASK:theorem', detail: why };
     return finish(iface || adapter ? 'ASK' : (rung()), cert, {});
   }
-  const withheldLine = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED Equal_${snake(unit)}: (interface differs: .*)$`, 'm')) || [])[1] ?? null;
+  const withheldLine = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED Equal_${dafnyName(unit)}: (interface differs: .*)$`, 'm')) || [])[1] ?? null;
   if (withheldLine && !adapter) { // a changed signature without an adapter: ASK:interface naming the door, whatever lane B found
     cert.lanes.A = { verdict: 'ASK:interface', identity: withheldLine, dir: tmp };
     if (b.verdict === 'WITNESS') cert.lanes.B.consulted = false; // ran and recorded; not the answer to an ill-posed comparison
@@ -94,8 +100,8 @@ export async function check(opts) {
   lines.forEach((ln, i) => { const mm = ln.match(/^lemma (?:\{[^}]*\}\s+)*(Equal(?:Canon|Direct)?_\w+)\(/); if (mm) { cur = mm[1]; spans[cur] = [i + 1, null]; } if (/^\} \/\/ END Equal(Canon|Direct)?_/.test(ln) && cur) spans[cur][1] = i + 1; });
   const errs = [...text.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((x) => Number(x[1]));
   const lemmas = Object.fromEntries(Object.entries(spans).map(([k, [a, bb]]) => [k, !errs.some((L) => a <= L && L <= bb)]));
-  const main = `Equal_${snake(unit)}`;
-  const canonParts = Object.keys(lemmas).filter((k) => k.startsWith(`EqualCanon_${snake(unit)}_`)); // the canonical-heap certificate: every part must hold (equal up to a renaming of fresh cells and up to dropped allocations)
+  const main = `Equal_${dafnyName(unit)}`;
+  const canonParts = canonPartsOf(Object.keys(lemmas), dafnyName(unit)); // the canonical-heap certificate: every part must hold (equal up to a renaming of fresh cells and up to dropped allocations)
   const canon = canonParts.length ? { parts: Object.fromEntries(canonParts.map((k) => [k, lemmas[k]])), proved: canonParts.every((k) => lemmas[k]) } : null;
   if (m && canon && canon.proved && !lemmas[main]) lemmas[main] = true; // the unit is proved by the canonical reading; lanes.A.reading says which
   // the callee summaries the unit's lemma rests on, each with its own result; the unit is proved only when every lemma it
@@ -111,7 +117,7 @@ export async function check(opts) {
   const adapterLine = (lines.find((ln) => ln.startsWith(`// ADAPTER ${main}: `)) ?? '').replace(`// ADAPTER ${main}: `, '');
   const unguarded = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED ${main}: (.*)$`, 'm')) || [])[1] ?? null; // the identity guard withheld the lemma: the value reading could not be shown to be a graph reading
   cert.lanes.A = { verdict: unguarded ? (unguarded.startsWith('interface') ? 'ASK:interface' : 'ASK:identity') : m ? (lemmas[main] ? 'PASS-proved' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), identity: unguarded, lemmas, reading: m && lemmas[main] ? (canon && canon.proved && !(spans[main] && !errs.some((L) => spans[main][0] <= L && L <= spans[main][1])) ? 'canonical heap: equal up to a renaming of fresh cells and up to dropped allocations' : 'whole heap') : null, canonical: canon, heapCore: heapOf('candidate').split(',').filter(Boolean), dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnySeconds, dir: tmp, restsOn, ...(through.length ? { ownLemma, unprovedThrough: through } : {}), ...(inductionLine ? { induction: { measure: (inductionLine.match(/^decreases (\S+)/) ?? [])[1] ?? null, component: ((inductionLine.match(/ over ([\w,]+);/) ?? [])[1] ?? '').split(',').filter(Boolean), termination: inductionLine.replace(/^.*?; termination: /, '') } } : {}), ...(adapterLine ? { adapter: { ...adapter, theorem: adapterLine } } : {}) };
-  const cellsLine = cand.match(new RegExp(`^// CELLS ${snake(unit)}_candidate: (.*)$`, 'm')); // the state-completeness audit: every persistent cell the unit touches, each matched to its transition
+  const cellsLine = cand.match(new RegExp(`^// CELLS ${dafnyName(unit)}_candidate: (.*)$`, 'm')); // the state-completeness audit: every persistent cell the unit touches, each matched to its transition
   if (cellsLine) { try { cert.lanes.A.cells = JSON.parse(cellsLine[1]); } catch { cert.lanes.A.cells = null; } }
   if (cert.lanes.A.cells && cert.lanes.A.cells.obligations.length && m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:obligation'; return finish('ASK', cert, { reason: `obligation: ${cert.lanes.A.cells.obligations.join('; ')}` }); } // a cell the unit touches without a transition: the lemma proves nothing about it
   const lib = b.bound?.library; // lane B's record of the unit's built-in calls against the library table: a defect is a wrong row, and the proof read that row
@@ -160,7 +166,7 @@ export function agreeCore({ files, dfyOf, tr, heap = true }) {
     const text = fs.existsSync(dfyOf(side)) ? fs.readFileSync(dfyOf(side), 'utf8') : '';
     const hdr = (key) => (text.match(new RegExp(`^// ${key}: (.*)$`, 'm')) ?? [])[1]?.trim() ?? '';
     const defined = new Set([...text.matchAll(/^\/\/ CELLS ([A-Za-z0-9_]+): /gm)].map((m) => m[1])); // every unit the translation emitted has its CELLS line (written once the unit is read)
-    return { eff: hdr('EFFECTFUL'), heap: hdr('HEAP').split(',').filter(Boolean), held: new Set(units[side].filter((u) => { const x = snake(u).replace(/[^A-Za-z0-9_]/g, '_').replace(/^_/, 'u_'); return defined.has(`${x}_${side}`) || defined.has(`${x}__${side}`); })) }; // the unit's Dafny name as the translator writes it (a Dafny keyword takes a trailing underscore)
+    return { eff: hdr('EFFECTFUL'), heap: hdr('HEAP').split(',').filter(Boolean), held: new Set(units[side].filter((u) => defined.has(`${dafnyName(u)}_${side}`))) }; // the unit's Dafny name as the translator writes it (dafnyName: a Dafny keyword takes a trailing underscore)
   };
   const list = (xs) => (heap ? [...new Set(xs)].sort().join(',') : undefined);
   const p1 = tr('parent', '', undefined);
@@ -196,7 +202,7 @@ export function commentAdapters(file) {
     for (const r of ts.getLeadingCommentRanges(text, node.getFullStart()) ?? []) {
       const m = text.slice(r.pos, r.end).match(/^\/\/\s*lean-adapter\s+(\{.*\})\s*$/);
       if (!m) continue;
-      try { out[snake(u.name)] = { ...JSON.parse(m[1]), door: 'comment' }; } catch { out[snake(u.name)] = { door: 'comment', from: null, to: null, map: null }; } // a comment that is not JSON: the theorem refuses it by name
+      try { out[dafnyName(u.name)] = { ...JSON.parse(m[1]), door: 'comment' }; } catch { out[dafnyName(u.name)] = { door: 'comment', from: null, to: null, map: null }; } // a comment that is not JSON: the theorem refuses it by name
     }
   }
   return out;
