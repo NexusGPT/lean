@@ -149,7 +149,7 @@ export class Environment {
         env.record('get', `${path}.${String(prop)}`);
         return env.answer(`${path}.${String(prop)}`);
       },
-      set(t, prop, value) { env.record('set', `${path}.${String(prop)}`, [render(value)]); return true; },
+      set(t, prop, value) { env.record('set', `${path}.${String(prop)}`, [render(value)]); if (typeof value === 'function' && !value.__isFake && env.knownCallables) env.knownCallables.push({ path: `${path}.${String(prop)}`, fn: value }); return true; }, // a handler assigned to the environment: a program may call it later
       has(t, prop) { env.record('has', `${path}.${String(prop)}`); return false; },
       deleteProperty(t, prop) { env.record('delete', `${path}.${String(prop)}`); return true; },
       apply(t, thisArg, args) {
@@ -172,6 +172,7 @@ export class Environment {
             if (typeof a === 'function' && !a.__isFake) cbs.push([a, '']);
             else if (a && typeof a === 'object' && !a.__isFake && !Array.isArray(a)) for (const k of Object.keys(a)) if (typeof a[k] === 'function' && !a[k].__isFake) cbs.push([a[k], '.' + k]);
           }
+          for (const [a, tag] of cbs) if (env.knownCallables && !/^class\s/.test(Function.prototype.toString.call(a))) env.knownCallables.push({ path: path + tag, fn: a }); // a callback handed to the environment: a program may fire it again
           for (const [a, tag] of cbs) if (a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) {
             // a callback that recurses through the environment (a visitor over fakes) is bounded: past the depth it is a budget, not a behaviour
             if (env.cbDepth >= 40) throw new BudgetError('callback recursion deeper than 40 through the environment');

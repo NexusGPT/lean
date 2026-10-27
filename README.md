@@ -275,7 +275,7 @@ Code written with the lint on is inside the subset from the first line. Code wri
 
 **Scope is optional.** Without it, every changed function of a pull request is judged and a difference is a `WITNESS`. With it, a function you name as meant to change reports `IN-SCOPE` with its lane B result: its difference is information, not a finding. Scope is declared, never inferred: function names, input predicates over the parameters, effect operations allowed to change. The producer of a change is never consulted.
 
-**Lane B needs only Node.** Dafny and Python are needed for the proof lane alone; without them every verdict is lane B's (`WITNESS`, `PASS-decided`, `PASS-bounded`, `ASK`) and the certificate says the proof lane did not run.
+**Lane B needs only Node** (fast-check, which draws and shrinks its environment programs, is vendored under `langs/ts/vendor` with its licence). Dafny and Python are needed for the proof lane alone; without them every verdict is lane B's (`WITNESS`, `PASS-decided`, `PASS-bounded`, `ASK`) and the certificate says the proof lane did not run.
 
 A pull request then carries, per changed function, one verdict and its certificate; `WITNESS` comes with the input or the click sequence, `PASS-proved` with a theorem anyone can re-check.
 

@@ -72,13 +72,13 @@ with my ruling where it differs from the dossier.
 | Steensgaard may-alias, HotSpot escape | 13 §25, §26 | REFERENCE (dossier said PORT) | `heap.mjs` `identitySkeleton` | the skeleton already treats every input path as a may-alias and every fresh node used twice as shared; a separate unification pass adds nothing the guard needs | 0 |
 | Hobbit closure search | 14 §4 | REFERENCE, later (dossier said PORT) | none now | a bisimulation search over paired worlds is the escalation for closures with state; the one-step proof over the complete ledger comes first | later |
 | W-method suite | 14 §22 | folded into the finite-state lane | `exec/finite.mjs` | the declared finite domain is the fault domain, so the product exploration is complete without a separate W | 0 |
-| Retained-state command runner | 14 design (a) | PORT | `exec/run.mjs`: one Environment per side per program, `commandSequence(spec, seed, i, len)` in `gen.mjs`, greedy delete shrinking | the counter pair gives a two-command WITNESS; clean runs stay PASS-bounded with the command count in the certificate | 6 d |
+| Retained-state command runner | 14 design (a) | BUILT 2026-10-27 | `exec/programs.mjs` `runPrograms`, `run.mjs` (programs first for a class unit), `bound.programs` | twelve seeded programs of 1..5 commands on one constructed instance per side; the alphabet is the unit and the methods unchanged on both sides, every program ending with the unit; the first divergence shrunk by greedy deletion is the WITNESS; the counter pair's `step` gives a two-command witness, `bump` a one-command one, `label` and `flush` twelve clean programs | done |
 | Finite-state product | 14 design (b) | PORT | new `exec/finite.mjs` | breadth-first over (parent state, candidate state) pairs when every cell and argument is a literal union, boolean or enum read from the types; PASS-decided with the pair count and visited-set hash | 6 d |
 | State-completeness audit | 14 design (c) | BUILT 2026-10-27 | `translate/translate.mjs` `cellsOf` (`// CELLS <unit>` header), `check.mjs` `lanes.A.cells`, `ASK:obligation` | every persistent cell a unit touches (module cells, fields of this, outside roots), read or written or changed through a mutator, each matched to the transition the emitted Dafny names; a touched cell with no transition is an obligation and lane A says ASK:obligation; what the stateful pairs report: section 2 | done |
-| fast-check model-based commands | 15 §26 | DEPENDENCY | vendored under `langs/ts/vendor/fast-check` (MIT, 4.10.2), new `exec/program.mjs` | one command class per legal operation (`call`, `retain`, `invoke`, `tick`, `settle`, `fire`, `next`, `throw`, `return`); `fc.commands` shrinks and `replayPath` replays | 8 to 12 d |
+| fast-check model-based commands | 15 §26 | BUILT 2026-10-27 | `langs/ts/vendor/fast-check` 4.10.2 and `pure-rand` 8.4.2 (MIT, ESM builds, `VENDOR.md`), `exec/program.mjs`, `run.mjs` (after the single calls of a free function), `bound.environmentPrograms` | commands `call`, `invoke`, `fire`, `tick`, `settle`, `next`/`throw`/`return`, each legal by the model (a retained function, a handed-over callback, an armed timer, a retained generator); `fc.commands` draws and shrinks, the replay runs again by seed, path and the commands' replay path before the WITNESS is reported; pair `env_programs` | done |
 | Virtual clock (Jest, Node MockTimers semantics) | 15 §27, §28 | PORT | `exec/fake.mjs` `clock` beside `pending`; `run.mjs:117-120` | `tick(ms)` fires due timers in arm order, intervals re-arm, `clearTimeout` removes the entry, `setTime` moves without firing, `runAll` has a count limit (ASK when hit) | 3 to 5 d |
 | Callable records `Fn(code, env)` | 15 §34 | PORT | `translate.mjs:2112` (`opaqueFn`), the prelude | a function value is its code identity plus captured cells; equal when both agree; a body outside the file's list is ASK (defunctionalisation, 15 §35) | 10 to 15 d |
-| HOBBIT's opponent-known callables | 15 §5 | PORT, inside the program runner | `fake.mjs` `knownCallables` beside `pending` | an escaped function becomes a retained handle a program may invoke again; bound exhaustion is ASK | counted above |
+| HOBBIT's opponent-known callables | 15 §5 | BUILT 2026-10-27 | `fake.mjs` `env.knownCallables` (a callback handed to a fake, a handler assigned to one), `program.mjs` retained handles | a returned function, generator or handed-over callback is a handle a program invokes, fires or steps again; the bound is the program count and length in the certificate | done |
 | Library transition table | 16 table, `library-ops.dfy` | PORT | `translate/library.json`, `heap.mjs` prelude generation | one row per operation (push, splice, sort with a pure comparator, reverse, slice, concat, map, Map.set, Set.add, Object.assign, Object.freeze, structuredClone of acyclic records, Date cells); the Dafny forms are verified in `design/library-ops.dfy` (23 verified, 0 errors) | 6 d |
 | Built-in call recording (Jalangi idea) | 16 §18, special depth (d) | PORT | `exec/run.mjs` around `unit.call` (line 221), new `exec/transitions.mjs` | wrappers on the host prototypes record receiver identity before and after, argument and result identities and the heap delta; a checker compares every record with the table; a mismatch refuses that operation's proofs | 2 to 3 d |
 | Test262 as a corpus of call patterns | 16 §17 | DEPENDENCY (clone, BSD) | new `exec/test262.mjs` | run the directories of the table's operations under node and record the transitions seen; a finite corpus validates the table, it proves nothing | 2 d |
@@ -262,6 +262,15 @@ zones: obligations unmet; `structuredClone` of unsupported values: refused by na
 **Settled.** A one-step proof over the complete state composes by induction; the hole is a cell omitted, reset or
 read without its meaning. Retained-state command sequences find real sequence bugs and prove nothing when clean.
 
+**Built (2026-10-27).** The retained-state runner (`exec/programs.mjs`): for a class unit lane B runs programs first,
+on an instance the class's own constructor builds with drawn arguments; the command alphabet is the unit and the
+methods whose text is the same on both sides, so a divergence is the unit's own; a divergence is shrunk by deleting
+commands while a divergence stays (a command whose removal moves the fakes' answers is kept), and the shrunk program
+is the witness with its seed and program index; a clean run reports the program and command counts. Measured on the
+pairs: `Counter.step` (a candidate that adds 2 after the first call) is a two-command witness invisible to one call
+from a built instance; `Counter.bump` a one-command witness; `Counter.label` and `flush` twelve clean programs of 42
+commands; `ChatService.regenerate` a four-command witness (the fake answers that show it come on the fourth draw).
+
 **Mechanism.** The state-completeness audit lists every persistent cell per component and writes the obligation to
 the certificate; the retained-state runner keeps the ledger between commands and shrinks a failing program; the
 finite-state lane decides equality when every cell and argument is a finite declared domain (PASS-decided, with
@@ -280,6 +289,17 @@ are ASK.
 commands, vendored) with the command set and a seeded schedule; the virtual clock; promise settlement and event
 firing as commands with enabling rules; the certificate records the program, its hash, the seed, both observations,
 the first difference and the replay path. Pilot: the 262 return/store/compare cases of our census.
+
+**Built (2026-10-27).** The environment-program runner (`exec/program.mjs`) on fast-check's model-based commands:
+after the single calls of a free function agree, twelve programs of up to six commands run on both sides; a returned
+function or generator and every callback handed to a fake (`env.knownCallables`) are handles the program invokes,
+fires or steps; timers tick and jobs settle as commands; a divergence is shrunk and replayed (seed, run path, the
+commands' replay path) before it is reported. Measured on the pair `env_programs`: a closure over a counter that starts
+at 1 instead of 0 (the same text) is the two-command witness `call, invoke`; a handler over a limit of 2 instead of 1
+is `call, fire` (the hand-over invokes it once already); a generator rewritten with the same yields runs twelve clean
+programs. A returned function still renders by its source for the single call, so a changed closure text is a
+one-call witness before any program runs. The four pairs the design named (callbacks, function_values,
+effectful_callbacks, promise_forms) keep their verdicts; `Fn(code, env)` in the prelude is the next row.
 
 **Boundary.** Function identity (`f === g`), `Function.prototype.toString`, `bind` observed through construction,
 transform-stream orderings: obligation unmet.
