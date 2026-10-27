@@ -25,7 +25,7 @@ const out = a.includes('--out') ? a[a.indexOf('--out') + 1] : null;
 const t0 = Date.now();
 const files = [...walk(root)];
 const byClass = {}, byKind = {}, proposals = new Map(), written = {}, samples = {};
-let n = 0, failed = 0, unresolved = 0, linted = 0;
+let n = 0, failed = 0, unresolved = 0, linted = 0, ruleFailures = 0;
 for (const loaded of loadManyChunks(files, { log: (m) => console.error(m) })) for (const [abs, L] of loaded) {
   if (!L || L.error) { failed++; continue; }
   let fs_;
@@ -34,6 +34,7 @@ for (const loaded of loadManyChunks(files, { log: (m) => console.error(m) })) fo
   for (const f of fs_) {
     if (f.rule === 'unresolved-module') unresolved++;
     if (f.rule !== 'any-type') continue;
+    if (/^any-type could not read/.test(f.msg)) { ruleFailures++; console.error(`! any-type ${path.relative(root, abs)}: ${f.msg}`); continue; }
     n++;
     const c = classOf(f);
     byClass[c] = (byClass[c] ?? 0) + 1;
@@ -45,6 +46,6 @@ for (const loaded of loadManyChunks(files, { log: (m) => console.error(m) })) fo
   if (linted % 200 === 0) console.error(`${linted} files, ${n} any-type findings, ${Math.round((Date.now() - t0) / 1000)} s`);
 }
 const top = [...proposals.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1)).slice(0, 10).map(([type, count]) => ({ type, count }));
-const res = { root, files: files.length, linted, failed, unresolvedModuleFindings: unresolved, anyType: n, byClass, byKind, byTypedHow: written, top, samples, seconds: Math.round((Date.now() - t0) / 1000) };
+const res = { root, files: files.length, linted, failed, ruleFailures, unresolvedModuleFindings: unresolved, anyType: n, byClass, byKind, byTypedHow: written, top, samples, seconds: Math.round((Date.now() - t0) / 1000) };
 if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
 console.log(JSON.stringify(res));
