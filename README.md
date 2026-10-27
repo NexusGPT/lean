@@ -110,7 +110,7 @@ $ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDisc
 
 **Impact:** the asked rule is reported `IN-SCOPE`; the slip nobody asked for is a `WITNESS` at `pricing.ts:59`, and so are the two callers whose text never changed. A test suite passes this pull request unless one of its tests sits exactly on the threshold. Intake, budgets and reuse across pushes: [`docs/pull-requests.md`](docs/pull-requests.md).
 
-**In CI**, [`langs/ts/ci/comment.mjs`](langs/ts/ci/) posts the pull-request table as one comment, updated on every push, and the reusable workflow [`.github/workflows/lean-pr.yml`](.github/workflows/lean-pr.yml) runs it from a caller of a few lines. `--block witness` fails the check on a `WITNESS` row and annotates it at its line; `IN-SCOPE` never blocks. The workflow is validated offline and has not yet run on a GitHub runner ([`langs/ts/design/ci.md`](langs/ts/design/ci.md)).
+**In CI**, [`langs/ts/ci/comment.mjs`](langs/ts/ci/) posts the pull-request table as one comment, updated on every push, and the reusable workflow [`.github/workflows/lean-pr.yml`](.github/workflows/lean-pr.yml) runs it from a caller of a few lines. `--block witness` fails the check on a `WITNESS` row and annotates it at its line; `IN-SCOPE` never blocks. Every refusal of a run is also a JSON record in `.lean/runs/<identity>.refusals.json`, and `--inline` posts each as a review comment at its lines, skipping a range that already carries one. The workflow is validated offline and has not yet run on a GitHub runner ([`langs/ts/design/ci.md`](langs/ts/design/ci.md)).
 
 ### 3. In the editor
 

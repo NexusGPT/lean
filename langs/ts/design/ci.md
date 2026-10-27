@@ -78,3 +78,25 @@ enabled anywhere.
    z3) and has not run on a Linux runner; validate it on the first run, or set `proof: false` for lane B verdicts.
 5. Pull requests from forks get a read-only token: the comment is not posted (a warning); acceptable or not.
 6. The editor rule's boundary tag and level (`error`, or `warn` to start).
+
+## Refusals as records and inline comments (2026-10-28)
+
+- `pr.mjs` writes every refusal of a run to `.lean/runs/<identity>.refusals.json` (`--runs-dir` moves the folder, so the
+  gate can point it at its own runs folder): `{identity, records}`, one record
+  `{check, unit, file, location: {start, end}, kind, input?, lines?, advice?, reason}` per WITNESS row (`kind: witness`,
+  check `lane-B`, located at the candidate statement lane B named), per REFUSE row (`refuse`, check `lane-B:<kind>`) and
+  per row whose coverage is `refused:<rule>` or `failed:<class>` (`coverage`, check the coverage value). A refused row
+  that lane B witnessed gives two records; a skipped row gives none. A preview writes no file.
+- `comment.mjs --inline` posts one review comment per record, read from that file and never from the markdown, on the
+  head commit at the record's lines. A record whose range meets an existing review comment of the pull request on the
+  same file at intersection over union 0.6 or more is not posted (`--iou`; 0 turns the rule off). An existing range is
+  `start_line` to `line` from the API; an outdated comment (no `line`) or one on the base side holds none. Records of
+  one run on such ranges share one comment, so a re-push adds nothing. Requests go in batches of at most 50 (`--batch`
+  lowers it) and each boundary is logged. `--dry-run` reads the existing comments, logs the plan and writes nothing.
+  A failed inline request is a warning, as a failed sticky post is.
+- Checked by `node --test langs/ts/tests/ci/` against a fake API object (no network): the dry run adds only the
+  non-overlapping records of a recorded set, the fake counts at most 50 requests between two logged boundaries, and
+  the pr-intake fixture's file holds its four records. The red run with the rule off posts the duplicates; its log is
+  `langs/ts/tests/ci/logs/red-threshold-0.log`. The reusable workflow does not pass `--inline` yet.
+- Every git that `pr.mjs` runs uses the C locale, and a path absent at a ref is found by the exit code of
+  `git cat-file -e`, so a machine whose git speaks another language reads a new file as new.

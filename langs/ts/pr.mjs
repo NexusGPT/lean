@@ -5,7 +5,7 @@
 // An unchanged caller of a changed function gets a row too when lane B finds a WITNESS through that callee.
 //
 //   node pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--preview] [--out report.md] [--json report.json]
-//               [--time-budget seconds] [--unit-budget n] [--reuse] [--fresh] [--cache-dir <dir>]
+//               [--time-budget seconds] [--unit-budget n] [--reuse] [--fresh] [--cache-dir <dir>] [--runs-dir <dir>]
 //               [--n 100] [--dafny-seconds 30] [--project <tsconfig>|--no-project] [--adapters scope.json]
 //
 // A changed signature proves only through an adapter the developer declares: the scope door (`--adapters`, a scope
@@ -230,6 +230,61 @@ export function stopNote(stop) {
   return stop && stop.reason !== 'none' ? `stopped: ${stop.reason} after ${stop.reached} of ${stop.total} units` : '';
 }
 
+// the refusals of a run as records a machine reads: a WITNESS row is one `witness` record at the statement lane B named,
+// a REFUSE row one `refuse` record, and a row whose coverage is refused:<rule> or failed:<class> one `coverage` record
+// (a REFUSE row carries its own coverage). A refused row that lane B witnessed gives both, since two checks said no.
+// A skipped row is not a refusal: lean did not look, and the intake table says so.
+const siteFile = (file, row, repo) => {
+  const source = String(file).replace(/(^|[\\/])\.lean_(?:head|base)_\d+_/, '$1');
+  if (source === row.file || source.endsWith('/' + row.file)) return row.file;
+  const relative = repo && path.isAbsolute(source) ? path.relative(repo, source) : source;
+  return relative.startsWith('..') ? source : relative.split(path.sep).join('/');
+};
+export function refusalRecords(rows, { repo = null } = {}) {
+  const records = [];
+  for (const r of rows) {
+    const base = { unit: r.unit, file: r.file };
+    const unitLocation = { start: r.lines?.[0] ?? 1, end: r.lines?.[1] ?? r.lines?.[0] ?? 1 };
+    const advice = (r.advice ?? []).map((a) => ({ line: a.line, rule: a.rule, msg: a.msg, ...(a.do ? { do: a.do } : {}) }));
+    const failed = /^(refused|failed):/.test(r.coverage ?? '');
+    if (r.verdict === 'REFUSE') {
+      const kind = r.certificate?.lanes?.B?.kind;
+      records.push({ check: 'lane-B' + (kind ? ':' + kind : ''), ...base, location: unitLocation, kind: 'refuse', ...(advice.length ? { advice } : {}), reason: String(r.reason ?? 'REFUSE') + (failed ? ` (${r.coverage})` : '') });
+    } else if (failed) {
+      const line = r.coverage.startsWith('refused:') ? advice.find((a) => a.rule === r.coverage.slice(8))?.line : null;
+      records.push({ check: r.coverage, ...base, location: line ? { start: line, end: line } : unitLocation, kind: 'coverage', ...(advice.length ? { advice } : {}), reason: String(r.reason ?? r.coverage) });
+    }
+    if (r.verdict === 'WITNESS') {
+      const w = r.witness ?? {};
+      const where = w.where ?? {};
+      const sides = where.lines ? Object.fromEntries(['parent', 'candidate'].filter((s) => where.lines[s]).map((s) => [s, { ...where.lines[s], file: siteFile(where.lines[s].file, r, repo) }])) : null;
+      const site = sides?.candidate;
+      const located = site && site.file === r.file ? { start: site.start, end: site.end } : unitLocation;
+      const advised = where.advice ? [where.advice] : advice;
+      const field = where.field ? where.field + (where.path ? ' ' + where.path : '') : 'an observation';
+      const through = (w.through ?? []).map((t) => t.callee);
+      records.push({ check: 'lane-B', ...base, location: located, kind: 'witness',
+        ...(w.args !== undefined || w.input !== undefined ? { input: w.args ?? w.input } : {}),
+        ...(sides && Object.keys(sides).length ? { lines: { ...(where.lines.kind ? { kind: where.lines.kind } : {}), ...sides } } : {}),
+        ...(advised.length ? { advice: advised } : {}),
+        reason: `the two versions differ on ${field}${through.length ? ` through ${through.join(', ')}` : ''}` });
+    }
+  }
+  return records;
+}
+
+// the refusals file beside the run's cache: <dir>/<identity>.refusals.json, written whole or not at all
+export function writeRefusals(rows, dir, opts = {}) {
+  const file = path.join(dir, `${rows.identity}.refusals.json`);
+  const temporary = file + '.' + process.pid + '.tmp';
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(temporary, JSON.stringify({ identity: rows.identity, records: refusalRecords(rows, opts) }, null, 1));
+    fs.renameSync(temporary, file);
+    return file;
+  } finally { fs.rmSync(temporary, { force: true }); }
+}
+
 export async function prReport(opts) {
   const { repo, base, head = 'WORKTREE', n = 100, seed = 1, deep = false, dafnySeconds = 30, project = true, scope = new Set(), adapters = null } = opts;
   const timeBudget = budgetValue(opts.timeBudget === undefined ? null : opts.timeBudget, '--time-budget');
@@ -358,6 +413,10 @@ export async function prReport(opts) {
     }
   } finally { for (const t of temps) { try { fs.rmSync(t, { force: true }); } catch { /* Gone. */ } } }
   rows.callersChecked = callersChecked;
+  if (rows.identity) {
+    try { rows.refusalsFile = writeRefusals(rows, path.resolve(opts.runsDir ?? path.join(repo, '.lean/runs')), { repo: path.resolve(repo) }); }
+    catch (e) { rows.refusalsFile = null; console.error('Refusals write failed: ' + (e.code ?? e.name)); }
+  }
   return rows;
 }
 
@@ -417,7 +476,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
   if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]'); process.exit(2); }
   const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
-  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
+  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
   const md = a.includes('--preview') ? intakeMarkdown(rows) : markdown(rows, base, head);
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(a.includes('--preview') ? rows : reportJSON(rows), null, 1));
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);

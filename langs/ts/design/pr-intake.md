@@ -85,3 +85,11 @@ The cap limits display only. Use the unit budget to limit work.
 Run reports now carry identity alongside rows, order and stop.
 The earlier reserved reused value is now emitted for a cache hit.
 See [Run identity and reuse](run-identity.md) for keys, flags and evidence.
+
+## Refusals file
+
+A run writes its refusals to .lean/runs/<identity>.refusals.json, or under --runs-dir.
+A WITNESS row, a REFUSE row and a refused or failed coverage row each give one record.
+A skipped row gives none, since lean did not look; the intake table names it.
+On the fixture: inside and refused give witness records, loader and refused coverage records.
+ci/comment.mjs --inline builds its review comments from this file (design/ci.md).
