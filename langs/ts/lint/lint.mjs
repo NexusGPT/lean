@@ -1031,7 +1031,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     return false;
   }
   function unsafePromiseCallee(u, seen = new Set()) {
-    if (!u || seen.has(u.name)) return false;
+    if (!u || !u.body || seen.has(u.name)) return false; // a declared function without a body is refused on its own (unsupported-syntax)
     seen.add(u.name); let unsafe = false;
     const w = (x) => {
       if (ts.isThrowStatement(x) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;

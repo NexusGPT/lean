@@ -41,9 +41,10 @@ export function executorShape(n, checker, sf) {
     return i < 0 ? null : { kind: i === 0 ? 'resolve' : 'reject', call: e };
   };
   let escaped = false, nested = false, misplaced = false;
+  const handed = []; // a resolver named as a value (not called here)
   const scan = (x, depth = 0) => {
     if (ts.isIdentifier(x) && symbols.includes(checker.getSymbolAtLocation(x)) && !cb.parameters.some((p) => p.name === x)) {
-      if (!(ts.isCallExpression(x.parent) && x.parent.expression === x && x.parent.arguments.length <= 1)) escaped = true;
+      if (!(ts.isCallExpression(x.parent) && x.parent.expression === x && x.parent.arguments.length <= 1)) { escaped = true; handed.push(x); }
       if (depth) nested = true;
       if (ts.isCallExpression(x.parent) && x.parent.expression === x) {
         let use = x.parent; while (use.parent && ts.isParenthesizedExpression(use.parent)) use = use.parent;
@@ -55,7 +56,14 @@ export function executorShape(n, checker, sf) {
   };
   scan(cb.body);
   if (misplaced) return bad('promise-executor', 'settlement must be a terminal statement, not part of another expression');
-  if (escaped) return bad('promise-executor-escape', 'resolve and reject cannot be stored or passed away; call them at the end of each executor path');
+  if (escaped) {
+    // the whole executor is one outside call that is handed the resolver itself (`setTimeout(resolve, ms)`): the outside
+    // calls it later, as it would call `(v) => resolve(v)`, so it is the callback bridge read the same way (one opaque
+    // transition keyed by the executor's text); a resolver stored, returned or handed beside other statements stays out
+    const only = ts.isBlock(cb.body) ? (cb.body.statements.length === 1 && ts.isExpressionStatement(cb.body.statements[0]) ? unparen(cb.body.statements[0].expression) : null) : unparen(cb.body);
+    if (only && ts.isCallExpression(only) && !nested && handed.every((x) => x.parent === only && only.arguments.includes(x))) return { cb, settlement, bridge: only };
+    return bad('promise-executor-escape', 'resolve and reject cannot be stored or passed away; call them at the end of each executor path');
+  }
   const flow = (list) => {
     if (!list.length) return false;
     const [s, ...rest] = list;
