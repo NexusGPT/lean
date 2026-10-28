@@ -56,7 +56,7 @@ class Unsupported extends Error {}
 import { dn } from '../common.mjs';
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
-import { definiteAssignmentRead } from '../common.mjs'; // `let v!: T` read before its first assignment: one test with the lint
+import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../common.mjs'; // a value that may be absent: an option, its payload read only where a statement test reaches it; one test with the lint (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { typeAssertion, assertionHeld } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
 import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
@@ -2015,7 +2015,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (o.kind === 'global') return externalValue(n);
     let code = dn(n.text);
     const LT = letTypeOf(o.sym);
-    if (LT) { if (LT.startsWith('Option<') && !isOptional(typeOf(n)) && !isNullish(typeOf(n))) code += '.value'; return code; }
+    if (LT) { if (payloadRead(checker, n) === n && !guardedReads.has(n)) fail(n, 'definite-assignment: a read TypeScript does not check, of a let that may be unassigned here'); if (optionalD(LT) && !isOptional(typeOf(n)) && !isNullish(typeOf(n))) code += '.value'; return code; } // an absent let is an option; a plain read is its payload where TypeScript checked a write or the statement's test did
     if (o.sym && o.sym.valueDeclaration && o.kind === 'local') {
       const dt = symType(o.sym, n);
       if (optionalAnyParam(o.sym, n)) return lowerOptionAny(code);
@@ -2108,8 +2108,13 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       case K.NonNullExpression: {
         const t = typeOf(n.expression);
-        // on a type that admits absence `x!` checks nothing: the absent value flows on or the read through it throws, and
-        // an uninterpreted value of the type in its place would prove `u.name!` equal to `u.name! + ""`; refused
+        // on a value that may be absent `x!` checks nothing: the absent value flows on or the read through it throws. It is
+        // the option's payload where the statement's test (absenceGuard) showed it present; anywhere else refused
+        const id = payloadRead(checker, n);
+        if (id) {
+          if (!guardedReads.has(n) || !ts.isIdentifier(id)) fail(n, 'non-null-assertion: `x!` on a value that may be null or undefined, outside a statement lean tests first');
+          return `${absenceBinding(id)}.value`;
+        }
         if (nonNullOnAbsent(checker, n) || isOptional(t)) fail(n, 'non-null-assertion: `x!` on a value that may be null or undefined');
         return expr(n.expression);
       }
@@ -2250,7 +2255,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         if (i === decls.length) return more();
         const d = decls[i];
         return capture(() => {
-          if (definiteAssignmentRead(checker, d)) fail(d, 'definite-assignment: `let v!: T` may be read before its first assignment'); const t = typeOf(d.name), D = dtype(t, d);
+          if (absenceCarried(checker, d)) fail(d, 'definite-assignment: a let that may be read unassigned, in a promise handler'); const t = typeOf(d.name), D = dtype(t, d);
           const value = d.initializer ? outerParens(expr(d.initializer, t)) : `${external(`uninit_${mangle(D)}`, [], D)}()`;
           const line = ts.isIdentifier(d.name) ? `var ${dn(d.name.text)}${hookResultOf.has(d.initializer) ? '' : `: ${D}`} := ${value};` : destructure(d.name, value, typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n');
           return `${line}\n${d.initializer && containsEffect(d.initializer) ? promiseGuard(bind(i + 1), R) : bind(i + 1)}`;
@@ -4921,7 +4926,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
           if (!ts.isIdentifier(d.name)) return faultEval(() => expr(d.initializer), (code) => `${destructure(d.name, outerParens(code), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n')}\n${more()}`, ctx);
           const t = typeOf(d.name);
           if (!d.initializer) {
-            if (definiteAssignmentRead(checker, d)) fail(d, 'definite-assignment: `let v!: T` may be read before its first assignment'); 
+            if (absenceCarried(checker, d)) fail(d, 'definite-assignment: a let that may be read unassigned, inside a try'); 
             if (!d.type) {
               const at = firstAssignedType(d.name); const sym = checker.getSymbolAtLocation(d.name);
               if (at && !isAny(at)) { usesOption = true; const inner = dtype(at, d); const D = inner.startsWith('Option<') ? inner : `Option<${inner}>`; letTypes.set(sym, D); return `var ${dn(d.name.text)}: ${D} := None;\n${more()}`; }
@@ -4947,11 +4952,33 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       default: return tr([s], next, u);
     }
   }
+  // a payload read (`x!` on a value that may be absent, a read of an absent let TypeScript did not check) in the unit's own
+  // statement flow: the option is tested before the statement; where it is absent the unit's result is one opaque value
+  // named by the whole file's text, so two different files never agree there and the same file agrees with itself
+  const guardedReads = new Set(), guardedStmts = new WeakSet();
+  function absenceBinding(id) { const sym = checker.getSymbolAtLocation(id); const D = letTypeOf(sym) ?? dtype(symType(sym, id), id); if (!optionalD(D)) fail(id, 'non-null-assertion: the value read is not held as an option here'); return dn(id.text); }
+  function absenceGuard(s, u, again) {
+    if (guardedStmts.has(s)) return null;
+    const head = ts.isIfStatement(s) ? s.expression : (ts.isReturnStatement(s) || ts.isExpressionStatement(s) || ts.isVariableStatement(s)) ? s : null;
+    if (!head) return null;
+    const reads = [];
+    const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isNonNullExpression(x) || ts.isIdentifier(x)) { const id = payloadRead(checker, x); if (id && ts.isIdentifier(id) && payloadStatement(checker, x, id) === s) reads.push([x, id]); } ts.forEachChild(x, w); };
+    w(head);
+    if (!reads.length || loopCtx.length || yieldState || u.isAsync) return null; // each read then fails where it is read
+    const D = dtype(retType(u), u.node);
+    if (D === 'Unit') return null;
+    const names = [...new Set(reads.map(([, id]) => absenceBinding(id)))];
+    for (const [x] of reads) guardedReads.add(x);
+    guardedStmts.add(s);
+    const absent = `${external(`absent_read_${mangle(D)}_${createHash('sha256').update(sf.text).digest('hex').slice(0, 16)}`, [], D)}()`;
+    return `if ${names.map((v) => `!${v}.Some?`).join(' || ')} then\n${indentBlock(wrapLet(retIn(absent)))}\nelse\n${indentBlock(wrapLet(again()))}`;
+  }
   function tr(list, fin, u) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
     if (s.__scope) return `${scopeText(s)}\n${tr(rest, fin, u)}`; // a block's own declarations end with it (scopedList)
     { const inl = inlineCall(s); if (inl) return tr([...inl, ...rest], fin, u); if (procDecl(s)) return tr(rest, fin, u); } // stage 5 rank 21
+    { const g = absenceGuard(s, u, () => tr(list, fin, u)); if (g) return g; } // a payload read: the option tested before the statement
     const more0 = (r = rest) => tr(r, fin, u);
     // after a statement of an exact try body that may fault: the catch path, else what follows
     const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) { const next = tr(r, fin, u); return `${code}${code ? '\n' : ''}${u.isAsync && !loopCtx.length && awaitsHere(s) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncFailure(u)} else ${wrapLet(next)}` : next}`; } const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
@@ -4978,7 +5005,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
             if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n');
             const t = typeOf(d.name);
             if (!d.initializer) {
-              if (definiteAssignmentRead(checker, d)) fail(d, 'definite-assignment: `let v!: T` may be read before its first assignment'); 
+              if (d.type && absenceCarried(checker, d)) { if (!absenceHome(checker, d)) fail(d, 'definite-assignment: a let that may be read unassigned, outside a function\'s own flow'); usesOption = true; const inner = dtype(t, d); const D = optionalD(inner) ? inner : `Option<${inner}>`; letTypes.set(checker.getSymbolAtLocation(d.name), D); return `var ${dn(d.name.text)}: ${D} := ${D.startsWith('Nullish<') ? 'Nullish.Undef' : 'None'};`; } // a typed let TypeScript does not fix: an option, absent until written
               if (!d.type) { // `let x;`: absent until its first assignment; Option of the first assigned type, or opaque
                 const at = firstAssignedType(d.name); const sym = checker.getSymbolAtLocation(d.name);
                 if (at && !isAny(at)) { usesOption = true; const inner = dtype(at, d); const D = inner.startsWith('Option<') ? inner : `Option<${inner}>`; letTypes.set(sym, D); return `var ${dn(d.name.text)}: ${D} := None;`; }

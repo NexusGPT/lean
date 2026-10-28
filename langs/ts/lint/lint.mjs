@@ -15,6 +15,7 @@ import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedu
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
+import { absenceCarried, absenceHome, payloadRead, payloadStatement, strandedLetReads } from '../common.mjs'; // a value that may be absent: one test with the translator (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
 import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
@@ -610,7 +611,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.VariableStatement: {
         const list = s.declarationList;
         if (!(list.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const))) v(s, 'var', '`var` is outside the subset; use let or const');
-        for (const d of list.declarations) { if (definiteAssignmentRead(checker, d)) v(d, 'definite-assignment', '`let v!: T` may be read before its first assignment, where it is undefined; assign it first or give it a start value'); varDecl(d); }
+        for (const d of list.declarations) { if (absenceCarried(checker, d) && !absenceHome(checker, d)) v(d, 'definite-assignment', 'this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested function), and here its absence is not carried (a try, a switch, an async or nested function); assign it where it is declared or give it a start value'); for (const r of strandedLetReads(checker, d)) v(r, 'definite-assignment', `\`${r.text}\` may be read here before its first assignment (TypeScript does not check this read), and lean tests it only in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions; assign it before this read or give it a start value`); varDecl(d); }
         return;
       }
       case K.ExpressionStatement: return exprStmt(s.expression);
@@ -1315,9 +1316,11 @@ export function lintFile(file, ranges = null, opts = {}) {
         // passes it through an uninterpreted conversion, the same on both sides
         return expr(e.expression);
       }
-      case K.NonNullExpression: // on a type that admits absence, `x!` is refused: the absent value would flow on, or the read through it throw
-        if (nonNullOnAbsent(checker, e)) v(e, 'non-null-assertion', '`x!` on a value that may be null or undefined checks nothing at run time; test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)');
+      case K.NonNullExpression: { // `x!` on a value that may be absent is a payload read: carried where the unit's own flow tests it, refused elsewhere
+        const id = payloadRead(checker, e);
+        if (id && !payloadStatement(checker, e, id)) v(e, 'non-null-assertion', '`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)');
         return expr(e.expression);
+      }
       case K.PrefixUnaryExpression:
         if (e.operator === K.ExclamationToken || e.operator === K.MinusToken) return expr(e.operand);
         if (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) return operatorValue(e);

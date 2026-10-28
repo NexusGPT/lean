@@ -1,0 +1,24 @@
+{
+  "scope": ["late_init", "flow_fixed", "definite_written", "definite_late", "opt_plus", "map_absent", "narrowed", "plain"],
+  "equal": {
+    "late_init": false,
+    "flow_fixed": true,
+    "definite_written": true,
+    "definite_late": false,
+    "opt_plus": false,
+    "map_absent": false,
+    "narrowed": true,
+    "plain": true
+  },
+  "why": "A let without initializer that TypeScript does not fix (a write inside a nested function, a read under `!`, `let v!`) is an option starting at None; a payload read is tested before its statement, and where absent the unit's result is an opaque value named by the file's text. ECMA-262: `undefined + 0` is NaN and `return v!` returns undefined, so lateInit (v written only when the closure ran, x > 1000) and definiteLate (written only when x > 3) differ and are not proved, lane B WITNESS. flowFixed and definiteWritten write before the read on every path: the option is Some and the lemma proves. optPlus: with x undefined both sides give NaN (`undefined + 1` is NaN, `NaN * 1` is NaN), the same behaviour, but the absent path is opaque on each side, so lane A does not prove it (a gap, never a false proof); lane B PASS-bounded. mapAbsent: a Map read held in a local, `g!` against `g! + 0`, undefined against NaN for a missing key: not proved, WITNESS. narrowed: `x!` after the test that narrows x is its value, proved. plain untouched.",
+  "b": {
+    "lateInit": "WITNESS",
+    "flowFixed": "PASS-bounded",
+    "definiteWritten": "PASS-bounded",
+    "definiteLate": "WITNESS",
+    "optPlus": "PASS-bounded",
+    "mapAbsent": "WITNESS",
+    "narrowed": "PASS-bounded",
+    "plain": "PASS-bounded"
+  }
+}
