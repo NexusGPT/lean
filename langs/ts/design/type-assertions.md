@@ -13,8 +13,8 @@ value keeps its run-time type whatever T says. `"a" as unknown as number` is the
 - `e as T` from a source not assignable to T: the source's type when it is one primitive family (a number asserted to
   `1 | 2` stays the number, a `Wide` string union asserted to `Mode` stays `Wide`), else Any (`string | number`).
 - a local of a function whose initializer or a later `=` is held, or typed any or unknown while the local is not: its
-  real type (Any when the writes disagree). A local whose declared type admits absence keeps the absence-lifting
-  reading (`liftAny`): its absence test is exact.
+  real type (Any when the writes disagree). A local or an `as` target typed `T | undefined` is no exception: the
+  value is opaque in its definedness and its payload (landed, the structural reading, not the interim refusal).
 - an operation, a member read or a method call on a held operand whose real type is not one primitive family: Any.
   An equality, `in` or `instanceof` stays a boolean.
 
@@ -49,14 +49,15 @@ a typed value). Refused where the opaque value cannot be carried, each with its 
 A wrong proof needs a value whose run-time type differs from the type its reading gives it and an operation exact on
 the read type but not on the real value. The held reading gives every such value its real type, so the operations
 on it are its own; a slot that converts it to the asserted type is either the lemma's own result (compared as the same
-uninterpreted conversion of two terms, equal only when the terms are) or refused. The one remaining open case:
-a local whose declared type admits absence, filled by an any value, is read by `liftAny`, whose present branch is an
-uninterpreted conversion followed by the declared type's reading; it is the pre-existing reading and stays as it was.
+uninterpreted conversion of two terms, equal only when the terms are) or refused. A slot that admits absence is
+read the same way: `s === undefined` is the uninterpreted `is_undefined` test on Any and the payload stays Any, so
+`s` and `s + ""` differ (optAny); the base proved them equal. branch_types' `missing` still proves: both sides make the
+same test. This reading needs symType and typeOf to agree on the held local (dd9c58d); with it the interim refusal
+named in the brief was not needed.
 
 Refused: `type-assertion`, escape `fixtures/escapes/ts/type_assertion.ts` (an `x as number` from unknown passed to a
 same-file number parameter). Lane B runs the emitted JavaScript, where the assertion is gone; its inputs draw the
 source's declared type, so it witnesses every must-not-prove unit of `pairs/type_assertions`.
-
 ## Instances (census nexus tree)
 
 Each is refused at the slot named; the unit reads its held value faithfully up to there:
