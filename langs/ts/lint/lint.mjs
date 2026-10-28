@@ -1017,7 +1017,11 @@ export function lintFile(file, ranges = null, opts = {}) {
         const ownedTarget = ts.isIdentifier(t0) && declOf(t0).kind === 'local' && ownedHere(declOf(t0).decl) && !aliasHere(declOf(t0).decl, e);
         const plainRecord = (x) => { const t = tOf(x); if (!isRecordish(t) || nonNull(t).length !== 1 || t.flags & (TF.Null | TF.Undefined)) return false; return checker.getPropertiesOfType(t).every((p) => !(p.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor | ts.SymbolFlags.Method))); };
         const targetProps = ownedTarget && plainRecord(t0) ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
-        const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
+        // a source's keys must be known exactly: Object.assign copies every own enumerable key of the source, and a value of a
+        // declared record type may carry keys its type does not name (structural typing), so only a literal source is read
+        const exactSource = (x) => { x = unparenX(x); return ts.isObjectLiteralExpression(x) && x.properties.every((p) => (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) || ts.isShorthandPropertyAssignment(p)); };
+        const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => exactSource(s) && plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
+        if (ownedTarget && targetProps && e.arguments.slice(1).some((s) => !exactSource(s) && isRecordish(tOf(s)))) return v(e, 'assign-target', '`Object.assign` copies every own key of its source, and a value of a record type may carry keys its type does not name; pass a literal of the fields it copies (`Object.assign(t, { a: s.a })`) or write them by name');
         if (ownedTarget && sourcesFit) { checkIdent(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
         // a node a parameter holds (`p.headers`, or a const name for it) as the target, and literal sources: the copy is a
         // sequence of field writes on that node in the literal's key order, after every value is evaluated (heap.mjs)
