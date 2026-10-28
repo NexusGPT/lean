@@ -18,6 +18,8 @@ captures of a handler call read as one transition.
   parameter list gives it; a unit with neither a class nor a `this` parameter fails as `this` (the lint's rule).
 - `selfValue(u)` is the receiver's Dafny value: `self` in a class method, `this_` in a free function. The three
   capture sites pass `selfValue` where they passed `self`.
+- A counted loop read as a recursive helper takes `this_` as a const operand when its body reads the receiver, as a
+  method's loop takes `self`; a loop that writes the receiver already carries it as loop state.
 - In an opaque block that writes the receiver, `this_` is already an input and an output (`assignedOutside` carries
   it as a written parameter), so it is not passed a second time.
 
