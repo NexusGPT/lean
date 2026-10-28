@@ -57,13 +57,13 @@ In the heap core a missing key marks the world (`oob`) and an in-range lemma req
 `m[k] ? 1 : 0` and `m[k] !== 0 ? 1 : 0` translate to the same Dafny body, so the theorem aliased them and dropped that
 obligation: proved, while lane B witnesses them (0 against 1 on a missing key). An aliased unit now keeps the
 obligation unless the two sources agree: each in-range unit carries `// SOURCE <name>: <key>`, the hash of its text and
-every same-file unit it reaches (the whole file when it reads another same-file declaration). Pair `theorem_alias`:
+every same-file unit it reaches (the whole file when it reads another same-file declaration), each text with its own
+parameters and locals renamed by first occurrence (as `_canon_locals` renames the Dafny side), grouping parentheses,
+comments and whitespace dropped: a rename keys the same (`rename_parameter` total proves). Pair `theorem_alias`:
 `truth`, `letTruth` WITNESS and unproved, `same` (one source) aliased and proved.
 
 ## Lane B
-
 Lane B runs JavaScript; its missing-key witnesses: `entryKind` and `truth` on `{"k0": -254, "k1": 0}, "a"`.
-
 ## Instances
 
 - `/tmp/claude-501/pyka-convert/src/engine/multibuy.ts:127` readMechanic: enters; against itself under its tsconfig

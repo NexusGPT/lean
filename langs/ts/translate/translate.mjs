@@ -5522,7 +5522,35 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     };
     visit(u);
     if (whole) return createHash('sha256').update(sf.text + '\n' + u.name).digest('hex').slice(0, 16);
-    return createHash('sha256').update([...seen].map((x) => `${x.name}:${x.fn.getText(sf)}`).sort().join('\n')).digest('hex').slice(0, 16);
+    return createHash('sha256').update([...seen].map((x) => `${x.name}:${canonText(x)}`).sort().join('\n')).digest('hex').slice(0, 16);
+  }
+  // a unit's text up to the names of its own parameters and locals (renamed by the order they are declared, as the
+  // theorem's _canon_locals renames the Dafny side), grouping parentheses, comments and whitespace: a rename keys the
+  // same, any changed expression keys differently
+  function canonText(v) {
+    const root = v.fn, base = root.getStart(sf), text = root.getText(sf);
+    const own = (decl) => { if (!decl || decl === root || decl === v.node) return false; if (!(ts.isParameter(decl) || ts.isVariableDeclaration(decl) || ts.isBindingElement(decl) || ts.isFunctionDeclaration(decl) || ts.isCatchClause(decl.parent))) return false; for (let p = decl; p; p = p.parent) if (p === root) return true; return false; };
+    const index = new Map(), edits = [];
+    const w = (x) => {
+      if (ts.isParenthesizedExpression(x)) { edits.push([x.getStart(sf) - base, x.getStart(sf) - base + 1, ' ']); edits.push([x.end - base - 1, x.end - base, ' ']); }
+      if (ts.isIdentifier(x)) {
+        const sh = x.parent && ts.isShorthandPropertyAssignment(x.parent) && x.parent.name === x;
+        const sym = sh ? checker.getShorthandAssignmentValueSymbol(x.parent) : checker.getSymbolAtLocation(x);
+        const decl = sym?.valueDeclaration ?? sym?.declarations?.[0];
+        if (sym && own(decl)) {
+          if (!index.has(sym)) index.set(sym, index.size);
+          const name = `v${index.get(sym)}_`;
+          edits.push([x.getStart(sf) - base, x.end - base, sh ? `${x.text}: ${name}` : name]);
+        }
+      }
+      ts.forEachChild(x, w);
+    };
+    w(root);
+    let out = text;
+    for (const [a, b, r] of edits.sort((p, q) => q[0] - p[0])) out = out.slice(0, a) + r + out.slice(b);
+    const sc = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, out); const toks = [];
+    for (let t = sc.scan(); t !== K.EndOfFileToken; t = sc.scan()) toks.push(sc.getTokenText());
+    return toks.join(' ');
   }
   function opaqueNumericUnit(u, rt, specs) {
     const params = [], args = [];
