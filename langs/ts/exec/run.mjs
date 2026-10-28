@@ -481,7 +481,17 @@ export function sandbox(env, root) {
       if (spec === 'react') return react;
       if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
       const alias = aliasTarget(abs, spec); // the project's own `paths` alias to a file of this package is code, loaded like a relative import
-      if (alias && (!root || alias.startsWith(root + path.sep))) return load(alias);
+      if (alias && (!root || alias.startsWith(root + path.sep))) {
+        // an aliased module whose top level cannot run in the sandbox (a bundler's import.meta.env, a host global, a
+        // require.resolve, a file TypeScript cannot emit alone) is the environment's module, as every alias was before
+        // aliases were loaded: the same fake on both sides; the files its failed load cached are dropped with it
+        const before = new Set(cache.keys()), seen = new Set(loadedFiles);
+        try { return load(alias); }
+        catch (e) {
+          if (harnessStop(e)) throw e;
+          for (const k of [...cache.keys()]) if (!before.has(k)) { cache.delete(k); delete env.siteState.files[k]; if (!seen.has(k)) loadedFiles.delete(k); }
+        }
+      }
       return decoratedModule(env, spec) ?? env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment (a package of the decorator table answers its listed exports by their rows)
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
@@ -569,10 +579,15 @@ export async function observe(side, spec, args, ms) {
     let v = await commitRender(env, call, ms);
     outcomeSite = env.siteState?.completed ?? null;
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
+      // each render's own pending continuations settle before its requests are read: work a render started (a promise
+      // chain in a hook) is that render's, never the next render's, so the two traces compare like with like
+      const settleRender = async () => { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); };
+      await settleRender();
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
       const framesAfter = env.childFrames; env.hookSlots = slotsBefore.slice(); env.childFrames = cloneFrames(framesBefore); env.calls = new Map(callsBefore); env.demand = demandBefore; // a deep child's frames start the second render as they started the first
       const v2 = await commitRender(env, call, ms);
+      await settleRender();
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
       env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.childFrames = framesAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
