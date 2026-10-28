@@ -20,10 +20,10 @@ export function testIntake() {
     assert.equal(run.status, 0, run.stderr);
     const report = JSON.parse(fs.readFileSync(json, 'utf8'));
     const rows = report.rows;
-    assert.deepEqual(report.stop, { reason: 'none', reached: 3, total: 3 });
+    assert.deepEqual(report.stop, { reason: 'none', reached: 4, total: 4 }); // plain.js is a unit row now (refused untyped-js), its lane B run spent
     const want = {
       '.env': 'skipped:secret-path', 'image.bin': 'skipped:binary', 'inside.ts': 'checked',
-      'loader.ts': 'failed:loader', 'plain.js': 'skipped:not-typescript', 'refused.ts': 'refused:alias-mutation',
+      'loader.ts': 'failed:loader', 'plain.js': 'refused:untyped-js', 'refused.ts': 'refused:alias-mutation',
       'gone.ts': 'removed',
     };
     console.log('JSON rows: ' + JSON.stringify(rows.map(({ file, unit, coverage }) => ({ file, unit, coverage }))));
@@ -81,7 +81,7 @@ export function testIntake() {
       assert.ok(skipped.every((r) => r.reason === `stop at unit ${partial.stop.reached + 1} of ${partial.stop.total}`));
       assert.match(result.stdout, new RegExp(`stopped: ${reason} after ${partial.stop.reached} of ${partial.stop.total} units`));
       assert.deepEqual(partial.order.map((g) => g.group), ['changed', 'callers', 'heap']);
-      assert.deepEqual(partial.order[0].units.map((u) => u.unit), ['inside', 'loader', 'refused']);
+      assert.deepEqual(partial.order[0].units.map((u) => u.unit), ['inside', 'loader', 'plain', 'refused']);
       assert.deepEqual(partial.order[2].units, []);
       console.log(label + ' budget JSON: ' + JSON.stringify({ stop: partial.stop, skipped: skipped.map(({ file, unit, coverage, reason }) => ({ file, unit, coverage, reason })) }));
     }
@@ -90,7 +90,7 @@ export function testIntake() {
     for (const [block, code] of [['ask', 1], ['witness', 1], ['none', 0]]) {
       const result = spawnSync(process.execPath, [comment, ...args, '--unit-budget', '0', '--max-functions', '1', '--block', block, '--json', stoppedJSON], { encoding: 'utf8' });
       assert.equal(result.status, code, result.stderr);
-      assert.match(result.stdout, /<sub>.*stopped: unit-budget after 0 of 3 units/);
+      assert.match(result.stdout, /<sub>.*stopped: unit-budget after 0 of 4 units/);
       if (block !== 'none') assert.match(result.stderr, /::error::lean stopped: unit-budget/);
       console.log('comment --block ' + block + ': EXIT ' + result.status);
     }
