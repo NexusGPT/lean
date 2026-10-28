@@ -666,6 +666,22 @@ INCLUDE_RE = re.compile(r'^include\s+"([^"]+)"\s*$', re.M)
 PRELUDE_BLOCK = re.compile(r'// PRELUDE (\S+)\n(.*?)\n// END PRELUDE', re.S)
 
 
+SHAPES_RE = re.compile(r'^// SHAPES: (.*)$', re.M)
+
+
+def _shape_change(parent_text, cand_text):
+    """The record or array shapes a unit reaches that one side holds and the other does not (the `// SHAPES:` header
+    both translations write), in the words of the fields: a block the unit reaches changed, so the interface did."""
+    def shapes(t):
+        m = SHAPES_RE.search(t)
+        return {x.split(' = ', 1)[1] for x in re.split(r', (?=\w+ = )', m.group(1))} if m and m.group(1).strip() else set()
+    p, c = shapes(parent_text), shapes(cand_text)
+    gone, new = sorted(p - c), sorted(c - p)
+    if not gone and not new:
+        return ''
+    return '; a shape the unit reaches changed: ' + (' and '.join(gone) or 'none') + ' in the parent, ' + (' and '.join(new) or 'none') + ' in the candidate'
+
+
 def merge_preludes(parent_path, cand_path, parent_text, cand_text):
     """Both translations may `include` a prelude of shared declarations (datatypes, helpers with bodies,
     bodiless externals). The theorem needs ONE prelude: every block named in both must be byte-identical,
@@ -688,7 +704,7 @@ def merge_preludes(parent_path, cand_path, parent_text, cand_text):
                 raise Refusal(f'{label} prelude: declares a _parent/_candidate name (a scoped name outside the main file)')
             for name, body in PRELUDE_BLOCK.findall(ptext):
                 if name in blocks and blocks[name] != body:
-                    raise Refusal(f'prelude block {name} differs between parent and candidate (the shared vocabulary must be one)')
+                    raise Refusal(f'prelude block {name} differs between parent and candidate (the shared vocabulary must be one){_shape_change(parent_text, cand_text)}')
                 if name not in blocks:
                     blocks[name] = body
                     order.append(name)

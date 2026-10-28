@@ -62,7 +62,7 @@ export function translate(file, fnName, opts = {}) {
   const sfx = core && suffix ? `_${suffix}` : '';
   const loaded = loadProgram(file, { project });
   const { sf, checker } = loaded;
-  const real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs)
+  let real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
   const fns = topLevelFunctions(sf);
   const exceptionUnits = exceptionUnitsOf(sf, checker, fns);
   const generators = generatorReading(checker, sf, fns);
@@ -136,6 +136,11 @@ export function translate(file, fnName, opts = {}) {
   if (target) collect(target);
   else if (only) { for (const name of only) { const u = fns.get(name); if (!u) fail(sf, `no top-level function or class method named ${name}`); collect(u); } }
   else for (const u of fns.values()) collect(u);
+
+  // numbers are read per unit: a unit translated alone (--only) is a real unit when its own text, a callee it reaches or the
+  // file outside its units has a float literal or a bare `/`; a sibling it does not reach is no part of the reading, so
+  // adding or deleting that sibling leaves the unit's numbers, signature and prelude as they were (design/prelude-unit.md)
+  if (only && !target && !realFlag && real) { const reached = new Set(order.map((u) => u.node)), own = new Set([...fns.values()].map((u) => u.node)); real = fileUsesReals(sf, (n) => own.has(n) && !reached.has(n)); }
 
   // ----- the subset gate: refuse before translating -----
   const promiseReadings = new Set();
