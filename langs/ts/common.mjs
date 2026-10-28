@@ -1224,3 +1224,13 @@ export function reduceAccumulator(param, checker, write = null) {
   if (ts.isIdentifier(target)) return target.text === name;
   return (ts.isPropertyAccessExpression(target) || ts.isElementAccessExpression(target)) && ts.isIdentifier(bare(target.expression)) && bare(target.expression).text === name;
 }
+
+// a non-null assertion on a value whose type admits null or undefined: `x!` checks nothing at run time, so the absent
+// value flows on (`u.name!` is undefined) or the read through it throws a TypeError (`u.name!.length`); the proof lane
+// carries neither exactly (an absent value read as one of the type, a throw no caller nor effect order sees), so the
+// lint refuses it as non-null-assertion and the translator reads it with the same test
+export function nonNullOnAbsent(checker, n) {
+  if (!ts.isNonNullExpression(n)) return false;
+  let t = null; try { t = checker.getTypeAtLocation(n.expression); } catch { return false; }
+  return !!t && !!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => !!(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null)));
+}
