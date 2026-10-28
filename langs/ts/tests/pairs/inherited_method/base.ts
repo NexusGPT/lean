@@ -26,4 +26,7 @@ export class Base {
   note(x: number): string {
     return "n" + x;
   }
+  mark(x: number): string {
+    return "m" + x;
+  }
 }

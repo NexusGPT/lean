@@ -2,6 +2,7 @@ import { Base } from "./base";
 
 /** an item over the base: it formats, labels and counts through the methods it inherits */
 export class Item extends Base {
+  last = "";
   render(x: number): string {
     return this.format(x) + "!";
   }
@@ -28,5 +29,10 @@ export class Item extends Base {
   }
   note(x: number): string {
     return super.note(x) + "+";
+  }
+  mark(x: number): string {
+    const r = super.mark(x);
+    this.last = r;
+    return r;
   }
 }
