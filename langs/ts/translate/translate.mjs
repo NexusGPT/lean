@@ -54,7 +54,8 @@ class Unsupported extends Error {}
 
 import { dn } from '../common.mjs';
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
-import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
+import { nonNullOnAbsent } from '../common.mjs';
+import { definiteAssignmentRead } from '../common.mjs'; // `let v!: T` read before its first assignment: one test with the lint // `x!` on a type that admits absence: one test with the lint
 import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -2241,7 +2242,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         if (i === decls.length) return more();
         const d = decls[i];
         return capture(() => {
-          const t = typeOf(d.name), D = dtype(t, d);
+          if (definiteAssignmentRead(checker, d)) fail(d, 'definite-assignment: `let v!: T` may be read before its first assignment'); const t = typeOf(d.name), D = dtype(t, d);
           const value = d.initializer ? outerParens(expr(d.initializer, t)) : `${external(`uninit_${mangle(D)}`, [], D)}()`;
           const line = ts.isIdentifier(d.name) ? `var ${dn(d.name.text)}${hookResultOf.has(d.initializer) ? '' : `: ${D}`} := ${value};` : destructure(d.name, value, typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n');
           return `${line}\n${d.initializer && containsEffect(d.initializer) ? promiseGuard(bind(i + 1), R) : bind(i + 1)}`;
@@ -4909,6 +4910,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
           if (!ts.isIdentifier(d.name)) return faultEval(() => expr(d.initializer), (code) => `${destructure(d.name, outerParens(code), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n')}\n${more()}`, ctx);
           const t = typeOf(d.name);
           if (!d.initializer) {
+            if (definiteAssignmentRead(checker, d)) fail(d, 'definite-assignment: `let v!: T` may be read before its first assignment'); 
             if (!d.type) {
               const at = firstAssignedType(d.name); const sym = checker.getSymbolAtLocation(d.name);
               if (at && !isAny(at)) { usesOption = true; const inner = dtype(at, d); const D = inner.startsWith('Option<') ? inner : `Option<${inner}>`; letTypes.set(sym, D); return `var ${dn(d.name.text)}: ${D} := None;\n${more()}`; }
@@ -4965,6 +4967,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
             if (!ts.isIdentifier(d.name)) return destructure(d.name, outerParens(expr(d.initializer)), typeOf(d.initializer), hookResultOf.get(d.initializer) ?? null).join('\n');
             const t = typeOf(d.name);
             if (!d.initializer) {
+              if (definiteAssignmentRead(checker, d)) fail(d, 'definite-assignment: `let v!: T` may be read before its first assignment'); 
               if (!d.type) { // `let x;`: absent until its first assignment; Option of the first assigned type, or opaque
                 const at = firstAssignedType(d.name); const sym = checker.getSymbolAtLocation(d.name);
                 if (at && !isAny(at)) { usesOption = true; const inner = dtype(at, d); const D = inner.startsWith('Option<') ? inner : `Option<${inner}>`; letTypes.set(sym, D); return `var ${dn(d.name.text)}: ${D} := None;`; }

@@ -1301,3 +1301,26 @@ export function nonNullOnAbsent(checker, n) {
   let t = null; try { t = checker.getTypeAtLocation(n.expression); } catch { return false; }
   return !!t && !!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => !!(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null)));
 }
+
+// a definite-assignment assertion (`let v!: number`) turns off TypeScript's check that the variable is assigned before
+// it is read, and a read before the first assignment gives undefined; the translator gives such a variable an
+// uninterpreted start value of its type, which would prove `return v` equal to `return v + 0` (undefined against NaN).
+// It is read safely only when nothing in its block mentions it before the declaration and the first statement after
+// it that mentions it is a plain assignment `v = e;` whose value does not read it; otherwise it may be read first, and
+// the lint (definite-assignment) and the translator refuse it with this test
+export function definiteAssignmentRead(checker, d) {
+  if (!ts.isVariableDeclaration(d) || !d.exclamationToken || !ts.isIdentifier(d.name)) return false;
+  const sym = checker.getSymbolAtLocation(d.name);
+  const list = d.parent, st = list?.parent, block = st?.parent;
+  if (!sym || !st || !ts.isVariableStatement(st) || !block?.statements) return true;
+  const mentions = (n) => { let hit = false; const w = (x) => { if (hit) return; if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym) { hit = true; return; } ts.forEachChild(x, w); }; w(n); return hit; };
+  if (list.declarations.slice(list.declarations.indexOf(d) + 1).some(mentions)) return true;
+  const at = block.statements.indexOf(st);
+  if (block.statements.slice(0, at).some(mentions)) return true; // a function declared before it may read it when called
+  for (const s of block.statements.slice(at + 1)) {
+    if (!mentions(s)) continue;
+    const e = ts.isExpressionStatement(s) ? s.expression : null;
+    return !(e && ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(e.left) && checker.getSymbolAtLocation(e.left) === sym && !mentions(e.right));
+  }
+  return false;
+}
