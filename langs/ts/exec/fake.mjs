@@ -255,6 +255,34 @@ export function namePromise(env, p, path, settled) {
 // the name of a promise the world or the input made, or null (not a promise, or one the unit made)
 export const promiseName = (v) => (v && (typeof v === 'object' || typeof v === 'function') && typeof v.then === 'function' ? promiseNames.get(v)?.label ?? null : null);
 
+// An Error of the sandbox's own realm (a TypeError the engine raises for `null.size`) is not an `instanceof` the host's
+// Error; the internal [[ErrorData]] slot is what the tag reads, in either realm.
+const isError = (v) => v instanceof Error || Object.prototype.toString.call(v) === '[object Error]';
+// A V8 stack frame line: four spaces, `at`, then a location the engine writes (`file:line:column`, `<anonymous>`,
+// `native`, `index N`, `unknown location`). A stack names the file and the columns of the copy that ran, which differ
+// between a parent and a candidate by construction; the header (class and message) is the Error's behaviour, the frames
+// are not. A line that only starts with `at` and has no such location is the unit's own text and stays.
+const FRAME = /^ {4}at [^\n]*(?::\d+:\d+\)?|<anonymous>\)?|\(native\)|\(index \d+\)|\(unknown location\))$/;
+// Where lean put the two copies is not a behaviour of the unit. A path the unit reads (`__filename`, `__dirname`,
+// `import.meta.url`, a file name inside a message) names the directory each side was loaded from, and the two differ by
+// construction (a temporary folder beside the project, a candidate file under another name). `setRoots` is told both
+// sides' directories once per pair; a rendered string shows each as `<root>`, and each side's unit file, when the two
+// are named differently, as `<unit file>`. A path of another place is untouched.
+let rootPatterns = [];
+export function setRoots({ dirs = [], files = [] } = {}) {
+  const make = (list, token) => {
+    const all = [...new Set(list.filter((x) => typeof x === 'string' && x.length > 1 && x !== '/'))].sort((a, b) => b.length - a.length);
+    return all.length ? { re: new RegExp(`(?<![A-Za-z0-9_.~-])(?:${all.map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![A-Za-z0-9_-])`, 'g'), token } : null;
+  };
+  rootPatterns = [make(files, '<unit file>'), make(dirs, '<root>')].filter(Boolean);
+}
+export const withoutRoots = (s) => { for (const { re, token } of rootPatterns) s = s.replace(re, token); return s; };
+export function withoutFrames(s) {
+  if (!s.includes('\n    at ')) return s;
+  const lines = s.split('\n'), kept = lines.filter((l, i) => i === 0 || !FRAME.test(l));
+  return kept.length === lines.length ? s : kept.join('\n');
+}
+
 // A rendering of a value for the trace and for outcome comparison: fakes by path, objects structurally, functions by name.
 // With `share` (renderDrawn), an object reached more than once is named: its first sight is `{ $ref: k, value }`, every
 // later sight `{ $ref: k }`, so two positions holding one object show the same name; without it, nothing changes.
@@ -263,7 +291,8 @@ export function render(v, depth = 0, seen = new Set(), share = null) {
   if (v === undefined) return { $undefined: true };
   const t = typeof v;
   if (t === 'number') return Number.isNaN(v) ? { $nan: true } : v === Infinity ? { $infinity: 1 } : v === -Infinity ? { $infinity: -1 } : Object.is(v, -0) ? { $negativeZero: true } : v;
-  if (t === 'string' || t === 'boolean') return v;
+  if (t === 'boolean') return v;
+  if (t === 'string') return withoutRoots(withoutFrames(v));
   if (t === 'bigint') return { $bigint: v.toString() };
   if (t === 'symbol') return { $symbol: String(v) };
   if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : { $fn: v.name || 'anonymous', src: fnHash(v) };
@@ -279,7 +308,7 @@ function renderBody(v, depth, seen, share) {
   if (v instanceof Date) return { $date: Number.isNaN(v.getTime()) ? 'invalid' : v.toISOString() };
   if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [render(k, depth + 1, seen, share), render(x, depth + 1, seen, share)]) };
   if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen, share)) };
-  if (v instanceof Error) return { $error: v.constructor.name, message: v.message };
+  if (isError(v)) return { $error: v.constructor?.name ?? 'Error', message: typeof v.message === 'string' ? withoutRoots(v.message) : v.message }; // class and message; the stack is never part of the rendering (design/stack-text.md)
   if (v instanceof RegExp) return { $regex: String(v) };
   if (typeof v.then === 'function') { const n = promiseNames.get(v); return n ? { $promise: n.label, settled: Object.hasOwn(n, 'reason') ? { rejected: render(n.reason, depth + 1, seen, share) } : render(n.value, depth + 1, seen, share) } : { $promise: true }; } // a promise the world or the input made is named by its creation; one the unit made is anonymous
   const out = {};
@@ -295,7 +324,7 @@ function renderBody(v, depth, seen, share) {
 export function renderDrawn(args) {
   const count = new Set(), multi = new Set();
   const visit = (v) => {
-    if (v === null || typeof v !== 'object' || v.__isFake || v instanceof Date || v instanceof Error || v instanceof RegExp || typeof v.then === 'function') return;
+    if (v === null || typeof v !== 'object' || v.__isFake || v instanceof Date || isError(v) || v instanceof RegExp || typeof v.then === 'function') return;
     if (count.has(v)) { multi.add(v); return; }
     count.add(v);
     if (Array.isArray(v)) v.forEach(visit);
