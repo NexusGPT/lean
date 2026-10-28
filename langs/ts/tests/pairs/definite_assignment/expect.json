@@ -1,5 +1,5 @@
 {
-  "why": "`let v!: T` turns off TypeScript's check that v is assigned before it is read; read first, v is undefined. The translator gave such a variable an uninterpreted start value of its type (uninit_T), which proved late's `return v` equal to `return v + 0` (undefined against NaN when flag is false). A definite-assignment declaration is now refused by the lint and the translator (common.mjs definiteAssignmentRead) unless nothing in its block mentions it before the declaration and its first later mention is a plain assignment that does not read it. late: lane B witnesses, lane A says nothing (parent against itself PASS-bounded). early, assigned first, keeps today's reading and is proved on a refactor; plain untouched, proved.",
+  "why": "`let v!: T` turns off TypeScript's check that v is assigned before it is read; read first, v is undefined. The translator once gave such a variable an uninterpreted start value of its type (uninit_T), which proved late's `return v` equal to `return v + 0` (undefined against NaN when flag is false). Now (design/opaque-values.md) such a let is an option that starts absent, and a read TypeScript did not check is its payload only after the statement's test; where it is absent the unit's result is an opaque value named by the file's text. late: lane B witnesses, lane A does not prove it against the candidate, and proves the parent against itself (the same file: the reading lifts the refusal, PASS-bounded became PASS-proved). early, assigned first, is proved on a refactor; plain untouched, proved.",
   "candidateOnly": [
     {
       "file": "candidate.ts",
@@ -23,7 +23,7 @@
       "file": "parent.ts",
       "parent": "parent.ts",
       "unit": "late",
-      "verdict": "PASS-bounded"
+      "verdict": "PASS-proved"
     }
   ]
 }

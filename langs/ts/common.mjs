@@ -2059,3 +2059,147 @@ export function signedZero(checker, fn) {
   if (!res) return null;
   return { node: res.node, why: `\`${res.node.getText().slice(0, 60)}\` may be a negative zero and ${res.why}; the exact reading holds -0 and 0 as one value, so two versions that differ only in the sign of a zero would read alike. Return a value that is never -0 (\`x + 0\` and Math.abs turn -0 into 0), or test it nonzero first (\`x > 0 ? x : 1\`)` };
 }
+// Absence (design/opaque-values.md). A `let` declared without an initializer holds undefined until a write; TypeScript
+// checks that a read follows a write only for a plain read in the declaring function: it assumes the variable assigned
+// under `v!`, for every read when the declaration says `let v!: T`, and for a read inside a nested function, and it
+// does not see a write a nested function makes. Such a let is an option (None until written) in the proof lane, its
+// definedness carried by the flow. A read whose value must be present (`x!` on a value that may be undefined, a read
+// TypeScript did not check) is a payload read: the translator tests the option before the statement holding it, and
+// where the option is absent the unit's result is an opaque value of its own text; it does so only in the unit's own
+// statement flow, so the lint refuses a payload read anywhere else (definite-assignment for a let, non-null-assertion
+// for `x!`).
+const fnOf = (n) => { let p = n.parent; while (p && !ts.isFunctionLike(p) && !ts.isSourceFile(p) && !ts.isClassStaticBlockDeclaration(p)) p = p.parent; return p ?? null; };
+// the declaration of a let without initializer named by this identifier, or null
+function bareLetDecl(checker, id) {
+  if (!ts.isIdentifier(id)) return null;
+  let s = null; try { s = checker.getSymbolAtLocation(id); } catch { return null; }
+  const d = s?.valueDeclaration;
+  if (!d || !ts.isVariableDeclaration(d) || d.initializer || !ts.isIdentifier(d.name) || d.name === id) return null;
+  const list = d.parent;
+  if (!ts.isVariableDeclarationList(list) || !(list.flags & ts.NodeFlags.Let) || !ts.isVariableStatement(list.parent)) return null;
+  if (d.type) { let t = null; try { t = checker.getTypeFromTypeNode(d.type); } catch { return null; } if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return null; } // an any or unknown let is one opaque value
+  return d;
+}
+const writeTarget = (id) => { let x = id; while (ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; return !!p && ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && p.operatorToken.kind <= ts.SyntaxKind.LastAssignment; };
+// every reference to the let's symbol in its function, as { node, write, unchecked }
+function letRefs(checker, d) {
+  const sym = checker.getSymbolAtLocation(d.name), home = fnOf(d), out = [];
+  if (!sym || !home) return out;
+  const w = (x) => {
+    if (ts.isIdentifier(x) && x !== d.name) {
+      let s = null; try { s = checker.getSymbolAtLocation(x); } catch { /* none */ }
+      if (s === sym) {
+        const write = writeTarget(x) && x.parent.operatorToken?.kind === ts.SyntaxKind.EqualsToken;
+        const nested = fnOf(x) !== home;
+        let p = x; while (ts.isParenthesizedExpression(p.parent)) p = p.parent;
+        out.push({ node: x, write, nested, unchecked: !write && (!!d.exclamationToken || nested || ts.isNonNullExpression(p.parent)) });
+      }
+    }
+    ts.forEachChild(x, w);
+  };
+  w(home);
+  return out;
+}
+// a let whose definedness TypeScript does not fix at some read (an unchecked read, or a write inside a nested function):
+// the proof lane carries it as an option that starts absent
+export function absenceCarried(checker, d) {
+  if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name)) return false;
+  if (d.initializer || !ts.isVariableDeclarationList(d.parent) || !(d.parent.flags & ts.NodeFlags.Let) || !ts.isVariableStatement(d.parent.parent)) return false;
+  if (d.type) { let t = null; try { t = checker.getTypeFromTypeNode(d.type); } catch { return false; } if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return false; }
+  return letRefs(checker, d).some((r) => r.unchecked || (r.write && r.nested));
+}
+// a payload read: the value read must be present, and nothing TypeScript checked says it is. `x!` on a local or a
+// parameter whose type admits undefined, or a read of an absence-carried let TypeScript did not check whose type here
+// excludes absence; returns the identifier read, or null
+export function payloadRead(checker, n) {
+  const TF = ts.TypeFlags;
+  const admits = (t) => !!t && !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
+  if (ts.isNonNullExpression(n)) {
+    let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    let t = null; try { t = checker.getTypeAtLocation(e); } catch { return null; }
+    if (ts.isIdentifier(e) && bareLetDecl(checker, e) && absenceCarried(checker, bareLetDecl(checker, e))) return e;
+    return admits(t) ? e : null;
+  }
+  if (!ts.isIdentifier(n) || writeTarget(n)) return null;
+  let p = n; while (ts.isParenthesizedExpression(p.parent)) p = p.parent;
+  if (ts.isNonNullExpression(p.parent)) return null; // the assertion owns it
+  const d = bareLetDecl(checker, n);
+  if (!d || !absenceCarried(checker, d)) return null;
+  const r = letRefs(checker, d).find((x) => x.node === n);
+  if (!r || !r.unchecked) return null;
+  let t = null; try { t = checker.getTypeAtLocation(n); } catch { return null; }
+  return admits(t) || (t.flags & (TF.Undefined | TF.Void)) ? null : n; // a read typed with its absence carries the option as it is
+}
+// the statement whose start tests a payload read, or null when the read is not in the unit's own statement flow: the
+// identifier is a parameter or a local of the unit, the read sits in a return, an expression statement, a declaration or
+// an if condition reached through blocks and if branches only (no loop, try, switch, label or nested function), the
+// unit is neither async nor a generator and returns a value, and the statement does not write the variable
+export function payloadStatement(checker, n, id) {
+  const unit = fnOf(n);
+  if (!unit || !ts.isFunctionLike(unit) || !unit.body || !ts.isBlock(unit.body)) return null;
+  if (unit.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword) || unit.asteriskToken) return null;
+  if (ts.isConstructorDeclaration(unit) || ts.isSetAccessorDeclaration(unit)) return null;
+  let sig = null; try { sig = checker.getSignatureFromDeclaration(unit); } catch { return null; }
+  const rt = sig ? checker.getReturnTypeOfSignature(sig) : null;
+  if (!rt || rt.flags & (ts.TypeFlags.Void | ts.TypeFlags.Undefined | ts.TypeFlags.Never)) return null;
+  let s = null;
+  if (ts.isIdentifier(id)) {
+    try { s = checker.getSymbolAtLocation(id); } catch { return null; }
+    const d = s?.valueDeclaration;
+    if (!d || fnOf(d) !== unit || !(ts.isParameter(d) || ts.isVariableDeclaration(d)) || !ts.isIdentifier(d.name)) return null;
+  } else if (!pureReadOf(checker, id, unit, true)) return null; // `m.get(k)!`, `xs.find(p)!`: the operand is read before the statement, so it must read only
+  let st = n; while (st && !ts.isStatement(st)) { if (ts.isFunctionLike(st)) return null; st = st.parent; }
+  if (!st || !(ts.isReturnStatement(st) || ts.isExpressionStatement(st) || ts.isVariableStatement(st) || (ts.isIfStatement(st) && n.pos >= st.expression.pos && n.end <= st.expression.end))) return null;
+  for (let p = st.parent; p !== unit.body; p = p.parent) if (!p || !(ts.isBlock(p) || ts.isIfStatement(p))) return null;
+  const head = ts.isIfStatement(st) ? st.expression : st;
+  let writes = false;
+  const w = (x) => { if (writes) return; if (ts.isIdentifier(x) && writeTarget(x)) { let t = null; try { t = checker.getSymbolAtLocation(x); } catch { /* none */ } if (t === s) writes = true; } if (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) { let o = x.operand; while (ts.isParenthesizedExpression(o)) o = o.expression; if (ts.isIdentifier(o) && checker.getSymbolAtLocation(o) === s && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(x.operator)) writes = true; } ts.forEachChild(x, w); };
+  w(head);
+  if (!ts.isIdentifier(id) && !pureReadOf(checker, head, unit, false)) return null; // the statement neither writes nor calls out, so reading the operand first reads the same value
+  return writes ? null : st;
+}
+// an expression that only reads: identifiers of the unit or the module, literals, operators other than writes, property
+// reads that are not accessors, and calls of the reading methods get, has, at, find, findLast, findIndex, includes,
+// indexOf on a Map or an array (a callback an arrow with an expression body that only reads); `top` asks for one such call
+function pureReadOf(checker, e, unit, top) {
+  const READS = new Set(['get', 'has', 'at', 'find', 'findLast', 'findIndex', 'includes', 'indexOf']);
+  let ok = true;
+  const w = (x) => {
+    if (!ok) return;
+    if (ts.isArrowFunction(x)) { if (ts.isBlock(x.body) || x.parameters.some((p) => !ts.isIdentifier(p.name))) ok = false; else w(x.body); return; }
+    if (ts.isFunctionLike(x) || ts.isNewExpression(x) || ts.isAwaitExpression(x) || ts.isYieldExpression(x) || ts.isDeleteExpression(x) || ts.isTaggedTemplateExpression(x) || ts.isClassExpression(x)) { ok = false; return; }
+    if (ts.isBinaryExpression(x) && x.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && x.operatorToken.kind <= ts.SyntaxKind.LastAssignment) { ok = false; return; }
+    if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(x.operator)) { ok = false; return; }
+    if (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) {
+      let ps = null; try { ps = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(x) ? x.name : x.argumentExpression); } catch { /* none */ }
+      if (ps?.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d))) { ok = false; return; }
+    }
+    if (ts.isCallExpression(x)) {
+      const c = x.expression;
+      if (!ts.isPropertyAccessExpression(c) || !READS.has(c.name.text) || x.questionDotToken || c.questionDotToken) { ok = false; return; }
+      let rt = null; try { rt = checker.getTypeAtLocation(c.expression); } catch { ok = false; return; }
+      const nm = (rt?.aliasSymbol ?? rt?.getSymbol?.())?.getName?.();
+      if (!(isArrayLike(checker, rt) || nm === 'Map' || nm === 'ReadonlyMap')) { ok = false; return; }
+      w(c.expression); x.arguments.forEach(w); return;
+    }
+    ts.forEachChild(x, w);
+  };
+  let e0 = e; while (ts.isParenthesizedExpression(e0)) e0 = e0.expression;
+  if (top && !ts.isCallExpression(e0)) return false;
+  w(e);
+  return ok;
+}
+// where an absence-carried let's option is carried: declared in a unit's own flow (no try, catch or switch around it, the
+// unit neither async nor a generator); the translator's fault and promise paths do not carry it
+export function absenceHome(checker, d) {
+  const fn = fnOf(d);
+  if (!fn || !unitFunction(fn) || fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword) || fn.asteriskToken) return false;
+  for (let p = d.parent; p && p !== fn; p = p.parent) if (ts.isTryStatement(p) || ts.isCatchClause(p) || ts.isSwitchStatement(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) return false;
+  return true;
+}
+// the payload reads of an absence-carried let that are not `x!` (a read TypeScript did not check whose type excludes
+// absence) and that no statement test reaches: the lint names each
+export function strandedLetReads(checker, d) {
+  if (!absenceCarried(checker, d)) return [];
+  return letRefs(checker, d).map((r) => r.node).filter((x) => payloadRead(checker, x) === x && !payloadStatement(checker, x, x));
+}
