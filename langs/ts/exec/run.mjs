@@ -23,7 +23,7 @@ import { createRequire } from 'node:module';
 import { fork } from 'node:child_process';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
-import { specOf, findValues, readValues } from './spec.mjs';
+import { specOf, findValues, readValues, argsFor } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
@@ -526,21 +526,21 @@ export function pickUnit(exportsObj, spec, env) {
   if (!spec.isMethod) {
     const f = units[spec.unit] ?? exportsObj[spec.unit];
     if (typeof f !== 'function') return null;
-    return { call: (args) => (spec.thisParam ? f.call(args[0], ...args.slice(1)) : f(...args)), receiver: null }; // a free function with a declared `this` parameter takes its receiver first
+    return { call: (drawn) => { const args = argsFor(spec, drawn); return spec.thisParam ? f.call(args[0], ...args.slice(1)) : f(...args); }, receiver: null }; // a free function with a declared `this` parameter takes its receiver first
   }
   const Cls = units[spec.className] ?? exportsObj[spec.className];
   if (typeof Cls !== 'function') return null;
   if (spec.unit.split('.')[1] === 'constructor') {
     // the constructor unit: the instance it builds is both the receiver observed after the call and the value returned
     const holder = { inst: null };
-    return { call: (args) => { holder.inst = Reflect.construct(Cls, args); return holder.inst; }, receiver: { __own: () => (holder.inst ? { ...holder.inst } : {}) } };
+    return { call: (args) => { holder.inst = Reflect.construct(Cls, argsFor(spec, args)); return holder.inst; }, receiver: { __own: () => (holder.inst ? { ...holder.inst } : {}) } };
   }
   const member = spec.member ?? spec.unit.split('.')[1];
   const descriptor = Object.getOwnPropertyDescriptor(spec.isStatic ? Cls : Cls.prototype, member);
   const method = descriptor?.value;
   if (typeof method !== 'function' && !spec.accessor && !spec.isStatic) return null;
   if (spec.isStatic && spec.accessor) return { call: (args) => spec.accessor === 'get' ? Reflect.get(Cls, member, Cls) : (Reflect.set(Cls, member, args[0], Cls), undefined), receiver: null };
-  if (spec.isStatic) { const sm = Cls[member]; return typeof sm === 'function' ? { call: (args) => sm.apply(Cls, args), receiver: null } : null; }
+  if (spec.isStatic) { const sm = Cls[member]; return typeof sm === 'function' ? { call: (args) => sm.apply(Cls, argsFor(spec, args)), receiver: null } : null; }
   // the receiver: real prototype methods, every field a fake
   const base = Object.create(Cls.prototype);
   const self = new Proxy(base, {
@@ -556,7 +556,7 @@ export function pickUnit(exportsObj, spec, env) {
     },
     set(t, p, v) { const d = Object.getOwnPropertyDescriptor(Cls.prototype, p); if (d?.set) { d.set.call(self, v); return true; } env.record('set', `this.${String(p)}`, [render(v)]); t[p] = v; return true; },
   });
-  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : routeCall(env, Cls, member, args, spec, (a) => method.apply(self, a)), receiver: self }; // a handler runs through the guards and pipes its listed decorators registered
+  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : routeCall(env, Cls, member, args, spec, (a) => method.apply(self, argsFor(spec, a))), receiver: self }; // a handler runs through the guards and pipes its listed decorators registered
 }
 
 // a synchronous call under the vm's watchdog: JavaScript cannot be preempted, so an unbounded loop (an input aliased
