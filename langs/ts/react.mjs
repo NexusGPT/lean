@@ -1,5 +1,5 @@
 // react imports and closure facts shared by the lint and translator
-import { ts } from './common.mjs';
+import { ts, isArrayLike } from './common.mjs';
 const K = ts.SyntaxKind;
 export function reactHook(checker, n) {
   if (!ts.isCallExpression(n)) return null;
@@ -181,6 +181,10 @@ export function captureKind(checker, id, cb, unitBody) {
     // a method call, a field read that writes nothing, a dependency; never a value handed on, never written through
     const used = refs.every((r) => isDependency(checker, r) || (ts.isPropertyAccessExpression(r.parent) && r.parent.expression === r && !r.parent.questionDotToken));
     if (!used || writes.some((w) => !w.direct)) return null;
+    // a value the translator reads as data (an array, a Map or Set and their kin) is updated in place by these methods:
+    // a closure keyed by that value would miss a later update, so such a result is no request handle
+    const t = checker.getTypeAtLocation(d.name), tn = (t.aliasSymbol ?? t.symbol)?.name;
+    if (writes.length && (isArrayLike(checker, t) || ['Map', 'Set', 'WeakMap', 'WeakSet', 'URLSearchParams', 'Headers', 'FormData'].includes(tn))) return null;
     const hookSym = checker.getSymbolAtLocation(constCall.expression);
     const calls = []; const walk = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && checker.getSymbolAtLocation(n.expression) === hookSym) calls.push(n); ts.forEachChild(n, walk); }; walk(unitBody);
     return { kind: 'hook-result', hook: `import:${imp.moduleSpecifier.text}:${(hd.propertyName ?? hd.name).text}`, at: calls.indexOf(constCall) };

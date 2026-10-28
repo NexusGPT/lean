@@ -1,7 +1,7 @@
 // expect: react-handler-capture
 import { useCallback } from "react";
 import { makeApi } from "api";
-import { useRouter } from "next/router";
+import { useRouter, useList } from "next/router";
 import { keep } from "service";
 // a value from an outside call that is no hook: its mutating method is no request the capture table names
 export function unknownCallee(n: number) {
@@ -13,4 +13,10 @@ export function handedOn(n: number) {
   const router = useRouter();
   keep(router);
   return useCallback(() => router.push(`/p/${n}`), [router, n]);
+}
+// a hook result the translator reads as data (an array): its push updates the value the closure captured
+export function arrayResult(n: number) {
+  const list: number[] = useList();
+  list.push(n);
+  return useCallback(() => list.length, [list]);
 }
