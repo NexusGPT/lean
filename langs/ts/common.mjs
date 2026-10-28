@@ -1356,7 +1356,6 @@ function writesOf(checker, sym) {
 // a real type an operation reads exactly as written: one primitive family (numbers, strings or booleans, literals
 // included), so `k + 1` on a number asserted to `1 | 2` is the number's own sum; any other real type (Any, a union of
 // families, an object) makes the operation one on the opaque value
-const admitsAbsence = (t) => !!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null));
 const primitiveFamily = (t) => { const TF = ts.TypeFlags; const ps = t.flags & TF.Union ? t.types : [t]; return [TF.NumberLike, TF.StringLike, TF.BooleanLike].some((f) => ps.every((x) => x.flags & f)); };
 // the real type of a held value (a TypeScript type; the any type for an opaque one), or null when the value is not held
 export function assertionHeld(checker, n, seen = new Map()) {
@@ -1376,7 +1375,6 @@ function heldOf(checker, n, seen) {
     if (isConstAssertion(n)) return assertionHeld(checker, n.expression, seen);
     const from = tAt(checker, n.expression), to = tAt(checker, n);
     if (!from || !to || opaqueT(to)) return null;
-    if (admitsAbsence(to) && !assertionHeld(checker, n.expression, seen)) return null; // a target that admits absence keeps the absence-lifting reading, as a local does
     const inner = assertionHeld(checker, n.expression, seen);
     if (inner) return inner;
     if (holdsOpaque(checker, from)) return any();
@@ -1390,7 +1388,6 @@ function heldOf(checker, n, seen) {
     const declared = tAt(checker, sym.valueDeclaration.name);
     if (!declared || opaqueT(declared)) return null;
     const heldWrites = ws.map((w) => assertionHeld(checker, w, seen));
-    if (admitsAbsence(declared) && heldWrites.every((h) => !h)) return null; // an any value in a slot that admits absence keeps the absence-lifting reading (liftAny): its absence test is exact
     const real = ws.map((w, i) => heldWrites[i] ?? (opaqueT(tAt(checker, w)) ? any() : null));
     if (!real.some(Boolean)) return null;
     return real.length === 1 ? real[0] : any();
