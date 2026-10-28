@@ -26,22 +26,56 @@ function of what `args` carry on both sides. It proves different behaviours equa
 arguments leave out something that changed (a body, a declaration, a creation order), or the model gives the value a
 type the runtime value lacks (an absent value read as a T: `+ 0`, `typeof`, `=== undefined` then answer for a T).
 
-## Classes (pair `tests/pairs/proof_hunt`; base 1e55e21; "hidden": lane A proved, lane B witnessed)
+## Classes, grouped by the invariant their structural fix restores (pairs `tests/pairs/proof_hunt_<n>`, base 1e55e21)
 
-| # | class | units | state | site | fix shape |
-|---|---|---|---|---|---|
-| 1 | open key on a record with declared fields and an index signature | openKey, dotKey, inKey, keysH | open, proved, lane B never draws the extras | dtype (a datatype of the declared fields), translate.mjs:3260 open_key_read, :3140 accessor, :2491 in_record, :5354 Object_keys | the extras in the value (a dictionary carrier beside the fields), or refuse every open read (dot, `in`, for-in too, not only brackets) |
-| 2 | an absent value asserted present (`x!`) | bang, bangS, bangType, mapGet, findBang | open, hidden | translate.mjs:2083 absent_T | the absent branch reads undefined (the Undef of the value's Option/Nullish), never a T; or refuse `!` the flow does not decide |
-| 3 | a dictionary read of an Object.prototype name | protoLit, protoRead | closed on this base (not proved) | missingKey :3168 | kept as must-not-prove |
-| 4 | a loop helper running on after a callee faults in a callback | lastOk | closed on this base | loop helpers | kept as must-not-prove |
-| 5 | for-in over a record: creation order and key presence | keyOrder, keysOfParam, optKeys | open, hidden | :5354 `Object_keys(D)` of a datatype value | name the key list by the source (as `Object_<name>_source_<hash>` at :3489), or refuse for-in over a record type |
-| 6 | a let read before any write | definite, definiteS, lateInit | open, hidden | :4856, :4911, :2223 uninit_T | refuse the read TypeScript does not vouch for (`let v!:`, a write only a closure makes), or read it as undefined |
-| 7 | a module constant holding a function value | scaled, applied | open, hidden | :551 call_args_<name> (a callback), :1403 to :1416 call_args_<name> (a direct call) | key it by its declaration and reach (as :1985 should), or refuse a non-unit callable constant |
-| 8 | the number envelope: exact int and real, no signed zero | negZero, bigInt; scratch `a + b - b + 0.5` (real file) | open; the envelope is documented (numbers-bitwise-nan.md); real rounding is witnessed | int and real readings | owner decision: claim the envelope in the certificate, or refuse results that can leave it |
-| 9 | a module constant whose initializer calls a changed same-file function | cfgX | open, hidden | :712 `Module_file_get_<name>_<hash(decl text)>`, a module cell of the world named by its declaration's own text | name it by `iteratorProgram(decl)` (the same-file declarations it reaches), as Static_ does at :861 |
-| 10 | a value of another runtime type asserted to T | anyAs, asCast, unknownAs, parsedA | open, hidden | :1719 to :1744 Any_as_T, cast_* | keep the source representation until a guard decides it, or refuse a narrowing `as` |
-| 11 | a tagged template whose same-file tag function changed | tagged | open, hidden | :2069 `tag_<tag text>_<n>` | call the same-file tag as the unit it is (its lemma then required), or key by its declaration and reach |
-| 12 | instanceof against a same-file class whose declaration changed | isBase | open, hidden | :2476 `instanceof_<right text>` (and the class named by its name) | key the test by the class declaration and its heritage, or decide it from both sides' declarations |
+"hidden": lane A proved, lane B witnessed; "unseen": lane A proved, lane B draws nothing that differs. A refusal is
+named only as the interim, where the structure cannot carry the construct yet.
+
+**I1. A shared name covers every piece of code that decides the value.** Fix: name each shared unknown by the reach
+of the code that decides it (`iteratorProgram` or `reachOf` of its declaration: the same-file declarations, imports and
+accessors it reaches), never by a bare name or the declaration's own text; or read it as the unit it is, so the
+theorem requires its lemma. Interim refusal: none needed.
+| # | class | units | state | site |
+|---|---|---|---|---|
+| 7 | a module constant holding a function value, called or passed by name | scaled, applied | open, hidden | :551, :1403 to :1416 `call_args_<name>` |
+| 9 | a module cell whose initializer calls a changed same-file function | cfgX | open, hidden | :712 `Module_file_<kind>_<name>_<hash(decl text)>` |
+| 11 | a tagged template whose same-file tag changed | tagged | open, hidden | :2069 `tag_<tag text>_<n>` |
+| 12 | instanceof against a same-file class whose heritage changed | isBase | open, hidden | :2476 `instanceof_<right text>`, the class named by its name |
+
+**I2. An unknown value stays opaque and is never coerced to a type it may not hold.** Fix: an asserted or unchecked
+value keeps its source representation (the Option or Nullish of `x!` with its Undef, the Any of an `any`, `unknown`
+or `JSON.parse`, the union before an `as`, the Undef of a let not yet written); every operation on it reads through
+that representation (the Any operations, the Option's Undef branch), and it becomes a T only where a guard the
+model decides narrows it. Interim refusal: a `!` or a narrowing `as` the flow does not decide, `let v!:`, a let
+written only by a closure.
+| # | class | units | state | site |
+|---|---|---|---|---|
+| 2 | an absent value asserted present (`x!`, `m.get(k)!`, `find()!`) | bang, bangS, bangType, mapGet, findBang | open, hidden | :2083 absent_T |
+| 6 | a let read before its write | definite, definiteS, lateInit | open, hidden | :2223, :4856, :4911 uninit_T |
+| 10 | a value of another runtime type asserted to T (`as`, an `any` or `unknown` narrowed, `JSON.parse(s) as R`) | anyAs, asCast, unknownAs, parsedA | open, hidden | :1719 to :1744 Any_as_T, cast_* |
+
+**I3. A record from the outside carries an opaque rest and an opaque key order.** Fix: a record value is its declared
+fields plus an opaque rest (the keys its type does not declare) plus an opaque key order; a declared field reads
+exactly, while an open key, `in`, for-in, a spread, `Object.assign` and the key lists read through functions of the
+whole value, rest and order included; a record the unit builds from a literal has an empty rest and the literal's
+order, so its reads stay exact. Interim refusal: the rule `key-order` (for-in over an outside record) and the open
+reads lane dynamic-key refuses.
+| # | class | units | state | site |
+|---|---|---|---|---|
+| 1 | an open key on a record with declared fields and an index signature (bracket, dot, `in`, for-in) | openKey, dotKey, inKey, keysH | open, unseen | dtype, :3260, :3140, :2491, :5354 |
+| 5 | for-in over a record: creation order and key presence | keyOrder; escape proof_hunt_key_order (keysOfParam, optKeys) | open, hidden | :5354 `Object_keys(D)` |
+| 13 | a spread or `Object.assign` of a record-typed value (structural typing lets it carry undeclared keys) | spreadCopy, assignInto | open, unseen | the core's spread reading; Object.assign |
+
+**I4. A prototype name is a function of the key.** Fix: a missing key that names an Object.prototype member reads
+`proto_member(key)`, never one value for every name. Class 3 (protoLit, protoRead): closed on the base.
+
+**I5. A fault is read after every call that can raise it.** Fix: a loop helper tests the fault after each step, as a
+statement sequence does. Class 4 (lastOk): closed on the base.
+
+**I6. The number model either is JavaScript's or says where it is not.** Class 8 (negZero, bigInt unseen; a real-file
+`a + b - b + 0.5` witnessed at finite inputs): the exact int and real envelope is documented, so the fix is the
+owner's choice: a float64 reading, or a proof that marks or refuses where a value may leave the envelope (as the heap
+core marks a negative zero).
 
 ## Every shared-unknown site and its answer (can the two sides differ at run time while it is shared?)
 
@@ -81,6 +115,6 @@ type the runtime value lacks (an absent value read as a T: `+ 0`, `typeof`, `===
 `LEAN_PAIRS=adapters,special_numbers,bare_return_void,loop_chain,null_undefined node langs/ts/tests/run.mjs`:
 `| PROOF-HUNT TOTAL | 43 units read by both lanes | NO HIDDEN FALSE PROOF | 6 exempt by a door (adapter, special numbers) |`
 (adapters pick and pad by their adapter; Gate.constructor, positives, andAbsence and clamp by NaN witnesses).
-`LEAN_PAIRS=proof_hunt`: `| PROOF-HUNT TOTAL | 35 units read by both lanes | 20 HIDDEN FALSE PROOFS | 0 exempt ... |`,
+`LEAN_PAIRS=proof_hunt` (the single pair before the split per class): `| PROOF-HUNT TOTAL | 35 units read by both lanes | 20 HIDDEN FALSE PROOFS | 0 exempt ... |`,
 `| TOTAL | 763 checks | 47 FAILED |`: the pair is red until the open classes are read soundly. Lane A on every other
 pair crossed with its expect.b: no hidden false proof outside these six exempt units.
