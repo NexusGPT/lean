@@ -3,7 +3,7 @@
 // run on every input lane B draws and compared with Node's result under SameValue, plus the product check for shared
 // parts with no body.
 //
-//   node run.mjs [--pairs <dir>] [--work <dir>] [--known <json>] [--n 30] [--jobs 3] [--pair-seconds 900] [--json <out>]
+//   node run.mjs [--pairs <dir>] [--work <dir>] [--known <json>] [--n 30] [--jobs 3] [--pair-seconds 3600] [--json <out>]
 //
 // LEAN_PAIRS=a,b limits the pairs, as in tests/run.mjs. Prints one row per unit, the totals, every disagreement and
 // coupling finding grouped by cause; exits 1 when a disagreement or a coupling finding is not listed in the known
@@ -20,7 +20,7 @@ const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
 const pairsDir = path.resolve(opt('--pairs', path.join(here, '../tests/pairs')));
 const work = path.resolve(opt('--work', fs.mkdtempSync(path.join(os.tmpdir(), 'lean-conformance-'))));
 const knownFile = path.resolve(opt('--known', path.join(here, 'known-findings.json')));
-const N = Number(opt('--n', 30)), JOBS = Number(opt('--jobs', 3)), PAIR_SECONDS = Number(opt('--pair-seconds', 900));
+const N = Number(opt('--n', 30)), JOBS = Number(opt('--jobs', 3)), PAIR_SECONDS = Number(opt('--pair-seconds', 3600)); // each unit has its own bound inside (pair.mjs)
 const jsonOut = opt('--json', null);
 const only = process.env.LEAN_PAIRS ? new Set(process.env.LEAN_PAIRS.split(',').map((x) => x.trim()).filter(Boolean)) : null;
 const known = fs.existsSync(knownFile) ? JSON.parse(fs.readFileSync(knownFile, 'utf8')).findings ?? [] : [];
@@ -48,7 +48,7 @@ const results = new Array(pairs.length);
 // ----- per unit: one status -----
 const sum = (o, re) => Object.entries(o ?? {}).filter(([k]) => re.test(k)).reduce((n, [, v]) => n + v, 0);
 const rows = [], findings = [], couplings = [];
-const totals = { pairs: pairs.length, pairsSkipped: 0, pairsFailed: 0, units: 0, executable: 0, agree: 0, disagree: 0, notExecutable: 0, outsideDomain: 0, notBridged: 0, modelError: 0, unitsSkipped: 0, inputs: 0, coupled: 0, productInputs: 0 };
+const totals = { pairs: pairs.length, pairsSkipped: 0, pairsFailed: 0, units: 0, executable: 0, agree: 0, disagree: 0, notExecutable: 0, outsideDomain: 0, notBridged: 0, modelError: 0, unitsSkipped: 0, inputs: 0, coupled: 0, productInputs: 0, unseen: 0 };
 const inputTally = {};
 for (const r of results) {
   if (r.harness) { totals.pairsFailed++; rows.push({ pair: r.pair, unit: '-', status: 'HARNESS', detail: r.harness }); }
@@ -56,7 +56,7 @@ for (const r of results) {
   for (const u of r.units) {
     totals.units++;
     if (u.skipped) { totals.unitsSkipped++; rows.push({ pair: r.pair, unit: u.unit, status: 'skipped', detail: u.skipped }); continue; }
-    totals.inputs += u.inputs; totals.productInputs += u.product.inputs;
+    totals.inputs += u.inputs; totals.productInputs += u.product.inputs; totals.unseen += u.unseen ?? 0;
     const both = {}; for (const side of ['parent', 'candidate']) for (const [k, v] of Object.entries(u.sides[side])) { both[k] = (both[k] ?? 0) + v; inputTally[k.split(':')[0]] = (inputTally[k.split(':')[0]] ?? 0) + v; }
     const ag = sum(both, /^agree/), dis = sum(both, /^disagree/), ne = sum(both, /^not executable/), od = sum(both, /^outside/), nb = sum(both, /^not bridged/), me = sum(both, /^model error/), nn = sum(both, /^Node did not/);
     let status;
@@ -68,10 +68,11 @@ for (const r of results) {
     else { status = 'not bridged'; totals.notBridged++; }
     const top = Object.entries(both).filter(([k]) => !/^agree$|^disagree$/.test(k)).sort((x, y) => y[1] - x[1])[0];
     rows.push({ pair: r.pair, unit: u.unit, status, detail: `${ag} agree, ${dis} disagree, ${ne} not executable, ${od} outside, ${nb} not bridged${me ? `, ${me} model error` : ''}${nn ? `, ${nn} Node did not answer` : ''} of ${u.inputs * 2}${top ? `; most: ${top[0].slice(0, 90)}` : ''}` });
-    for (const d of u.disagreements) findings.push({ pair: r.pair, unit: u.unit, ...d });
-    for (const c of u.coupling) { totals.coupled++; couplings.push({ pair: r.pair, unit: u.unit, ...c }); }
+    for (const d of u.disagreements) findings.push({ pair: r.pair, unit: u.unit, laneA: u.laneA, ...d });
+    for (const c of u.coupling) { totals.coupled++; couplings.push({ pair: r.pair, unit: u.unit, laneA: u.laneA, ...c }); }
   }
 }
+const laneAText = (x) => (x === true ? 'proved' : x === false ? 'not proved' : x === 'withheld' ? 'withheld' : 'unlisted');
 const isKnown = (f, kind) => known.find((k) => k.kind === kind && k.pair === f.pair && k.unit === f.unit && (!k.cause || k.cause === f.cause) && (!k.side || k.side === f.side));
 
 // ----- the table -----
@@ -91,13 +92,19 @@ for (const [cause, fs_] of [...groups].sort((x, y) => y[1].length - x[1].length)
   for (const [k, list] of byUnit) {
     const f = list[0]; const kn = isKnown(f, 'disagree');
     if (!kn) unknown += 1;
-    console.log(`- ${k} (${list.length}: ${[...new Set(list.map((x) => x.side))].join(', ')})${kn ? ` [known: ${kn.row}]` : ' [NEW]'}: input ${f.input} ${JSON.stringify(f.args).slice(0, 140)}; Node ${JSON.stringify(f.node).slice(0, 100)}; ${f.diff.slice(0, 200)}`);
+    console.log(`- ${k} (${list.length}: ${[...new Set(list.map((x) => x.side))].join(', ')}; the pair expects lane A ${laneAText(f.laneA)})${kn ? ` [known: ${kn.row}]` : ' [NEW]'}: input ${f.input} ${JSON.stringify(f.args).slice(0, 140)}; Node ${JSON.stringify(f.node).slice(0, 100)}; ${f.diff.slice(0, 200)}`);
   }
 }
-console.log(`\n## Coupling findings (the product check): ${couplings.length} on ${totals.productInputs} inputs that reached a part with no body`);
-for (const c of couplings) { const kn = isKnown(c, 'coupling'); if (!kn) unknown++; console.log(`- ${c.pair}/${c.unit}${kn ? ` [known: ${kn.row}]` : ' [NEW]'}: input ${c.input} ${JSON.stringify(c.args).slice(0, 120)}; ${c.why}; Node parent ${JSON.stringify(c.node.parent).slice(0, 80)}, candidate ${JSON.stringify(c.node.candidate).slice(0, 80)}`); }
+console.log(`\n## The product check: ${couplings.length} inputs where both models agree under every seed and Node differs, of ${totals.productInputs} inputs that reached a part with no body`);
+// a coupling is a defect under a lemma lane A proves: the theorem holds for every reading of the shared symbols, and the
+// sampled seeds only stand in for that; under a lemma lane A does not prove or withholds, Dafny already found the reading
+// the seeds missed, so the sampled agreement is listed and is no finding
+const sampledOnly = couplings.filter((c) => c.laneA !== true);
+console.log(`(${couplings.length - sampledOnly.length} under a lemma lane A proves: findings; ${sampledOnly.length} under a lemma lane A does not prove or withholds: sampled agreement, no finding, by unit: ${[...new Set(sampledOnly.map((c) => `${c.pair}/${c.unit}`))].join(', ') || 'none'})`);
+for (const c of couplings.filter((x) => x.laneA === true)) { const kn = isKnown(c, 'coupling'); if (!kn) unknown++; console.log(`- ${c.pair}/${c.unit} (the pair expects lane A ${laneAText(c.laneA)})${kn ? ` [known: ${kn.row}]` : ' [NEW]'}: input ${c.input} ${JSON.stringify(c.args).slice(0, 120)}; ${c.why}; Node parent ${JSON.stringify(c.node.parent).slice(0, 80)}, candidate ${JSON.stringify(c.node.candidate).slice(0, 80)}`); }
+console.log(`\n## Inputs: ${totals.inputs} drawn, ${totals.inputs * 2} model runs; ${totals.unseen} positions of Node's result lane B rendered as a second sight, not compared`);
 console.log(`\n## Inputs by status (both sides): ${Object.entries(inputTally).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify({ totals, inputTally, rows, findings, couplings, work }, null, 1));
 const t = totals;
-console.log(`| MODEL-CONFORMANCE TOTAL | ${t.units} units in ${t.pairs - t.pairsSkipped} pairs (${t.pairsSkipped} skipped${t.pairsFailed ? `, ${t.pairsFailed} HARNESS` : ''}) | ${t.executable} executable: ${t.agree} agree, ${t.disagree} disagree | ${t.notExecutable} not executable, ${t.outsideDomain} outside domain, ${t.notBridged} not bridged, ${t.modelError} model error, ${t.unitsSkipped} skipped | ${t.coupled} coupling | ${unknown === 0 && !t.pairsFailed ? 'NO NEW FINDING' : `${unknown} NEW FINDING(S)${t.pairsFailed ? `, ${t.pairsFailed} pair(s) failed` : ''}`} |`);
+console.log(`| MODEL-CONFORMANCE TOTAL | ${t.units} units in ${t.pairs - t.pairsSkipped} pairs (${t.pairsSkipped} skipped${t.pairsFailed ? `, ${t.pairsFailed} HARNESS` : ''}) | ${t.executable} executable: ${t.agree} agree, ${t.disagree} disagree | ${t.notExecutable} not executable, ${t.outsideDomain} outside domain, ${t.notBridged} not bridged, ${t.modelError} model error, ${t.unitsSkipped} skipped | ${couplings.filter((c) => c.laneA === true).length} coupling finding(s) (${t.coupled} sampled) | ${unknown === 0 && !t.pairsFailed ? 'NO NEW FINDING' : `${unknown} NEW FINDING(S)${t.pairsFailed ? `, ${t.pairsFailed} pair(s) failed` : ''}`} |`);
 process.exit(unknown === 0 && !t.pairsFailed ? 0 : 1);

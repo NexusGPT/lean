@@ -5,7 +5,7 @@
 // has no reading for is not bridged (NoBridge, counted with its reason).
 import { BigNumber, canon, opaqueValue } from './model.mjs';
 import { dn } from '../common.mjs';
-import { render } from '../exec/fake.mjs';
+import { render, renderDrawn } from '../exec/fake.mjs';
 
 export class NoBridge extends Error { constructor(why) { super(why); this.why = why; } }
 export class OutOfDomain extends Error { constructor(why) { super(why); this.why = why; } }
@@ -28,7 +28,7 @@ export function makeBridge(model) {
   const { M, D, decls } = model;
   // the absence a None stands for: Option<T> reads a single-absence union, T | null or T | undefined; the unit's TypeScript
   // signature (// SIG) says which, and a signature naming both or neither leaves either
-  const state = { none: 'either' };
+  const state = { none: 'either', unseen: 0 };
   const rest = new Map(); // MoreFrom src -> the undeclared keys and values of the object it was read from (rendered)
   const restIds = new Map();
   const dt = (name) => decls.datatypes.get(name);
@@ -56,7 +56,7 @@ export function makeBridge(model) {
       if (!Array.isArray(v) || v.length !== t.items.length) throw new OutOfDomain(`not a tuple of ${t.items.length}`);
       return D.Tuple.of(...v.map((x, i) => into(x, t.items[i])));
     }
-    if (t.k === 'arrow') { if (typeof v !== 'function') throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads a function`); const label = `input function ${JSON.stringify(render(v))}`; return (...args) => model.apply(label, args, t.to); } // an input function's body is not the model's: applying it is applying a part with no body
+    if (t.k === 'arrow') { if (typeof v !== 'function') throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads a function`); const label = `input function ${JSON.stringify(render(v))}`; return Object.assign((...args) => model.apply(label, args, t.to), { __leanLabel: label }); } // an input function's body is not the model's: applying it is applying a part with no body
     if (t.k !== 'name') throw new NoBridge(`type ${t.text}`);
     // a value of a type the model has no body for (Ext_, Any) is a term to it: named by the input as lane B renders it,
     // so the same input is the same term on both sides; the model can only pass it on or apply a bodiless part to it
@@ -89,7 +89,10 @@ export function makeBridge(model) {
       case 'seq': if (!Array.isArray(v)) throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads a sequence`); return D.Seq.of(...Array.from(v, (x) => into(x, t.args[0])));
       case 'set': { const xs = v instanceof Set ? [...v] : null; if (!xs) throw new OutOfDomain('not a Set'); return D.Set.fromElements(...xs.map((x) => into(x, t.args[0]))); }
       case 'map': { let m = D.Map.Empty; for (const [k, x] of entriesOf(v)) m = m.update(into(k, t.args[0]), into(x, t.args[1])); return m; }
-      case 'Option': return v === undefined || v === null ? make('Option', 0, []) : make('Option', 1, [into(v, t.args[0])]); // a single-absence union: None is its one absence, null or undefined as the type declares
+      case 'Option': { // a single-absence union: None is its one absence, null or undefined as the type declares; the other is outside it
+        if (v === undefined || v === null) { if ((v === null && state.none === 'undefined') || (v === undefined && state.none === 'null')) throw new OutOfDomain(`${v === null ? 'null' : 'undefined'} where the type declares only ${state.none}`); return make('Option', 0, []); }
+        return make('Option', 1, [into(v, t.args[0])]);
+      }
       case 'Nullish': return v === null ? make('Nullish', 0, []) : v === undefined ? make('Nullish', 1, []) : make('Nullish', 2, [into(v, t.args[0])]);
       case 'Absent': if (v === null) return make('Absent', 0, []); if (v === undefined) return make('Absent', 1, []); throw new OutOfDomain('a value where the model reads null or undefined');
       case 'Unit': if (v !== undefined) throw new OutOfDomain('a value where the model reads Unit'); return make('Unit', 0, []);
@@ -153,6 +156,7 @@ export function makeBridge(model) {
   function agree(x, t0, r, at = 'result') {
     const t = resolve(t0);
     const no = (why) => `${at}: ${why}`;
+    if (r && typeof r === 'object' && r.$cycle === true) { state.unseen++; return null; } // lane B renders a second sight of one object as a cycle: nothing past it is compared (counted)
     if (x && x.__leanOpaque) { if (x.rendered !== undefined) return JSON.stringify(x.rendered) === JSON.stringify(r) ? null : no(`model passes on the input ${show(x.rendered)}, Node ${show(r)}`); throw new Opaque(`${at} is an opaque value (${x.__leanOpaque})`); }
     if (t.k === 'tuple') {
       if (!t.items.length) return isUndef(r) ? null : no(`model () against ${show(r)}`);
@@ -240,3 +244,21 @@ const isRecordRendering = (r) => r !== null && typeof r === 'object' && !Array.i
 const typeOfJs = (v) => (v === null ? 'null' : Array.isArray(v) ? 'array' : v instanceof Map ? 'Map' : v instanceof Set ? 'Set' : typeof v);
 export const show = (r) => JSON.stringify(r)?.slice(0, 120) ?? String(r);
 function canonJs(v) { try { return JSON.stringify(v, (k, x) => (typeof x === 'bigint' ? `${x}n` : x === undefined ? '$undefined' : Number.isNaN(x) ? '$nan' : x)); } catch { return String(v); } }
+
+// the arguments after the call, rendered with their sharing named (renderDrawn), then each name replaced by the value it
+// names: two positions holding one object show the same contents, where render shows the second as a cycle. A true cycle
+// (a name met again inside its own value) stays a cycle.
+export function expandRefs(xs) {
+  const vals = new Map();
+  const collect = (r) => { if (Array.isArray(r)) r.forEach(collect); else if (r && typeof r === 'object') { if (r.$ref !== undefined && 'value' in r) vals.set(r.$ref, r.value); for (const k of Object.keys(r)) collect(r[k]); } };
+  collect(xs);
+  const ex = (r, path) => {
+    if (Array.isArray(r)) return r.map((x) => ex(x, path));
+    if (!r || typeof r !== 'object') return r;
+    if (r.$ref !== undefined && Object.keys(r).every((k) => k === '$ref' || k === 'value')) { if (path.has(r.$ref)) return { $cycle: true }; return ex(vals.get(r.$ref), new Set(path).add(r.$ref)); }
+    return Object.fromEntries(Object.keys(r).map((k) => [k, ex(r[k], path)]));
+  };
+  return xs.map((x) => ex(x, new Set()));
+}
+// one value as an argument after the call is shown: its sharing named, then expanded
+export const argRendering = (v) => expandRefs(renderDrawn([v]))[0];

@@ -4,7 +4,7 @@
 // a field or element of an object shape is a Ref to its own cell, and an object reached twice is one cell. A Ref
 // parameter's shape is the one its hypothesis names (`// HYP <unit>: WF(hw_) && IsK(hw_, p)`).
 import { BigNumber, canon } from './model.mjs';
-import { NoBridge, OutOfDomain, Opaque, show } from './bridge.mjs';
+import { NoBridge, OutOfDomain, Opaque, show, argRendering } from './bridge.mjs';
 import { render } from '../exec/fake.mjs';
 import { splitTop } from './dafny-text.mjs';
 
@@ -24,6 +24,7 @@ export function legendOf(text) {
     else if (body === 'Date') s = { kind: 'date' };
     else if (body.startsWith('{')) s = { kind: 'rec', fields: body.slice(1, -1).trim() === '' ? [] : splitTop(body.slice(1, -1)).map((f) => { const i = f.indexOf(':'); return { name: f.slice(0, i).trim(), key: f.slice(i + 1).trim() }; }) };
     else s = { kind: 'unknown', body };
+    if (s.kind === 'rec' && s.fields.length && s.fields.every((f, i) => f.name === `_${i}`)) s.tuple = true; // a tuple of mixed shapes: a record of its positions (translate/heap.mjs)
     shapes.set(key, s);
   }
   return shapes;
@@ -60,6 +61,7 @@ export function heapBridge(model) {
       else if (s.kind === 'dict') { if (Array.isArray(v) || v instanceof Map || v instanceof Set) throw new OutOfDomain(`not a dictionary (${key})`); const ks = Object.keys(v); parts = [D.Seq.of(...ks.map((k) => prim(k, 'string'))), ks.reduce((m, k) => m.update(prim(k, 'string'), elem(v[k], s.v)), D.Map.Empty), Object.getPrototypeOf(v) !== null]; }
       else if (s.kind === 'map') { if (!(v instanceof Map)) throw new OutOfDomain(`not a Map (${key})`); const es = [...v.entries()]; parts = [D.Seq.of(...es.map(([k]) => elem(k, s.k))), es.reduce((m, [k, x]) => m.update(elem(k, s.k), elem(x, s.v)), D.Map.Empty)]; }
       else if (s.kind === 'date') { if (!(v instanceof Date) || Number.isNaN(v.getTime())) throw new OutOfDomain(`not a valid Date (${key})`); const tvT = obj.ctors[ci].fields[0].type.text; parts = [prim(v.getTime(), tvT === 'real' ? 'real' : 'int')]; }
+      else if (s.tuple) { if (!Array.isArray(v) || v.length !== s.fields.length) throw new OutOfDomain(`not a tuple of ${s.fields.length} (${key})`); parts = s.fields.map((f, i) => elem(v[i], f.key)); }
       else { // a record: its declared fields; a key it does not declare stays as it was (the core never reads it)
         if (Array.isArray(v) || v instanceof Map || v instanceof Set) throw new OutOfDomain(`not a record (${key})`);
         parts = s.fields.map((f) => field(v, f));
@@ -97,11 +99,13 @@ export function heapBridge(model) {
     else if (s.kind === 'dict') { v = parts[2] ? {} : Object.create(null); memo.set(ref, v); for (const k of parts[0]) v[k.toVerbatimString(false)] = el(parts[1].get(k), s.v); }
     else if (s.kind === 'map') { v = new Map(); memo.set(ref, v); for (const k of parts[0]) v.set(el(k, s.k), el(parts[1].get(k), s.v)); }
     else if (s.kind === 'date') { v = new Date(parts[0].num !== undefined ? jsPrim(parts[0], 'real') : Number(parts[0].toFixed())); memo.set(ref, v); } // a date's time value: int, or real in a real file
+    else if (s.tuple) { v = []; memo.set(ref, v); s.fields.forEach((f, i) => { v.push(el(parts[i], f.key)); }); }
     else { v = {}; memo.set(ref, v); s.fields.forEach((f, i) => { const x = parts[i], op = optOf(f.key); if (op && op.absent === 'u') { if (x.$tag === 1) v[f.name] = undefined; else if (x.$tag === 2) v[f.name] = jsPrim(fields(x)[0], op.inner); return; } v[f.name] = el(x, f.key); }); Object.assign(v, extras.get(ref) ?? {}); }
     return v;
   }
   const jsPrim = (x, k) => { if (k === 'int') { const n = Number(x.toFixed()); return BigInt(n) === BigInt(x.toFixed()) ? n : BigInt(x.toFixed()); } if (k === 'real') return Number(x.num.dividedBy(x.den).toPrecision(40)); if (k === 'string') return x.toVerbatimString(false); return x; };
-  const sameRendering = (hw, ref, r, at) => { const mine = render(rebuild(hw, ref, last.extras)); return JSON.stringify(mine) === JSON.stringify(r) ? null : `${at}: ${firstDiff(mine, r)}`; };
+  // an argument after the call is shown with its sharing expanded (node-side.mjs), a result as lane B's observe renders it
+  const sameRendering = (hw, ref, r, at, asArg = false) => { const v = rebuild(hw, ref, last.extras); const mine = asArg ? argRendering(v) : render(v); return JSON.stringify(mine) === JSON.stringify(r) ? null : `${at}: ${firstDiff(mine, r)}`; };
   const heapGet = (hw, ref) => { const heap = fields(hw)[0]; return heap.get(new BigNumber(ref)); };
   let last = null;
   return {
@@ -110,7 +114,7 @@ export function heapBridge(model) {
     oob: (hw) => fields(hw)[2] === true,
     agreeResult(hw, x, t, r) { if (t.text === 'Ref') return sameRendering(hw, Number(x.toFixed()), r, 'result'); return model.bridge.agree(x, t, r); },
     agreeArgs(hw, args, after) { // every heap argument after the call: the model's cell at its reference against Node's rendering of that argument
-      for (const [k, p] of last.positions) { const d = sameRendering(hw, p.ref, after[k], `argument ${p.name} after the call`); if (d) return d; }
+      for (const [k, p] of last.positions) { const d = sameRendering(hw, p.ref, after[k], `argument ${p.name} after the call`, true); if (d) return d; }
       return null;
     },
   };

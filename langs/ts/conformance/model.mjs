@@ -29,7 +29,14 @@ export function compileSide({ dfy, prelude, units, dir, label }) {
   const r = spawnSync('dafny', ['translate', 'js', '--no-verify', '--include-runtime', '--allow-warnings', '--optimize-erasable-datatype-wrapper:false', file], { cwd: dir, encoding: 'utf8', maxBuffer: 1 << 26 });
   const js = path.join(dir, `${label}.js`);
   if (r.status !== 0 || !fs.existsSync(js)) return { ok: false, error: ((r.stdout ?? '') + (r.stderr ?? '')).split('\n').filter((l) => /Error|error/.test(l)).slice(0, 3).join(' | ').slice(0, 400) || `dafny exit ${r.status}`, text: c.text };
+  fs.writeFileSync(path.join(dir, `${label}.externs.json`), JSON.stringify(c.externs));
   return { ok: true, js, text: c.text, externs: c.externs };
+}
+// a side compiled before (by the pair's own process): the same files, read back
+export function compiledSide({ dir, label }) {
+  const js = path.join(dir, `${label}.js`), ex = path.join(dir, `${label}.externs.json`);
+  if (!fs.existsSync(js) || !fs.existsSync(ex)) return null;
+  return { ok: true, js, text: fs.readFileSync(path.join(dir, `${label}.dfy`), 'utf8'), externs: JSON.parse(fs.readFileSync(ex, 'utf8')) };
 }
 
 // load a compiled side; `handler(symbol, args, kind)` answers every extern function application
@@ -76,7 +83,7 @@ export function canon(v) {
     if (cls === 'Set' || cls === 'MultiSet') return `${cls}{${v.map(canon).sort().join(',')}}`;
     return `${cls === 'Tuple' ? '(' : '['}${v.map(canon).join(',')}${cls === 'Tuple' ? ')' : ']'}`;
   }
-  if (typeof v === 'function') return '<fn>';
+  if (typeof v === 'function') return v.__leanLabel ?? `fn:${Function.prototype.toString.call(v).replace(/\s+/g, ' ')}`; // a function value is its code (a lambda of the model) or its name (an input function)
   if ('$tag' in v) return `${cls}#${v.$tag}(${Object.keys(v).filter((k) => k !== '$tag').map((k) => canon(v[k])).join(',')})`;
   return `{${Object.keys(v).sort().map((k) => `${k}:${canon(v[k])}`).join(',')}}`;
 }

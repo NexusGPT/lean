@@ -4,6 +4,7 @@
 // outcome is lane B's rendering. A third copy of input i, drawn the same way and never run, is what the model reads.
 import { inputPlan, sandbox, pickUnit, observe, findRoot, sideLocations } from '../exec/run.mjs';
 import { Environment, renderDrawn, render, setRoots } from '../exec/fake.mjs';
+import { expandRefs } from './bridge.mjs';
 
 // run.mjs installs late-error hooks that end the process when no lane B run is in flight; here every unit call is ours,
 // so an error that escapes a unit is that input's late error, recorded, never the end of the step
@@ -38,5 +39,6 @@ export async function nodeRun(plan, file, i, { seed = 1, ms = 2000 } = {}) {
   late = [];
   const obs = await observe({ env, unit: u }, plan.spec, inputs, ms);
   if (obs.harness || obs.impure) return { harness: obs.harness ?? 'render-impure', drawn };
-  return { drawn, outcome: obs.outcome, after: inputs.map((x) => render(x)), trace: obs.trace.map((r) => render(r)), pending: obs.pending.length, late: late.slice(), receiver: obs.receiver };
+  return { drawn, outcome: obs.outcome, after: expandRefs(renderDrawn(inputs)), trace: obs.trace.map((r) => render(r)), pending: obs.pending.length, late: late.slice(), receiver: obs.receiver };
 }
+
