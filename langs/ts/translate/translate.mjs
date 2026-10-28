@@ -5444,9 +5444,11 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     // a loop of a unit on a recursive cycle takes the unit's fuel as a const parameter: a recursive call in its body
     // passes it decremented as the unit itself does, and the helper decreases the fuel first, then its own measure
     const fuelled = fuelInScope();
-    const constParams = [...(fuelled ? [`${FUEL}: nat`] : []), ...(loopUsesSelf && classOf(u) ? [`${SELF}: ${selfType(u)}`] : []), ...free.map((v) => `${dn(v.name)}: ${v.d}`)];
+    // a free function's declared receiver read in the loop is a const operand of the helper, as `self` is in a method; written there, it is loop state already
+    const selfIn = loopUsesSelf && (!!classOf(u) || (!!thisParamOf(u) && !M.some((m) => m.name === 'this') && !free.some((v) => v.name === 'this')));
+    const constParams = [...(fuelled ? [`${FUEL}: nat`] : []), ...(selfIn ? [`${selfValue(u)}: ${selfType(u)}`] : []), ...free.map((v) => `${dn(v.name)}: ${v.d}`)];
     const stateParams = M.map((m) => `${dn(m.name)}: ${m.d}`);
-    const constArgs = [...(fuelled ? [FUEL] : []), ...(loopUsesSelf && classOf(u) ? [SELF] : []), ...free.map((v) => dn(v.name))];
+    const constArgs = [...(fuelled ? [FUEL] : []), ...(selfIn ? [selfValue(u)] : []), ...free.map((v) => dn(v.name))];
     const requiresL = fuelled ? [`${FUEL} > 0`] : [];
     // a captured value that may be absent, read inside the loop only where a guard before the loop narrowed it present
     // (every read of it in the loop has the narrowed type): the helper requires it present, the caller proves it

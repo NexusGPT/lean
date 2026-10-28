@@ -20,3 +20,7 @@ export function bump(this: Rec, x: number): number { let i = 0; while (i < x) { 
 export function bumpRead(this: Rec, x: number): number { let i = 0; while (i < x) { this.f = this.f + 1; i = i + 1; } return this.f; }
 // a caller that binds the receiver with call
 export function bumpVia(r: Rec, x: number): number { return bumpRead.call(r, x) + r.g; }
+// a counted loop reads the receiver: the loop helper takes it as a const operand
+export function tally(this: Ctx, xs: number[]): number { let s = 0; for (const x of xs) { s = s + x + this.base; } return s * 2; }
+// the same loop
+export function tallyOther(this: Ctx, xs: number[]): number { let s = 0; for (const x of xs) { s = s + x + this.base; } return s; }

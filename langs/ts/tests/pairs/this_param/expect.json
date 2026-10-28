@@ -1,5 +1,17 @@
 {
- "scope": ["sum", "shifted", "via_helper", "climb", "climb_other", "pages", "bump", "bump_read", "bump_via"],
+ "scope": [
+  "sum",
+  "shifted",
+  "via_helper",
+  "climb",
+  "climb_other",
+  "pages",
+  "bump",
+  "bump_read",
+  "bump_via",
+  "tally",
+  "tally_other"
+ ],
  "equal": {
   "sum": true,
   "shifted": false,
@@ -9,9 +21,11 @@
   "pages": true,
   "bump": true,
   "bump_read": false,
-  "bump_via": false
+  "bump_via": false,
+  "tally": true,
+  "tally_other": false
  },
- "why": "A free function's declared `this` parameter is its receiver: its self type is the declared type, a first operand. sum reorders the sum: proved. shifted reads another field: witnessed. viaHelper calls a method of the receiver on both sides (an outside call on the operand): proved. climb keeps the unbounded loop (one transition taking the receiver) and doubles by an addition: proved. climbOther bounds the loop by another field: a different transition, witnessed. pages pages through the receiver's fetch on both sides: proved. bump writes the receiver inside the loop (the receiver is an output of the block) and reads it after through a local: proved. bumpRead reads the field before the loop: not proved, witnessed. bumpVia binds the receiver with call and inherits bumpRead's change: witnessed.",
+ "why": "A free function's declared `this` parameter is its receiver: its self type is the declared type, a first operand. sum reorders the sum: proved. shifted reads another field: witnessed. viaHelper calls a method of the receiver on both sides (an outside call on the operand): proved. climb keeps the unbounded loop (one transition taking the receiver) and doubles by an addition: proved. climbOther bounds the loop by another field: a different transition, witnessed. pages pages through the receiver's fetch on both sides: proved. bump writes the receiver inside the loop (the receiver is an output of the block) and reads it after through a local: proved. bumpRead reads the field before the loop: not proved, witnessed. bumpVia binds the receiver with call and inherits bumpRead's change: witnessed. tally keeps a counted loop that reads the receiver (the loop helper takes it as a const operand) and doubles by an addition: proved. tallyOther reads another field in the loop: witnessed.",
  "b": {
   "sum": "PASS-bounded",
   "shifted": "WITNESS",
@@ -21,6 +35,8 @@
   "pages": "PASS-bounded",
   "bump": "PASS-bounded",
   "bumpRead": "WITNESS",
-  "bumpVia": "WITNESS"
+  "bumpVia": "WITNESS",
+  "tally": "PASS-bounded",
+  "tallyOther": "WITNESS"
  }
 }
