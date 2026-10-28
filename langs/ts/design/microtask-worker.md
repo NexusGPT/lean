@@ -26,7 +26,7 @@ kill names them; it sends the result as JSON over the IPC channel, the same text
 without a result is ASK naming what was pending. A child whose event loop drains before a verdict drains a caller that
 armed the verdict guard (`check.mjs`, `run.mjs`), whose guard then answers ASK:harness exactly as before; a caller
 without the guard (`pr.mjs`) gets that ASK as the unit's lane B result and goes on.
-`check.mjs` then runs lane A as before; `pr.mjs` reports the row `failed:timeout` and goes on to the next unit.
+`check.mjs` then runs lane A as before; `pr.mjs` reports the row `failed:spin-bound` (its own coverage value, apart from `failed:timeout`; a failed row is never cached, so a later run with a larger bound checks the unit again) and goes on to the next unit.
 
 Why a child process and not `worker_threads`: SIGKILL ends a process whatever it runs, where `Worker.terminate` relies on
 V8 reaching an interrupt check; the permission model below is a per-process switch a worker thread cannot narrow; a
@@ -42,6 +42,13 @@ are recording fakes); a vm escape to the host's own modules is not stopped by le
 around the whole run is the gate's, not lean's.
 
 A unit whose parent does not hold it (a new unit) runs as before: `new-unit.mjs` starts its own bounded process.
+
+## Defaults
+
+`--unit-seconds` defaults to 120 s in `run.mjs` and `check.mjs`. `pr.mjs` uses the flag when given, else the smaller of
+`--time-budget` and 120 s, else 120 s. The run budget is checked before each unit (A4), so a run ends within its budget
+plus one unit's bound and that unit's lane A. A killed unit's certificate names the side that was running
+(`lanes.B.bound.killedAt.side`), and `check.mjs` carries the spin-bound reason into its verdict.
 
 ## Soundness
 

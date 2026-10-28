@@ -19,7 +19,11 @@
  "check": {
   "drain": {
    "verdict": "ASK",
-   "laneA": "ASK:unproved"
+   "laneA": "ASK:unproved",
+   "reason": "spin-bound"
   }
+ },
+ "states": {
+  "double": 30
  }
 }
