@@ -1639,3 +1639,15 @@ export function typeAssertion(checker, n) {
   if (carried(checker, n)) return null;
   return `\`${n.getText().slice(0, 60)}\` holds a value whose type nothing checked (an \`as\` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (\`typeof x === "number"\`, a field test), or keep it in a local, an operation or the result`;
 }
+
+// a function's declared `this` parameter (TypeScript's this parameter) whose type names no receiver: `any`, `unknown`, or
+// no annotation at all. The receiver is then any object the caller binds, so the function is not a method of a type the
+// reading could key its receiver on; the refusal text, or null when the function declares no `this` or declares a type
+export function untypedThisParam(checker, fn) {
+  const p = fn?.parameters?.[0];
+  if (!p || !ts.isIdentifier(p.name) || p.name.text !== 'this') return null;
+  if (!p.type) return '`this` is declared without a type; declare the receiver type (`this: Ctx`)';
+  const t = checker.getTypeFromTypeNode(p.type);
+  if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return `\`this: ${p.type.getText()}\` names no receiver type; declare the receiver type the function reads (\`this: Ctx\`)`;
+  return null;
+}

@@ -30,7 +30,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
@@ -824,8 +824,17 @@ export function translate(file, fnName, opts = {}) {
   const fname = (tsName) => (core ? dn(snake(tsName.replace('.', '_'))) + sfx : dn(tsName.replace('.', '_')));
   const SELF = 'self';
   const classOf = (u) => (u && u.cls ? u : null);
-  // the receiver's Dafny type: the class instance type, opaque (its methods make it so)
-  const selfType = (u) => dtype(checker.getTypeAtLocation(u.cls.name), u.node);
+  // the receiver's Dafny type: the class instance type, opaque (its methods make it so); a free function's declared `this`
+  // parameter (TypeScript's this parameter) is its receiver, so its self type is that parameter's type, read as the
+  // parameter list reads it; a unit with neither has no receiver and `this` in it is refused by name
+  const selfType = (u) => {
+    if (u?.cls) return dtype(checker.getTypeAtLocation(u.cls.name), u.node);
+    const tp = thisParamOf(u);
+    if (tp) { const why = untypedThisParam(checker, u.fn); if (why) fail(tp, `this-param: ${why}`); return dtype(typeOf(tp.name), tp); }
+    return fail(u?.node ?? sf, 'this: `this` outside a class method; a free function declares its receiver as a `this` parameter');
+  };
+  // the receiver's Dafny value: `self` in a class method, the declared `this` parameter in a free function
+  const selfValue = (u) => (!u?.cls && thisParamOf(u) ? dn('this') : SELF);
   // ----- same-file classes: an instance built here (`new C(args)`) is a fresh handle from the world; its methods are the
   // file's own units, its fields live in the world (get/set transitions), as for `this` inside the class -----
   const sameFileClassOf = (t) => (t ? classOfType(isOptional(t) ? baseOf(t) : t) : null);
@@ -2183,7 +2192,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       ts.forEachChild(x, scan);
     };
     scan(n);
-    if (usesSelf) { types.push(selfType(currentUnit)); values.push(SELF); }
+    if (usesSelf) { types.push(selfType(currentUnit)); values.push(selfValue(currentUnit)); }
     for (const v of free) { types.push(dtype(symType(v.sym, v.node), v.node)); values.push(dn(v.name)); }
     const callees = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), ''));
     const name = external(`${spread ? 'call_seq' : 'call_args'}_${awaited ? 'await_' : ''}promise_${form.kind}_${mangle(R)}${callees.length ? '_calls_' + callees.join('_') : ''}`, ['World', ...types], `(World, ${R})`);
@@ -2329,7 +2338,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const tag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
     const name = external(`block_promise_${iteratorProgram(n)}${tag ? '_calls_' + tag : ''}`, ['World', ...(usesSelf ? [selfType(currentUnit)] : []), ...types], `(World, ${R})`);
     if (calls.size) prelude.set(name, `${prelude.get(name)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
-    return hoist(`${name}(${[WORLD, ...(usesSelf ? [SELF] : []), ...free.map((v) => dn(v.name))].join(', ')})`, R);
+    return hoist(`${name}(${[WORLD, ...(usesSelf ? [selfValue(currentUnit)] : []), ...free.map((v) => dn(v.name))].join(', ')})`, R);
   }
   function promiseExpression(n, form) {
     if (!promiseConsumed(n, checker, sf)) fail(n, 'promise-pending: await or return the promise directly');
@@ -5104,6 +5113,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       ts.forEachChild(x, w);
     };
     w(s);
+    if (usesSelf && !u.cls && free.some((v) => v.name === 'this')) usesSelf = false; // a free function's receiver the block writes is already an input and an output, as a written parameter is
     const text = s.getText(sf).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' ').trim();
     const RD = opaqueRet ?? (u.isCtor ? 'Unit' : dtype(retType(u), s)); // inside a throwing callback or handler a return is the callback's value
     const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
@@ -5117,7 +5127,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     // record the callees on the prelude block so the theorem can refuse a block whose callee changed
     const key = [...prelude.keys()].find((k) => k === name);
     if (key && calls.size) prelude.set(key, `${prelude.get(key)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
-    const args = [WORLD, ...(usesSelf ? [SELF] : []), ...free.map((v) => dn(v.name))];
+    const args = [WORLD, ...(usesSelf ? [selfValue(u)] : []), ...free.map((v) => dn(v.name))];
     const jumpName = `jumpb${loopCount}_`;
     const outs = [WORLD, ...(jumps.length ? [jumpName] : []), ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
     const line = outs.length === 1 ? `var ${outs[0]} := ${name}(${args.join(', ')});` : `var (${outs.join(', ')}) := ${name}(${args.join(', ')});`;
@@ -5850,6 +5860,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   }
   function emitUnit(u) {
     currentUnit = u;
+    if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
     { const lw = loopElementWriteOf(u); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
     tempCount = 0; // a unit's temporaries are numbered from its own start: an edit elsewhere in the file leaves its text unchanged, so the theorem's identity shortcut still reads it
     faultMode = false;
