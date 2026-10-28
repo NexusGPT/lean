@@ -1,5 +1,5 @@
 // react imports and closure facts shared by the lint and translator
-import { ts } from './common.mjs';
+import { ts, isArrayLike } from './common.mjs';
 const K = ts.SyntaxKind;
 export function reactHook(checker, n) {
   if (!ts.isCallExpression(n)) return null;
@@ -92,4 +92,110 @@ export function exactReactHook(checker, n) {
   const t = body && checker.getTypeAtLocation(body);
   if (cb.parameters.length || !renderPure(checker, body) || !(t.flags & (ts.TypeFlags.NumberLike | ts.TypeFlags.StringLike | ts.TypeFlags.BooleanLike))) return null;
   return { kind, cb, value: body };
+}
+
+// ----- the capture table (design/handler-descriptors.md, "Capture kinds", 2026-10-28) -----
+// A value a React closure captures is carried when it is one of three kinds, read alike by the lint (lint.mjs,
+// reactCapture) and by lane B's interpreter (exec/handlers-interp.mjs): the descriptor reader (handlers.mjs) attaches the
+// entry of each capture, so the two never decide apart.
+//   hook-result: `const x = useH(...)` with H imported from outside React; the unit only calls its methods (`x.push(p)`,
+//     a request to the outside named by the hook and the method), reads its fields, or lists it as a dependency.
+//   record-read: a binding element of the props parameter, of a state value, or of a `const` destructuring of a pure
+//     value, at any depth (`({ user: { id } })`), never written through.
+//   ref-cell: `const r = useRef(...)` from React; the unit uses it only as `r.current`, as a `ref={r}` attribute or a
+//     dependency, every write through it lies inside a function React holds (an effect, a callback, a JSX handler),
+//     and the closure itself only reads the cell.
+// Anything else is no entry: the lint's own changing-local check decides, and the interpreter does not read it.
+const SLOT_EFFECTS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect', 'useCallback']);
+const MUTATING = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
+const rootOf = (n) => { while (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isParenthesizedExpression(n) || ts.isNonNullExpression(n) || ts.isAsExpression(n)) n = n.expression; return n; };
+// every reference to a symbol inside a node, the declaring name excluded
+function referencesOf(checker, node, sym) {
+  const out = [];
+  const walk = (n) => { if (ts.isIdentifier(n) && checker.getSymbolAtLocation(n) === sym && !(n.parent && (ts.isVariableDeclaration(n.parent) || ts.isBindingElement(n.parent) || ts.isParameter(n.parent)) && n.parent.name === n)) out.push(n); ts.forEachChild(n, walk); };
+  if (node) walk(node);
+  return out;
+}
+// the writes a node makes through a symbol: an assignment or update whose target is rooted at it, a `delete`, a
+// mutating method on it or on a path from it; `direct` marks a mutating method called on the symbol itself (`x.push(p)`)
+function writesThrough(checker, node, sym) {
+  const out = [];
+  const hits = (n) => { const r = rootOf(n); return ts.isIdentifier(r) && checker.getSymbolAtLocation(r) === sym; };
+  const walk = (n) => {
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment && hits(n.left)) out.push({ node: n, direct: false });
+    if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && hits(n.operand)) out.push({ node: n, direct: false });
+    if (ts.isDeleteExpression(n) && hits(n.expression)) out.push({ node: n, direct: false });
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATING.has(n.expression.name.text) && hits(n.expression.expression)) {
+      const recv = n.expression.expression;
+      out.push({ node: n, direct: ts.isIdentifier(recv) && checker.getSymbolAtLocation(recv) === sym });
+    }
+    ts.forEachChild(n, walk);
+  };
+  if (node) walk(node);
+  return out;
+}
+// a dependency list element of a React hook call (`useEffect(f, [x])`)
+const isDependency = (checker, ref) => ts.isArrayLiteralExpression(ref.parent) && ts.isCallExpression(ref.parent.parent) && ref.parent.parent.arguments[1] === ref.parent && !!reactHook(checker, ref.parent.parent);
+// whether a function React holds runs this node later than the render: an ancestor function of the node is a JSX
+// attribute value, the first argument of an effect or of useCallback, or a `const` function every reference of which
+// is held so (or lies in such a function); useMemo and a synchronous callback run during the render and hold nothing
+export function deferredByReact(checker, node, unitBody, seen = new Set()) {
+  for (let p = node.parent; p && p !== unitBody; p = p.parent) {
+    if (!ts.isFunctionLike(p)) continue;
+    if (heldByReact(checker, p, unitBody, seen)) return true;
+  }
+  return false;
+}
+function heldByReact(checker, fn, unitBody, seen) {
+  if (seen.has(fn)) return false;
+  seen.add(fn);
+  const at = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; return (ts.isJsxExpression(p) && ts.isJsxAttribute(p.parent)) || (ts.isCallExpression(p) && p.arguments[0] === x && SLOT_EFFECTS.has(reactHook(checker, p))); };
+  if (at(fn)) return true;
+  const d = fn.parent;
+  if (ts.isVariableDeclaration(d) && d.initializer === fn && ts.isIdentifier(d.name) && (ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) {
+    const refs = referencesOf(checker, unitBody, checker.getSymbolAtLocation(d.name));
+    return refs.length > 0 && refs.every((r) => at(r) || isDependency(checker, r) || deferredByReact(checker, r, unitBody, seen));
+  }
+  return false;
+}
+// the props parameter's or a state value's binding element, or one of a const destructuring of a pure value
+function recordBinding(checker, d, unitBody) {
+  let top = d, p = d;
+  while (p && ts.isBindingElement(p)) { if (p.dotDotDotToken) return false; top = p; p = p.parent.parent; }
+  if (!p || p === d) return false;
+  if (ts.isParameter(p)) return p.parent === unitBody.parent && p.parent.parameters[0] === p; // the props parameter of the unit
+  if (!ts.isVariableDeclaration(p) || !(ts.getCombinedNodeFlags(p) & ts.NodeFlags.Const) || !p.initializer) return false;
+  if (ts.isCallExpression(p.initializer) && reactHook(checker, p.initializer) === 'useState') return ts.isArrayBindingPattern(p.name) && p.name.elements[0] === top; // the state value, never the setter
+  return renderPure(checker, p.initializer);
+}
+// captureKind(checker, id, cb, unitBody) -> null | { kind: 'hook-result', hook, at } | { kind: 'record-read' } | { kind: 'ref-cell', at }
+export function captureKind(checker, id, cb, unitBody) {
+  const sym = checker.getSymbolAtLocation(id), d = sym?.valueDeclaration;
+  if (!d || !unitBody || d.pos > cb.pos) return null;
+  const refs = referencesOf(checker, unitBody, sym), writes = writesThrough(checker, unitBody, sym);
+  const constCall = ts.isVariableDeclaration(d) && ts.isIdentifier(d.name) && (ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && d.initializer && ts.isCallExpression(d.initializer) ? d.initializer : null;
+  if (constCall && ts.isIdentifier(constCall.expression) && /^use[A-Z0-9]/.test(constCall.expression.text) && !reactHook(checker, constCall)) {
+    const hd = checker.getSymbolAtLocation(constCall.expression)?.declarations?.[0];
+    let imp = hd; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent;
+    if (!imp || !ts.isImportSpecifier(hd)) return null;
+    // a method call, a field read that writes nothing, a dependency; never a value handed on, never written through
+    const used = refs.every((r) => isDependency(checker, r) || (ts.isPropertyAccessExpression(r.parent) && r.parent.expression === r && !r.parent.questionDotToken));
+    if (!used || writes.some((w) => !w.direct)) return null;
+    // a value the translator reads as data (an array, a Map or Set and their kin) is updated in place by these methods:
+    // a closure keyed by that value would miss a later update, so such a result is no request handle
+    const t = checker.getTypeAtLocation(d.name), tn = (t.aliasSymbol ?? t.symbol)?.name;
+    if (writes.length && (isArrayLike(checker, t) || ['Map', 'Set', 'WeakMap', 'WeakSet', 'URLSearchParams', 'Headers', 'FormData'].includes(tn))) return null;
+    const hookSym = checker.getSymbolAtLocation(constCall.expression);
+    const calls = []; const walk = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && checker.getSymbolAtLocation(n.expression) === hookSym) calls.push(n); ts.forEachChild(n, walk); }; walk(unitBody);
+    return { kind: 'hook-result', hook: `import:${imp.moduleSpecifier.text}:${(hd.propertyName ?? hd.name).text}`, at: calls.indexOf(constCall) };
+  }
+  if (constCall && reactHook(checker, constCall) === 'useRef') {
+    const used = refs.every((r) => isDependency(checker, r) || (ts.isPropertyAccessExpression(r.parent) && r.parent.expression === r && r.parent.name.text === 'current' && !r.parent.questionDotToken) || (ts.isJsxExpression(r.parent) && ts.isJsxAttribute(r.parent.parent) && r.parent.parent.name.getText() === 'ref'));
+    if (!used) return null;
+    if (writes.some((w) => (w.node.pos >= cb.pos && w.node.end <= cb.end) || !deferredByReact(checker, w.node, unitBody))) return null;
+    const calls = []; const walk = (n) => { if (reactHook(checker, n) === 'useRef') calls.push(n); ts.forEachChild(n, walk); }; walk(unitBody);
+    return { kind: 'ref-cell', at: calls.indexOf(constCall) };
+  }
+  if (ts.isBindingElement(d) && ts.isIdentifier(d.name) && recordBinding(checker, d, unitBody) && !writes.length) return { kind: 'record-read' };
+  return null;
 }
