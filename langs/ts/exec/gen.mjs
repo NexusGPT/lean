@@ -5,8 +5,27 @@ import { sampleRegex } from './regex-sample.mjs';
 const STR_EDGE = ['', 'a', 'abc', ' ', 'x y', '0', '-1', 'ÄÖü', '日本', 'a'.repeat(64), 'twelve-chars', 'Hello, World! 2024-01-31 10:30', 'abcdefghijklmnopqrstuvwxyz'.repeat(8), 'line one\nline two', 'null', 'undefined', '  padded  ', 'a,b,c', '/path/to/file.txt', 'user@example.com'];
 const NUM_EDGE = [0, 1, -1, 2, 10, 100, -100, 0.5, 1e9, Number.MAX_SAFE_INTEGER];
 
-// the number of inputs, from the first generated one, that walk the boundaries of a shaped spec (spec.mjs) in order
-export const WALK = 48;
+// the walk: the generated inputs of a shaped spec (spec.mjs) that take its boundaries in order, every combination of
+// them once. Its length is the product of the boundary sizes (the largest radix times its own size), never more than
+// WALK inputs, half of the 60 the concept bench runs per mutant; after it every input is a free draw. The cap is a
+// constant, so input i is the same whatever the number of inputs a run asks for (a replay that knows the seed draws it)
+export const WALK = 30;
+const walkLengths = new WeakMap();
+export function walkLength(spec) {
+  if (!spec || typeof spec !== 'object') return 0;
+  if (walkLengths.has(spec)) return walkLengths.get(spec);
+  let product = 1; const seen = new Set();
+  const visit = (x, d = 0) => {
+    if (!x || typeof x !== 'object' || d > 60 || seen.has(x)) return; seen.add(x);
+    if (Array.isArray(x)) { x.forEach((y) => visit(y, d + 1)); return; }
+    for (const key of ['boundary', 'lengths']) { const b = x[key]; if (b && Array.isArray(b.cmp) && b.cmp.length) product = Math.max(product, (b.radix ?? 1) * b.cmp.length); }
+    for (const v of Object.values(x)) visit(v, d + 1);
+  };
+  visit([spec.params, spec.receiver, spec.defs]);
+  const n = Math.min(product, WALK);
+  walkLengths.set(spec, n);
+  return n;
+}
 // NaN and the two infinities are numbers (ECMA-262 6.1.6.1): a declared number admits them, and lane A's finite model
 // leaves them out, so lane B draws them. Every SPECIAL-th generated input is a special-number input (the first one
 // after the inputs that lean on 0, 1 and -1): in it the first number leaf, walked or drawn, is replaced by a special
@@ -18,7 +37,7 @@ const NUM_SPECIAL = [NaN, Infinity, -Infinity];
 // whether a spec admits a number of any value: a number, or a union with a number option (a literal type does not)
 const admitsNumber = (spec) => !!spec && (spec.kind === 'number' || (spec.kind === 'union' && spec.options.some((o) => o && o.kind === 'number')));
 
-export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null, special = null) {
+export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null, special = null, walkLen = WALK) {
   const rng = makeRng(seed);
   // a special-number input (`special` its turn: 0 for the first one, 1 for the next, ...): its own stream decides
   const srng = special != null ? makeRng((seed ^ 0x2545f491) >>> 0) : null;
@@ -28,12 +47,12 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
     if (replaced > 0 && special % 2 === 1 && srng() < 0.5) return x; // every other special-number input keeps some later leaves finite
     return NUM_SPECIAL[(special + replaced++) % NUM_SPECIAL.length];
   };
-  // a shaped spec's boundaries: in the walk (input `walk` < WALK) each boundary takes its digit of the walk index,
+  // a shaped spec's boundaries: in the walk (`walk` set by inputsFor) each boundary takes its digit of the walk index,
   // the first boundary turning fastest; after it, a boundary value is mixed in at random. The declared draw is made
   // first in every case and the boundary decisions use their own stream, so the declared draws of every other leaf
   // are the ones an unshaped spec makes
   const brng = makeRng((seed ^ 0x5bd1e995) >>> 0);
-  const walking = walk != null && walk >= 0 && walk < WALK;
+  const walking = walk != null && walk >= 0 && walk < WALK; // inputsFor ends the walk earlier, at walkLength(spec)
   const spool = [...strings];
   for (const re of regexes) { const xs = sampleRegex(re, rng, 2); if (xs) spool.push(...xs); } // strings that match the unit's own patterns // string literals of the unit: a comparison against a constant should go both ways
   let edge = startEdge; // the i-th generated input leans on the i-th boundary value: the caller passes i, so the first
@@ -50,13 +69,27 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   const materialize = (x, v, env, path) => (x && typeof x === 'object' ? (x.t === 'undefined' ? undefined : x.t === 'object' ? {} : x.t === 'array' ? [] : x.t === 'fn' ? (env ? env.fake(`${path}#fn`) : () => undefined) : v) : x);
   const choose = (b) => { // an index into b.cmp, or -1
     if (!b || !b.cmp || !b.cmp.length) return -1;
-    if (walking) { const q = Math.floor(walk / (b.radix ?? 1)); return b.rank === 1 && q === 0 ? -1 : q % b.cmp.length; } // a truthiness-only leaf whose digit has not started turning mixes its falsy values in at random
+    if (walking) { const q = Math.floor(walk / (b.radix ?? 1)); return b.rank === 1 && q === 0 && (b.radix ?? 1) >= walkLen ? -1 : q % b.cmp.length; } // a truthiness-only leaf whose digit never turns within the walk mixes its falsy values in at random
     return brng() < 0.3 ? Math.floor(brng() * b.cmp.length) : -1;
   };
+  // the declared-draw digit of a truthiness-only leaf is the truthy side of its test (its other digits are the falsy
+  // values): a falsy draw there becomes a truthy value of a primitive option, chosen on the boundary stream
+  const isDraw = (x) => !!x && typeof x === 'object' && x.t === 'draw';
+  function truthyOf(spec, v) {
+    if (v || !spec) return v;
+    for (const o of spec.kind === 'union' ? spec.options : [spec]) {
+      if (!o) continue;
+      if (o.kind === 'boolean') return true;
+      if (o.kind === 'number') { const xs = pool.filter((x) => x); return xs[Math.floor(brng() * xs.length)]; }
+      if (o.kind === 'string') { const xs = [...spool, ...STR_EDGE].filter((x) => x.trim()); return xs[Math.floor(brng() * xs.length)]; }
+      if (o.kind === 'literal') { const xs = o.values.filter((x) => x); if (xs.length) return xs[Math.floor(brng() * xs.length)]; }
+    }
+    return v;
+  }
   function gen(spec, depth = 0, env = null, path = 'in', leaf = false) {
     const v = gen0(spec, depth, env, path, leaf);
     const b = spec && spec.boundary; if (!b) return spec && spec.kind === 'number' ? specialOf(spec, v) : v;
-    const c = choose(b); if (c >= 0) { const x = materialize(b.cmp[c], v, env, path); return typeof b.cmp[c] === 'number' ? specialOf(spec, x) : x; } // a compared number may be NaN or infinite in a special-number input
+    const c = choose(b); if (c >= 0) { const x = materialize(b.cmp[c], v, env, path); if (walking && b.rank === 1 && isDraw(b.cmp[c])) return truthyOf(spec, x); if (typeof x === 'number' && pool.length < 64) pool.push(x); return typeof b.cmp[c] === 'number' ? specialOf(spec, x) : x; } // a compared number the input holds joins the pool, as a drawn one does; it may be NaN or infinite in a special-number input
     if (b.falsy && b.falsy.length && brng() < (walking ? 0.5 : 0.25)) return materialize(b.falsy[Math.floor(brng() * b.falsy.length)], v, env, path);
     return spec.kind === 'number' ? specialOf(spec, v) : v;
   }
@@ -110,10 +143,11 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
 
 // the i-th input set for a unit: a list of argument values; each call gets a fresh generator seeded by (seed, i)
 export function inputsFor(spec, seed, i, env) {
-  // a shaped spec walks its boundaries from its first generated input (`walkFrom`: the inputs before it are enumerated heaps)
-  const walk = spec.shaped && i >= (spec.walkFrom ?? 0) ? i - (spec.walkFrom ?? 0) : null;
+  // a shaped spec walks its boundaries from its first generated input (`walkFrom`: the inputs before it are enumerated
+  // heaps) for walkLength(spec) inputs, every combination of its boundaries once; the inputs after it are free draws
+  const walk = spec.shaped && i >= (spec.walkFrom ?? 0) && i - (spec.walkFrom ?? 0) < walkLength(spec) ? i - (spec.walkFrom ?? 0) : null;
   const generated = i - (spec.walkFrom ?? 0); // the index among the generated inputs (the enumerated heaps come first)
-  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null);
+  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec));
   return spec.params.map((p, k) => (p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`)));
 }
 
