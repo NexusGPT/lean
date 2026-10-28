@@ -104,7 +104,7 @@ export function exactReactHook(checker, n) {
 //     value, at any depth (`({ user: { id } })`), never written through.
 //   ref-cell: `const r = useRef(...)` from React; the unit uses it only as `r.current`, as a `ref={r}` attribute or a
 //     dependency, every write through it lies inside a function React holds (an effect, a callback, a JSX handler),
-//     and the closure itself only reads the cell.
+//     the closure's own writes included; a write during the render is no entry.
 // Anything else is no entry: the lint's own changing-local check decides, and the interpreter does not read it.
 const SLOT_EFFECTS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect', 'useCallback']);
 const MUTATING = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
@@ -192,7 +192,7 @@ export function captureKind(checker, id, cb, unitBody) {
   if (constCall && reactHook(checker, constCall) === 'useRef') {
     const used = refs.every((r) => isDependency(checker, r) || (ts.isPropertyAccessExpression(r.parent) && r.parent.expression === r && r.parent.name.text === 'current' && !r.parent.questionDotToken) || (ts.isJsxExpression(r.parent) && ts.isJsxAttribute(r.parent.parent) && r.parent.parent.name.getText() === 'ref'));
     if (!used) return null;
-    if (writes.some((w) => (w.node.pos >= cb.pos && w.node.end <= cb.end) || !deferredByReact(checker, w.node, unitBody))) return null;
+    if (writes.some((w) => !deferredByReact(checker, w.node, unitBody))) return null; // a write during the render stays refused: a closure keyed by the captured value would miss it; a write in a held function is named at its own site (closure-mutation)
     const calls = []; const walk = (n) => { if (reactHook(checker, n) === 'useRef') calls.push(n); ts.forEachChild(n, walk); }; walk(unitBody);
     return { kind: 'ref-cell', at: calls.indexOf(constCall) };
   }
