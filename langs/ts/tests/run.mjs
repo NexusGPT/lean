@@ -12,7 +12,7 @@ import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ts, dn } from '../common.mjs';
-import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf } from '../check.mjs';
+import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -189,6 +189,7 @@ for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(c
 // ----- pairs: parent against candidate through the theorem and Dafny -----
 const pairsDir = path.join(here, 'pairs');
 // LEAN_PAIRS=a,b runs these pairs only (a merge smoke); the full suite is the gate, this is never it
+const huntA = new Map(); // pair name -> lane A's reading of each lemma, for the proof-hunt step
 const onlyPairs = process.env.LEAN_PAIRS ? new Set(process.env.LEAN_PAIRS.split(',').map((x) => x.trim()).filter(Boolean)) : null;
 for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().filter((n) => !onlyPairs || onlyPairs.has(n)) : []) {
   const d = path.join(pairsDir, name);
@@ -239,6 +240,8 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want ? 'proved' : 'not proved'}`, ok, got);
     if (exp.canon && f in exp.canon) add('pair', name, `EqualCanon_${f} ${exp.canon[f] ? 'proved' : 'not proved'}`, canon === exp.canon[f] && (!exp.canon[f] || !whole), `${parts.length} parts: ${parts.filter((k) => errs.some((L) => spans[k][0] <= L && L <= spans[k][1])).map((k) => k.slice(k.lastIndexOf('_') + 1)).join(', ') || 'all hold'}${whole ? '; whole heap also proved' : ''}`); // "canon": the canonical reading alone proves it (the whole-heap lemma fails)
   }
+  // the proof-hunt step reads lane A's result on every lemma of the pair, listed in expect.json or not (below)
+  huntA.set(name, { adapters: Object.keys(allAdapters), proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
@@ -350,6 +353,33 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     const ok = got.verdict === want.verdict && new RegExp(want.reason).test(got.reason ?? '') && got.certificate?.lanes?.A?.verdict === 'ASK:library-model';
     add('pair', name, `library ${unit} proof refused on a wrong row`, ok, `${got.verdict ?? 'no result'}: ${(got.reason ?? '').slice(0, 120)} | A: ${got.certificate?.lanes?.A?.verdict ?? '-'} | B: ${got.certificate?.lanes?.B?.verdict ?? '-'}`);
   }
+}
+
+// ----- proof hunt: lane A beside lane B on every unit the pair step ran (langs/ts/design/proof-hunt.md) -----
+// check.mjs answers lane B first, so a lane A proof of two different behaviours is hidden whenever lane B witnesses.
+// Here both are read: a unit lane B witnessed whose lemma lane A proved is a hidden false proof and fails, unless the
+// pair declares an adapter for that unit (the scope file's adapters or a // lean-adapter comment: the adapted claim
+// f_candidate(A(x)) == f_parent(x) is not the raw same-input comparison lane B ran), or lane B witnessed on special
+// numbers only. The step prints its own TOTAL line.
+{
+  let both = 0, hidden = 0, exempt = 0;
+  for (const [name, A] of huntA) {
+    const d = path.join(pairsDir, name), exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
+    for (const unit of Object.keys(exp.b ?? {})) {
+      let B = null; try { B = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}`, `b_${unit}.json`), 'utf8')); } catch { /* no lane B result: not counted */ }
+      const f = dafnyName(unit), a = A.proved(f), b = B?.verdict;
+      if (!b || a === null) continue;
+      both++;
+      if (!(a && b === 'WITNESS')) continue;
+      // two doors only: a declared adapter, and a witness whose every input holds NaN or an infinity (lane A's number
+      // model is finite, so its hypothesis excludes them: design/special-numbers.md); any other witness is hidden
+      const door = A.adapters.includes(f) ? 'the pair declares an adapter door for this unit' : (B.witnesses ?? []).length && B.witnesses.every((w) => /"\$(nan|infinity)"/.test(JSON.stringify(w.args ?? w.input ?? null))) ? 'every witness input holds NaN or an infinity, outside the finite number model' : null;
+      if (door) exempt++; else hidden++;
+      add('proof-hunt', name, `${unit}: lane A proved, lane B WITNESS`, !!door, door ? `exempt: ${door}` : `HIDDEN FALSE PROOF: lane A proved a unit lane B witnessed at ${JSON.stringify(B.witnesses?.[0]?.args ?? null).slice(0, 120)}`);
+    }
+  }
+  add('proof-hunt', 'all pairs', `${both} units read by both lanes`, hidden === 0, `${hidden} hidden false proofs, ${exempt} exempt by a door (adapter, special numbers)`);
+  console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, special numbers) |`);
 }
 
 // ----- escapes -----
