@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 // numbers_doubles: the doubles reading measured on Z3 before lane A uses it (lane doubles, step 0).
-//   node run.mjs [--seconds 60] [--out table.md] [--only a,b]
+//   node run.mjs [--seconds 60] [--out table.md] [--only a,b] [--hand]
+// By default each case is written as two TypeScript functions and read by the emitter (translate/smt-fp.mjs) and the
+// driver (solve/fp.mjs: Z3, the model decoded, the replay through lane B's runner). --hand runs the hand-written SMT of
+// cases.json over prelude.smt2 instead (the step 0 measurement, before the emitter existed).
 // Each case of cases.json is a parent and a candidate expression over number parameters, an expected verdict
 // (equal | differs) and the SMT-LIB QF_FP reading of both sides over prelude.smt2. The query asks Z3 for an input where
 // the two results differ by SMT `=` (JavaScript SameValue). unsat = equal; sat = a counterexample, decoded from its
@@ -19,8 +22,11 @@ const argv = process.argv.slice(2);
 const opt = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
 const seconds = Number(opt('--seconds', 60));
 const only = opt('--only', null)?.split(',');
-const prelude = fs.readFileSync(path.join(here, 'prelude.smt2'), 'utf8');
-const cases = JSON.parse(fs.readFileSync(path.join(here, 'cases.json'), 'utf8')).filter((c) => !only || only.includes(c.name));
+const hand = argv.includes('--hand');
+const { PRELUDE, exactDecimal } = await import('../../translate/smt-fp.mjs');
+const { solveUnit } = await import('../../solve/fp.mjs');
+const prelude = hand ? fs.readFileSync(path.join(here, 'prelude.smt2'), 'utf8') : PRELUDE;
+const cases = JSON.parse(fs.readFileSync(path.join(here, 'cases.json'), 'utf8')).filter((c) => (!only || only.includes(c.name)) && (!argv.includes('--hand') || c.smt));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-doubles-'));
 
 // a double as an SMT-LIB FloatingPoint literal, bit for bit
@@ -41,6 +47,7 @@ export function fpValue(text) {
   if (bits.length !== 64) throw new Error(`not 64 bits: ${t}`);
   const b = new DataView(new ArrayBuffer(8)); b.setBigUint64(0, BigInt('0b' + bits)); return b.getFloat64(0);
 }
+const unrender = (v) => (v?.$negativeZero ? -0 : v?.$nan ? NaN : v?.$infinity ? v.$infinity * Infinity : v);
 const show = (x) => (Object.is(x, -0) ? '-0' : typeof x === 'number' ? String(x) : JSON.stringify(x));
 export function z3(query, secs, name) {
   const file = path.join(tmp, `${name}.smt2`); fs.writeFileSync(file, query);
@@ -84,13 +91,35 @@ const rows = [];
   rows.push({ name: 'seams', parent: '%, Math.round, Math.min/max, ToInt32, ToUint32', candidate: `Node, ${want.length} edge evaluations`, expect: 'agree', got: bad.length ? 'DISAGREE' : 'agree', ok: r.answer === 'sat' && bad.length === 0, seconds: r.seconds, cex: bad.slice(0, 6).join('; ') });
 }
 
+// ---- literals: the emitter's `((_ to_fp 11 53) RNE <decimal>)` against Node's parse, bit for bit ----
+if (!hand) {
+  const texts = ['0.1', '0.2', '0.3', '1e9', '9007199254740993', '9007199254740995', '1.7976931348623157e308', '1.8e308', '5e-324', '2.4703282292062328e-324', '2.4703282292062327e-324', '1e-400', '0x1F', '0b1011', '0o777', '1_000_000.5', '123456789012345678901234567890', '.5', '5.', '2.2250738585072011e-308', '4.9406564584124654e-324', '0.30000000000000004', '1e23', '8.98846567431158e307'];
+  const names = texts.map((_, i) => `l${i}`);
+  const q = `${PRELUDE}\n${texts.map((t, i) => `(define-fun l${i} () D ((_ to_fp 11 53) RNE ${exactDecimal(t)}))`).join('\n')}\n(check-sat)\n(get-value (${names.join(' ')}))\n`;
+  const r = z3(q, 60, 'literals'); let bad = [];
+  try { const v = modelValues(r.out, names); bad = texts.filter((t, i) => !Object.is(v[names[i]], Number(t.replace(/_/g, '')))).map((t, i) => `${t}: Node ${Number(t.replace(/_/g, ''))}`); } catch (e) { bad = [String(e.message)]; }
+  rows.push({ name: 'literals', parent: 'to_fp RNE of the exact decimal', candidate: `Node's parse, ${texts.length} literals`, expect: 'agree', got: bad.length ? 'DISAGREE' : 'agree', ok: r.answer === 'sat' && !bad.length, seconds: r.seconds, cex: bad.join('; ') });
+}
+
 // ---- cases ----
 const replay = (c, args) => {
-  const f = (e) => new Function(...c.params, `return (${e});`);
+  const f = (e) => new Function(...c.params, (c.extra ? c.extra.replace(/: number/g, '') : '') + `return (${e});`);
   return { parent: f(c.parent)(...args), candidate: f(c.candidate)(...args) };
 };
 for (const c of cases) {
   const knownBad = (c.known ?? []).map((k) => k.map((v) => (v === null ? NaN : v))).filter((args) => { const r = replay(c, args); return Object.is(r.parent, r.candidate); });
+  if (!hand) {
+    const dir = fs.mkdtempSync(path.join(tmp, `${c.name}-`));
+    // `sig` the parameter list (default: every parameter a number), `body` the two bodies as statements, `extra` file text both sides share
+    const fn = (e, i) => `${c.extra ?? ''}export function f(${c.sig ?? c.params.map((p) => `${p}: number`).join(', ')}) { ${c.body ? c.body[i] : `return ${e};`} }\n`;
+    fs.writeFileSync(path.join(dir, 'parent.ts'), fn(c.parent, 0)); fs.writeFileSync(path.join(dir, 'candidate.ts'), fn(c.candidate, 1));
+    const res = await solveUnit({ parent: path.join(dir, 'parent.ts'), candidate: path.join(dir, 'candidate.ts'), unit: 'f', seconds });
+    let got = !res.bearing ? 'not number-bearing' : res.verdict === 'proved' ? 'equal' : res.verdict === 'witness' ? 'differs' : res.verdict === 'unknown' ? (res.uninterpreted?.length && /uninterpreted/.test(res.reason ?? '') ? 'unknown (uninterpreted: spurious model)' : 'unknown') : 'ENCODING FINDING';
+    const cex = res.verdict === 'witness' ? `${c.params.map((p, i) => `${p}=${show(unrender(res.input[i]))}`).join(', ')}` : res.reason && res.verdict !== 'proved' ? res.reason.slice(0, 120) : '';
+    if (knownBad.length) got = `KNOWN INPUT AGREES: ${knownBad.map((a) => a.map(show).join(',')).join('; ')}`;
+    rows.push({ name: c.name, parent: c.parent, candidate: c.candidate, expect: c.expect, got, ok: [].concat(c.expect).includes(got), seconds: res.seconds ?? 0, cex, uf: (res.uninterpreted ?? []).join(' ') });
+    continue;
+  }
   const sort = (t) => (/^\((fp\.(eq|lt|leq|gt|geq|is\w+)|not|and|or|=)\b/.test(t.trim()) ? 'Bool' : 'D');
   const ufs = (c.uninterpreted ?? []).map((u) => `(declare-fun |${u}| (D) D)`).join('\n');
   const q = `${prelude}\n${ufs}\n${c.params.map((p) => `(declare-const ${p} D)`).join('\n')}\n(define-fun old () ${sort(c.smt[0])} ${c.smt[0]})\n(define-fun new () ${sort(c.smt[1])} ${c.smt[1]})\n(assert (not (= old new)))\n(check-sat)\n(get-value (${c.params.join(' ')}))\n`;
@@ -103,13 +132,13 @@ for (const c of cases) {
     cex = `${c.params.map((p, i) => `${p}=${show(args[i])}`).join(', ')} -> ${show(rr.parent)} vs ${show(rr.candidate)}`;
   }
   if (knownBad.length) got = `KNOWN INPUT AGREES: ${knownBad.map((a) => a.map(show).join(',')).join('; ')}`;
-  rows.push({ name: c.name, parent: c.parent, candidate: c.candidate, expect: c.expect, got, ok: got === c.expect, seconds: r.seconds, cex });
+  rows.push({ name: c.name, parent: c.parent, candidate: c.candidate, expect: c.expect, got, ok: [].concat(c.expect).includes(got), seconds: r.seconds, cex });
 }
 
 const secs = rows.filter((r) => r.name !== 'seams').map((r) => r.seconds).sort((a, b) => a - b);
 const q = (p) => secs[Math.min(secs.length - 1, Math.floor(p * secs.length))];
 const median = secs.length % 2 ? secs[(secs.length - 1) / 2] : (secs[secs.length / 2 - 1] + secs[secs.length / 2]) / 2;
-const differCases = rows.filter((r) => r.expect === 'differs'), differTimeouts = differCases.filter((r) => /unknown/.test(r.got)).length;
+const differCases = rows.filter((r) => [].concat(r.expect).includes('differs')), differTimeouts = differCases.filter((r) => /unknown/.test(r.got)).length;
 const lines = ['| case | parent | candidate | expected | Z3 verdict | counterexample (replayed in Node) | seconds |', '|---|---|---|---|---|---|---|',
   ...rows.map((r) => `| ${r.name} | \`${r.parent}\` | \`${r.candidate}\` | ${r.expect} | ${r.got}${r.ok ? '' : ' (MISMATCH)'} | ${r.cex.replace(/\|/g, '\\|')} | ${r.seconds.toFixed(2)} |`),
   '', `Z3: ${spawnSync('z3', ['--version'], { encoding: 'utf8' }).stdout.trim()}; timeout ${seconds} s per query; ${secs.length} case queries: median ${median.toFixed(2)} s, p90 ${q(0.9).toFixed(2)} s, max ${secs[secs.length - 1].toFixed(2)} s; differ-cases timed out: ${differTimeouts} of ${differCases.length}.`,
