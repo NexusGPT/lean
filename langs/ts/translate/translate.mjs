@@ -36,6 +36,7 @@ import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
+import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
@@ -582,8 +583,23 @@ export function translate(file, fnName, opts = {}) {
   };
   const cellCallback = (cb) => !!cb && assignedOutside(cb).some((m) => !m.synthetic); // stage 5 rank 19: a callback writing a local, an array or a record declared outside it is a loop body threading that cell
   const isLoopCallback = (x) => !!(x && x.parent && ts.isCallExpression(x.parent) && x.parent.arguments[0] === x && (arrayCallbackShape(x.parent) || forEachShape({ kind: K.ExpressionStatement, expression: x.parent })));
+  // a callback that may throw into its loop: a throw or a call of a throwing same-file unit in its body (a nested
+  // synchronous array callback's included), or a throwing unit named as the callback. The method runs the callback per
+  // element in order and a throw ends the method there (ECMA-262 23.1.3.15 Array.prototype.forEach step 6.c.ii: the
+  // abrupt completion of Call returns at once), so the loop over it exits at the first fault with what it has done.
+  function loopFaults(fe) {
+    if (fe.named) return fe.named.kind === 'unit' && exceptionUnits.has(fe.named.u.name);
+    if (!fe.cb || fe.cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return false; // an async callback's throw rejects its own promise
+    let f = false;
+    const w = (x) => { if (f) return; if (ts.isFunctionLike(x) && !syncLoopCallback(x, checker)) return; if (ts.isThrowStatement(x) || ((ts.isCallExpression(x) || ts.isNewExpression(x)) && exceptionUnits.has(unitNameOfCall(x))) || (syncLoopCall(x, checker) && x.arguments.some((a) => ts.isIdentifier(a) && originOf(checker, a, sf, currentUnit?.node ?? null).kind === 'unit' && exceptionUnits.has(a.text)))) { f = true; return; } ts.forEachChild(x, w); };
+    w(fe.cb.body); return f;
+  }
+  // the route a throwing callback's loop exits by, set by faultTr (a forEach statement: the enclosing fault path after
+  // the loop) or callbackValue (a hoisted loop value: a fault checkpoint after it), taken by the next loop built here
+  let loopFault = null;
   function fakeForOf(st, fe, collect = null) {
-    if (fe.named) return namedForOf(st, fe, collect);
+    const faults = loopFault; loopFault = null;
+    if (fe.named) return Object.assign(namedForOf(st, fe, collect), { __faults: faults });
     const { call, cb } = fe; const name = cb.parameters[fe.method === 'reduce' ? 1 : 0].name;
     const body = ts.isBlock(cb.body) ? cb.body : { kind: collect ? K.ReturnStatement : K.ExpressionStatement, expression: cb.body, parent: cb, pos: cb.body.pos, end: cb.body.end, getStart: () => cb.body.getStart(sf), getEnd: () => cb.body.getEnd(), getText: () => cb.body.getText(sf), getFullStart: () => cb.body.getFullStart() };
     const decl = { kind: K.VariableDeclaration, name, pos: name.pos, end: name.end, parent: null };
@@ -591,6 +607,7 @@ export function translate(file, fnName, opts = {}) {
     decl.parent = list;
     const fake = { kind: K.ForOfStatement, expression: call.expression.expression, initializer: list, statement: body, parent: st.parent, pos: st.pos, end: st.end, getStart: () => st.getStart(sf), getEnd: () => st.getEnd(), getText: () => st.getText(sf), getFullStart: () => st.getFullStart(), __forEach: true, __collect: collect, __callback: fe };
     list.parent = fake;
+    fake.__faults = faults;
     return fake;
   }
   // the innermost exact try whose BODY holds the statement, within the same function
@@ -3866,7 +3883,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     if (isArrayLike(checker, base)) {
       const shape = arrayCallbackShape(n);
-      if (shape && (containsEffect(shape.cb.body) || cellCallback(shape.cb))) return callbackValue(n, shape);
+      if (shape && (containsEffect(shape.cb.body) || cellCallback(shape.cb) || loopFaults(shape))) return callbackValue(n, shape); // a callback that throws is a loop with a fault exit
       { const named = namedCallbackShape(n); if (named) return callbackValue(n, named); }
       const A = () => dtype(elemType(recv), n);
       const R = expr(recv);
@@ -4811,6 +4828,18 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     };
     return faultTr(scopedList(s.tryBlock, [...s.tryBlock.statements]), done, u, { ret, fault: caught, check: true });
   }
+  // the statements whose throwing array callback takes the exact fault exit: a forEach statement ('stmt': the loop runs
+  // here, its fault routed after it) and a declaration, return or expression statement whose whole value is the array
+  // method call ('value': the hoisted loop's checkpoint); any other place keeps the opaque block
+  function faultLoopTarget(s) {
+    const fe = forEachShape(s);
+    if (fe) return loopFaults(fe) ? 'stmt' : null;
+    let e = ts.isReturnStatement(s) || ts.isExpressionStatement(s) ? s.expression : ts.isVariableStatement(s) && s.declarationList.declarations.length === 1 ? s.declarationList.declarations[0].initializer : null;
+    if (!e) return null;
+    e = unparen(e);
+    const shape = arrayCallbackShape(e) || namedCallbackShape(e);
+    return shape && loopFaults(shape) ? 'value' : null;
+  }
   function faultTr(list, fin, u, ctx) {
     if (!list.length) return fin();
     const [s, ...rest] = list;
@@ -4818,20 +4847,28 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (s.__scope) return `${scopeText(s)}\n${next()}`;
     { const inl = inlineCall(s); if (inl) return faultTr([...inl, ...rest], fin, u, ctx); if (procDecl(s)) return next(); } // stage 5 rank 21
     if (!ts.isTryStatement(s) && opaqueExceptionTry(s, checker)) {
-      let propagates = false;
+      let propagates = false, inCallback = false;
+      const throwing = (n) => ts.isThrowStatement(n) || ((ts.isCallExpression(n) || ts.isNewExpression(n)) && exceptionUnits.has(unitNameOfCall(n)));
+      const namedThrowing = (n) => syncLoopCall(n, checker) && n.arguments.some((a) => ts.isIdentifier(a) && originOf(checker, a, sf, currentUnit?.node ?? null).kind === 'unit' && exceptionUnits.has(a.text)); // a throwing unit named as the callback runs inside the loop
       const scan = (n, inLoopCb = false) => {
-        if (ts.isFunctionLike(n)) { if (!syncLoopCallback(n, checker)) return; inLoopCb = true; } // stage 5 rank 20: a throw or try inside a synchronous array callback is this statement's; a call of a throwing unit there threads the loop helper's fault check instead
-        if (ts.isThrowStatement(n) || ts.isTryStatement(n) || (!inLoopCb && (ts.isCallExpression(n) || ts.isNewExpression(n)) && exceptionUnits.has(unitNameOfCall(n)))) propagates = true;
+        if (ts.isFunctionLike(n)) { if (!syncLoopCallback(n, checker)) return; inLoopCb = true; } // stage 5 rank 20: a throw inside a synchronous array callback is this statement's
+        if (ts.isTryStatement(n) || (!inLoopCb && throwing(n))) propagates = true;
+        else if (throwing(n) || namedThrowing(n)) inCallback = true;
         ts.forEachChild(n, (c) => scan(c, inLoopCb));
       };
       scan(s);
-      return propagates ? opaqueCompletion(s, next, u, ctx) : tr([s], next, u);
+      // a throwing callback of an array method: the loop exits at its first fault and the fault takes this statement's
+      // route (a forEach statement after its loop, a value form at the checkpoint after the hoisted loop); a throwing
+      // callback anywhere else in the statement keeps the opaque block
+      const target = !propagates && inCallback ? faultLoopTarget(s) : null;
+      if (target === 'stmt') { loopFault = { route: () => ctx.fault() }; try { return tr([s], next, u); } finally { loopFault = null; } }
+      if (!target) return propagates || inCallback ? opaqueCompletion(s, next, u, ctx) : tr([s], next, u);
     }
     switch (s.kind) {
       case K.Block: return faultTr([...scopedList(s, [...s.statements]), ...rest], fin, u, ctx);
       case K.EmptyStatement: return next();
       case K.TryStatement: return exactTry(s) ? faultTry(s, next, u, ctx) : opaqueCompletion(s, next, u, ctx);
-      case K.ReturnStatement: return faultEval(() => s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s), ctx.ret, ctx);
+      case K.ReturnStatement: if (ctx.step) return ctx.step(s); return faultEval(() => s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s), ctx.ret, ctx);
       case K.ThrowStatement: return faultEval(() => expr(s.expression, anyTarget()), (value) => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${value});\n${ctx.fault()}`, ctx);
       case K.IfStatement: return faultEval(() => truthy(s.expression), (cond) => {
         const yes = faultTr(sflatten(s.thenStatement), next, u, ctx);
@@ -5062,17 +5099,34 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     w(cb); return found;
   }
   function callbackStep(value, top) {
-    return capture(() => {
+    return capture(() => callbackStepTail(callbackStepValue(value, top), top));
+  }
+  // the value a callback step supplies, as the method reads it
+  function callbackStepValue(value, top) {
+    const c = top.collect, method = c.method;
+    const predicate = ['filter', 'find', 'findIndex', 'some', 'every'].includes(method);
+    const step = c.named && value === c.named.cb ? namedStepCall(c) : null; // a named callback's step: its call, then its value as the method reads it
+    return step ? outerParens(predicate ? valueTruth(step.code, dtype(step.type, value)) : convert(step.code, step.type, c.valueType, value)) : value ? outerParens(predicate ? truthy(value) : expr(value, c.valueType)) : (predicate ? 'false' : c.valueD === 'Unit' ? 'Unit' : 'None');
+  }
+  // a return in a throwing callback's body (read by faultTr): its value's transitions complete first, and a fault among
+  // them leaves the loop; a forEach return ends one step
+  function faultStep(s, top, ctx) {
+    if (!top.collect) {
+      let cb = s.parent; while (cb && !ts.isFunctionLike(cb)) cb = cb.parent;
+      return jumpRestores(s, cb) + faultEval(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return ''; }, () => top.cont(), ctx);
+    }
+    return faultEval(() => callbackStepValue(s.expression ?? null, top), (code) => callbackStepTail(code, top), ctx);
+  }
+  // the step after a callback's value: the method's state, then the next element or the exit
+  function callbackStepTail(code, top) {
+    {
       const c = top.collect, name = dn(c.name), method = c.method;
-      const predicate = ['filter', 'find', 'findIndex', 'some', 'every'].includes(method);
-      const step = c.named && value === c.named.cb ? namedStepCall(c) : null; // a named callback's step: its call, then its value as the method reads it
-      const code = step ? outerParens(predicate ? valueTruth(step.code, dtype(step.type, value)) : convert(step.code, step.type, c.valueType, value)) : value ? outerParens(predicate ? truthy(value) : expr(value, c.valueType)) : (predicate ? 'false' : c.valueD === 'Unit' ? 'Unit' : 'None');
       if (method === 'map' || method === 'flatMap') return `var ${name}: ${c.d} := ${name} + ${method === 'map' || !c.flatSequence ? `[${code}]` : code};\n${top.cont()}`;
       if (method === 'reduce') return `var ${name} := ${code};\n${top.cont()}`;
       const hit = method === 'every' ? `!(${code})` : code;
       const result = method === 'filter' ? `${name} + [${c.element}]` : method === 'find' ? convert(c.element, c.elementType, c.resultType, c.node) : method === 'findIndex' ? (real ? `(${c.index} as real)` : c.index) : method === 'some' ? 'true' : 'false';
       return `if ${hit} then\n${indentBlock(wrapLet(`var ${name} := ${result};\n${method === 'filter' ? top.cont() : top.brk()}`))}\nelse\n${indentBlock(top.cont())}`;
-    });
+    }
   }
   function callbackLoop(node, shape, name, resultType, rest, fin, u) {
     const D = dtype(resultType, node), method = shape.method;
@@ -5100,10 +5154,15 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const eff = unitEffectful();
     const cells = assignedOutside(shape.cb).filter((m) => !m.synthetic).map((m) => dn(m.name));
     const tuple = (xs) => (xs.length === 1 ? xs[0] : `(${xs.join(', ')})`);
+    // a throwing callback's loop exits at its first fault with the state so far; the checkpoint after the hoisted loop
+    // routes that fault as the enclosing statement routes a throwing call's (faultEval)
+    const faults = loopFaults(shape);
+    if (faults && !faultMode && !completionMode) fail(node, 'a throwing callback here has no fault channel; call the array method in a statement of the unit');
+    if (faults) loopFault = { route: null };
     const body = capture(() => callbackLoop(node, shape, name, resultType, [], () => tuple([...(eff ? [WORLD] : []), name, ...cells]), currentUnit));
     const t = valueOperands && eff ? valueName() : `t${tempCount++}_`;
     pending.push(`var ${tuple([...(eff ? [WORLD] : []), t, ...cells])} := ${wrapLet(body)};`);
-    if (eff && faultMode) pending.push(FAULT_CHECK);
+    if ((eff && faultMode) || faults) pending.push(FAULT_CHECK);
     return t;
   }
   function opaqueCompletion(s, next, u, ctx) {
@@ -5294,13 +5353,18 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     return `var ${dn(push.acc.text)} := ${dn(push.acc.text)} + ${parts.text};`;
   }
   function coreLoop(s, rest, fin, u) {
+    // a throwing callback's loop: its body read by faultTr, a fault leaving the helper with the state so far; a loop
+    // whose callback throws and that no fault route reached stays untranslated (its fault would be lost)
+    const lf = s.__forEach ? s.__faults ?? null : null;
+    if (s.__forEach && !lf && (s.__callback || s.__named) && loopFaults(s.__callback ?? s.__named)) fail(s, 'a throwing callback here has no fault channel; call the array method in a statement of the unit');
     if (s.awaitModifier) return asyncIteratorLoop(s, rest, fin, u);
-    { const gp = guardPushLoop(s, u); if (gp) return `${gp}\n${tr(rest, fin, u)}`; }
+    { const gp = !lf && guardPushLoop(s, u); if (gp) return `${gp}\n${tr(rest, fin, u)}`; }
     const id = loopCount++;
     const jumps = escapingLabels(s);
     const returns = !s.__forEach && containsReturn(s); // a return inside a forEach callback ends one step, never the function
     const hoisted = initDecls(s);
     const M = assignedOutside(s, hoisted).map((m) => (m.synthetic ? m : { ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) }));
+    if (lf && unitEffectful() && !M.some((m) => m.name === WORLD)) M.unshift({ name: WORLD, sym: null, node: s, synthetic: true, d: 'World' }); // a throw in the body raises on the world the loop then carries
     if (!M.length && !returns && !jumps.length) return tr(rest, fin, u);
     if (ts.isForStatement(s) && !emptyFor(s) && ((s.condition && containsEffect(s.condition)) || (s.incrementor && containsEffect(s.incrementor)))) fail(s, 'an effect in a for header'); // a general for may lack either
     const RD = u.isCtor ? 'Unit' : dtype(retType(u), s);
@@ -5408,7 +5472,9 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const stepStmts = generalFor(s) && s.incrementor ? [forStep(s)] : [];
     loopCtx.push({ label: labelId(s), jump: (code) => jumps.length ? completed(code) : fail(s, 'a labelled exit lacks its completion channel'), cont: stepStmts.length ? () => tr(stepStmts, next, u) : next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ? { ...s.__collect, element: ts.isIdentifier(s.initializer.declarations[0].name) ? dn(s.initializer.declarations[0].name.text) : `seq${id}[idx${id}]`, index: `idx${id}` } : null, ret: (code) => (returns ? completed('0', `Some(${code})`) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
-    try { bodyE = tr(derivedBound(s)?.body ? (ts.isBlock(s.statement) ? scopedList(s.statement, derivedBound(s).body) : derivedBound(s).body) : [...sflatten(s.statement), ...stepStmts], s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next, u); } finally { loopCtx.pop(); } // the step is the body's last statement; only `continue` runs it through loopCtx.cont
+    const fctx = lf ? { ret: () => fail(s, 'a return inside an opaque block of a throwing callback'), fault: () => exitVal(), check: false } : null;
+    if (fctx) { const top = loopCtx[loopCtx.length - 1]; fctx.step = (r) => faultStep(r, top, fctx); }
+    try { const bodyList = derivedBound(s)?.body ? (ts.isBlock(s.statement) ? scopedList(s.statement, derivedBound(s).body) : derivedBound(s).body) : [...sflatten(s.statement), ...stepStmts]; const bodyFin = s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next; bodyE = fctx ? faultTr(bodyList, bodyFin, u, fctx) : tr(bodyList, bodyFin, u); } finally { loopCtx.pop(); } // the step is the body's last statement; only `continue` runs it through loopCtx.cont
     const params = [...lead, ...constParams, ...stateParams];
     const selfArgs = [...lead.map((p) => p.split(':')[0]), ...constArgs, ...mNames];
     const callS = `${hn}(${selfArgs.join(', ')})`;
@@ -5428,6 +5494,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (isFor && real) intVars.delete(lp.i);
     const first = `${hn}(${[...leadArgsFirst, ...constArgs, ...mNames].join(', ')})`;
     let after = tr(rest, fin, u);
+    if (lf?.route) after = `if ${faultPreds().faulted}(${WORLD}) then\n${indentBlock(wrapLet(lf.route()))}\nelse\n${indentBlock(wrapLet(after))}`; // the loop left at a fault: the enclosing fault path
     if (returns) after = `if ${retName}.Some? then\n${indentBlock(retIn(`${retName}.value`))}\nelse\n${indentBlock(wrapLet(after))}`;
     if (jumps.length) after = `if ${jumpName} != 0 then\n${indentBlock(wrapLet(dispatchJump(jumpName, jumps)))}\nelse\n${indentBlock(wrapLet(after))}`;
     return `var ${tupleOf(outNames)} := ${first};\n${after}`;
