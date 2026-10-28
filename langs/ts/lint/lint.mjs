@@ -19,6 +19,7 @@ import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definit
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
 import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
 import { spreadReadWhy, openRecordReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries (open-datatype)
+import { untypedThisParam } from '../common.mjs'; // a `this` parameter typed any or unknown, or untyped: one test with the translator
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -2274,6 +2275,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (!inScope) continue;
       checkedDiagSpans.push(st);
       current = st; currentFn = u.fn; thisParam = (u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this') ? u.params[0] : null; // a free function's declared `this` parameter is its receiver operand
+      { const why = untypedThisParam(checker, u.fn); if (why) v(u.params[0], 'this-param', why); } // a free function's receiver is read by its declared type; a `this` that names no type is refused, as the translator refuses it
       if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(st, shape.rule, shape.message); }
       if (!u.body) v(st, 'unsupported-syntax', 'function without a body');
       const sig = checker.getSignatureFromDeclaration(u.fn);

@@ -1730,5 +1730,15 @@ export function spreadReadWhy(checker, lit) {
     const name = p.name && (ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) || ts.isNumericLiteral(p.name)) ? p.name.text : null;
     if (name === null) unknownBefore = true; else before.add(name);
   }
+}
+// a function's declared `this` parameter (TypeScript's this parameter) whose type names no receiver: `any`, `unknown`, or
+// no annotation at all. The receiver is then any object the caller binds, so the function is not a method of a type the
+// reading could key its receiver on; the refusal text, or null when the function declares no `this` or declares a type
+export function untypedThisParam(checker, fn) {
+  const p = fn?.parameters?.[0];
+  if (!p || !ts.isIdentifier(p.name) || p.name.text !== 'this') return null;
+  if (!p.type) return '`this` is declared without a type; declare the receiver type (`this: Ctx`)';
+  const t = checker.getTypeFromTypeNode(p.type);
+  if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return /^(any|unknown)$/.test(p.type.getText()) ? `\`this: ${p.type.getText()}\` names no receiver type; declare the receiver type the function reads (\`this: Ctx\`)` : `\`this: ${p.type.getText()}\` reads as any (the type does not resolve here); make its declaration visible to the file or declare a receiver type that resolves`;
   return null;
 }
