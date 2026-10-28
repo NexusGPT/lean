@@ -75,6 +75,14 @@ export default {
     if (bad) return { list: bad };
     if (contains(cb.body, (x) => x.kind === K.ThisKeyword || (ts.isIdentifier(x) && x.text === 'arguments'))) return { list: 'the body reads this or arguments' };
     if (contains(cb.body, (x) => ts.isLabeledStatement(x))) return { list: 'a labelled statement in the body' };
+    // the body becomes the loop's block, beside `const x = list[i]`: a name it declares at its top must not hide the list
+    const own = new Set();
+    if (ts.isBlock(cb.body)) for (const st of cb.body.statements) {
+      if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) { const w = (b) => { if (ts.isIdentifier(b)) own.add(b.text); else b.elements?.forEach((e) => e.name && w(e.name)); }; w(d.name); }
+      if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && st.name) own.add(st.name.text);
+    }
+    const recvRoot = rootOf(recv);
+    if (recvRoot && own.has(recvRoot.text)) return { list: `the body declares \`${recvRoot.text}\`, which would hide the list in the loop` };
     const ind = indentAt(sf, stmt.getStart(sf));
     const pre = [];
     let list;
