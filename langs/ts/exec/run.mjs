@@ -20,7 +20,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import { fork } from 'node:child_process';
+import { fork, spawnSync } from 'node:child_process';
+import { captureEnvironment, captureActive, snapshot, witnessRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues } from './spec.mjs';
@@ -419,6 +420,7 @@ function routeCall(env, Cls, member, args, spec, run) {
 
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
+  captureEnvironment(env);
   const cache = new Map();
   env.siteState = { current: null, completed: null, fault: null, files: Object.create(null) };
   const react = reactRuntime(env);
@@ -801,6 +803,11 @@ const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefin
 // in the child under the bound
 const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit);
 export async function runPair(opts) {
+  if (!opts.recordHead) {
+    const head = spawnSync('git', ['-C', path.dirname(new URL(import.meta.url).pathname), 'rev-parse', 'HEAD'], { encoding: 'utf8' });
+    if (head.status !== 0) console.error(`witness record head unavailable (exit ${head.status}): ${head.stderr ?? head.error?.message}`);
+    opts = { ...opts, recordHead: head.status === 0 ? head.stdout.trim() : 'unknown' };
+  }
   if (opts.inProcess || !parentHolds(opts.parent, opts.unit)) return runPairInProcess(opts);
   const seconds = unitSecondsValue(opts.unitSeconds);
   const { unitSeconds, inProcess, ...rest } = opts;
@@ -905,16 +912,17 @@ async function runPairOnce(opts) {
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       let inputs;
+      captureActive(env, false);
       try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
-      sides[name] = { env, unit: u, inputs, drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
+      sides[name] = { env, unit: u, inputs, args: snapshot(env, inputs), drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }
     return sides;
   };
   // a witness's args: the input as drawn, before either call; `parent` and `candidate` keep what each call left. The two
   // sides draw their own copies from one seed, so their drawn renderings are equal; one that differs is named beside it
-  const drawnOf = (sides) => ({ args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
-  const observeSide = (sides, name) => { crumb.side = name; tellCrumb(); return observe(sides[name], spec, sides[name].inputs, ms); }; // the side being observed joins the breadcrumb
+  const drawnOf = (sides) => ({ record: witnessRecord({ seed, leanHead: opts.recordHead ?? 'unknown', input: crumb.input, sides, invocation: { kind: 'call', isMethod: spec.isMethod, isStatic: spec.isStatic, accessor: spec.accessor ?? null } }), args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
+  const observeSide = async (sides, name) => { crumb.side = name; tellCrumb(); captureActive(sides[name].env, true); try { return await observe(sides[name], spec, sides[name].inputs, ms); } finally { captureActive(sides[name].env, false); } }; // the side being observed joins the breadcrumb
   const observeBoth = (sides, record) => (record ? recording(records, async () => [await observeSide(sides, 'parent'), await observeSide(sides, 'candidate')]) : (async () => [await observeSide(sides, 'parent'), await observeSide(sides, 'candidate')])());
   // retained state: for a class unit, programs of method calls on one constructed instance per side run first (programs.mjs); a divergence in a program that calls this unit is its WITNESS, one elsewhere rides in the certificate for the unit it names
   let programRun = null;
