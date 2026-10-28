@@ -56,12 +56,25 @@ export function unitKey({ parentText, candidateText, calleeSummaries, fileContex
   return hash(JSON.stringify(canonical({ parentText, candidateText, calleeSummaries, fileContext, imports, tsconfig, flags })));
 }
 
+// lean's own version: the commit of the checkout that holds this file. A copy without its git history (a `git archive`,
+// or a folder inside some other repository that does not track this file) is 'unknown', named by the hash of its
+// sources, so a cached row is never reused across two different copies of lean
+function leanVersion() {
+  const tracked = spawnSync('git', ['-C', here, 'ls-files', '--error-unmatch', path.basename(fileURLToPath(import.meta.url))], { encoding: 'utf8', env: GIT_ENV });
+  const head = tracked.status === 0 ? spawnSync('git', ['-C', here, 'rev-parse', 'HEAD'], { encoding: 'utf8', env: GIT_ENV }) : null;
+  if (head && head.status === 0) return head.stdout.trim();
+  const files = []; const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) { const f = path.join(d, e.name); if (e.isDirectory()) { if (f !== path.join(here, 'tests')) walk(f); } else if (e.isFile()) files.push(f); } };
+  walk(here);
+  const h = createHash('sha256'); for (const f of files) h.update(path.relative(here, f)).update('\0').update(fs.readFileSync(f)).update('\0');
+  return `unknown (no git history for this copy of lean); sources sha256 ${h.digest('hex')}`;
+}
+
 function runTools() {
   const version = spawnSync('dafny', ['--version'], { encoding: 'utf8', timeout: 20000 });
   if (version.error && version.error.code !== 'ENOENT') throw version.error;
   if (!version.error && version.status !== 0) throw new Error('Dafny version failed: ' + version.stderr);
   return {
-    leanVersion: git(here, ['rev-parse', 'HEAD']).trim(),
+    leanVersion: leanVersion(),
     libraryTableHash: fileHash(process.env.LEAN_LIBRARY_TABLE || path.join(here, 'translate/library.json')),
     adviceTableHash: fileHash(path.join(here, 'lint/advice.mjs')),
     dafnyVersion: version.error?.code === 'ENOENT' ? 'absent' : version.stdout.trim(),
@@ -296,7 +309,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop };
+  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop };
 }
 
 export function stopNote(stop) {
@@ -412,6 +425,7 @@ export async function prReport(opts) {
     const groups = [{ group: 'changed', units: changed }, { group: 'callers', units: callers }, { group: 'heap', units: heap }];
     const order = groups.flatMap((g) => g.units);
     rows.order = groups.map(({ group, units }) => ({ group, units: units.map(({ entry, u }) => ({ file: entry.file, unit: u.name, lines: [u.start, u.end] })) }));
+    if (toolVersions) rows.leanVersion = toolVersions.leanVersion; // the certificate names the lean it came from, 'unknown' included
     if (toolVersions) rows.identity = runIdentity({ base: git(repo, ['rev-parse', base]).trim(), head: head === 'WORKTREE' ? head : git(repo, ['rev-parse', head]).trim(),
       unitSet: [...new Map([...selected.map(({ unit }) => ({ file: unit.file, unit: unit.name })), ...order.map(({ entry, u }) => ({ file: entry.file, unit: u.name }))].map((u) => [JSON.stringify(u), u])).values()], ...toolVersions });
     rows.stop = { reason: 'none', reached: 0, total: order.length };
@@ -524,7 +538,7 @@ export function intakeMarkdown(rows) {
 
 export function markdown(rows, base, head) {
   const count = (v) => rows.filter((r) => r.verdict === v).length;
-  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');

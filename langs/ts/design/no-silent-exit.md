@@ -38,3 +38,16 @@ the tree holds is a fake. Relative imports already followed it; a project `paths
 ## What stays out
 - A unit that patches a shared host intrinsic (`Promise.prototype.then`) can still stop the harness; the guard
   turns that into ASK. Isolating the intrinsics is a separate change.
+
+## 2026-10-28: the late-error hooks are scoped to a unit run; lean without git history
+- The `uncaughtException` and `unhandledRejection` hooks are process-wide, and every script that imports run.mjs
+  installs them. They now record an escaped error only while `runPairInProcess` is in flight in that process. With the
+  forked worker that is the child, where unit code runs; the parent never swallows.
+- Outside a run the error belongs to the importing script (pr.mjs, check.mjs, a tool): it prints
+  `lean: <kind> outside a unit run: <stack>` to stderr and exits 1. Before, pr.mjs on a lean copy with no `.git` threw
+  in `git rev-parse HEAD` and exited 0 with nothing written.
+- pr.mjs names lean's version by the HEAD of the checkout that tracks pr.mjs. A copy without that history is
+  `unknown (no git history for this copy of lean); sources sha256 <hash>`, the hash covering langs/ts minus tests. A
+  cached row is keyed by it, so two different copies never share a cache. The Identity line and the JSON carry it.
+- Stays out: a checkout with uncommitted changes still reports its HEAD.
+- Test: tests/no-silent-exit-importers.mjs.

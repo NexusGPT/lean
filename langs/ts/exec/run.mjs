@@ -579,7 +579,9 @@ async function withTimeout(p, ms) {
 
 // an error raised after the unit returned (a fire-and-forget promise, a timer): recorded as an observation, never a crash
 const lateErrors = [];
-if (!globalThis.__leanLateHooks) { globalThis.__leanLateHooks = true; process.on('unhandledRejection', (e) => lateErrors.push(String(e && e.message || e))); process.on('uncaughtException', (e) => lateErrors.push(String(e && e.message || e))); }
+let runsInFlight = 0; // unit runs in this process (runPairInProcess): an error that escapes one of them is the unit's
+const lateHook = (kind) => (e) => { if (runsInFlight > 0) { lateErrors.push(String(e && e.message || e)); return; } process.stderr.write(`lean: ${kind} outside a unit run: ${e && e.stack ? e.stack : String(e)}\n`); process.exit(1); }; // outside a run the error is the importing script's own: printed, exit 1, never swallowed
+if (!globalThis.__leanLateHooks) { globalThis.__leanLateHooks = true; process.on('unhandledRejection', lateHook('unhandled rejection')); process.on('uncaughtException', lateHook('uncaught exception')); }
 export async function observe(side, spec, args, ms) {
   const { env, unit } = side;
   // the heap layer, stage 1: the object graph reachable from the arguments is named before the call (graph.mjs)
@@ -823,7 +825,8 @@ export async function runPair(opts) {
 }
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
-export async function runPairInProcess(opts) {
+export async function runPairInProcess(opts) { runsInFlight++; try { return await runPairInFlight(opts); } finally { runsInFlight--; } } // a unit run in flight: the late hooks record what escapes it
+async function runPairInFlight(opts) {
   const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
   const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
   for (const witness of res.witnesses ?? []) {
