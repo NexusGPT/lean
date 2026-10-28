@@ -24,8 +24,9 @@ reflection or a cast makes: defineProperty, Object.create, delete, a symbol key,
 thenable where a Promise is declared. The default (`LEAN_REACH` unset or `contract`) runs the contract families, and
 their witnesses are lane B's verdict. The reflection families run when `LEAN_REACH` names them (`reflection`, `all`,
 or a list). Their witnesses are differences on values the declared type does not promise. They are reported apart and
-never move a default verdict: on the suite's pairs they moved 17 rows of units lane A proves (listed in the lane
-report), which is evidence for the owner's open question on the input domain, not a default verdict.
+never move a default verdict. On the suite's pairs, the reflection families move rows of units lane A proves (listed
+with their counts in the lane report). That is evidence for the owner's open question on the input domain (is a value
+the declared type admits only through reflection inside it?), not a default verdict.
 
 | family | on | why it can separate two versions | class |
 |---|---|---|---|
@@ -35,7 +36,7 @@ report), which is evidence for the owner's open question on the input domain, no
 | non-enumerable-key | record, dict | a read sees it; a spread, assign, keys, for-in and JSON.stringify skip it | reflection |
 | symbol-key | record | a spread and assign copy an own symbol key; keys, for-in and JSON skip it | reflection |
 | null-prototype | record, dict | `x.hasOwnProperty`, `String(x)` and a template literal throw; `instanceof Object` is false | reflection |
-| proto-name-key | dict, string parameter | `k in d` and `d[k]` read Object.prototype where Object.hasOwn and a Map do not; `o[k] = v` with `__proto__` sets the prototype | contract |
+| proto-name-key | dict, a string parameter used as a key into an object the caller passes | `k in d` and `d[k]` read Object.prototype where Object.hasOwn and a Map do not; `o[k] = v` with `__proto__` sets the prototype | contract |
 | sparse-array | array | forEach, map, filter and for-in skip a hole; an index loop and for-of read undefined; length counts it | reflection |
 | array-extra-property | array | for-in, Object.keys, Object.assign and a spread into an object carry it; for-of, map, forEach do not | reflection |
 | shared-reference | 2 or more object positions | every position of one shape holds one object, and record fields link across shapes (cycles across arguments) | contract |
@@ -46,6 +47,10 @@ report), which is evidence for the owner's open question on the input domain, no
 
 Three families replace a leaf: proto-name-key replaces a string parameter, coercion-hooks replaces an unread value, and
 thenable replaces an input promise. The replacement settles to the same value where one exists. A coercion object
+replaces only a value the unit converts, and a prototype name replaces only a string the unit uses as a key into an
+object the caller passes (`p[k]`, `k in p`, Object.hasOwn(p, k), p.hasOwnProperty(k)). A key into the module's own
+table is the unit's domain guard (design/unreached-body.md): a prototype name there stands for no value the table
+holds, and would turn that pair's honest ASK (no input reached the body) into a PASS-bounded. A coercion object
 replaces only a value the unit converts: an unread value whose members or elements the unit reads (a union that
 usage.mjs shaped into an array or a record) keeps its fake, which answers those reads. The other families
 only add structure. The shared-reference family forces the sharing that aliasInputs draws at random, and adds links
@@ -67,7 +72,8 @@ or a local const holding one) becomes a target. The other side gives the values:
 
 Both versions are read, so the constants on both sides of a changed comparison are drawn. A target keeps only the
 values its leaf's declared type admits (a neighbour of a literal type's member is not a value of it), and a copied
-value is written only where the target's type admits it. The tier holds generated
+value is written only where the target's type admits it. A path through a union is no target: a write there can
+leave a value that matches no option (a discriminant set on another option's record). The tier holds generated
 inputs 2, 6, 10 and so on, when the unit has targets. A `.length` target cuts or extends its string or array. Syntax
 only: a side computed by a call, by arithmetic or from the receiver is no target. A concolic step would cover those
 sides (see the measurement: the misses that remain are listed with their changed condition).
