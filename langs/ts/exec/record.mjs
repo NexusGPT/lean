@@ -1,6 +1,16 @@
 // Versioned evidence, separate from the v1 observation. No answer is generated here.
 import { render } from './fake.mjs';
 const captures = new WeakMap();
+let currentUnit = null;
+export function beginUnitRecord(record) { currentUnit = { record, environments: [] }; }
+export function finishUnitRecord(record) {
+  const session = currentUnit; currentUnit = null;
+  if (!session || session.record !== record) return;
+  record.auxiliaryEnvironments = session.environments.filter(env => !captures.get(env).claimed).map(env => {
+    const c = captures.get(env);
+    return { seed: env.seed, events: c.events, imports: [...c.imports], invocation: { status: 'not recorded', reason: 'auxiliary program/sequence generator outside the single-draw output boundary' } };
+  });
+}
 const knownHandles = new WeakMap();
 const special = new Set(['__isFake', '__fakePath', 'then', 'valueOf', 'toString', 'constructor']);
 const keyOf = p => typeof p === 'symbol' ? `@@${p.description}` : String(p);
@@ -44,6 +54,7 @@ export function captureEnvironment(env) {
   if (captures.has(env)) return;
   const c = { events: [], imports: new Set(), silent: 0, stack: [], active: true };
   captures.set(env, c);
+  currentUnit?.environments.push(env);
   const event = (op, path, args, fn) => {
     if (c.silent || !c.active) return fn();
     const e = { index: c.events.length, parent: c.stack.at(-1) ?? null, phase: env.loading ? 'load' : 'run', op, path, args: snapshot(env, args), site: env.siteState?.current?.site ?? null };
@@ -89,10 +100,11 @@ export function captureEnvironment(env) {
 // Stop observing harness serialization; no v1 field or trace entry is added.
 export function captureActive(env, active) { const c = captures.get(env); if (c) c.active = active; }
 export function witnessRecord({ seed, leanHead, input, sides, invocation = { kind: 'call' } }) {
-  return { schema: 'witness-record/v2', version: 2, seed, leanHead, input, invocation,
+  return { schema: 'witness-record/v2', version: 2, seed, leanHead, input, invocation, clockEpoch: 1700000000000, compiler: { target: 'ES2020', esModuleInterop: true, experimentalDecorators: true, useDefineForClassFields: false, jsx: 'react-jsx' },
     sides: Object.fromEntries(Object.entries(sides).map(([name, side]) => {
       const c = captures.get(side.env);
       const events = c?.events ?? [];
+      if (c) c.claimed = true;
       return [name, { seed: side.env.seed, args: side.args ?? snapshot(side.env, side.inputs), events, imports: [...(c?.imports ?? [])],
         clock: events.filter(e => e.op === 'clock'), random: events.filter(e => e.op === 'rng'),
         timeline: side.env.trace.filter(e => e.op === 'fire').map(e => ({ ...e })),

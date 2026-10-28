@@ -489,7 +489,7 @@ export async function prReport(opts) {
         let b;
         try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project }); }
         catch (e) { b = { verdict: 'ASK', reason: `harness: ${String(e.message).slice(0, 300)}` }; }
-        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : b.verdict, laneB: b.verdict, laneA: null, witness: b.witnesses?.[0] ?? null, reason: b.reason ?? u.findings[0].msg, advice: u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: `refused:${u.findings[0].rule}`, certificate: basicCertificate({ B: b }), verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : b.verdict, laneB: b.verdict, laneA: null, witness: b.witnesses?.[0] ?? null, reason: b.reason ?? u.findings[0].msg, advice: u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
         continue;
       }
       if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {

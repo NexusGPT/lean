@@ -17,3 +17,11 @@ A program/race/React sequence without captured invocation data must be marked un
 ## Tests
 
 `node --test langs/ts/exec/record.test.mjs` failed first with ERR_MODULE_NOT_FOUND, then the emission test failed with missing witness.record. It exercises repeated return/throw, the clock, rng, v1 trace equality, load capture and graph sharing. Full pair/v1 evidence is reported in the lane report.
+
+## Every unit, including bounded and refused rows
+
+The same schema has `invocation.kind: unit` for a run certificate. It holds each primary draw's input and answers, per-parameter shape, draw count and generator-route counts (enumerated heaps, listed values, boundary walk, seeded type-directed draw). Auxiliary program/sequence environments retain their answer events separately, with initialization explicitly not recorded. No draws is not represented as a measured zero when the input plan was never reached: its status says not recorded. The compiler settings and clock epoch are included in each replay record.
+
+`runPairInFlight` attaches the unit record to the result and its existing bound; `check.mjs` already passes that bound through unchanged. The findings branch of `prReport` now retains its existing lane B result in the certificate instead of dropping it. Statement markers expose only the current/completed site, not a visit accumulator. `reach` therefore explicitly says not recorded and names the absent bitmap; it does not equate reaching the body with reaching changed lines.
+
+Red controls: the bounded test failed on the absent bound.record; removing the findings-branch certificate made the refused-row test fail on absent certificate. Both pass with capture and pass-through. The independent emission test failed on omitted compiler options (load-time import navigation was not replayed); preserving the actual compiler options made it pass.

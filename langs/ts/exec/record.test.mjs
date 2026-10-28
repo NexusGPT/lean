@@ -67,3 +67,34 @@ test('pr report passes the same v2 record through the checked row', async () => 
     assert.deepEqual(JSON.parse(JSON.stringify(reportJSON(rows))).rows.find(r => r.unit === 'f').witness.record, row.witness.record);
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
+
+test('PASS-bounded carries every draw, per-parameter generator counts and explicit reach status', async () => {
+  const { runPair } = await import('./run.mjs'); const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'bounded-record-test-'));
+  try {
+    for (const side of ['parent', 'candidate']) fs.writeFileSync(path.join(d, side + '.ts'), 'export function f(x: number) { return x + Date.now(); }');
+    const r = await runPair({ parent: path.join(d, 'parent.ts'), candidate: path.join(d, 'candidate.ts'), unit: 'f', project: false, n: 3 });
+    assert.equal(r.verdict, 'PASS-bounded');
+    assert.equal(r.bound.record?.schema, 'witness-record/v2');
+    assert.equal(r.bound.record.draws.length, 3);
+    assert.equal(r.bound.record.drawDomain.parameters[0].count, 3);
+    assert.equal(r.bound.record.reach.status, 'not recorded');
+    assert.ok(r.bound.record.draws.every(d => d.sides.parent.clock.length === 1));
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
+test('lane-A-refused PR rows retain the bounded lane B certificate', async () => {
+  const { prReport } = await import('../pr.mjs');
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path'); const { spawnSync } = await import('node:child_process');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'refused-record-test-'));
+  const git = (...args) => { const r = spawnSync('git', ['-C', d, ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr); };
+  try {
+    git('init'); git('config', 'user.name', 'test'); git('config', 'user.email', 'test@example.invalid');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { var y = x; return y; }'); git('add', '.'); git('commit', '-m', 'before');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { var y = x; return y * 1; }');
+    const r = (await prReport({ repo: d, base: 'HEAD', project: false, n: 3, dafnySeconds: 1, fresh: true })).find(r => r.unit === 'f');
+    assert.match(r.coverage, /^refused:/); assert.equal(r.laneB, 'PASS-bounded');
+    assert.equal(r.certificate?.lanes.B.record.schema, 'witness-record/v2');
+    assert.equal(r.certificate.lanes.B.record.drawDomain.parameters[0].count, 3);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
