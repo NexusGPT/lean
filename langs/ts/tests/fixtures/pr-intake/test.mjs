@@ -13,7 +13,7 @@ const pr = path.resolve(here, '../../../pr.mjs');
 export function testIntake() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-intake-test-'));
   try {
-    const refs = intakeRepo(path.join(tmp, 'repo'));
+    const refs = intakeRepo(path.join(tmp, 'repo'), { removeMissing: true });
     const json = path.join(tmp, 'report.json'), previewJson = path.join(tmp, 'preview.json'), audit = path.join(tmp, 'audit.log');
     const args = ['--repo', refs.repo, '--base', refs.base, '--head', refs.head, '--dafny-seconds', '1'];
     const run = spawnSync(process.execPath, [pr, ...args, '--json', json], { encoding: 'utf8' });
@@ -24,11 +24,17 @@ export function testIntake() {
     const want = {
       '.env': 'skipped:secret-path', 'image.bin': 'skipped:binary', 'inside.ts': 'checked',
       'loader.ts': 'failed:loader', 'plain.js': 'skipped:not-typescript', 'refused.ts': 'refused:alias-mutation',
+      'gone.ts': 'removed',
     };
     console.log('JSON rows: ' + JSON.stringify(rows.map(({ file, unit, coverage }) => ({ file, unit, coverage }))));
-    assert.equal(rows.length, 6, 'every changed fixture unit has a row, including .env');
+    assert.equal(rows.length, 7, 'every changed fixture unit has a row, including .env and the deleted gone.ts');
     assert.deepEqual(Object.fromEntries(rows.map((r) => [r.file, r.coverage])), want);
-    assert.equal(new Set(rows.map((r) => r.coverage)).size, 6);
+    assert.equal(new Set(rows.map((r) => r.coverage)).size, 7);
+    // a unit of a deleted file is a row of its own: the parent's name and lines, no lane, no verdict, no unit spent
+    const gone = rows.find((r) => r.file === 'gone.ts');
+    assert.deepEqual([gone.unit, gone.lines, gone.decision, gone.verdict, gone.reason], ['gone', [1, 1], 'removed', null, 'present at the parent, absent at the head']);
+    assert.ok(gone.laneA === undefined && gone.laneB === undefined && gone.certificate === undefined, 'no lane ran on it');
+    assert.ok(!report.order.some((g) => g.units.some((u) => u.unit === 'gone')), 'a removed unit is not in the spending list');
     const refused = rows.find((r) => r.file === 'refused.ts');
     assert.equal(refused.laneA, null);
     assert.equal(refused.laneB, 'WITNESS');
@@ -40,9 +46,10 @@ export function testIntake() {
     assert.deepEqual(intake.map((r) => [r.file, r.unit]), rows.map((r) => [r.file, r.unit]));
     assert.ok(intake.every((r) => r.coverage && r.decision && r.reason && r.verdict === null));
     assert.equal(intake.filter((r) => r.coverage === 'pending').length, 2);
+    assert.deepEqual(intake.find((r) => r.file === 'gone.ts'), { file: 'gone.ts', unit: 'gone', lines: [1, 1], coverage: 'removed', decision: 'removed', verdict: null, reason: 'present at the parent, absent at the head', advice: [] });
     assert.equal(fs.readFileSync(audit, 'utf8'), '', 'no lane process, sandbox, or secret read');
     assert.ok(!preview.stdout.includes('## Verdicts') && preview.stdout.includes('| coverage | decision | reason |'));
-    console.log('Preview: 6 matching rows; 2 pending; 0 lane processes; 0 sandbox executions; 0 secret reads');
+    console.log('Preview: 7 matching rows; 2 pending; 0 lane processes; 0 sandbox executions; 0 secret reads');
     for (const file of ['.env', 'nested/.env.local', 'a.pem', 'a.key', 'id_rsa.pub', 'a.p12', 'a.pfx', 'a.jks']) assert.ok(secretPath(file), file);
     assert.ok(!secretPath('environment.ts'));
     const changes = Object.freeze([Object.freeze({ file: 'a.ts', units: Object.freeze([Object.freeze({ name: 'a', start: 1, end: 1, findings: Object.freeze([]) })]) })]);
@@ -116,6 +123,18 @@ export function testIntake() {
     assert.deepEqual(orderedReport.stop, { reason: 'unit-budget', reached: 0, total: 3 });
     assert.ok(orderedReport.rows.some((r) => r.unit === 'caller' && r.caller && r.coverage === 'skipped:budget'));
     console.log('Order: changed inside,last; callers caller; heap empty; all three rows skipped at zero units');
+    // a function deleted from a file that stays is a removed row too; the unit beside the deleted lines is not a changed unit
+    fs.writeFileSync(path.join(ordered.repo, 'z.ts'), 'export function other(x: number): number { return x; }\nexport function last(x: number): number { return x + 1; }\n');
+    git('add', 'z.ts');
+    git('commit', '-qm', 'Read two units in z.ts');
+    const twoUnits = git('rev-parse', 'HEAD');
+    fs.writeFileSync(path.join(ordered.repo, 'z.ts'), 'export function other(x: number): number { return x; }\n');
+    const goneJSON = path.join(tmp, 'removed-function.json');
+    const gonePreview = spawnSync(process.execPath, ['--import', path.join(here, 'preview-audit.mjs'), pr, '--repo', ordered.repo, '--base', twoUnits, '--preview', '--json', goneJSON], { encoding: 'utf8', env: { ...process.env, LEAN_INTAKE_AUDIT: audit } });
+    assert.equal(gonePreview.status, 0, gonePreview.stderr);
+    const goneRows = JSON.parse(fs.readFileSync(goneJSON, 'utf8')).filter((r) => r.file === 'z.ts'); // inside.ts still holds the earlier uncommitted edit
+    assert.deepEqual(goneRows.map((r) => [r.file, r.unit, r.coverage, r.lines]), [['z.ts', 'last', 'removed', [2, 2]]], 'the deleted function is the only row; other is untouched');
+    console.log('Removed function: ' + JSON.stringify(goneRows.map(({ file, unit, lines, coverage }) => ({ file, unit, lines, coverage }))));
     const identityParts = { base: 'base', head: 'head', unitSet: [{ file: 'a.ts', unit: 'a' }, { file: 'b.ts', unit: 'b' }],
       leanVersion: 'lean', libraryTableHash: 'library', adviceTableHash: 'advice', dafnyVersion: 'dafny' };
     assert.equal(runIdentity(identityParts), runIdentity({ ...identityParts, unitSet: [...identityParts.unitSet].reverse() }));
@@ -131,7 +150,7 @@ export function testIntake() {
       assert.notEqual(unitKey(keyParts), unitKey({ ...keyParts, flags: { ...keyParts.flags, [key]: 'changed' } }), key);
     }
     testRunIdentity();
-    return '6 rows; 6 coverage values; preview has no lane process; refusal keeps WITNESS; budgets and comment stops pass';
+    return '7 rows; 7 coverage values; preview has no lane process; refusal keeps WITNESS; budgets and comment stops pass';
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
