@@ -439,6 +439,16 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             if not name.endswith(suffix):
                 raise Refusal(f'{label}: in-range mark for {name} does not end in {suffix}')
             inrange.add(name[: -len(suffix)])
+    # the source an in-range unit means (`// SOURCE <name>: <key>`: its text and every same-file unit it reaches): two
+    # Dafny-identical bodies agree only inside the model, so an aliased unit drops the in-range obligation only when the
+    # two sources are the same; Dafny-identical bodies of different sources keep it, as any other unit does
+    sources = {}
+    for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
+        for m in re.finditer(r'^// SOURCE ([A-Za-z_][A-Za-z0-9_]*): (\S+)$', text, flags=re.M):
+            name = m.group(1)
+            if name.endswith(suffix):
+                sources.setdefault(name[: -len(suffix)], {})[label] = m.group(2)
+    same_source = {f for f, k in sources.items() if k.get('parent') is not None and k.get('parent') == k.get('candidate')}
     for f, h in hyps.items():  # compared with the parameters by position: the lemma states the parent's, over the parent's names
         if f in adapters and h.get('parent') is not None and h.get('candidate') is not None:
             continue  # an adapted heap-core unit: the lemma assumes the parent's hypothesis over the parent's inputs; the candidate runs on A(x)
@@ -575,7 +585,7 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         if f in hyps:
             out.append(f'  requires {hyps[f]["parent"]}')
         adapted = adapted_args(f, [n for n, _ in sig["params"]], adapters, cf)
-        if f in inrange and f in hyps and f not in aliased:
+        if f in inrange and f in hyps and (f not in aliased or f not in same_source):
             out.append(f'  ensures !{f}_parent({names}).0.oob && !{f}_candidate({adapted}).0.oob')
         out.append(f'  ensures {f}_parent({names}) == {f}_candidate({adapted})')
         if sm.get('induction'):
