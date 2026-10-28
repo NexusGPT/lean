@@ -9,7 +9,8 @@ export function block(node: Block, tools?: Map<string, string>): string | null {
   switch (node.type) {
     case "paragraph": return node.text ?? "";
     case "collection-mention": {
-      const id = node.attrs?.collectionId as string | undefined;
+      const raw = node.attrs?.collectionId;
+      const id = typeof raw === "string" ? raw : undefined;
       if (tools && id && tools.has(id)) return `[Knowledge: use ${tools.get(id)}]`;
       if (tools) return null;
       return "%%" + (node.attrs?.name || "") + "%%";

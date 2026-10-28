@@ -25,10 +25,7 @@
     "asserted_in",
     "asserted_dictionary",
     "asserted_optional",
-    "asserted_assignment",
     "asserted_tag",
-    "asserted_container",
-    "asserted_destructure",
     "non_null_exact",
     "asserted_refactor"
   ],
@@ -58,10 +55,7 @@
     "asserted_in": false,
     "asserted_dictionary": false,
     "asserted_optional": false,
-    "asserted_assignment": false,
     "asserted_tag": false,
-    "asserted_container": false,
-    "asserted_destructure": false,
     "non_null_exact": true,
     "asserted_refactor": true
   },
@@ -92,10 +86,7 @@
     "assertedIn": "WITNESS",
     "assertedDictionary": "WITNESS",
     "assertedOptional": "WITNESS",
-    "assertedAssignment": "WITNESS",
     "assertedTag": "WITNESS",
-    "assertedContainer": "WITNESS",
-    "assertedDestructure": "WITNESS",
     "nonNullExact": "PASS-bounded",
     "assertedRefactor": "PASS-bounded"
   }

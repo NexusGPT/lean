@@ -11,6 +11,6 @@ declare module "service" {
 declare module "react/jsx-runtime" {
   export namespace JSX {
     interface Element { readonly jsx: true }
-    interface IntrinsicElements { [tag: string]: any }
+    interface IntrinsicElements { input: { value?: string; onChange?: (e: { target: { value: string } }) => void; [attr: string]: unknown }; [tag: string]: any } // a text input's value is a string
   }
 }

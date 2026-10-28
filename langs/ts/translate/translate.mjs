@@ -58,6 +58,7 @@ import { elementWritePath } from '../common.mjs'; // a field write through a par
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
 import { definiteAssignmentRead } from '../common.mjs'; // `let v!: T` read before its first assignment: one test with the lint
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
+import { typeAssertion, assertionHeld } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
 import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -1362,7 +1363,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isPrefixUnaryExpression(n)) { const T = typeOf(n.operand); if (anyT(T)) return null; if (n.operator === K.ExclamationToken) return checker.getBooleanType(); if (n.operator === K.MinusToken || n.operator === K.PlusToken) return (T.flags & TF.NumberLike) ? checker.getNumberType() : null; }
     return null;
   };
-  const typeOf = (n) => { const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
+  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
   if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
   const anyTarget = () => checker.getAnyType();
   const symType = (sym, n) => (checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n));
@@ -1723,6 +1724,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // a Dafny target still needs the source type to identify Option.None
   function convertToD(code, from, td, node) {
     const fd = dtype(from, node);
+    if (node && fd !== td) { const why = typeAssertion(checker, node); if (why) fail(node, `type-assertion: ${why}`); } // a value whose type nothing checked, converted where its reading does not carry it: the lint's test on the same node
     if (isNullish(from)) {
       if (optionalD(td)) return missingD(td, from.flags & TF.Null ? 'Null' : 'Undef');
       if (td === 'Any') return `${external(from.flags & TF.Null ? 'Any_null' : 'Any_undefined', [], anyType())}()`;
@@ -2075,6 +2077,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         // identity at run time; the types may differ, so the value is converted (opaque when they do)
         const tn = n.type;
         if (tn && ts.isTypeReferenceNode(tn) && tn.typeName.getText(sf) === 'const') return expr(n.expression, expected);
+        { const real = assertionHeld(checker, n); if (real) return convert(expr(n.expression), typeOf(n.expression), real, n); } // a narrowing assertion: the value keeps its run-time type (the source's, or Any for an any or unknown source)
         const from = typeOf(n.expression), to = typeOf(n), code = expr(n.expression);
         if (bothAbsent(from) && !bothAbsent(to) && isOptional(to)) { const fd = dtype(from, n), td = dtype(to, n); return `${external(`cast_${mangle(fd)}_${mangle(td)}`, [fd], td)}(${code})`; }
         return convert(code, from, to, n);

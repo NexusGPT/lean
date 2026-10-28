@@ -16,6 +16,7 @@ import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.
 import { infinitySign } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
+import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -1294,6 +1295,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
 
   function expr(e) {
+    { const why = typeAssertion(checker, e); if (why) v(e, 'type-assertion', why); } // a value whose type nothing checked, in a slot that reads it as its declared type
     switch (e.kind) {
       case K.Identifier: return checkIdent(e);
       case K.NumericLiteral: case K.BigIntLiteral: case K.StringLiteral: case K.TrueKeyword: case K.FalseKeyword: case K.NullKeyword: return;
