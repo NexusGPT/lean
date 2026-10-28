@@ -1316,7 +1316,7 @@ export function copySourceWhy(checker, src, site = null) {
   const record = (y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0;
   let t = null; try { t = checker.getTypeAtLocation(bare(src)); } catch { return 'the copied value has no type'; }
   if (!t || !(t.flags & TF.Union ? t.types : [t]).some(record)) return null; // a dictionary, an array, a primitive: not a record copy
-  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent) && site.parent.properties.slice(0, site.parent.properties.indexOf(site)).some((q) => !(ts.isSpreadAssignment(q) || ts.isShorthandPropertyAssignment(q) || (ts.isPropertyAssignment(q) && (ts.isIdentifier(q.name) || ts.isStringLiteral(q.name)))))) return 'a spread after a computed or method member: the merge of the members before it is formed from named members and spreads only; write the spread before that member';
+  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent) && site.parent.properties.slice(0, site.parent.properties.indexOf(site)).some((q) => !(ts.isSpreadAssignment(q) || ts.isShorthandPropertyAssignment(q) || (ts.isPropertyAssignment(q) && (ts.isIdentifier(q.name) || ts.isStringLiteral(q.name) || ts.isComputedPropertyName(q.name)))))) return 'a spread after a method or accessor member: the merge of the members before it takes values, and a method is a function the reading does not hold as a value; write the spread before that member';
   const keys = new Set();
   const built = (x, depth) => {
     x = bare(x); if (depth > 8) return false;
@@ -1369,6 +1369,11 @@ export function copySource(checker, src, site = null) {
   let t = null; try { t = checker.getTypeAtLocation(x); } catch { return { kind: 'refuse', why: 'the copied value has no type' }; }
   const record = !!t && (t.flags & TF.Union ? t.types : [t]).some((y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0);
   if (!record) return { kind: 'plain' };
+  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent)) { // a dictionary literal (Record<string, T>): its reading holds every key a spread copies (a map merge)
+    let ctx = null; try { ctx = checker.getContextualType(site.parent); } catch { ctx = null; }
+    const parts = ctx ? (ctx.flags & TF.Union ? ctx.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [ctx]) : [];
+    if (parts.length === 1 && (parts[0].flags & TF.Object) && checker.getIndexInfoOfType(parts[0], ts.IndexKind.String) && !checker.getPropertiesOfType(parts[0]).length) return { kind: 'plain' };
+  }
   const why = copySourceWhy(checker, src, site);
   return why === null ? { kind: 'built' } : why === COPY_NOT_BUILT || why.startsWith('the copy holds the key') ? { kind: 'copy' } : { kind: 'refuse', why }; // a built copy holding a key the target does not declare carries it, as any copy carries what its source carries
 }

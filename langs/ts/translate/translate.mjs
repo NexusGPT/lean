@@ -2751,8 +2751,9 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (lastSpread > 0) {
       const vals = [], types = [], names = [];
       for (const p of n.properties.slice(0, lastSpread + 1)) {
+        if (ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name)) { const k = p.name.expression; names.push('[]'); types.push(dtype(typeOf(k), k)); vals.push(expr(k)); } // a computed member: its key, then its value
         const e = ts.isSpreadAssignment(p) ? p.expression : ts.isShorthandPropertyAssignment(p) ? p.name : p.initializer;
-        names.push(ts.isSpreadAssignment(p) ? '...' : keyOf(p)); types.push(dtype(typeOf(e), e)); vals.push(expr(e));
+        if (!(ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name))) names.push(ts.isSpreadAssignment(p) ? '...' : keyOf(p)); types.push(dtype(typeOf(e), e)); vals.push(expr(e));
       }
       merged = `${external(`spread_merge_${mangle(rname)}_${hash(names.join(','))}`, types, rname)}(${vals.join(', ')})`;
     }
