@@ -1,6 +1,7 @@
 // expect: prototype
-// a literal key that names a member of Object.prototype reads that member on a dictionary that does not own it:
-// `{}["toString"]` is a function and `{}["valueOf"]` another, which one absent value of the value type cannot tell apart
-export function sizeOf(d: Record<string, number>): number {
-  return d["toString"] ?? 0;
+// a literal `__proto__` or `constructor` key reaches the prototype chain itself (the prototype object, the constructor
+// function), which the bracket rule refuses on every receiver; another Object.prototype name on a dictionary is read
+// as a value per name (design/proto-names.md)
+export function protoOf(d: Record<string, number>): number {
+  return d["__proto__"] ?? 0;
 }
