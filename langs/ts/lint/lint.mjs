@@ -17,7 +17,6 @@ import { infinitySign } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
 import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
-import { signedZero } from '../common.mjs'; // the sign of zero: one test with the translator
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -2283,7 +2282,6 @@ export function lintFile(file, ranges = null, opts = {}) {
         checkType(tOf(p.name), p);
       }
       checkStringLiterals(u.node);
-      { const sz = signedZero(checker, u.fn); if (sz) v(sz.node, 'signed-zero', sz.why); } // a result or a read that tells -0 from 0 (design/signed-zero.md): one test with the translator
       if (u.body) { if (ts.isBlock(u.body)) stmts(u.body.statements); else expr(u.body); }
       current = null; currentFn = null;
       continue;
@@ -2320,7 +2318,6 @@ export function lintFile(file, ranges = null, opts = {}) {
           checkType(tOf(p.name), p);
         }
         checkStringLiterals(u.node);
-        { const sz = signedZero(checker, u.fn); if (sz) v(sz.node, 'signed-zero', sz.why); } // a result or a read that tells -0 from 0 (design/signed-zero.md): one test with the translator
         if (u.isStatic && !u.params.every((p) => ts.isIdentifier(p.name))) staticThis(u.body); // with plain parameters the unit is one opaque transition keyed by the file
         stmts(u.body.statements);
         current = null; currentFn = null; currentClass = null; thisParam = null;

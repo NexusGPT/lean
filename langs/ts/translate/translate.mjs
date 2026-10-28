@@ -1365,8 +1365,9 @@ export function translate(file, fnName, opts = {}) {
     return null;
   };
   const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
-  // the sign of zero (design/signed-zero.md, common.mjs signedZero, one test with the lint): a unit whose number result
-  // may be a -0 an operation makes, or which tells -0 from 0, is refused by name (signed-zero)
+  // the sign of zero (design/signed-zero.md, common.mjs signedZero): a unit of the ordinary lane whose number result
+  // may be a -0 an operation makes, or which tells -0 from 0, is read as one opaque unit keyed by its source (the heap
+  // core marks its world where such a -0 may escape, NegZeroMark); the same source on both sides is the same function
   const signedZeroUnits = new Set(order.filter((u) => signedZero(checker, u.fn)).map((u) => u.name));
   if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
   const anyTarget = () => checker.getAnyType();
@@ -5698,7 +5699,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     });
     const outs = [...(eff ? ['World'] : []), rt, ...(core ? mutatedOf(u).map((m) => dtype(typeOf(u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m).name), u.node)) : [])];
     const out = outs.length === 1 ? rt : `(${outs.join(', ')})`;
-    const ext = external(`${absentOpaque.has(u.name) ? 'absent_number' : 'number_special'}_${numericKey(u)}`, args.map((a) => a.d), out); // the reading names why the unit is opaque
+    const ext = external(`${absentOpaque.has(u.name) ? 'absent_number' : numericOpaque.has(u.name) ? 'number_special' : 'signed_zero'}_${numericKey(u)}`, args.map((a) => a.d), out); // the reading names why the unit is opaque
     const tp = unitTParams().length ? `<${unitTParams().map((p) => `${p}(==)`).join(', ')}>` : '';
     return [`function ${fname(u.name)}${tp}(${params.join(', ')}): ${core ? out : `(result: ${out})`}`, ...specs, `{ ${ext}(${args.map((a) => a.name).join(', ')}) }`].join('\n');
   }
@@ -5869,8 +5870,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       for (const r of requires) specs.push(`  requires ${sub(r)}`);
       for (const e of ensures) specs.push(`  ensures ${sub(e)}`);
     }
-    if (signedZeroUnits.has(u.name)) { const sz = signedZero(checker, u.fn); fail(sz.node, `signed-zero: ${sz.why}`); } // the lint's own test (its gate refuses first)
-    if (numericOpaque.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
+    if (numericOpaque.has(u.name) || signedZeroUnits.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
     const sp = sigParams(u);
     const bodyList = ts.isBlock(u.body) ? [...u.body.statements] : null;
     reassignedParams(u); // refuses a parameter both rebound and changed in place
