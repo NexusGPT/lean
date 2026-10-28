@@ -78,3 +78,15 @@ A case is a buggy and a fixed version of one module plus a driver. The two versi
 handler under race the unit; the driver's two concurrent requests are `call` and `call2`. The WITNESS's distinguishing
 order is the replay file (event names and task ids for `fc.schedulerFor`); a no-race control is a pair whose sets are
 equal with its order count. The benchmark material is not a dependency of this row.
+
+### 2026-10-28: a race witness names its statements
+
+A race witness carries `where.lines` like every other witness: the statement on each side where the two sides first
+differ under the distinguishing order. The explorer keeps, beside the distinguishing observation, the other side's
+observation under that same order (its arm order when the order is not feasible there). The first request that
+differs gives a statement on each side, read from the request's recorded site; a side with no request at that place
+names its last request. When the requests agree, the first call whose outcome differs gives the statement each call
+completed at (a `return`), read in the event that settled the call. The kind says which: `race effect`,
+`race effect; <side> record absent`, `race completion`, `race completion fallback`. The lines are not part of
+equality, so no verdict changes. Pair `race_lines`: a dropped check (completion lines), a dropped check guarding a
+request (effect lines), a pure refactor of the same unit (PASS-bounded) and an untouched unit.

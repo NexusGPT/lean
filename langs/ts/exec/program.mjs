@@ -106,9 +106,10 @@ export async function exploreRaces({ mount, programs = 2, seed, ms, rt, b = 2, m
     env.scheduler = { hold: (v, path) => { v.catch(() => {}); made[cur] = (made[cur] ?? 0) + 1; const label = `${cur}/${made[cur]}`; return sch.schedule(v, label, { path }, act(label)); } };
     const escaped = new Set(); // an object a field held, once read: a later event may change it through a local alias, so every later event writes it
     env.access = (cell, kind) => { if (kind === 'object') escaped.add(cell); if (step) (kind === 'r' ? step.r : step.w).add(cell); };
-    const outs = [null, null];
+    const outs = [null, null], seen = [false, false];
+    const finished = () => { for (const c of [0, 1]) if (outs[c] && !seen[c]) { seen[c] = true; Object.defineProperty(outs[c], 'site', { value: env.siteState?.completed ?? null }); } }; // the statement a call completed at, read in the event that settled it
     const start = (c) => { let v; try { v = rt.guardedCall(env, s.start[c], ms); } catch (e) { if (harnessStop(e)) throw e; outs[c] = { threw: render(e) }; return; } if (v && typeof v.then === 'function') v.then((x) => { outs[c] = { returned: render(x) }; }, (e) => { outs[c] = { threw: render(e) }; }); else outs[c] = { returned: render(v) }; };
-    open('call1'); start(0); await settle(env); close({});
+    open('call1'); start(0); await settle(env); finished(); close({});
     sch.schedule(Promise.resolve(), 'call2', { arrival: true }, act('call2')).then(() => start(1)); // the second caller arrives while the first is pending
     for (let n = 0; ; n++) {
       const pending = sch.report().filter((t) => t.status === 'pending');
@@ -117,6 +118,7 @@ export async function exploreRaces({ mount, programs = 2, seed, ms, rt, b = 2, m
       const enabled = pending.map((t) => t.label), fifo = enabled[0];
       if (!plan.drawn) { const want = plan.prefix[n]; const pick = want === undefined ? pending[0] : pending.find((t) => t.label === want); if (!pick) return { infeasible: n }; taskIds.push(pick.taskId); }
       await rt.awaitUnit(env, (async () => { await sch.waitOne(); await drain(); })(), ms);
+      finished();
       close({ enabled, fifo });
     }
     const obs = { calls: outs.map((o) => o ?? { pending: true }), trace: env.trace, receiver: s.own ? render(s.own()) : null, pending: env.pending.map(({ id, ...rest }) => rest) };
@@ -194,7 +196,7 @@ export async function exploreRaces({ mount, programs = 2, seed, ms, rt, b = 2, m
     const ms1 = run.steps[i], ms2 = run.steps.find((x) => x.label === before) ?? def.steps[i];
     const cells = ms1 && ms2 ? [...new Set([...ms1.w].filter((c) => ms2.r.has(c) || ms2.w.has(c)).concat([...ms2.w].filter((c) => ms1.r.has(c))))].concat(ms1.world && ms2.world ? ['the trace'] : []) : [];
     const again = await execute(who, p, { prefix: run.order }); // the distinguishing order once more, by its own ordering: the replay is a fact
-    return { verdict: 'WITNESS', stats, witness: { program: p, side: who, orders: { default: { order: def.order, observation: def.obs, otherSideReaches: other.set.has(def.key) }, distinguishing: { order: run.order, taskIds: run.taskIds, observation: run.obs } }, dependentPair: { moved, before, cells: hidden ? [`every cell (${hidden})`] : cells }, otherSide: { orders: other.runs.length, observations: other.set.size, complete: other.complete }, replayed: again.key === run.key } };
+    return { verdict: 'WITNESS', stats, witness: { program: p, side: who, orders: { default: { order: def.order, observation: def.obs, otherSideReaches: other.set.has(def.key) }, distinguishing: { order: run.order, taskIds: run.taskIds, observation: run.obs } }, dependentPair: { moved, before, cells: hidden ? [`every cell (${hidden})`] : cells }, otherSide: { orders: other.runs.length, observations: other.set.size, complete: other.complete }, replayed: again.key === run.key, rival: { obs: (other.byOrder.get(orderKey(run.order)) ?? other.runs[0]).obs, sameOrder: other.byOrder.has(orderKey(run.order)) } } };
   }
   return { verdict: 'PASS-bounded', stats };
 }
