@@ -10,6 +10,12 @@ It collects source text, line ranges, units and lint findings.
 Secret names are classified before their contents are read.
 Binary files are identified by git or a zero byte in their contents.
 The reader uses project types when it reads TypeScript.
+The reader makes one TypeScript program per tsconfig per side: the head files of the change are its roots, and the intake, the lint and the cache key of every unit share it.
+The parent side is read the same way, from the materialised base files, when the run reaches its first unit.
+A file that cannot load in the program is a failed:loader row by itself; the other files keep their reading.
+A file with no readable tsconfig, and every file under --no-project, is read alone and let go, so another changed file's declarations never reach it.
+The earlier reader kept one program per changed file for the whole run. On a 68-file backend change (project types, 8 GB heap) it aborted at a peak of 9.07 GB after 67 s; with one program it finishes in 12.8 s at 2.34 GB.
+Of that, the program holds 8,169 source files (4,026 declaration files) and 1.29 GB of heap once created, and typing the changed files adds 0.45 GB; one program per side still holds that much on the largest change.
 JavaScript with declared JSDoc types can enter the same reader.
 
 selectUnits(changedFiles, opts) returns [{unit, decision, reason}].

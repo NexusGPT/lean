@@ -21,7 +21,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, topLevelFunctions } from './common.mjs';
+import { ts, loadProgram, loadProgramOptions, topLevelFunctions } from './common.mjs';
 import { check } from './check.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
@@ -62,10 +62,49 @@ function runTools() {
   };
 }
 
+// One TypeScript program per tsconfig per side of a run, with every file of that side that the run reads as a root, shared
+// by the intake, the lint and the cache key of every unit. The options are loadProgram's, for many roots at once. A file the
+// program cannot read maps to {error} on its own; the other files of the program keep their reading. A file with no
+// readable tsconfig (--no-project, none above it, an unparsable one) is not in the map: it is read alone as loadProgram
+// reads it, one file at a time and let go, so another changed file's declarations never reach it.
+function sharedReadings(files, project) {
+  const out = new Map();
+  const groups = new Map(); // tsconfig path -> [abs]
+  for (const f of files) {
+    const abs = path.resolve(f);
+    const cfg = project === false ? '' : typeof project === 'string' ? path.resolve(project) : (ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? '');
+    if (!cfg || !fs.existsSync(cfg)) continue;
+    if (!groups.has(cfg)) groups.set(cfg, []);
+    groups.get(cfg).push(abs);
+  }
+  for (const [cfg, roots] of groups) {
+    let options;
+    try {
+      ({ options } = loadProgramOptions(roots[0], cfg));
+      if (options.configFilePath !== cfg) continue; // set only when the tsconfig parsed
+      if (options.jsx === undefined) options.jsx = ts.JsxEmit.ReactJSX;
+    } catch (e) { for (const abs of roots) out.set(abs, { error: String(e.message) }); continue; }
+    let program;
+    try { program = ts.createProgram(roots, options); }
+    catch (e) { for (const abs of roots) out.set(abs, { error: String(e.message) }); continue; }
+    const checker = program.getTypeChecker();
+    for (const abs of roots) {
+      const sf = program.getSourceFile(abs);
+      if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
+      try { out.set(abs, { program, sf, checker, diagnostics: [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)], abs, projectFile: cfg }); }
+      catch (e) { out.set(abs, { error: String(e.message) }); }
+    }
+  }
+  return out;
+}
+
 function keySide(file, unit, loaded, project, repo, readingAlreadyLoaded) {
   if (!file) return { text: null, callees: [], fileContext: null, imports: [], tsconfig: null };
   if (!loaded.has(file)) {
     const reading = readingAlreadyLoaded ?? loadProgram(file, { project });
+    if (reading.error) throw new Error(reading.error);
+    // a file read alone is kept for its own units only: the two latest (parent and candidate) stay, an older one is let go
+    if (!readingAlreadyLoaded) { const alone = [...loaded].filter(([, r]) => r.alone).map(([f]) => f); for (const f of alone.slice(0, Math.max(0, alone.length - 1))) loaded.delete(f); }
     const { sf, program, projectFile } = reading;
     const imports = [...new Set(ts.preProcessFile(sf.text, true, true).importedFiles.map((entry) => entry.fileName))].sort().map((specifier) => {
       const resolved = ts.resolveModuleName(specifier, file, program.getCompilerOptions(), ts.sys).resolvedModule;
@@ -79,7 +118,7 @@ function keySide(file, unit, loaded, project, repo, readingAlreadyLoaded) {
     let outside = '', end = 0;
     for (const [start, stop] of spans) { outside += sf.text.slice(end, start); end = stop; }
     outside += sf.text.slice(end);
-    loaded.set(file, { ...reading, fileContext: hash(outside), imports, tsconfig: projectFile && fs.existsSync(projectFile) ? fileHash(projectFile) : null });
+    loaded.set(file, { ...reading, ...(readingAlreadyLoaded ? {} : { alone: true }), fileContext: hash(outside), imports, tsconfig: projectFile && fs.existsSync(projectFile) ? fileHash(projectFile) : null });
   }
   const { sf, checker, fileContext, imports, tsconfig } = loaded.get(file), units = topLevelFunctions(sf);
   const textOf = (name) => units.get(name)?.node.getFullText(sf) ?? null;
@@ -160,7 +199,8 @@ function changedFiles(opts, temps) {
   const names = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--name-only', '-z', ...refs, '--']).split('\0').filter(Boolean);
   const stats = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--numstat', '-z', ...refs, '--']);
   const binary = new Set(stats.split('\0').filter((x) => x.startsWith('-\t-\t')).map((x) => x.slice(4)));
-  return names.map((rel) => {
+  const pending = [];
+  const entries = names.map((rel) => {
     const entry = { file: rel, binary: binary.has(rel) };
     if (secretPath(rel) || entry.binary || (!CODE.test(rel) && !JS.test(rel))) return entry;
     const abs = path.join(filesRoot ?? repo, rel);
@@ -190,15 +230,26 @@ function changedFiles(opts, temps) {
       };
       entry.headFile = head === 'WORKTREE' && !entry.deleted ? abs : temporary('head', bytes);
       entry.baseFile = original ? temporary('base', original) : null;
-      const ranges = changedRanges(repo, base, head, rel, entry.deleted);
-      try { entry.keyReading = loadProgram(entry.headFile, { project }); entry.units = changedUnits(entry.keyReading, ranges, entry.headFile); }
-      catch (e) {
-        entry.error = String(e.message).slice(0, 300);
-        entry.units = changedUnits({ sf: ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true) }, ranges, entry.headFile);
-      }
+      pending.push({ entry, rel, text, ranges: changedRanges(repo, base, head, rel, entry.deleted) });
     } catch (e) { entry.error = String(e.message).slice(0, 300); }
     return entry;
   });
+  // the head side is read once: one program per tsconfig with every changed file as a root; a file that cannot load in it is
+  // a loader row by itself, and the others keep their reading (their lint, their cache key and their advice share it)
+  const readings = pending.length ? sharedReadings(pending.map(({ entry }) => entry.headFile), project) : new Map();
+  for (const { entry, rel, text, ranges } of pending) {
+    try {
+      const shared = readings.get(path.resolve(entry.headFile));
+      if (shared?.error) throw new Error(shared.error);
+      const reading = shared ?? loadProgram(entry.headFile, { project }); // a file read alone is let go after its units
+      if (shared) entry.keyReading = shared;
+      entry.units = changedUnits(reading, ranges, entry.headFile);
+    } catch (e) {
+      entry.error = String(e.message).slice(0, 300);
+      try { entry.units = changedUnits({ sf: ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true) }, ranges, entry.headFile); } catch (f) { entry.error = String(f.message).slice(0, 300); }
+    }
+  }
+  return entries;
 }
 
 export function coverageOf(result) {
@@ -334,6 +385,8 @@ export async function prReport(opts) {
     if (toolVersions) rows.identity = runIdentity({ base: git(repo, ['rev-parse', base]).trim(), head: head === 'WORKTREE' ? head : git(repo, ['rev-parse', head]).trim(),
       unitSet: [...new Map([...selected.map(({ unit }) => ({ file: unit.file, unit: unit.name })), ...order.map(({ entry, u }) => ({ file: entry.file, unit: u.name }))].map((u) => [JSON.stringify(u), u])).values()], ...toolVersions });
     rows.stop = { reason: 'none', reached: 0, total: order.length };
+    // the parent side is read once as well: one program per tsconfig over the materialised base files the run reads
+    const baseReadings = order.length ? sharedReadings([...new Set(order.map(({ entry }) => entry.baseFile).filter(Boolean))], project) : new Map();
     for (const task of order) {
       const { entry, u, caller, index } = task;
       const rel = entry.file, headFile = entry.headFile, baseFile = entry.baseFile;
@@ -354,7 +407,7 @@ export async function prReport(opts) {
       rows.stop.reached++;
       if (!u.findings?.length) {
         try {
-          const parent = keySide(baseFile, u.name, loadedKeys, project, repo);
+          const parent = keySide(baseFile, u.name, loadedKeys, project, repo, baseFile ? baseReadings.get(path.resolve(baseFile)) : undefined);
           const candidate = keySide(entry.deleted ? null : headFile, u.name, loadedKeys, project, repo, entry.keyReading);
           key = unitKey({ parentText: parent.text, candidateText: candidate.text,
             calleeSummaries: { parent: parent.callees, candidate: candidate.callees },
@@ -407,7 +460,7 @@ export async function prReport(opts) {
       const lanes = res.certificate?.lanes ?? {};
       const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}) };
       if (res.verdict !== 'PASS-proved' && res.verdict !== 'WITNESS') {
-        try { const f = lintFile(headFile, [[u.start, u.end]], { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
+        try { const f = lintFile(headFile, [[u.start, u.end]], entry.keyReading?.checker ? { loaded: entry.keyReading } : { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
       }
       save(row);
     }
