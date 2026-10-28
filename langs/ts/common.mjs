@@ -1654,6 +1654,7 @@ export function signedZero(checker, fn) {
   // the model's inputs are never -0 (a parameter, a field, an element, an outside answer), as they are never NaN or
   // infinite: lane B draws -0 for them (gen.mjs), so a version that differs only on a -0 input is witnessed there
   const inputNegZero = () => false;
+  const booleanish = (t) => !!t && (t.flags & TF.Union ? t.types : [t]).every((p) => p.flags & TF.BooleanLike);
   const numberish = (t) => !!t && (t.flags & TF.Union ? t.types : [t]).some((p) => p.flags & (TF.NumberLike));
   const symOf = (n) => { try { const s = checker.getSymbolAtLocation(n); return s && (s.flags & ts.SymbolFlags.Alias) ? checker.getAliasedSymbol(s) : s; } catch { return null; } };
   const K = ts.SyntaxKind;
@@ -1755,7 +1756,7 @@ export function signedZero(checker, fn) {
     if (ts.isNumericLiteral(e)) return false;
     if (ts.isPrefixUnaryExpression(e)) {
       if (e.operator === K.MinusToken) return !nonzero(e.operand) && numberish(typeAt(e.operand)); // -x of a zero is -0 (6.1.6.1.1)
-      if (e.operator === K.PlusToken) return numberish(typeAt(e.operand)) ? mayNegZero(e.operand) : true; // +"-0" is -0
+      if (e.operator === K.PlusToken) return numberish(typeAt(e.operand)) ? mayNegZero(e.operand) : !booleanish(typeAt(e.operand)); // +"-0" is -0, +true is 1
       return false; // ~, !, ++x, --x
     }
     if (ts.isPostfixUnaryExpression(e)) return mayNegZero(e.operand); // x++ answers the old value
@@ -1786,10 +1787,12 @@ export function signedZero(checker, fn) {
     if (ts.isCallExpression(e)) {
       const m = mathName(e.expression), a = e.arguments;
       if (m) {
+        const lits = a.map((x) => litNum(x));
+        if (m.startsWith('Math.') && a.length > 0 && lits.every((x) => x !== null) && typeof Math[m.slice(5)] === 'function') return Object.is(Math[m.slice(5)](...lits), -0); // of literals: its value
         if (['Math.abs', 'Math.random', 'Math.hypot', 'Math.clz32', 'Math.imul', 'Math.exp', 'Math.log', 'Math.log2', 'Math.log10', 'Math.cosh', 'Math.cos', 'Math.acos', 'Date.now', 'Date.UTC', 'Date.parse'].includes(m)) return false;
         if (['Math.floor', 'Math.sqrt', 'Math.fround', 'Math.sign'].includes(m)) return a.length > 0 && mayNegZero(a[0]); // floor(-0) is -0, floor(-0.5) is -1
         if (['Math.min', 'Math.max'].includes(m)) return a.some((x) => ts.isSpreadElement(x) || mayNegZero(x)); // min(0, -0) is -0
-        if (m === 'Number') return a.length > 0 && (numberish(typeAt(a[0])) ? mayNegZero(a[0]) : true); // Number("-0") is -0
+        if (m === 'Number') return a.length > 0 && (numberish(typeAt(a[0])) ? mayNegZero(a[0]) : !booleanish(typeAt(a[0]))); // Number("-0") is -0, Number(true) is 1
         return true; // round, ceil, trunc, cbrt, sin, tan, parseInt, parseFloat, ...
       }
       const callee = strip(e.expression);
