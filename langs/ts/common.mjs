@@ -1323,6 +1323,8 @@ export function definiteAssignmentRead(checker, d) {
     return !(e && ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(e.left) && checker.getSymbolAtLocation(e.left) === sym && !mentions(e.right));
   }
   return false;
+}
+
 // The key order of a for-in, shared by the lint and the translator (design/forin-order.md). ECMA-262 14.7.5.9 visits
 // the own enumerable keys in OrdinaryOwnPropertyKeys order (10.1.11): array indexes ascending, then the other keys in
 // creation order. A record datatype forgets creation order, so a record's keys are read only where the unit fixes them:
