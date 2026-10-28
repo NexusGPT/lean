@@ -618,7 +618,7 @@ export async function observe(side, spec, args, ms) {
     if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
     if (isJsxValue(v) && env.react) v = keyHandlers(v, { env, props: args[0], unit: spec.unit }); // a function the tree holds and lane B never fires is compared by its descriptor, not its text (design/handler-identity.md)
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
-    if (env.timers.queue.length) await runTimers(env, ms); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace
+    if (env.timers.queue.length) await runTimers(env, ms, 50, env.timerPerm ? { perm: env.timerPerm } : {}); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace; on a timer-order input (gen.mjs, repr.mjs) the ties at one instant in another legal order
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
     outcome = { returned: isJsxValue(outcomeValue) ? renderTree(outcomeValue) : render(outcomeValue) };
     if (returnedPromise) outcome.promise = returnedPromise;
@@ -655,12 +655,18 @@ export async function observe(side, spec, args, ms) {
 // budget: ASK). The observation holds the fired order (a 'fire' record per timer) and what each callback asked of
 // the environment.
 const PERMS = { 1: [[0]], 2: [[0, 1], [1, 0]], 3: [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] }; // the firing orders of up to three timers due at one instant
-async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0 } = {}) { // until: fire what is due up to this instant (the schedule explorer advances the clock step by step); perm: which order the timers due at one instant fire in (the event loop fixes none for equal instants)
+// a timer may fire before an earlier-armed one due at the same instant only when the event loop leaves their order open:
+// different kinds, never two timeouts or intervals (equal delays fire in arm order in Node; the queue does not keep the
+// delay, so two of them are never swapped). Every caller that picks an order (the timer-order family, the JSX schedule
+// explorer's ticks) runs only orders Node can produce
+const mayPrecede = (a, b) => a.kind !== b.kind && !(['timeout', 'interval'].includes(a.kind) && ['timeout', 'interval'].includes(b.kind));
+async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0, legal = true } = {}) { // until: fire what is due up to this instant (the schedule explorer advances the clock step by step); perm: which order the timers due at one instant fire in (the event loop fixes none for equal instants)
   const t = env.timers; let fired = 0;
   for (;;) {
     const due = t.queue.filter((e) => e.fired === 0 && e.due <= until).sort((a, b) => a.due - b.due || a.order - b.order);
     if (!due.length) break;
-    const ties = due.filter((x) => x.due === due[0].due); const pick = perm && PERMS[ties.length] ? ties[PERMS[ties.length][perm % PERMS[ties.length].length][0]] : due[0];
+    const ties = due.filter((x) => x.due === due[0].due); let pick = perm && PERMS[ties.length] ? ties[PERMS[ties.length][perm % PERMS[ties.length].length][0]] : due[0];
+    if (legal && pick !== due[0] && !ties.every((x) => x === pick || x.order > pick.order || mayPrecede(pick, x))) pick = due[0]; // an order the event loop forbids is never run
     const e = pick; if (e.due > t.now) t.now = e.due;
     const i = t.queue.indexOf(e); t.queue.splice(i, 1); const j = env.pending.findIndex((x) => x.id === e.id); if (j >= 0) env.pending.splice(j, 1);
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
@@ -1023,8 +1029,8 @@ async function runPairOnce(opts) {
       const r = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth, handlers: handlerRun }));
       if (r.ask === undefined && !r.witness) { // the schedule explorer (moonshot 9): the same machine with the clock as a command, when the mount armed at most three timers
       const r2 = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, schedules: true, depth: Math.max(sequenceDepth, 2), breadth: sequenceBreadth, handlers: handlerRun }));
-        if (r2.witness) return { verdict: 'WITNESS', unit, witnesses: [{ ...r2.witness, schedule: true }], bound: { ...bound, schedules: { timers: r2.timers, paths: r2.paths, orders: 'every order of the timers due at one instant, up to three' } }, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
-        if (r2.ask) bound.schedulesAsk = r2.ask; else bound.schedules = { timers: r2.timers ?? 0, paths: r2.paths, orders: 'every order of the timers due at one instant, up to three' };
+        if (r2.witness) return { verdict: 'WITNESS', unit, witnesses: [{ ...r2.witness, schedule: true }], bound: { ...bound, schedules: { timers: r2.timers, paths: r2.paths, orders: 'every order Node allows of the timers due at one instant (two timeouts or intervals keep their arm order), up to three' } }, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+        if (r2.ask) bound.schedulesAsk = r2.ask; else bound.schedules = { timers: r2.timers ?? 0, paths: r2.paths, orders: 'every order Node allows of the timers due at one instant (two timeouts or intervals keep their arm order), up to three' };
       }
       if (r.ask) return { verdict: 'ASK', reason: `input ${i}: ${r.ask}`, unit, bound };
       if (r.witness) { bound.frontEnd.renders = `one, then command sequences of up to ${sequenceDepth} clicks`; return { verdict: 'WITNESS', unit, witnesses: [{ input: i, sequence: r.witness.sequence, step: r.witness.step, parent: r.witness.parent, candidate: r.witness.candidate, patch: r.witness.patch, patchSummary: r.witness.patchSummary, where: { field: 'sequence', command: r.witness.sequence[r.witness.step] ?? 'unmount' } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }

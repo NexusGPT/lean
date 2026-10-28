@@ -182,6 +182,20 @@ export function specOf(file, unitName, opts = {}) {
     };
     walkKey(u.body);
     for (const [i, keys] of keyed) params[i].spec = { kind: 'union', options: [{ kind: 'literal', values: keys }, params[i].spec] };
+    // a string parameter the unit uses as a key into an object the caller passes (`p[k]`, `k in p`, Object.hasOwn(p, k),
+    // p.hasOwnProperty(k), p a parameter or a member of one): the proto-name-key family draws it as an Object.prototype
+    // name (repr.mjs). A key into the module's own table is the unit's domain guard (design/unreached-body.md), where a
+    // prototype name stands for no value the table holds, so it keeps its declared draw
+    const rootParam = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e))) e = e.expression; return e ? pIndex(e) : -1; };
+    const inputKeys = new Set();
+    const walkInputKey = (n) => {
+      let pair = ts.isElementAccessExpression(n) ? [n.argumentExpression, n.expression] : ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.InKeyword ? [n.left, n.right] : null;
+      if (!pair && ts.isCallExpression(n)) { const c = n.expression; if (ts.isPropertyAccessExpression(c) && c.name.text === 'hasOwn' && ts.isIdentifier(c.expression) && c.expression.text === 'Object' && n.arguments.length === 2) pair = [n.arguments[1], n.arguments[0]]; else if (ts.isPropertyAccessExpression(c) && c.name.text === 'hasOwnProperty' && n.arguments.length === 1) pair = [n.arguments[0], c.expression]; }
+      if (pair) { const i = pIndex(pair[0]); if (i >= 0 && rootParam(pair[1]) >= 0) inputKeys.add(i); }
+      ts.forEachChild(n, walkInputKey);
+    };
+    walkInputKey(u.body);
+    for (const i of inputKeys) if (params[i] && (params[i].spec.kind === 'string' || (params[i].spec.kind === 'union' && params[i].spec.options.some((o) => o && o.kind === 'string')))) params[i].inputKey = true; // a key of a literal type is none of its members' prototype names
   }
   let rt = checker.getSignatureFromDeclaration(u.fn).getReturnType();
   if (rt.symbol?.name === 'Promise') rt = checker.getTypeArguments(rt)[0];
@@ -293,14 +307,22 @@ export function specOf(file, unitName, opts = {}) {
   // inputs shaped by what the unit reads (usage.mjs), on this file and on the other version's (`usageFrom`): only
   // where the declared type gives no shape, plus the compared literals a declared leaf admits drawn first
   let shaped = false;
+  let otherLoaded; const other = () => (otherLoaded ??= loadProgram(opts.usageFrom, { project: false })); // the other version, read once for its reads and its changed comparisons
   if (opts.usageFrom || opts.usage) {
     let use = null;
     try { use = usage(sf, unitName, checker); } catch { use = null; }
-    if (opts.usageFrom) { try { const o = loadProgram(opts.usageFrom, { project: false }); use = mergeUsage(use, usage(o.sf, unitName, o.checker)); } catch { /* the other side has no such unit: this side's reads */ } }
+    if (opts.usageFrom) { try { const o = other(); use = mergeUsage(use, usage(o.sf, unitName, o.checker)); } catch { /* the other side has no such unit: this side's reads */ } }
     if (use) shaped = shapeByUsage({ params, receiver, defs: usedDefs }, use);
   }
   const known = opts.values ? knownOf({ params, defs: usedDefs }, opts.values, vfn) : null; // the listed values the declared types admit, the rest named
-  return { unit: unitName, shaped, ...(known ? { known } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}) };
+  // the changed-path tier (gen.mjs changedTurn): the comparisons the two versions do not share, as targets on the inputs
+  let changed = null;
+  if (opts.usageFrom) { try { const o = other(); const up = topLevelFunctions(o.sf).get(unitName); if (up) changed = changedTargets({ sf, checker, unit: u }, { sf: o.sf, checker: o.checker, unit: up }, constOf); } catch { changed = null; } }
+  // a target keeps only the values its leaf's declared type admits (a neighbour of a literal type's member is no value
+  // of it), and carries its leaf's spec, so a copied value is written only where the type admits it (gen.mjs)
+  if (changed) changed = changed.map((tg) => { const leaf = tg.at.length ? null : specAtPath(params[tg.at.param], tg.at.chain, usedDefs); if (!tg.at.length && !leaf) return null; if (tg.values) { const vs = tg.at.length ? tg.values : tg.values.filter((v) => (v && typeof v === 'object' && v.t === 'undefined' ? leaf.optional || admitsUndefined(leaf.spec, usedDefs) : fits(leaf.spec, v, usedDefs))); return vs.length ? { ...tg, values: vs } : null; } return { ...tg, ...(leaf ? { leaf: leaf.spec } : {}) }; }).filter(Boolean);
+  const timers = /\b(setTimeout|setInterval|setImmediate|requestAnimationFrame|requestIdleCallback)\b/.test(sf.text); // the file arms timers: the timer-order family has ties to reorder
+  return { unit: unitName, shaped, ...(known ? { known } : {}), ...(changed && changed.length ? { changed } : {}), ...(timers ? { timers } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}) };
 }
 
 // ---- inputs shaped by usage ------------------------------------------------------------------------------------
@@ -503,6 +525,90 @@ function knownOf(sp, values, vfn) {
   for (const p of sp.params) visit(p.spec, p.name);
   const unmatched = vfn ? Object.keys(vfn.params).filter((k) => !sp.params.some((p) => p.name === k)) : [];
   return { file: values.file, sha256: values.sha256, listed, ...(rejected.length ? { rejected } : {}), ...(unmatched.length ? { unmatched } : {}) };
+}
+
+// ---- the changed-path tier: inputs that reach each changed branch ------------------------------------------------
+// The comparisons (<, <=, >, >=, ===, !==, ==, !=) one version holds and the other does not, read by their text, and
+// every comparison inside a condition (if, while, for, a conditional, an operand of && or ||) whose text changed: a
+// negated, swapped or rewritten condition. A side of such a comparison that is a path from a parameter (`p`, `p.a.b`,
+// `p.items.length`, or a local const holding one) is a target; the other side gives its values: a constant (a literal,
+// a module constant, a static field) gives itself and, for an integer, its two neighbours; another parameter path gives
+// a copy of that path's drawn value, and its neighbours. Comparisons of both versions are read, so the constants on both
+// sides of a changed one are drawn. Syntax only: a side computed by a call, an arithmetic expression or the receiver is
+// no target (design/lane-b-reach.md, "Tier 2").
+const COMPARE = new Set([ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanEqualsToken, ts.SyntaxKind.GreaterThanToken, ts.SyntaxKind.GreaterThanEqualsToken, ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken]);
+// the spec of a leaf a target names: a parameter, then record fields through references and union options; with
+// `optional` when the last step is an optional field or parameter; null when the path leaves the declared shape
+function specAtPath(param, chain, defs) {
+  if (!param) return null;
+  let cur = { spec: param.spec, optional: !!param.optional };
+  const resolve = (s, d = 0) => (s && s.kind === 'ref' && d < 8 ? resolve(defs[s.key], d + 1) : s);
+  for (const name of chain) {
+    const s = resolve(cur.spec); // a step through a union is no target: a write there may leave the value matching no option (a discriminant set on another option's record)
+    if (!s || s.kind !== 'record' || !s.fields?.[name]) return null;
+    cur = { spec: s.fields[name].spec, optional: !!s.fields[name].optional };
+  }
+  return cur;
+}
+const admitsUndefined = (s, defs, d = 0) => !!s && d < 8 && (s.kind === 'undefined' || s.kind === 'opaque' || (s.kind === 'ref' && admitsUndefined(defs[s.key], defs, d + 1)) || (s.kind === 'union' && s.options.some((o) => admitsUndefined(o, defs, d + 1))));
+export function changedTargets(cand, par, constOf) {
+  const textOf = (side, n) => n.getText(side.sf).replace(/\s+/g, ' ');
+  if (textOf(cand, cand.unit.node) === textOf(par, par.unit.node)) return [];
+  const collect = (side) => { // comparisons and conditions of one version, by text
+    const comps = [], conds = [];
+    const isCond = (n) => { const q = n.parent; return !!q && ((ts.isIfStatement(q) || ts.isWhileStatement(q) || ts.isDoStatement(q)) && q.expression === n || ts.isForStatement(q) && q.condition === n || ts.isConditionalExpression(q) && q.condition === n || ts.isBinaryExpression(q) && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken].includes(q.operatorToken.kind)); };
+    const walk = (n) => { if (ts.isBinaryExpression(n) && COMPARE.has(n.operatorToken.kind)) comps.push(n); if (isCond(n)) conds.push(n); ts.forEachChild(n, walk); };
+    if (side.unit.body) walk(side.unit.body);
+    return { comps, conds };
+  };
+  const C = collect(cand), P = collect(par);
+  const count = (side, xs) => { const m = new Map(); for (const x of xs) { const t = textOf(side, x); m.set(t, (m.get(t) ?? 0) + 1); } return m; };
+  const picked = [];
+  for (const [side, mine, theirs] of [[cand, C, P], [par, P, C]]) {
+    const cm = count(theirs === P ? par : cand, theirs.comps), dm = count(theirs === P ? par : cand, theirs.conds);
+    const usedC = new Map(), usedD = new Map();
+    const unmatched = (m, used, t) => { const k = (used.get(t) ?? 0) + 1; used.set(t, k); return k > (m.get(t) ?? 0); };
+    for (const n of mine.comps) if (unmatched(cm, usedC, textOf(side, n))) picked.push([side, n]);
+    for (const c of mine.conds) if (unmatched(dm, usedD, textOf(side, c))) { const w = (n) => { if (ts.isBinaryExpression(n) && COMPARE.has(n.operatorToken.kind)) picked.push([side, n]); ts.forEachChild(n, w); }; w(c); }
+  }
+  const candParams = cand.unit.params.map((x) => (ts.isIdentifier(x.name) ? x.name.text : null));
+  // a parameter path of one version, as an index into the candidate's parameters and a chain of names
+  const pathOf = (side, e, d = 0) => {
+    while (e && (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e))) e = e.expression;
+    const chain = [];
+    while (e && ts.isPropertyAccessExpression(e)) { chain.unshift(e.name.text); e = e.expression; while (e && (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e))) e = e.expression; }
+    if (!e || !ts.isIdentifier(e) || d > 3) return null;
+    let decl = null; try { decl = side.checker.getSymbolAtLocation(e)?.valueDeclaration ?? null; } catch { decl = null; }
+    if (decl && ts.isParameter(decl) && side.unit.params.includes(decl)) { const i = candParams.indexOf(e.text); if (i < 0) return null; const length = chain.at(-1) === 'length'; return { param: i, chain: length ? chain.slice(0, -1) : chain, length }; }
+    if (decl && ts.isVariableDeclaration(decl) && decl.initializer && decl.parent && (decl.parent.flags & ts.NodeFlags.Const)) { const inner = pathOf(side, decl.initializer, d + 1); if (inner && !inner.length) { const all = [...inner.chain, ...chain]; const length = all.at(-1) === 'length'; return { param: inner.param, chain: length ? all.slice(0, -1) : all, length }; } }
+    return null;
+  };
+  const valueOf = (side, e) => {
+    while (e && (ts.isParenthesizedExpression(e) || ts.isAsExpression(e))) e = e.expression;
+    if (!e) return { none: true };
+    if (ts.isNumericLiteral(e)) return { v: Number(e.text) };
+    if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.MinusToken && ts.isNumericLiteral(e.operand)) return { v: -Number(e.operand.text) };
+    if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return { v: e.text };
+    if (e.kind === ts.SyntaxKind.NullKeyword) return { v: null };
+    if (e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword) return { v: e.kind === ts.SyntaxKind.TrueKeyword };
+    if (ts.isIdentifier(e) && e.text === 'undefined') return { v: { t: 'undefined' } };
+    if ((ts.isIdentifier(e) || ts.isPropertyAccessExpression(e)) && side === cand) { const c = constOf(e); if (c !== null && c !== undefined) return { v: c }; } // a module constant: the candidate's checker reads its declaration
+    return { none: true };
+  };
+  const targets = new Map();
+  const keyOf = (at) => JSON.stringify(at);
+  const add = (at, vals, from) => { const k = keyOf(at) + (from ? '<-' + keyOf(from) : ''); const t = targets.get(k) ?? (targets.set(k, { at, ...(from ? { from, deltas: [0, 1, -1] } : { values: [] }) }), targets.get(k)); if (!from) for (const v of vals) if (!t.values.some((x) => JSON.stringify(x) === JSON.stringify(v)) && t.values.length < 12) t.values.push(v); };
+  const neighbours = (v, length) => (typeof v === 'number' && Number.isInteger(v) ? [v, v + 1, v - 1].filter((x) => !length || x >= 0) : typeof v === 'string' && !length ? [v, v + 'x', ''] : [v]);
+  for (const [side, n] of picked) {
+    const L = pathOf(side, n.left), R = pathOf(side, n.right);
+    if (L && R) { add(L, [], R); continue; }
+    for (const [at, other] of [[L, n.right], [R, n.left]]) {
+      if (!at) continue; const c = valueOf(side, other); if (c.none) continue;
+      if (at.length && typeof c.v !== 'number') continue;
+      add(at, neighbours(c.v, at.length));
+    }
+  }
+  return [...targets.values()].slice(0, 8);
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {

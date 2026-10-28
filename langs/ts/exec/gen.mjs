@@ -1,6 +1,8 @@
 // Lane B input generation from a spec (spec.mjs), seeded. Boundary values come first, then random ones.
 import { makeRng, namePromise } from './fake.mjs';
 import { sampleRegex } from './regex-sample.mjs';
+import { reshaper, familiesOn, familiesAt, applicableFamilies } from './repr.mjs';
+import { fits } from './spec.mjs';
 
 const STR_EDGE = ['', 'a', 'abc', ' ', 'x y', '0', '-1', 'ÄÖü', '日本', 'a'.repeat(64), 'twelve-chars', 'Hello, World! 2024-01-31 10:30', 'abcdefghijklmnopqrstuvwxyz'.repeat(8), 'line one\nline two', 'null', 'undefined', '  padded  ', 'a,b,c', '/path/to/file.txt', 'user@example.com'];
 const NUM_EDGE = [0, 1, -1, 2, 10, 100, -100, 0.5, 1e9, Number.MAX_SAFE_INTEGER];
@@ -63,9 +65,59 @@ export const SPECIAL = 4;
 const NUM_SPECIAL = [NaN, Infinity, -Infinity, -0];
 // whether a spec admits a number of any value: a number, or a union with a number option (a literal type does not)
 const admitsNumber = (spec) => !!spec && (spec.kind === 'number' || (spec.kind === 'union' && spec.options.some((o) => o && o.kind === 'number')));
+// the representation tier (repr.mjs): every REACH-th generated input from the second period on, outside the known phase,
+// is turn j of the tier, whose families reshape the values the declared draw made (records, dictionaries, arrays, input
+// promises, values of an unread type, string parameters); the two turns before it in each period are the plain draw and
+// the special-number input stays the last one, so the inputs that lean on 0, 1 and -1 and the first walk keep their place
+export const REACH = 4;
+export function reachTurn(spec, i) {
+  const g = i - (spec.walkFrom ?? 0);
+  if (g < REACH + 1 || g % REACH !== 1 || knownInput(spec, i)) return null;
+  return (g - REACH - 1) / REACH;
+}
+// the changed-path tier (spec.mjs changedTargets): for a unit whose two versions differ in a comparison or a condition,
+// the generated input two after each period start (outside the known phase) is turn t of the tier: every target leaf
+// takes value t of its list (a constant of a changed comparison and its neighbours, cycling), or a copy of the other
+// parameter path it is compared with, plus 0, 1 or -1; a `.length` target cuts or extends its string or array to that
+// length. Every other leaf keeps its declared draw
+export function changedTurn(spec, i) {
+  if (!spec.changed || !spec.changed.length || process.env.LEAN_CHANGED === 'off') return null; // LEAN_CHANGED=off switches the tier off
+  const g = i - (spec.walkFrom ?? 0);
+  if (g < 2 || g % REACH !== 2 || knownInput(spec, i)) return null;
+  return (g - 2) / REACH;
+}
+const isUndefTag = (v) => !!v && typeof v === 'object' && v.t === 'undefined';
+function reachChanged(args, targets, t, defs = {}) {
+  const locate = (at) => { // the holder of a target's leaf and its key, or null when a container on the way is absent
+    let holder = args, key = at.param;
+    for (const name of at.chain) { const o = holder[key]; if (o === null || typeof o !== 'object' || o.__isFake || Array.isArray(o) && !/^\d+$/.test(name)) return null; holder = o; key = name; }
+    return { holder, key };
+  };
+  const read = (at) => { const l = locate(at); if (!l) return undefined; const v = l.holder[l.key]; return at.length ? (typeof v === 'string' || Array.isArray(v) ? v.length : undefined) : v; };
+  const write = (at, v) => {
+    const l = locate(at); if (!l) return;
+    try {
+      if (!at.length) { l.holder[l.key] = isUndefTag(v) ? undefined : v; return; }
+      const cur = l.holder[l.key]; if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 4096) return;
+      if (typeof cur === 'string') l.holder[l.key] = (cur + 'x'.repeat(v)).slice(0, v);
+      else if (Array.isArray(cur) && v <= 256) { if (v <= cur.length) cur.length = v; else if (cur.length) while (cur.length < v) cur.push(cur[cur.length - 1]); }
+    } catch { /* a leaf the draw made read-only stays as drawn */ }
+  };
+  for (const tg of targets) if (tg.values && tg.values.length) write(tg.at, tg.values[t % tg.values.length]);
+  const admitted = (tg, v) => tg.at.length || !tg.leaf || fits(tg.leaf, v, defs); // a copied value only where the target's declared type admits it
+  for (const tg of targets) if (tg.from) { const v = read(tg.from), d = tg.deltas[t % tg.deltas.length]; const x = typeof v === 'number' ? v + d : d === 0 ? v : undefined; if (x !== undefined && admitted(tg, x)) write(tg.at, x); }
+}
+// a spec that admits any string: a string, or a union with a string option (a literal type admits its members only)
+const admitsAnyString = (s) => !!s && (s.kind === 'string' || (s.kind === 'union' && s.options.some((o) => o && o.kind === 'string')));
+// the families of input i: null outside the tier, else the families its turn holds among those switched on and admitted
+export function reachFamilies(spec, i) {
+  const j = reachTurn(spec, i); if (j === null) return null;
+  const admitted = applicableFamilies(spec), on = familiesOn().filter((f) => admitted.includes(f));
+  return familiesAt(j, on);
+}
 
-export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null, special = null, walkLen = WALK, known = null) {
-  const rng = makeRng(seed);
+export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null, special = null, walkLen = WALK, known = null, reach = null) {
+  const rng = makeRng(seed); // `reach`: the reshaper of a representation input (repr.mjs), else null
   // a listed value of a leaf in the known phase (`known` the phase index, inputsFor): a fresh copy, so neither side's call
   // writes into the other's input; undefined outside the phase or for a leaf with no list
   const listed = (holder) => (known != null && holder && Array.isArray(holder.known) && holder.known.length ? structuredClone(holder.known[known % holder.known.length]) : undefined);
@@ -117,7 +169,11 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
     }
     return v;
   }
+  let membersRead = false; // inside a union whose options the unit's reads shaped (an array, a record): the opaque option stands for that reader, not for a value it only converts
   function gen(spec, depth = 0, env = null, path = 'in', leaf = false) {
+    return genBoundary(spec, depth, env, path, leaf);
+  }
+  function genBoundary(spec, depth = 0, env = null, path = 'in', leaf = false) {
     const v = gen0(spec, depth, env, path, leaf);
     const b = spec && spec.boundary; if (!b) return spec && spec.kind === 'number' ? specialOf(spec, v) : v;
     const c = choose(b); if (c >= 0) { const x = materialize(b.cmp[c], v, env, path); if (walking && b.rank === 1 && isDraw(b.cmp[c])) return truthyOf(spec, x); if (typeof x === 'number' && pool.length < 64) pool.push(x); return typeof b.cmp[c] === 'number' ? specialOf(spec, x) : x; } // a compared number the input holds joins the pool, as a drawn one does; it may be NaN or infinite in a special-number input
@@ -127,7 +183,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   function gen0(spec, depth = 0, env = null, path = 'in', leaf = false) {
     if (!spec || depth > 8) return env ? env.fake(path) : null;
     switch (spec.kind) {
-      case 'promise': { const value = gen(spec.of, depth + 1, env, path); return namePromise(env, Promise.resolve(value), path, { value }); } // an input promise is named by its position
+      case 'promise': { const value = gen(spec.of, depth + 1, env, path); return namePromise(env, reach && reach.on.has('thenable') ? reach.thenable(value) : reach && reach.on.has('settlement-order') ? reach.settleLater(value, reach.turn ?? 0) : Promise.resolve(value), path, { value }); } // an input promise is named by its position; on a representation input, a thenable settling to the same value, or a promise the caller settles later in the turn's order
       case 'number': return number();
       case 'string': { if (spool.length && rng() < 0.3) return spool[Math.floor(rng() * spool.length)]; return pick(STR_EDGE, () => `v${Math.floor(rng() * 1e6).toString(36)}`); }
       case 'boolean': return rng() < 0.5;
@@ -135,7 +191,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'null': return null;
       case 'undefined': return undefined;
       case 'literal': return spec.values[Math.floor(rng() * spec.values.length)];
-      case 'array': { let n = leaf ? 0 : pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); const c = choose(spec.lengths); if (c >= 0) n = spec.lengths.cmp[c]; return Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`, leaf)); }
+      case 'array': { let n = leaf ? 0 : pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); const c = choose(spec.lengths); if (c >= 0) n = spec.lengths.cmp[c]; const xs = Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`, leaf)); return reach ? reach.array(xs) : xs; }
       case 'async-iterable': {
         const values = gen({ kind: 'array', of: spec.of }, depth + 1, env, path, leaf);
         return { [Symbol.asyncIterator]() {
@@ -150,10 +206,10 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'tuple': return spec.items.map((s, i) => gen(s, depth + 1, env, `${path}[${i}]`));
       case 'set': return new Set(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => gen(spec.of, depth + 1, env, `${path}{${i}}`)));
       case 'map': return new Map(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => [gen(spec.key, depth + 1, env, `${path}<k${i}>`), gen(spec.value, depth + 1, env, `${path}<v${i}>`)]));
-      case 'dict': { const o = {}; for (let i = 0, n = Math.floor(rng() * 4); i < n; i++) o[`k${i}`] = gen(spec.value, depth + 1, env, `${path}.k${i}`); return o; }
+      case 'dict': { const o = {}; for (let i = 0, n = Math.floor(rng() * 4); i < n; i++) o[`k${i}`] = gen(spec.value, depth + 1, env, `${path}.k${i}`); return reach ? reach.dict(o) : o; }
       // a record: a field leading to a compared leaf stays present while walking, unless the unit tests its key with `in`
-      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3 && !((spec.refined || f.shaped) && walking && !f.presence) && !isListed(f)) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); if (isListed(f)) o[k] = listed(f); } return o; } // a listed field holds its listed value in the known phase (its declared draw made first)
-      case 'union': { const j = Math.floor(rng() * spec.options.length); return gen(spec.options[spec.prefer != null && walking && brng() >= 1 / 3 ? spec.prefer : j], depth + 1, env, path); } // while walking, the option leading to a compared leaf two times in three; the declared draw stays reachable
+      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3 && !((spec.refined || f.shaped) && walking && !f.presence) && !isListed(f)) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); if (isListed(f)) o[k] = listed(f); } return reach ? reach.record(o, spec) : o; } // a listed field holds its listed value in the known phase (its declared draw made first)
+      case 'union': { const j = Math.floor(rng() * spec.options.length); const o = spec.options[spec.prefer != null && walking && brng() >= 1 / 3 ? spec.prefer : j]; const read = spec.options.some((x) => x && ['array', 'record', 'dict', 'function', 'service', 'ref'].includes(x.kind)); const was = membersRead; if (read) membersRead = true; try { return gen(o, depth + 1, env, path); } finally { membersRead = was; } } // while walking, the option leading to a compared leaf two times in three; the declared draw stays reachable
       case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
       // an Error whose `cause` is another Error, `chain` links at most: the links a unit walks through `.cause`; the last
@@ -162,8 +218,8 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'function': return env ? env.fake(`${path}#fn`, spec.returns ? { kind: 'method', returns: spec.returns } : null) : () => undefined;
       case 'service': return env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path, spec)) : {}; // a handle: often one the unit was handed, so a lookup keyed by an argument can hit
       case 'class': return env ? env.fake(path, spec) : function () {};
-      case 'tparam': { const pool = [0, 1, 2, 'a', 'b', '', true, false, 7]; return pool[Math.floor(rng() * pool.length)]; }
-      case 'opaque': default: return env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {};
+      case 'tparam': { const pool = [0, 1, 2, 'a', 'b', '', true, false, 7]; const x = pool[Math.floor(rng() * pool.length)]; return reach && reach.on.has('coercion-hooks') ? reach.coercible() : x; }
+      case 'opaque': default: { const x = env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {}; return reach && reach.on.has('coercion-hooks') && (spec?.kind === 'opaque') && !membersRead ? reach.coercible() : x; } // a value of an unread type converts itself on a representation input, its declared draw made first; one whose members or elements the unit reads (a union the reads shaped, usage.mjs) keeps its fake
     }
   }
   // nullable optional fields draw both absent tags as well as omission
@@ -184,8 +240,14 @@ export function inputsFor(spec, seed, i, env) {
   const generated = i - (spec.walkFrom ?? 0); // the index among the generated inputs (the enumerated heaps come first)
   const K = knownLength(spec), known = generated >= 0 && generated < K ? generated : null;
   const walk = known != null ? (spec.shaped && walkLength(spec) ? Math.floor(known / knownWidth(spec)) : null) : spec.shaped && generated >= K && generated - K < walkLength(spec) ? generated - K : null;
-  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec), known);
-  return spec.params.map((p, k) => { const v = p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`); return g.isListed(p) ? g.listed(p) : v; }); // a listed parameter takes its listed value in the known phase, its declared draw made first
+  const fams = reachFamilies(spec, i); // a representation input: the families of its turn reshape what the declared draw made
+  const shaper = fams && fams.length ? Object.assign(reshaper(fams, seed * 1000003 + i, spec.strings ?? []), { turn: reachTurn(spec, i) }) : null;
+  if (shaper && env && shaper.on.has('timer-order')) env.timerPerm = 1 + (reachTurn(spec, i) % 5); // the timers due at one instant fire in a legal order other than arm order (run.mjs observe and runTimers)
+  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec), known, shaper);
+  const args = spec.params.map((p, k) => { const v = p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`); return g.isListed(p) ? g.listed(p) : v; }); // a listed parameter takes its listed value in the known phase, its declared draw made first
+  if (shaper && shaper.on.has('proto-name-key')) spec.params.forEach((p, k) => { if (p.inputKey && typeof args[k] === 'string' && admitsAnyString(p.spec)) args[k] = shaper.keyString(args[k]); }); // a key into an object the caller passes names an Object.prototype member, its declared draw made first; a key of a literal type keeps its member
+  const t = changedTurn(spec, i); if (t !== null) reachChanged(args, spec.changed, t, spec.defs ?? {}); // a changed-path input: the changed comparisons' targets after the declared draw
+  return args;
 }
 
 // Heap layer, stage 1: the i-th input set may alias. Positions of one declared shape (an argument, a record field, an
@@ -194,16 +256,19 @@ export function inputsFor(spec, seed, i, env) {
 // shapes only, so both sides receive the same sharing; fakes and primitives are never aliased.
 export function aliasInputs(args, spec, seed, i) {
   const rng = makeRng(seed * 31337 + i * 101 + 7);
-  if (rng() < 0.4) return args; // most inputs stay unshared, so a behaviour that needs no aliasing is exercised too
+  const force = (reachFamilies(spec, i) ?? []).includes('shared-reference'); // a representation input of the shared-reference family: every sharing the shapes allow, and links across shapes
+  if (rng() < 0.4 && !force) return args; // most inputs stay unshared, so a behaviour that needs no aliasing is exercised too
   const defs = spec.defs ?? {};
   const resolve = (s, d = 0) => (s && s.kind === 'ref' && defs[s.key] && d < 4 ? resolve(defs[s.key], d + 1) : s);
   const shapeKey = (s) => { const r = resolve(s); return r ? JSON.stringify({ kind: r.kind, of: r.of ? shapeKey(r.of) : undefined, fields: r.fields ? Object.keys(r.fields).sort() : undefined, key: s && s.kind === 'ref' ? s.key : undefined }) : null; };
   const isObj = (v) => v !== null && typeof v === 'object' && !v.__isFake && !(v instanceof Date) && !(v instanceof RegExp) && !(v instanceof Map) && !(v instanceof Set) && typeof v.then !== 'function';
+  // a write of a position: a field a representation input holds behind a getter keeps a getter, now of the shared object
+  const put = (holder, key, x) => { const d = Object.getOwnPropertyDescriptor(holder, key); if (d && !Object.hasOwn(d, 'value')) Object.defineProperty(holder, key, { get: () => x, enumerable: d.enumerable, configurable: true }); else holder[key] = x; };
   const positions = []; // {get, set, shape, self: the record's own shape key when it is a record}
   const visit = (holder, key, s, depth) => {
     const v = holder[key]; if (!isObj(v) || depth > 3) return;
     const r = resolve(s); if (!r) return;
-    positions.push({ get: () => holder[key], set: (x) => { holder[key] = x; }, shape: shapeKey(s), refKey: s && s.kind === 'ref' ? s.key : null });
+    positions.push({ get: () => holder[key], set: (x) => { put(holder, key, x); }, shape: shapeKey(s), refKey: s && s.kind === 'ref' ? s.key : null });
     if (r.kind === 'record' && r.fields) for (const [k, f] of Object.entries(r.fields)) if (Object.hasOwn(v, k)) visit(v, k, f.spec ?? f, depth + 1);
     else if (r.kind === 'array' && Array.isArray(v)) for (let j = 0; j < v.length; j++) visit(v, j, r.of, depth + 1);
     else if (r.kind === 'tuple' && Array.isArray(v)) for (let j = 0; j < Math.min(v.length, r.items.length); j++) visit(v, j, r.items[j], depth + 1);
@@ -214,14 +279,26 @@ export function aliasInputs(args, spec, seed, i) {
   for (const group of groups.values()) {
     if (group.length < 2) continue;
     const first = group[0].get();
-    for (let j = 1; j < group.length; j++) if (rng() < 0.5) group[j].set(first); // two names, one object
+    for (let j = 1; j < group.length; j++) if (rng() < 0.5 || force) group[j].set(first); // two names, one object
   }
   // a self-referencing shape: a record whose field can be the record itself
   for (const pos of positions) {
     if (!pos.refKey) continue;
     const v = pos.get(); const r = resolve({ kind: 'ref', key: pos.refKey });
     if (!r || r.kind !== 'record' || !r.fields) continue;
-    for (const [k, f] of Object.entries(r.fields)) { const fs = f.spec ?? f; if (fs && fs.kind === 'ref' && fs.key === pos.refKey && Object.hasOwn(v, k) && isObj(v[k]) && rng() < 0.2) v[k] = v; }
+    for (const [k, f] of Object.entries(r.fields)) { const fs = f.spec ?? f; if (fs && fs.kind === 'ref' && fs.key === pos.refKey && Object.hasOwn(v, k) && isObj(v[k]) && (rng() < 0.2 || force)) put(v, k, v); }
+  }
+  // the shared-reference family links across shapes too: a record field of a shape another position holds points at
+  // that position's object, so a write through one argument is seen through another, and two records may hold each other
+  if (force) for (const pos of positions) {
+    if (!pos.refKey) continue;
+    const v = pos.get(); const r = resolve({ kind: 'ref', key: pos.refKey });
+    if (!r || r.kind !== 'record' || !r.fields || !isObj(v)) continue;
+    for (const [k, f] of Object.entries(r.fields)) {
+      const fs = f.spec ?? f; if (!fs || fs.kind !== 'ref' || fs.key === pos.refKey || !Object.hasOwn(v, k) || !isObj(v[k])) continue;
+      const other = positions.find((q) => q.refKey === fs.key && q.get() !== v[k] && isObj(q.get()));
+      if (other) put(v, k, other.get());
+    }
   }
   return args;
 }
