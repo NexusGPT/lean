@@ -1740,3 +1740,112 @@ export function untypedThisParam(checker, fn) {
   if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return /^(any|unknown)$/.test(p.type.getText()) ? `\`this: ${p.type.getText()}\` names no receiver type; declare the receiver type the function reads (\`this: Ctx\`)` : `\`this: ${p.type.getText()}\` reads as any (the type does not resolve here); make its declaration visible to the file or declare a receiver type that resolves`;
   return null;
 }
+
+// A method called through Function.prototype.apply or call is the direct call on its `this`: `r.m.apply(r, b)` is
+// `r.m(...b)` and `r.m.call(r, x, y)` is `r.m(x, y)` (ECMA-262 20.2.3.1 and 20.2.3.3: the function runs with thisArg as
+// `this` and the elements of b, or the remaining arguments, as its arguments; spreading an array lists the elements
+// CreateListFromArrayLike lists). applyCall returns { receiver, method, args, spread, via, exact, why } for a call
+// through `.apply`/`.call` (the lib's own members of Function), or null. `exact` holds when the direct call is the
+// same transition: (1) the receiver is the method's own base, one path (a name, `this`, property names, literal or
+// name indexes; casts and `!` aside) every step of which is a plain property (no getter), so reading it twice or once
+// is one value; or (2) the method is an Array.prototype method of the lib reached through a base that is such a path,
+// `[]` or `Array.prototype`, and `this` is such a path to an array or tuple: an array reaches the same intrinsic, so
+// `[].push.call(c, x)` is `c.push(x)` (`receiver` is then `this`). apply also needs b a non-nullable array or tuple
+// (apply on undefined passes nothing where a spread throws; an array-like that is not an array iterates otherwise).
+// `why` names what fails. normaliseApplyCalls rewrites every exact one before the lint and the translator read the
+// source, so every analysis that knows a method by its callee (a mutator by its name) sees the direct call.
+export function applyCall(n, checker) {
+  if (!ts.isCallExpression(n) || n.questionDotToken || n.typeArguments) return null;
+  const via = n.expression;
+  if (!ts.isPropertyAccessExpression(via) || via.questionDotToken || !ts.isIdentifier(via.name) || !['apply', 'call'].includes(via.name.text)) return null;
+  const callee = via.expression;
+  if (!ts.isPropertyAccessExpression(callee) || callee.questionDotToken || !ts.isIdentifier(callee.name)) return null;
+  const libOf = (s, names) => !!s?.declarations?.length && s.declarations.every((d) => LIB_FILE.test(d.getSourceFile().fileName) && ts.isInterfaceDeclaration(d.parent) && names.includes(d.parent.name.text));
+  if (!libOf(checker.getSymbolAtLocation(via.name), ['CallableFunction', 'NewableFunction', 'Function'])) return null;
+  const method = callee.name.text, base = callee.expression, kind = via.name.text;
+  const [thisArg, ...rest] = n.arguments;
+  if (!thisArg || ts.isSpreadElement(thisArg)) return { receiver: base, method, args: [], spread: null, via: kind, exact: false, why: 'no receiver operand' };
+  const strip = (x) => { while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isTypeAssertionExpression(x) || ts.isSatisfiesExpression(x)) x = x.expression; return x; };
+  const plain = (x) => { const s = checker.getSymbolAtLocation(x); return !s || !(s.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor)); };
+  const keyOf = (k) => { k = strip(k); return ts.isStringLiteral(k) || ts.isNumericLiteral(k) ? `${k.kind}:${k.text}` : null; };
+  const samePath = (a, b) => { // one path, read with no effect: the same value however often it is read
+    if (b === undefined) b = a;
+    a = strip(a); b = strip(b);
+    if (a.kind !== b.kind) return false;
+    if (a.kind === ts.SyntaxKind.ThisKeyword) return true;
+    if (ts.isIdentifier(a)) { const s = checker.getSymbolAtLocation(a); return a.text === b.text && !!s && s === checker.getSymbolAtLocation(b); }
+    if (ts.isPropertyAccessExpression(a)) return !a.questionDotToken && !b.questionDotToken && ts.isIdentifier(a.name) && ts.isIdentifier(b.name) && a.name.text === b.name.text && plain(a.name) && samePath(a.expression, b.expression);
+    if (ts.isElementAccessExpression(a)) {
+      const ka = keyOf(a.argumentExpression), sameKey = ka ? ka === keyOf(b.argumentExpression) : ts.isIdentifier(strip(a.argumentExpression)) && samePath(a.argumentExpression, b.argumentExpression);
+      return !a.questionDotToken && !b.questionDotToken && sameKey && samePath(a.expression, b.expression);
+    }
+    return false;
+  };
+  const arrayT = (x) => { const t = checker.getTypeAtLocation(x); return !(t.flags & (TF.Any | TF.Unknown | TF.Union | TF.Never)) && (checker.isArrayType(t) || checker.isTupleType(t)); };
+  let list = null;
+  if (kind === 'apply') {
+    if (rest.length > 1 || (rest[0] && ts.isSpreadElement(rest[0]))) return { receiver: base, method, args: [], spread: null, via: kind, exact: false, why: '`apply` takes one list' };
+    list = rest[0] ?? null;
+  }
+  const out = { method, args: kind === 'call' ? rest : [], spread: list, via: kind };
+  if (list && !arrayT(list)) return { ...out, receiver: thisArg, exact: false, why: `the list \`${list.getText().slice(0, 40)}\` is not an array type: apply lists its length and indexes (CreateListFromArrayLike) where a spread iterates, so a string or a Set differ, and apply on null or undefined passes nothing where a spread throws` };
+  const rootOf = (x) => { x = strip(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) x = strip(x.expression); return x; };
+  const worldRoot = (x) => { // a field of `this` or a module binding is a cell of the world: each read is a transition (lane B traces it), so the apply form's two reads are not the direct call's one
+    const r = rootOf(x);
+    if (r.kind === ts.SyntaxKind.ThisKeyword) return 'a field of the receiver `this`';
+    if (!ts.isIdentifier(r)) return null;
+    const d = checker.getSymbolAtLocation(r)?.valueDeclaration;
+    for (let p = d?.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return null;
+    return 'a module binding';
+  };
+  const libRoot = (x) => { const r = rootOf(x); const d = ts.isIdentifier(r) ? checker.getSymbolAtLocation(r)?.valueDeclaration : null; return !!d && LIB_FILE.test(d.getSourceFile().fileName); }; // `Array.prototype`: a constant of the language, read with no effect
+  { const w = worldRoot(thisArg) ?? (libRoot(base) ? null : worldRoot(base)); if (w) return { ...out, receiver: thisArg, exact: false, why: `the receiver \`${thisArg.getText().slice(0, 40)}\` is ${w}, a cell of the world read once per mention: the apply form reads it twice, the direct call once` }; }
+  if (samePath(base, thisArg)) return { ...out, receiver: base, exact: true, own: true };
+  const intrinsic = libOf(checker.getSymbolAtLocation(callee.name), ['Array', 'ReadonlyArray']) && (samePath(base) || (ts.isArrayLiteralExpression(strip(base)) && !strip(base).elements.length));
+  if (intrinsic && samePath(thisArg) && arrayT(thisArg) && !/\n/.test(thisArg.getText())) return { ...out, receiver: thisArg, exact: true, own: false };
+  return { ...out, receiver: thisArg, exact: false, why: intrinsic ? `\`this\` (\`${thisArg.getText().slice(0, 40)}\`) is not an array reached by a plain path` : `\`this\` (\`${thisArg.getText().slice(0, 40)}\`) is another value than the method's base \`${base.getText().slice(0, 40)}\`` };
+}
+
+// normaliseApplyCalls(loaded): the loaded program with every exact apply/call (applyCall) written as the direct call.
+// The text keeps its length and its line breaks: only the span before the list (or the first remaining argument)
+// changes, to `r.m(` and, for apply, `...`, padded with blanks, so every other position, line and unit is the same and
+// a diagnostic or a finding elsewhere reports where it did. A nested form is rewritten on the next round.
+export function normaliseApplyCalls(loaded) {
+  let cur = loaded;
+  for (let round = 0; round < 4; round++) {
+    const { sf, checker, program } = cur;
+    if (!/\.(apply|call)\s*\(/.test(sf.text)) return cur;
+    const edits = [];
+    const walk = (x) => { const a = applyCall(x, checker); if (a?.exact) edits.push({ x, a }); ts.forEachChild(x, walk); };
+    walk(sf);
+    if (!edits.length) return cur;
+    let text = sf.text; let last = Infinity;
+    for (const { x, a } of edits.sort((p, q) => q.x.pos - p.x.pos)) { // from the end; a call inside an earlier edit's span waits for the next round
+      const callee = x.expression.expression;
+      const from = a.own ? callee.end : callee.getStart(sf); // after `r.m`, or the whole borrowed callee
+      const close = x.end - 1; // the closing parenthesis
+      const to = a.via === 'apply' ? (a.spread ? a.spread.getStart(sf) : close) : (a.args.length ? a.args[0].getStart(sf) : close);
+      if (x.end > last || text[close] !== ')') continue;
+      const span = text.slice(from, to); const lines = (span.match(/\n/g) ?? []).length;
+      const head = (a.own ? '(' : `${a.receiver.getText(sf)}.${a.method}(`) + '\n'.repeat(lines); const tail = a.via === 'apply' && a.spread ? '...' : '';
+      if (head.length + tail.length > span.length) continue;
+      text = text.slice(0, from) + head + ' '.repeat(span.length - head.length - tail.length) + tail + text.slice(to);
+      last = x.getStart(sf);
+    }
+    if (text === sf.text) return cur;
+    const options = program.getCompilerOptions();
+    const host = ts.createCompilerHost(options, true);
+    const getSourceFile = host.getSourceFile;
+    host.getSourceFile = (name, lang, onError, create) => {
+      if (path.resolve(name) === path.resolve(sf.fileName)) return ts.createSourceFile(name, text, lang, true, sf.scriptKind);
+      return program.getSourceFile(name) ?? getSourceFile.call(host, name, lang, onError, create);
+    };
+    const roots = [...new Set([sf.fileName, ...program.getRootFileNames().filter((f) => f.endsWith('.d.ts'))])];
+    const next = ts.createProgram({ rootNames: roots, options, host, oldProgram: program });
+    const nsf = next.getSourceFile(sf.fileName);
+    if (!nsf) return cur;
+    const diagnostics = [...next.getSyntacticDiagnostics(nsf), ...next.getSemanticDiagnostics(nsf)];
+    cur = { ...cur, program: next, sf: nsf, checker: next.getTypeChecker(), diagnostics };
+  }
+  return cur;
+}

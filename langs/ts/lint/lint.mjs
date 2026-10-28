@@ -10,6 +10,7 @@
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
 import path from 'node:path';
+import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
@@ -203,7 +204,9 @@ function forInDelete(s, checker, sf) {
 
 export function lintFile(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
-  const { sf, checker, diagnostics } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
+  const given = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
+  const { sf, checker, diagnostics } = normaliseApplyCalls(given); // an exact apply/call is read as the direct call (common.mjs applyCall)
+  const ownText = given.sf.text; // what the owner wrote: the normalised text has the same length, so a finding quotes this at the same positions
   const out = [];
   const units = topLevelFunctions(sf);
   const exceptionUnits = exceptionUnitsOf(sf, checker, units);
@@ -256,7 +259,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   // site: the label of the advised rewrite as decided at this site ({ label, precondition }), for the rules that decide it
   const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
-    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
+    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
   };
   // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
   // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
@@ -2155,7 +2158,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)}: constrain the type parameter to one record declaring it`);
       }
       if (!isRecordish(t)) {
-        if (['push', 'unshift', 'pop', 'shift', 'splice'].includes(name) && isArrayLike(checker, t) && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.expression === e && ['apply', 'call', 'bind'].includes(e.parent.name.text)) return v(e, 'unsupported-member', memberRow('push-apply-value').message(name));
+        if (['push', 'unshift', 'pop', 'shift', 'splice'].includes(name) && isArrayLike(checker, t) && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.expression === e && ['apply', 'call', 'bind'].includes(e.parent.name.text)) { const a = e.parent.parent && ts.isCallExpression(e.parent.parent) && e.parent.parent.expression === e.parent ? applyCall(e.parent.parent, checker) : null; return v(e, 'unsupported-member', memberRow('push-apply-value').message(name, a?.why ?? null)); } // an exact apply/call was read as the direct call before the lint ran (common.mjs normaliseApplyCalls); what is left is a bound value, a borrowed method on another value, or a list that is not an array
         if ((name === 'index' || name === 'groups') && /^RegExp(Exec|Match)Array$/.test(t.symbol?.name ?? '')) return v(e, 'unsupported-member', memberRow(name === 'index' ? 'match-index' : 'match-groups').message());
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
       }
@@ -2398,7 +2401,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (IMPLICIT_ANY.has(d.code)) continue; // implicit any: opaque, admitted
     if (d.code === 18046 && !ownUnknown(d)) continue; // an unknown the unit did not write: opaque, admitted
     if (d.code === 2683 || d.code === 7041) { // an implicit receiver: an input the function does not declare, which the translator refuses
-      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: sf.text.slice(d.start, d.start + (d.length ?? 4)) });
+      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: ownText.slice(d.start, d.start + (d.length ?? 4)) });
       continue;
     }
     if (d.code === 2339 || d.code === 2551) {
