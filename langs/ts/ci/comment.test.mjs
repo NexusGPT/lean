@@ -108,7 +108,7 @@ try {
   const intakeTable = intakeBody.split('## Intake')[1]?.split('## Verdicts')[0] ?? '';
   ok(intakeRun.code === 0 && intakeBody.startsWith(MARKER) && intakeBody.length <= MAX_BODY, 'intake comment has marker and fits the cap');
   ok(intakeBody.indexOf('## Intake') < intakeBody.indexOf('## Verdicts'), 'intake comes before verdicts');
-  ok((intakeTable.match(/^\| \x60/gm) ?? []).length === 7, 'intake includes unit and atomic edit rows');
+  ok((intakeTable.match(/^\| \x60/gm) ?? []).length === 6, 'intake has six rows: three units, one unassigned hunk, two artifact hunks');
   ok(['checked', 'refused:alias-mutation', 'failed:loader', 'unassigned:untyped JavaScript file', 'artifact:binary', 'artifact:secret-path'].every((c) => intakeTable.includes(c)), 'intake comment has unit, artifact and unassigned coverage values');
   const terminalRows = ['crash', 'timeout', 'lost-worker', 'incomplete-artifact'].map(state => ({ file: 'failed.ts', unit: state, lines: [1, 1], verdict: 'ASK', coverage: `failed:${state}`, reason: state }));
   const terminalBody = commentBody('# lean report', { rows: terminalRows });

@@ -123,10 +123,17 @@ export function materializeSources({ repo, head, dir, sensitivePath }) {
     if (r.status !== 0) throw new Error(`snapshot git exit ${r.status}: ${r.stderr}`);
     return r.stdout;
   };
-  const tree = head === 'WORKTREE' ? 'HEAD' : head;
-  const entries = runGit(['ls-tree', '-r', '-z', tree]).toString().split('\0').filter(Boolean).map(line => {
-    const tab = line.indexOf('\t'), [mode, type, oid] = line.slice(0, tab).split(' '); return { mode, type, oid, file: line.slice(tab + 1) };
-  }).filter(e => e.type === 'blob' && /^100/.test(e.mode) && !sensitivePath(e.file)
+  // WORKTREE means the tracked working tree, which is the index's path set (a staged added file included), the same
+  // universe `git diff <base>` reads for the change frame. A commit means that commit's tree.
+  const listing = head === 'WORKTREE'
+    ? runGit(['ls-files', '-s', '-z']).toString().split('\0').filter(Boolean).map(line => {
+      const tab = line.indexOf('\t'), [mode, oid] = line.slice(0, tab).split(' '); return { mode, type: mode === '160000' ? 'commit' : 'blob', oid, file: line.slice(tab + 1) };
+    })
+    : runGit(['ls-tree', '-r', '-z', head]).toString().split('\0').filter(Boolean).map(line => {
+      const tab = line.indexOf('\t'), [mode, type, oid] = line.slice(0, tab).split(' '); return { mode, type, oid, file: line.slice(tab + 1) };
+    });
+  const seen = new Set(); // an unmerged path has one index entry per stage; it is copied once
+  const entries = listing.filter(e => !seen.has(e.file) && seen.add(e.file)).filter(e => e.type === 'blob' && /^100/.test(e.mode) && !sensitivePath(e.file)
     && (/\.[cm]?[jt]sx?$/.test(e.file) || /(?:^|\/)(?:package|tsconfig[^/]*)\.json$/.test(e.file) || e.file === '.lean/values.json'));
   fs.mkdirSync(dir, { recursive: true });
   if (head === 'WORKTREE') {

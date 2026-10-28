@@ -96,5 +96,14 @@ try {
   const classified = routeChanges(buildChangeManifest({ repo: tmp, base: classifiedBase, head: 'WORKTREE' }));
   assert.equal(classified.files.find(f => f.file === 'configuration.ts').class, 'config');
   assert(classified.edits.some(e => e.primary.kind === 'unit' && e.primary.unit === 'configure'), 'an artifact class must not suppress an eligible listed unit');
+  write('yarn.lock', Array.from({ length: 50 }, (_, i) => `entry-${i}@1`).join('\n') + '\n');
+  git('add', '-A'); git('commit', '-qm', 'lock base'); const lockBase = git('rev-parse', 'HEAD');
+  write('yarn.lock', Array.from({ length: 50 }, (_, i) => `entry-${i}@2`).join('\n') + '\n');
+  const { ledgerRows } = await import('./ledger.mjs');
+  const locked = routeChanges(buildChangeManifest({ repo: tmp, base: lockBase, head: 'WORKTREE' }));
+  const lockRows = ledgerRows(locked);
+  assert.equal(lockRows.length, 1, 'one hunk of one route is one ASK row, not one row per line');
+  assert.equal(lockRows[0].coverage, 'artifact:lockfile');
+  assert.deepEqual(lockRows.flatMap(r => r.editIds).sort(), locked.edits.filter(e => e.primary.kind !== 'unit').map(e => e.id).sort(), 'every non-unit edit identity is on exactly one row');
   console.log('ledger.test: all assertions pass');
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

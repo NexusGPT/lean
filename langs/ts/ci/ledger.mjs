@@ -35,6 +35,15 @@ export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
   const after = head === 'WORKTREE' ? head : git(repo, ['rev-parse', '--verify', `${head}^{commit}`]).toString().trim();
   const refs = [before, ...(after === 'WORKTREE' ? [] : [after])];
   const raw = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--raw', '--no-abbrev', '-z', '-M', ...refs, '--']).toString().split('\0');
+  // numstat prints `-\t-` for every path git itself treats as binary, including a `.gitattributes` -diff/binary path.
+  const numstat = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--numstat', '-z', '-M', ...refs, '--']).toString().split('\0');
+  const gitBinary = new Set();
+  for (let i = 0; i < numstat.length && numstat[i];) {
+    const m = numstat[i++].match(/^(-|\d+)\t(-|\d+)\t(.*)$/s);
+    if (!m) throw new Error('unrecognized git numstat record');
+    const names = m[3] ? [m[3]] : [numstat[i++], numstat[i++]];
+    if (m[1] === '-' && m[2] === '-') for (const n of names) gitBinary.add(n);
+  }
   const files = [], edits = [], sources = new Map();
   for (let i = 0; i < raw.length && raw[i];) {
     const match = raw[i++].match(/^:(\d+) (\d+) ([a-f0-9]+) ([a-f0-9]+) ([A-Z])(\d*)$/);
@@ -59,7 +68,7 @@ export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
       const newBytes = status === 'D' ? null : after === 'WORKTREE' ? fs.readFileSync(path.join(repo, newName)) : git(repo, ['cat-file', 'blob', newOid]);
       file.oldHash = oldBytes === null ? null : hash(oldBytes); file.newHash = newBytes === null ? null : hash(newBytes);
       if (after === 'WORKTREE') file.id = id([file.id, file.oldHash, file.newHash]);
-      if (oldBytes?.includes(0) || newBytes?.includes(0)) { file.kind = 'binary'; add({ kind: file.kind }); continue; }
+      if (gitBinary.has(newName) || gitBinary.has(oldName) || oldBytes?.includes(0) || newBytes?.includes(0)) { file.kind = 'binary'; add({ kind: file.kind }); continue; }
       const oldText = oldBytes?.toString('utf8') ?? null, newText = newBytes?.toString('utf8') ?? null;
       sources.set(file.id, { old: oldText, new: newText });
       file.class = artifactClass(newName, newText ?? oldText ?? '');
@@ -75,7 +84,7 @@ export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
           add({ kind: 'text', hunkId: hunk.id, side, old: side === 'old' ? { start: line, count: 1 } : { start: oldSpan.start, count: 0 }, new: side === 'new' ? { start: line, count: 1 } : { start: newSpan.start, count: 0 } });
         }
       }
-      if (status === 'R' || oldMode !== newMode || !file.edits.length) add({ kind: file.kind === 'text' ? 'metadata' : file.kind });
+      if (status === 'R' || (!zero(oldMode) && !zero(newMode) && oldMode !== newMode) || !file.edits.length) add({ kind: file.kind === 'text' ? 'metadata' : file.kind });
     } catch (e) {
       file.kind ??= 'unreadable'; file.error = e.code ?? e.name;
       add({ kind: 'failure', reason: 'read-failure' });
@@ -109,12 +118,20 @@ export function routeChanges(manifest) {
     for (const side of ['old', 'new']) {
       const text = manifest.sources.get(file.id)?.[side];
       if (text == null || !/\.[cm]?[jt]sx?$/.test(file.file)) continue;
-      const sf = ts.createSourceFile((side === 'old' ? file.oldPath : file.newPath) ?? file.file, text, ts.ScriptTarget.Latest, true);
+      // A parser or lister exception (e.g. stack exhaustion on deep nesting) is a record on this side, never a lost change.
+      let sf;
+      try {
+        sf = ts.createSourceFile((side === 'old' ? file.oldPath : file.newPath) ?? file.file, text, ts.ScriptTarget.Latest, true);
+        file.units[side] = [...topLevelFunctions(sf).values()].map(u => ({ name: u.name, side, file: file.file,
+          start: sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1,
+          end: sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1,
+          offset: u.node.getStart(sf), stop: u.node.getEnd(), id: id([file.id, side, u.name, u.node.pos, u.node.end]) }));
+      } catch (e) {
+        file.units[side] = [];
+        (file.parseFailures ??= {})[side] = [{ exception: e.name, message: String(e.message).slice(0, 120) }];
+        continue;
+      }
       readings[side] = sf;
-      file.units[side] = [...topLevelFunctions(sf).values()].map(u => ({ name: u.name, side, file: file.file,
-        start: sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1,
-        end: sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1,
-        offset: u.node.getStart(sf), stop: u.node.getEnd(), id: id([file.id, side, u.name, u.node.pos, u.node.end]) }));
       const diagnostics = sf.parseDiagnostics.map(d => ({ code: d.code, start: d.start, length: d.length }));
       if (diagnostics.length) (file.parseFailures ??= {})[side] = diagnostics;
     }
@@ -123,7 +140,7 @@ export function routeChanges(manifest) {
     const expanded = [];
     for (const edit of manifest.edits.filter(e => e.fileId === file.id)) {
       const sf = readings[edit.side];
-      if (edit.kind !== 'text' || !sf) { expanded.push(edit); continue; }
+      if (edit.kind !== 'text' || !sf || file.parseFailures?.[edit.side]) { expanded.push(edit); continue; }
       const starts = sf.getLineStarts(), begin = starts[edit[edit.side].start - 1], end = starts[edit[edit.side].start] ?? sf.text.length;
       const boundaries = [...new Set([begin, end, ...file.units[edit.side].flatMap(u => [u.offset, u.stop]), ...sf.statements.flatMap(n => [n.getStart(sf), n.end])].filter(p => p >= begin && p <= end))].sort((a, b) => a - b);
       const spans = [];
@@ -146,17 +163,21 @@ export function routeChanges(manifest) {
       const side = edit.side, span = edit[side], sf = readings[side];
       const touched = file.units[side].filter(u => edit.offsets ? u.offset < edit.offsets.end && edit.offsets.start < u.stop : u.start <= span.start && span.start <= u.end);
       edit.links = touched.map(u => ({ id: u.id, file: file.file, unit: u.name, side, start: u.start, end: u.end }));
-      const syntax = sf ? syntaxContext(sf, span.start, edit.offsets) : { reason: 'non-source', parent: null };
+      let syntax;
+      try { syntax = file.parseFailures?.[side] ? { reason: 'parse-failure', parent: null } : sf ? syntaxContext(sf, span.start, edit.offsets) : { reason: 'non-source', parent: null }; }
+      catch (e) { syntax = { reason: 'syntax-context-failure', parent: null, exception: e.name }; }
       edit.context = syntax;
       const untyped = /\.[cm]?jsx?$/.test(file.file) && !/@(?:type|param|returns?|typedef)\s*\{/.test(sf?.text ?? '');
+      // Order: a parse failure first (no listing on that side is trustworthy), then a listed unit (the checker can read it,
+      // whatever the path's class), then the artifact class of a file with no touched unit, then a named unassigned reason.
       if (file.parseFailures?.[side]) edit.primary = { kind: 'unassigned', reason: 'parse-failure', side };
-      else if (file.class !== 'source') edit.primary = { kind: 'artifact', reason: file.class, class: file.class };
       else if (untyped) edit.primary = { kind: 'unassigned', reason: 'untyped JavaScript file', context: syntax.reason, side };
       else if (touched.length) {
         // Stable smallest-containing-unit choice; secondary links retain every touched unit.
         const primary = touched.slice().sort((a, b) => (a.stop - a.offset) - (b.stop - b.offset) || a.id.localeCompare(b.id))[0];
         edit.primary = { kind: 'unit', id: primary.id, file: file.file, unit: primary.name, side, start: primary.start, end: primary.end };
-      } else edit.primary = { kind: 'unassigned', reason: syntax.reason, parent: syntax.parent, side };
+      } else if (file.class !== 'source') edit.primary = { kind: 'artifact', reason: file.class, class: file.class };
+      else edit.primary = { kind: 'unassigned', reason: syntax.reason, parent: syntax.parent, side };
     }
   }
   manifest.reconciliation = reconcileEdits(manifest);
@@ -173,6 +194,9 @@ function syntaxContext(sf, line, offsets) {
   }
   if (!meaningful) return { reason: comments ? 'comment' : 'whitespace', parent: 'SourceFile' };
   const candidates = [];
+  // An explicit stack: a 10,000-term expression must not exhaust the call stack.
+  const stack = [];
+  ts.forEachChild(sf, c => { stack.push(c); });
   const visit = n => {
     if (n.end <= start || n.getStart(sf) >= end) return;
     if (n.parent && ts.isObjectLiteralExpression(n.parent) && (ts.isMethodDeclaration(n) || ts.isPropertyAssignment(n) || ts.isShorthandPropertyAssignment(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n))) candidates.push({ reason: 'object-literal member', node: n, priority: 0 });
@@ -180,19 +204,28 @@ function syntaxContext(sf, line, offsets) {
     if (ts.isPropertyDeclaration(n)) candidates.push({ reason: 'class field', node: n, priority: 0 });
     if (ts.isTypeAliasDeclaration(n) || ts.isInterfaceDeclaration(n) || (ts.isImportDeclaration(n) && n.importClause?.isTypeOnly) || (ts.isExportDeclaration(n) && n.isTypeOnly)) candidates.push({ reason: 'type-only', node: n, priority: 0 });
     if (n.parent === sf) candidates.push({ reason: 'module-level statement', node: n, priority: 2 });
-    ts.forEachChild(n, visit);
+    ts.forEachChild(n, c => { stack.push(c); });
   };
-  ts.forEachChild(sf, visit);
+  while (stack.length) visit(stack.pop());
   const c = candidates.sort((a, b) => a.priority - b.priority || (a.node.end - a.node.pos) - (b.node.end - b.node.pos))[0];
   return { reason: c?.reason ?? 'module-level statement', parent: c ? ts.SyntaxKind[c.node.parent.kind] : 'SourceFile', node: c ? ts.SyntaxKind[c.node.kind] : 'SourceFile' };
 }
 
+// One ASK row per (file, hunk, route): a 3,000-line lockfile hunk is one row naming 3,000 edit identities, not 3,000 rows.
+// Every edit identity stays on exactly one row, so the rows still reconcile to the ledger edit by edit.
 export function ledgerRows(manifest) {
-  return manifest.edits.filter(e => e.primary.kind !== 'unit').map(e => ({
-    file: e.file, unit: `(edit ${e.id.slice(0, 12)})`, editIds: [e.id], lines: [Math.max(1, e[e.side ?? 'new']?.start ?? 1), Math.max(1, e[e.side ?? 'new']?.start ?? 1)],
-    verdict: 'ASK', decision: e.primary.kind, coverage: `${e.primary.kind}:${e.primary.reason}`,
-    reason: e.primary.reason + (e.primary.context ? ` (${e.primary.context})` : ''), context: e.context, advice: [],
-  }));
+  const groups = new Map();
+  for (const e of manifest.edits) {
+    if (e.primary.kind === 'unit') continue;
+    const key = JSON.stringify([e.file, e.hunkId ?? e.id, e.primary.kind, e.primary.reason, e.primary.context ?? null]);
+    const line = Math.max(1, e[e.side ?? 'new']?.start ?? 1);
+    const g = groups.get(key);
+    if (g) { g.editIds.push(e.id); g.lines = [Math.min(g.lines[0], line), Math.max(g.lines[1], line)]; continue; }
+    groups.set(key, { file: e.file, unit: `(${e.hunkId ? 'hunk ' + e.hunkId.slice(0, 12) : 'edit ' + e.id.slice(0, 12)} ${e.primary.kind}:${e.primary.reason})`, editIds: [e.id], lines: [line, line],
+      verdict: 'ASK', decision: e.primary.kind, coverage: `${e.primary.kind}:${e.primary.reason}`,
+      reason: e.primary.reason + (e.primary.context ? ` (${e.primary.context})` : ''), context: e.context, advice: [] });
+  }
+  return [...groups.values()];
 }
 
 export function ledgerMarkdown(manifest) {
