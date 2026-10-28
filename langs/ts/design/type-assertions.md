@@ -72,8 +72,8 @@ Each is refused at the slot named; the unit reads its held value faithfully up t
 `node langs/ts/census.mjs <root>`, inside the subset (base 9d6229a, then dd9c58d):
 | tree | before | after | type-assertion the only rule |
 |---|---:|---:|---:|
-| nexus | 23,850 of 26,520 | 22,411 | 1,263 units (1,104 a slot, 159 a call of a held-result unit) |
-| langchainjs | 3,441 of 4,871 | 3,167 | |
+| nexus | 23,850 of 26,520 | 22,411; 22,296 with optional slots held (17fbd38) | 1,263 units at dd9c58d |
+| langchainjs | 3,441 of 4,871 | 3,167; 3,160 with optional slots held | |
 
 The invariant: no value is given a Dafny type its run-time value has not been shown to have; a value whose type was
 asserted rather than checked is read at the type its source proves, and converted to the asserted type only as the
