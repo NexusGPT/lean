@@ -35,6 +35,7 @@ import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-for
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { openRecordType, OPEN_RECORD_WHY } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
@@ -3123,6 +3124,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     { let e = n.expression; while (e && ts.isParenthesizedExpression(e)) e = e.expression;
       if (e && ts.isIdentifier(e)) { const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (o.kind === 'local' && o.sym) { const dt = symType(o.sym, e); const bd = isOptional(dt) ? baseOf(dt) : dt; if (isRecordish(bd) && dtype(bd, n) !== dtype(recvT, n)) recvT = bd; } } }
     if (isRecordish(recvT)) {
+      if (!checker.getPropertyOfType(recvT, name) && openRecordType(checker, recvT)) fail(n, `dynamic-key: ${OPEN_RECORD_WHY(checker.typeToString(recvT))}`); // common.mjs openRecordType: the datatype holds no undeclared key
       const props = checker.getPropertiesOfType(recvT);
       const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
       const T = dtype(recvT, n);
@@ -3274,20 +3276,25 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return `${external('Any_index', [anyType(), anyType()], rd)}(${expr(n.expression, anyTarget())}, ${expr(n.argumentExpression, anyTarget())})`;
     }
     const base = baseOf(recvT);
-    if (ts.isStringLiteral(n.argumentExpression) && isRecordish(base)) return fieldOf(expr(n.expression), base, n.argumentExpression.text, n);
-    const d = dictRead(n);
+    const d = dictRead(n); // a dictionary takes every key through its map, a literal key included (the key need not be declared)
+    if (!d && ts.isStringLiteral(n.argumentExpression) && isRecordish(base)) return fieldOf(expr(n.expression), base, n.argumentExpression.text, n);
     if (d) {
-      const V = dtype(stringIndex(base).type, n), rd = isAny(typeOf(n)) ? V : dtype(typeOf(n), n);
+      const ixT = stringIndex(base).type, V = dtype(ixT, n), rd = isAny(typeOf(n)) ? V : dtype(typeOf(n), n);
+      // a name of Object.prototype the dictionary does not own reads that member, a value per name: a function of the key
+      // (the other dictionary readings, `??` and the entries loop, still read one absent value for every such name)
+      const protoMember = () => `${external(`proto_member_${V}`, ['string'], V)}(${d.key})`;
       // a read typed with the absence a missing key yields (noUncheckedIndexedAccess): a missing key reads undefined, a
       // present key its value, so the read is exact; a null the value type holds stays Null beside the missing key's Undef
       if (rd === `Option<${V}>`) { usesOption = true; return `(if ${d.key} in ${d.map} then Some(${d.map}[${d.key}]) else ${missingKey(d, n, () => `Some(${external(`absent_${V}`, [], V)}())`, 'None')})`; }
-      if (V.startsWith('Option<') && rd === `Nullish<${innerOf(V)}>` && hasAbsence(stringIndex(base).type, TF.Null) && !hasAbsence(stringIndex(base).type, TF.Undefined)) { const x = `dv${tempCount++}_`; return `(if ${d.key} in ${d.map} then (var ${x} := ${d.map}[${d.key}]; if ${x}.Some? then Nullish.Some(${x}.value) else Nullish.Null) else Nullish.Undef)`; }
+      // values typed `T | undefined`: a stored undefined and a missing key both read None, an owned key its value
+      if (V.startsWith('Option<') && rd === V && hasAbsence(ixT, TF.Undefined) && !hasAbsence(ixT, TF.Null)) return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${missingKey(d, n, protoMember, 'None')})`;
+      if (V.startsWith('Option<') && rd === `Nullish<${innerOf(V)}>` && hasAbsence(ixT, TF.Null) && !hasAbsence(ixT, TF.Undefined)) { const x = `dv${tempCount++}_`; return `(if ${d.key} in ${d.map} then (var ${x} := ${d.map}[${d.key}]; if ${x}.Some? then Nullish.Some(${x}.value) else Nullish.Null) else Nullish.Undef)`; }
       return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`;
     }
     if (isRecordish(base)) {
       // a finite key selects a declared field; receiver and key are evaluated once, in that order
       const keyParts = at.flags & TF.Union ? at.types : [at];
-      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) return openKeyRead(n, base, at);
+      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) { if (openRecordType(checker, base)) fail(n, `dynamic-key: ${OPEN_RECORD_WHY(checker.typeToString(base))}`); return openKeyRead(n, base, at); }
       const keys = keyParts.map((x) => x.value);
       const R = `rr${tempCount++}_`, Kc = `rk${tempCount++}_`;
       const receiver = expr(n.expression);
