@@ -11,6 +11,7 @@ import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { reactHook, arrowOf, renderPure } from '../react.mjs';
 import { readHandler } from '../handlers.mjs';
 import { render, fnHash } from './fake.mjs';
+import { kidsOf } from '../patch.mjs';
 
 const K = ts.SyntaxKind;
 const MAX_DEFECTS = 20;
@@ -450,7 +451,7 @@ export function handlerDifference(a, b, at = '') {
     const esc = [x.escape && `the parent's is not read (${x.escape})`, y.escape && `the candidate's is not read (${y.escape})`].filter(Boolean).join('; ');
     return { prop, first: `keyed by text: ${esc}`, keyed: 'text', escape: x.escape ?? y.escape };
   }
-  const ca = a.children ?? [], cb = b.children ?? [];
+  const ca = kidsOf(a.children), cb = kidsOf(b.children);
   for (let i = 0; i < Math.min(ca.length, cb.length); i++) { const d = handlerDifference(ca[i], cb[i], `${here}[${i}]`); if (d) return d; }
   return null;
 }

@@ -16,6 +16,8 @@
 // A changed tag at one position is a remove and an insert. A path is the child-index path from the root in the labels
 // the handlers carry (exec/run.mjs treeHandlers): `[i]` under an array or a fragment, `div[i]` under a div, `C[i]` under
 // a component; '' is the root itself. Values are printed with render (exec/fake.mjs), so a fake prints as its path.
+// `children` is read one way by every reader (kidsOf): nothing is no child, an array is the children, anything else (one
+// element, one text, a rendered value cut by a depth bound) is one child.
 import { render } from './exec/fake.mjs';
 
 const KINDS = ['insert', 'remove', 'text', 'attribute', 'move'];
@@ -25,6 +27,7 @@ const isFake = (v) => (typeof v === 'object' || typeof v === 'function') && v !=
 const isNode = (v) => !!v && typeof v === 'object' && !isFake(v) && !Array.isArray(v) && Object.hasOwn(v, '$el');
 const isNothing = (v) => v === null || v === undefined || typeof v === 'boolean' || (!!v && typeof v === 'object' && !isFake(v) && v.$undefined === true && Object.keys(v).length === 1); // React renders nothing for these
 const isText = (v) => typeof v === 'string' || typeof v === 'number';
+export const kidsOf = (v) => (v === null || v === undefined ? [] : Array.isArray(v) ? v : [v]);
 const json = (v) => JSON.stringify(render(v));
 // a function prop is compared as 'fn': a raw function, a rendered {$fn}, an observed {$handler}
 const isFnValue = (v) => (typeof v === 'function' && !isFake(v)) || (!!v && typeof v === 'object' && !isFake(v) && (Object.hasOwn(v, '$fn') || Object.hasOwn(v, '$handler')));
@@ -83,7 +86,7 @@ function diffNode(a, b, path, st, depth) {
       const x = Object.hasOwn(pa, name) ? propValue(pa[name]) : render(undefined), y = Object.hasOwn(pb, name) ? propValue(pb[name]) : render(undefined);
       if (JSON.stringify(x) !== JSON.stringify(y)) emit(st, { kind: 'attribute', path, name, before: x, after: y });
     }
-    diffChildren(a.children ?? [], b.children ?? [], path, (i) => `${segTag(b)}[${i}]`, st, depth);
+    diffChildren(kidsOf(a.children), kidsOf(b.children), path, (i) => `${segTag(b)}[${i}]`, st, depth);
     if (Object.hasOwn(a, 'rendered') || Object.hasOwn(b, 'rendered')) diffRoot(a.rendered, b.rendered, join(path, 'rendered'), st, depth + 1); // --deep: the child component's own tree
     return;
   }
@@ -97,7 +100,7 @@ function diffRoot(a, b, path, st, depth) {
   else diffNode(a, b, path, st, depth);
 }
 const toList = (v) => (Array.isArray(v) ? v : isNothing(v) ? [] : [v]);
-const eraseFns = (v) => (Array.isArray(v) ? v.map(eraseFns) : isNode(v) ? { ...v, props: Object.fromEntries(Object.entries(v.props ?? {}).map(([k, x]) => [k, isFnValue(x) ? 'fn' : x])), children: (v.children ?? []).map(eraseFns), ...(Object.hasOwn(v, 'rendered') ? { rendered: eraseFns(v.rendered) } : {}) } : v);
+const eraseFns = (v) => (Array.isArray(v) ? v.map(eraseFns) : isNode(v) ? { ...v, props: Object.fromEntries(Object.entries(v.props ?? {}).map(([k, x]) => [k, isFnValue(x) ? 'fn' : x])), children: kidsOf(v.children).map(eraseFns), ...(Object.hasOwn(v, 'rendered') ? { rendered: eraseFns(v.rendered) } : {}) } : v);
 function emit(st, op) { if (st.cut) return; if (st.ops.length >= MAX_OPS) { st.cut = true; return; } st.ops.push(op); }
 
 // a tree lane B can render: an element, an array, or (beside one) text or nothing
@@ -164,7 +167,7 @@ function shortNode(v) {
   if (isNode(v)) {
     const tag = typeof v.$el === 'string' ? (v.$el || 'fragment') : v.$el && v.$el.$component ? v.$el.$component : v.$el && v.$el.$fake ? v.$el.$fake : JSON.stringify(v.$el);
     const attrs = Object.entries(v.props ?? {}).map(([k, x]) => `${k}=${isFnValue(x) ? 'fn' : JSON.stringify(x)}`).join(' ');
-    const kids = (v.children ?? []).map(shortNode).join(' ');
+    const kids = kidsOf(v.children).map(shortNode).join(' ');
     return `<${tag}${attrs ? ' ' + attrs : ''}>${kids}</${tag}>`;
   }
   if (v && typeof v === 'object' && Object.hasOwn(v, '$fake')) return String(v.$fake);
