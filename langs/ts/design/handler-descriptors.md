@@ -98,9 +98,14 @@ block skips a capture with an entry; `readHandler` attaches the entry of every c
   every write through it lies inside a function React holds (a JSX attribute value, an effect or `useCallback`
   argument, a const every reference of which is held so), the closure's own writes included, never in the render
   itself or in `useMemo`. A write in the render stays refused: the lint admits `r.current = v` there as an update of a local record,
-  so a closure keyed by its captured record would miss it. A write inside a held function is carried by the table and named
-  `closure-mutation` at its own site, the reading still missing (a cell step of the component machine, lane A's
-  translator and that rule's block). Lane B finds the box by a static slot numbering of the unit's statement-level hooks, confirmed
+  so a closure keyed by its captured record would miss it. A write `r.current = v` inside a held function is a cell
+  step of the component machine: it writes the box without a re-render (`cellWrite`). The lint admits it there, except
+  inside a `useCallback` argument, which the translator reads as a lambda over values (that write stays
+  `closure-mutation`). Lane A keeps a writing handler or effect as a function value keyed by its text and captures, so a
+  dropped or reordered write is never proved equal; lane B's interpreter steps it: the predicted slots put the next
+  value in the box, a read of a cell the same handler writes is not interpreted (the box already holds the value
+  after), and the held handler's key carries the cell, what it held before and the next value. Lane B finds the box by
+  a static slot numbering of the unit's statement-level hooks, confirmed
   against the slots the run placed for `useState`; the key carries the cell's ordinal and what it holds at the key's
   moment, and `.current` stays a read when the handler runs. A fired handler that hands the cell to a call is not
   interpreted.
@@ -118,9 +123,8 @@ Stays refused: a capture with no entry. Escape `fixtures/escapes/ts/handler_capt
 value's `push` in a callback, and a hook result handed on as a value, both named `react-handler-capture`. The pair
 `handler_capture_unknown` shows lane B on the first: ASK naming the escape, never a WITNESS or a pass.
 
-Measured with `node langs/ts/census.mjs` on the two bench trees, base 6661006 against this reading: on nexus,
-`react-handler-capture` stops 259 units before and 60 after, `closure-mutation` 99 before and 218 after (the ref cell
-writes inside held functions, now named at the write), and the units inside the subset go from 23753 to 23808 of 26520;
-the rest move one or two units each to their next rule (`ts-strict` 487 to 494, `opaque-mutation` 53 to 60). The units
-that entered carry a hook result (`router.push`, a form hook's `add`). n8n has no unit under this rule and is unchanged
-(4314 of 6337 inside).
+Measured with `node langs/ts/census.mjs` on the nexus bench tree, base 6661006 against this reading:
+`react-handler-capture` stops 259 units before and 68 after, `closure-mutation` 99 before and 140 after, and the units
+inside the subset go from 23753 to 23853 of 26520 (100 units entered). Every entered unit was put through
+`translate.mjs --tolerant`; none failed on a cell write. n8n has no unit under this rule (4314 of 6337 inside, unchanged
+at the previous round).

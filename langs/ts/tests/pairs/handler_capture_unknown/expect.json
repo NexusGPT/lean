@@ -2,11 +2,9 @@
  "laneBOnly": true,
  "scope": [],
  "equal": {},
- "why": "lane B only, since the lint refuses each unit: a value from an outside call that is no hook, its mutating method called by a held handler, is no capture kind (react-handler-capture; check.mjs lane A ASK at translation) and lane B keys the handler by its text, so the changed argument is ASK naming the escape; a ref cell written in one handler and read in another is carried by the capture table and refused only at the write (closure-mutation): dropping the write is a WITNESS (the read handler saves another value), and a pure const moved past the useRef is PASS-bounded",
+ "why": "a value from an outside call that is no hook, its mutating method called by a held handler, is no capture kind: the lint refuses the unit (react-handler-capture, so check.mjs's lane A is ASK at translation) and lane B keys the handler by its text, so the changed argument is ASK naming the escape, never a WITNESS and never a pass",
  "b": {
-  "Unknown": "ASK",
-  "WriteRead": "WITNESS",
-  "WriteReorder": "PASS-bounded"
+  "Unknown": "ASK"
  },
  "check": {
   "Unknown": {

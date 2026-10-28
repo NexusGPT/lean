@@ -1,5 +1,5 @@
 /// <reference path="./types.d.ts" />
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { save } from "service";
 type Item = { id: number; label: string };
@@ -28,4 +28,26 @@ export function Tally({ item: { id } }: { item: Item }) {
   const [total, setTotal] = useState(0);
   const base = useRef(10);
   return <button onClick={() => setTotal(base.current + id)}>{total}</button>;
+}
+// a handler writes a ref cell and a second handler reads it: the candidate drops the write (the second click saves another value)
+export function WriteRead(props: Item) {
+  const last = useRef(0);
+  return (
+    <div>
+      <button onClick={() => { last.current = props.id; }}>mark</button>
+      <button onClick={() => save(last.current)}>send</button>
+    </div>
+  );
+}
+// two cell writes in another order leave the same cells
+export function WriteReorder(props: Item) {
+  const id = useRef(0);
+  const label = useRef("");
+  return <button onClick={() => { id.current = props.id; label.current = props.label; }}>{props.label}</button>;
+}
+// an effect writes the cell a handler reads, untouched
+export function EffectWrite(props: Item) {
+  const seen = useRef(0);
+  useEffect(() => { seen.current = props.id; }, [props.id]);
+  return <button onClick={() => save(seen.current)}>send</button>;
 }

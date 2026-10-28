@@ -30,7 +30,7 @@ const LIBRARY_RESULT_MORE = {
   'Array.prototype.find': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
 };
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText, memberRow, freshRegexFlags, regexNeverAdvanced, incompleteType, onWritePath, writesThroughIncomplete } from '../library-rows.mjs';
-import { reactHook, arrowOf, closureReads, captureKind } from '../react.mjs';
+import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 
@@ -986,7 +986,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (throughElement) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`: a field of an element is written when the path from a parameter takes field and array-element steps only, each index a number that calls nothing (name it first: \`const k = ...\`), and \`!\` or \`as T\` stand only on an element, T its own type`);
           else if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (aliasHere(o.decl, l) && !heldAlias(o.decl)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl)); // a const name for a node a parameter holds: the write is a step on that node (heap shapes)
-          else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
+          else if (!ownedHere(o.decl) && !(op === K.EqualsToken && cellWrite(checker, l, currentFn?.body))) v(l, 'closure-mutation', 'a callback cannot change an outer record'); // `r.current = v` in a function React holds is a ref cell step (react.mjs, cellWrite)
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
         }
         else if (ts.isElementAccessExpression(l) && !l.questionDotToken && (heldNodePath(l.expression)?.steps ?? 0) >= 1 && recDict(tOf(l.expression))) { // a record stored under a key of a dictionary of records a parameter's node holds: DictSet_ of the reference; a key that may be `__proto__` would replace the prototype instead
