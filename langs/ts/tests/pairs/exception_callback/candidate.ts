@@ -1,6 +1,7 @@
 // Callbacks that throw: a throwing callee inside an array callback ends the loop at the first throwing element with the
 // loop's partial state, and a throwing callee inside a promise handler rejects the promise the link returns.
 interface Service { get(id: number): Promise<number>; }
+interface Box { k: number; }
 
 export function check(n: number): number {
   if (n < 0) throw new Error("negative");
@@ -33,4 +34,14 @@ export async function ordered(svc: Service, id: number): Promise<number> {
 // a refactor: the first check is implied by the second (x below 0 means x - 1 below 0), so one check rejects alike
 export async function guarded(svc: Service, id: number): Promise<number> {
   return await svc.get(id).then((x) => check(x - 1));
+}
+
+// a throwing unit called with its receiver through call: the call of the unit, its fault routed as a direct call's
+export function times(this: Box, n: number): number {
+  if (n < 0) throw new Error("negative");
+  return n * this.k;
+}
+// a refactor: apply with an array literal is the same call
+export function viaCall(this: Box, a: number, b: number): number {
+  return times.apply(this, [a]) + times.call(this, b);
 }

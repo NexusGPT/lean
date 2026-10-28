@@ -90,6 +90,7 @@ export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
       if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
         const callee = byDecl.get(checker.getResolvedSignature(n)?.declaration);
         if (callee) edges.get(callee).add(u.name);
+        { const f = n.expression; if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(f) && (f.name.text === 'call' || f.name.text === 'apply') && ts.isIdentifier(f.expression)) { const d = checker.getSymbolAtLocation(f.expression)?.valueDeclaration; const named = d && byDecl.get(d); if (named) edges.get(named).add(u.name); } } // `h.call(o, a)` / `h.apply(o, [a])` calls h here: its throw is this unit's
         if (syncLoopCall(n, checker)) for (const a of n.arguments) if (ts.isIdentifier(a)) { const d = checker.getSymbolAtLocation(a)?.valueDeclaration; const named = d && byDecl.get(d); if (named) edges.get(named).add(u.name); } // stage 5 rank 20: a throwing unit handed to an array method runs here, so its throw is this unit's
       }
       if (ts.isPropertyAccessExpression(n)) {
@@ -431,7 +432,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (name === 'undefined') return;
     if (name === 'arguments' && originOf(checker, id, sf, current).kind === 'global') return v(id, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter', restParamsSite(id));
     const o = originOf(checker, id, sf, current);
-    if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id))) return v(id, 'exception-callback', 'call the throwing unit directly, or pass it to a call; a stored function value has no fault channel'); // stage 5 rank 20: as a call argument it is an opaque value (outside) or a loop body (array method)
+    const viaCall = id.parent && ts.isPropertyAccessExpression(id.parent) && id.parent.expression === id && (id.parent.name.text === 'call' || id.parent.name.text === 'apply') && ts.isCallExpression(id.parent.parent) && id.parent.parent.expression === id.parent; // `h.call(o, a)` / `h.apply(o, [a])` calls h here (ECMA-262 20.2.3.1 and 20.2.3.3): the call of the unit, its fault routed as a direct call's
+    if (!asCallee && !viaCall && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id))) return v(id, 'exception-callback', 'call the throwing unit directly, or pass it to a call; a stored function value has no fault channel'); // stage 5 rank 20: as a call argument it is an opaque value (outside) or a loop body (array method)
     if (o.kind === 'unit' && units.get(name)?.fn.asteriskToken && !asyncGenerator(units.get(name)) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.expression === id)) return v(id, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
     if (o.kind === 'local' && localMethodLiteral(tOf(id)) && id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id)) return v(id, 'object-method-mutation', 'pass a fresh literal handler or keep calls on the local object; sharing a named method object needs a heap');
     if (o.kind === 'local' || o.kind === 'unit') return;

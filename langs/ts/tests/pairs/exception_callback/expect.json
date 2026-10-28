@@ -5,7 +5,9 @@
   "total",
   "later",
   "ordered",
-  "guarded"
+  "guarded",
+  "times",
+  "via_call"
  ],
  "equal": {
   "check": true,
@@ -13,22 +15,39 @@
   "total": true,
   "later": false,
   "ordered": true,
-  "guarded": true
+  "guarded": true,
+  "times": true,
+  "via_call": true
  },
- "why": "Plan section 3, callbacks that throw. A throwing callee inside an array callback ends the loop at the first throwing element, the loop's partial state kept, and the fault takes the statement's route; inside a then handler it rejects the promise the link returns. check is untouched. scaled maps a negative element to zero instead of throwing (unproved; lane B WITNESS on an array holding a negative). total moves a pure value after the forEach loop (proved: the loop helper is the same, the fault exit unchanged). later resolves a negative value instead of rejecting (unproved; WITNESS). ordered moves a pure value after the throwing call inside the handler (proved). guarded drops a check the second one implies (proved: the handler leaves at the first fault, so both reject on the same values with the same error). A callback handed to an outside function whose body throws stays refused: fixtures/escapes/ts/exception_callback_outside.ts.",
+ "why": "Plan section 3, callbacks that throw. A throwing callee inside an array callback ends the loop at the first throwing element, the loop's partial state kept, and the fault takes the statement's route; inside a then handler it rejects the promise the link returns. check is untouched. scaled maps a negative element to zero instead of throwing (unproved; lane B WITNESS on an array holding a negative). total moves a pure value after the forEach loop (proved: the loop helper is the same, the fault exit unchanged). later resolves a negative value instead of rejecting (unproved; WITNESS). ordered moves a pure value after the throwing call inside the handler (proved). guarded drops a check the second one implies (proved: the handler leaves at the first fault, so both reject on the same values with the same error). times is untouched; viaCall calls a throwing unit with its receiver through call, the candidate through apply with an array literal (proved: the same call, its fault routed as a direct call's). A callback handed to an outside function whose body throws stays refused: fixtures/escapes/ts/exception_callback_outside.ts.",
  "b": {
   "check": "PASS-bounded",
   "scaled": "WITNESS",
   "total": "PASS-bounded",
   "later": "WITNESS",
   "ordered": "PASS-bounded",
-  "guarded": "PASS-bounded"
+  "guarded": "PASS-bounded",
+  "times": "PASS-bounded",
+  "viaCall": "PASS-bounded"
  },
  "check": {
-  "scaled": { "verdict": "WITNESS" },
-  "total": { "verdict": "PASS-proved" },
-  "later": { "verdict": "WITNESS" },
-  "ordered": { "verdict": "PASS-proved" },
-  "guarded": { "verdict": "PASS-proved" }
+  "scaled": {
+   "verdict": "WITNESS"
+  },
+  "total": {
+   "verdict": "PASS-proved"
+  },
+  "later": {
+   "verdict": "WITNESS"
+  },
+  "ordered": {
+   "verdict": "PASS-proved"
+  },
+  "guarded": {
+   "verdict": "PASS-proved"
+  },
+  "viaCall": {
+   "verdict": "PASS-proved"
+  }
  }
 }
