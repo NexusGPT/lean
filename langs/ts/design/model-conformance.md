@@ -1,0 +1,68 @@
+# Model conformance: each model against Node, on lane B's inputs
+
+A translator defect both sides of a pair share is invisible to the pair: the parent's model and the candidate's model
+are wrong alike, the lemma holds, and lane B, which runs the TypeScript, never reads the model. This step reads the
+model itself. It is the report's "add model execution now" (section 11, step 3) and its relation check (section 5):
+for an exact reading compare observations; for an over-approximate one, check the concrete value is admitted; for a
+shared unknown, check the pair of executions under the product model.
+
+## The step
+
+`conformance/run.mjs` (one line in `tests/run.mjs`; `LEAN_PAIRS` limits it as it limits the pairs) runs every pair in
+its own process (`conformance/pair.mjs`, three at a time, a wall-clock bound per pair):
+
+1. Translate both sides exactly as the suite's pair step (`--core --suffix --heap --prelude`, check.mjs `agreeCore`).
+2. Compile each side's model to JavaScript (`dafny translate js --include-runtime`, wrapper erasure off so a value keeps
+   its declared shape). Every part with no body (a bodiless function or predicate, an opaque type) becomes an extern of
+   one module, `LeanOpaque`; no body is ever written for it (`dafny-text.mjs compilable`).
+3. For every unit of the pair's scope both files hold, draw every input lane B draws (`run.mjs inputPlan`, seed 1, the
+   suite's n = 30: the enumerated small heaps, then the seeded draws). Node runs each side in lane B's sandbox and lane
+   B's `observe` renders the result (`fake.mjs render`, the shared value format). A third copy of the input, never run,
+   goes to the models.
+4. Each model runs on it. Per input and side, one status:
+   - agree: the model's answer is Node's, SameValue at every number (`-0`, NaN and the infinities render apart);
+   - disagree: it is not (the result, an argument the unit returns rebound, a heap argument after the call, a thrown
+     value against a returned one, or a request Node made where the model reached no transition);
+   - not executable: the run reached a part with no body (the extern stops it and names the symbol);
+   - outside the model domain: the input is not a value of the model's declared type (NaN or an infinity in the finite
+     number model, a fraction where `number` is `int`, a lone surrogate in a string), or the unit's stated hypothesis
+     (`requires`, `// HYP`) is false on it, or an in-range unit set the oob flag (`// INRANGE`);
+   - not bridged: the bridge has no reading for the input's type (a generic unit, callback slots, a data type with no
+     input reading). Counted apart, never merged with the others.
+5. The product check: on an input where a model reached a part with no body, both models run again with one table for
+   those parts, keyed by the symbol and the canonical text of its arguments, under three seeds (a concrete return type
+   drawn from the seed, an opaque one a term of the symbol and its arguments). When both models make the same
+   applications, agree under every seed, and Node's two observations differ, the shared symbols coupled two different
+   behaviours: a coupling finding.
+
+A unit's status: disagree if any input disagrees on either side; agree if one input ran to the end and none disagreed;
+else not executable, outside the domain, or not bridged, in that order. A disagreement is a finding even when the
+pair's verdict is right. The step exits 1 on a disagreement or a coupling finding not listed in
+`conformance/known-findings.json` (pair, unit, cause, board row).
+
+## The bridge (`bridge.mjs`, `heap.mjs`): read from the model's own declared types
+
+- int: an integral double, exactly (a bigint too); `-0` is the model's one zero, so a `-0` the unit returns is a
+  disagreement. real: the double's exact rational; the model's real result rounded once, then SameValue.
+- Option: the single absence of the declared union; the unit's TypeScript signature (`// SIG`) says null or undefined.
+  A missing optional field and one holding undefined are one value, None (design/open-datatype.md), so None admits both.
+- A record: its declared fields by key; the rest is MoreBuilt when the object has no other key, else MoreFrom of one
+  name per set of undeclared keys and values, and compares equal only to those same keys and values.
+- An opaque type (Ext_, Any) and a class receiver: a term named by lane B's rendering of the input. The model can only
+  pass it on (compared to the input as drawn) or apply a bodiless part to it. An input function: a part with no body.
+- The heap core: every object a Ref argument reaches is one cell, its constructor the shape the `// SHAPES` legend
+  names, an object reached twice one cell. Out of the model, the cell is rebuilt as the value it stands for and rendered
+  by lane B's own render, so cycles, sharing and the six-level bound compare as lane B observes them.
+
+## What it does not see
+
+- An exact reading of `number` as `int` cannot be told apart from Node on `-0` input when the reading is wrong only
+  there (`x + 0` read as `x` gives the model's 0 for Node's +0): the int model holds no `-0` to disagree with. A
+  disagreement shows only where Node returns `-0` and the model 0.
+- Lane B's rendering sorts a plain object's keys: key order is compared for a Map and a Set, not for a plain object.
+- A thrown value is compared only as thrown: the model's fault holds an opaque value.
+- Units that are not executable or not bridged are counted, never run through an invented body.
+
+## Measurement
+
+See the lane report: `harness/lanes/model-conformance.md` under W.
