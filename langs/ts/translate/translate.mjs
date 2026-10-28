@@ -35,6 +35,7 @@ import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-for
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { infinitySign } from '../common.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
@@ -5306,6 +5307,20 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (ts.isPrefixUnaryExpression(n) && [K.MinusToken, K.PlusToken].includes(n.operator)) { const v = finiteLiteral(n.operand); return v === null ? null : n.operator === K.MinusToken ? -v : v; }
     return null;
   };
+  // the text of a node with every infinity spelling written one way (`Infinity`, `Number.POSITIVE_INFINITY`, `-Infinity`,
+  // `Number.NEGATIVE_INFINITY`): the opaque key of a unit names the value, so the spellings of one value are one function
+  function infinityText(node, current) {
+    const from = node.getStart(sf), edits = [];
+    const walk = (n) => {
+      const sign = ts.isTypeNode(n) ? 0 : infinitySign(checker, n, sf, current);
+      if (sign) { edits.push([n.getStart(sf) - from, n.end - from, sign > 0 ? 'Number.POSITIVE_INFINITY' : 'Number.NEGATIVE_INFINITY']); return; }
+      ts.forEachChild(n, walk);
+    };
+    walk(node);
+    let text = node.getText(sf);
+    for (const [a, b, t] of edits.reverse()) text = text.slice(0, a) + t + text.slice(b);
+    return text;
+  }
   for (const u of order) {
     const deps = new Set(); numericDeps.set(u.name, deps);
     const sources = new Set(), seen = new Set(); numericSources.set(u.name, sources);
@@ -5325,7 +5340,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
         const d = checker.getSymbolAtLocation(n)?.valueDeclaration;
         const other = unitByDecl.get(d) ?? (d && ts.isVariableDeclaration(d) ? unitByDecl.get(d.initializer) : null);
         if (other && other !== u) deps.add(other.name);
-        if (d && ts.isVariableDeclaration(d) && d.parent?.parent?.parent === sf && d.initializer && !other) { sources.add(d.getText(sf)); scan(d.initializer); }
+        if (d && ts.isVariableDeclaration(d) && d.parent?.parent?.parent === sf && d.initializer && !other) { sources.add(infinityText(d, u.node)); scan(d.initializer); }
         if (['NaN', 'Infinity'].includes(n.text) && originOf(checker, n, sf, u.node).kind === 'global') numericOpaque.add(u.name);
         if (['parseInt', 'parseFloat', 'Number'].includes(n.text) && n.parent && ts.isCallExpression(n.parent) && n.parent.arguments[0] === n && ts.isPropertyAccessExpression(n.parent.expression) && originOf(checker, n, sf, u.node).kind === 'global' && (n.text !== 'Number' || !((() => { try { return elemType(n.parent.expression.expression)?.flags ?? 0; } catch { return 0; } })() & (TF.NumberLike | TF.BooleanLike)))) numericOpaque.add(u.name); // a named numeric parse as an array callback, as its direct call
       }
@@ -5355,7 +5370,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const visit = (name) => { if (seen.has(name)) return; seen.add(name); for (const dep of numericDeps.get(name) ?? []) visit(dep); };
     visit(u.name);
     if (moduleUnitShape(u).reads) return createHash('sha256').update(sf.text + '\n' + u.name).digest('hex');
-    return createHash('sha256').update([...seen].sort().map((name) => `${name}:${fns.get(name).fn.getText(sf)}\n${[...(numericSources.get(name) ?? [])].sort().join('\n')}`).join('\n')).digest('hex');
+    return createHash('sha256').update([...seen].sort().map((name) => `${name}:${infinityText(fns.get(name).fn, fns.get(name).node)}\n${[...(numericSources.get(name) ?? [])].sort().join('\n')}`).join('\n')).digest('hex');
   }
   function opaqueNumericUnit(u, rt, specs) {
     const params = [], args = [];
