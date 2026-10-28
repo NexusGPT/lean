@@ -25,11 +25,11 @@ one opaque unit keyed by its source (`opaqueNumericUnit`, the path an explicit `
 its world where such a -0 may escape (`NegZeroMark`, heap-stage5.md 13), so its lemma does not close.
 
 "May be -0": `-e` unless e is a nonzero literal or a name a test proved nonzero (`n > 0 ? -n : 1`); `a * b` unless one
-side is a positive literal and the other may not; `a / b` unless b is a positive literal and a may not; `%`, `**`,
-Math.round, ceil, trunc, cbrt, sin and the Math functions not named below, parseInt, parseFloat, Number of a string;
-`a - b` when a may and b is not a nonzero literal; `a + b` when both may; `a || b` when b may; `a ?? b`, `a && b`, a
-conditional when either may; floor, sqrt, fround, sign and Number(n) pass their argument on; min and max when any
-argument may; a same-file call when one of its number results may; a local by the least fixpoint over its writes.
+side is a positive literal and the other may not; `a / b` unless b is a positive literal and a may not; `%`;
+Math.round, ceil, trunc (a value in (-1, 0)), parseInt, parseFloat, Number of a string; `a - b` when a may and b is not
+a nonzero literal; `a + b` when both may; `a || b` when b may; `a ?? b`, `a && b`, a conditional when either may;
+`**` and every other Math function pass their first argument's -0 on (sin, cbrt, pow, atan2's y); min and max when an
+argument may (a spread of an input holds none); a same-file call when one of its results may; a local by fixpoint.
 
 ## Soundness
 
