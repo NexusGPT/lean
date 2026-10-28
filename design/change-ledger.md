@@ -18,3 +18,13 @@ Working directory for all commands: `/Users/assem/nexus/nexus-organisation/work/
 `pr.mjs` selects work from those links and emits ASK rows for artifact/unassigned edits, including their edit identities. Artifact ASK means no equivalence check was performed for that artifact. `reportJSON` adds `ledger` (files, edits, units and routing reconciliation). Markdown prints edit identities and per-class identity sets. Existing unit verdicts retain their meaning.
 
 `node langs/ts/ci/ledger.test.mjs` now exits 0, including the previously red missing-object-member assertion and duplicate-identity rejection.
+
+## Supervision protocol
+
+`supervise.mjs` creates a unique run directory and writes the change/task manifest before starting a checker process. Every task has an attempt UUID and private directory. Artifacts are fsynced, renamed, hashed and receipted before the supervisor marks an attempt done. Only the outer process writes terminal status. Abnormal exit, deadline termination, launch loss, missing completion and invalid artifacts become crash, timeout, lost-worker or incomplete-artifact. Reconciliation compares task identities and their named lane identities; repeat reconciliation returns the same terminal result. Optional caller tasks are registered before those checks start. Non-witness caller outcomes remain durable but do not add presentation rows.
+
+The supervisor commits `terminal.json` before generating Markdown, JSON projections or refusal annotations. Each report names that file. `reportJSON` exposes `runDir`, `terminalFile` and `reconciliation`, including the expected/terminal identity sets. A failed report writer cannot destroy an earlier artifact.
+
+`materializeSources` reads Git blobs into the private run, preserving relative source/configuration paths. It excludes secret paths and symlinks; existing dependency installations are read through node_modules links. Nothing is installed. For WORKTREE the tracked files are copied; the checker rejects a change frame that moves between registration and dispatch.
+
+`node langs/ts/ci/supervise.test.mjs`: red before implementation (no private run directory, exit 1); green after implementation (exit 0). The fixture injects worker/report crashes, deadline expiry, absent output, abandoned work and a corrupted artifact. The worker-crash fixture retains a named ASK and exact reconciliation; the report-crash fixture retains its WITNESS and artifact hash while the CLI exits 1.
