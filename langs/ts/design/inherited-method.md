@@ -18,8 +18,8 @@ method's text and everything that text runs, and the receiver it reads and write
 `reach.mjs` `reachOf.inheritedKeyText(call)`: the checker resolves `m` on the type of `this`; it must be one method
 declaration with a body, on a class of the receiver's `extends` chain above the receiver's class. The key is the
 base method's reach in its own file (`makeReach` on that file: the method, the members it uses on `this`, the
-functions and bindings it names, the import statements, the classes a value carries out), plus, for every member it
-names on `this` that a third file declares, that member's reach, recursively. The translator
+functions and bindings it names, the import statements, the classes a value carries out), joined with the reach of
+every method or accessor it runs on `this`, in whatever file declares it (a grand-base in a third file included). The translator
 (`translate.mjs`, the inherited read in the `this` call reading) names the transition
 `<Receiver>_m_of_<Base>_<sha256 of the key, 16 hex>`; the cell audit counts that read as modelled.
 
@@ -36,8 +36,10 @@ the method's run never goes keeps the key (the unrelated change still proves).
 The reading is null, with a reason, when the transition could not stand for the call:
 - `m` is a field holding a function, an overload set split across classes, abstract, or declared without a body;
 - a class between the receiver's class and the base, or a subclass of the receiver's class in this file, declares a
-  member the base code names on `this` (the base would run that override, whose text the key leaves out);
-- the base code (its own run, members of the receiver's chain) writes a member of `this`, calls a mutator
+  method or accessor the base code names on `this`, or any member where the base names a method (the base would run
+  that override, whose text the key leaves out); a field redeclared below is state, read through `self`;
+- the base code (the method and every method or accessor it runs on `this`) calls a function held in a field of
+  `this`, writes a member of `this`, calls a mutator
   (`push`, `set`, `sort`, ...) on one, hands out `this` or a non-primitive member of it (an argument, a return, a
   binding), reads a computed member of `this`, or uses `super`. The caller's own reading keeps its receiver fields as
   values or world cells it knows; a base that changed them behind the transition would make a shared, wrong model,
@@ -67,4 +69,5 @@ ten-mutants rows 22 to 24 and the identical draft: the lane report.
 
 Instances (nexus-1130 tree, `workflow-node-executor/nodes/`): `EnhancedPluginNode.ts:40` (enters, see the report),
 `BranchingNode.ts:28`, `AIPassiveSatisfactionScoreNode.ts:86` and `:113`, `AITaskNode.ts:83` (the same base method
-of `Abstract.ts:76`: they enter on the same terms).
+of `Abstract.ts:76`: they enter on the same terms); `EnhancedPluginNode.ts:228` `this.generateInput` stays out
+(`recursiveFillInputWithContext` calls `this.hasVariable`, an arrow held in a field).
