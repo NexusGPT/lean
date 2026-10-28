@@ -28,6 +28,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { originOf } from '../common.mjs';
+import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
 // the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
 // design/library-ops.dfy and against the engine by exec/transitions.mjs on Test262); the prelude instantiates a row's
@@ -366,19 +367,23 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // callback, a function value, an async result, a spread argument; and in a file with a discriminated union (it could
   // rewrite a discriminant under a narrowing).
   const callUsed = new Map(); // key -> [argument types, result type]
-  // the file's method code: a transition may run a method of an object it reaches (an instance of a class of this file,
-  // an object literal with methods built here), and the heap world holds fields, not code. So every transition's key
-  // carries a hash of the texts of the file's class members and object-literal methods: a changed method makes every
-  // transition another one (unproved), never the same one over different code
-  let codeKeyMemo = null;
-  const codeKey = () => { if (codeKeyMemo !== null) return codeKeyMemo; const parts = []; const w = (n) => { if ((ts.isClassDeclaration(n) || ts.isClassExpression(n))) for (const m of n.members) if (!ts.isPropertyDeclaration(m) || (m.initializer && (ts.isArrowFunction(m.initializer) || ts.isFunctionExpression(m.initializer)))) parts.push(m.getText(sf)); if (ts.isObjectLiteralExpression(n)) for (const p of n.properties) if (ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p) || ts.isSetAccessorDeclaration(p) || (ts.isPropertyAssignment(p) && (ts.isArrowFunction(unparen(p.initializer)) || ts.isFunctionExpression(unparen(p.initializer))))) parts.push(p.getText(sf)); if (hasDecorator(n)) parts.push(n.modifiers.filter((m) => m.kind === K.Decorator).map((m) => m.getText(sf)).join(' ')); ts.forEachChild(n, w); }; w(sf); codeKeyMemo = hash(parts.join('\n')); return codeKeyMemo; };
+  // the code a transition may run: a method of an object it reaches (an instance of a class of this file, an object
+  // literal with methods built here), a function of this file handed to it as a value. The heap world holds fields,
+  // not code, so every transition's key carries a hash of that code: the code reachable from the values the unit
+  // containing the call touches, transitively (reach.mjs, design/hash-keys.md). A changed method the unit may reach
+  // makes every transition another one (unproved), never the same transition over different code; an edit the unit
+  // cannot reach leaves its transitions as they were
+  const reachOf = makeReach(checker, sf);
+  const unitNodes = new Set([...fns.values()].map((u) => u.node));
+  const codeKeyMemo = new Map();
+  const codeKey = (e) => { let n = e; while (n && !unitNodes.has(n)) n = n.parent; const k = n ?? sf; if (!codeKeyMemo.has(k)) codeKeyMemo.set(k, hash(n ? reachOf(n).code.join('\n\u0000') : sf.text)); return codeKeyMemo.get(k); };
   function outsideCall(e) {
     if (ts.isCallExpression(e) && !e.questionDotToken && !e.typeArguments && ts.isPropertyAccessExpression(e.expression) && !e.expression.questionDotToken && !e.arguments.some((a) => ts.isSpreadElement(a)) && ((shapeOf(typeOf(e.expression.expression))?.kind === 'handle' && !(ts.isIdentifier(e.expression.expression) && originOf(checker, e.expression.expression, sf, null).kind === 'global')) || (clsOf(e.expression.expression) && fns.has(`${clsOf(e.expression.expression).name.text}.${e.expression.name.text}`) && (e.expression.expression.kind !== K.ThisKeyword || replaceable(clsOf(e.expression.expression), e.expression.name.text))))) { // a method of a handle, or of another instance of a class of this file (a subclass elsewhere may override it): a transition taking the receiver first
       const rcv = shapeOf(typeOf(e.expression.expression)); const hs = rcv?.kind === 'handle' ? rcv : { name: `local:${clsOf(e.expression.expression).name.text}` }; const sig = checker.getResolvedSignature(e); if (!sig) return null;
       const rt = sig.getReturnType(); const rs = isVoidT(rt) ? { kind: 'void' } : shapeOf(rt); if (!rs) return null;
       const as = e.arguments.map((a) => (isAbsent(a) ? null : shapeOf(typeOf(a)))); if (as.some((x) => !x)) return null;
       const ds = ['Ref', ...as.map(valD)], rd = valD(rs); const m = e.expression.name.text;
-      return { key: `HCall_${m.replace(/[^A-Za-z0-9]/g, '_')}_${hash(hs.name + '.' + m + '/' + ds.join(',') + '>' + rd + '#' + codeKey())}`, ds, rd, rs, recv: e.expression.expression };
+      return { key: `HCall_${m.replace(/[^A-Za-z0-9]/g, '_')}_${hash(hs.name + '.' + m + '/' + ds.join(',') + '>' + rd + '#' + codeKey(e))}`, ds, rd, rs, recv: e.expression.expression };
     }
     if (!ts.isCallExpression(e) || e.questionDotToken || e.typeArguments || !ts.isIdentifier(e.expression) || e.arguments.some((a) => ts.isSpreadElement(a))) return null;
     const sym = checker.getSymbolAtLocation(e.expression); const d0 = sym?.declarations?.[0];
@@ -388,7 +393,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const rt = sig.getReturnType(); const rs = isVoidT(rt) ? { kind: 'void' } : shapeOf(rt); if (!rs) return null;
     const as = e.arguments.map((a) => (isAbsent(a) ? null : shapeOf(typeOf(a)))); if (as.some((x) => !x)) return null;
     const ds = as.map(valD), rd = valD(rs);
-    return { key: `Call_${ik.slice(4)}_${hash(ds.join(',') + '>' + rd + '#' + codeKey())}`, ds, rd, rs };
+    return { key: `Call_${ik.slice(4)}_${hash(ds.join(',') + '>' + rd + '#' + codeKey(e))}`, ds, rd, rs };
   }
   // the copy forms: `new Set(xs)` of an array (its items, the first of equal ones kept), `new Set(s)` of a set and
   // `new Map(m)` of a map (the same entries in the same order), `Array.from(x)` of an array or a set (its items): each a

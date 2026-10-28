@@ -42,6 +42,7 @@ import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '..
 import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
+import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText } from '../library-rows.mjs';
 
 const K = ts.SyntaxKind;
@@ -161,6 +162,7 @@ export function translate(file, fnName, opts = {}) {
     throw new Unsupported(`outside the subset:\n${gate.map((g) => `  ${g.file}:${g.line}:${g.col}  ${g.rule}  ${g.msg}`).join('\n')}`);
   }
   // ----- references, layer 2: the heap core (heap.mjs) is planned over the final order; its units are emitted there -----
+  const reachOf = makeReach(checker, sf);
   const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
   const heapHyps = [];
   const cellLines = []; // `// CELLS <unit>: <json>`: the persistent cells the unit touches (module cells, fields of this, outside roots), each read or written, each matched against the transition the emitted text carries; a touched cell with no transition is an obligation, and lane A says ASK:obligation
@@ -5701,8 +5703,10 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const inputs = [WORLD, ...(u.cls && !u.isStatic ? [SELF] : []), ...u.params.map((p, i) => ts.isIdentifier(p.name) ? `${dn(p.name.text)}${p.initializer ? '_opt' : ''}` : `arg${i}_`)];
     const types = ['World', ...(u.cls && !u.isStatic ? [selfType(u)] : []), ...u.params.map((p) => { const d = dtype(typeOf(p.name), p); return p.initializer ? `Option<${d}>` : p.questionToken && !d.startsWith('Option<') ? `Option<${d}>` : d; })];
     const outputs = ['World', u.isCtor ? 'Unit' : dtype(retType(u), u.node), ...mutatedOf(u).map((m) => dtype(typeOf(u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m).name), u.node))];
-    // the complete source keeps every module initializer and same-file dependency in the opaque identity
-    return `${external(`Module_file_block_${hash(sf.text)}_${u.name}`, types, `(${outputs.join(', ')})`)}(${inputs.join(', ')})`;
+    // the identity is the code the unit's run reaches (reach.mjs): its own text, the module bindings and same-file
+    // declarations it names, transitively, and the code of every value it may hand the outside. A changed reachable
+    // declaration is another function; an edit the unit cannot reach leaves it the same one
+    return `${external(`Module_file_block_${hash(reachOf(u.node).decls.join('\n\u0000'))}_${u.name}`, types, `(${outputs.join(', ')})`)}(${inputs.join(', ')})`;
   }
   // a write through the element a loop walks (a for-of binding, a parameter of a synchronous array callback): `r.n = 0`,
   // `r.tags.push(x)`, `Object.assign(r, s)`, `delete r.f`. The value reading binds a copy of the element, so it would
