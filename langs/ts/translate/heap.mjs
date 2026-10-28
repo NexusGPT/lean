@@ -28,6 +28,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { originOf } from '../common.mjs';
+import { builtRecord } from '../common.mjs'; // the record-node build takes a spread of a record the unit built (open-datatype)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint

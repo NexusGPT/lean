@@ -120,6 +120,14 @@ export function specOf(file, unitName, opts = {}) {
       const keys = openKeys().filter((k) => !props.some((p) => p.name === k)).slice(0, 2);
       for (const k of keys.length ? keys : ['k0']) out.fields[k] = { spec: spec(ix.type, depth + 1), optional: true };
     }
+    // a plain record may carry a key its type does not name (structural typing: a caller passes a wider object), which a
+    // spread, Object.assign, `in` and a key enumeration see (design/open-datatype.md): zero or one such entry, a string
+    // keyed by a name the unit mentions and the type does not declare (a generic key when it names none), never an
+    // Object.prototype name; a literal type of the unit itself is no outside value and draws none
+    else if (!props.some((p) => p.valueDeclaration && ts.isObjectLiteralExpression(p.valueDeclaration.parent))) {
+      const k = openKeys().find((x) => !props.some((p) => p.name === x)) ?? 'k0';
+      out.fields[k] = { spec: { kind: 'string' }, optional: true, extra: true };
+    }
     return out;
   }
   const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, spec: spec(checker.getTypeAtLocation(p.name)) }));
@@ -146,6 +154,20 @@ export function specOf(file, unitName, opts = {}) {
     const walkErr = (n) => { if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword && errorClass(n.right)) { const i = source(n.left); if (i >= 0) errorParams.add(i); } ts.forEachChild(n, walkErr); };
     if (u.body) walkErr(u.body);
     for (const i of errorParams) { const p = params[i]; if (p && (p.spec.kind === 'opaque' || p.spec.kind === 'record' || p.spec.kind === 'ref')) p.spec = { kind: 'union', options: [{ kind: 'error', chain: 6 }, p.spec] }; }
+  }
+  // a string parameter used as the key of a record with fields and a string index (`h[k]`, `k in h`): drawn half the
+  // time among the keys that record draws (its index entries, its declared fields), so a read of an entry the record
+  // holds is met, not left to a free string (design/open-datatype.md)
+  if (u.body) {
+    const pIndex = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e)) return -1; const d = checker.getSymbolAtLocation(e)?.valueDeclaration; return d && ts.isParameter(d) ? u.params.indexOf(d) : -1; };
+    const keyed = new Map();
+    const walkKey = (n) => {
+      const pair = ts.isElementAccessExpression(n) ? [n.argumentExpression, n.expression] : ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.InKeyword ? [n.left, n.right] : null;
+      if (pair) { const i = pIndex(pair[0]); const rt0 = checker.getTypeAtLocation(pair[1]); const props = rt0 && rt0.flags & TF.Object ? checker.getPropertiesOfType(rt0) : []; if (i >= 0 && params[i]?.spec.kind === 'string' && props.length && checker.getIndexInfoOfType(rt0, ts.IndexKind.String)) { const extra = openKeys().filter((k) => !props.some((p) => p.name === k)).slice(0, 2); keyed.set(i, [...(extra.length ? extra : ['k0']), ...props.map((p) => p.name)]); } }
+      ts.forEachChild(n, walkKey);
+    };
+    walkKey(u.body);
+    for (const [i, keys] of keyed) params[i].spec = { kind: 'union', options: [{ kind: 'literal', values: keys }, params[i].spec] };
   }
   let rt = checker.getSignatureFromDeclaration(u.fn).getReturnType();
   if (rt.symbol?.name === 'Promise') rt = checker.getTypeArguments(rt)[0];

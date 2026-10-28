@@ -1289,7 +1289,22 @@ export function openRecordIn(checker, keyNode, objType) {
   if (!open.length) return null;
   let k = keyNode; while (ts.isParenthesizedExpression(k)) k = k.expression;
   if (ts.isStringLiteralLike(k) && open.every((p) => checker.getPropertyOfType(p, k.text))) return null;
+  // since open-datatype: an open record with a string index carries its undeclared keys (the datatype's open_index_), so
+  // an undeclared literal key and a computed key are read there; a computed key stays refused where a declared field is
+  // optional (a missing field and a field holding undefined read alike, and `in` tells them apart), on a union of
+  // records, and on a number index alone
+  if (parts.length === 1 && open.length === 1 && openRecordReadWhy(checker, open[0], ts.isStringLiteralLike(k) ? k.text : null) === null && (ts.isStringLiteralLike(k) || !checker.getPropertiesOfType(open[0]).some((p) => p.flags & ts.SymbolFlags.Optional))) return null;
   return `${OPEN_RECORD_WHY(checker.typeToString(objType))}; \`in\` answers only a declared key`;
+}
+// A key an open record's type does not declare, by dot, bracket or `in` (design/open-datatype.md): the datatype of a type
+// with fields and a string index signature carries the undeclared keys as a dictionary (its open_index_ slot), so the
+// read is the dictionary's read; null when it is read, else { rule, why }: a number index alone has no such slot
+// (dynamic-key), a name of Object.prototype is read through the prototype, not the own keys (prototype)
+export function openRecordReadWhy(checker, t, keyName) {
+  if (!openRecordType(checker, t)) return null;
+  if (!checker.getIndexInfoOfType(t, ts.IndexKind.String)) return { rule: 'dynamic-key', why: OPEN_RECORD_WHY(checker.typeToString(t)) };
+  if (keyName !== null && (OBJECT_PROTO_NAMES.includes(keyName) || keyName === '__proto__')) return { rule: 'prototype', why: `${keyName} names a member of Object.prototype, which a record reads through its prototype; read a declared field or an entry under another name` };
+  return null;
 }
 export const OPEN_RECORD_WHY = (typeText) => `${typeText} declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own`;
 // a non-null assertion on a value whose type admits null or undefined: `x!` checks nothing at run time, so the absent
@@ -1668,4 +1683,52 @@ export function namedPromiseHandler(checker, a, sf, current, arity) {
   const nativePromise = !!rt.symbol && rt.symbol === checker.resolveName('Promise', undefined, ts.SymbolFlags.Type, false);
   if ((rt.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) || (!nativePromise && checker.getPropertyOfType(rt, 'then'))) return refused('promise-thenable', 'give a named handler a plain or native Promise return type');
   return { admit: true, value, origin: o.kind === 'unit' ? 'unit' : o.kind === 'module' ? 'binding' : 'outside', sig: sg };
+}
+
+// A record whose own keys the unit fixed (design/open-datatype.md): an object literal whose every member is a named
+// property, a shorthand or a spread of such a record, or a `const` local of the unit that such a literal initialises.
+// Any other record value (a parameter, an import, a call result, a field of either) may carry keys its type does not
+// name, which a spread and Object.assign copy (ECMA-262 CopyDataProperties). The value reading carries them in the
+// datatype's rest; the heap core builds a node of the declared fields only, so it takes a spread of a built record alone.
+export function builtRecord(checker, e, unitNode, seen = new Set()) {
+  while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression?.(e)) e = e.expression;
+  if (ts.isIdentifier(e)) {
+    const d = checker.getSymbolAtLocation(e)?.valueDeclaration;
+    if (!d || seen.has(d) || !unitNode || !(d.pos >= unitNode.pos && d.end <= unitNode.end) || !ts.isVariableDeclaration(d) || !d.initializer || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) return false;
+    seen.add(d); return builtRecord(checker, d.initializer, unitNode, seen);
+  }
+  if (!ts.isObjectLiteralExpression(e)) return false;
+  return e.properties.every((p) => ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p) || (ts.isSpreadAssignment(p) && builtRecord(checker, p.expression, unitNode, seen)));
+}
+// The spreads of a record literal the value reading carries (design/open-datatype.md), shared by the lint (rule
+// spread-source) and the translator (objectLit). One spread first is the source updated by the later members, its rest
+// included; any other layout is one uninterpreted construction of the member values in order, keyed by the layout,
+// which holds each source whole, rest included. Both are functions of the values (an any value is opaque, a union
+// holds its member, an index entry is a key of its dictionary), except where a key given before a spread names an
+// optional field of the source's type: the member survives only if the source lacks the key, and a missing optional
+// field and one holding undefined are one value in the reading (None). Returns the text of that refusal, or null. A dictionary literal is not judged here.
+export function spreadReadWhy(checker, lit) {
+  const TF = ts.TypeFlags;
+  const spreads = lit.properties.filter(ts.isSpreadAssignment);
+  if (!spreads.length || (spreads.length === 1 && lit.properties[0] === spreads[0])) return null;
+  const t = checker.getTypeAtLocation(lit);
+  if (t && t.flags & TF.Object && checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getPropertiesOfType(t).length) return null;
+  if (lit.properties.some((p) => !(ts.isSpreadAssignment(p) || ts.isShorthandPropertyAssignment(p) || (ts.isPropertyAssignment(p) && !ts.isArrowFunction(p.initializer) && !ts.isFunctionExpression(p.initializer))))) return 'a method or a function value beside a later spread is not read; spread first, or build the record in steps';
+  const parts = (x) => (x.flags & TF.Union ? x.types : [x]).filter((y) => !(y.flags & (TF.Undefined | TF.Null | TF.Void | TF.BooleanLiteral | TF.Boolean)));
+  const keysOf = (x) => new Set(parts(x).flatMap((y) => (y.flags & (TF.Object | TF.Intersection) ? checker.getPropertiesOfType(y).map((q) => q.name) : [])));
+  const optional = (x, k) => parts(x).some((y) => { const q = y.flags & (TF.Object | TF.Intersection) ? checker.getPropertyOfType(y, k) : null; return !!q && !!(q.flags & ts.SymbolFlags.Optional); });
+  const before = new Set(); let unknownBefore = false;
+  for (const p of lit.properties) {
+    if (ts.isSpreadAssignment(p)) {
+      const st = checker.getTypeAtLocation(p.expression);
+      const hit = [...before].find((k) => optional(st, k));
+      if (!hit && unknownBefore && [...keysOf(st)].some((k) => optional(st, k))) return 'a computed key given before this spread may name a key the source lets be missing or undefined, which the reading tells apart nowhere; spread first and write the members after it';
+      if (hit) return `the key ${JSON.stringify(hit)} given before this spread survives only where the source lacks it, and the source's type lets it be missing or undefined there, which the reading tells apart nowhere; spread first and write the members after it`;
+      for (const k of keysOf(st)) before.add(k);
+      continue;
+    }
+    const name = p.name && (ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) || ts.isNumericLiteral(p.name)) ? p.name.text : null;
+    if (name === null) unknownBefore = true; else before.add(name);
+  }
+  return null;
 }
