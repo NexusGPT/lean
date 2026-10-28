@@ -29,6 +29,12 @@ one text. Pair unit sameName, `d["toString"] ?? 0`:
   else if "toString" in ObjectProtoNames_ then ext_proto_member_int_string("toString") else 0))
 ```
 
+The sites, in translate.mjs: the helpers `protoValue` and `unownedRead` beside `missingKey`; three that read an
+absent value for every name before (`d[k] ?? r` in the binary `??` branch, the entries-loop binding, the dictionary
+dot read in fieldOf) and three in elemAccess's dictionary branch (the plain read, the read typed `V | undefined` under
+noUncheckedIndexedAccess, and `protoMember` of the `T | undefined` values, whose text is unchanged). The `x!` read is
+not one: it reads absent only on a None, which a prototype name never gives.
+
 A unit a made prototype reaches (`inPrototypeReach`) keeps the own-key reading, as `missingKey` already does. The heap
 core is unchanged: a missing key marks the world out of range, so no lemma rests on its value.
 
