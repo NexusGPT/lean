@@ -178,8 +178,8 @@ export function makeReach(checker, sf) {
   // receiver's class in this file) overrides a member the base code names on `this`; and the base code changes nothing
   // the caller reads from its receiver: it writes no member of `this`, calls no mutator on one, never hands `this` or
   // a non-primitive member of it to anyone, and uses no `super` and no computed member of `this`. A member it names
-  // on `this` that another file declares is read the same way, its reach joining the key. Anything else: null, with
-  // the reason, and the caller keeps its unkeyed name (the cell audit then says ASK).
+  // on `this` that another file declares is read the same way, its reach joining the key. Anything else: the
+  // transition is still named by its key, and the caller's read stays an obligation (the cell audit says ASK).
   const reaches = new Map([[sf, reachOf]]);
   const reachFor = (s) => { if (!reaches.has(s)) reaches.set(s, makeReach(checker, s)); return reaches.get(s); };
   const heritageOf = (c) => { const h = c.heritageClauses?.find((x) => x.token === K.ExtendsKeyword)?.types?.[0]; if (!h) return null; let sym = checker.getSymbolAtLocation(h.expression); if (sym && sym.flags & ts.SymbolFlags.Alias) { try { sym = checker.getAliasedSymbol(sym); } catch { return null; } } const d = sym && (sym.valueDeclaration ?? sym.declarations?.[0]); return isClassLike(d) ? d : null; };
@@ -189,9 +189,16 @@ export function makeReach(checker, sf) {
   const MUTATING = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   const readOnlyUse = (top) => { const p = top.parent; if (!p) return false; if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p)) && p.expression === top) return true; if (ts.isConditionalExpression(p) && p.condition === top) return true; if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true; if (ts.isTypeOfExpression(p)) return true; return ts.isBinaryExpression(p) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(p.operatorToken.kind); };
   const memberDecls = (name, recvNode) => { let t; try { t = checker.getTypeAtLocation(recvNode); } catch { return null; } const p = t && checker.getPropertyOfType(t, name); return p ? (p.declarations ?? []) : null; };
+  // `this.m(args)` or `super.m(args)`: { base, key, admitted, why }, or { why } alone when m is not one method with a
+  // body on the receiver's extends chain (a field holding a function, a declaration file). The key always covers the
+  // code that decides the call: the base method's reach, every method or accessor it runs on `this` or `super` in any
+  // file, and every member below the base that overrides one of those names (that override is what runs). `admitted`
+  // says whether the transition may also stand for the receiver afterwards (the conditions above); `why` names the first
+  // condition that failed.
   reachOf.inheritedKeyText = (call) => {
     const f = call.expression;
-    if (!ts.isPropertyAccessExpression(f) || f.expression.kind !== K.ThisKeyword || !ts.isIdentifier(f.name)) return { why: 'not a method read on this' };
+    const viaSuper = !!f && ts.isPropertyAccessExpression(f) && f.expression.kind === K.SuperKeyword;
+    if (!ts.isPropertyAccessExpression(f) || !(f.expression.kind === K.ThisKeyword || viaSuper) || !ts.isIdentifier(f.name)) return { why: 'not a method read on this or super' };
     let recvClass = f.parent; while (recvClass && !isClassLike(recvClass)) recvClass = recvClass.parent;
     if (!recvClass) return { why: 'no class around this' };
     const chain = chainOf(recvClass);
@@ -204,47 +211,49 @@ export function makeReach(checker, sf) {
     const below = chain.slice(0, at); // the receiver's class and the classes between it and the base: their members shadow the base's
     const subclasses = []; const findSub = (n) => { if (isClassLike(n) && n !== recvClass && chainOf(n).includes(recvClass)) subclasses.push(n); ts.forEachChild(n, findSub); }; findSub(sf);
     const codeMember = (m) => ts.isMethodDeclaration(m) || ts.isGetAccessorDeclaration(m) || ts.isSetAccessorDeclaration(m);
-    const shadows = (name, baseIsCode = true) => [...below, ...subclasses].some((c) => c.members.some((m) => memberName(m) === name && (codeMember(m) || baseIsCode))); // a method or accessor below runs instead of the base's member; any member below replaces a base method
+    const shadowing = (name, baseIsCode = true) => [...below, ...subclasses].flatMap((c) => c.members.filter((m) => memberName(m) === name && (codeMember(m) || baseIsCode))); // a method or accessor below runs instead of the base's member; any member below replaces a base method
     const texts = [], seen = new Set();
     let why = null;
+    const fail = (w) => { if (!why) why = w; };
+    const keyOf = (decl) => { const s = decl.getSourceFile(); if (!s.isDeclarationFile) texts.push(reachFor(s).keyText(decl)); }; // the code text, wherever the file sits: two checkouts of one tree give one key
     const visit = (decl, depth) => {
-      if (why || seen.has(decl)) return; seen.add(decl);
-      if (depth > 16) { why = 'inherited members nest too deep'; return; }
-      const s = decl.getSourceFile();
-      if (s.isDeclarationFile || !decl.body) { why = `${memberName(decl) ?? '?'} has no body to read`; return; }
-      texts.push(reachFor(s).keyText(decl)); // the code text, wherever the file sits: two checkouts of one tree give one key
+      if (seen.has(decl)) return; seen.add(decl);
+      if (depth > 16) { fail('inherited members nest too deep'); return; }
+      keyOf(decl);
+      if (decl.getSourceFile().isDeclarationFile || !decl.body) { fail(`${memberName(decl) ?? '?'} has no body to read`); return; }
       // the base code's own `this`: the member's body and every method or accessor it runs on `this`, in any file
       const w = (n) => {
-        if (why) return;
         if (isClassLike(n)) return; // `this` inside another class is another object
-        if (n.kind === K.SuperKeyword) { why = `${memberName(decl) ?? '?'} uses super`; return; }
-        if (n.kind === K.ThisKeyword) {
+        if (n.kind === K.SuperKeyword || n.kind === K.ThisKeyword) {
           const p = n.parent;
-          if (!(ts.isPropertyAccessExpression(p) && p.expression === n && ts.isIdentifier(p.name))) { why = `${memberName(decl) ?? '?'} hands out this or reads a computed member of it`; return; }
+          if (!(ts.isPropertyAccessExpression(p) && p.expression === n && ts.isIdentifier(p.name))) { fail(`${memberName(decl) ?? '?'} hands out this, calls super or reads a computed member`); ts.forEachChild(n, w); return; }
           const name = p.name.text;
+          if (n.kind === K.SuperKeyword) fail(`${memberName(decl) ?? '?'} uses super.${name}`);
           let top = p; while (top.parent && (ts.isPropertyAccessExpression(top.parent) || ts.isElementAccessExpression(top.parent) || ts.isNonNullExpression(top.parent) || ts.isParenthesizedExpression(top.parent)) && top.parent.expression === top) top = top.parent;
           const callee = !!top.parent && ts.isCallExpression(top.parent) && top.parent.expression === top;
           const tp = top.parent;
           const written = !!tp && ((ts.isBinaryExpression(tp) && tp.left === top && tp.operatorToken.kind >= K.FirstAssignment && tp.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(tp) || ts.isPostfixUnaryExpression(tp)) && (tp.operator === K.PlusPlusToken || tp.operator === K.MinusMinusToken)) || ts.isDeleteExpression(tp));
-          if (written) { why = `${memberName(decl) ?? '?'} writes this.${name}`; return; }
-          if (callee && top !== p && ts.isPropertyAccessExpression(top) && MUTATING.has(top.name.text)) { why = `${memberName(decl) ?? '?'} calls ${top.name.text} on a member of this`; return; }
-          if (!callee) { let t; try { t = checker.getTypeAtLocation(top); } catch { t = null; } if (!primitiveT(t) && !readOnlyUse(top)) { why = `${memberName(decl) ?? '?'} hands out this.${name}`; return; } }
-          const ds = memberDecls(name, n) ?? [];
-          const code = ds.filter(codeMember);
-          if (shadows(name, code.length > 0)) { why = `${name} is overridden below ${declClass.name?.text ?? 'the base'}`; return; }
-          if (callee && top === p && !code.length) { why = `${memberName(decl) ?? '?'} calls this.${name}, a function held in a field`; return; }
+          if (written) fail(`${memberName(decl) ?? '?'} writes this.${name}`);
+          if (callee && top !== p && ts.isPropertyAccessExpression(top) && MUTATING.has(top.name.text)) fail(`${memberName(decl) ?? '?'} calls ${top.name.text} on a member of this`);
+          if (!callee) { let t; try { t = checker.getTypeAtLocation(top); } catch { t = null; } if (!primitiveT(t) && !readOnlyUse(top)) fail(`${memberName(decl) ?? '?'} hands out this.${name}`); }
+          const code = (memberDecls(name, n) ?? []).filter(codeMember);
+          if (n.kind === K.ThisKeyword) { const over = shadowing(name, code.length > 0); if (over.length) { fail(`${name} is overridden below ${declClass.name?.text ?? 'the base'}`); for (const m of over) if (codeMember(m) && m.body) visit(m, depth + 1); else keyOf(m); } }
+          if (callee && top === p && !code.length) fail(`${memberName(decl) ?? '?'} calls this.${name}, a function held in a field`);
           const bodies = code.filter((d) => d.body); // an overload's signatures run nothing: the implementation does
-          if (code.length && !bodies.length) { why = `${name} has no body to read`; return; }
+          if (code.length && !bodies.length) fail(`${name} has no body to read`);
           for (const d of bodies) visit(d, depth + 1); // a method or accessor it runs on this: its run joins the key and the scan
         }
         ts.forEachChild(n, w);
       };
       ts.forEachChild(decl, w);
     };
-    if (shadows(f.name.text)) return { why: `${f.name.text} is overridden below the base` };
+    if (!viaSuper) { const over = shadowing(f.name.text); if (over.length) { fail(`${f.name.text} is overridden below the base`); for (const m of over) keyOf(m); } } // super.m skips the receiver's own m by definition
     visit(impl, 0);
-    if (why) return { why };
-    return { base: declClass.name?.text ?? 'anonymous', key: [...new Set(texts)].sort().join('\n\u0002') };
+    return { base: declClass.name?.text ?? 'anonymous', key: [...new Set(texts)].sort().join('\n\u0002'), admitted: !why, why };
   };
+  // `super(args)` in a constructor runs the base class's constructor and field initializers, then its own base's: the
+  // key is the text of every class above the receiver's along the extends chain (each with its members, heritage and
+  // decorators), in whatever file declares it; a class from a declaration file contributes its name only
+  reachOf.superInitKeyText = (cls) => chainOf(cls).slice(1).map((c) => (c.getSourceFile().isDeclarationFile ? `declared ${c.name?.text ?? '?'}` : reachFor(c.getSourceFile()).keyText(c))).join('\n\u0002');
   return reachOf;
 }

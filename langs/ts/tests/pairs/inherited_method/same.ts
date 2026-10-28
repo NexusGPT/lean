@@ -23,4 +23,10 @@ export class Item extends Base {
   size(s: string): number {
     return s.length;
   }
+  stamp(x: number): string {
+    return super.stamp(x) + "*";
+  }
+  note(x: number): string {
+    return super.note(x) + "+";
+  }
 }

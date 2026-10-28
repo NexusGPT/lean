@@ -171,6 +171,7 @@ export function translate(file, fnName, opts = {}) {
   const reachOf = makeReach(checker, sf);
   const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
   const heapHyps = [];
+  const superObligations = new Set(); // `<unit>\u0000<method>`: a `super.m()` whose base code may change the receiver behind its transition: an obligation (design/inherited-method.md)
   const inheritedReads = new Set(); // `<unit>\u0000<method>`: an inherited method the unit reads through its keyed transition (design/inherited-method.md)
   const cellLines = []; // `// CELLS <unit>: <json>`: the persistent cells the unit touches (module cells, fields of this, outside roots), each read or written, each matched against the transition the emitted text carries; a touched cell with no transition is an obligation, and lane A says ASK:obligation
   // the state-completeness audit (research 14 design (c)): what a unit reads and writes outside its own frame. A module
@@ -228,12 +229,14 @@ export function translate(file, fnName, opts = {}) {
       ts.forEachChild(n, aliasWalk);
     };
     aliasWalk(u.body ?? u.fn);
+    for (const k of superObligations) if (k.startsWith(`${u.name}\u0000`)) touch('super', k.slice(u.name.length + 1), 'read'); // a super call whose base code may change the receiver
     const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const has = (re) => re.test(text);
     const modelled = (c) => {
       if (c.alias && !/\bHWorld\b/.test(text)) return false; // a change through a call result reaches the cell only in the heap core
       if (/_block_/.test(text)) return true; // an opaque unit: one uninterpreted transition of the world, every cell inside it rides in that transition
       if (c.kind === 'module') return (!c.read || has(new RegExp(`Module_file_get_${esc(c.name)}_`))) && (!c.write || has(new RegExp(`Module_file_set_${esc(c.name)}_`))) && (!c.mutator || /\bWorld\b/.test(text));
+      if (c.kind === 'super') return false;
       if (c.kind === 'this' && c.read && !c.write && !c.mutator && !c.alias && inheritedReads.has(`${u.name}\u0000${c.name}`)) return true; // an inherited method read through its keyed transition (design/inherited-method.md)
       if (c.kind === 'this') return (!c.read || has(new RegExp(`(_get_${esc(c.name)}(_|\\()|Get_\\w+_${esc(c.name)}\\(|\\.${esc(c.name)}_f\\b|_${esc(c.name)}_Ext_\\w+\\(self\\))`))) && (!c.write || has(new RegExp(`(_set_${esc(c.name)}(_|\\()|Set_\\w+_${esc(c.name)}\\(|${esc(c.name)}_f :=)`))) && (!c.mutator || /\bH?World\b/.test(text)); // a heap-core method's mutator is a heap write of its HWorld
       return (!c.read || has(/(global_handle_|global_get_|module_require|module_import)/)) && !c.write;
@@ -3793,7 +3796,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (o.kind === 'global' && f.text === 'structuredClone' && n.arguments.length === 1) return expr(n.arguments[0]); // HTML 2.7.4: a copy of a value is the value in the value reading (the heap core allocates a fresh cell)
       return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
     }
-    if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); return externalCall(`super_init_${mangle(Tn)}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition
+    if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); const key = currentUnit.cls ? reachOf.superInitKeyText(currentUnit.cls) : ''; return externalCall(`super_init_${mangle(Tn)}${key ? '_' + createHash('sha256').update(key).digest('hex').slice(0, 16) : ''}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition named by the code of the classes above (design/inherited-method.md)
     if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
     const recv = f.expression, name = f.name.text;
     if (ts.isIdentifier(recv) && recv.text === 'Array' && name === 'isArray' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 1) {
@@ -3820,8 +3823,13 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return externalCall(`${awaited ? 'await_' : ''}${isAny(base) ? 'Any' : Td}_${name}`, n, [...n.arguments], `${v}.value`, Td, null, `${v}.Some?`);
     }
     if (recv.kind === K.SuperKeyword && classOf(currentUnit)) {
-      // `super.m(args)`: the parent class's method on this receiver, a transition of the world (its body is not read here)
+      // `super.m(args)`: the parent class's method on this receiver, a transition of the world (its body is not read here),
+      // named like `this.m` by the base, the method and the key of the code that decides it (reach.mjs inheritedKeyText,
+      // design/inherited-method.md): one base method is one transition however it is called. Where the base code may
+      // change the receiver behind the transition, the read is an obligation of the cell audit
       const T = selfType(currentUnit);
+      const inherited = reachOf.inheritedKeyText(n);
+      if (inherited.key) { if (!inherited.admitted) superObligations.add(`${currentUnit.name}\u0000${name}`); return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_of_${inherited.base}_${createHash('sha256').update(inherited.key).digest('hex').slice(0, 16)}`, n, [...n.arguments], SELF, T, true); }
       return externalCall(`${awaited ? 'await_' : ''}super_${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
     }
     if (recv.kind === K.ThisKeyword && classOf(currentUnit)) {
@@ -3844,7 +3852,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       // code its run reaches (reach.mjs inheritedKeyText, design/inherited-method.md), so a changed base is another
       // transition; where the reading does not hold the name stays unkeyed and the cell audit keeps the read an obligation
       const inherited = reachOf.inheritedKeyText(n);
-      if (inherited.key) { inheritedReads.add(`${currentUnit.name}\u0000${name}`); return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_of_${inherited.base}_${createHash('sha256').update(inherited.key).digest('hex').slice(0, 16)}`, n, [...n.arguments], SELF, T, true); }
+      if (inherited.key) { if (inherited.admitted) inheritedReads.add(`${currentUnit.name}\u0000${name}`); return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_of_${inherited.base}_${createHash('sha256').update(inherited.key).digest('hex').slice(0, 16)}`, n, [...n.arguments], SELF, T, true); }
       return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
     }
     {

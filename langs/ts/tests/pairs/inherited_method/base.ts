@@ -20,4 +20,10 @@ export class Base {
   word(x: number): string {
     return "w" + x;
   }
+  stamp(x: number): string {
+    return "s" + (x * 2);
+  }
+  note(x: number): string {
+    return "n" + x;
+  }
 }
