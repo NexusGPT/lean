@@ -860,6 +860,36 @@ export function lintFile(file, ranges = null, opts = {}) {
     expr(d.initializer);
   }
   const outsideWriteStatement = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; return !!x.parent && ts.isExpressionStatement(x.parent); };
+  // heap shapes (translate/heap.mjs, design/heap-stage5.md "Heap shapes"): a write through a node a parameter holds is a
+  // step on the explicit object graph, which the heap core reads exactly. A node a parameter holds is reached from a
+  // parameter of this unit by field steps only (`p.headers`, `p.a.b`, a `!` on the way); a const local bound to such a
+  // path is another name for that node; a same-file call that returns such a path of its own parameters (or of `this`),
+  // given the caller's parameter nodes, returns one. The value reading copies a node, so a unit outside the heap core
+  // keeps no value-reading lemma for these shapes (heap.mjs guard: its identity shape is unreadable): the proof lane
+  // answers through the core or not at all. A node that came from the outside (a module object, an import, a global
+  // registry) is no parameter's node and stays refused (escape heap_shapes_outside_node).
+  const plainNode = (t) => !!t && !(t.flags & TF.Union) && (plainDataRecord(checker, t) || (checker.isArrayType(t) && ((x) => !!x && (!!(x.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) || plainDataRecord(checker, x)))(checker.getTypeArguments(t)[0]))); // a plain data record, or an array of primitives or of plain data records: the shapes the heap core holds as cells
+  const primDict = (t) => !!t && !(t.flags & TF.Union) && !!(t.flags & TF.Object) && !checker.getPropertiesOfType(t).length && !t.getCallSignatures().length && !checker.getIndexInfoOfType(t, ts.IndexKind.Number) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !!(checker.getIndexInfoOfType(t, ts.IndexKind.String).type.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) && !(checker.getIndexInfoOfType(t, ts.IndexKind.String).type.flags & TF.Union && checker.getIndexInfoOfType(t, ts.IndexKind.String).type.types.some((x) => x.flags & (TF.Undefined | TF.Null))); // Record<string, T> of a primitive: the heap core's dictionary cell
+  const heldNodePath = (x) => { // the parameter of this unit whose node x is, and the field steps from it, or null
+    let steps = 0; x = unparenX(x);
+    for (;;) { if (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { x = x.expression; continue; } if (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; continue; } break; }
+    if (!ts.isIdentifier(x) || !currentFn) return null;
+    const o = declOf(x); if (o.kind !== 'local' || !isParam(o.decl) || o.decl.parent !== currentFn || !ownedHere(o.decl)) return null;
+    return { decl: o.decl, steps };
+  };
+  const heldAlias = (decl) => !!decl && !!currentFn && ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !!decl.initializer && !!(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && !aliasCalls.has(decl) && decl.pos >= currentFn.pos && decl.end <= currentFn.end && ownedHere(decl) && (heldNodePath(decl.initializer)?.steps ?? 0) >= 1 && plainNode(tOf(decl.name)); // `const names = b.names`: another name for a node a parameter holds
+  const returnsHeldPath = (u) => { // every return of the unit is a field path of one of its own parameters, or of `this` in a method
+    if (!u?.body || u.fn.asteriskToken || u.fn.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return false;
+    const held = (x) => { x = unparenX(x); while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; if (ts.isConditionalExpression(x)) return held(x.whenTrue) && held(x.whenFalse); let steps = 0; while (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; } if (!steps) return false; if (x.kind === K.ThisKeyword) return !!u.cls; if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.valueDeclaration; return !!d && ts.isParameter(d) && d.parent === u.fn; };
+    if (!ts.isBlock(u.body)) return held(u.body);
+    let ok = true, any = false; const w = (n) => { if (!ok || ts.isFunctionLike(n)) return; if (ts.isReturnStatement(n)) { any = true; if (!n.expression || !held(n.expression)) ok = false; } ts.forEachChild(n, w); }; ts.forEachChild(u.body, w); return ok && any;
+  };
+  const heldCall = (x) => { // a call whose result is a node the caller's parameters (or its receiver) hold: `pick(b, true)`, `this.current()`
+    x = unparenX(x); if (!ts.isCallExpression(x) || x.questionDotToken || !currentFn) return false;
+    const callee = sameFileCallee(x, currentClass); if (!callee || !returnsHeldPath(callee) || !plainNode(tOf(x))) return false;
+    if (ts.isPropertyAccessExpression(unparenX(x.expression)) && !(currentClass && !thisParam)) return false; // `this.m()` in a method of this file's class
+    return x.arguments.every((a) => ts.isSpreadElement(a) ? false : nonNull(tOf(a)).every((t) => !(t.flags & TF.Object)) || !!heldNodePath(a)); // every object handed in is a parameter's node
+  };
   // a write through a parameter of a synchronous array-method callback (`rows.forEach((r) => { r.n = 0; })`): that
   // parameter is the array's element at each step, so the write is the heap step `rows[i].n = 0` (common.mjs
   // elementWritePath). The heap core carries it in a `forEach` statement over a plain data record (plainDataRecord); the
@@ -945,11 +975,17 @@ export function lintFile(file, ranges = null, opts = {}) {
             return expr(e.right);
           }
           const throughElement = (() => { let x = l.expression; while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x)) { if (ts.isElementAccessExpression(x)) return true; x = x.expression; } return false; })();
+          if (!throughElement && heldCall(root)) { if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field'); expr(l.expression); return expr(e.right); } // a field of the node a same-file call returns (`pick(b, true).status = v`, `this.current().n = 0`): a heap step on that node
           if (throughElement) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`: a field of an element is written when the path from a parameter takes field and array-element steps only, each index a number that calls nothing (name it first: \`const k = ...\`), and \`!\` or \`as T\` stand only on an element, T its own type`);
           else if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
-          else if (aliasHere(o.decl, l)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl));
+          else if (aliasHere(o.decl, l) && !heldAlias(o.decl)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl)); // a const name for a node a parameter holds: the write is a step on that node (heap shapes)
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
+        }
+        else if (ts.isElementAccessExpression(l) && !l.questionDotToken && (heldNodePath(l.expression)?.steps ?? 0) >= 1 && primDict(tOf(l.expression))) { // a key of a dictionary a parameter's node holds (`r.headers[k] = v`, Record<string, T> of a primitive): DictSet_ on that node (heap.mjs); a primitive written to `__proto__` is ignored by its setter, as the core reads it
+          if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
+          else if (!nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
+          expr(l.expression); expr(l.argumentExpression);
         }
         else if (ts.isElementAccessExpression(l)) v(l, 'index-assign', 'write a record field by name, or use a local Record<string, T> dictionary');
         else v(l, 'unsupported-syntax', 'assignment target');
@@ -963,7 +999,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
       if (ts.isPropertyAccessExpression(e.operand) && elementWritePath(checker, e.operand)) { const ep = elementWritePath(checker, e.operand); const po = declOf(ep.root); if (po.kind === 'local' && isParam(po.decl) && po.decl.parent === currentFn && !aliasLocals.has(po.decl) && ownedHere(po.decl)) return expr(e.operand.expression); } // a field of a parameter's element: a heap step on that element
-      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasHere(o.decl, e) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
+      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && (!aliasHere(o.decl, e) || heldAlias(o.decl)) && ownedHere(o.decl)) return; if (heldCall(r)) return expr(r); return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
       if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
@@ -983,13 +1019,20 @@ export function lintFile(file, ranges = null, opts = {}) {
         const targetProps = ownedTarget && plainRecord(t0) ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
         const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
         if (ownedTarget && sourcesFit) { checkIdent(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
+        // a node a parameter holds (`p.headers`, or a const name for it) as the target, and literal sources: the copy is a
+        // sequence of field writes on that node in the literal's key order, after every value is evaluated (heap.mjs)
+        const heldTarget = !ownedTarget && ((heldNodePath(t0)?.steps ?? 0) >= 1 || (ts.isIdentifier(t0) && declOf(t0).kind === 'local' && heldAlias(declOf(t0).decl))) && plainDataRecord(checker, tOf(t0));
+        const fields = heldTarget ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
+        const literalSources = !!fields && e.arguments.slice(1).every((s) => { s = unparenX(s); return ts.isObjectLiteralExpression(s) && s.properties.every((p) => ((ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) || ts.isShorthandPropertyAssignment(p)) && fields.has(p.name.text)); });
+        if (heldTarget && literalSources) { expr(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
       }
       { const refused = objectCallRefusal(e, r, name); if (refused) return refused; }
       // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
       // a Date setter is a method call like any other: a world transition (the Date's state lives in the world since the clock-read lane), so no refusal and no rebinding
       if (moduleState(checker, r, sf) && MUT_NAMES.has(name)) { checkIdent(r); return argsOf(e); }
-      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasHere(declOf(r).decl, e);
-      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
+      const heldRow = ts.isIdentifier(r) && declOf(r).kind === 'local' && heldAlias(declOf(r).decl) && ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'].includes(name) && isArrayExpr(r); // an in-place row of the library table on a const name for an array a parameter's node holds: a step on that node (heap shapes)
+      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && (!aliasHere(declOf(r).decl, e) || heldRow);
+      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name) && !heldRow) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
       if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
       if (nonNull(rt).some(isAny)) {
         // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
@@ -1422,7 +1465,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       // against a literal (a negated number included) === is true only on the literal's primitive arm holding its value
       const eqLit = (x) => { x = unparenX(x); return litSide(x) || (ts.isPrefixUnaryExpression(x) && x.operator === K.MinusToken && ts.isNumericLiteral(x.operand)); };
       if (!nul(e.left) && !nul(e.right) && (mixed(lt) || mixed(rt)) && !eqLit(e.left) && !eqLit(e.right)) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal; narrow it before comparing it with another value');
-      else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt)) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
+      else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt) && !(plainNode(lt) && plainNode(rt))) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields'); // two plain data records or arrays: node identity, which the heap core reads as Ref equality (heap.mjs); outside the core the identity guard withholds the value reading's lemma
     }
   }
 
