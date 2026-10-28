@@ -865,6 +865,39 @@ export function lintFile(file, ranges = null, opts = {}) {
   // elementWritePath). The heap core carries it in a `forEach` statement over a plain data record (plainDataRecord); the
   // value reading copies the element and would lose the write, so every other shape is refused here (escape
   // element_write_loop_callback) and the translator refuses a unit outside the heap core
+  // the first parameter of a `reduce` callback is the accumulator, not an element (ECMA-262 23.1.3.24 Array.prototype.reduce:
+  // it holds initialValue, then each step's return value). It names an object of the unit's own, never one of the array,
+  // when the call passes an initial value it builds itself out of primitives (`{}`, `[]`, `{ n: 0 }`, `new Map()`), the
+  // callback never rebinds the accumulator, every value it returns is the accumulator itself (the last operand of a
+  // comma included), and the write is one step deep (`acc.f = v`, `acc[k] = v`, `acc.push(x)`): a deeper path may pass
+  // through an object the unit stored in it. Without an initial value the accumulator starts as the array's first
+  // element, and a step that returns an element hands that element on: both stay element writes
+  function reduceAccumulatorOwned(d, call, w, r) {
+    const cb = d.parent;
+    if (call.expression.name.text !== 'reduce' || cb.parameters[0] !== d || !ts.isIdentifier(d.name) || call.arguments.length < 2) return false;
+    const bare = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isNonNullExpression(x) || ts.isSatisfiesExpression(x) || ts.isTypeAssertionExpression(x)) x = x.expression; return x; };
+    const primitive = (x) => nonNull(tOf(x)).every(isPrim);
+    const init = bare(call.arguments[1]);
+    const built = (ts.isObjectLiteralExpression(init) && init.properties.every((q) => ts.isPropertyAssignment(q) && primitive(q.initializer)))
+      || (ts.isArrayLiteralExpression(init) && init.elements.every((x) => !ts.isSpreadElement(x) && primitive(x)))
+      || (ts.isNewExpression(init) && ts.isIdentifier(init.expression) && ['Map', 'Set', 'Array', 'Object'].includes(init.expression.text) && (init.arguments ?? []).length === 0);
+    if (!built) return false;
+    const target = bare(w);
+    const step = target === r || ((ts.isPropertyAccessExpression(target) || ts.isElementAccessExpression(target)) && bare(target.expression) === r);
+    if (!step) return false;
+    const name = d.name.text;
+    const isAcc = (x) => { x = bare(x); while (ts.isBinaryExpression(x) && x.operatorToken.kind === K.CommaToken) x = bare(x.right); return ts.isIdentifier(x) && x.text === name; };
+    let ok = true;
+    const walk = (x) => {
+      if (!ok) return;
+      if (ts.isFunctionLike(x)) { ok = false; return; } // a nested function may capture and hand on the accumulator
+      if (ts.isReturnStatement(x) && (!x.expression || !isAcc(x.expression))) { ok = false; return; }
+      if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(bare(x.left)) && bare(x.left).text === name) { ok = false; return; }
+      ts.forEachChild(x, walk);
+    };
+    if (ts.isBlock(cb.body)) ts.forEachChild(cb.body, walk); else { if (!isAcc(cb.body)) return false; walk(cb.body); }
+    return ok;
+  }
   function loopElementWrite(e) {
     let w = ts.isBinaryExpression(e) && e.operatorToken.kind >= K.FirstAssignment && e.operatorToken.kind <= K.LastAssignment ? e.left : (ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) ? e.operand : ts.isDeleteExpression(e) ? e.expression : null;
     if (!w && ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) w = ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign' ? e.arguments[0] ?? null : MUT_NAMES.has(e.expression.name.text) ? e.expression.expression : null;
@@ -875,9 +908,11 @@ export function lintFile(file, ranges = null, opts = {}) {
     const d = declOf(r).decl;
     if (!d || !ts.isParameter(d) || !syncLoopCallback(d.parent, checker)) return null;
     const call = d.parent.parent; const st = call.parent;
+    if (reduceAccumulatorOwned(d, call, w, r)) return null; // the accumulator of a reduce the call itself builds: no element of the array
     const fieldWrite = (ts.isBinaryExpression(e) && [K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e); // the writes the heap core reads in a loop body (a mutator, Object.assign and delete are not)
     const carried = fieldWrite && call.expression.name.text === 'forEach' && st && ts.isExpressionStatement(st) && d.parent.parameters.length === 1 && d.parent.parameters[0] === d && ts.isIdentifier(d.name) && plainDataRecord(checker, checker.getTypeAtLocation(d.name));
     if (carried) return null;
+    if (call.expression.name.text === 'reduce' && d.parent.parameters[0] === d) return v(w, 'alias-mutation', `\`${r.text}\` is the accumulator \`reduce\` hands its callback: it holds the array's first element when the call passes no initial value, a value the unit was handed, or what a step returned; a write through it is read only when the call passes an initial value it builds itself out of primitives (\`{}\`, \`[]\`, \`new Map()\`), every step returns the accumulator, and the write is one step deep (\`acc[k] = v\`) (escape reduce_accumulator_element)`);
     return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
   }
   function exprStmt(e) {
