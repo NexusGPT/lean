@@ -169,9 +169,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   }
   let membersRead = false; // inside a union whose options the unit's reads shaped (an array, a record): the opaque option stands for that reader, not for a value it only converts
   function gen(spec, depth = 0, env = null, path = 'in', leaf = false) {
-    const v1 = genBoundary(spec, depth, env, path, leaf);
-    if (reach && depth === 0 && typeof v1 === 'string' && reach.on.has('proto-name-key') && admitsString(spec)) return reach.keyString(v1); // a string parameter names an Object.prototype member, its declared draw made first
-    return v1;
+    return genBoundary(spec, depth, env, path, leaf);
   }
   function genBoundary(spec, depth = 0, env = null, path = 'in', leaf = false) {
     const v = gen0(spec, depth, env, path, leaf);
@@ -222,8 +220,6 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'opaque': default: { const x = env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {}; return reach && reach.on.has('coercion-hooks') && (spec?.kind === 'opaque') && !membersRead ? reach.coercible() : x; } // a value of an unread type converts itself on a representation input, its declared draw made first; one whose members or elements the unit reads (a union the reads shaped, usage.mjs) keeps its fake
     }
   }
-  // a spec that admits any string: a string, or a union with a string option (a literal option is a fixed key, not drawn)
-  function admitsString(s) { return !!s && (s.kind === 'string' || (s.kind === 'union' && s.options.some((o) => o && o.kind === 'string'))); }
   // nullable optional fields draw both absent tags as well as omission
   function present(u) { if (u.options.some((o) => o.kind === 'null')) return u; const opts = u.options.filter((o) => o.kind !== 'undefined'); const r = opts.length && opts.length < u.options.length ? (opts.length === 1 ? opts[0] : { kind: 'union', options: opts }) : u; return r !== u && u.boundary ? { ...r, boundary: u.boundary } : r; } // a shaped union keeps its boundary
   function pick(edges, random) {
@@ -247,6 +243,7 @@ export function inputsFor(spec, seed, i, env) {
   if (shaper && env && shaper.on.has('timer-order')) env.timerPerm = 1 + (reachTurn(spec, i) % 5); // the timers due at one instant fire in a legal order other than arm order (run.mjs observe and runTimers)
   const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec), known, shaper);
   const args = spec.params.map((p, k) => { const v = p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`); return g.isListed(p) ? g.listed(p) : v; }); // a listed parameter takes its listed value in the known phase, its declared draw made first
+  if (shaper && shaper.on.has('proto-name-key')) spec.params.forEach((p, k) => { if (p.inputKey && typeof args[k] === 'string') args[k] = shaper.keyString(args[k]); }); // a key into an object the caller passes names an Object.prototype member, its declared draw made first
   const t = changedTurn(spec, i); if (t !== null) reachChanged(args, spec.changed, t, spec.defs ?? {}); // a changed-path input: the changed comparisons' targets after the declared draw
   return args;
 }

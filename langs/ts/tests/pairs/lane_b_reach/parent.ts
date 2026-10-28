@@ -3,21 +3,20 @@
 // that family alone (LEAN_REACH=<family>) and with none of them (LEAN_REACH=none) finds no difference
 const ONE = { x: 1 };
 const PAIR = { x: 1, y: 2 };
-const TABLE: Record<string, number> = { a: 1, b: 2 };
 // extra-key: an own key the type does not declare
 export function extraKey(a: typeof PAIR): number { return Object.getOwnPropertyNames(a).filter((k) => !(k in PAIR)).length; }
 // inherited-key: `in` sees the prototype, Object.hasOwn does not
 export function inheritedKey(a: { x?: number }): boolean { return 'x' in a; }
 // accessor-key: a write to a field held by a getter throws in strict code
 export function accessorKey(a: { x: number }): number { a.x = a.x; return a.x; }
-// non-enumerable-key: a spread skips a field that is not enumerable
-export function nonEnumerableKey(a: typeof ONE): { x: number } { return { ...a }; }
+// non-enumerable-key: Object.keys skips a field that is not enumerable, Object.getOwnPropertyNames does not
+export function nonEnumerableKey(a: typeof ONE): number { return Object.keys(a).length; }
 // symbol-key: a spread copies an own symbol key
 export function symbolKey(a: typeof ONE): number { return Reflect.ownKeys({ ...a }).length; }
 // null-prototype: an object with no prototype is no instance of Object
 export function nullPrototype(a: typeof ONE): boolean { return a instanceof Object; }
-// proto-name-key: `in` finds Object.prototype's members on a dictionary
-export function protoNameKey(k: string): boolean { return k in TABLE; }
+// proto-name-key: `in` finds Object.prototype's members on a dictionary the caller passes
+export function protoNameKey(d: Record<string, number>, k: string): boolean { return k in d; }
 // sparse-array: forEach skips a hole, length counts it
 export function sparseArray(xs: number[]): number { let c = 0; xs.forEach(() => { c++; }); return c; }
 // array-extra-property: for-in visits an own key beside the indices

@@ -168,6 +168,20 @@ export function specOf(file, unitName, opts = {}) {
     };
     walkKey(u.body);
     for (const [i, keys] of keyed) params[i].spec = { kind: 'union', options: [{ kind: 'literal', values: keys }, params[i].spec] };
+    // a string parameter the unit uses as a key into an object the caller passes (`p[k]`, `k in p`, Object.hasOwn(p, k),
+    // p.hasOwnProperty(k), p a parameter or a member of one): the proto-name-key family draws it as an Object.prototype
+    // name (repr.mjs). A key into the module's own table is the unit's domain guard (design/unreached-body.md), where a
+    // prototype name stands for no value the table holds, so it keeps its declared draw
+    const rootParam = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e))) e = e.expression; return e ? pIndex(e) : -1; };
+    const inputKeys = new Set();
+    const walkInputKey = (n) => {
+      let pair = ts.isElementAccessExpression(n) ? [n.argumentExpression, n.expression] : ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.InKeyword ? [n.left, n.right] : null;
+      if (!pair && ts.isCallExpression(n)) { const c = n.expression; if (ts.isPropertyAccessExpression(c) && c.name.text === 'hasOwn' && ts.isIdentifier(c.expression) && c.expression.text === 'Object' && n.arguments.length === 2) pair = [n.arguments[1], n.arguments[0]]; else if (ts.isPropertyAccessExpression(c) && c.name.text === 'hasOwnProperty' && n.arguments.length === 1) pair = [n.arguments[0], c.expression]; }
+      if (pair) { const i = pIndex(pair[0]); if (i >= 0 && rootParam(pair[1]) >= 0) inputKeys.add(i); }
+      ts.forEachChild(n, walkInputKey);
+    };
+    walkInputKey(u.body);
+    for (const i of inputKeys) if (params[i]) params[i].inputKey = true;
   }
   let rt = checker.getSignatureFromDeclaration(u.fn).getReturnType();
   if (rt.symbol?.name === 'Promise') rt = checker.getTypeArguments(rt)[0];
@@ -516,8 +530,7 @@ function specAtPath(param, chain, defs) {
   let cur = { spec: param.spec, optional: !!param.optional };
   const resolve = (s, d = 0) => (s && s.kind === 'ref' && d < 8 ? resolve(defs[s.key], d + 1) : s);
   for (const name of chain) {
-    let s = resolve(cur.spec); if (!s) return null;
-    if (s.kind === 'union') s = s.options.map((o) => resolve(o)).find((o) => o && o.kind === 'record' && o.fields?.[name]) ?? null;
+    const s = resolve(cur.spec); // a step through a union is no target: a write there may leave the value matching no option (a discriminant set on another option's record)
     if (!s || s.kind !== 'record' || !s.fields?.[name]) return null;
     cur = { spec: s.fields[name].spec, optional: !!s.fields[name].optional };
   }

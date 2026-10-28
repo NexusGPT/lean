@@ -24,7 +24,7 @@ export const FAMILIES = [
   { name: 'non-enumerable-key', class: 'reflection', on: 'record, dictionary', why: 'a field that is not enumerable: a read sees it, a spread, Object.assign, Object.keys, for-in and JSON.stringify skip it' },
   { name: 'symbol-key', class: 'reflection', on: 'record', why: 'an own symbol key: a spread and Object.assign copy it, Object.keys, for-in and JSON.stringify skip it' },
   { name: 'null-prototype', class: 'reflection', on: 'record, dictionary', why: 'an object with no prototype: `x.hasOwnProperty(k)`, `String(x)` and a template literal throw, `instanceof Object` is false, `k in x` sees own keys only' },
-  { name: 'proto-name-key', class: 'contract', on: 'dictionary, a string parameter', why: 'a key that names an Object.prototype member (constructor, toString, __proto__): `k in d` and `d[k]` read the prototype where Object.hasOwn and a Map do not; `o[k] = v` with `__proto__` sets the prototype' },
+  { name: 'proto-name-key', class: 'contract', on: 'dictionary, a string parameter used as a key into an object the caller passes', why: 'a key that names an Object.prototype member (constructor, toString, __proto__): `k in d` and `d[k]` read the prototype where Object.hasOwn and a Map do not; `o[k] = v` with `__proto__` sets the prototype' },
   { name: 'sparse-array', class: 'reflection', on: 'array', why: 'an array with a hole: forEach, map, filter and for-in skip it, an index loop and for-of read undefined there, its length counts it' },
   { name: 'array-extra-property', class: 'reflection', on: 'array', why: 'an own key beside the indices: for-in, Object.keys, Object.assign and a spread into an object carry it, for-of, map and forEach do not' },
   { name: 'shared-reference', class: 'contract', on: 'arguments', why: 'every position of one shape holds one object, and a record links to every object of the shapes its fields name (cycles across arguments): a write through one name is seen through the other' },
@@ -71,14 +71,14 @@ export function applicableFamilies(spec) {
     if (!x || typeof x !== 'object' || d > 30 || seen.has(x)) return; seen.add(x);
     if (x.kind === 'ref') return visit(spec.defs?.[x.key], top, d + 1);
     if (['record', 'dict', 'array', 'tuple'].includes(x.kind)) objects++;
-    if (x.kind === 'string' && top) kinds.add('key-string');
+    if (x.kind === 'string' && top) kinds.add('string');
     kinds.add(x.kind);
     for (const o of x.options ?? []) visit(o, top, d + 1);
     for (const it of x.items ?? []) visit(it, false, d + 1);
     if (x.fields) for (const f of Object.values(x.fields)) visit(f.spec, false, d + 1);
     for (const k of ['of', 'value']) if (x[k]) visit(x[k], false, d + 1);
   };
-  for (const p of spec.params ?? []) visit(p.spec, true);
+  for (const p of spec.params ?? []) { visit(p.spec, true); if (p.inputKey) kinds.add('key-string'); }
   const out = new Set();
   if (kinds.has('record')) for (const f of ['extra-key', 'inherited-key', 'accessor-key', 'non-enumerable-key', 'symbol-key', 'null-prototype']) out.add(f);
   if (kinds.has('dict')) for (const f of ['inherited-key', 'accessor-key', 'non-enumerable-key', 'null-prototype', 'proto-name-key']) out.add(f);
