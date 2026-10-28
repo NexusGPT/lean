@@ -894,7 +894,7 @@ async function runPairOnce(opts) {
   // races (design/schedules.md): an async unit called twice, the second call arriving while the first is pending, every
   // promise the world answers held by the scheduler; the orders run are bounded by conflicts and by b preemptions
   const racesOf = async (load) => { step('races'); const { RACE_BOUND } = await import('./program.mjs'); let rr = null; try { rr = await recording(records, load); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') rr = { verdict: 'ASK', reason: `races: ${e instanceof BudgetError ? 'budget: ' + e.message : 'timeout'}`, stats: null }; else rr = { verdict: 'ASK', reason: `races: ${String(e && e.message).slice(0, 160)}`, stats: null }; } if (!rr) return null; const st = rr.stats; bound.races = { liveCalls: 2, preemptions: 2, programs: st?.programs ?? 0, orders: st?.orders ?? null, drawn: st?.drawn ?? 0, dependentPairs: st?.dependentPairs ?? 0, cut: st?.cut ?? null, complete: st?.complete ?? false, events: 'the first call\'s start, the second call\'s arrival, each release of a promise the world answers', bound: RACE_BOUND, ...(rr.skipped ? { skipped: rr.skipped } : {}) }; if (rr.verdict === 'ASK') bound.races.ask = rr.reason; return rr; };
-  const raceWitness = (rr) => ({ verdict: 'WITNESS', unit, witnesses: [{ input: `race program ${rr.witness.program}`, race: true, program: [`call(${rr.witness.program})`, `call2(${rr.witness.program})`], side: rr.witness.side, orders: rr.witness.orders, dependentPair: rr.witness.dependentPair, otherSide: rr.witness.otherSide, replayed: rr.witness.replayed, where: { field: 'race', side: rr.witness.side, moved: rr.witness.dependentPair.moved, before: rr.witness.dependentPair.before } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } });
+  const raceWitness = (rr) => ({ verdict: 'WITNESS', unit, witnesses: [{ input: `race program ${rr.witness.program}`, race: true, program: [`call(${rr.witness.program})`, `call2(${rr.witness.program})`], side: rr.witness.side, orders: rr.witness.orders, dependentPair: rr.witness.dependentPair, otherSide: rr.witness.otherSide, replayed: rr.witness.replayed, where: { field: 'race', side: rr.witness.side, moved: rr.witness.dependentPair.moved, before: rr.witness.dependentPair.before, lines: raceLines(rr.witness) } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } });
   if (!diffs.length && !diffs.unloadable && !sawJsx && !harnessAsk && spec.isAsync && spec.isMethod) {
     const { runClassRaces } = await import('./programs.mjs');
     const rr = await racesOf(() => runClassRaces({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, guardedCall, awaitUnit } }));
@@ -1000,6 +1000,23 @@ function guardThrow(site) {
 }
 const thrownText = (t) => (t && typeof t === 'object' && typeof t.$error === 'string' ? `${t.$error}: ${t.message}` : JSON.stringify(t)).slice(0, 200);
 
+// a race witness names the statement of the first request that differs between the two sides under the distinguishing
+// order (the other side's arm order when it cannot run that order); with equal requests, the last request each side made
+function raceLines(w) {
+  const mine = w.orders.distinguishing.observation?.trace ?? [], theirs = w.rival?.obs?.trace ?? [];
+  const same = (x, y) => JSON.stringify(render(x)) === JSON.stringify(render(y));
+  let i = 0; while (i < Math.max(mine.length, theirs.length) && mine[i] && theirs[i] && same(mine[i], theirs[i])) i++;
+  let kind = 'race effect';
+  if (i >= mine.length && i >= theirs.length) { // the requests agree: the first call whose outcome differs, at the statement it completed
+    const c = [0, 1].find((k) => JSON.stringify(w.orders.distinguishing.observation?.calls?.[k]) !== JSON.stringify(w.rival?.obs?.calls?.[k]));
+    const a = w.orders.distinguishing.observation?.calls?.[c]?.site, b = w.rival?.obs?.calls?.[c]?.site;
+    if (a && b) return { kind: 'race completion', parent: siteLines(w.side === 'parent' ? a : b), candidate: siteLines(w.side === 'parent' ? b : a) };
+    i = Math.max(mine.length, theirs.length) - 1; kind = 'race completion fallback';
+  }
+  else if (!mine[i] || !theirs[i]) kind = `race effect; ${w.side === 'parent' ? 'candidate' : 'parent'} record absent`;
+  const own = siteLines(mine[i]?.site ?? mine.at(-1)?.site), rival = siteLines(theirs[i]?.site ?? theirs.at(-1)?.site);
+  return { kind, parent: w.side === 'parent' ? own : rival, candidate: w.side === 'parent' ? rival : own };
+}
 function siteLines(site) {
   if (!site) return null;
   return { file: site.file, start: site.start, end: site.end, text: site.text ?? '' };
