@@ -44,12 +44,27 @@ test('certificate: the input files by SHA-256, the bound with its seed, the theo
   assert.equal(res.verdict, 'PASS-proved', `${res.verdict}: ${res.reason ?? ''}`);
 });
 
+test('certificate: the tools record holds the Node version, the Dafny version text and the version Z3 reports', () => {
+  const t = res.certificate.tools;
+  assert.equal(t.node, process.version);
+  const dafny = spawnSync('dafny', ['--version'], { encoding: 'utf8' });
+  assert.equal(dafny.status, 0, 'dafny --version');
+  assert.equal(t.dafny, (dafny.stdout + dafny.stderr).trim());
+  assert.equal(t.dafny, res.certificate.lanes.A.dafnyVersion);
+  // the Z3 the certificate names is one that answers --version with the text it recorded
+  assert.equal(typeof t.z3, 'string', `z3 is null: ${t.z3Source}`);
+  assert.match(t.z3, /^Z3 version \d+\.\d+/);
+  assert.ok(['bundled beside dafny', 'z3 on PATH'].includes(t.z3Source), t.z3Source);
+  const z3 = spawnSync('z3', ['--version'], { encoding: 'utf8' });
+  if (t.z3Source === 'z3 on PATH') assert.equal(t.z3, (z3.stdout + z3.stderr).trim());
+});
+
 test('certificate: words given beside the files never reach the verdict or the certificate', () => {
   assert.ok(!fs.readFileSync(out, 'utf8').includes(words), 'the words are in the verdict file');
   assert.ok(!text.includes(words), 'the words are on the output');
   const top = ['verdict', 'reason', 'witness', 'certificate'];
   for (const k of Object.keys(res)) assert.ok(top.includes(k), `unexpected verdict field ${k}`);
-  const fields = ['tool', 'identity', 'unit', 'parent', 'candidate', 'lanes', 'unitTextEqual', 'observation', 'layers', 'library', 'adapter'];
+  const fields = ['tool', 'tools', 'identity', 'unit', 'parent', 'candidate', 'lanes', 'unitTextEqual', 'observation', 'layers', 'library', 'adapter'];
   for (const k of Object.keys(res.certificate)) assert.ok(fields.includes(k), `unexpected certificate field ${k}`);
 });
 

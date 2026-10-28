@@ -82,9 +82,12 @@ the time limit and the temporary folder (line 150).
 - The run identity hashes lean's commit, the hashes of the library and advice tables and the Dafny version string
   (`runIdentity` and `runTools`, pr.mjs lines 43 and 51); a change to any of them is a new identity.
   `check: run identity: lean's commit, its tables and the Dafny version each change the identity`
-- Limits, no check: lean records the Dafny version as text and does not hash the `dafny`, Z3 or `node` binaries; the
-  certificate records no Node version and no separate Z3 version (check.mjs line 14 says Z3; line 130 records
-  `dafny --version` only).
+- The certificate's `tools` record (check.mjs line 151) holds `node` (`process.version`), `dafny` (the text of
+  `dafny --version`) and `z3` (the text of `z3 --version`, run on the Z3 bundled in a `z3/bin` folder beside the dafny
+  executable, else on the `z3` on PATH that Dafny falls back to; `z3Source` names which, and `z3` is null with the
+  reason in `z3Source` when neither answers). `node` is recorded on every certificate; `dafny` and `z3` once lane A has
+  run Dafny. `check: certificate: the tools record holds the Node version, the Dafny version text and the version Z3 reports`
+- Limits, no check: lean records these versions as text and does not hash the `dafny`, Z3 or `node` binaries.
 - In the gate, outside lean: the release instrument of experiment M35 (version 4) calls `node` and the database
   tools by absolute path, holds the SHA-256 of each binary and its library closure in a signed reference, and checks
   them again before each spawn. No check here.

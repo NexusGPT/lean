@@ -11,7 +11,10 @@
 //   NEW and REFUSE(load) are candidate-only observations, outside the equality ordering.
 // A PASS-bounded never becomes a proof; a proof lemma that fails is ASK:unproved (not a refutation).
 // The certificate lists what was checked: file hashes, the unit, the bound, the theorem and prelude hashes, the
-// Dafny and Z3 versions, the time limit, and the lemma results, so a reader can re-run every step.
+// time limit, and the lemma results, so a reader can re-run every step. Its `tools` record holds the Node version
+// (always) and, once lane A has run Dafny, the text of `dafny --version` and the text of the version Z3 reports,
+// with `z3Source` saying where that Z3 came from (the one bundled beside the dafny executable, else the `z3` on PATH
+// that Dafny itself falls back to, else null with the reason).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -34,6 +37,22 @@ export const dafnyName = (unit) => dn(snake(unit));
 // the parts of the canonical-heap certificate of the unit whose Dafny name is f: `EqualCanon_<f>_<part>`, a part one
 // lower-case word (spec/theorem.py), so the parts of a unit `f_g` are never read as parts of a unit `f`
 export const canonPartsOf = (keys, f) => keys.filter((k) => k.startsWith(`EqualCanon_${f}_`) && /^[a-z]+$/.test(k.slice(`EqualCanon_${f}_`.length)));
+// the Z3 Dafny verifies with: the binary bundled in a `z3/bin` folder beside the dafny executable, else the `z3` on PATH
+function z3Record() {
+  const version = (bin) => { const r = spawnSync(bin, ['--version'], { encoding: 'utf8', timeout: 20000 }); return r.status === 0 ? (r.stdout + r.stderr).trim() : null; };
+  const dirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
+  for (const d of dirs) {
+    const exe = path.join(d, 'dafny');
+    if (!fs.existsSync(exe)) continue;
+    const bin = path.join(path.dirname(fs.realpathSync(exe)), 'z3', 'bin');
+    const found = fs.existsSync(bin) ? fs.readdirSync(bin).filter((f) => /^z3/.test(f)).sort() : [];
+    for (const f of found) { const v = version(path.join(bin, f)); if (v) return { z3: v, z3Source: 'bundled beside dafny' }; }
+    break;
+  }
+  const v = version('z3');
+  if (v) return { z3: v, z3Source: 'z3 on PATH' };
+  return { z3: null, z3Source: 'no z3 beside the dafny executable and none on PATH answered --version' };
+}
 const run = (cmd, args, timeoutMs) => { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: !!r.error && r.error.code === 'ETIMEDOUT' }; };
 
 export async function check(opts) {
@@ -44,7 +63,7 @@ export async function check(opts) {
   const scopeFile = scope ? JSON.parse(fs.readFileSync(scope, 'utf8')) : null;
   const declared = { ...(() => { try { return commentAdapters(candidate); } catch { return {}; } })(), ...(adapters ?? {}), ...(scopeFile?.adapters ?? {}) };
   const adapter = declared[dafnyName(unit)] ? { name: dafnyName(unit), ...declared[dafnyName(unit)], door: declared[dafnyName(unit)].door ?? 'scope' } : null;
-  const cert = { tool: 'lean-ts v3', ...(opts.identity === undefined ? {} : { identity: opts.identity }), unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {} };
+  const cert = { tool: 'lean-ts v3', ...(opts.identity === undefined ? {} : { identity: opts.identity }), unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {}, tools: { node: process.version } };
   // ---- lane B ----
   const b = await runPair({ parent, candidate, unit, n, seed, project, deep });
   if (b.witnesses?.some((w) => w.where?.lines?.candidate)) {
@@ -129,6 +148,7 @@ export async function check(opts) {
   const adapterLine = (lines.find((ln) => ln.startsWith(`// ADAPTER ${main}: `)) ?? '').replace(`// ADAPTER ${main}: `, '');
   const unguarded = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED ${main}: (.*)$`, 'm')) || [])[1] ?? null; // the identity guard withheld the lemma: the value reading could not be shown to be a graph reading
   cert.lanes.A = { verdict: unguarded ? (unguarded.startsWith('interface') ? 'ASK:interface' : 'ASK:identity') : m ? (lemmas[main] ? 'PASS-proved' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), identity: unguarded, lemmas, reading: m && lemmas[main] ? (canon && canon.proved && !(spans[main] && !errs.some((L) => spans[main][0] <= L && L <= spans[main][1])) ? 'canonical heap: equal up to a renaming of fresh cells and up to dropped allocations' : 'whole heap') : null, canonical: canon, heapCore: heapOf('candidate').split(',').filter(Boolean), dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnySeconds, dir: tmp, restsOn, ...(through.length ? { ownLemma, unprovedThrough: through } : {}), ...(inductionLine ? { induction: { measure: (inductionLine.match(/^decreases (\S+)/) ?? [])[1] ?? null, component: ((inductionLine.match(/ over ([\w,]+);/) ?? [])[1] ?? '').split(',').filter(Boolean), termination: inductionLine.replace(/^.*?; termination: /, '') } } : {}), ...(adapterLine ? { adapter: { ...adapter, theorem: adapterLine } } : {}) };
+  cert.tools = { node: process.version, dafny: cert.lanes.A.dafnyVersion, ...z3Record() }; // the toolchain that produced this lane A result
   const cellsLine = cand.match(new RegExp(`^// CELLS ${dafnyName(unit)}_candidate: (.*)$`, 'm')); // the state-completeness audit: every persistent cell the unit touches, each matched to its transition
   if (cellsLine) { try { cert.lanes.A.cells = JSON.parse(cellsLine[1]); } catch { cert.lanes.A.cells = null; } }
   if (cert.lanes.A.cells && cert.lanes.A.cells.obligations.length && m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:obligation'; return finish('ASK', cert, { reason: `obligation: ${cert.lanes.A.cells.obligations.join('; ')}` }); } // a cell the unit touches without a transition: the lemma proves nothing about it
