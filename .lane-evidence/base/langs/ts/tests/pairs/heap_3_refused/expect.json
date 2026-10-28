@@ -1,7 +1,0 @@
-{
- "laneBOnly": true,
- "why": "heap-3 (design/heap-3.md section 1). Refused by spread-source (escape spread_source): Object.assign onto a literal from a value the function did not build; the call is read as a function of the values of its arguments, which hold declared fields alone, so it would equal the fields copied by hand (proved on the base 9d6229a). Lane B: WITNESS (an undeclared entry drawn).",
- "b": {
-  "assignBag": "WITNESS"
- }
-}

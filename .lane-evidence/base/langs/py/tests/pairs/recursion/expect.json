@@ -1,6 +1,0 @@
-{
- "scope": ["total", "depth"],
- "equal": { "total": false, "depth": false },
- "why": "both functions recurse through a loop helper; the helper calls the changed sibling, so identity cannot alias it and the proof needs an induction the theorem does not generate: not proved on both (honest ASK). total is behaviourally equal (n.v + 0): lane B says PASS-bounded; depth changes its step: lane B witnesses it",
- "b": { "total": "PASS-bounded", "depth": "WITNESS" }
-}

@@ -1,8 +1,0 @@
-{
- "scope": ["child", "page"],
- "equal": {"child": false, "page": true},
- "why": "Only Child's text changes. Page's own text is identical, so lane A aliases it and proves it, and lane B's tree of names sees the same page: PASS-bounded. With --deep, lane B renders the same-package Child inside Page's render on its own hook frame, one level down, and the composed tree differs: WITNESS. The certificate's observation line names the mode.",
- "heap": false,
- "b": {"Child": "WITNESS", "Page": "PASS-bounded"},
- "deep": {"Page": {"deep": "WITNESS", "names": "PASS-bounded"}}
-}

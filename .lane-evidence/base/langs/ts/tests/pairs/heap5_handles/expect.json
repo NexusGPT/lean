@@ -1,7 +1,0 @@
-{
- "scope": ["fund", "settle", "transfer", "audit", "report", "account_deposit"],
- "equal": {"fund": false, "settle": false, "transfer": false, "audit": true, "report": true, "account_deposit": true},
- "why": "a method of another instance, or of a handle, is a transition of the whole heap world, the same on both sides for the same type, method, world and arguments: fund writes the field for the deposit call (unproved: a subclass in another file may override deposit; lane B, which runs the instance as an outside object, witnesses the other trace); settle reads the balance before recording (unproved, WITNESS); transfer deposits in the other order (unproved, WITNESS); audit and Account.deposit are untouched; report names the balance before adding (proved: the same transition, then the same sum).",
- "b": {"fund": "WITNESS", "settle": "WITNESS", "transfer": "WITNESS", "audit": "PASS-bounded", "report": "PASS-bounded"},
- "heap": true
-}

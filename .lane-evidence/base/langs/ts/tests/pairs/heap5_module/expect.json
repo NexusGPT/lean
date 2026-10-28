@@ -1,7 +1,0 @@
-{
- "scope": ["key", "capped", "room", "tagged"],
- "equal": {"key": true, "capped": false, "room": true, "tagged": true},
- "why": "a module constant whose initializer is a constant expression is read by that initializer: key writes the prefix's literal for the constant (proved); capped admits the maximum itself (unproved, WITNESS at an id of 10); room writes MAX + MAX for the constant DOUBLE the candidate dropped (proved); tagged is untouched, a template constant built from another constant.",
- "b": {"key": "PASS-bounded", "capped": "WITNESS", "room": "PASS-bounded", "tagged": "PASS-bounded"},
- "heap": true
-}

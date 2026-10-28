@@ -1,7 +1,0 @@
-{
- "scope": ["size", "is_round", "grow", "describe"],
- "equal": {"size": false, "is_round": true, "grow": true, "describe": true},
- "why": "a discriminated union of records is a reference whose cell is one of the alternatives with one of its discriminant values (the hypothesis states it), and a test of the discriminant narrows it: size adds one to a circle's radius (unproved, WITNESS); isRound tests the other alternative's value (proved only through the hypothesis: the discriminant holds one of two values); grow is untouched (narrowed writes); describe tests the other alternative first and returns from an if (proved).",
- "b": {"size": "WITNESS", "isRound": "PASS-bounded", "grow": "PASS-bounded", "describe": "PASS-bounded"},
- "heap": true
-}

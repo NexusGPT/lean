@@ -1,6 +1,0 @@
-{
- "scope": ["sign", "note_and_count", "first_big"],
- "equal": { "sign": false, "note_and_count": true, "first_big": true },
- "why": "the candidate changes one label of sign; the other two functions are untouched",
- "b": { "sign": "WITNESS", "note_and_count": "PASS-bounded", "first_big": "PASS-bounded" }
-}

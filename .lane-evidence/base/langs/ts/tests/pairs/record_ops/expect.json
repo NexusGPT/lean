@@ -1,6 +1,0 @@
-{
- "scope": ["count_keys", "names", "merged", "from_pairs"],
- "equal": { "count_keys": false, "names": true, "merged": true, "from_pairs": true },
- "why": "countKeys (a for-in over a dictionary) changes its test; names, merged and fromPairs (Object.keys, Object.assign, Object.fromEntries as pure functions) are untouched",
- "b": { "countKeys": "WITNESS", "names": "PASS-bounded", "merged": "PASS-bounded", "fromPairs": "PASS-bounded" }
-}

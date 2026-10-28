@@ -1,5 +1,0 @@
-{
-  "ext": "py",
-  "lint": ["python3", "-I", "langs/py/lint/lint.py", "{src}"],
-  "translate": ["python3", "-I", "langs/py/translate/translate.py", "{src}", "--core", "--suffix", "{suffix}", "--out", "{out}"]
-}

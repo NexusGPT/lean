@@ -1,8 +1,0 @@
-/* The project's Tailwind v4 entry (exec/styles.mjs reads its @theme block as text): a brand colour and a spacing step. */
-@import "tailwindcss";
-
-@theme {
-  --color-brand-500: #1f6feb;
-  --color-brand-600: #1158c7;
-  --spacing-18: 4.5rem;
-}

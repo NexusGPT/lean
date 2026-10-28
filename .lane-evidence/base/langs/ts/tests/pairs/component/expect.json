@@ -1,6 +1,0 @@
-{
- "scope": ["item_list", "counter"],
- "equal": { "item_list": false, "counter": true },
- "why": "the candidate changes the text of the empty-state paragraph in ItemList, a different JsxText child; Counter is untouched",
- "b": { "ItemList": "WITNESS", "Counter": "PASS-bounded" }
-}

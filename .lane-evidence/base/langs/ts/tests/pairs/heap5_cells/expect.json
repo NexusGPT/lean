@@ -1,7 +1,0 @@
-{
- "scope": ["mark", "is_seen", "count_of", "unique", "copy_ids"],
- "equal": {"mark": true, "is_seen": false, "count_of": true, "unique": true, "copy_ids": true},
- "why": "a Set of records holds references by identity and a Map's get is a value or absent: mark is untouched (an add of a record); isSeen negates the test (unproved, WITNESS); countOf names the get before ?? (proved); unique is untouched, a set of the ids allocated and its size read; copyIds spreads the ids into a literal for Array.from (one fresh array of the same items: proved).",
- "b": {"mark": "PASS-bounded", "isSeen": "WITNESS", "countOf": "PASS-bounded", "unique": "PASS-bounded", "copyIds": "PASS-bounded"},
- "heap": true
-}

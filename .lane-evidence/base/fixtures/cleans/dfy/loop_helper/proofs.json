@@ -1,4 +1,0 @@
-{
-  "support": "lemma HelperEq(xs: seq<int>, acc: int)\n  ensures total_loop0_parent(xs, acc) == total_loop0_candidate(xs, acc)\n{\n}",
-  "bodies": {"Equal_total": "  HelperEq(xs, 0);"}
-}

@@ -1,6 +1,0 @@
-{
- "scope": ["card", "has_note", "badge", "owner_line", "sized"],
- "equal": { "card": false, "has_note": false, "badge": true, "owner_line": true, "sized": false },
- "why": "a record rest of a parameter is one uninterpreted function of the source named by its excluded keys: Card and HasNote's candidates also take `note` out, so the spread div loses that prop and `\"note\" in rest` turns false (another function, not proved); Badge renames and reorders the same exclusions and rewrites the string (the same function, proved); OwnerLine reads fields of the remainder and is untouched; Sized changes the default of a field of an untyped source (the default is an argument of the field's function, not proved)",
- "b": { "Card": "WITNESS", "HasNote": "WITNESS", "Badge": "PASS-bounded", "OwnerLine": "PASS-bounded", "Sized": "WITNESS" }
-}

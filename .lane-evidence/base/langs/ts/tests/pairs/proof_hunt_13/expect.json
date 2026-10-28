@@ -1,6 +1,0 @@
-{
- "scope": ["assign_into", "assign_new", "spread_copy"],
- "equal": {"spread_copy": false, "assign_new": false, "assign_into": false},
- "why": "class 13, a spread or Object.assign of a record-typed value: at run time the value may carry keys its type does not declare (structural typing), and a spread or an assign copies them, while a datatype of the declared fields drops them; lane B never draws the extras. Failing on 1e55e21: Equal_spread_copy ({...a} against the declared fields written one by one) and Equal_assign_into (Object.assign(t, s) against t.x = s.x) proved, lane B PASS-bounded. assignNew (Object.assign({}, a, b)) is not proved on the base. {...a, ...b} with sources of different record types does not resolve in Dafny (it reads every field off the last source), so it is left out of this pair: it would hide the other lemmas.",
- "b": {"spreadCopy": "PASS-bounded", "assignNew": "PASS-bounded", "assignInto": "PASS-bounded"}
-}

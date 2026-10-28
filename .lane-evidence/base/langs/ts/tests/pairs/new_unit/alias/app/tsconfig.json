@@ -1,1 +1,0 @@
-{"compilerOptions":{"moduleResolution":"bundler","module":"esnext","paths":{"@local/*":["./*"]}}}

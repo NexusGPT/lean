@@ -1,8 +1,0 @@
-[
- { "id": 101, "path": "src/a.ts", "line": 10, "start_line": null, "side": "RIGHT", "start_side": null, "original_line": 10, "body": "a reviewer's note", "user": { "login": "reviewer" } },
- { "id": 102, "path": "src/a.ts", "line": 23, "start_line": 21, "side": "RIGHT", "start_side": "RIGHT", "original_line": 23, "body": "<!-- lean-refusal -->\nan earlier lean comment", "user": { "login": "github-actions[bot]" } },
- { "id": 103, "path": "src/a.ts", "line": 35, "start_line": 32, "side": "RIGHT", "start_side": "RIGHT", "original_line": 35, "body": "a reviewer's note", "user": { "login": "reviewer" } },
- { "id": 104, "path": "src/a.ts", "line": null, "start_line": null, "side": "RIGHT", "start_side": null, "original_line": 40, "body": "an outdated note", "user": { "login": "reviewer" } },
- { "id": 105, "path": "src/a.ts", "line": 50, "start_line": null, "side": "LEFT", "start_side": null, "original_line": 50, "body": "a note on the base side", "user": { "login": "reviewer" } },
- { "id": 106, "path": "src/a.ts", "line": 62, "start_line": 60, "side": "RIGHT", "start_side": "RIGHT", "original_line": 62, "body": "a reviewer's note", "user": { "login": "reviewer" } }
-]

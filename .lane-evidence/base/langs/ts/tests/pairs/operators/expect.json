@@ -1,6 +1,0 @@
-{
- "scope": ["sum", "total", "head_tail", "with_default", "area"],
- "equal": { "sum": true, "total": true, "head_tail": false, "with_default": false, "area": true },
- "why": "rest parameters and a spread call (untouched, proved); headTail adds one (array pattern default and rest element); withDefault changes the fallback under ??=; area with ** is untouched",
- "b": { "sum": "PASS-bounded", "total": "PASS-bounded", "headTail": "WITNESS", "withDefault": "WITNESS", "area": "PASS-bounded" }
-}

@@ -1,7 +1,0 @@
-{
- "scope": ["cross_null", "later", "before"],
- "equal": {"cross_null": false, "later": true, "before": true},
- "why": "crossNull defaults both sides of a comparison of a value that may be null with one that may be undefined: different at (null, undefined), where a === b is false (unproved, WITNESS; the parent stays out of the heap core, where both absences were one Option's None and the pair proved); later writes b > a for a < b (proved: both read StrLt, the order of code units, where a Dafny order of strings was a type error); before is untouched.",
- "b": {"crossNull": "WITNESS", "later": "PASS-bounded", "before": "PASS-bounded"},
- "heap": true
-}

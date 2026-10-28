@@ -1,1 +1,0 @@
-{"functions": {"grade": {"in_scope": "score >= 90"}, "double": {"in_scope": "false"}}}

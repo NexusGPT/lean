@@ -1,6 +1,0 @@
-{
- "scope": ["build", "first_positive", "count_down", "twice"],
- "equal": { "build": true, "first_positive": true, "count_down": false, "twice": true },
- "why": "count_down counts two per step in the candidate; the others are untouched: a dict literal with a computed key, an Optional set before a break, a comprehension",
- "b": { "build": "PASS-bounded", "first_positive": "PASS-bounded", "count_down": "WITNESS", "twice": "PASS-bounded" }
-}
