@@ -7,6 +7,9 @@ import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { hookTable, hookRecordSpec } from '../hooks.mjs';
 import { usage, mergeUsage, newNode } from './usage.mjs';
 import { decoratorTable, importOf } from '../decorators.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
 
 export function specOf(file, unitName, opts = {}) {
   const { sf, checker } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
@@ -28,6 +31,9 @@ export function specOf(file, unitName, opts = {}) {
     w(u.node ?? sf);
     return (openKeyList = out);
   };
+  // the known values of a type name in the project's values file (readValues): a field or a parameter whose declared type
+  // names it draws them first (gen.mjs); null when the file names no types
+  const vtypes = opts.values?.data?.types; const byType = vtypes && Object.keys(vtypes).length ? (node, t) => { const name = node && ts.isTypeReferenceNode(node) ? node.typeName.getText() : t?.aliasSymbol?.name; return name && Object.hasOwn(vtypes, name) && Array.isArray(vtypes[name]) ? { from: `types.${name}`, values: vtypes[name] } : null; } : null;
   let budget = 20000; // shape nodes; a type with a very large closure (a database client) ends in opaque leaves
   function spec(t, depth = 0) {
     const f = t.flags;
@@ -106,6 +112,7 @@ export function specOf(file, unitName, opts = {}) {
     const out = { kind: 'record', fields: {} };
     seen.set(key, out); defs[key] = out;
     for (const p of props) out.fields[p.name] = { spec: spec(checker.getTypeOfSymbolAtLocation(p, u.node), depth + 1), optional: !!(p.flags & ts.SymbolFlags.Optional) };
+    if (byType) for (const p of props) { const list = byType(p.valueDeclaration?.type, null); if (list) out.fields[p.name].known = list; } // a field whose declared type is named in the values file
     // a record with an index signature beside its fields holds entries the fields do not name: up to two optional
     // entries of the signature's type, keyed by names the unit reads as members or writes as strings and the type does
     // not declare (a generic key when it names none), never '__proto__' nor another Object.prototype name
@@ -116,6 +123,9 @@ export function specOf(file, unitName, opts = {}) {
     return out;
   }
   const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, spec: spec(checker.getTypeAtLocation(p.name)) }));
+  // the known values of each parameter: the values file's entry for this unit and parameter, else for its declared type's name
+  const vfn = opts.values ? unitValues(opts.values.data, file, unitName) : null;
+  if (vfn || byType) params.forEach((p, i) => { const list = vfn && Object.hasOwn(vfn.params, p.name) && Array.isArray(vfn.params[p.name]) ? { from: `functions.${vfn.key}.${p.name}`, values: vfn.params[p.name] } : byType ? byType(u.params[i].type, checker.getTypeAtLocation(u.params[i].name)) : null; if (list) p.known = list; });
   // a parameter read as an error: the unit tests `x instanceof C` where C is Error or a class that extends it, and x is the
   // parameter, or a local whose value comes from it or from a `.cause` of such a value (a walk down an error's cause
   // chain, ECMA-262 20.5.6.3 InstallErrorCause). A declared type of unknown, any or Error gives no Error instance to that
@@ -253,7 +263,8 @@ export function specOf(file, unitName, opts = {}) {
     if (opts.usageFrom) { try { const o = loadProgram(opts.usageFrom, { project: false }); use = mergeUsage(use, usage(o.sf, unitName, o.checker)); } catch { /* the other side has no such unit: this side's reads */ } }
     if (use) shaped = shapeByUsage({ params, receiver, defs: usedDefs }, use);
   }
-  return { unit: unitName, shaped, isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}) };
+  const known = opts.values ? knownOf({ params, defs: usedDefs }, opts.values, vfn) : null; // the listed values the declared types admit, the rest named
+  return { unit: unitName, shaped, ...(known ? { known } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}) };
 }
 
 // ---- inputs shaped by usage ------------------------------------------------------------------------------------
@@ -382,6 +393,80 @@ function shapeByUsage(sp, use) {
   let radix = 1;
   for (const rank of [0, 1]) for (const b of order) if ((b.rank ?? 0) === rank && b.cmp.length) { b.radix = radix; radix = Math.min(radix * b.cmp.length, 1e9); }
   return any;
+}
+
+// ---- known values: the project's values file ------------------------------------------------------------------
+// `.lean/values.json` holds, per unit and parameter or per type name, values the project knows its inputs take (the keys
+// of a table, the plans a database holds): { "functions": { "<unit>" | "<file>:<unit>": { "<param>": [v, ...] } },
+// "types": { "<TypeName>": [v, ...] } }, each value JSON (a string, a number, a boolean, null, a small record or list).
+// Lane B draws them first (gen.mjs); a listed value is one more input, it never changes what a verdict says.
+export const VALUES_FILE = path.join('.lean', 'values.json');
+// the values file of a source file: the nearest `.lean/values.json` in its folder or above it, up to the project root
+// (the first folder holding a package.json or a .git), or null
+export function findValues(file) {
+  if (!file) return null;
+  let d = path.dirname(path.resolve(file));
+  for (let i = 0; i < 40; i++) {
+    const f = path.join(d, VALUES_FILE);
+    if (fs.existsSync(f)) return f;
+    if (fs.existsSync(path.join(d, 'package.json')) || fs.existsSync(path.join(d, '.git'))) return null;
+    const up = path.dirname(d); if (up === d) return null; d = up;
+  }
+  return null;
+}
+// the values file read: its path, its sha256 (the first 16 hex digits, as check.mjs hashes the source files) and its
+// data; a file that is not JSON, or not of the shape above, throws naming what is wrong
+export function readValues(file) {
+  const text = fs.readFileSync(file);
+  let data; try { data = JSON.parse(text.toString('utf8')); } catch (e) { throw new Error(`values file ${file}: not JSON: ${e.message}`); }
+  const isObj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  if (!isObj(data)) throw new Error(`values file ${file}: not an object`);
+  for (const k of Object.keys(data)) if (k !== 'functions' && k !== 'types' && !k.startsWith('$')) throw new Error(`values file ${file}: unknown key ${k} (functions, types)`);
+  if (data.functions !== undefined && (!isObj(data.functions) || Object.entries(data.functions).some(([, v]) => !isObj(v) || Object.values(v).some((l) => !Array.isArray(l))))) throw new Error(`values file ${file}: functions maps a unit to { parameter: [values] }`);
+  if (data.types !== undefined && (!isObj(data.types) || Object.values(data.types).some((l) => !Array.isArray(l)))) throw new Error(`values file ${file}: types maps a type name to [values]`);
+  return { file: path.resolve(file), sha256: createHash('sha256').update(text).digest('hex').slice(0, 16), data };
+}
+// a unit's entry: the key `<unit>`, or `<file>:<unit>` where the source path ends with <file> (pr.mjs's dotted copies of a
+// file read as the file); the file-qualified key wins
+function unitValues(data, file, unit) {
+  const fns = data?.functions; if (!fns) return null;
+  const src = path.resolve(file).split(path.sep).join('/').replace(/(^|\/)\.lean_(?:head|base)_\d+_/, '$1');
+  for (const key of Object.keys(fns)) { const i = key.lastIndexOf(':'); if (i > 0 && key.slice(i + 1) === unit) { const f = key.slice(0, i).replace(/^\.\//, ''); if (src === f || src.endsWith('/' + f)) return { key, params: fns[key] }; } }
+  return Object.hasOwn(fns, unit) ? { key: unit, params: fns[unit] } : null;
+}
+// whether a JSON value is a value of a spec: a string of a string, a member of a literal, a record with its required
+// fields and no other key, a list of its element, an option of a union; anything of an unread type (any, unknown, an
+// unresolved import); never a Date, a Map, a function or a handle, which JSON cannot state
+export function fits(spec, v, defs, d = 0) {
+  if (!spec || d > 12) return false;
+  const isObj = v !== null && typeof v === 'object' && !Array.isArray(v);
+  switch (spec.kind) {
+    case 'ref': return fits(defs?.[spec.key], v, defs, d + 1);
+    case 'opaque': case 'tparam': return true;
+    case 'string': return typeof v === 'string';
+    case 'number': return typeof v === 'number';
+    case 'boolean': return typeof v === 'boolean';
+    case 'null': return v === null;
+    case 'literal': return spec.values.some((x) => x === v);
+    case 'union': return spec.options.some((o) => fits(o, v, defs, d + 1));
+    case 'array': return Array.isArray(v) && v.every((x) => fits(spec.of, x, defs, d + 1));
+    case 'tuple': return Array.isArray(v) && v.length === spec.items.length && v.every((x, i) => fits(spec.items[i], x, defs, d + 1));
+    case 'dict': return isObj && Object.values(v).every((x) => fits(spec.value, x, defs, d + 1));
+    case 'record': return isObj && Object.keys(v).every((k) => Object.hasOwn(spec.fields, k) && fits(spec.fields[k].spec, v[k], defs, d + 1)) && Object.entries(spec.fields).every(([k, f]) => f.optional || Object.hasOwn(v, k));
+    default: return false;
+  }
+}
+// keep, on every parameter and record field, the listed values its declared type admits; the summary names what was
+// listed, what was drawn and what was left out
+function knownOf(sp, values, vfn) {
+  const listed = [], rejected = [];
+  const keep = (holder, where, spec) => { const l = holder.known; if (!l) return; const ok = l.values.filter((v) => fits(spec, v, sp.defs)); for (const v of l.values) if (!ok.includes(v)) rejected.push({ at: where, from: l.from, value: v, why: 'not a value of the declared type' }); if (ok.length) { holder.known = ok; listed.push({ at: where, from: l.from, values: ok.length }); } else delete holder.known; };
+  for (const p of sp.params) keep(p, p.name, p.spec);
+  const seen = new Set();
+  const visit = (x, at, d = 0) => { if (!x || typeof x !== 'object' || d > 12 || seen.has(x)) return; seen.add(x); if (x.kind === 'ref') return visit(sp.defs[x.key], at, d + 1); if (x.kind === 'record') for (const [k, f] of Object.entries(x.fields)) { keep(f, `${at}.${k}`, f.spec); visit(f.spec, `${at}.${k}`, d + 1); } for (const k of ['of', 'value']) if (x[k]) visit(x[k], `${at}[]`, d + 1); for (const o of x.options ?? x.items ?? []) visit(o, at, d + 1); };
+  for (const p of sp.params) visit(p.spec, p.name);
+  const unmatched = vfn ? Object.keys(vfn.params).filter((k) => !sp.params.some((p) => p.name === k)) : [];
+  return { file: values.file, sha256: values.sha256, listed, ...(rejected.length ? { rejected } : {}), ...(unmatched.length ? { unmatched } : {}) };
 }
 
 if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {

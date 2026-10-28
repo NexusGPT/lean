@@ -16,6 +16,11 @@
 // head ref's content written beside it); the base version is `git show base:path` written beside the file under a
 // dotted name, so its imports resolve exactly as the real file's do. Both temporary files are removed at the end.
 // Source files are restored and nothing is committed. The cache retains checked evidence.
+//
+// The project's values file `.lean/values.json` (exec/spec.mjs: per unit and parameter or per type name, values the
+// inputs are known to take) is read from the head: the checkout's file for WORKTREE, else `git show <head>:.lean/values.json`.
+// Lane B draws its values first on every unit; the report names the file and its hash, each certificate carries the
+// hash, and the cache keys on it. Without a root file, each unit reads the nearest `.lean/values.json` above its file.
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -27,6 +32,7 @@ import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
 import { runPair } from './exec/run.mjs';
 import { callersOf, calleesOf } from './exec/callees.mjs';
+import { findValues, readValues, VALUES_FILE } from './exec/spec.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // every git runs in the C locale, so a message never depends on the machine's language
@@ -289,7 +295,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, rows, order: rows.order, stop: rows.stop };
+  return { identity: rows.identity, ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop };
 }
 
 export function stopNote(stop) {
@@ -366,6 +372,13 @@ export async function prReport(opts) {
   try {
     const files = changedFiles(opts, temps);
     const selected = selectUnits(files, opts);
+    // the project's values file, as the head has it (a temporary copy for a head ref, removed with the others)
+    let valuesFile;
+    if (opts.values !== undefined) valuesFile = opts.values;
+    else if (head === 'WORKTREE') valuesFile = fs.existsSync(path.join(repo, VALUES_FILE)) ? path.join(repo, VALUES_FILE) : undefined;
+    else { let text = null; try { text = git(repo, ['show', `${head}:${VALUES_FILE.split(path.sep).join('/')}`]); } catch { text = null; } if (text !== null) { const t = path.join(repo, `.lean_values_${process.pid}.json`); fs.writeFileSync(t, text); temps.push(t); valuesFile = t; } }
+    if (valuesFile) { const v = readValues(valuesFile); rows.values = { file: VALUES_FILE, from: head, sha256: v.sha256 }; }
+    const valuesHash = (file) => { const f = valuesFile !== undefined ? valuesFile : findValues(file); return f ? readValues(f).sha256 : null; }; // the cache key's: the file this unit's lane B reads
     for (const entry of files) {
       const rel = entry.file;
       const intake = selected.filter((x) => x.unit.file === rel);
@@ -408,6 +421,7 @@ export async function prReport(opts) {
       let key = null, cacheFile = null;
       const save = (row) => {
         if (row.certificate) row.certificate = { ...row.certificate, verdict: row.verdict };
+        if (row.certificate?.values && rows.values) row.certificate.values = { ...row.certificate.values, file: rows.values.file, from: rows.values.from }; // the project's file by its name in the checkout, never the temporary copy of a head ref
         if (caller) rows.push(row); else rows[index] = row;
         if (key && row.coverage === 'checked' && row.certificate) writeCache(cacheFile, { key, context, row });
       };
@@ -428,7 +442,7 @@ export async function prReport(opts) {
             calleeSummaries: { parent: parent.callees, candidate: candidate.callees },
             fileContext: { parent: parent.fileContext, candidate: candidate.fileContext },
             imports: { parent: parent.imports, candidate: candidate.imports }, tsconfig: { parent: parent.tsconfig, candidate: candidate.tsconfig },
-            flags: { n, seed, dafnySeconds, project, deep, scope: scope.has(u.name) || scope.has(`${rel}:${u.name}`), adapters,
+            flags: { n, seed, dafnySeconds, project, deep, scope: scope.has(u.name) || scope.has(`${rel}:${u.name}`), adapters, values: valuesHash(headFile ?? baseFile),
               file: rel, unit: u.name, caller: !!caller } });
           cacheFile = path.join(cacheDir, key + '.json');
         } catch (e) { console.error('Cache key unavailable: ' + (e.code ?? e.name)); }
@@ -445,7 +459,7 @@ export async function prReport(opts) {
       if (caller) {
         callersChecked++;
         let b = null;
-        try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project }); } catch { /* No witness row. */ }
+        try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, values: valuesFile }); } catch { /* No witness row. */ }
         const w = b?.verdict === 'WITNESS' ? b.witnesses?.[0] : null;
         if (!w || w.where?.cause !== 'callee') continue;
         save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'WITNESS', coverage: 'checked', laneB: 'WITNESS', laneA: null, caller: true, certificate: basicCertificate({ B: b }), witness: { input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, reason: null, advice: [] });
@@ -464,13 +478,13 @@ export async function prReport(opts) {
       }
       if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
         // declared in scope: this function was meant to change; its difference is information, not a refusal
-        let result = null; try { result = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds: 1, identity: rows.identity }); } catch { /* keep */ }
+        let result = null; try { result = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds: 1, identity: rows.identity, values: valuesFile }); } catch { /* keep */ }
         const b = result?.certificate?.lanes?.B ?? null;
         save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'IN-SCOPE', coverage: 'checked', certificate: result?.certificate ?? basicCertificate(), laneB: b?.verdict ?? null, laneA: null, witness: b?.witnesses?.[0] ?? null, reason: b?.verdict === 'WITNESS' ? 'changed as asked: the two versions differ' : b?.verdict === 'PASS-bounded' ? 'declared in scope but no difference found within the bound' : (b?.reason ?? null), advice: [] });
         continue;
       }
       let res;
-      try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds, adapters, identity: rows.identity }); }
+      try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds, adapters, identity: rows.identity, values: valuesFile }); }
       catch (e) { res = { verdict: 'ASK', certificate: basicCertificate({ B: { verdict: 'ASK:harness', reason: `harness: ${String(e.message).slice(0, 300)}` } }) }; }
       const lanes = res.certificate?.lanes ?? {};
       const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}) };
@@ -508,7 +522,7 @@ export function intakeMarkdown(rows) {
 
 export function markdown(rows, base, head) {
   const count = (v) => rows.filter((r) => r.verdict === v).length;
-  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');

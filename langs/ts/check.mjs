@@ -3,6 +3,12 @@
 //
 //   node check.mjs --parent <file.ts> --candidate <file.ts> --unit <name|Class.method> [--out verdict.json]
 //                  [--n 200] [--seed 1] [--project <tsconfig>|--no-project] [--dafny-seconds 60] [--scope scope.json] [--deep[=k]]
+//                  [--values <values.json>|none]
+//
+// --values names the project's values file (exec/spec.mjs: per unit and parameter or per type name, values the inputs
+// are known to take); without it lane B reads the nearest `.lean/values.json` above the candidate, `none` reads none.
+// Lane B draws the listed values first; the certificate's `values` names the file and its hash, and the verdict means
+// what it means without them (a PASS-bounded stays bounded, over the inputs the bound states).
 //
 // Order: lane B (bounded execution) first; a WITNESS ends the question. Then lane A (proof): lint, translate both
 // sides (the effect set shared), theorem, Dafny. The verdict is the strongest statement the evidence supports:
@@ -21,7 +27,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { runPair, crumb, crumbText, verdictGuard, deepDepth } from './exec/run.mjs';
+import { runPair, crumb, crumbText, verdictGuard, deepDepth, valuesOpt } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 import { ts, loadProgram, topLevelFunctions, dn } from './common.mjs';
@@ -65,7 +71,8 @@ export async function check(opts) {
   const adapter = declared[dafnyName(unit)] ? { name: dafnyName(unit), ...declared[dafnyName(unit)], door: declared[dafnyName(unit)].door ?? 'scope' } : null;
   const cert = { tool: 'lean-ts v3', ...(opts.identity === undefined ? {} : { identity: opts.identity }), unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {}, tools: { node: process.version } };
   // ---- lane B ----
-  const b = await runPair({ parent, candidate, unit, n, seed, project, deep });
+  const b = await runPair({ parent, candidate, unit, n, seed, project, deep, values: opts.values });
+  if (b.bound?.values) cert.values = { file: b.bound.values.file, sha256: b.bound.values.sha256, phase: b.bound.values.phase, inputs: b.bound.values.inputs, reachedBody: b.bound.values.reachedBody }; // the values file lane B drew from, by hash
   if (b.witnesses?.some((w) => w.where?.lines?.candidate)) {
     const findings = lintFile(candidate, null, { project });
     for (const w of b.witnesses) {
@@ -247,7 +254,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const files = { parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit') };
   const guard = verdictGuard(opt('--out', null), (r) => harnessAsk(r.reason, files));
-  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
+  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), values: valuesOpt(opt('--values', undefined)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
   guard.settle();
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);
