@@ -113,3 +113,21 @@ test('method programs carry constructor inputs and every command snapshot', asyn
     assert.ok(r.record.programRuns.some(p => JSON.stringify(p) === JSON.stringify(w.record)));
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
+
+test('capture never invokes user accessors or proxy traps', () => {
+  const env = new Environment(1); captureEnvironment(env); let hits = 0;
+  const value = { get [Symbol.toStringTag]() { hits++; return 'Object'; } };
+  const proxy = new Proxy({}, { get() { hits++; return 1; }, ownKeys() { hits++; return []; } });
+  snapshot(env, [value, proxy]);
+  assert.equal(hits, 0);
+});
+
+test('a worker stopped at its bound retains an explicit incomplete unit record', async () => {
+  const { runPair } = await import('./run.mjs'); const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'stopped-record-test-'));
+  try {
+    for (const side of ['parent','candidate']) fs.writeFileSync(path.join(d, side + '.ts'), 'export function f() { while (true) {} }');
+    const r = await runPair({ parent: path.join(d,'parent.ts'), candidate: path.join(d,'candidate.ts'), unit: 'f', unitSeconds: 0.01, project: false });
+    assert.equal(r.kind, 'spin-bound'); assert.equal(r.record?.version, 2); assert.equal(r.record.drawDomain.status, 'not recorded');
+  } finally { fs.rmSync(d,{recursive:true,force:true}); }
+});

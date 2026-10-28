@@ -1,5 +1,5 @@
 // Versioned evidence, separate from the v1 observation. No answer is generated here.
-import { render } from './fake.mjs';
+import { types } from 'node:util';
 const captures = new WeakMap();
 let currentUnit = null;
 export function beginUnitRecord(record) { currentUnit = { record, environments: [] }; }
@@ -27,16 +27,31 @@ function encode(value, seen = new Map()) {
   if (seen.has(value)) return { t: 'ref', v: seen.get(value) };
   if (seen.size > 20000) return { t: 'unrecorded', reason: 'value graph exceeds capture bound' };
   const id = seen.size; seen.set(value, id);
-  const tag = Object.prototype.toString.call(value);
-  if (tag === '[object Date]') return { t: 'date', id, v: String(Date.prototype.getTime.call(value)) };
-  if (tag === '[object RegExp]') return { t: 'regexp', id, source: value.source, flags: value.flags, lastIndex: value.lastIndex };
-  if (tag === '[object Error]') return { t: 'error', id, name: value.constructor?.name ?? 'Error', message: value.message };
-  if (tag === '[object Promise]') { const v = render(value); return v.settled === undefined ? { t: 'unrecorded', reason: 'promise without recorded settlement' } : { t: 'promise', id, v }; }
-  if (tag === '[object Map]') return { t: 'map', id, v: [...value].map(([k, v]) => [encode(k, seen), encode(v, seen)]) };
-  if (tag === '[object Set]') return { t: 'set', id, v: [...value].map(v => encode(v, seen)) };
-  if (Array.isArray(value)) return { t: 'array', id, v: value.map(v => encode(v, seen)) };
+  if (types.isProxy(value)) return { t: 'unrecorded', reason: 'real proxy: inspecting it would invoke user traps' };
+  if (Object.getOwnPropertySymbols(value).length) return { t: 'unrecorded', reason: 'symbol-keyed properties' };
+  if (types.isDate(value)) return { t: 'date', id, v: String(Date.prototype.getTime.call(value)) };
+  if (types.isRegExp(value)) {
+    const get = key => Object.getOwnPropertyDescriptor(RegExp.prototype, key).get.call(value);
+    return { t: 'regexp', id, source: get('source'), flags: [['hasIndices','d'],['global','g'],['ignoreCase','i'],['multiline','m'],['dotAll','s'],['unicode','u'],['unicodeSets','v'],['sticky','y']].filter(([key]) => get(key)).map(([,flag]) => flag).join(''), lastIndex: Object.getOwnPropertyDescriptor(value,'lastIndex').value };
+  }
+  if (types.isNativeError(value)) {
+    const message = Object.getOwnPropertyDescriptor(value, 'message'), ctor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(value), 'constructor');
+    if ((message && (!('value' in message) || typeof message.value !== 'string')) || !ctor || !('value' in ctor) || types.isProxy(ctor.value) || Object.keys(value).length) return { t: 'unrecorded', reason: 'error with accessor or own fields' };
+    return { t: 'error', id, name: Object.getOwnPropertyDescriptor(ctor.value, 'name')?.value ?? 'Error', message: message?.value ?? '' };
+  }
+  if (types.isPromise(value)) return { t: 'unrecorded', reason: 'promise settlement requires an asynchronous capture protocol' };
+  if (types.isMap(value)) return { t: 'map', id, v: [...Map.prototype.entries.call(value)].map(([k, v]) => [encode(k, seen), encode(v, seen)]) };
+  if (types.isSet(value)) return { t: 'set', id, v: [...Set.prototype.values.call(value)].map(v => encode(v, seen)) };
+  if (Array.isArray(value)) {
+    const ds = Object.getOwnPropertyDescriptors(value), n = ds.length.value;
+    if (n > 20000 || Object.keys(ds).some(k => k !== 'length' && !/^(0|[1-9][0-9]*)$/.test(k))) return { t: 'unrecorded', reason: 'extended or oversized array' };
+    const v = [];
+    for (let i = 0; i < n; i++) { if (!ds[i] || !('value' in ds[i])) return { t: 'unrecorded', reason: 'sparse array or array accessor' }; v.push(encode(ds[i].value, seen)); }
+    return { t: 'array', id, v };
+  }
   const proto = Object.getPrototypeOf(value);
-  if (proto && Object.getPrototypeOf(proto) !== null) return { t: 'unrecorded', reason: 'class instance prototype' };
+  if (proto && (types.isProxy(proto) || Object.getPrototypeOf(proto) !== null)) return { t: 'unrecorded', reason: 'class instance prototype' };
+  if (Object.getOwnPropertyNames(value).length !== Object.keys(value).length) return { t: 'unrecorded', reason: 'non-enumerable object fields' };
   const entries = [];
   for (const k of Object.keys(value)) {
     const d = Object.getOwnPropertyDescriptor(value, k);
@@ -112,4 +127,9 @@ export function witnessRecord({ seed, leanHead, input, sides, invocation = { kin
     })) };
   if (invocation.kind === 'program' && currentUnit) (currentUnit.record.programRuns ??= []).push(record);
   return record;
+}
+
+// A worker can stop before it can return its local recorder. Preserve that absence as data.
+export function incompleteUnitRecord(opts, reason) {
+  return { schema: 'witness-record/v2', version: 2, invocation: { kind: 'unit' }, unit: opts.unit, seed: opts.seed ?? 1, leanHead: opts.recordHead ?? 'unknown', draws: [], auxiliaryEnvironments: [], drawDomain: { parameters: [], status: 'not recorded', reason }, reach: { status: 'not recorded', reason }, unrecorded: [{ site: 'run.mjs runPair worker completion', reason }] };
 }

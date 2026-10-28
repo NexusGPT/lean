@@ -21,7 +21,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork, spawnSync } from 'node:child_process';
-import { captureEnvironment, captureActive, snapshot, witnessRecord, beginUnitRecord, finishUnitRecord } from './record.mjs';
+import { captureEnvironment, captureActive, snapshot, witnessRecord, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues } from './spec.mjs';
@@ -814,7 +814,7 @@ export async function runPair(opts) {
   return new Promise((resolve) => {
     let last = null, done = false;
     const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
-    const end = (res) => { if (done) return; done = true; clearTimeout(timer); resolve(res); };
+    const end = (res) => { if (done) return; done = true; clearTimeout(timer); if (!res.record) { res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); if (res.bound) res.bound.record = res.record; } resolve(res); };
     const timer = setTimeout(() => {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
       end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its wall-clock bound (timeout) of ${seconds} s per unit (--unit-seconds); the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
