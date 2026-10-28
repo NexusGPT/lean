@@ -1,0 +1,7 @@
+{
+ "scope": ["sign", "stamp"],
+ "equal": {"sign": false, "stamp": true},
+ "why": "shape 1: sign drops a field the literal source wrote (WITNESS); stamp writes the literal's keys in the other order (the same field writes on the headers node: proved).",
+ "b": {"sign": "WITNESS", "stamp": "PASS-bounded"},
+ "heap": true
+}

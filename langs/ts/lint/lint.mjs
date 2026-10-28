@@ -860,6 +860,36 @@ export function lintFile(file, ranges = null, opts = {}) {
     expr(d.initializer);
   }
   const outsideWriteStatement = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; return !!x.parent && ts.isExpressionStatement(x.parent); };
+  // heap shapes (translate/heap.mjs, design/heap-stage5.md "Heap shapes"): a write through a node a parameter holds is a
+  // step on the explicit object graph, which the heap core reads exactly. A node a parameter holds is reached from a
+  // parameter of this unit by field steps only (`p.headers`, `p.a.b`, a `!` on the way); a const local bound to such a
+  // path is another name for that node; a same-file call that returns such a path of its own parameters (or of `this`),
+  // given the caller's parameter nodes, returns one. The value reading copies a node, so a unit outside the heap core
+  // keeps no value-reading lemma for these shapes (heap.mjs guard: its identity shape is unreadable): the proof lane
+  // answers through the core or not at all. A node that came from the outside (a module object, an import, a global
+  // registry) is no parameter's node and stays refused (escape heap_shapes_outside_node).
+  const plainNode = (t) => !!t && !(t.flags & TF.Union) && (plainDataRecord(checker, t) || (checker.isArrayType(t) && ((x) => !!x && (!!(x.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) || plainDataRecord(checker, x)))(checker.getTypeArguments(t)[0]))); // a plain data record, or an array of primitives or of plain data records: the shapes the heap core holds as cells
+  const primDict = (t) => !!t && !(t.flags & TF.Union) && !!(t.flags & TF.Object) && !checker.getPropertiesOfType(t).length && !t.getCallSignatures().length && !checker.getIndexInfoOfType(t, ts.IndexKind.Number) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !!(checker.getIndexInfoOfType(t, ts.IndexKind.String).type.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) && !(checker.getIndexInfoOfType(t, ts.IndexKind.String).type.flags & TF.Union && checker.getIndexInfoOfType(t, ts.IndexKind.String).type.types.some((x) => x.flags & (TF.Undefined | TF.Null))); // Record<string, T> of a primitive: the heap core's dictionary cell
+  const heldNodePath = (x) => { // the parameter of this unit whose node x is, and the field steps from it, or null
+    let steps = 0; x = unparenX(x);
+    for (;;) { if (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { x = x.expression; continue; } if (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; continue; } break; }
+    if (!ts.isIdentifier(x) || !currentFn) return null;
+    const o = declOf(x); if (o.kind !== 'local' || !isParam(o.decl) || o.decl.parent !== currentFn || !ownedHere(o.decl)) return null;
+    return { decl: o.decl, steps };
+  };
+  const heldAlias = (decl) => !!decl && !!currentFn && ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !!decl.initializer && !!(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && !aliasCalls.has(decl) && decl.pos >= currentFn.pos && decl.end <= currentFn.end && ownedHere(decl) && (heldNodePath(decl.initializer)?.steps ?? 0) >= 1 && plainNode(tOf(decl.name)); // `const names = b.names`: another name for a node a parameter holds
+  const returnsHeldPath = (u) => { // every return of the unit is a field path of one of its own parameters, or of `this` in a method
+    if (!u?.body || u.fn.asteriskToken || u.fn.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return false;
+    const held = (x) => { x = unparenX(x); while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; if (ts.isConditionalExpression(x)) return held(x.whenTrue) && held(x.whenFalse); let steps = 0; while (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; } if (!steps) return false; if (x.kind === K.ThisKeyword) return !!u.cls; if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.valueDeclaration; return !!d && ts.isParameter(d) && d.parent === u.fn; };
+    if (!ts.isBlock(u.body)) return held(u.body);
+    let ok = true, any = false; const w = (n) => { if (!ok || ts.isFunctionLike(n)) return; if (ts.isReturnStatement(n)) { any = true; if (!n.expression || !held(n.expression)) ok = false; } ts.forEachChild(n, w); }; ts.forEachChild(u.body, w); return ok && any;
+  };
+  const heldCall = (x) => { // a call whose result is a node the caller's parameters (or its receiver) hold: `pick(b, true)`, `this.current()`
+    x = unparenX(x); if (!ts.isCallExpression(x) || x.questionDotToken || !currentFn) return false;
+    const callee = sameFileCallee(x, currentClass); if (!callee || !returnsHeldPath(callee) || !plainNode(tOf(x))) return false;
+    if (ts.isPropertyAccessExpression(unparenX(x.expression)) && !(currentClass && !thisParam)) return false; // `this.m()` in a method of this file's class
+    return x.arguments.every((a) => ts.isSpreadElement(a) ? false : nonNull(tOf(a)).every((t) => !(t.flags & TF.Object)) || !!heldNodePath(a)); // every object handed in is a parameter's node
+  };
   // a write through a parameter of a synchronous array-method callback (`rows.forEach((r) => { r.n = 0; })`): that
   // parameter is the array's element at each step, so the write is the heap step `rows[i].n = 0` (common.mjs
   // elementWritePath). The heap core carries it in a `forEach` statement over a plain data record (plainDataRecord); the
@@ -983,6 +1013,12 @@ export function lintFile(file, ranges = null, opts = {}) {
         const targetProps = ownedTarget && plainRecord(t0) ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
         const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
         if (ownedTarget && sourcesFit) { checkIdent(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
+        // a node a parameter holds (`p.headers`, or a const name for it) as the target, and literal sources: the copy is a
+        // sequence of field writes on that node in the literal's key order, after every value is evaluated (heap.mjs)
+        const heldTarget = !ownedTarget && ((heldNodePath(t0)?.steps ?? 0) >= 1 || (ts.isIdentifier(t0) && declOf(t0).kind === 'local' && heldAlias(declOf(t0).decl))) && plainDataRecord(checker, tOf(t0));
+        const fields = heldTarget ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
+        const literalSources = !!fields && e.arguments.slice(1).every((s) => { s = unparenX(s); return ts.isObjectLiteralExpression(s) && s.properties.every((p) => ((ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) || ts.isShorthandPropertyAssignment(p)) && fields.has(p.name.text)); });
+        if (heldTarget && literalSources) { expr(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
       }
       { const refused = objectCallRefusal(e, r, name); if (refused) return refused; }
       // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
