@@ -27,7 +27,7 @@ In the proof lane the heap is a map from references to cells, and a fresh cell t
 
 ## Equal by identity
 
-A function whose text is identical on both sides (comments removed, whitespace folded, suffixes stripped) is the same function; the theorem aliases the candidate's definition to the parent's. No proof is needed for unchanged code.
+A function whose text is identical on both sides (comments removed, whitespace folded, suffixes stripped) is the same function; the theorem aliases the candidate's definition to the parent's. No proof is needed for unchanged code. A unit is read with the part of the file it reaches (itself, its callees, the file outside its units) and nothing else: its numbers are integers or reals by that text alone, so adding or deleting a sibling it does not reach leaves its prelude and its proof as they were (`design/prelude-unit.md`).
 
 ## Function values
 
