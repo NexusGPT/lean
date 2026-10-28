@@ -660,24 +660,6 @@
   },
   {
    "kind": "disagree",
-   "pair": "exceptions_rebase",
-   "unit": "ignoredMethod",
-   "cause": "Node asks the outside, the model reaches no transition",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 0, parent: Node made 1 request(s), first {\"args\":[420],\"op\":\"call\",\"path\":\"arg0.read\"}; the model none"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_rebase",
-   "unit": "ignoredMethod",
-   "cause": "Node throws, the model returns",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 5, parent: Node threw {\"$error\":\"Error\",\"message\":\"fault: arg0.read\"}; the model returned 42"
-  },
-  {
-   "kind": "disagree",
    "pair": "numbers_bits",
    "unit": "divide",
    "cause": "real arithmetic: the model is exact, Node rounds to binary64",

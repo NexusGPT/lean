@@ -308,7 +308,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isPropertyAccessExpression(n)) {
       const literal = literalGetter(n); if (literal) return !exactObjectMethod(literal);
       const get = accessorOf(n, 'get'), set = propertyWrite(n) && accessorOf(n, 'set');
-      if (set || (get && (accessorOpaque.has(get.name) || effectfulUnits.has(get.name)))) return true;
+      if (set || (get && (accessorOpaque.has(get.name) || effectfulUnits.has(get.name) || heldAccess(get, n)))) return true; // a get on a receiver this file did not make is a request (accessorCall)
     }
     if (ts.isAwaitExpression(n) || (ts.isForOfStatement(n) && n.awaitModifier)) return true;
     if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
@@ -342,7 +342,7 @@ export function translate(file, fnName, opts = {}) {
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
       if (ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(f.name.text) && n.arguments.length === 1 && enumerationRecord(n.arguments[0])) return !recordEnumerationLiteral(n.arguments[0]);
       if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
-      { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag; an inherited method is a transition
+      { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor && (classRef(recv) || madeDispatch(recv, sfc, f.name.text))) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag on a receiver this file made (design/conformance-readings.md); any other receiver, or an inherited method, is a transition
       const t = baseOf(typeOf(recv));
       if (f.name.text === 'toString' && !n.arguments.length && primitiveText(typeOf(recv))) return false; // ToString of a primitive (design/library-rows.md)
       if (LOCALE_READS.has(f.name.text) && (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike))) return true; // the host's locale data decides the text: a world read (design/library-rows.md)
@@ -1341,6 +1341,14 @@ export function translate(file, fnName, opts = {}) {
     const made = madeBy(recv);
     if (!made) return false;
     return made.every((c) => { const ch = chainOf(c); const owner = ch.classes.find((k) => k.members.some((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === K.StaticKeyword))); return owner === cls; });
+  }
+  // the name of a request on a held receiver carries the code a made instance of its type would run: the reach of every
+  // class of this file whose instances its type admits (a subclass overriding the member included), never the call
+  // site's own text, so two sides reaching the receiver by other locals name one request
+  function heldKey(t) {
+    if (isOptional(t)) t = baseOf(t);
+    const cs = [...classDecls.values()].filter((c) => { try { return checker.isTypeAssignableTo(checker.getTypeAtLocation(c.name), t); } catch { return false; } });
+    return cs.length ? `_${hash(cs.map((c) => reachOf.keyText(c)).join('\n\u0001'))}` : '';
   }
   function instanceDecision(t, target, n, made = false) {
     if (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined)) return 'false';
@@ -3802,8 +3810,19 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     });
     return tag + (fields.length ? `{${fields.sort().join(',')}}` : '');
   }
+  // a get or set through an instance accessor on a receiver this file did not make by `new`: [[Get]] and [[Set]] run what
+  // that object holds (10.1.8.1, 10.1.9.2), so the access is a request of the world with the value written, as a method
+  // call on it is (design/conformance-readings.md); named by the code a made instance would run
+  const heldAccess = (u, n) => !u.isStatic && n.expression.kind !== K.ThisKeyword && n.expression.kind !== K.SuperKeyword && !madeDispatch(n.expression, u.cls, n.name.text);
   function accessorCall(u, n, args) {
     if (failedUnits.has(u.name)) fail(n, `callee ${u.name} was not translated`);
+    if (heldAccess(u, n)) {
+      if (!unitEffectful()) fail(n, 'internal: an accessor of a receiver not made here, in a pure unit');
+      const T = classTypeD(u.cls), d = u.accessor === 'set' ? 'Unit' : dtype(retType(u), n);
+      addPrelude('World', 'type World');
+      const f = external(`${mangle(T)}_${u.accessor}_${n.name.text}_held${heldKey(typeOf(n.expression))}`, ['World', T, ...(u.accessor === 'set' ? [dtype(typeOf(u.params[0].name), n)] : [])], `(World, ${d})`);
+      return hoist(`${f}(${[WORLD, outerParens(expr(n.expression)), ...args].join(', ')})`, d);
+    }
     const recv = u.isStatic ? [] : [n.expression.kind === K.ThisKeyword ? SELF : expr(n.expression)];
     const eff = effectfulUnits.has(u.name);
     const code = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...recv, ...args].join(', ')})`;
@@ -4087,6 +4106,14 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       // a method of a same-file class: on the class itself (static) or on a receiver typed by it; the file's own unit
       const asClass = classRef(recv); const sfc = asClass ?? (isOptional(typeOf(recv)) ? null : sameFileClassOf(typeOf(recv)));
       const callee = sfc ? fns.get(`${sfc.name.text}.${name}`) : null;
+      if (callee && !callee.isCtor && !asClass && !callee.isStatic && !madeDispatch(recv, sfc, name)) {
+        // a receiver this file did not make by `new`: it may be any object of the class's shape, and the call runs what
+        // that object holds (10.1.8.1), a request of the world with the argument values whether or not its result is
+        // read (design/conformance-readings.md); named by the code a made instance would run (the call's reach), so a
+        // changed method is another transition
+        const T = classTypeD(sfc);
+        return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_held${heldKey(typeOf(recv))}`, n, [...n.arguments], outerParens(expr(recv)), T, true);
+      }
       if (callee && !callee.isCtor && !!asClass === !!callee.isStatic) {
         if (failedUnits.has(callee.name)) fail(n, `callee ${callee.name} was not translated`);
         const args = unitArgs(callee, n);
