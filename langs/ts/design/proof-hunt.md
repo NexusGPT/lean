@@ -75,8 +75,11 @@ type the runtime value lacks (an absent value read as a T: `+ 0`, `typeof`, `===
 | 5796 to 5802 pipe_, guard_, route_denied_ | a decorator named by its key | yes in principle when a same-file guard's body changes under one key; unprobed |
 | heap.mjs:386, 396 Call_/HCall_<import>_<hash(types, code)> | an outside call of the heap world | no (the world) |
 
-## Measured
+## Measured (base 1e55e21)
 
-Pair probe on the base: 38 lemmas, 28 proved; 19 units lane A proved and lane B witnessed (the step's hidden count);
-6 more proved where lane B draws nothing that differs (classes 1 and 8). The step's TOTAL and R11 are in the lane
-report (`harness/lanes/proof-hunt.md`).
+`LEAN_PAIRS=adapters,special_numbers,bare_return_void,loop_chain,null_undefined node langs/ts/tests/run.mjs`:
+`| PROOF-HUNT TOTAL | 43 units read by both lanes | NO HIDDEN FALSE PROOF | 6 exempt by a door (adapter, special numbers) |`
+(adapters pick and pad by their adapter; Gate.constructor, positives, andAbsence and clamp by NaN witnesses).
+`LEAN_PAIRS=proof_hunt`: `| PROOF-HUNT TOTAL | 35 units read by both lanes | 20 HIDDEN FALSE PROOFS | 0 exempt ... |`,
+`| TOTAL | 763 checks | 47 FAILED |`: the pair is red until the open classes are read soundly. Lane A on every other
+pair crossed with its expect.b: no hidden false proof outside these six exempt units.
