@@ -160,20 +160,35 @@ function witnessPatchOf(parentObs, candidateObs, otherwise) {
   return { patch: [], patchSummary: `no tree difference; ${otherwise ?? 'the difference is outside the tree'}` };
 }
 
-// one op on one line, path first
-const short = (v, room = 100) => { const s = shortNode(v); return s.length > room ? s.slice(0, room - 3) + '...' : s; };
-function shortNode(v) {
-  if (typeof v === 'string') return JSON.stringify(v);
+// one op on one line, path first. Total, the same contract as witnessPatch: a value the line printer cannot print (a
+// bigint, a cycle, a getter that throws) is printed as its rendered JSON with a note, so a verdict's report never kills
+// a run. The walk stops once the line is past its room, so a large subtree costs its first `room` characters.
+const ellipsis = (s, room) => (s.length > room ? s.slice(0, room - 3) + '...' : s);
+const short = (v, room = 100) => {
+  try { return ellipsis(shortNode(v, { left: room + 1 }), room); }
+  catch (e) {
+    let s; try { s = JSON.stringify(render(v)) ?? String(v); } catch { s = Object.prototype.toString.call(v); }
+    return `${ellipsis(s, room)} (not printed as a tree: ${String(e && e.message).slice(0, 60)})`;
+  }
+};
+function shortNode(v, budget) {
+  const spend = (s) => { budget.left -= s.length; return s; };
+  if (budget.left <= 0) return '';
+  if (typeof v === 'string') return spend(JSON.stringify(v));
   if (isNode(v)) {
     const tag = typeof v.$el === 'string' ? (v.$el || 'fragment') : v.$el && v.$el.$component ? v.$el.$component : v.$el && v.$el.$fake ? v.$el.$fake : JSON.stringify(v.$el);
     const attrs = Object.entries(v.props ?? {}).map(([k, x]) => `${k}=${isFnValue(x) ? 'fn' : JSON.stringify(x)}`).join(' ');
-    const kids = kidsOf(v.children).map(shortNode).join(' ');
-    return `<${tag}${attrs ? ' ' + attrs : ''}>${kids}</${tag}>`;
+    const open = spend(`<${tag}${attrs ? ' ' + attrs : ''}>`);
+    const kids = []; for (const c of kidsOf(v.children)) { if (budget.left <= 0) break; kids.push(shortNode(c, budget)); }
+    return `${open}${kids.join(' ')}</${tag}>`;
   }
-  if (v && typeof v === 'object' && Object.hasOwn(v, '$fake')) return String(v.$fake);
-  return JSON.stringify(v);
+  if (v && typeof v === 'object' && Object.hasOwn(v, '$fake')) return spend(String(v.$fake));
+  return spend(JSON.stringify(v));
 }
 export function formatOp(op) {
+  try { return formatOpOf(op); } catch (e) { return `${(op && op.path) || '(root)'} ${op && op.kind} (not printed: ${String(e && e.message).slice(0, 60)})`; }
+}
+function formatOpOf(op) {
   const at = op.path || '(root)';
   if (op.kind === 'insert') return `${at} insert ${short(op.after)}`;
   if (op.kind === 'remove') return `${at} remove ${short(op.before)}`;
