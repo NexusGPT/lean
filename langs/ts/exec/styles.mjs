@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ts } from '../common.mjs';
+import { kidsOf } from '../patch.mjs';
 
 export const PINNED = Object.freeze({ name: 'tailwindcss v3.4 default theme', scope: 'the utilities of exec/styles.mjs; every other class is unknown' });
 
@@ -181,7 +182,7 @@ export function styledElements(tree, out = []) {
   const cn = tree.props && tree.props.className;
   if (typeof cn === 'string') out.push({ tag: typeof tree.$el === 'string' ? tree.$el : JSON.stringify(tree.$el), className: cn });
   else if (cn !== undefined && cn !== null) out.push({ tag: typeof tree.$el === 'string' ? tree.$el : JSON.stringify(tree.$el), className: null, value: cn }); // a class value that is not a string (a fake, a function result): unknown
-  if (Array.isArray(tree.children)) for (const c of tree.children) styledElements(c, out);
+  for (const c of kidsOf(tree.children)) styledElements(c, out);
   if (Object.hasOwn(tree, 'rendered')) styledElements(tree.rendered, out);
   return out;
 }
