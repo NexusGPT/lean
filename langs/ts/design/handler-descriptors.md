@@ -99,10 +99,10 @@ block skips a capture with an entry; `readHandler` attaches the entry of every c
   argument, a const every reference of which is held so), the closure's own writes included, never in the render
   itself or in `useMemo`. A write in the render stays refused: the lint admits `r.current = v` there as an update of a local record,
   so a closure keyed by its captured record would miss it. A write `r.current = v` inside a held function is a cell
-  step of the component machine: it writes the box without a re-render (`cellWrite`). The lint admits it there, except
-  inside a `useCallback` argument, which the translator reads as a lambda over values (that write stays
-  `closure-mutation`). Lane A keeps a writing handler or effect as a function value keyed by its text and captures, so a
-  dropped or reordered write is never proved equal; lane B's interpreter steps it: the predicted slots put the next
+  step of the component machine: it writes the box without a re-render (`cellWrite`). The lint admits it there, a
+  `useCallback` argument included. Lane A reads the holding function's statements as steps, the write a cell step, and
+  puts adjacent writes of distinct independent cells in the cells' hook order (design/ref-cell.md); lane B's interpreter
+  steps it: the predicted slots put the next
   value in the box, a read of a cell the same handler writes is not interpreted (the box already holds the value
   after), and the held handler's key carries the cell, what it held before and the next value. Lane B finds the box by
   a static slot numbering of the unit's statement-level hooks, confirmed
