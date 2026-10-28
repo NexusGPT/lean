@@ -155,6 +155,20 @@ export function specOf(file, unitName, opts = {}) {
     if (u.body) walkErr(u.body);
     for (const i of errorParams) { const p = params[i]; if (p && (p.spec.kind === 'opaque' || p.spec.kind === 'record' || p.spec.kind === 'ref')) p.spec = { kind: 'union', options: [{ kind: 'error', chain: 6 }, p.spec] }; }
   }
+  // a string parameter used as the key of a record with fields and a string index (`h[k]`, `k in h`): drawn half the
+  // time among the keys that record draws (its index entries, its declared fields), so a read of an entry the record
+  // holds is met, not left to a free string (design/open-datatype.md)
+  if (u.body) {
+    const pIndex = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e)) return -1; const d = checker.getSymbolAtLocation(e)?.valueDeclaration; return d && ts.isParameter(d) ? u.params.indexOf(d) : -1; };
+    const keyed = new Map();
+    const walkKey = (n) => {
+      const pair = ts.isElementAccessExpression(n) ? [n.argumentExpression, n.expression] : ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.InKeyword ? [n.left, n.right] : null;
+      if (pair) { const i = pIndex(pair[0]); const rt0 = checker.getTypeAtLocation(pair[1]); const props = rt0 && rt0.flags & TF.Object ? checker.getPropertiesOfType(rt0) : []; if (i >= 0 && params[i]?.spec.kind === 'string' && props.length && checker.getIndexInfoOfType(rt0, ts.IndexKind.String)) { const extra = openKeys().filter((k) => !props.some((p) => p.name === k)).slice(0, 2); keyed.set(i, [...(extra.length ? extra : ['k0']), ...props.map((p) => p.name)]); } }
+      ts.forEachChild(n, walkKey);
+    };
+    walkKey(u.body);
+    for (const [i, keys] of keyed) params[i].spec = { kind: 'union', options: [{ kind: 'literal', values: keys }, params[i].spec] };
+  }
   let rt = checker.getSignatureFromDeclaration(u.fn).getReturnType();
   if (rt.symbol?.name === 'Promise') rt = checker.getTypeArguments(rt)[0];
   const literals = []; const strings = []; const regexes = [];
