@@ -42,7 +42,7 @@ export function readHandler(checker, sf, cb, ctx) {
   if (!ts.isArrowFunction(cb)) return no('handler-not-an-arrow');
   if (cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return no('handler-async');
   if (!cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken)) return no('handler-parameter-pattern');
-  if (!usedByReact(checker, cb, ctx.unitBody)) return no('handler-not-held-by-react');
+  if (!ctx.held && !usedByReact(checker, cb, ctx.unitBody)) return no('handler-not-held-by-react'); // ctx.held: the caller found the arrow held by React otherwise (an effect argument, react.mjs heldFunction)
   const params = cb.parameters.map((p) => checker.getSymbolAtLocation(p.name));
   const locals = new Map();
   const isSetter = (id) => { if (!ts.isIdentifier(id)) return null; const s = checker.getSymbolAtLocation(id); const k = s ? ctx.isSetter(s) : null; return k === undefined ? null : k; };
@@ -51,7 +51,8 @@ export function readHandler(checker, sf, cb, ctx) {
   const declaredAt = new Map(); // a local -> the number of steps before its declaration
   // a local stands for its initializer only where no call step ran between the two: a call of the world may change
   // what the initializer reads (a field of the event, of the props), so moving the read past it would change the value
-  const readsMovedPastCall = (nodes) => { for (const n of nodes) { if (!n) continue; for (const s of mentions(checker, n, locals)) if (declaredAt.has(s) && steps.slice(declaredAt.get(s)).some((x) => x.kind === 'call')) return true; } return false; };
+  // a cell step between the two changes what the initializer reads when it reads that cell (`const x = r.current; r.current = v; f(x)`)
+  const readsMovedPastCall = (nodes) => { for (const n of nodes) { if (!n) continue; for (const s of mentions(checker, n, locals)) if (declaredAt.has(s) && steps.slice(declaredAt.get(s)).some((x) => x.kind === 'call' || (x.kind === 'cell' && mentions(checker, locals.get(s), locals).has(x.cell)))) return true; } return false; };
   for (const st of body) {
     if (ts.isVariableStatement(st)) { // a `const` local of the handler: later references stand for its initializer
       const dl = st.declarationList;
@@ -64,7 +65,7 @@ export function readHandler(checker, sf, cb, ctx) {
       continue;
     }
     // `r.current = v` on a ref cell of the unit (react.mjs, cellWrite), v pure: a cell step, which writes without a
-    // re-render; only a reader that steps cells asks for it (lane B's interpreter), so lane A keeps such a handler opaque
+    // re-render; a reader that steps cells asks for it (lane B's interpreter, and the translator's handler reading)
     if (ctx.cellSteps && ts.isExpressionStatement(st) && ts.isBinaryExpression(st.expression) && st.expression.operatorToken.kind === K.EqualsToken && cellWrite(checker, st.expression.left, ctx.unitBody) && renderPure(checker, st.expression.right)) {
       if (readsMovedPastCall([st.expression.right])) return no('handler-read-moved-past-call');
       steps.push({ kind: 'cell', cell: checker.getSymbolAtLocation(st.expression.left.expression), value: st.expression.right, returns: false });

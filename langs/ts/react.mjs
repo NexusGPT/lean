@@ -146,6 +146,9 @@ export function deferredByReact(checker, node, unitBody, seen = new Set()) {
   }
   return false;
 }
+// whether a function value itself is held by React (a JSX attribute value, an effect or useCallback argument, a const
+// held so), not merely nested inside one
+export const heldFunction = (checker, fn, unitBody) => !!unitBody && heldByReact(checker, fn, unitBody, new Set());
 function heldByReact(checker, fn, unitBody, seen) {
   if (seen.has(fn)) return false;
   seen.add(fn);
@@ -183,16 +186,9 @@ export function cellWrite(checker, target, unitBody) {
   const sym = checker.getSymbolAtLocation(target.expression), d = sym?.valueDeclaration;
   if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) || !d.initializer || !ts.isCallExpression(d.initializer) || reactHook(checker, d.initializer) !== 'useRef') return null;
   if (!(d.pos >= unitBody.pos && d.end <= unitBody.end) || !deferredByReact(checker, target, unitBody)) return null;
-  // a useCallback argument is read by the translator as a lambda over values, which holds no write: the lint keeps
-  // closure-mutation there, so the lint admits exactly what the translator reads (a JSX handler or an effect body is an
-  // opaque function value keyed by its text and captures)
-  for (let p = target.parent; p && p !== unitBody; p = p.parent) {
-    if (!ts.isFunctionLike(p)) continue;
-    let x = p; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent;
-    const lambdaAt = (e) => ts.isCallExpression(e.parent) && e.parent.arguments[0] === e && reactHook(checker, e.parent) === 'useCallback';
-    if (lambdaAt(x)) return null;
-    if (ts.isVariableDeclaration(x.parent) && x.parent.initializer === x && ts.isIdentifier(x.parent.name) && referencesOf(checker, unitBody, checker.getSymbolAtLocation(x.parent.name)).some(lambdaAt)) return null;
-  }
+  // the translator reads a held function holding the write as its steps, the write a cell step (a JSX handler, an effect,
+  // a useCallback argument alike: translate.mjs cellWriter), or, when its statements are not read, as one function value
+  // keyed by its text and captures (design/ref-cell.md)
   return refCell(checker, d, referencesOf(checker, unitBody, sym), writesThrough(checker, unitBody, sym), unitBody);
 }
 // captureKind(checker, id, cb, unitBody) -> null | { kind: 'hook-result', hook, at } | { kind: 'record-read' } | { kind: 'ref-cell', at }

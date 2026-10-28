@@ -1,5 +1,5 @@
 /// <reference path="./types.d.ts" />
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { save } from "service";
 type Item = { id: number; label: string };
@@ -50,4 +50,32 @@ export function EffectWrite(props: Item) {
   const seen = useRef(0);
   useEffect(() => { seen.current = props.id; }, [props.id]);
   return <button onClick={() => save(seen.current)}>send</button>;
+}
+// a write moved past a write of another cell whose value reads the first: the second cell takes the old content
+export function ChainReorder(props: Item) {
+  const a = useRef(0);
+  const b = useRef(0);
+  return (
+    <div>
+      <button onClick={() => { a.current = props.id; b.current = a.current; }}>mark</button>
+      <button onClick={() => save(b.current)}>send</button>
+    </div>
+  );
+}
+// a handler useCallback holds writes two cells, in another order on the candidate
+export function HeldReorder(props: Item) {
+  const a = useRef(0);
+  const b = useRef("");
+  const mark = useCallback(() => { a.current = props.id; b.current = props.label; }, [props.id, props.label]);
+  return <button onClick={mark}>{props.label}</button>;
+}
+// the written value changed: the cell holds another number when the second handler reads it
+export function WriteValue(props: Item) {
+  const last = useRef(0);
+  return (
+    <div>
+      <button onClick={() => { last.current = props.id; }}>mark</button>
+      <button onClick={() => save(last.current)}>send</button>
+    </div>
+  );
 }
