@@ -64,3 +64,10 @@ export function both(a: number, b: number): number {
   [0, b].forEach((x) => { check(x); });
   return 0;
 }
+
+// changed behaviour: the second element no longer throws (WITNESS on a negative b); a loop that ran on after a fault,
+// the next call clearing it, would read both sides as "throws when a or c is negative" and could prove them equal
+export function middle(a: number, b: number, c: number): number {
+  [a, 0, c].forEach((x) => { check(x); });
+  return 0;
+}

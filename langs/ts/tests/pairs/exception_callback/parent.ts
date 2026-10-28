@@ -62,3 +62,9 @@ export function both(a: number, b: number): number {
   [a, b].forEach((x) => { check(x); });
   return 0;
 }
+
+// throws at the second element when b is negative; c is checked only when a and b pass
+export function middle(a: number, b: number, c: number): number {
+  [a, b, c].forEach((x) => { check(x); });
+  return 0;
+}
