@@ -72,7 +72,6 @@ Census nexus tree at 0ed2760; every one below is refused, none enters:
 ## Measured
 
 Census (`node langs/ts/census.mjs <root>`), inside the subset:
-
 | tree | base 9d6229a | explicit form alone | 0ed2760 (both forms) |
 |---|---:|---:|---:|
 | nexus | 23,850 of 26,520 | 22,393 | 21,896 |
