@@ -1,1 +1,1679 @@
-{ "about": "disagreements and coupling findings the model conformance step has seen and the board tracks; each names its board row", "findings": [] }
+{
+ "about": "disagreements and coupling findings the model conformance step has seen (run on 4edf56b: the translator of f409bd8); each names its board row: d7e54baf, this lane, until the lead opens a row per cause",
+ "findings": [
+  {
+   "kind": "disagree",
+   "pair": "implicit_any_policy",
+   "unit": "arity",
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 0, parent: result: model 3 against 1"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators",
+   "unit": "sum",
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 0, parent: result: model 0 against \"00,1,-1\""
+  },
+  {
+   "kind": "disagree",
+   "pair": "element_writes",
+   "unit": "bump",
+   "cause": "aliased arguments: one object at two places of the input",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 2, parent: result: model 9007199254741411 against 9007199254741412"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_enumerated",
+   "unit": "writeThenRead",
+   "cause": "aliased arguments: one object at two places of the input",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 0, parent: result: model 9007199254740991 against 1"
+  },
+  {
+   "kind": "disagree",
+   "pair": "recursion",
+   "unit": "total",
+   "cause": "aliased arguments: one object at two places of the input",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 24, parent: result: model 27021597764222973 against 27021597764222972"
+  },
+  {
+   "kind": "disagree",
+   "pair": "callee_witness",
+   "unit": "Caller",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 18014398509481986 against 18014398509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "callee_witness",
+   "unit": "helper",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "callee_witness",
+   "unit": "Total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 18014398509481983 against 18014398509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "class_statics",
+   "unit": "Pricing.fee",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, parent: result: model 27021597764222974 against 27021597764222972"
+  },
+  {
+   "kind": "disagree",
+   "pair": "class_statics",
+   "unit": "Pricing.total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, candidate: result: model 9007202254740991 against 9007202254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "clock",
+   "unit": "pureOnly",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "comma_operator",
+   "unit": "commaDrop",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 8, parent: result: model 18014400509481982 against 18014400509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "comma_operator",
+   "unit": "commaLast",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 8, parent: result: model 18014400509481982 against 18014400509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "comma_operator",
+   "unit": "commaSplit",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: result: model 18014400509481982 against 18014400509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "comma_operator",
+   "unit": "commaSwap",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 8, parent: result: model 18014400509481982 against 18014400509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "comma_operator",
+   "unit": "untouched",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 26, parent: result: model -9007199254741090 against -9007199254741092"
+  },
+  {
+   "kind": "disagree",
+   "pair": "dict_order",
+   "unit": "lookup",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: result: model 9007209254740991 against 9007209254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "element_writes",
+   "unit": "bump",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 1, parent: result: model 9007199254741411 against 9007199254741412"
+  },
+  {
+   "kind": "disagree",
+   "pair": "element_writes",
+   "unit": "settle",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 18, parent: result: model 9007199254741091 against 9007199254741092"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exception_callback",
+   "unit": "total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_scope",
+   "unit": "caller",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: result: model 9007199254740997 against 9007199254740996"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_scope",
+   "unit": "helper",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 17, parent: result: model 9007200254740993 against 9007200254740994"
+  },
+  {
+   "kind": "disagree",
+   "pair": "for_desugar",
+   "unit": "sumPositive",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "for_each",
+   "unit": "total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "function_values",
+   "unit": "apply",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 12, parent: result[0]: model 9007199254741001 against 9007199254741000"
+  },
+  {
+   "kind": "disagree",
+   "pair": "generators",
+   "unit": "collectCounted",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result[1]: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "generators",
+   "unit": "composition",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result[2]: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "generators",
+   "unit": "consume",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result[1]: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "generators",
+   "unit": "producerStep",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_enumerated",
+   "unit": "total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 3, parent: result: model 9007199254741091 against 9007199254741092"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_loops",
+   "unit": "raise",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: argument a after the call: .1: model {\"$bigint\":\"18014398509481983\"} against 18014398509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_loops",
+   "unit": "total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 8, candidate: result: model 9007199254740995 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_loops",
+   "unit": "weight",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 6, parent: result: model 9007199254742053 against 9007199254742052"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_arith",
+   "unit": "total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 19, candidate: result: model 18014398509481983 against 18014398509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_tuples",
+   "unit": "width",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 26, parent: result: model -9007199254741091 against -9007199254741092"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_void",
+   "unit": "add",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: argument c after the call: .total: model {\"$bigint\":\"9007199254741091\"} against 9007199254741092"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_void",
+   "unit": "addTwice",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 0, parent: argument c after the call: .total: model {\"$bigint\":\"9007199254740993\"} against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "known_values",
+   "unit": "freeSeats",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 26, parent: result: model 9007199254741091 against 9007199254741092"
+  },
+  {
+   "kind": "disagree",
+   "pair": "lint_small",
+   "unit": "untouched",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "local_declarations",
+   "unit": "summary",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 17, parent: result.total: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "local_declarations",
+   "unit": "widen",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result: model 18014398509481983 against 18014398509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "local_procedures",
+   "unit": "tagged",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 17, parent: result: model 900720025474099303 against 900720025474099200"
+  },
+  {
+   "kind": "disagree",
+   "pair": "loop_chain",
+   "unit": "totalQty",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result: model 9007199254742337 against 9007199254742336"
+  },
+  {
+   "kind": "disagree",
+   "pair": "loop_forms",
+   "unit": "doUpdate",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result: model 9007199254740997 against 9007199254740996"
+  },
+  {
+   "kind": "disagree",
+   "pair": "map_block",
+   "unit": "sizes",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 5, candidate: result[1]: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "module_forms",
+   "unit": "untouched",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutual_summaries",
+   "unit": "scale",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 27021597764222973 against 27021597764222972"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutual_summaries",
+   "unit": "useScale",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, parent: result: model 18014398509481983 against 18014398509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "named_then",
+   "unit": "changedUnit",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "named_then",
+   "unit": "inc",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "numbers_bits",
+   "unit": "divide",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 0, candidate: result: model 1/420 (0.0023809523809523807) against 0.002380952380952381"
+  },
+  {
+   "kind": "disagree",
+   "pair": "numbers",
+   "unit": "discounted",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 8, parent: result: model -9007199254740891000000000/100 (-9.007199254740891e+22) against -9.00719925474089e+22"
+  },
+  {
+   "kind": "disagree",
+   "pair": "object_methods",
+   "unit": "literalGetter",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "object_methods",
+   "unit": "strategy",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, parent: result: model 36028797018963966 against 36028797018963964"
+  },
+  {
+   "kind": "disagree",
+   "pair": "object_methods",
+   "unit": "strategyRefactor",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operands_arguments",
+   "unit": "first",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operands_arguments",
+   "unit": "second",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "order",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 18014398509481983 against 18014398509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators",
+   "unit": "sum",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 17, parent: result: model 9007200254740991 against \"01000000000,9007199254740991\""
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators",
+   "unit": "total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "ordered_collections",
+   "unit": "weighted",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 17, candidate: result: model 90071992547409207 against 90071992547409200"
+  },
+  {
+   "kind": "disagree",
+   "pair": "param_rebind",
+   "unit": "bumped",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 0, parent: result: model 90071992547414110 against 90071992547414110"
+  },
+  {
+   "kind": "disagree",
+   "pair": "param_rebind",
+   "unit": "drained",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 17, parent: result: model -9007200254740891 against -9007200254740892"
+  },
+  {
+   "kind": "disagree",
+   "pair": "param_rebind",
+   "unit": "spread",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result: model 27021597764222973 against 27021597764222972"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_9",
+   "unit": "make",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: .x: model {\"$bigint\":\"9007199254740993\"} against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "receiver_write",
+   "unit": "hitTwice",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: argument t after the call.n: model 9007199254740993 against 9007199254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "rename_parameter",
+   "unit": "bump",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 3, parent: result: model 9007199254741091 against 9007199254741092"
+  },
+  {
+   "kind": "disagree",
+   "pair": "rename_parameter",
+   "unit": "fieldname",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 3, parent: result: model 9007199254741551 against 9007199254741552"
+  },
+  {
+   "kind": "disagree",
+   "pair": "rename_parameter",
+   "unit": "total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 24, parent: result: model -4269412446746818302 against -4269412446746818600"
+  },
+  {
+   "kind": "disagree",
+   "pair": "signed_zero",
+   "unit": "untouched",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "special_numbers",
+   "unit": "total",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "kind": "disagree",
+   "pair": "special_numbers",
+   "unit": "untouched",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 9, parent: result: model 18014398509481983 against 18014398509481984"
+  },
+  {
+   "kind": "disagree",
+   "pair": "witness_args",
+   "unit": "scaled",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 8, candidate: result: model 9007199254740995 against 9007199254740996"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_rebase",
+   "unit": "ignoredMethod",
+   "cause": "Node asks the outside, the model reaches no transition",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 0, parent: Node made 1 request(s), first {\"args\":[420],\"op\":\"call\",\"path\":\"arg0.read\"}; the model none"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_rebase",
+   "unit": "ignoredMethod",
+   "cause": "Node throws, the model returns",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 5, parent: Node threw {\"$error\":\"Error\",\"message\":\"fault: arg0.read\"}; the model returned 42"
+  },
+  {
+   "kind": "disagree",
+   "pair": "numbers_bits",
+   "unit": "divide",
+   "cause": "real arithmetic: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 1/9007199254740991 (1.1102e-16) against 1.1102230246251568e-16"
+  },
+  {
+   "kind": "disagree",
+   "pair": "numbers",
+   "unit": "discounted",
+   "cause": "real arithmetic: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 10, candidate: result: model 434112/100 (4341.12) against 4341.120000000001"
+  },
+  {
+   "kind": "disagree",
+   "pair": "numbers",
+   "unit": "vat",
+   "cause": "real arithmetic: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 4, parent: result: model 42350/100 (423.5) against 423.50000000000006"
+  },
+  {
+   "kind": "disagree",
+   "pair": "library_more",
+   "unit": "cloned",
+   "cause": "record keys",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 1, parent: result: .k0: the model has no key, Node \"vdow5\""
+  },
+  {
+   "kind": "disagree",
+   "pair": "library_more",
+   "unit": "clonedAlias",
+   "cause": "record keys",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 1, parent: result: .k0: the model has no key, Node \"vdow5\""
+  },
+  {
+   "kind": "disagree",
+   "pair": "adapters",
+   "unit": "pick",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "adapters",
+   "unit": "shift",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "adapters",
+   "unit": "twice",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "bench_drops",
+   "unit": "twice",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "callee_witness",
+   "unit": "double",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "callee_witness",
+   "unit": "Total",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "computed_literal_keys",
+   "unit": "byStatus",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result.active: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "computed_literal_keys",
+   "unit": "counts",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result.active: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "computed_literal_keys",
+   "unit": "partial",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result.b: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "dynamic_reads",
+   "unit": "optional",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "dynamic_reads",
+   "unit": "undefinedValues",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 15, parent: result[1]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exception_callback",
+   "unit": "check",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exception_callback",
+   "unit": "scaled",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 0, parent: result[0]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_across",
+   "unit": "caller",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_across",
+   "unit": "Finalizer.cleanup",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_across",
+   "unit": "leaf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_across",
+   "unit": "moved",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_across",
+   "unit": "stable",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_rebase",
+   "unit": "Guard.read",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exceptions_scope",
+   "unit": "lazyLeaf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "gen_walk",
+   "unit": "clampUnit",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0/1 (0) against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "gen_walk",
+   "unit": "scale",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0/1 (0) against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "gen_walk",
+   "unit": "toStep",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 2, candidate: result: model 0/1 (0) against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "generators",
+   "unit": "composition",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result[0]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "generators",
+   "unit": "consume",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result[0]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "generators",
+   "unit": "refactor",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 15, parent: result[0]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "built",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: .a: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "clear",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument box after the call: .count: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "copyBag",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "copyRec",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "markRead",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument box after the call: .count: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "rename",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument box after the call: .count: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_optional",
+   "unit": "display",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument u after the call: .visits: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_optional",
+   "unit": "forget",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument u after the call: .visits: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_optional",
+   "unit": "greeting",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument u after the call: .visits: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_optional",
+   "unit": "pad",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_shapes",
+   "unit": "off",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument b after the call: .count: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_conditional",
+   "unit": "caption",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .qty: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_conditional",
+   "unit": "count",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .qty: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_conditional",
+   "unit": "pick",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .qty: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_conditional",
+   "unit": "size",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument i after the call: .qty: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_literals",
+   "unit": "clear",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_literals",
+   "unit": "reset",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument t after the call: .size: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_literals",
+   "unit": "title",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument t after the call: .size: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_literals",
+   "unit": "twice",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_module",
+   "unit": "capped",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument i after the call: .id: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_module",
+   "unit": "key",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .id: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_module",
+   "unit": "room",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .id: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_module",
+   "unit": "tagged",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .id: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_template",
+   "unit": "badge",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument u after the call: .age: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_template",
+   "unit": "handle",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument u after the call: .age: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_tuples",
+   "unit": "make",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: .1: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_tuples",
+   "unit": "tagOf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument t after the call: .id: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "inline_callee",
+   "unit": "nameOf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument user after the call: .visits: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "inline_callee",
+   "unit": "rename",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "lint_misfires",
+   "unit": "blockShadow",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "logic_values",
+   "unit": "kind",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "map_block",
+   "unit": "labels",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 20, parent: argument seen after the call[0]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "map_block",
+   "unit": "labelsInner",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 20, parent: argument seen after the call[0]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "map_block",
+   "unit": "sizes",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 20, parent: argument seen after the call[0]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "microtask_worker",
+   "unit": "double",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mixed_logic_values",
+   "unit": "nullishNumber",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "module_const_deps",
+   "unit": "twice",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutation",
+   "unit": "addTag",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument user after the call: .visits: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutation",
+   "unit": "countOnly",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutation",
+   "unit": "rename",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result: .visits: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutation",
+   "unit": "tagTwice",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument user after the call: .visits: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutual_summaries",
+   "unit": "double",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutual_summaries",
+   "unit": "scale",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "named_then",
+   "unit": "double",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "named_then",
+   "unit": "unitHandler",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "andAbsence",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "boundary",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "boundaryResult",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "coalesce",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "nullableDefault",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "nullEcho",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "nullOnly",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "untouched",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "numbers_bits",
+   "unit": "numericIdentity",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0/1 (0) against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "open_datatype",
+   "unit": "assignCopy",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "open_datatype",
+   "unit": "copyRec",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "open_datatype",
+   "unit": "restOf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "assignedCoalesce",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "assignedNullable",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "compound",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "localPostfix",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "order",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "path",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "param_rebind",
+   "unit": "drained",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "param_rebind",
+   "unit": "spread",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "promise_module_nullish",
+   "unit": "widened",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_8",
+   "unit": "bigInt",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_8",
+   "unit": "negZero",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "reach_keys",
+   "unit": "build",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: .y: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "read_shaped_inputs",
+   "unit": "clampLimit",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "rename_parameter",
+   "unit": "width",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 11, candidate: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "signed_zero",
+   "unit": "doubled",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "signed_zero",
+   "unit": "magnitude",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "signed_zero",
+   "unit": "normalized",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "signed_zero",
+   "unit": "plusZero",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "spread_outside",
+   "unit": "appendAbsent",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: argument xs after the call[0]: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "this_receiver",
+   "unit": "sameOf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result.n: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "throwing_callbacks",
+   "unit": "check",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}"
+  },
+  {
+   "kind": "disagree",
+   "pair": "small_forms",
+   "unit": "build",
+   "cause": "value",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model dictionary entry \"vh6y1\" has no match"
+  },
+  {
+   "kind": "disagree",
+   "pair": "type_tests",
+   "unit": "baseTest",
+   "cause": "value",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 1, parent: result: model true against false"
+  }
+ ]
+}
