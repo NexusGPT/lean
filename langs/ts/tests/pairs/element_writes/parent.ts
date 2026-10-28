@@ -21,7 +21,7 @@ export function stamp(rows: Row[]): number {
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     if (r === undefined) continue;
-    rows[i] = { ...r, winner: { a: r.typed.length } };
+    rows[i] = { typed: r.typed, winner: { a: r.typed.length } };
   }
   return rows.length;
 }

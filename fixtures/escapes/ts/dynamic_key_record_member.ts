@@ -3,5 +3,6 @@
 // literal would replace a function with a number; give the data a Record<string, T> dictionary of its own
 type Counter = { count: number; label: string; reset(): void };
 export function setAny(c: Counter, k: string, v: number): Counter {
-  return { ...c, [k]: v };
+  const r = { count: c.count, label: c.label, reset: c.reset };
+  return { ...r, [k]: v };
 }

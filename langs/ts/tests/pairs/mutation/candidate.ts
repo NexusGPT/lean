@@ -16,7 +16,7 @@ export function tagTwice(user: User, t: string): number {
   return addTag(user, t + "2");
 }
 export function countOnly(user: User): number {
-  const u = { ...user };
+  const u = { id: user.id, tags: user.tags, visits: user.visits };
   u.visits = 0;
   return user.visits;
 }

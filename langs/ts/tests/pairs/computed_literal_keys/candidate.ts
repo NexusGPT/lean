@@ -16,7 +16,8 @@ export function counts(n: number): Record<Status, number> {
 
 // a refactor: the case split written out as a conditional
 export function setField(row: Row, k: "a" | "b", v: number): Row {
-  return k === "a" ? { ...row, a: v } : { ...row, b: v };
+  const r: Row = { a: row.a, b: row.b, c: row.c };
+  return k === "a" ? { ...r, a: v } : { ...r, b: v };
 }
 
 // changed behaviour: b is always set too: a WITNESS when k is "a"
