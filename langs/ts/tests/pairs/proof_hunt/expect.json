@@ -30,6 +30,7 @@
   "neg_zero",
   "open_key",
   "opt_keys",
+  "parsed_a",
   "proto_lit",
   "proto_read",
   "same",
@@ -77,7 +78,8 @@
   "unknown_as": false,
   "tag": false,
   "tagged": false,
-  "is_base": false
+  "is_base": false,
+  "parsed_a": false
  },
  "why": "must-not-prove units (design/proof-hunt.md): each unit differs only through one place where lane A reads both sides as one shared unknown or one exact reading JavaScript does not keep. equal false on every one: a proof is a false proof. Lane B witnesses where its typed inputs reach the difference; the index-signature extras, a negative zero and a number past 2^53 are never drawn, so those units are PASS-bounded and a proof there is a false proof no lane shows.",
  "b": {
@@ -114,6 +116,7 @@
   "asCast": "WITNESS",
   "unknownAs": "WITNESS",
   "tagged": "WITNESS",
-  "isBase": "WITNESS"
+  "isBase": "WITNESS",
+  "parsedA": "WITNESS"
  }
 }

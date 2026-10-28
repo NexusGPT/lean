@@ -56,6 +56,7 @@ export function cfgX(y: number): number { return CFG.x + y; }
 export function anyAs(x: any): number { const n: number = x; return n; }
 export function asCast(x: string | number): number { return x as number; }
 export function unknownAs(x: unknown): string { return x as string; }
+export function parsedA(s: string): number { const o = JSON.parse(s) as { a: number }; return o.a; }
 
 // class 11: a tagged template whose same-file tag function changed (the tag is named by its text)
 function tag(s: TemplateStringsArray, ...v: number[]): string { return s.join("|"); }
