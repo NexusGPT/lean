@@ -14,6 +14,7 @@
 // turns every third holds every family the unit's spec admits (applicableFamilies) at once, and the others one family
 // alone, cycling through them in the order below, so a family that another one masks still meets the unit by itself.
 // A minimised witness (minimizeWitness below) names the fewest families it needs.
+import path from 'node:path';
 import { makeRng } from './fake.mjs';
 
 export const FAMILIES = [
@@ -29,6 +30,8 @@ export const FAMILIES = [
   { name: 'shared-reference', on: 'arguments', why: 'every position of one shape holds one object, and a record links to every object of the shapes its fields name (cycles across arguments): a write through one name is seen through the other' },
   { name: 'coercion-hooks', on: 'a value of an unread type (any, unknown, a bare type parameter)', why: 'an object with valueOf and toString, or with Symbol.toPrimitive: `x + ""`, `${x}`, String(x), `+x` and `==` each take a different hint' },
   { name: 'thenable', on: 'an input promise', why: 'an object with `then` and no `catch` or `finally`, settling to the same value: await and Promise.resolve accept it, `instanceof Promise` is false, `.catch` throws, and it settles two microtasks later than a promise' },
+  { name: 'settlement-order', on: 'input promises', why: 'the caller decides when its promises settle: they stay pending when the call starts and settle after the unit first waits on one, one per macrotask, in an order the turn picks among every order of up to four (the declared draw settles them at once, in position order); `Promise.race`, a first-come loop and work done between two awaits see the order' },
+  { name: 'timer-order', on: 'timers armed for one instant', why: 'the timers due at one instant fire in another order the event loop allows: a timer may run before an earlier-armed one of another kind (an immediate before a timeout); two timeouts or intervals keep their arm order, which Node guarantees for equal delays and lean cannot tell apart (run.mjs runTimers, legal)' },
 ];
 const NAMES = FAMILIES.map((f) => f.name);
 
@@ -69,7 +72,8 @@ export function applicableFamilies(spec) {
   if (kinds.has('array')) { out.add('sparse-array'); out.add('array-extra-property'); }
   if (objects >= 2) out.add('shared-reference');
   if (kinds.has('opaque') || kinds.has('tparam')) out.add('coercion-hooks');
-  if (kinds.has('promise')) out.add('thenable');
+  if (kinds.has('promise')) { out.add('thenable'); out.add('settlement-order'); }
+  if (spec.timers) out.add('timer-order');
   return NAMES.filter((n) => out.has(n));
 }
 
@@ -142,7 +146,31 @@ export function reshaper(families, seed, extraNames = []) {
   // the input carries stays a rejection)
   function thenable(value) { mark('thenable'); return { then(resolve, reject) { return Promise.resolve(value).then(resolve, reject); } }; }
   function keyString(s) { if (typeof s !== 'string') return s; mark('proto-name-key'); return pick(PROTO_NAMES); }
-  return { on, record, dict, array, coercible, thenable, keyString, applied };
+  // an input promise the caller settles later: a promise (instanceof Promise holds) that stays pending until the unit
+  // first subscribes to one of this input's held promises; then every held promise settles, one per host macrotask, in
+  // the order `order` (an index into every order of the held promises, up to four of them; beyond four the reverse)
+  const held = []; let started = false;
+  function settleLater(value, order) {
+    mark('settlement-order');
+    let res; const entry = { value, settle: () => res(value) };
+    class Held extends Promise { then(a, b) { start(order); return super.then(a, b); } }
+    const p = new Held((r) => { res = r; }); held.push(entry);
+    return p;
+  }
+  function start(order) {
+    if (started) return; started = true;
+    const k = held.length, perms = k <= 4 ? permutations(k) : [Array.from({ length: k }, (_, i) => k - 1 - i)];
+    const seq = perms[order % perms.length];
+    let i = 0; const next = () => { if (i >= seq.length) return; held[seq[i++]].settle(); setImmediate(next); };
+    setImmediate(next);
+  }
+  return { on, record, dict, array, coercible, thenable, keyString, settleLater, applied };
+}
+// every order of k items, the identity last (the declared draw's own order)
+function permutations(k) {
+  const out = []; const go = (pre, rest) => { if (!rest.length) { out.push(pre); return; } rest.forEach((x, i) => go([...pre, x], rest.filter((_, j) => j !== i))); };
+  go([], Array.from({ length: k }, (_, i) => i));
+  return out.length > 1 ? [...out.slice(1), out[0]] : out;
 }
 // a value standing for a field the prototype holds: the type's own kind of value, so a read through the prototype is
 // still a value of the declared type
@@ -198,17 +226,18 @@ export async function minimizeWitness({ parent, candidate, unit, input, project 
   } finally { if (saved === undefined) delete process.env.LEAN_REACH; else process.env.LEAN_REACH = saved; }
 }
 
-// CLI: node repr.mjs --list | --minimize --parent p.ts --candidate c.ts --unit u --input i [--n N] [--no-project] [--budget 16]
+// CLI: node repr.mjs --list | --minimize --parent p.ts --candidate c.ts --unit u --input i [--no-project] [--budget 16]
 // --minimize prints { input, before, after, runs, complete, seconds }: the families of the input's turn and the fewest
 // that still give a witness on that input
-if (process.argv[1] && new URL(import.meta.url).pathname === (await import('node:path')).resolve(process.argv[1])) {
+// the CLI runs after this module has loaded (no top-level await): run.mjs, which minimisation loads, imports this module
+if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) (async () => {
   const a = process.argv.slice(2); const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   if (a.includes('--list')) { for (const f of FAMILIES) console.log(`${f.name} (${f.on}): ${f.why}`); process.exit(0); }
   if (a.includes('--minimize')) {
-    const res = await minimizeWitness({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), input: Number(opt('--input')), n: Number(opt('--n', 60)), project: a.includes('--no-project') ? false : true, budget: Number(opt('--budget', 16)) });
+    const res = await minimizeWitness({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), input: Number(opt('--input')), project: a.includes('--no-project') ? false : true, budget: Number(opt('--budget', 16)) });
     console.log(JSON.stringify(res));
     process.exit(0);
   }
-  console.log('usage: node repr.mjs --list | --minimize --parent p.ts --candidate c.ts --unit u --input i [--n N] [--no-project] [--budget 16]');
+  console.log('usage: node repr.mjs --list | --minimize --parent p.ts --candidate c.ts --unit u --input i [--no-project] [--budget 16]');
   process.exit(2);
-}
+})().catch((e) => { console.log(JSON.stringify({ error: String(e && e.message || e).slice(0, 300) })); process.exit(1); });

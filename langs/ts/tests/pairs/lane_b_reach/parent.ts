@@ -28,5 +28,9 @@ export function sharedReference(a: { n: number }, b: { n: number }): number { a.
 export function coercionHooks(x: any): number { return x + 1; }
 // thenable: an awaited value may have `then` and no `catch`
 export async function thenable(p: Promise<number>): Promise<number> { return p.catch(() => 0); }
+// settlement-order: the caller settles its promises in any order; Promise.race sees it
+export async function settlementOrder(a: Promise<number>, b: Promise<number>): Promise<number> { return Promise.race([a, b]); }
+// timer-order: a timeout and an immediate due at one instant may fire in either order
+export function timerOrder(box: { v: string }): void { setTimeout(() => { box.v = 't'; }, 0); setImmediate(() => { box.v = 'i'; }); }
 // the same text on both sides
 export function untouched(a: { x: number }, xs: number[]): number { return a.x + xs.length; }

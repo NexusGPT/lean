@@ -618,7 +618,7 @@ export async function observe(side, spec, args, ms) {
     if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
     if (isJsxValue(v) && env.react) v = keyHandlers(v, { env, props: args[0], unit: spec.unit }); // a function the tree holds and lane B never fires is compared by its descriptor, not its text (design/handler-identity.md)
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
-    if (env.timers.queue.length) await runTimers(env, ms); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace
+    if (env.timers.queue.length) await runTimers(env, ms, 50, env.timerPerm ? { perm: env.timerPerm, legal: true } : {}); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace; on a timer-order input (gen.mjs, repr.mjs) the ties at one instant in another legal order
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
     outcome = { returned: isJsxValue(outcomeValue) ? renderTree(outcomeValue) : render(outcomeValue) };
     if (returnedPromise) outcome.promise = returnedPromise;
@@ -655,12 +655,18 @@ export async function observe(side, spec, args, ms) {
 // budget: ASK). The observation holds the fired order (a 'fire' record per timer) and what each callback asked of
 // the environment.
 const PERMS = { 1: [[0]], 2: [[0, 1], [1, 0]], 3: [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] }; // the firing orders of up to three timers due at one instant
-async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0 } = {}) { // until: fire what is due up to this instant (the schedule explorer advances the clock step by step); perm: which order the timers due at one instant fire in (the event loop fixes none for equal instants)
+// a timer may fire before an earlier-armed one due at the same instant only when the event loop leaves their order open:
+// different kinds, never two timeouts or intervals (equal delays fire in arm order in Node; the queue does not keep the
+// delay, so two of them are never swapped). The legal flag (the timer-order family) applies it; the JSX schedule
+// explorer passes none and keeps every order of the ties
+const mayPrecede = (a, b) => a.kind !== b.kind && !(['timeout', 'interval'].includes(a.kind) && ['timeout', 'interval'].includes(b.kind));
+async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0, legal = false } = {}) { // until: fire what is due up to this instant (the schedule explorer advances the clock step by step); perm: which order the timers due at one instant fire in (the event loop fixes none for equal instants)
   const t = env.timers; let fired = 0;
   for (;;) {
     const due = t.queue.filter((e) => e.fired === 0 && e.due <= until).sort((a, b) => a.due - b.due || a.order - b.order);
     if (!due.length) break;
-    const ties = due.filter((x) => x.due === due[0].due); const pick = perm && PERMS[ties.length] ? ties[PERMS[ties.length][perm % PERMS[ties.length].length][0]] : due[0];
+    const ties = due.filter((x) => x.due === due[0].due); let pick = perm && PERMS[ties.length] ? ties[PERMS[ties.length][perm % PERMS[ties.length].length][0]] : due[0];
+    if (legal && pick !== due[0] && !ties.every((x) => x === pick || x.order > pick.order || mayPrecede(pick, x))) pick = due[0]; // an order the event loop forbids is never run
     const e = pick; if (e.due > t.now) t.now = e.due;
     const i = t.queue.indexOf(e); t.queue.splice(i, 1); const j = env.pending.findIndex((x) => x.id === e.id); if (j >= 0) env.pending.splice(j, 1);
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);

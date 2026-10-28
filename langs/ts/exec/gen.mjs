@@ -74,6 +74,37 @@ export function reachTurn(spec, i) {
   if (g < REACH + 1 || g % REACH !== 1 || knownInput(spec, i)) return null;
   return (g - REACH - 1) / REACH;
 }
+// the changed-path tier (spec.mjs changedTargets): for a unit whose two versions differ in a comparison or a condition,
+// the generated input two after each period start (outside the known phase) is turn t of the tier: every target leaf
+// takes value t of its list (a constant of a changed comparison and its neighbours, cycling), or a copy of the other
+// parameter path it is compared with, plus 0, 1 or -1; a `.length` target cuts or extends its string or array to that
+// length. Every other leaf keeps its declared draw
+export function changedTurn(spec, i) {
+  if (!spec.changed || !spec.changed.length) return null;
+  const g = i - (spec.walkFrom ?? 0);
+  if (g < 2 || g % REACH !== 2 || knownInput(spec, i)) return null;
+  return (g - 2) / REACH;
+}
+const isUndefTag = (v) => !!v && typeof v === 'object' && v.t === 'undefined';
+function reachChanged(args, targets, t) {
+  const locate = (at) => { // the holder of a target's leaf and its key, or null when a container on the way is absent
+    let holder = args, key = at.param;
+    for (const name of at.chain) { const o = holder[key]; if (o === null || typeof o !== 'object' || o.__isFake || Array.isArray(o) && !/^\d+$/.test(name)) return null; holder = o; key = name; }
+    return { holder, key };
+  };
+  const read = (at) => { const l = locate(at); if (!l) return undefined; const v = l.holder[l.key]; return at.length ? (typeof v === 'string' || Array.isArray(v) ? v.length : undefined) : v; };
+  const write = (at, v) => {
+    const l = locate(at); if (!l) return;
+    try {
+      if (!at.length) { l.holder[l.key] = isUndefTag(v) ? undefined : v; return; }
+      const cur = l.holder[l.key]; if (typeof v !== 'number' || !Number.isInteger(v) || v < 0 || v > 4096) return;
+      if (typeof cur === 'string') l.holder[l.key] = (cur + 'x'.repeat(v)).slice(0, v);
+      else if (Array.isArray(cur) && v <= 256) { if (v <= cur.length) cur.length = v; else if (cur.length) while (cur.length < v) cur.push(cur[cur.length - 1]); }
+    } catch { /* a leaf the draw made read-only stays as drawn */ }
+  };
+  for (const tg of targets) if (tg.values && tg.values.length) write(tg.at, tg.values[t % tg.values.length]);
+  for (const tg of targets) if (tg.from) { const v = read(tg.from), d = tg.deltas[t % tg.deltas.length]; if (typeof v === 'number') write(tg.at, v + d); else if (d === 0 && v !== undefined) write(tg.at, v); }
+}
 // the families of input i: null outside the tier, else the families its turn holds among those switched on and admitted
 export function reachFamilies(spec, i) {
   const j = reachTurn(spec, i); if (j === null) return null;
@@ -149,7 +180,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   function gen0(spec, depth = 0, env = null, path = 'in', leaf = false) {
     if (!spec || depth > 8) return env ? env.fake(path) : null;
     switch (spec.kind) {
-      case 'promise': { const value = gen(spec.of, depth + 1, env, path); return namePromise(env, reach && reach.on.has('thenable') ? reach.thenable(value) : Promise.resolve(value), path, { value }); } // an input promise is named by its position; on a representation input, a thenable settling to the same value
+      case 'promise': { const value = gen(spec.of, depth + 1, env, path); return namePromise(env, reach && reach.on.has('thenable') ? reach.thenable(value) : reach && reach.on.has('settlement-order') ? reach.settleLater(value, reach.turn ?? 0) : Promise.resolve(value), path, { value }); } // an input promise is named by its position; on a representation input, a thenable settling to the same value, or a promise the caller settles later in the turn's order
       case 'number': return number();
       case 'string': { if (spool.length && rng() < 0.3) return spool[Math.floor(rng() * spool.length)]; return pick(STR_EDGE, () => `v${Math.floor(rng() * 1e6).toString(36)}`); }
       case 'boolean': return rng() < 0.5;
@@ -209,8 +240,12 @@ export function inputsFor(spec, seed, i, env) {
   const K = knownLength(spec), known = generated >= 0 && generated < K ? generated : null;
   const walk = known != null ? (spec.shaped && walkLength(spec) ? Math.floor(known / knownWidth(spec)) : null) : spec.shaped && generated >= K && generated - K < walkLength(spec) ? generated - K : null;
   const fams = reachFamilies(spec, i); // a representation input: the families of its turn reshape what the declared draw made
-  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec), known, fams && fams.length ? reshaper(fams, seed * 1000003 + i, spec.strings ?? []) : null);
-  return spec.params.map((p, k) => { const v = p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`); return g.isListed(p) ? g.listed(p) : v; }); // a listed parameter takes its listed value in the known phase, its declared draw made first
+  const shaper = fams && fams.length ? Object.assign(reshaper(fams, seed * 1000003 + i, spec.strings ?? []), { turn: reachTurn(spec, i) }) : null;
+  if (shaper && env && shaper.on.has('timer-order')) env.timerPerm = 1 + (reachTurn(spec, i) % 5); // the timers due at one instant fire in a legal order other than arm order (run.mjs observe and runTimers)
+  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec), known, shaper);
+  const args = spec.params.map((p, k) => { const v = p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`); return g.isListed(p) ? g.listed(p) : v; }); // a listed parameter takes its listed value in the known phase, its declared draw made first
+  const t = changedTurn(spec, i); if (t !== null) reachChanged(args, spec.changed, t); // a changed-path input: the changed comparisons' targets after the declared draw
+  return args;
 }
 
 // Heap layer, stage 1: the i-th input set may alias. Positions of one declared shape (an argument, a record field, an
