@@ -21,17 +21,19 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
-import { Environment, render, BudgetError } from './fake.mjs';
+import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor, aliasInputs } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
 import { Graph } from './graph.mjs';
 import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
-import { witnessPatch } from '../patch.mjs';
-import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
+import { witnessPatch, statementMarks } from '../patch.mjs';
+import { descriptorsOf, interpretFire, newHandlerStats, keyHandlers, handlerDifference, heldTextOnly } from './handlers-interp.mjs';
 import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
+import { stylesLayer, projectConfig } from './styles.mjs';
+import { contextRow } from '../hooks.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -41,9 +43,10 @@ const require = createRequire(import.meta.url);
 const loadedFiles = new Set(); // every file a sandbox loaded: a built-in call is the unit's when its caller's file is one of them
 let libraryTable = null;
 const libraryTableOf = () => libraryTable ??= JSON.parse(fs.readFileSync(process.env.LEAN_LIBRARY_TABLE || path.join(path.dirname(new URL(import.meta.url).pathname), '../translate/library.json'), 'utf8'));
+let activeSiteState = null;
 let activeRecords = null, windowDepth = 0; // a run's record set, and the window: the prototypes are patched only while unit code runs (guardedCall, an effect, a cleanup, the await of a promise the unit returned), so the harness's own work between calls costs nothing
 const recording = async (records, fn) => { const prev = activeRecords; activeRecords = records; try { return await fn(); } finally { activeRecords = prev; } };
-const openWindow = (env) => { if (!activeRecords) return false; if (windowDepth++ === 0) { startRecording(activeRecords, undefined, { keep: (f) => loadedFiles.has(f) }); } if (env && env.realm) addRealm(env.realm); return true; };
+const openWindow = (env) => { activeSiteState = env?.siteState ?? null; if (!activeRecords) return false; if (windowDepth++ === 0) { startRecording(activeRecords, undefined, { keep: (f) => loadedFiles.has(f), site: () => activeSiteState?.current?.site ?? null }); } if (env && env.realm) addRealm(env.realm); return true; };
 const closeWindow = (opened) => { if (!opened) return; if (--windowDepth === 0) stopRecording(); };
 const awaitUnit = async (env, p, ms) => { const w = openWindow(env); try { return await withTimeout(p, ms); } finally { closeWindow(w); } }; // a promise the unit returned: its continuations are unit code
 const libraryCases = (summary) => {
@@ -54,7 +57,7 @@ const libraryCases = (summary) => {
 
 const COMPILE = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, experimentalDecorators: true, emitDecoratorMetadata: false, esModuleInterop: true, importHelpers: false, strict: false, sourceMap: false, removeComments: true, jsx: ts.JsxEmit.ReactJSX, allowJs: true, moduleDetection: ts.ModuleDetectionKind.Force };
 
-// the loader's marks: every `on[A-Z]` JSX attribute value becomes `__lean_h(pos, value, file)` and every `useState(...)`
+// the loader's marks: every JSX attribute value becomes `__lean_h(pos, value, file)` and every `useState(...)`
 // or `x.useState(...)` call `__lean_s(pos, call, file)`, where pos is the node's position in the source; both return
 // their value unchanged and record the function or the slot under that position (handlers-interp.mjs meets them with
 // the static descriptors there). The positions are the source file's unless the file uses import.meta before the node
@@ -62,7 +65,7 @@ const COMPILE = { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020
 const leanMarks = (file) => (context) => {
   const f = context.factory;
   const visit = (node) => {
-    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && /^on[A-Z]/.test(node.name.text) && node.initializer && ts.isJsxExpression(node.initializer) && node.initializer.expression) {
+    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && node.initializer && ts.isJsxExpression(node.initializer) && node.initializer.expression) { // an `on[A-Z]` value meets its descriptor at a fire; any other function value is keyed by its descriptor in the tree (handlers-interp.mjs keyHandlers)
       const e = node.initializer.expression;
       return f.updateJsxAttribute(node, node.name, f.updateJsxExpression(node.initializer, f.createCallExpression(f.createIdentifier('__lean_h'), undefined, [f.createNumericLiteral(e.pos), ts.visitNode(e, visit), f.createStringLiteral(file)])));
     }
@@ -73,6 +76,30 @@ const leanMarks = (file) => (context) => {
   };
   return (sf) => ts.visitNode(sf, visit);
 };
+
+// A file is compiled once per source text. Each sandbox receives its own marker.
+const siteCompiles = new Map();
+function compileWithSites(src, tsName, abs) {
+  const old = siteCompiles.get(abs);
+  if (old?.src === src) return old;
+  const sites = [];
+  let stateName = '__lean_site';
+  while (src.includes(stateName)) stateName += '_';
+  const emit = (before) => ts.transpileModule(src, { compilerOptions: COMPILE, fileName: tsName, transformers: { before } }).outputText;
+  const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
+  const marked = emit([statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
+  const functions = (text) => {
+    const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
+    const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
+    walk(sf); return out;
+  };
+  const a = functions(original), b = functions(marked);
+  if (a.length !== b.length) throw new Error('statement markers changed the function count');
+  b.forEach((text, i) => rememberFunctionSource(text, a[i]));
+  const compiled = { src, sites, stateName, js: marked + unitShim(src, tsName) };
+  siteCompiles.set(abs, compiled);
+  return compiled;
+}
 
 // every top-level function and class of the file, exported or not, reachable for the harness
 function unitShim(src, abs) {
@@ -105,28 +132,72 @@ function jsxChildren(c) {
   add(c);
   return out;
 }
-const deepMode = { on: false }; // --deep: a same-package function component is rendered one level down (moonshot 7); off, a component tag is its name and props (a tree of names)
+const deepMode = { depth: 0 }; // --deep[=k]: same-package function components rendered k levels down (moonshot 7, design/ui-layers.md); 0, a component tag is its name and props (a tree of names)
 function jsxValue(type, props, key, env = null) {
-  const tag = typeof type === 'string' ? type : type && type.__isFake ? { $fake: type.__fakePath } : typeof type === 'function' ? { $component: type.name || 'anonymous' } : type === JSX_FRAGMENT ? '' : String(type);
+  const tag = typeof type === 'string' ? type : type && type.__isFake ? { $fake: type.__fakePath } : type && type.__leanProvider ? { $provider: contextName(type.__leanProvider) } : type && type.__leanConsumer ? { $consumer: contextName(type.__leanConsumer) } : type && type.__leanContext ? { $provider: contextName(type) } : typeof type === 'function' ? { $component: type.name || 'anonymous' } : type === JSX_FRAGMENT ? '' : String(type);
   const rest = {}; let children = [];
   for (const k of Object.keys(props ?? {})) { if (k === 'children') children = jsxChildren(props[k]); else rest[k] = props[k]; }
   if (key !== undefined && key !== null) rest.key = key;
   const el = { $el: tag, props: rest, children };
-  // deep render: a same-package component (a real function the sandbox linked, never a fake) is called with its props
-  // inside the parent's render, on its own hook frame keyed by its order among the parent's component tags (React keys
-  // by position); one level only, so a component tag inside the child is a name again; no context
-  if (deepMode.on && env && env.react && typeof type === 'function' && !type.__isFake && !(env.deepDepth > 0)) {
-    const frameKey = `${type.name || 'anonymous'}#${env.deepSeq = (env.deepSeq ?? 0) + 1}`;
-    const frames = (env.childFrames ??= new Map()); if (!frames.has(frameKey)) frames.set(frameKey, { hookSlots: [], effectSlots: [] });
-    const frame = frames.get(frameKey);
-    const saved = env.react.__pushFrame(frame); env.deepDepth = (env.deepDepth ?? 0) + 1;
-    try { el.rendered = type({ ...rest, ...(children.length ? { children: children.length === 1 ? children[0] : children } : {}) }); }
-    catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop) throw e; el.rendered = { threw: render(e) }; }
-    finally { env.deepDepth -= 1; env.react.__popFrame(saved); }
-    el.deep = frameKey;
-  }
+  // the element's type, never observed: a component is rendered later, top down, where its element is placed (React's
+  // order), so a child takes its context from the providers above its place (deepExpand)
+  if (type && typeof type !== 'string') Object.defineProperty(el, '$type', { value: type, enumerable: false });
   return el;
 }
+// a context of React's own (createContext in the hook runtime): named by its displayName, else by its creation order
+const contextName = (ctx) => (typeof ctx.displayName === 'string' && ctx.displayName) || ctx.__leanContext;
+// what one run rendered deep: the components rendered with their depth, the handles left as names with why, every
+// context read (which frame read which context, from a provider element or from outside); the tree layer reads it
+const deepLog = { rendered: new Map(), handles: new Map(), contexts: new Map() };
+const logOnce = (m, k, v) => { if (!m.has(k)) m.set(k, v); };
+const harnessStop = (e) => e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop || e instanceof CallTimeout;
+// a useContext read: the value of the nearest provider element of that context above the frame in the rendered tree;
+// with none, the outside value, one fake per context, the same at every frame and every render (hooks.json, useContext)
+function readContext(env, ctx, frame) {
+  const stack = env.contextStack ?? [];
+  for (let j = stack.length - 1; j >= 0; j--) if (stack[j].ctx === ctx) { logOnce(deepLog.contexts, `${frame} ${contextName(ctx)} provider`, { frame, context: contextName(ctx), from: 'provider' }); return stack[j].value; }
+  logOnce(deepLog.contexts, `${frame} ${contextName(ctx)} outside`, { frame, context: contextName(ctx), from: 'outside' });
+  const outside = (env.outsideContexts ??= new Map()); if (!outside.has(ctx)) outside.set(ctx, env.fake(`react:context:${contextName(ctx)}`));
+  return outside.get(ctx);
+}
+// deep render: the tree the unit returned, walked top down; a same-package function component (a real function the
+// sandbox linked, never a fake) at a component depth below k is called with its props on its own hook frame, keyed by
+// its place (its owner's frame, then its order among the owner's component tags, as React keys a fiber), and its output
+// walked in turn; a provider element's value is the context of everything below it; a component at depth k, and a
+// package component (a fake), stays a handle: its name and props
+function deepExpand(env, v, level, owner, counter) {
+  if (Array.isArray(v)) return v.map((x) => deepExpand(env, x, level, owner, counter));
+  if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return v;
+  const type = v.$type; const out = { ...v };
+  if (type !== undefined) Object.defineProperty(out, '$type', { value: type, enumerable: false });
+  const inPlace = () => { out.children = v.children.map((c) => deepExpand(env, c, level, owner, counter)); return out; };
+  if (type && (type.__leanProvider || type.__leanContext)) {
+    const stack = (env.contextStack ??= []); stack.push({ ctx: type.__leanProvider ?? type, value: v.props.value });
+    try { return inPlace(); } finally { stack.pop(); }
+  }
+  if (type && type.__leanConsumer) { // a consumer's child is a function of the nearest value, called where it is placed
+    const f = v.children[0]; if (typeof f !== 'function') return inPlace();
+    let r; try { r = f(readContext(env, type.__leanConsumer, `${owner || 'unit'}:Consumer`)); } catch (e) { if (harnessStop(e)) throw e; out.rendered = { threw: render(e) }; return out; }
+    out.rendered = deepExpand(env, r, level, owner, counter); return out;
+  }
+  if (typeof type === 'function' && !type.__isFake) {
+    const name = type.name || 'anonymous';
+    if (level >= deepMode.depth) { logOnce(deepLog.handles, name, `at depth ${level + 1}, below the stated depth ${deepMode.depth}: its name and props, never its output`); return out; } // its children are props: React renders them only where it places them
+    const frameKey = `${owner}${owner ? '>' : ''}${name}#${counter.seq += 1}`;
+    const frames = (env.childFrames ??= new Map()); if (!frames.has(frameKey)) frames.set(frameKey, { hookSlots: [], effectSlots: [] });
+    const saved = env.react.__pushFrame(frames.get(frameKey)); const was = env.deepFrame; env.deepFrame = frameKey;
+    let r;
+    try { r = type({ ...v.props, ...(v.children.length ? { children: v.children.length === 1 ? v.children[0] : v.children } : {}) }); }
+    catch (e) { if (harnessStop(e)) throw e; out.rendered = { threw: render(e) }; out.deep = frameKey; return out; }
+    finally { env.deepFrame = was; env.react.__popFrame(saved); }
+    logOnce(deepLog.rendered, name, level + 1);
+    out.rendered = deepExpand(env, r, level + 1, frameKey, { seq: 0 }); out.deep = frameKey;
+    return out;
+  }
+  if (type && type.__isFake) logOnce(deepLog.handles, type.__fakePath, 'outside the package: its name and props; its children are rendered in place, as if it passed them through, and it provides no context');
+  return inPlace();
+}
+const cloneFrames = (m) => (m ? new Map([...m].map(([k, f]) => [k, { ...f, hookSlots: f.hookSlots.slice(), effectSlots: f.effectSlots.slice() }])) : undefined);
 const JSX_FRAGMENT = '';
 const jsxRuntimeFor = (env) => { const j = (type, props, key) => jsxValue(type, props, key, env); return { jsx: j, jsxs: j, jsxDEV: j, Fragment: JSX_FRAGMENT, __esModule: true }; };
 
@@ -134,7 +205,7 @@ class RenderLoop extends Error { constructor(why) { super(`render-loop: ${why}`)
 // one commit: render until a setter during render stops changing the state (React re-renders at once, up to 25 times)
 async function commitRender(env, call, ms) {
   let v, renders = 0;
-  do { env.stateDirty = false; env.react?.__beginRender?.(); renders++; const r = call(); v = (r && typeof r.then === 'function') ? await awaitUnit(env, r, ms) : r; if (env.stateDirty && renders >= 25) throw new RenderLoop('a setter during render re-rendered 25 times'); } while (env.stateDirty && env.react);
+  do { env.stateDirty = false; env.react?.__beginRender?.(); renders++; const r = call(); v = (r && typeof r.then === 'function') ? await awaitUnit(env, r, ms) : r; if (deepMode.depth > 0 && env.react && isJsxValue(v)) { const tree = v; v = guardedCall(env, () => deepExpand(env, tree, 0, '', { seq: 0 }), ms); } if (env.stateDirty && renders >= 25) throw new RenderLoop('a setter during render re-rendered 25 times'); } while (env.stateDirty && env.react);
   return v;
 }
 // after a commit: effects run (settleEffects), and an effect that set the state re-renders and settles again, bounded
@@ -174,7 +245,8 @@ function reactRuntime(env) {
     use: (x) => { if (x && typeof x.then === 'function') throw new Suspended('use(promise)'); return x; }, // a suspended render: no model of the fallback and the retry; the run ends as ASK:suspense
     useRef: (initial) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; }, // one box per slot, the same box on every render
     useId: () => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = `:r${i}:`; return slots[i]; }, // a stable id per slot
-    useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
+    createContext: (defaultValue) => { const ctx = { __leanContext: `context#${env.contextCount = (env.contextCount ?? 0) + 1}`, displayName: undefined, _defaultValue: defaultValue }; ctx.Provider = { __leanProvider: ctx }; ctx.Consumer = { __leanConsumer: ctx }; return ctx; }, // React's own context: a provider element of it gives its value to everything rendered below it; the default is never read, since the nearest provider of a unit's root is outside the unit
+    useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (ctx && ctx.__leanContext) { env.record('get', `react:context:${i}`); slots[i] = readContext(env, ctx, env.deepFrame ?? 'unit'); return slots[i]; } if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
     useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; return [slots[i], dispatch]; },
     useLayoutEffect: (fn, deps) => effectSlot(fn, deps, 'react:layout-effect'), // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
@@ -185,6 +257,9 @@ function reactRuntime(env) {
   env.react = runtime;
   return proxy;
 }
+// a rendered tree, observed to its last element: render's depth bound (six object levels) restarts at every element, so
+// an element is never cut because of where it sits; a value inside a prop keeps the bound
+const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 const isJsxValue = (v) => (Array.isArray(v) ? v.some(isJsxValue) : !!v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el'));
 // the layer a front-end verdict names (research 18, 19: every verdict names its layer and its admitted set)
 export const FRONT_END_OBSERVATION = Object.freeze({ layer: 'element tree', renders: 'one', handlers: 'each invoked once on a fake event, its result and requests recorded', effects: 'run once after the render, in registration order; cleanups recorded as pending', schedule: 'synchronous; microtasks drained after the call; timers recorded as pending, never fired' });
@@ -339,6 +414,7 @@ function routeCall(env, Cls, member, args, spec, run) {
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
   const cache = new Map();
+  env.siteState = { current: null, completed: null, fault: null, files: Object.create(null) };
   const react = reactRuntime(env);
   const epoch = 1700000000000;
   const dateNow = (...args) => epoch + env.clock('Date.now', args);
@@ -374,6 +450,15 @@ export function sandbox(env, root) {
   const ctx = vm.createContext(g);
   env.realm = vm.runInContext('({ Array: [].constructor, Object: ({}).constructor })', ctx); // the context's own intrinsics: an array literal in the unit uses them, not the host's Array; patched while a recording window is open
   env.ctx = ctx; // a unit call runs under this context's watchdog (guardedCall): a synchronous loop that never ends is a timeout, never a hang or a native crash
+  // a module is inside the package root only when its real path is the root's real path or starts with it and a separator:
+  // a sibling folder that shares the root's name prefix, a link inside the root to a file outside it and a .json outside
+  // are outside; no root given, nothing is outside
+  const realRoot = root ? (() => { try { return fs.realpathSync(root); } catch { return path.resolve(root); } })() : null;
+  const insideRoot = (file) => {
+    if (!realRoot) return true;
+    let real; try { real = fs.realpathSync(file); } catch { return false; }
+    return real === realRoot || real.startsWith(realRoot + path.sep);
+  };
   function load(file) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
@@ -384,7 +469,9 @@ export function sandbox(env, root) {
     const src = fs.readFileSync(abs, 'utf8');
     const tsName = /\.(mjs|cjs|js)$/.test(abs) ? abs.replace(/\.(mjs|cjs|js)$/, '.ts') : abs; // a script file is read as TypeScript so its imports become requires
     const src2 = src.replace(/\bimport\.meta\.url\b/g, JSON.stringify('file://' + abs)).replace(/\bimport\.meta\b/g, '({})'); // a script's import.meta under CommonJS
-    let js = ts.transpileModule(src2, { compilerOptions: COMPILE, fileName: tsName, transformers: { before: [leanMarks(abs)] } }).outputText + unitShim(src2, tsName);
+    const compiled = compileWithSites(src2, tsName, abs);
+    env.siteState.files[abs] = compiled.sites;
+    let js = compiled.js;
     // a decorator is run (so its reads and calls are recorded) but its result never replaces the class or the member:
     // the decorated code stays the code under test, whatever the fake decorator returned
     js = js.replace(/var __decorate = \(this && this\.__decorate\) \|\| function \(decorators, target, key, desc\) \{[\s\S]*?\n\};/,
@@ -396,22 +483,32 @@ export function sandbox(env, root) {
       if (spec.startsWith('.') ) {
         if (/\.(css|scss|sass|less|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|md|txt|html|wasm)(\?.*)?$/i.test(spec)) return env.module(spec); // an asset, not code: a fake module
         const r = resolveRelative(abs, spec);
-        if (r && /\.json$/i.test(r)) { try { return JSON.parse(fs.readFileSync(r, 'utf8')); } catch { return env.module(spec); } }
-        if (r && (!root || r.startsWith(root))) return load(r);
+        if (r && /\.json$/i.test(r) && insideRoot(r)) { try { return JSON.parse(fs.readFileSync(r, 'utf8')); } catch { return env.module(spec); } } // a .json outside the root falls through to the fake below
+        if (r && !/\.json$/i.test(r) && insideRoot(r)) return load(r);
         return env.module(spec);
       }
       if (spec === 'react') return react;
       if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
       const alias = aliasTarget(abs, spec); // the project's own `paths` alias to a file of this package is code, loaded like a relative import
-      if (alias && (!root || alias.startsWith(root + path.sep))) return load(alias);
+      if (alias && insideRoot(alias)) {
+        // an aliased module whose top level cannot run in the sandbox (a bundler's import.meta.env, a host global, a
+        // require.resolve, a file TypeScript cannot emit alone) is the environment's module, as every alias was before
+        // aliases were loaded: the same fake on both sides; the files its failed load cached are dropped with it
+        const before = new Set(cache.keys()), seen = new Set(loadedFiles);
+        try { return load(alias); }
+        catch (e) {
+          if (harnessStop(e)) throw e;
+          for (const k of [...cache.keys()]) if (!before.has(k)) { cache.delete(k); delete env.siteState.files[k]; if (!seen.has(k)) loadedFiles.delete(k); }
+        }
+      }
       return decoratedModule(env, spec) ?? env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment (a package of the decorator table answers its listed exports by their rows)
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
     let wrapper;
-    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname'], { parsingContext: ctx, filename: abs }); }
+    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName], { parsingContext: ctx, filename: abs }); }
     catch (e) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); } // the file that failed to compile is named
-    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs));
+    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState);
     return mod.exports;
   }
   return { load, ctx, react, jsxRuntime: jsxRuntimeFor(env) };
@@ -481,19 +578,27 @@ export async function observe(side, spec, args, ms) {
   // the heap layer, stage 1: the object graph reachable from the arguments is named before the call (graph.mjs)
   let graph;
   try { graph = new Graph().before(args); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
-  let outcome, outcomeValue, hasOutcome = false;
+  let outcomeSite = null;
+  if (env.siteState) { env.siteState.completed = null; env.siteState.fault = null; }
+  let outcome, outcomeValue, hasOutcome = false, returnedPromise = null;
   lateErrors.length = 0;
   try {
-    const slotsBefore = (env.hookSlots ?? []).slice(), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
-    const call = () => guardedCall(env, () => unit.call(args), ms);
+    const slotsBefore = (env.hookSlots ?? []).slice(), framesBefore = cloneFrames(env.childFrames), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
+    const call = () => { const r = guardedCall(env, () => unit.call(args), ms); returnedPromise = promiseName(r); return r; }; // a promise the world made and the unit returned as it is: its name joins the outcome
     let v = await commitRender(env, call, ms);
+    outcomeSite = env.siteState?.completed ?? null;
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
+      // each render's own pending continuations settle before its requests are read: work a render started (a promise
+      // chain in a hook) is that render's, never the next render's, so the two traces compare like with like
+      const settleRender = async () => { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); };
+      await settleRender();
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
-      env.hookSlots = slotsBefore.slice(); env.calls = new Map(callsBefore); env.demand = demandBefore;
+      const framesAfter = env.childFrames; env.hookSlots = slotsBefore.slice(); env.childFrames = cloneFrames(framesBefore); env.calls = new Map(callsBefore); env.demand = demandBefore; // a deep child's frames start the second render as they started the first
       const v2 = await commitRender(env, call, ms);
+      await settleRender();
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
-      env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
+      env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.childFrames = framesAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
     }
     for (const effect of env.reactEffects ?? []) { // the mount's effects, once, in registration order (the pending records of their cleanups are part of the one-render observation)
@@ -502,10 +607,12 @@ export async function observe(side, spec, args, ms) {
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
     if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
+    if (isJsxValue(v) && env.react) v = keyHandlers(v, { env, props: args[0], unit: spec.unit }); // a function the tree holds and lane B never fires is compared by its descriptor, not its text (design/handler-identity.md)
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
     if (env.timers.queue.length) await runTimers(env, ms); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
-    outcome = { returned: render(outcomeValue) };
+    outcome = { returned: isJsxValue(outcomeValue) ? renderTree(outcomeValue) : render(outcomeValue) };
+    if (returnedPromise) outcome.promise = returnedPromise;
   } catch (e) {
     if (e && e.message === '__timeout__') return { harness: 'timeout' };
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
@@ -513,7 +620,9 @@ export async function observe(side, spec, args, ms) {
     if (e instanceof RenderLoop) return { harness: e.message }; // ASK:render-loop: React would throw or never settle
     if (e instanceof CallTimeout) return { harness: 'timeout' };
     if (e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message))) return { harness: 'stack overflow' }; // whichever realm threw it: the host's (a fake, a patched intrinsic) or the sandbox's (the unit's own recursion)
+    outcomeSite = env.siteState?.completed ?? env.siteState?.current?.site ?? null;
     outcome = { threw: render(e) };
+    if (returnedPromise) outcome.promise = returnedPromise;
   }
   // drain microtasks so pending work settles
   await new Promise((r) => setImmediate(r));
@@ -528,7 +637,7 @@ export async function observe(side, spec, args, ms) {
   // object; a fresh object is named by its first sight, so two runs equal up to a renaming serialise the same
   let heap;
   try { heap = graph.after(args, own, outcomeValue, hasOutcome); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
-  return { outcome, heap, receiver, trace: env.trace, pending: env.pending.map(({ id, ...rest }) => rest) }; // a timer id is an arm counter, not an observation
+  return Object.defineProperty({ outcome, heap, receiver, trace: env.trace, pending: env.pending.map(({ id, ...rest }, i) => withSite(rest, env.pending[i].site)) }, 'site', { value: outcomeSite }); // a timer id is an arm counter, not an observation
 }
 
 // ----- the virtual clock: armed timers fire in due order -----
@@ -548,7 +657,7 @@ async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0 } = {
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
     env.record('fire', { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[e.kind], [e.due]); // the instant, never the id: an id is an arm counter nobody outside sees
     try { const r = guardedCall(env, () => e.fn(...e.args), ms); if (r && typeof r.then === 'function') await awaitUnit(env, r, ms); } catch (x) { if (x instanceof BudgetError || x?.message === '__timeout__') throw x; env.record('timer-throw', e.kind, [render(x)]); }
-    if (e.interval) { e.fired = 1; e.due = t.now + e.interval; e.order = t.nextId++; t.queue.push(e); env.pending.push({ op: 'setInterval', ms: e.interval, id: e.id }); } // once per run: the interval stays pending for the next tick
+    if (e.interval) { e.fired = 1; e.due = t.now + e.interval; e.order = t.nextId++; t.queue.push(e); env.pending.push(withSite({ op: 'setInterval', ms: e.interval, id: e.id }, e.site)); } // once per run: the interval stays pending for the next tick
     await new Promise((r) => setImmediate(r));
   }
   for (const e of t.queue) e.fired = 0; // the next run may fire the intervals again
@@ -572,8 +681,8 @@ async function settleEffects(env, ms) {
   }
   await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r));
 }
-const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers) } : v);
-const treeHandlers = (v, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeHandlers(c, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (/^on[A-Z]/.test(k) && typeof x === 'function') out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeHandlers(c, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); return out; };
+const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers), ...(Object.hasOwn(v, 'rendered') ? { rendered: eraseHandlers(v.rendered) } : {}) } : v);
+const treeHandlers = (v, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeHandlers(c, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (/^on[A-Z]/.test(k) && typeof x === 'function') out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeHandlers(c, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); if (Object.hasOwn(v, 'rendered')) treeHandlers(v.rendered, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}>`], out); return out; }; // a deep child's output: its handlers are the page's too
 async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth, schedules = false, handlers = null }) { // schedules: the clock is a command (moonshot 9): a tick fires what is due at the next instant, ties in every order, and a handler may arrive before a timer fires
   const mount = async (name) => { // a fresh mount: the same seed gives the same fakes and the same inputs as the pair's run of this input
     const env = new Environment(seed * 7919 + inputIndex); env.shapes = spec;
@@ -592,13 +701,13 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
     const settle = async () => { let t = await commit(s); if (!schedules && s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and (outside the schedule explorer) the timers they armed
     const tick = async (perm) => { const q = s.env.timers.queue.filter((e) => e.fired === 0); if (!q.length) return null; const next = Math.min(...q.map((e) => e.due)); await runTimers(s.env, ms, 50, { until: next, perm }); return commit(s); }; // the clock advances to the next due instant; the timers due there fire in the chosen order
     let tree;
-    try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: 'mount', threw: render(e), trace: s.env.trace.map((x) => render(x)) }); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
+    try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: 'mount', threw: render(e), trace: traceWithSites(s.env.trace) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
     for (const label of labels) {
       const from = s.env.trace.length;
       if (label.startsWith('tick@')) { // a clock step: the instant it reaches and what fired are the observation
         const perm = Number(label.slice(5)) || 0; const before = s.env.timers.now;
-        try { const t2 = await tick(perm); if (t2 !== null) tree = t2; } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; }
-        obs.push({ command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
+        try { const t2 = await tick(perm); if (t2 !== null) tree = t2; } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; }
+        obs.push({ command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
         continue;
       }
       const h = treeHandlers(tree).find((x) => x.label === label);
@@ -606,15 +715,15 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
       const event = s.env.fake(`react:event:${label}`), slotsBefore = (s.env.hookSlots ?? []).slice(); let threw = false;
       try { const r = guardedCall(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (harness(e)) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
       if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // a readable descriptor applied to the slots before the handler must give the slots the handler left
-      try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push({ command: label, threw: render(e), trace: s.env.trace.slice(from).map((x) => render(x)) }); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
-      obs.push({ command: label, tree: eraseHandlers(tree), trace: s.env.trace.slice(from).map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
+      try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
+      obs.push({ command: label, tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
     }
     const pendingTimers = s.env.timers.queue.filter((e) => e.fired === 0); const ties = pendingTimers.length ? pendingTimers.filter((e) => e.due === Math.min(...pendingTimers.map((x) => x.due))).length : 0; // read before the unmount clears them: the clock steps the next level may take
     const ticks = schedules && pendingTimers.length && pendingTimers.length <= 3 ? Array.from({ length: Math.min(PERMS[ties]?.length ?? 1, 6) }, (_, k) => `tick@${k}`) : [];
     // unmount: every cleanup, in slot order
     const from = s.env.trace.length;
     for (const es of s.env.effectSlots ?? []) if (es && es.cleanup) { s.env.record('call', `${es.key}.cleanup`, []); try { await awaitUnit(s.env, Promise.resolve(callUnit(s.env, es.cleanup)), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
-    obs.push({ command: 'unmount', trace: s.env.trace.slice(from).map((x) => render(x)) });
+    obs.push({ command: 'unmount', trace: traceWithSites(s.env.trace.slice(from)) });
     return { obs, s, handlers: treeHandlers(tree).map((x) => x.label), ticks, timers: pendingTimers.length };
   };
   let paths = 0; let frontier = [[]]; const done = new Set(); let maxTimers = 0;
@@ -636,24 +745,70 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
   return { paths, timers: maxTimers };
 }
 
+export const traceWithSites = (records) => records.map((r) => withSite(render(r), r.site));
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
-export async function runPair(opts) { return annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit); }
+export async function runPair(opts) {
+  const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
+  const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
+  for (const witness of res.witnesses ?? []) {
+    const hd = handlerDifference(witness.parent?.outcome?.returned, witness.candidate?.outcome?.returned); if (hd) witness.where = { ...(witness.where ?? {}), handler: hd }; // a held handler's keys differ: the prop and the first differing step, or the escape that kept a text key
+    if (witness.where?.lines || !witness.parent || !witness.candidate) continue;
+    const a = witness.parent, b = witness.candidate;
+    if (JSON.stringify(a.threw) !== JSON.stringify(b.threw) && (a.site || b.site)) {
+      witness.where.lines = { kind: 'completion', parent: siteLines(a.site), candidate: siteLines(b.site) };
+      continue;
+    }
+    if (a.trace && b.trace && JSON.stringify(a.trace) !== JSON.stringify(b.trace)) {
+      witness.where.lines = firstDifference({ trace: a.trace }, { trace: b.trace }).lines;
+    }
+  }
+  const fe = res?.bound?.frontEnd; if (fe && fe.layers) fe.layers = { ...fe.layers, tree: { verdict: res.verdict, ...fe.layers.tree } }; // the tree layer's verdict is lane B's; the styles layer keeps its own
+  return res;
+}
+// the depth --deep states: true or a bare flag is one level; a number k is k levels; anything else is a tree of names
+export const deepDepth = (deep) => (deep === true ? 1 : Number.isInteger(Number(deep)) && Number(deep) > 0 ? Number(deep) : 0);
+const componentsText = (k) => (k > 0 ? `same-package function components rendered ${k === 1 ? 'one level down' : `${k} levels down`} on their own hook frames, top down where their elements are placed, each useContext read from the nearest provider element above it (--deep${k === 1 ? '' : '=' + k})` : 'a tree of names: a component tag is its name and props');
+// the layers of a rendered unit's certificate (design/ui-layers.md): the tree, to the stated depth with its context, and
+// the resolved styles; each with its assumptions; what neither layer observes is named
+function layersOf(styles) {
+  const layers = { styles: null, notObserved: 'pixels, layout, the committed DOM, the accessibility tree; styles beyond the pinned utilities' };
+  Object.defineProperty(layers, 'tree', { enumerable: true, get: () => ({
+    depth: deepMode.depth, components: componentsText(deepMode.depth),
+    rendered: [...deepLog.rendered].map(([name, depth]) => ({ component: name, depth })),
+    handles: [...deepLog.handles].map(([name, why]) => ({ component: name, why })),
+    contexts: [...deepLog.contexts.values()],
+    assumptions: deepMode.depth > 0 ? ['a component renders where its element is placed, after its owner returned, top down (React\'s order); its hook frame is keyed by that place', `components deeper than ${deepMode.depth} level(s) are handles: their name and props are observed, never their output`, 'a package component is a handle: its children are rendered in place, as if it passed them through, and it provides no context', `useContext: ${contextRow()?.effect ?? 'the nearest provider above the frame'}`, 'a rendered child\'s effects run once with the mount of the one-render observation; the command sequences re-run the unit\'s own effects only'] : ['a component tag is its name and props; no child is rendered', `useContext at the unit's root: ${contextRow()?.effect ?? 'the outside value'}`],
+  }) });
+  Object.defineProperty(layers, 'styles', { enumerable: true, get: () => styles.result() });
+  return layers;
+}
+// the inputs of a unit: its spec (shaped by what both versions read), the enumerated small heaps, and the i-th draw on
+// one side's environment (a heap builder first, then the seeded generator with its sharing); each side draws its own
+// copy, so a replay draws input i on a fresh environment seeded as that side's was and gets the input both runs started from
+export function inputPlan(parent, candidate, unit, { project = true, seed = 1 } = {}) {
+  const spec = specOf(candidate, unit, { project, usageFrom: parent }); // the inputs are shaped by what both versions read and compare against (usage.mjs)
+  const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
+  spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
+  return { spec, heaps, draw: (i, env) => (i < heaps.builders.length ? heaps.builders[i](env) : aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i)) };
+}
 async function runPairOnce(opts) {
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
-  deepMode.on = !!deep;
+  deepMode.depth = deepDepth(deep); deepLog.rendered.clear(); deepLog.handles.clear(); deepLog.contexts.clear();
+  const styles = stylesLayer({ parent: projectConfig(parent), candidate: projectConfig(candidate) }); let treeDone = false; // the styles layer reads every input both sides rendered, past the tree layer's witnesses too; each side's classes under its own project's Tailwind configuration (the nearest tailwind.config.* or CSS entry, exec/styles.mjs projectConfig)
   // a missing parent unit has no equality question
   if (!parent || !fs.existsSync(parent) || !topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit)) {
     return runNew(opts);
   }
-  let spec; step('inputs');
-  try { spec = specOf(candidate, unit, { project, usageFrom: parent }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; } // the inputs are shaped by what both versions read and compare against (usage.mjs)
-  const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
-  spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
+  let plan; step('inputs');
+  try { plan = inputPlan(parent, candidate, unit, { project, seed }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
+  const { spec, heaps } = plan;
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
+  setRoots(sideLocations(parent, candidate, roots)); // the directories lean loaded the two copies from render as one token (fake.mjs setRoots)
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
+  const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
   let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
   const mountSides = async (i) => { // a fresh environment per side for input i, the unit picked, the inputs drawn
     const sides = {};
@@ -667,12 +822,15 @@ async function runPairOnce(opts) {
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       let inputs;
-      try { inputs = i < heaps.builders.length ? heaps.builders[i](env) : aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
+      try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
-      sides[name] = { env, unit: u, inputs };
+      sides[name] = { env, unit: u, inputs, drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }
     return sides;
   };
+  // a witness's args: the input as drawn, before either call; `parent` and `candidate` keep what each call left. The two
+  // sides draw their own copies from one seed, so their drawn renderings are equal; one that differs is named beside it
+  const drawnOf = (sides) => ({ args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
   const observeBoth = (sides, record) => (record ? recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]) : (async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)])());
   // retained state: for a class unit, programs of method calls on one constructed instance per side run first (programs.mjs); a divergence in a program that calls this unit is its WITNESS, one elsewhere rides in the certificate for the unit it names
   let programRun = null;
@@ -683,34 +841,41 @@ async function runPairOnce(opts) {
   for (let i = 0; i < n; i++) {
     step('lane B', i); let sides = await mountSides(i);
     if (harnessAsk) break;
-    let [oP, oC] = await observeBoth(sides, true);
-    if (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout') { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
+    let [oP, oC] = await observeBoth(sides, !treeDone);
+    if (!treeDone && (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout')) { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
       recorderRetries++; sides = await mountSides(i); if (harnessAsk) break; [oP, oC] = await observeBoth(sides, false);
     }
+    if (treeDone && (oP.harness || oC.harness || oP.impure || oC.impure)) break; // past the tree layer's witnesses the run only feeds the styles layer: a stop there ends it
+    if ((sides.parent.sawJsx || sides.candidate.sawJsx) && oP.outcome && oC.outcome && Object.hasOwn(oP.outcome, 'returned') && Object.hasOwn(oC.outcome, 'returned')) styles.add(i, oP.outcome.returned, oC.outcome.returned);
+    if (treeDone) continue;
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
-    if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, args: sides.parent.inputs.map((a) => render(a)), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
+    if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, ...drawnOf(sides), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
     if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
     if (oP.harness === 'stack overflow' && oC.harness === 'stack overflow') { skipped.push(i); continue; } // both sides exhausted the call stack on this input, with and without the recorder: the input proves nothing
     if ((oP.harness === 'stack overflow' && !oC.harness) || (oC.harness === 'stack overflow' && !oP.harness)) { // one side recursed past the stack where the other returned: the thrown RangeError is that side's outcome (SEMANTICS item 1), observed on the same stack without the recorder
       const side = oP.harness ? 'parent' : 'candidate';
-      diffs.push({ input: i, args: sides.parent.inputs.map((a) => render(a)), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } });
+      diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } });
       if (diffs.length >= 3) break;
       continue;
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
+    if (atGuard(oP, sides.parent) && atGuard(oC, sides.candidate)) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
-      diffs.push({ input: i, args: sides.parent.inputs.map((a) => render(a)), parent: oP, candidate: oC, where: firstDifference(oP, oC) });
-      if (diffs.length >= 3) break;
+      const held = heldTextOnly(oP, oC); // the sides differ only in a held function lean cannot read: its text is no difference lean can show on a run
+      if (held) (diffs.heldText ??= []).push({ input: i, escapes: held });
+      else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
     }
   }
-  const bound = { n, seed, ms, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  const bound = { n, seed, ms, reached, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  if (diffs.heldText && !diffs.length) bound.heldText = { inputs: diffs.heldText.length, first: diffs.heldText[0] }; // runPair turns a PASS into ASK naming the escape
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing' };
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
   if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };
   const handlerRun = sawJsx ? { models: { parent: descriptorsOf(parent, unit, { project }), candidate: descriptorsOf(candidate, unit, { project }) }, stats: newHandlerStats() } : null; // the descriptors of the unit's handlers, read once per side, applied at every fire of the sequences and the finite lane
-  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, components: deep ? 'same-package function components rendered one level down on their own hook frames, no context (--deep)' : 'a tree of names: a component tag is its name and props', notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
+  if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, components: componentsText(deepMode.depth), notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
+  if (sawJsx) bound.frontEnd.layers = layersOf(styles); // the tree layer (depth, rendered children, handles, context reads) and the styles layer, each with its assumptions
   if (handlerRun) bound.frontEnd.handlers = Object.assign(handlerRun.stats, { observed: FRONT_END_OBSERVATION.handlers }); // how a handler is observed, and the descriptor interpreter's counts: fired, readable, interpretable, agreed, and every defect
   if (programRun) {
     const member = spec.member ?? unit.split('.')[1];
@@ -747,7 +912,7 @@ async function runPairOnce(opts) {
   }
   if (harnessAsk) return { verdict: 'ASK', reason: harnessAsk, unit, bound, ran: diffs.length };
   if (sawJsx) { // the one-render check found no difference: a finite component is decided over every click order (rung 2); the rest runs re-render sequences (rung 3)
-    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); step('finite'); const rt = { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
+    const { finiteDomain, exploreFinite } = await import('./finite.mjs'); step('finite'); const rt = { traceWithSites, sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop, guardedCall, awaitUnit };
     let domain = null; try { domain = finiteDomain(candidate, unit, { project }); } catch (e) { domain = { why: `finiteness: ${String(e && e.message).slice(0, 120)}` }; }
     if (domain && !domain.why) {
       const r = await recording(records, () => exploreFinite({ files: { parent, candidate }, roots, spec, unit, domain, seed, ms, rt, handlers: handlerRun }));
@@ -777,14 +942,63 @@ async function runPairOnce(opts) {
     bound.frontEnd.renders = `one, then every command sequence of up to ${sequenceDepth} clicks over at most ${sequenceBreadth} handlers per step, from a fresh mount, on ${Math.min(sequenceInputs, n)} inputs (${paths} paths); effects re-run by Object.is deps with cleanup first; unmount runs every cleanup`;
     bound.frontEnd.notObserved = 'committed DOM, computed styles, layout, pixels, accessibility tree; timers never fire; sequences beyond the depth';
   }
+  // no input got past a guard: the inputs drawn from the types all fell outside the domain the unit accepts (a table, a
+  // check the types do not state), so the bounded run sampled the refusal only and says nothing about the body
+  if (reached.body === 0 && reached.guard > 0) return { verdict: 'ASK', unreached: true, reason: `no input reached the body: every one of the ${reached.guard} inputs threw at a guard (first: ${thrownText(firstGuard)})`, unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
 }
+// an input stopped at a guard: the call threw at a guard's throw (guardThrow) having done nothing the observation sees, no
+// request of the environment, no pending work, no field of the receiver touched, its arguments as drawn; a throw after any
+// of these, an unconditional throw and a fault of the language (a read of undefined) reached the body
+function atGuard(o, side) {
+  if (!o.outcome || !Object.hasOwn(o.outcome, 'threw') || o.outcome.promise) return false;
+  if (o.trace.length || o.pending.length || Object.keys(o.receiver ?? {}).length) return false;
+  if (!guardThrow(o.site)) return false;
+  return JSON.stringify(renderDrawn(side.inputs)) === JSON.stringify(side.drawn);
+}
+// a guard's throw: the throw statement the run completed at sits in a branch of its own function (an if, a case of a
+// switch, a catch), so the function has a way past it; the site is the statement marker's (patch.mjs), the file read once
+const guardFiles = new Map();
+function guardThrow(site) {
+  if (!site || !site.file || typeof site.text !== 'string' || !/^throw\b/.test(site.text)) return false;
+  let sf = guardFiles.get(site.file);
+  if (sf === undefined) { try { sf = ts.createSourceFile(site.file, fs.readFileSync(site.file, 'utf8'), ts.ScriptTarget.Latest, true); } catch { sf = null; } guardFiles.set(site.file, sf); }
+  if (!sf) return false;
+  const line = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
+  let hit = null;
+  const walk = (n) => { if (hit) return; if (ts.isThrowStatement(n) && line(n.getStart(sf)) === site.start && line(n.end - 1) === site.end) { hit = n; return; } ts.forEachChild(n, walk); };
+  walk(sf);
+  for (let c = hit, p = hit?.parent; p && !ts.isFunctionLike(p) && !ts.isSourceFile(p); c = p, p = p.parent) {
+    if (ts.isIfStatement(p) && c !== p.expression) return true;
+    if (ts.isCaseClause(p) || ts.isDefaultClause(p) || ts.isCatchClause(p)) return true;
+  }
+  return false;
+}
+const thrownText = (t) => (t && typeof t === 'object' && typeof t.$error === 'string' ? `${t.$error}: ${t.message}` : JSON.stringify(t)).slice(0, 200);
 
+function siteLines(site) {
+  if (!site) return null;
+  return { file: site.file, start: site.start, end: site.end, text: site.text ?? '' };
+}
 function firstDifference(a, b) {
+  const where = differenceField(a, b);
+  if (!where) return null;
+  const trace = where.field === 'trace';
+  let parentSite = trace ? a.trace[where.index]?.site : a.site;
+  let candidateSite = trace ? b.trace[where.index]?.site : b.site;
+  let kind = trace ? (!a.trace[where.index] ? 'effect; parent record absent' : !b.trace[where.index] ? 'effect; candidate record absent' : 'effect') : where.field === 'outcome' ? 'completion' : 'completion fallback';
+  if (where.field === 'pending') {
+    let i = 0; while (i < Math.max(a.pending.length, b.pending.length) && JSON.stringify(a.pending[i]) === JSON.stringify(b.pending[i])) i++;
+    if (a.pending[i]?.site && b.pending[i]?.site) { parentSite = a.pending[i].site; candidateSite = b.pending[i].site; kind = 'pending arm'; }
+  }
+  where.lines = { kind, parent: siteLines(parentSite), candidate: siteLines(candidateSite) };
+  return where;
+}
+function differenceField(a, b) {
   for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending']) {
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
-      if (k === 'trace') { const i = a.trace.findIndex((e, j) => JSON.stringify(e) !== JSON.stringify(b.trace[j])); return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }
+      if (k === 'trace') { let i = 0; while (i < Math.max(a.trace.length, b.trace.length) && JSON.stringify(a.trace[i]) === JSON.stringify(b.trace[i])) i++; return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }
       if (k === 'heap') { const h = a.heap ?? {}, g = b.heap ?? {}; for (const part of ['roots', 'outcome', 'own']) if (JSON.stringify(h[part]) !== JSON.stringify(g[part])) return { field: 'heap', part }; const n = Math.max((h.heap ?? []).length, (g.heap ?? []).length); for (let j = 0; j < n; j++) if (JSON.stringify((h.heap ?? [])[j]) !== JSON.stringify((g.heap ?? [])[j])) return { field: 'heap', object: j, anchor: j < (h.anchors ?? 0), parent: (h.heap ?? [])[j] ?? null, candidate: (g.heap ?? [])[j] ?? null }; return { field: 'heap' }; }
       return { field: k };
     }
@@ -792,8 +1006,25 @@ function firstDifference(a, b) {
   return null;
 }
 
+// the directories each side was loaded from: its package root, and the prefix of its unit file that the other side's path
+// does not share (the temporary folder a copy sits in; found as the segments left when the common tail of the two unit
+// file paths is cut, when both files bear one name); each in its real-path spelling too. When the two files bear different
+// names the files themselves are listed, so a unit that reads its own file name sees one name.
+export function sideLocations(parent, candidate, roots) {
+  const real = (x) => { try { return fs.realpathSync(x); } catch { return x; } };
+  const abs = { parent: path.resolve(parent), candidate: path.resolve(candidate) };
+  const seg = { parent: abs.parent.split(path.sep), candidate: abs.candidate.split(path.sep) };
+  const dirs = [roots.parent, roots.candidate], files = [];
+  if (seg.parent.at(-1) === seg.candidate.at(-1)) {
+    let k = 0; while (k < seg.parent.length - 1 && k < seg.candidate.length - 1 && seg.parent.at(-1 - k) === seg.candidate.at(-1 - k)) k++;
+    for (const side of ['parent', 'candidate']) dirs.push(seg[side].slice(0, seg[side].length - k).join(path.sep));
+  } else files.push(abs.parent, abs.candidate);
+  const withReal = (list) => [...list, ...list.map(real)];
+  return { dirs: withReal(dirs.map((d) => path.resolve(d))), files: withReal(files) };
+}
+
 // the package root: the nearest package.json above the file (relative imports inside it are compiled, others faked)
-function findRoot(file) {
+export function findRoot(file) {
   let d = path.dirname(path.resolve(file));
   for (let i = 0; i < 10; i++) { if (fs.existsSync(path.join(d, 'package.json'))) return d; const up = path.dirname(d); if (up === d) break; d = up; }
   return path.dirname(path.resolve(file));
@@ -803,7 +1034,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const guard = verdictGuard(opt('--out', null));
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: a.includes('--deep'), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
   const out = opt('--out', null);
   guard.settle();
   const text = JSON.stringify(res, null, 1);

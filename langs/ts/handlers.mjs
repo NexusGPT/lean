@@ -36,9 +36,12 @@ function usedByReact(checker, cb, unitBody) {
 // a parameter is an atom of its own (its index in params); a `const` local with a pure initializer stands for that
 // initializer; a branch, a loop, await, try, an assignment, `let`, a call whose arguments are not pure stay unread
 export function readHandler(checker, sf, cb, ctx) {
-  if (!ts.isArrowFunction(cb) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null;
-  if (!cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken)) return null;
-  if (!usedByReact(checker, cb, ctx.unitBody)) return null;
+  const no = (why) => { ctx.escape = why; return null; }; // the escape: why the handler stays unread, named by the tree's handler key (exec/handlers-interp.mjs)
+  ctx.escape = null;
+  if (!ts.isArrowFunction(cb)) return no('handler-not-an-arrow');
+  if (cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return no('handler-async');
+  if (!cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken)) return no('handler-parameter-pattern');
+  if (!usedByReact(checker, cb, ctx.unitBody)) return no('handler-not-held-by-react');
   const params = cb.parameters.map((p) => checker.getSymbolAtLocation(p.name));
   const locals = new Map();
   const isSetter = (id) => { if (!ts.isIdentifier(id)) return null; const s = checker.getSymbolAtLocation(id); const k = s ? ctx.isSetter(s) : null; return k === undefined ? null : k; };
@@ -51,40 +54,40 @@ export function readHandler(checker, sf, cb, ctx) {
   for (const st of body) {
     if (ts.isVariableStatement(st)) { // a `const` local of the handler: later references stand for its initializer
       const dl = st.declarationList;
-      if (!(dl.flags & ts.NodeFlags.Const) || dl.declarations.length !== 1) return null;
+      if (!(dl.flags & ts.NodeFlags.Const) || dl.declarations.length !== 1) return no('handler-let-or-several-declarations');
       const d = dl.declarations[0];
-      if (!ts.isIdentifier(d.name) || !d.initializer || !renderPure(checker, d.initializer)) return null;
-      const s = checker.getSymbolAtLocation(d.name); if (!s) return null;
-      if (readsMovedPastCall([d.initializer])) return null;
+      if (!ts.isIdentifier(d.name) || !d.initializer || !renderPure(checker, d.initializer)) return no('handler-local-not-pure');
+      const s = checker.getSymbolAtLocation(d.name); if (!s) return no('handler-local-not-pure');
+      if (readsMovedPastCall([d.initializer])) return no('handler-read-moved-past-call');
       locals.set(s, d.initializer); declaredAt.set(s, steps.length);
       continue;
     }
-    if (!ts.isExpressionStatement(st) && !ts.isReturnStatement(st)) return null;
+    if (!ts.isExpressionStatement(st) && !ts.isReturnStatement(st)) return no(`handler-statement:${ts.SyntaxKind[st.kind]}`);
     const e = st.expression;
-    if (e && readsMovedPastCall([e])) return null;
+    if (e && readsMovedPastCall([e])) return no('handler-read-moved-past-call');
     const returns = ts.isReturnStatement(st);
     const setterKey = e && ts.isCallExpression(e) ? isSetter(e.expression) : null;
     if (e && ts.isCallExpression(e) && !e.questionDotToken && (e.arguments.every((a) => renderPure(checker, a)) || (setterKey !== null && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])))) {
       const f = e.expression;
       if (ts.isIdentifier(f)) {
         const o = originOf(checker, f, sf, ctx.unitNode ?? null);
-        if (o.kind === 'unit') return null;
+        if (o.kind === 'unit') return no('handler-unit-call');
         if (o.kind === 'local') {
           if (setterKey !== null && e.arguments.length === 1) { // a slot setter: the step carries the next value, or the updater applied to the running value
             const a = e.arguments[0];
             steps.push({ kind: 'set', setter: checker.getSymbolAtLocation(f), slot: setterKey, ...(ts.isArrowFunction(a) ? { updater: a } : { next: a }), callee: f, args: [...e.arguments], returns });
           } else steps.push({ kind: 'call', name: 'value', recv: [f], args: [...e.arguments], returns });
         } else if (o.kind === 'import' || o.kind === 'global') steps.push({ kind: 'call', name: outsideName(checker, f), recv: [], args: [...e.arguments], returns });
-        else return null;
+        else return no('handler-callee');
       } else if (ts.isPropertyAccessExpression(f) && !f.questionDotToken) {
         let name = `member:${f.name.text}`, recv = [];
         if (renderPure(checker, f.expression)) recv = [f.expression]; // a receiver that is a parameter (`e.preventDefault()`), a prop or a local
         else if (ts.isIdentifier(f.expression) && ['import', 'global'].includes(originOf(checker, f.expression, sf, ctx.unitNode ?? null).kind)) name = outsideName(checker, f.expression) + '.' + f.name.text;
-        else return null;
+        else return no('handler-receiver');
         steps.push({ kind: 'call', name, recv, args: [...e.arguments], returns });
-      } else return null;
+      } else return no('handler-callee');
     } else if (returns && (!e || renderPure(checker, e))) steps.push({ kind: 'return', value: e ?? null });
-    else return null;
+    else return no(e && ts.isCallExpression(e) ? 'handler-argument-not-pure' : `handler-expression:${e ? ts.SyntaxKind[e.kind] : 'none'}`);
   }
   return { params, locals, steps };
 }

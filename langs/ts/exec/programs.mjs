@@ -4,7 +4,7 @@
 // two sides' observations (outcome, the instance's fields, the trace, the reachable graph) are compared; the first
 // divergence is shrunk by deleting commands while a divergence stays, and the shrunk program is the WITNESS. A clean
 // run is PASS-bounded with the program and command counts in the certificate (bound.programs).
-import { Environment, render, makeRng } from './fake.mjs';
+import { Environment, renderDrawn, makeRng } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
 import { loadProgram, topLevelFunctions } from '../common.mjs';
@@ -56,8 +56,8 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, p
         const method = s.Cls.prototype[c.method];
         if (typeof method !== 'function') return { harness: `${name}: ${c.method} is not a method` };
         const side = { env: s.env, unit: { call: (a) => method.apply(s.inst, a), receiver: { __own: () => ({ ...s.inst }) } } };
+        obs[`${name}Args`] = renderDrawn(args); // the command's arguments as drawn, before the call writes them
         obs[name] = await rt.observe(side, specs[c.method], args, ms);
-        obs[`${name}Args`] = args.map((a) => render(a));
       }
       if (obs.parent.harness || obs.candidate.harness) return { harness: `command ${k} (${c.method}): ${obs.parent.harness ? 'parent ' + obs.parent.harness : 'candidate ' + obs.candidate.harness}` };
       steps.push({ method: c.method, args: obs.parentArgs });

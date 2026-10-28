@@ -214,7 +214,10 @@ export function usage(sf, unitName, checker, opts = {}) {
 export function mergeNodes(a, b) {
   if (!a) return b; if (!b) return a;
   const o = newNode();
-  for (const k of new Set([...Object.keys(a.fields), ...Object.keys(b.fields)])) o.fields[k] = mergeNodes(a.fields[k], b.fields[k]);
+  // an own field only: a field named like an Object.prototype member (`constructor`, `toString`) on one side alone
+  // must not merge with that member
+  const own = (n, k) => (Object.hasOwn(n.fields, k) ? n.fields[k] : null);
+  for (const k of new Set([...Object.keys(a.fields), ...Object.keys(b.fields)])) o.fields[k] = mergeNodes(own(a, k), own(b, k));
   o.elem = mergeNodes(a.elem, b.elem); o.len = mergeNodes(a.len, b.len);
   for (const key of ['compares', 'typeofs', 'includes']) { for (const v of a[key]) addLit(o[key], v); for (const v of b[key]) addLit(o[key], v); }
   for (const key of ['truthy', 'numeric', 'string', 'array', 'inTested']) o[key] = a[key] || b[key];

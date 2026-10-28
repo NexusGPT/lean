@@ -142,6 +142,56 @@ export function specOf(file, unitName, opts = {}) {
     if (Object.keys(members).length) imports[st.moduleSpecifier.text] = { kind: 'service', name: st.moduleSpecifier.text, members };
   }
   const returns = spec(rt);
+  // an answer the unit casts: where a callee's declared answer names no shape (any, unknown), the unit's own cast is the
+  // best type lane B has for it, so the answer is drawn at the cast type (`(await q()) as Row[]`, `f(x) as T`, a tagged
+  // template cast, through `as unknown as T`). The callee is a parameter, a member of a parameter or of the receiver, or
+  // an imported function. A callee whose answers the unit casts to two different types keeps the shapeless answer.
+  {
+    const isShapeless = (x) => !!x && x.kind === 'opaque';
+    const loose = (tn) => { try { return !!(checker.getTypeFromTypeNode(tn).flags & (TF.Any | TF.Unknown)); } catch { return false; } };
+    const importsByLocal = new Map(); // a local import name -> its module and exported name
+    for (const st of sf.statements) {
+      if (!ts.isImportDeclaration(st) || !st.importClause || !ts.isStringLiteral(st.moduleSpecifier)) continue;
+      if (st.importClause.name) importsByLocal.set(st.importClause.name.text, [st.moduleSpecifier.text, 'default']);
+      const nb = st.importClause.namedBindings;
+      if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) importsByLocal.set(el.name.text, [st.moduleSpecifier.text, (el.propertyName ?? el.name).text]);
+    }
+    const recv = receiver?.members ? receiver : receiver?.instance?.members ? receiver.instance : null;
+    const paramOf = (id) => { try { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; const i = d ? u.params.indexOf(d) : -1; return i >= 0 ? params[i] : null; } catch { return null; } };
+    const callable = (x) => (x && (x.kind === 'function' || x.kind === 'method') ? x : null);
+    const calleeSpec = (c) => {
+      if (ts.isIdentifier(c)) { const p = paramOf(c); if (p) return callable(p.spec); const imp = importsByLocal.get(c.text); return imp ? callable(imports[imp[0]]?.members?.[imp[1]]) : null; }
+      if (ts.isPropertyAccessExpression(c)) {
+        const m = c.name.text;
+        if (c.expression.kind === ts.SyntaxKind.ThisKeyword) return callable(recv?.members?.[m]);
+        if (ts.isIdentifier(c.expression)) { const p = paramOf(c.expression); const sv = p?.spec?.kind === 'ref' ? defs[p.spec.key] : p?.spec; return callable(sv?.members?.[m]); }
+      }
+      return null;
+    };
+    const found = new Map(); // a callee spec -> [{ awaited, cast }]
+    const visit = (n) => {
+      if ((ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)) && !loose(n.type)) {
+        let e = n.expression, awaited = false;
+        for (;;) {
+          if (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e)) e = e.expression;
+          else if (ts.isAwaitExpression(e)) { awaited = true; e = e.expression; }
+          else if ((ts.isAsExpression(e) || ts.isTypeAssertionExpression(e)) && loose(e.type)) e = e.expression;
+          else break;
+        }
+        const callee = ts.isCallExpression(e) ? e.expression : ts.isTaggedTemplateExpression(e) ? e.tag : null;
+        const target = callee ? calleeSpec(callee) : null;
+        if (target) { let cast = null; try { cast = spec(checker.getTypeFromTypeNode(n.type)); } catch { cast = null; } if (cast && !isShapeless(cast)) { if (!found.has(target)) found.set(target, []); found.get(target).push({ awaited, cast }); } }
+      }
+      ts.forEachChild(n, visit);
+    };
+    if (u.body) visit(u.body);
+    for (const [target, casts] of found) {
+      if (casts.some((c) => c.awaited !== casts[0].awaited || JSON.stringify(c.cast) !== JSON.stringify(casts[0].cast))) continue; // two readings of one answer: the answer stays shapeless
+      const { awaited, cast } = casts[0]; const r = target.returns;
+      if (r?.kind === 'promise' && isShapeless(r.of)) { if (awaited) r.of = cast; else if (cast.kind === 'promise') r.of = cast.of; }
+      else if (isShapeless(r) && !awaited) target.returns = cast;
+    }
+  }
   // the receiver's fields declared as a metadata reader of the decorator table (Nest's Reflector): lane B answers them
   // with a reader of the sandbox's metadata store, never with a fake
   const metadataReaders = [];

@@ -1,0 +1,18 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "The `in` refusal follows a made prototype (design/narrow-in.md). bare makes a dictionary without a prototype and put writes an object under a key that may be '__proto__' (both refused, prototype). seeded tests `in` on the object bare returns two calls away, has receives it as an argument from lookup, filled holds the object put changes: their `in` stays refused (lane A ASK, lane B PASS-bounded, the units are the same text). known, inherited and hit test `in` on objects no made prototype reaches, so they keep the reading: known's refactor (a conditional to an if statement) is PASS-proved, inherited's own-key test differs from `'toString' in r` and lane B witnesses it, hit is untouched and proved. A pair translates whole files and every maker is refused, so lane A runs per unit through check.mjs (laneBOnly skips the whole-file theorem).",
+ "heap": false,
+ "b": {"known": "PASS-bounded", "inherited": "WITNESS", "hit": "PASS-bounded"},
+ "check": {
+  "known": {"verdict": "PASS-proved"},
+  "inherited": {"verdict": "WITNESS"},
+  "hit": {"verdict": "PASS-proved"},
+  "seeded": {"verdict": "PASS-bounded", "laneA": "ASK"},
+  "has": {"verdict": "PASS-bounded", "laneA": "ASK"},
+  "filled": {"verdict": "PASS-bounded", "laneA": "ASK"},
+  "bare": {"verdict": "PASS-bounded", "laneA": "ASK"},
+  "put": {"verdict": "PASS-bounded", "laneA": "ASK"}
+ }
+}

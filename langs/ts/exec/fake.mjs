@@ -51,7 +51,7 @@ export class Environment {
   // has the same answer on both sides and in any order. A method member is a callable fake that answers its return
   // type; a service is a fake with typed members.
   typed(path, tspec, optional = false) {
-    if (tspec?.kind === 'promise') { const v = Promise.resolve(this.typed(path, tspec.of)); return this.scheduler ? this.scheduler.hold(v, path) : v; } // under the race explorer a promise the world answers is held until the scheduler releases it; otherwise it resolves at once, in call order
+    if (tspec?.kind === 'promise') { const value = this.typed(path, tspec.of); const v = Promise.resolve(value); const held = this.scheduler ? this.scheduler.hold(v, path) : v; return namePromise(this, held, path, { value }); } // under the race explorer a promise the world answers is held until the scheduler releases it; otherwise it resolves at once, in call order
     if (this.cache.has(path)) return this.cache.get(path);
     if (!tspec) return this.answer(path);
     if (tspec.kind === 'service' && tspec.awaits) return this.typed(path, tspec.awaits); // a thenable answers what awaiting it yields
@@ -79,9 +79,9 @@ export class Environment {
   arm(kind, fn, ms, args = []) {
     const t = this.timers; const id = t.nextId++;
     const delay = kind === 'immediate' ? 0 : kind === 'frame' ? 16 : kind === 'idle' ? 1 : Math.max(0, Number(ms) || 0);
-    const entry = { id, kind, fn, args, due: t.now + delay, interval: kind === 'interval' ? Math.max(1, Number(ms) || 0) : null, order: id, fired: 0 };
+    const entry = { site: this.siteState?.current?.site ?? null, id, kind, fn, args, due: t.now + delay, interval: kind === 'interval' ? Math.max(1, Number(ms) || 0) : null, order: id, fired: 0 };
     t.queue.push(entry);
-    this.pending.push({ op: { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[kind], ms: kind === 'immediate' ? undefined : delay, id });
+    this.pending.push(withSite({ op: { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[kind], ms: kind === 'immediate' ? undefined : delay, id }, this.siteState?.current?.site));
     return id;
   }
   clearTimer(id, op = 'clearTimeout') {
@@ -90,7 +90,7 @@ export class Environment {
     t.queue.splice(i, 1); const j = this.pending.findIndex((e) => e.id === id); if (j >= 0) this.pending.splice(j, 1); // armed and cleared in this run: nothing, as it is to the outside world
   }
   record(op, path, args) {
-    this.trace.push({ op, path, args: args ?? [] });
+    this.trace.push(withSite({ op, path, args: args ?? [] }, this.siteState?.current?.site));
     if (this.trace.length > 20000) throw new BudgetError('more than 20000 environment operations');
   }
   primitive(kind, path) {
@@ -144,7 +144,8 @@ export class Environment {
         if (prop === Symbol.iterator) return function* () { const n = depthOf(path) > 8 ? 0 : 2; for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
         if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return env.member(path, prop, tspec); }
-        if (prop === 'length') { env.record('get', `${path}.length`); return depthOf(path) > 8 ? 0 : 2; }
+        if (typeof prop === 'string' && Object.hasOwn(ITERATION, prop) && !env.loading) return iterationMethod(env, receiver, path, prop); // an iteration method: the fake is read as an array when the call hands it a callback
+        if (prop === 'length') return depthOf(path) > 8 ? 0 : 2; // the length of the array a fake stands for is its drawn shape and asks nothing of the world, as the iterator asks nothing: a loop that reads it once (forEach) and one that reads it per step (a counted for) make the same requests
         if (prop === 'constructor') return Object;
         if (typeof prop === 'symbol') return undefined;
         env.record('get', `${path}.${String(prop)}`);
@@ -165,7 +166,7 @@ export class Environment {
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
         // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
-        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r; } throw error; }
+        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return namePromise(env, env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r, `${path}()#${k}`, { reason: error }); } throw error; }
         // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
         if (!env.loading) {
           const cbs = [];
@@ -199,32 +200,147 @@ export class Environment {
   module(name) { return this.fake(`module:${name}`, this.shapes?.imports?.[name] ?? null); }
 }
 
+// The iteration methods a fake answers like an array. Called with a function, the fake is read as an array: its length
+// and its elements are reads of the fake (`get X.length`, `get X.0`, ...), the same reads an indexed loop over it makes,
+// and the callback runs over those elements in order, as Array.prototype runs it over an array-like. A throw inside the
+// callback is the unit's throw, never caught here; `some`, `every` and `find` stop where a real array stops. Called
+// otherwise (a service's `find(query)`), the member is the fake's plain answer, read and called as before. While a
+// module loads the member is the plain answer too.
+const elementsOf = (self) => { const n = Number(self.length); return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };
+const ITERATION = {
+  forEach(self, [cb, thisArg]) { const n = elementsOf(self); for (let k = 0; k < n; k++) Reflect.apply(cb, thisArg, [self[k], k, self]); return undefined; },
+  map(self, [cb, thisArg]) { const n = elementsOf(self), out = []; for (let k = 0; k < n; k++) out.push(Reflect.apply(cb, thisArg, [self[k], k, self])); return out; },
+  filter(self, [cb, thisArg]) { const n = elementsOf(self), out = []; for (let k = 0; k < n; k++) { const v = self[k]; if (Reflect.apply(cb, thisArg, [v, k, self])) out.push(v); } return out; },
+  some(self, [cb, thisArg]) { const n = elementsOf(self); for (let k = 0; k < n; k++) if (Reflect.apply(cb, thisArg, [self[k], k, self])) return true; return false; },
+  every(self, [cb, thisArg]) { const n = elementsOf(self); for (let k = 0; k < n; k++) if (!Reflect.apply(cb, thisArg, [self[k], k, self])) return false; return true; },
+  find(self, [cb, thisArg]) { const n = elementsOf(self); for (let k = 0; k < n; k++) { const v = self[k]; if (Reflect.apply(cb, thisArg, [v, k, self])) return v; } return undefined; },
+  flatMap(self, [cb, thisArg]) { const n = elementsOf(self), out = []; for (let k = 0; k < n; k++) { const r = Reflect.apply(cb, thisArg, [self[k], k, self]); if (Array.isArray(r)) out.push(...r); else out.push(r); } return out; },
+  reduce(self, args) {
+    const [cb] = args; const n = elementsOf(self); let k = 0, acc;
+    if (args.length >= 2) acc = args[1];
+    else { if (n === 0) throw new TypeError('Reduce of empty array with no initial value'); acc = self[0]; k = 1; }
+    for (; k < n; k++) acc = Reflect.apply(cb, undefined, [acc, self[k], k, self]);
+    return acc;
+  },
+};
+function iterationMethod(env, self, path, name) {
+  const key = `${path}.${name}`;
+  const memo = (env.iterationMethods ??= new Map()); // one function per member, so a member read twice is one value
+  if (memo.has(key)) return memo.get(key);
+  const method = function (...args) {
+    if (typeof args[0] === 'function' && !args[0].__isFake) return ITERATION[name](self, args);
+    env.record('get', key);
+    const member = env.answer(key);
+    if (typeof member !== 'function') throw new TypeError(`${name} is not a function`);
+    return Reflect.apply(member, this, args);
+  };
+  memo.set(key, method);
+  return method;
+}
+
+// A promise object the world answers (a typed call or field, a faulted call) or the input holds is named by its
+// creation: `promise#N from <path>`, N the order in which its path first made a promise in this run, the path the
+// fake's own (call counter included). Two runs that hand the outside, or return, a different promise object at the
+// same position differ, even when both settle to the same value; the name never depends on a memory address, so one
+// side's runs are deterministic. A promise the unit makes itself (an async function's result, a `.then` product, a
+// `new Promise`) stays anonymous.
+const promiseNames = new WeakMap(); // promise -> { label, value } or { label, reason }
+export function namePromise(env, p, path, settled) {
+  if (!p || typeof p !== 'object' || promiseNames.has(p)) return p;
+  let label = `promise from ${path}`;
+  if (env) { const seq = (env.promiseSeq ??= new Map()); if (!seq.has(path)) seq.set(path, seq.size + 1); label = `promise#${seq.get(path)} from ${path}`; }
+  promiseNames.set(p, { label, ...settled });
+  return p;
+}
+// the name of a promise the world or the input made, or null (not a promise, or one the unit made)
+export const promiseName = (v) => (v && (typeof v === 'object' || typeof v === 'function') && typeof v.then === 'function' ? promiseNames.get(v)?.label ?? null : null);
+
+// An Error of the sandbox's own realm (a TypeError the engine raises for `null.size`) is not an `instanceof` the host's
+// Error; the internal [[ErrorData]] slot is what the tag reads, in either realm.
+const isError = (v) => v instanceof Error || Object.prototype.toString.call(v) === '[object Error]';
+// A V8 stack frame line: four spaces, `at`, then a location the engine writes (`file:line:column`, `<anonymous>`,
+// `native`, `index N`, `unknown location`). A stack names the file and the columns of the copy that ran, which differ
+// between a parent and a candidate by construction; the header (class and message) is the Error's behaviour, the frames
+// are not. A line that only starts with `at` and has no such location is the unit's own text and stays.
+const FRAME = /^ {4}at [^\n]*(?::\d+:\d+\)?|<anonymous>\)?|\(native\)|\(index \d+\)|\(unknown location\))$/;
+// Where lean put the two copies is not a behaviour of the unit. A path the unit reads (`__filename`, `__dirname`,
+// `import.meta.url`, a file name inside a message) names the directory each side was loaded from, and the two differ by
+// construction (a temporary folder beside the project, a candidate file under another name). `setRoots` is told both
+// sides' directories once per pair; a rendered string shows each as `<root>`, and each side's unit file, when the two
+// are named differently, as `<unit file>`. A path of another place is untouched.
+let rootPatterns = [];
+export function setRoots({ dirs = [], files = [] } = {}) {
+  const make = (list, token) => {
+    const all = [...new Set(list.filter((x) => typeof x === 'string' && x.length > 1 && x !== '/'))].sort((a, b) => b.length - a.length);
+    return all.length ? { re: new RegExp(`(?<![A-Za-z0-9_.~-])(?:${all.map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![A-Za-z0-9_-])`, 'g'), token } : null;
+  };
+  rootPatterns = [make(files, '<unit file>'), make(dirs, '<root>')].filter(Boolean);
+}
+export const withoutRoots = (s) => { for (const { re, token } of rootPatterns) s = s.replace(re, token); return s; };
+export function withoutFrames(s) {
+  if (!s.includes('\n    at ')) return s;
+  const lines = s.split('\n'), kept = lines.filter((l, i) => i === 0 || !FRAME.test(l));
+  return kept.length === lines.length ? s : kept.join('\n');
+}
+
 // A rendering of a value for the trace and for outcome comparison: fakes by path, objects structurally, functions by name.
-export function render(v, depth = 0, seen = new Set()) {
+// With `share` (renderDrawn), an object reached more than once is named: its first sight is `{ $ref: k, value }`, every
+// later sight `{ $ref: k }`, so two positions holding one object show the same name; without it, nothing changes.
+export function render(v, depth = 0, seen = new Set(), share = null) {
   if (v === null) return null;
   if (v === undefined) return { $undefined: true };
   const t = typeof v;
   if (t === 'number') return Number.isNaN(v) ? { $nan: true } : v === Infinity ? { $infinity: 1 } : v === -Infinity ? { $infinity: -1 } : Object.is(v, -0) ? { $negativeZero: true } : v;
-  if (t === 'string' || t === 'boolean') return v;
+  if (t === 'boolean') return v;
+  if (t === 'string') return withoutRoots(withoutFrames(v));
   if (t === 'bigint') return { $bigint: v.toString() };
   if (t === 'symbol') return { $symbol: String(v) };
   if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : { $fn: v.name || 'anonymous', src: fnHash(v) };
   if (v.__isFake) return { $fake: v.__fakePath };
   if (depth > 6) return { $deep: true };
+  if (share && share.multi.has(v)) { if (share.ids.has(v)) return { $ref: share.ids.get(v) }; share.ids.set(v, share.ids.size); return { $ref: share.ids.get(v), value: renderBody(v, depth, seen, share) }; }
   if (seen.has(v)) return { $cycle: true };
   seen.add(v);
-  if (Array.isArray(v)) return v.map((x) => render(x, depth + 1, seen));
+  return renderBody(v, depth, seen, share);
+}
+function renderBody(v, depth, seen, share) {
+  if (Array.isArray(v)) return v.map((x) => render(x, depth + 1, seen, share));
   if (v instanceof Date) return { $date: Number.isNaN(v.getTime()) ? 'invalid' : v.toISOString() };
-  if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [render(k, depth + 1, seen), render(x, depth + 1, seen)]) };
-  if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen)) };
-  if (v instanceof Error) return { $error: v.constructor.name, message: v.message };
+  if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [render(k, depth + 1, seen, share), render(x, depth + 1, seen, share)]) };
+  if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen, share)) };
+  if (isError(v)) return { $error: v.constructor?.name ?? 'Error', message: typeof v.message === 'string' ? withoutRoots(v.message) : v.message }; // class and message; the stack is never part of the rendering (design/stack-text.md)
   if (v instanceof RegExp) return { $regex: String(v) };
-  if (typeof v.then === 'function') return { $promise: true };
+  if (typeof v.then === 'function') { const n = promiseNames.get(v); return n ? { $promise: n.label, settled: Object.hasOwn(n, 'reason') ? { rejected: render(n.reason, depth + 1, seen, share) } : render(n.value, depth + 1, seen, share) } : { $promise: true }; } // a promise the world or the input made is named by its creation; one the unit made is anonymous
   const out = {};
-  for (const k of Object.keys(v).sort()) out[k] = render(v[k], depth + 1, seen);
+  for (const k of Object.keys(v).sort()) out[k] = render(v[k], depth + 1, seen, share);
   return out;
+}
+
+// The input as drawn: every position rendered before either side runs, so a witness replayed from its certificate starts
+// where both runs started (a call that writes its arguments changes them after this rendering, never in it). Positions
+// that hold one object, and an object that holds itself, keep that sharing: the object is named by `$ref` in order of
+// first sight (render's `share`). The objects counted are the ones render walks into: fakes, dates, errors, regular
+// expressions and promises are leaves, named by what they are.
+export function renderDrawn(args) {
+  const count = new Set(), multi = new Set();
+  const visit = (v) => {
+    if (v === null || typeof v !== 'object' || v.__isFake || v instanceof Date || isError(v) || v instanceof RegExp || typeof v.then === 'function') return;
+    if (count.has(v)) { multi.add(v); return; }
+    count.add(v);
+    if (Array.isArray(v)) v.forEach(visit);
+    else if (v instanceof Map) for (const [k, x] of v) { visit(k); visit(x); }
+    else if (v instanceof Set) for (const x of v) visit(x);
+    else for (const k of Object.keys(v)) visit(v[k]);
+  };
+  args.forEach(visit);
+  const share = { multi, ids: new Map() };
+  return args.map((a) => render(a, 0, new Set(), share));
 }
 
 export function stable(v) { return JSON.stringify(render(v)); }
 // the hash of a function's own source text, comments and whitespace folded
-export function fnHash(f) { try { const src = Function.prototype.toString.call(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' '); return createHash('sha256').update(src).digest('hex').slice(0, 12); } catch { return 'native'; } }
+const functionSources = new Map();
+export function rememberFunctionSource(marked, original) { functionSources.set(marked, original); }
+export function withSite(record, site) { return Object.defineProperty(record, 'site', { value: site ?? null }); }
+
+export function fnHash(f) { try { const emitted = Function.prototype.toString.call(f); const src = (functionSources.get(emitted) ?? emitted).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' '); return createHash('sha256').update(src).digest('hex').slice(0, 12); } catch { return 'native'; } }

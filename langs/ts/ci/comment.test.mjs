@@ -12,6 +12,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { main, MARKER, MAX_BODY, commentBody, inPaths, blockingRows, prNumber } from './comment.mjs';
 import { pairsRepo } from './pairs-repo.mjs';
+import { intakeRepo } from '../tests/fixtures/pr-intake/build.mjs';
 
 let passed = 0; const failed = [];
 const printed = []; // every line any run printed, searched for the token at the end
@@ -22,9 +23,9 @@ const tmp = fs.mkdtempSync(path.join(scratchRoot, 'ci-comment-test-'));
 const TOKEN = `ghs_fake_${crypto.randomBytes(12).toString('hex')}`;
 
 // a run of main with its output captured
-async function run(argv, env = {}) {
+async function run(argv, env = {}, report) {
   const out = [], err = [];
-  const code = await main(argv, env, (s) => out.push(String(s)), (s) => err.push(String(s)));
+  const code = await main(argv, env, (s) => out.push(String(s)), (s) => err.push(String(s)), report);
   printed.push(...out, ...err);
   return { code, out: out.join('\n'), err: err.join('\n') };
 }
@@ -64,6 +65,57 @@ const git = (repo, args) => {
 };
 
 try {
+  const reportAt = process.argv.indexOf('--budget-report');
+  const stopped = reportAt < 0 ? {
+    rows: [{ file: 'later.ts', unit: 'later', lines: [1, 1], coverage: 'skipped:budget', verdict: null, reason: 'stop at unit 1 of 1' }],
+    order: [{ group: 'changed', units: [{ file: 'later.ts', unit: 'later' }] }, { group: 'callers', units: [] }, { group: 'heap', units: [] }],
+    stop: { reason: 'unit-budget', reached: 0, total: 1 },
+  } : JSON.parse(fs.readFileSync(process.argv[reportAt + 1], 'utf8'));
+  const replay = async () => Object.assign([...stopped.rows], { stop: stopped.stop, order: stopped.order });
+  const args = ['--repo', tmp, '--base', 'base', '--head', 'head', '--max-functions', '1'];
+  for (const block of ['ask', 'witness', 'none']) {
+    const r = await run([...args, '--block', block], {}, replay);
+    ok(r.code === (block === 'none' ? 0 : 1), 'a stop respects block ' + block);
+    ok(r.out.includes('stopped: ' + stopped.stop.reason), 'the footer names the stop under ' + block);
+    ok(block === 'none' || r.err.includes('::error::lean stopped:'), 'the annotation names the stop under ' + block);
+  }
+  const timeRows = Object.assign([], { stop: { reason: 'time-budget', reached: 0, total: 1 } });
+  const timeStop = await run([...args, '--block', 'ask'], {}, async () => timeRows);
+  ok(timeStop.code === 1 && timeStop.err.includes('time-budget'), 'a time stop blocks with no verdict rows');
+  const longStop = commentBody('# lean report\n' + 'row\n'.repeat(20000), { rows: stopped.rows, stop: stopped.stop });
+  ok(longStop.length <= MAX_BODY && longStop.includes('stopped: ' + stopped.stop.reason), 'a truncated comment keeps its stop');
+  const silent = structuredClone(stopped);
+  delete silent.stop;
+  const scratch = path.join(tmp, 'silent.json');
+  fs.writeFileSync(scratch, JSON.stringify(silent));
+  const red = await run([...args, '--block', 'ask'], {}, async () => {
+    const saved = JSON.parse(fs.readFileSync(scratch, 'utf8'));
+    return Object.assign(saved.rows, { order: saved.order, stop: saved.stop });
+  });
+  ok(red.code === 0, 'dropping the stop makes the gate silent');
+  const redLog = 'Scratch report: stop field removed\ncomment.mjs --block ask\nEXIT ' + red.code + '\n';
+  if (process.argv.includes('--budget-only')) {
+    fs.mkdirSync('/tmp/claude-501', { recursive: true });
+    fs.writeFileSync('/tmp/claude-501/budgets-red.log', redLog);
+    fs.copyFileSync(scratch, '/tmp/claude-501/budgets-red.json');
+    console.log(redLog.trimEnd());
+  }
+  if (!process.argv.includes('--budget-only')) {
+  const fixture = intakeRepo(path.join(tmp, 'intake'));
+  const intakeOut = path.join(tmp, 'intake.md');
+  const intakeRun = await run(['--repo', fixture.repo, '--base', fixture.base, '--head', fixture.head, '--dafny-seconds', '1', '--out', intakeOut]);
+  const intakeBody = fs.readFileSync(intakeOut, 'utf8');
+  const intakeTable = intakeBody.split('## Intake')[1]?.split('## Verdicts')[0] ?? '';
+  ok(intakeRun.code === 0 && intakeBody.startsWith(MARKER) && intakeBody.length <= MAX_BODY, 'intake comment has marker and fits the cap');
+  ok(intakeBody.indexOf('## Intake') < intakeBody.indexOf('## Verdicts'), 'intake comes before verdicts');
+  ok((intakeTable.match(/^\| \x60/gm) ?? []).length === 6, 'intake comment has all six units');
+  ok(['checked', 'refused:alias-mutation', 'failed:loader', 'skipped:not-typescript', 'skipped:binary', 'skipped:secret-path'].every((c) => intakeTable.includes(c)), 'intake comment has all six coverage values');
+  const longIntake = commentBody('# lean report', { rows: Array.from({ length: 4000 }, (_, i) => ({ file: `source${i}.ts`, unit: 'f', coverage: 'checked' })) });
+  ok(longIntake.length <= MAX_BODY && longIntake.includes('longer than one comment holds'), 'long intake respects the character cap');
+  const cappedIntake = commentBody('# lean report\n\none verdict', { capped: true, rows: [{ file: 'later.ts', unit: 'later', coverage: 'checked' }] });
+  ok(cappedIntake.includes('later.ts') && cappedIntake.includes('intake lists the change set'), 'the verdict cap keeps the intake rows');
+  console.log('intake comment: ' + (failed.length ? 'FAIL' : '6 checks pass'));
+  if (!process.argv.includes('--intake-only')) {
   // the pure parts
   ok(inPaths('src/a/b.ts', '') && inPaths('src/a/b.ts', 'src/**') && !inPaths('lib/b.ts', 'src/**,test/**') && inPaths('lib/b.ts', 'src/**\nlib/*.ts'), 'paths globs');
   const rowsOf = (...v) => v.map((verdict) => ({ verdict }));
@@ -144,6 +196,8 @@ try {
 
   const written = fs.readdirSync(tmp).filter((f) => f.endsWith('.md')).map((f) => fs.readFileSync(path.join(tmp, f), 'utf8')).join('\n');
   ok(printed.length > 20 && ![...printed, written].some((s) => s.includes(TOKEN)), 'the token is in no output and no file');
+  }
+  }
 } catch (e) {
   failed.push(`threw: ${e.message}`);
 } finally {

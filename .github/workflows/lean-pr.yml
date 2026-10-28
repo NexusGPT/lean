@@ -102,7 +102,7 @@ jobs:
           if [ "$PROJECT" = "none" ]; then project=(--no-project); elif [ -n "$PROJECT" ]; then project=(--project "$GITHUB_WORKSPACE/repo/$PROJECT"); fi
           node .lean/langs/ts/ci/comment.mjs --repo repo --base "$BASE" --head "$HEAD" \
             --paths "$PATHS" --max-functions "$MAX" "${project[@]}" \
-            --out lean-report.md --json lean-report.json --post --block "$BLOCK"
+            --out lean-report.md --json lean-report.json --post --inline --block "$BLOCK"
       - name: keep the full report
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

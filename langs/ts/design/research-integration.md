@@ -169,7 +169,14 @@ growing receiver in an aliased unbounded loop (2,299 s for 60 inputs). With the 
 overflow is a witness on the outcome), a cap of 256 records per operation per run and the retry without the recorder:
 `for (;;)` 16 of 18, `Math.sin` 11 of 12, the baseline levels, 13.65 s for the five inputs that took more than 16
 minutes (lean-v3 `results/concept-bench-{54ef742,a11fb78}.json`, `results/cb-two-heap-cap.json`). The two misses
-left (drawLevels string, clusterPoints boundary) are PASS-bounded on every tree.
+left (drawLevels string, clusterPoints boundary) are PASS-bounded on every tree. Admission of the heap layer and stage 5
+ranks 13 to 21 (dev at 5417b0c, from e0eceda, 2026-10-27): the concept bench reads 995 inside, 913 translated and
+1,718 of 2,430 witnessed (a11fb78: 838, 770, 1,503 of 2,037; master: 849, 770, 1,481 of 2,031); 26 concepts are below
+one of the two on some count (`results/concept-compare-e0eceda.md`; Object.freeze 3 to 0 by design, the rest under
+investigation, among them clearInterval 10 to 3, the JSX handler attribute 20 to 14, Math.pow 20 to 16, the comma
+operator 3 to 0). The corpus bench on the same head: design 14 of 43 caught for the right reason (previous dev head 11,
+master 12), held-out 18 of 101 (unchanged), the union with DA 30 of 43 (27, 28), with the pick 32 of 43 (29, 30)
+(`results-e0eceda.md`).
 
 **Boundary.** Getters, setters, proxies, species constructors, effectful comparators, Date string parsing and time
 zones: obligations unmet; `structuredClone` of unsupported values: refused by name. `Object.freeze` needs a

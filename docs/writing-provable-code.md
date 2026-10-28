@@ -2,6 +2,20 @@
 
 The long form of the style section of the README: the eight habits with what each one buys, and why a whole program, screens and pointers included, can be read as mathematics. Moved here from the README on 2026-10-27, unchanged. The construct-by-construct reference is [`../langs/ts/subset.md`](../langs/ts/subset.md); the coverage matrix over every language concept is [`../langs/ts/COVERAGE.md`](../langs/ts/COVERAGE.md).
 
+## The habits at a glance
+
+The table the README carried before its showcase of before and after pairs, moved here on 2026-10-27. Each row is a construct the proof lane refuses (or reads as an opaque block), the rule lean names, what to write instead, and what the rewrite buys.
+
+| you write | lean says | write instead | what it buys |
+|---|---|---|---|
+| `const t = user.tags; t.push(x)` | `alias-mutation` | `user.tags.push(x)`: change it through the parameter, which becomes an output | a candidate that appends twice or to the wrong record returns a different `user'`, for every input |
+| `a === b` on two objects | `reference-equality` | compare the fields you mean | a value equality the verifier decides |
+| `while (i > 0) { … }` with no measure | opaque block | `// @decreases i` above the loop | a change inside the loop is proved or refuted, never silently equal |
+| `this.client.state.n += 1` through a class instance | `receiver-mutation` | keep receiver paths as data records: `this.stats = { ...stats, n: stats.n + 1 }` | each read and write is a transition the proof sees |
+| `Object.assign(user, patch)` | `assign-target` | `{ ...user, ...patch }` | the target's new value is in the model |
+| `on && change(xs)` | `conditional-effect` | `if (on) change(xs)` | a branch returns its world and value only when selected |
+| `d[k] = v` on a dictionary, a run-time key, an object value | `prototype` | `d = { ...d, [k]: v }`, or a `Map` | a key named `__proto__` cannot replace the object's prototype behind the proof's back; a primitive value under that key is read as the setter ignores it |
+
 ## The eight habits
 
 **What a proof needs.** The proof lane reads a function as mathematics: every value is a mathematical value (a number, a string, a record, a sequence, a set, a map), and the function is a map from its arguments and the state of the world to a result and the next state of the world. Two versions are equal when that map is the same for every argument and every world. The verifier (Dafny over Z3) decides that statement. So the style below is not taste: each habit removes one thing that has no place in that reading, and lean names the habit it needs (`ASK: <rule>`) instead of guessing. Everything else is translated as it is.
@@ -88,9 +102,9 @@ export function ItemList(props: { items: readonly Item[]; onPick: (id: string) =
 
 What this buys: a candidate that drops the empty-state paragraph, renders the wrong field, moves a button or wires another handler produces a different tree, and lane B shows the props on which the trees differ; a refactor from `cond ? <A/> : null` to `cond && <A/>` is proved equal. What it does not judge: pixels, CSS and layout, which stay with the recording gate. Measured on three React front ends written before this rule, the share of units inside rose several-fold once JSX was read as a value.
 
-Everything else is yours: `async`/`await`, `try`/`catch` (a fault flag on the world: every transition inside the body may fault, the catch path runs with the fault value), `switch`, destructuring with defaults, optional chaining, template strings, `Set`, `Map`, generics, recursion, early returns, callbacks to array methods, local lambdas, JSX. [`langs/ts/subset.md`](langs/ts/subset.md) lists every construct and whether it is exact, uninterpreted, or refused.
+Everything else is yours: `async`/`await`, `try`/`catch` (a fault flag on the world: every transition inside the body may fault, the catch path runs with the fault value), `switch`, destructuring with defaults, optional chaining, template strings, `Set`, `Map`, generics, recursion, early returns, callbacks to array methods, local lambdas, JSX. [`langs/ts/subset.md`](../langs/ts/subset.md) lists every construct and whether it is exact, uninterpreted, or refused.
 
-**How much real code is inside.** Measured on 39 repositories, private and public (48,696 functions and methods written before this style existed): 60.0 percent of all units are inside the subset as written. The rest get lane B and the rule that stopped the proof lane. Code written with the lint on is inside from the first line.
+**How much real code is inside.** Measured on a census of private and public repositories, on code written before this style existed: most units are inside the subset as written. The rest get lane B and the rule that stopped the proof lane. Code written with the lint on is inside from the first line.
 
 **In the editor.** lean ships an ESLint plugin (`langs/ts/eslint`) with one rule, `lean/provable`. It runs lean's own lint on the file inside its project, so what the editor underlines is exactly what the proof lane will refuse: the line, the rule, and what to write instead. Where a rewrite keeps your meaning (`n / 2` to `Math.floor(n / 2)`, `==` to `===`) it is offered as a suggestion; where it does not (a mutation that must become a returned value), the message gives the shape and leaves the edit to you.
 
@@ -145,7 +159,7 @@ stated axiom; lane B does not yet pass one object twice, see the heap design not
 (`alias-mutation`), because the value reading has one value per name. Layer 2, planned: objects that come from the
 world (a row from a repository, a node in a tree, a shared cache) are references into a heap carried by the world;
 reads and writes go through it; two versions are equal when results and final heaps agree up to a renaming of fresh
-allocations. The census counts 4,620 units that change an object through an alias; layer 2 is what makes them
+allocations. The census finds many units that change an object through an alias; layer 2 is what makes them
 provable without rewriting them.
 
 **Reading 3: control is data.** A loop is a recursive helper over the variables it changes, with its own

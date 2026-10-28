@@ -28,6 +28,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { originOf } from '../common.mjs';
+import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
 // the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
 // design/library-ops.dfy and against the engine by exec/transitions.mjs on Test262); the prelude instantiates a row's
 // form per shape by substituting <K> (the shape key) and <E> (its element type)
@@ -226,6 +227,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const COMPOUND = { [K.PlusEqualsToken]: K.PlusToken, [K.MinusEqualsToken]: K.MinusToken, [K.AsteriskEqualsToken]: K.AsteriskToken }; // the compound writes the lint admits
   let divUsed = false; // RemT_, DivT_ and ZeroMark_ in the prelude
   const unparen = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
+  // the receiver of a field write: on a parameter's element path (common.mjs elementWritePath) a `!` or `as T` on the
+  // element is erased, as at run time, and the element itself is read; any other receiver as it stands
+  const writeReceiver = (t) => { let x = t.expression; if (!elementWritePath(checker, t)) return x; while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isTypeAssertionExpression(x)) x = x.expression; return x; };
   // `xs.forEach((x) => body)` as a statement is the loop `for (const x of xs) body` (the length read once, an
   // index visited while it is below the current length; nothing in a core loop body grows an array, so the two visit
   // the same items): the statement is read through a for-of node standing for it, the callback's parameter its element
@@ -464,6 +468,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (!proc && (!rt || !shapeOf(rt))) no(`return type: ${shapeWhy(rt)}`);
     if (proc && !ts.isBlock(u.body) && !calleeOf(unparen(u.body), u)) no('expression body of a procedure (only a same-file call)');
     if (!ok) return false;
+    // a record value where a dictionary is read (an initializer, an argument, a return, a field of a literal: the
+    // contextual type says so): its key order is the order its fields were created in, which a record cell does not
+    // hold, and a dictionary read of a record cell is empty; the unit stays in the ordinary lane (design/dict-order.md)
+    { const w = (x) => { if (!ok) return; if (ts.isExpression(x) && shapeOf(typeOf(x))?.kind === 'rec') { const ct = checker.getContextualType(x); if (ct && shapeOf(ct)?.kind === 'dict') return no('a record read as a dictionary'); } ts.forEachChild(x, w); }; if (u.body) w(u.body); }
+    if (!ok) return false;
     const declaredInside = (id) => { const s = checker.getSymbolAtLocation(id); const d = s?.valueDeclaration ?? s?.declarations?.[0]; return !!d && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end; };
     const checkExpr = (e0) => {
       if (!ok) return;
@@ -571,7 +580,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isIdentifier(t)) return checkExpr(t);
       if (tuplePos(t)) return checkExpr(t.expression);
       if (ts.isElementAccessExpression(t)) { const why = elementWhy(t); if (why) return no(why.replace('element access', 'element write')); if (!safeIndex.has(t) && shapeOf(typeOf(t.expression)).kind !== 'dict') usesIndex = true; checkExpr(t.expression); return checkExpr(t.argumentExpression); }
-      if (ts.isPropertyAccessExpression(t)) { const s = shapeOf(typeOf(t.expression)); if (!s || s.kind !== 'rec' || !fieldOf(s, t.name.text)) return no('write target'); return checkExpr(t.expression); }
+      if (ts.isPropertyAccessExpression(t)) { const s = shapeOf(typeOf(t.expression)); if (!s || s.kind !== 'rec' || !fieldOf(s, t.name.text)) return no('write target'); return checkExpr(writeReceiver(t)); } // a field of a parameter's element: the element read, then the store
       no(ts.isElementAccessExpression(t) ? 'element write' : 'write target');
     };
     // a loop over an array: `for (const x of a)`, or `for (let i = 0; i < a.length; i++)` over an array name. Its body
@@ -845,10 +854,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         out.push(`function MapSize_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].keys_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
       } else if (s.kind === 'set') {
         const E = valD(s.elem);
-        if (dedupUsed.has(k)) out.push(`function Dedup_${k}(xs: seq<${E}>, acc: seq<${E}>): seq<${E}> decreases |xs| { if |xs| == 0 then acc else Dedup_${k}(xs[1..], if xs[0] in acc then acc else acc + [xs[0]]) }`); // new Set(xs): the first of equal items kept, in order
+        if (dedupUsed.has(k)) out.push(`function {:fuel 3} Dedup_${k}(xs: seq<${E}>, acc: seq<${E}>): seq<${E}> decreases |xs| { if |xs| == 0 then acc else Dedup_${k}(xs[1..], if xs[0] in acc then acc else acc + [xs[0]]) }`); // new Set(xs): the first of equal items kept, in order
         out.push(instantiate(LIBRARY.helpers['RemoveItem_<K>'], k, E));
         for (const op of ['Set.prototype.add', 'Set.prototype.has', 'Set.prototype.delete']) out.push(instantiate(LIB_ROW[op].dafny, k, E));
         out.push(`function SetSize_${k}(hw: HWorld, r: Ref): ${NUM} { if Is${k}(hw, r) then |hw.heap[r].items_${k}|${isReal ? ' as real' : ''} else ${isReal ? '0.0' : '0'} }`);
+        out.push(`function Items_${k}(hw: HWorld, r: Ref): seq<${E}> { if Is${k}(hw, r) then hw.heap[r].items_${k} else [] }`); // a spread of a Set cell: its items in insertion order
       } else if (s.kind === 'dict') { // JavaScript's own-key semantics over the ordered map; a key of Object.prototype is read through the prototype bit
         const V = s.v.d;
         out.push(`predicate DictOwn_${k}(hw: HWorld, r: Ref, key: string) { Is${k}(hw, r) && key in hw.heap[r].m_${k} }`);
@@ -1155,7 +1165,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isElementAccessExpression(t) && shapeExpr(t.expression).kind === 'dict') { const [s, r, i] = element(t); return { as: (x) => expr(x), read: () => dictRead(s, r, i), write: (v) => lines.push(`var ${HW} := DictSet_${s.key}(${HW}, ${r}, ${i}, ${v});`) }; }
       if (tuplePos(t)) { const tp = tuplePos(t); const r = bind(expr(t.expression), 'o'); const f = fieldOf(tp.s, tp.field); return { as: (x) => exprField(x, f.shape), read: () => `Get_${tp.s.key}_${dn(tp.field)}(${HW}, ${r})`, write: (v) => lines.push(`var ${HW} := Set_${tp.s.key}_${dn(tp.field)}(${HW}, ${r}, ${v});`) }; }
       if (ts.isElementAccessExpression(t)) { const [s, r, i] = element(t); const safe = safeIndex.has(t); return { as: (x) => expr(x), read: () => { if (!safe) lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; }, write: (v) => lines.push(`var ${HW} := ${safe ? 'SetIdxIn' : 'SetIdx'}_${s.key}(${HW}, ${r}, ${i}, ${v});`) }; }
-      const s = shapeExpr(t.expression); const r = bind(expr(t.expression), 'o');
+      const s = shapeExpr(t.expression); const r = bind(expr(writeReceiver(t)), 'o'); // the receiver first: an element of a parameter is read (and its index marked) before the right side
       return { as: (x) => exprField(x, fieldOf(s, t.name.text).shape), read: () => `Get_${s.key}_${dn(t.name.text)}(${HW}, ${r})`, write: (v) => lines.push(`var ${HW} := Set_${s.key}_${dn(t.name.text)}(${HW}, ${r}, ${v});`) };
     }
     const flush = () => lines.splice(0).join('\n');
@@ -1279,8 +1289,50 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // reference or share a reference twice (the same tree, another graph). A unit with neither is one layer 1 reads
   // soundly under item 2. This reports the two classes; it changes no verdict.
   const isRefType = (t) => nonNull(t).some((x) => (x.flags & TF.Object) && !x.getCallSignatures().length) || nonNull(t).some((x) => x.flags & (TF.Any | TF.Unknown));
-  const rootOf = (x) => { x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
-  const depth = (x) => { let d = 0; x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { if (!ts.isParenthesizedExpression(x) && !ts.isNonNullExpression(x)) d++; x = x.expression; } return d; };
+  const erasedStep = (x) => ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isTypeAssertionExpression(x); // `!`, `( )` and `as T` are erased at run time: the path goes on through them
+  const rootOf = (x) => { x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || erasedStep(x)) x = x.expression; return x; };
+  const depth = (x) => { let d = 0; x = unparen(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || erasedStep(x)) { if (!erasedStep(x)) d++; x = x.expression; } return d; };
+  // the parameters a same-file unit writes through (a field, an element, a mutator, Object.assign, delete), itself or
+  // through a same-file callee it passes them to, by position, to a fixpoint: a caller passing an input there writes
+  // through that input, which its own text does not show. A name bound to a path of a parameter, an element of a loop
+  // over one (for-of, or the parameter of an array callback) is that parameter
+  const LOOP_CB = new Set(['forEach', 'map', 'filter', 'some', 'every', 'find', 'findIndex', 'flatMap', 'reduce']);
+  const elementNames = (n, rooted) => { // the names a loop or an array callback binds to the elements of a rooted array
+    if (ts.isForOfStatement(n) && rooted(n.expression)) { const dl = n.initializer; return ts.isVariableDeclarationList(dl) ? dl.declarations.filter((d) => ts.isIdentifier(d.name)).map((d) => d.name.text) : []; }
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && LOOP_CB.has(n.expression.name.text) && rooted(n.expression.expression)) { const cb = n.arguments[0]; if (cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb))) return cb.parameters.filter((q) => ts.isIdentifier(q.name)).map((q) => q.name.text); }
+    return [];
+  };
+  let writesThroughMemo = null;
+  function writesThrough() {
+    if (writesThroughMemo) return writesThroughMemo;
+    const units = [...fns.values()].filter((u) => u.body);
+    const out = new Map(units.map((u) => [u.name, new Set()]));
+    const own = new Map(); // unit -> [the same-file calls it makes, each with the parameter positions its arguments reach]
+    for (const u of units) {
+      const pos = new Map(); u.params.forEach((q, i) => { if (ts.isIdentifier(q.name)) pos.set(q.name.text, i); });
+      const alias = new Map(); // local -> the parameter position its value is a path of
+      const at = (x) => { const r = rootOf(x); if (!ts.isIdentifier(r)) return null; return pos.has(r.text) ? pos.get(r.text) : alias.has(r.text) ? alias.get(r.text) : null; };
+      const mark = (x) => { const i = at(x); if (i !== null && unparen(x) !== rootOf(x)) out.get(u.name).add(i); };
+      const calls = [];
+      const walk = (n) => {
+        if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && at(n.initializer) !== null) alias.set(n.name.text, at(n.initializer));
+        for (const nm of elementNames(n, (x) => at(x) !== null)) alias.set(nm, at(ts.isForOfStatement(n) ? n.expression : n.expression.expression));
+        if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) mark(n.left);
+        if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) mark(n.operand);
+        if (ts.isDeleteExpression(n)) mark(n.expression);
+        if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text)) { const i = at(n.expression.expression); if (i !== null) out.get(u.name).add(i); }
+        if (isAssignCall(n) && n.arguments.length) { const i = at(n.arguments[0]); if (i !== null) out.get(u.name).add(i); }
+        if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text)) calls.push({ callee: n.expression.text, args: n.arguments.map((a) => at(a)) });
+        ts.forEachChild(n, walk);
+      };
+      walk(u.body);
+      own.set(u.name, calls);
+    }
+    for (let changed = true; changed;) { changed = false; for (const u of units) for (const c of own.get(u.name)) { const w = out.get(c.callee); if (!w) continue; c.args.forEach((i, k) => { if (i !== null && w.has(k) && !out.get(u.name).has(i)) { out.get(u.name).add(i); changed = true; } }); } }
+    writesThroughMemo = out; return out;
+  }
+  // a same-file call that writes through one of its arguments, and that argument
+  const calleeWrites = (n) => (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text) ? n.arguments.filter((a, k) => writesThrough().get(n.expression.text)?.has(k)) : []);
   function layer1Risk(u) {
     const risks = new Set();
     const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) ? p.name.text : null)).filter(Boolean));
@@ -1299,6 +1351,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isConditionalExpression(e)) return fresh(e.whenTrue) && fresh(e.whenFalse);
       if (ts.isTemplateExpression(e) || ts.isStringLiteral(e) || ts.isNumericLiteral(e)) return true;
       if (freshPrimArrayCall(e)) return true; // map, filter, slice, concat, flat, toSorted, toReversed over primitives: a fresh array holding no reference (the library table's result fact)
+      if (ts.isCallExpression(e) && e.arguments.length === 1 && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Array' && e.expression.name.text === 'from' && orderedYieldsNoRef(e.arguments[0])) return true; // Array.from of a Map, a Set or their iterator over primitives: a fresh array
       if (ts.isIdentifier(e)) { // a const of the unit holding a fresh value, of a shape no reference can live in: nothing stored into it since can carry one
         const d = checker.getSymbolAtLocation(e)?.valueDeclaration;
         if (d && ts.isVariableDeclaration(d) && ts.isIdentifier(d.name) && d.initializer && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end && (d.parent.flags & ts.NodeFlags.Const) && holdsNoRef(shapeOf(typeOf(d.name))) && fresh(d.initializer)) return true;
@@ -1307,6 +1360,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     };
     const holdsNoRef = (s) => !!s && (s.kind === 'prim' || s.kind === 'opt' || (s.kind === 'rec' && s.fields.every((f) => holdsNoRef(f.shape))) || ((s.kind === 'arr' || s.kind === 'set') && holdsNoRef(s.elem))); // a shape no reference can live in: a primitive, an optional one, a record or an array of such
     const spreadFresh = (src) => { // spreading copies the source's reference-typed members: fresh only when it has none
+      if (orderedYield(src)) return orderedYieldsNoRef(src);
       const t = typeOf(src); const s = shapeOf(t);
       if (checker.isArrayType(nonNull(t)[0] ?? t)) { const el = checker.getTypeArguments(nonNull(t)[0])[0]; return !!el && !isRefType(el); }
       if (!s || s.kind !== 'rec') return false;
@@ -1324,6 +1378,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     let writesInput = false;
     const walk = (n) => {
       if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || ts.isPropertyAccessExpression(unparen(n.initializer)) || unparen(n.initializer).kind === K.ThisKeyword)) aliases.set(n.name.text, effDepth(n.initializer));
+      for (const nm of elementNames(n, inputRooted)) aliases.set(nm, effDepth(ts.isForOfStatement(n) ? n.expression : n.expression.expression) + 1); // an element of an input array: one level below it
+      for (const a of calleeWrites(n)) if (inputRooted(a)) { writesInput = true; risks.add('write through an input in a same-file callee'); } // the callee's writes are the caller's
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
         const L = unparen(n.left);
         if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) { writesInput = true; if (effDepth(L) >= 2) risks.add('nested write through an input'); else if (n.operatorToken.kind === K.EqualsToken && isRefType(typeOf(n.right)) && !fresh(n.right)) risks.add('input field assigned a reference'); }
@@ -1351,6 +1407,21 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const el = checker.getTypeArguments(rt)[0]; return !!el && !isRefType(el);
   };
   const MUTATORS_ALL = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin', 'set', 'add', 'delete', 'clear']);
+  // what iterating a Map, a Set or one of their iterators (`m.keys()`, `m.values()`, `m.entries()`) yields, as types:
+  // a Set its items, a Map and entries() a fresh [key, value] pair per entry, keys() and values() the keys or the
+  // values; null for any other source (the ordinary lane's ordered carriers, design/ordered-collections.md)
+  const orderedYield = (src) => {
+    src = unparen(src);
+    let recv = src, method = null;
+    if (ts.isCallExpression(src) && !src.arguments.length && ts.isPropertyAccessExpression(src.expression) && ['keys', 'values', 'entries'].includes(src.expression.name.text)) { recv = src.expression.expression; method = src.expression.name.text; }
+    const ts0 = nonNull(typeOf(recv)); const t = ts0[0];
+    if (ts0.length !== 1 || !t) return null;
+    const nm = t.symbol?.name;
+    if (nm === 'Set' || nm === 'ReadonlySet') return [checker.getTypeArguments(t)[0]];
+    if (nm === 'Map' || nm === 'ReadonlyMap') { const [k, v] = checker.getTypeArguments(t); return method === 'keys' ? [k] : method === 'values' ? [v] : [k, v]; }
+    return null;
+  };
+  const orderedYieldsNoRef = (src) => { const ys = orderedYield(src); return !!ys && ys.every((y) => !!y && !isRefType(y)); };
 
   // ----- identity skeletons: where tree equality would imply graph equality -----
   // For a unit with no nested write through an input, the graph of its result is fixed by the identity of every
@@ -1417,6 +1488,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const spreadFreshOrPath = (src, s) => { // spreading copies members: fine when they are primitive, or when the source is an input path (its members are that path's members)
       const t = typeOf(src);
       const arrT = nonNull(t)[0] ?? t;
+      if (orderedYieldsNoRef(src)) return true; // a Map, a Set or their iterator over primitives yields primitives and fresh [key, value] pairs
       if (checker.isArrayType(arrT)) { const el = checker.getTypeArguments(arrT)[0]; if (el && !isRefType(el)) return true; return path(src) !== null; }
       const sh = s ?? shapeOf(t);
       if (sh && sh.kind === 'rec' && sh.fields.every((f) => f.shape.kind === 'prim')) return true;
@@ -1424,7 +1496,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     };
     const canon = (s) => { if (s === null) return null; const ids = new Map(); return s.replace(/#(\d+)/g, (m, d) => { if (!ids.has(d)) ids.set(d, ids.size); return `#${ids.get(d)}`; }); };
     const sites = [], writes = []; let nestedWrite = false; // nestedWrite: a write through an input whose target path could not be read
-    const paramsOrThis = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && params.has(r.text)) || r.kind === K.ThisKeyword || (ts.isIdentifier(r) && bound.has(r.text)); };
+    const elementOf = new Set(); // names bound to the elements of a loop over an input: a write through one has no readable path
+    let inFn = 0; // inside a nested function of the unit
+    const paramsOrThis = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && params.has(r.text)) || r.kind === K.ThisKeyword || (ts.isIdentifier(r) && (bound.has(r.text) || elementOf.has(r.text))); };
     // a local written after its binding (a mutator, an assignment through it, a let rebound) has no fixed skeleton
     const written = new Set();
     const scan = (n) => {
@@ -1436,6 +1510,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     scan(u.body);
     for (const [name, tm] of destructured) if (!written.has(name)) bound.set(name, tm); // a binding the unit writes again has no fixed skeleton
     const walk = (n) => {
+      for (const nm of elementNames(n, paramsOrThis)) elementOf.add(nm);
+      if (calleeWrites(n).some((a) => paramsOrThis(a))) nestedWrite = true; // a callee writes through an input: the path of its write is not read here
       if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && (n.parent.flags & ts.NodeFlags.Const) && !written.has(n.name.text)) { const tm = term(n.initializer); if (tm !== null) bound.set(n.name.text, tm); }
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
         const L = unparen(n.left);
@@ -1452,8 +1528,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         else { const args = n.arguments.map((a) => (isRefType(typeOf(a)) ? term(a) : '.')); if (args.some((a) => a === null)) nestedWrite = true; else writes.push(`@${pth}.${n.expression.name.text}(${args.join(',')})`); }
       }
       if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && paramsOrThis(L)) { const pth = ts.isPropertyAccessExpression(L) ? path(L) : null; if (typeof pth !== 'string') nestedWrite = true; else writes.push(`@${pth}:=.`); } }
-      if (ts.isReturnStatement(n) && n.expression) sites.push(term(n.expression));
-      if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) return; // a nested function's returns are its own
+      if (ts.isReturnStatement(n) && n.expression && !inFn) sites.push(term(n.expression));
+      if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) { inFn++; ts.forEachChild(n, walk); inFn--; return; } // a nested function's returns are its own; its writes through an input are the unit's
       ts.forEachChild(n, walk);
     };
     if (ts.isBlock(u.body)) walk(u.body); else sites.push(term(u.body));

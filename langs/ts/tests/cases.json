@@ -912,5 +912,582 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "receiver_write_sumAll",
+  "file": "receiver_write.ts",
+  "fn": "sumAll",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     -4
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "receiver_write_twice",
+  "file": "receiver_write.ts",
+  "fn": "twice",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    2,
+    3
+   ],
+   [
+    0,
+    0
+   ],
+   [
+    -5,
+    1
+   ]
+  ]
+ },
+ {
+  "name": "receiver_write_eachAdd",
+  "file": "receiver_write.ts",
+  "fn": "eachAdd",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     7
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "ordered_collections_orderCode",
+  "file": "ordered_collections.ts",
+  "fn": "orderCode",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     6,
+     2,
+     11,
+     7
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     4,
+     9
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "ordered_collections_distinctCode",
+  "file": "ordered_collections.ts",
+  "fn": "distinctCode",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     3,
+     1,
+     3,
+     2,
+     1
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     5
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "ordered_collections_reinsertCode",
+  "file": "ordered_collections.ts",
+  "fn": "reinsertCode",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     3,
+     1
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "map_block_scale_count",
+  "file": "map_block.ts",
+  "fn": "scaleCount",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     3,
+     -2,
+     0
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     5
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "dict_order_keyOrder",
+  "file": "dict_order.ts",
+  "fn": "keyOrder",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "b",
+     "2",
+     "a",
+     "10",
+     "9"
+    ]
+   ],
+   [
+    [
+     "x",
+     "1",
+     "x",
+     "0"
+    ]
+   ],
+   [
+    [
+     "01",
+     "1",
+     "4294967295",
+     "4294967294",
+     "-1"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "dict_order_reinsertOrder",
+  "file": "dict_order.ts",
+  "fn": "reinsertOrder",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "b",
+     "2",
+     "a",
+     "10",
+     "9"
+    ]
+   ],
+   [
+    [
+     "x",
+     "1",
+     "x",
+     "0"
+    ]
+   ],
+   [
+    [
+     "01",
+     "1",
+     "4294967295",
+     "4294967294",
+     "-1"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "dict_order_spreadOrder",
+  "file": "dict_order.ts",
+  "fn": "spreadOrder",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "b",
+     "2",
+     "a",
+     "10",
+     "9"
+    ]
+   ],
+   [
+    [
+     "x",
+     "1",
+     "x",
+     "0"
+    ]
+   ],
+   [
+    [
+     "01",
+     "1",
+     "4294967295",
+     "4294967294",
+     "-1"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "loop_chain_doubledPositives",
+  "file": "loop_chain.ts",
+  "fn": "doubledPositives",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     3,
+     -1,
+     0,
+     5
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     -2,
+     -3
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "loop_chain_smallOdd",
+  "file": "loop_chain.ts",
+  "fn": "smallOdd",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3,
+     9,
+     5
+    ],
+    6
+   ],
+   [
+    [],
+    0
+   ],
+   [
+    [
+     4,
+     7
+    ],
+    10
+   ]
+  ]
+ },
+ {
+  "name": "loop_chain_shifted",
+  "file": "loop_chain.ts",
+  "fn": "shifted",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3,
+     2
+    ],
+    2
+   ],
+   [
+    [],
+    1
+   ],
+   [
+    [
+     5
+    ],
+    5
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_blockScope",
+  "file": "lint_misfires.ts",
+  "fn": "blockScope",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    5,
+    [
+     1,
+     2
+    ]
+   ],
+   [
+    0,
+    []
+   ],
+   [
+    -3,
+    [
+     7
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_shadowProc",
+  "file": "lint_misfires.ts",
+  "fn": "shadowProc",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "ab",
+     "c"
+    ],
+    [
+     "xyz"
+    ]
+   ],
+   [
+    [],
+    []
+   ],
+   [
+    [
+     "q"
+    ],
+    [
+     "r",
+     "st"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_buckets",
+  "file": "lint_misfires.ts",
+  "fn": "buckets",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "a",
+     "bb",
+     "a",
+     "a"
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     "xy",
+     "xy"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_rebound",
+  "file": "lint_misfires.ts",
+  "fn": "rebound",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ],
+    true
+   ],
+   [
+    [
+     4,
+     5
+    ],
+    false
+   ],
+   [
+    [],
+    true
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_widest",
+  "file": "lint_misfires.ts",
+  "fn": "widest",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     3,
+     -1,
+     7
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     2
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_shifted",
+  "file": "lint_misfires.ts",
+  "fn": "shifted",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     1,
+     2,
+     3
+    ],
+    10
+   ],
+   [
+    [],
+    4
+   ],
+   [
+    [
+     5
+    ],
+    -1
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_scopedJumps",
+  "file": "lint_misfires.ts",
+  "fn": "scopedJumps",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    5,
+    [
+     1,
+     0,
+     -2,
+     3
+    ]
+   ],
+   [
+    0,
+    []
+   ],
+   [
+    -4,
+    [
+     2,
+     0
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "lint_misfires_setBack",
+  "file": "lint_misfires.ts",
+  "fn": "setBack",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "a",
+     "bb",
+     "a"
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     "x",
+     "x",
+     "x"
+    ]
+   ]
+  ]
  }
 ]

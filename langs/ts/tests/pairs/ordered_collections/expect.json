@@ -1,0 +1,6 @@
+{
+ "scope": ["order_of", "table", "weighted", "first_places", "tally"],
+ "equal": {"order_of": false, "table": true, "weighted": false, "first_places": true, "tally": true},
+ "why": "a Map and a Set are ordered collections (OMap keys beside the entries, OSet items): orderOf sets the same two keys in the other order (WITNESS on [...m.keys()], unproved); table writes the same entries in the same order through new Map(entries) (proved); weighted swaps two set calls and reads the entries by for-of (WITNESS, unproved); firstPlaces spreads new Set([a, b, a]) back against three add calls (proved; the heap core holds it on both sides, the canonical certificate); tally is untouched (keys() in a for-of, Array.from of values(), a Set's size).",
+ "b": {"orderOf": "WITNESS", "table": "PASS-bounded", "weighted": "WITNESS", "firstPlaces": "PASS-bounded", "tally": "PASS-bounded"}
+}

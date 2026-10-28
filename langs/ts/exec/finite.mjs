@@ -65,7 +65,7 @@ export function finiteDomain(file, unit, { project = false, maxAssignments = 64 
 // a unit call under the context's watchdog (as run.mjs does): an endless click handler is a timeout, never a hang
 class CallTimeout extends Error { constructor() { super('__timeout__'); } }
 // the watchdog call and the await of a unit promise come from the runtime (run.mjs): they open the recording window of the library table
-const erase = (v) => (Array.isArray(v) ? v.map(erase) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : erase(x)])), children: v.children.map(erase) } : v);
+const erase = (v) => (Array.isArray(v) ? v.map(erase) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : erase(x)])), children: v.children.map(erase), ...(Object.hasOwn(v, 'rendered') ? { rendered: erase(v.rendered) } : {}) } : v); // a deep child's output is part of the tree
 
 // explore the product of parent and candidate over every click order from every prop assignment
 export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1, ms = 2000, maxPairs = 500, rt, handlers = null }) {
@@ -84,7 +84,7 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
     const guarded = rt.guardedCall, awaitUnit = rt.awaitUnit;
     const call = (s) => () => guarded(s.env, () => s.u.call(s.inputs), ms);
     const commit = async (s) => { let v = await commitEffects(s.env, call(s), ms, await commitRender(s.env, call(s), ms)); if (s.env.timers.queue.length) { await runTimers(s.env, ms); v = await commitEffects(s.env, call(s), ms, await commitRender(s.env, call(s), ms)); } return v; };
-    const stateKey = (s) => JSON.stringify([render(s.env.hookSlots ?? []), render(s.env.pending.map(({ id, ...rest }) => rest))]);
+    const stateKey = (s) => JSON.stringify([render(s.env.hookSlots ?? []), render(s.env.pending.map(({ id, ...rest }) => rest)), ...(s.env.childFrames ? [[...s.env.childFrames].map(([k, f]) => [k, render(f.hookSlots)])] : [])]); // with --deep a rendered child's hook slots are state too: two states that differ there are never merged
     const runPath = async (name, labels) => { // a fresh mount, the clicks replayed: branches never share a mutated state
       const s = await mount(name); let tree = await commit(s); const obs = [];
       for (const label of labels) {
@@ -94,7 +94,7 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
         try { const r = guarded(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
         if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // the descriptor applied to the slots before the handler must give the slots the handler left
         tree = await commit(s);
-        obs.push({ command: label, tree: erase(tree), trace: s.env.trace.slice(from).filter((x) => x.op !== 'set' && x.op !== 'hook').map((x) => render(x)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }); // setter calls are state, compared through the slots; their order inside one handler is React's batching, not an observation
+        obs.push({ command: label, tree: erase(tree), trace: rt.traceWithSites(s.env.trace.slice(from).filter((x) => x.op !== 'set' && x.op !== 'hook')), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }); // setter calls are state, compared through the slots; their order inside one handler is React's batching, not an observation
       }
       return { obs, s, tree, handlers: treeHandlers(tree).map((x) => x.label) };
     };

@@ -18,8 +18,7 @@ or by a top-level `this.f = ..` of the constructor, so no well-formed heap holds
 `this.m()` runs the declared method: a class that extends, is abstract, generic, decorated or extended in the file stays
 out (an override would run other code); a subclass in another file is the ordinary lane's own assumption.
 Lane B: twelve programs per method on a constructed instance; receiver fields are traced, so a refactor keeps the order
-of its field reads. Out: constructors, accessors, static methods, `class: <why>`. `check.mjs --only` cannot agree the
-core when a refactor inlines a same-file callee (`ASK:interface`, the base does the same on a free function).
+of its field reads. Out: constructors, accessors, static methods, `class: <why>`. `check.mjs --only` agrees the core on the units both sides hold since lane inline-callee (`agreeCore` in `check.mjs`, shared with the pair runner): a callee inlined away takes its own side's core, and the rule narrows the shared core round by round until the sides agree (`design/inline-callee.md`).
 Reach: 46 -> 94. The method bucket (21,519) splits: abstract or decorated 8,618, constructor 4,379, extends 3,465.
 
 ## 2. Array element access

@@ -11,8 +11,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts } from '../common.mjs';
-import { restsOf, restsClosure, provedLemma, commentAdapters } from '../check.mjs';
+import { ts, dn } from '../common.mjs';
+import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf } from '../check.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -128,7 +128,7 @@ function differential(label, tsFile, entries) {
   if (t.status !== 0) { add('differential', label, 'translate --core', false, (t.stderr || t.stdout).trim().split('\n')[0]); return; }
   const lines = [], want = [];
   for (const { fn, samples } of entries) for (const args of samples) {
-    lines.push(`  print ${snake(fn)}(${args.map(dfyLit).join(', ')}), "\\n";`);
+    lines.push(`  print ${dn(snake(fn))}(${args.map(dfyLit).join(', ')}), "\\n";`); // the unit's Dafny name as the translator writes it (common.mjs dn)
     want.push(show(mod.exports[fn](...args)));
   }
   fs.appendFileSync(dfy, `\nmethod Main() {\n${lines.join('\n')}\n}\n`);
@@ -206,15 +206,8 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   }
   if (!exp.laneBOnly) { // a pair whose units lane A refuses by design (closures over mutable cells) checks lane B alone
   const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...(exp.heap !== false ? ['--heap'] : []), ...extra]);
-  const headerOf = (which, key) => fs.readFileSync(path.join(tmpd, `${which}.dfy`), 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm'))?.[1] ?? '';
-  const p1 = tr('parent', []);
-  const eff = p1.status === 0 ? headerOf('parent', 'EFFECTFUL') : '';
-  const hp = p1.status === 0 && exp.heap !== false ? headerOf('parent', 'HEAP') : '';
-  const heapArgs = (units) => (exp.heap !== false ? ['--heap-units', units || '-'] : []); // the heap core agreed on both sides: a unit in the core on one side only would change its signature
-  const c1 = tr('candidate', [...(eff ? ['--effectful', eff] : []), ...heapArgs(hp)]);
-  const eff2 = c1.status === 0 ? headerOf('candidate', 'EFFECTFUL') : '';
-  const hc = c1.status === 0 && exp.heap !== false ? headerOf('candidate', 'HEAP') : '';
-  if (eff2 !== eff || hc !== hp) tr('parent', [...(eff2 ? ['--effectful', eff2] : []), ...heapArgs(hc)]);
+  // the heap core agreed on the units both sides hold (check.mjs agreeCore): a unit in the core on one side only would change its signature; a unit one side holds alone (a callee inlined away) takes its own side's core
+  agreeCore({ files: { parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate') }, dfyOf: (which) => path.join(tmpd, `${which}.dfy`), heap: exp.heap !== false, tr: (which, eff, units) => tr(which, [...(eff ? ['--effectful', eff] : []), ...(units !== undefined ? ['--heap-units', units || '-'] : [])]) });
   const adapters = typeof exp.adapters === 'string' ? JSON.parse(fs.readFileSync(path.join(d, exp.adapters), 'utf8')).adapters : exp.adapters; // a changed signature proves through the adapter the pair's scope file declares, the comment door included (check.mjs reads it from the candidate)
   const commentDoor = commentAdapters(pairFile(d, 'candidate'));
   const allAdapters = { ...commentDoor, ...(adapters ?? {}) };
@@ -237,7 +230,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     const viaRests = provedLemma(`Equal_${f}`, spanClean, rests);
     const through = viaRests || !spanClean(`Equal_${f}`) ? [] : restsClosure(rests, `Equal_${f}`).filter((k) => !provedLemma(k, spanClean, rests));
     const whole = finished && !!sp && viaRests;
-    const parts = Object.keys(spans).filter((k) => k.startsWith(`EqualCanon_${f}_`)); // the canonical-heap certificate: every part must hold
+    const parts = canonPartsOf(Object.keys(spans), f); // the canonical-heap certificate: every part must hold (check.mjs canonPartsOf: this unit's parts only)
     const canon = finished && parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]));
     const proved = whole || canon;
     const withheld = lines.find((ln) => ln.startsWith(`// UNGUARDED Equal_${f}: `));
@@ -308,6 +301,18 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     const ok = got.verdict === want.verdict && (!want.laneA || A.verdict === want.laneA) && (!want.reason || (got.reason ?? '').includes(want.reason)) && (!want.door || A.adapter?.door === want.door);
     add('pair', name, `check ${unit} ${want.verdict}${want.laneA ? ' (' + want.laneA + ')' : ''}`, ok, `${got.verdict ?? 'no result'} | A: ${A.verdict ?? '-'} | B: ${got.certificate?.lanes?.B?.verdict ?? '-'} | ${(got.reason ?? '').slice(0, 140)}`);
   }
+  // the layered UI certificate (design/ui-layers.md): check.mjs on the unit, at the stated depth; the tree layer (its verdict,
+  // the depth, the children rendered and left as handles, each context read and where it came from) and the styles layer
+  // (its verdict, the classes it could not read), each carrying its assumptions
+  for (const [i, want] of (exp.layers ?? []).entries()) {
+    const out = path.join(tmpd, `layers_${i}_${want.unit}.json`);
+    run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', want.unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(want.deep ? [`--deep=${want.deep}`] : []), '--out', out]);
+    let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
+    const L = got.certificate?.layers ?? null, T = L?.tree ?? {}, S = L?.styles ?? {};
+    const names = (xs) => JSON.stringify((xs ?? []).map((x) => x.component).sort());
+    const ok = !!L && (want.verdict === undefined || got.verdict === want.verdict) && (want.tree === undefined || T.verdict === want.tree) && T.depth === (want.deep ?? 0) && (want.rendered === undefined || names(T.rendered) === JSON.stringify([...want.rendered].sort())) && (want.handles === undefined || names(T.handles) === JSON.stringify([...want.handles].sort())) && (want.contexts ?? []).every((c) => (T.contexts ?? []).some((x) => x.frame === c.frame && x.from === c.from)) && (want.styles === undefined || S.verdict === want.styles) && (want.unsupported ?? []).every((c) => (S.unsupported ?? []).some((x) => x.class === c)) && (T.assumptions ?? []).length > 0 && (S.assumptions ?? []).length > 0 && /pixels/.test(L.notObserved ?? '');
+    add('pair', name, `layers ${want.unit}${want.deep ? ' deep ' + want.deep : ''}: tree ${want.tree ?? '-'}, styles ${want.styles ?? '-'}`, ok, L ? `${got.verdict} | tree ${T.verdict} depth ${T.depth}, rendered ${names(T.rendered)}, handles ${names(T.handles)}, contexts ${(T.contexts ?? []).map((x) => `${x.frame}:${x.from}`).join(' ') || 'none'} | styles ${S.verdict}${(S.unsupported ?? []).length ? ', unsupported ' + S.unsupported.map((x) => x.class).join(' ') : ''}` : `no layers (${got.verdict ?? 'no result'})`);
+  }
   // the callee a WITNESS came through (exec/callees.mjs): a unit whose own text is equal on both sides names the changed same-file callees on its call path, with where.cause 'callee'; an empty list: the witness names none and keeps its own cause
   for (const [unit, want] of Object.entries(exp.through ?? {})) {
     let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
@@ -370,13 +375,13 @@ for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) 
 const advDir = path.join(here, 'fixtures/advice');
 for (const f of fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.endsWith('.ts')).sort() : []) {
   const src = fs.readFileSync(path.join(advDir, f), 'utf8');
-  const [, rule, label] = src.match(/^\/\/ expect:\s*(\S+)\s+(proved|conditional|migration)\b/m) ?? [];
+  const [, rule, label] = src.match(/^\/\/ expect:\s*(\S+)\s+(proved|conditional|migration|flag-only)(?![\w-])/m) ?? [];
   const name = f.replace(/\.ts$/, '');
   if (!rule) { add('advice', name, 'expect line', false, 'missing `// expect: <rule> <label>`'); continue; }
   // an any_* fixture runs with --any-type; `// expect-none: <rule>` names a rule that must not fire (an any from an
   // unresolved import is unresolved-module only)
   const none = (src.match(/^\/\/ expect-none:\s*(\S+)/m) ?? [])[1];
-  const l = run('node', [lint, path.join(advDir, f), '--json', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
+  const l = run('node', [lint, path.join(advDir, f), '--json', '--advice', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
   let all = [], found = []; try { all = JSON.parse(l.stdout); found = all.filter((x) => x.rule === rule); } catch { /* not JSON: fails below */ }
   const tag = label === 'conditional' ? '[conditional: ' : `[${label}]`;
   const ok = l.status === 1 && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
@@ -445,6 +450,200 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
   const c = run('python3', ['-I', 'conformance/run.py', 'ts']);
   const last = (c.stdout ?? '').trim().split('\n').pop();
   add('repo', 'conformance/run.py ts', 'runner', c.status === 0, last);
+}
+
+// Census report checks.
+{
+  const assert = (await import('node:assert/strict')).default;
+  const script = path.join(here, '../census.mjs');
+  // The census skips paths under tests or fixtures. Copy this tree outside those folders.
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-census-'));
+  fs.cpSync(path.join(here, 'fixtures/census-report'), repo, { recursive: true });
+  try {
+    const scan = (name, flags = []) => {
+      const json = path.join(tmp, `census-${name}.json`), md = path.join(tmp, `census-${name}.md`);
+      const r = run(process.execPath, [script, repo, '--out', json, '--report', md, ...flags]);
+      assert.equal(r.status, 0, (r.stdout ?? '') + (r.stderr ?? '') + (r.error ?? ''));
+      return { result: JSON.parse(fs.readFileSync(json, 'utf8')), report: fs.readFileSync(md, 'utf8') };
+    };
+    const { result: result, report } = scan('default');
+    const sections = [...report.matchAll(/^## Rule: <code>([^<]+)<\/code>\n\nUnits stopped: (\d+)\.\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)].map((m) => ({
+      rule: m[1], units: Number(m[2]),
+      directories: [...m[3].matchAll(/^\| <code>([^<]+)<\/code> \| (\d+) \| <code>(.*)<\/code> \|$/gm)].map((d) => ({ directory: d[1], units: Number(d[2]), example: d[3] })),
+    }));
+    // Rebuild the expected attribution from the file findings, independently of the report groups.
+    const expected = new Map();
+    for (const record of result.records) for (const unit of record.units ?? []) {
+      const first = record.findings.find((f) => !f.env && unit.lines[0] <= f.line && f.line <= unit.lines[1]);
+      if (first) expected.set(first.rule, (expected.get(first.rule) ?? 0) + 1);
+    }
+    const sums = sections.map((s) => ({ ...s, sum: s.directories.reduce((n, d) => n + d.units, 0) }));
+    const directoryOK = sums.length === expected.size && new Set(sums.map((s) => s.rule)).size === expected.size && sums.every((s) => s.sum === s.units && s.units === expected.get(s.rule) && s.units === result.refusalRules.find((r) => r.rule === s.rule)?.units);
+    add('census', 'report', 'directory sums equal rule totals', directoryOK, sums.map((s) => `${s.rule}: ${s.sum} = ${s.units}`).join('; '));
+    const stopped = sections.reduce((n, s) => n + s.units, 0);
+    add('census', 'report', 'rule totals equal JSON refused', stopped === result.refused && stopped === result.units - result.entered, `${sections.map((s) => s.units).join(' + ')} = ${result.refused}`);
+    const header = report.match(/Units: (\d+)\. Inside the subset: (\d+) \(([^)]+) percent\)\. Refused: (\d+)\. Files unreadable: (\d+)\./);
+    assert.ok(header, 'report header is present');
+    add('census', 'report', 'refused plus inside equal JSON units', Number(header[1]) === result.units && Number(header[2]) === result.entered && Number(header[4]) === result.refused && Number(header[4]) + Number(header[2]) === result.units, `${header[4]} + ${header[2]} = ${result.units}`);
+    assert.deepEqual([result.files, result.units, result.entered, result.failedFiles], [8, 8, 2, 0]);
+    assert.deepEqual(sections.map((s) => [s.rule, s.units]), [['alias-mutation', 2], ['reference-equality', 2], ['var', 2]]);
+    assert.equal(result.rules.find((r) => r.rule === 'reference-equality').units, 3, 'the fixture also has a unit with two rules');
+    assert.equal(header[3], String(result.share));
+    assert.equal(Number(header[5]), result.failedFiles);
+    assert.ok(report.startsWith(`# Census: <code>${path.basename(repo)}</code>\n`));
+    assert.match(result.date, /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(report.includes(`Date: ${result.date} (UTC)`));
+    assert.ok(report.includes('Each refused unit is counted once, under the first rule the lint names for it.'));
+    const top = report.split('## Top five rules by units stopped\n')[1].split('## Rule:')[0];
+    assert.deepEqual([...top.matchAll(/^\| <code>([^<]+)<\/code> \| (\d+) \|$/gm)].map((m) => [m[1], Number(m[2])]), sections.slice(0, 5).map((s) => [s.rule, s.units]));
+    for (const s of sections) {
+      assert.deepEqual(s.directories.map((d) => d.directory), ['alpha', 'alpha/beta']);
+      for (const d of s.directories) {
+        const saved = result.refusalRules.find((r) => r.rule === s.rule).directories.find((r) => r.directory === d.directory);
+        assert.equal(d.units, saved.units);
+        assert.equal(d.example, `${saved.example.file}:${saved.example.line}  ${saved.example.code}`);
+        assert.ok(saved.example.code.length <= 120);
+        const record = result.records.find((r) => r.file === saved.example.file);
+        assert.equal(saved.example.line, record.findings.find((f) => f.rule === s.rule).line);
+        assert.ok(fs.readFileSync(path.join(repo, saved.example.file), 'utf8').split('\n')[saved.example.line - 1].includes(saved.example.code));
+      }
+    }
+    add('census', 'report', 'header order examples and first rule', true, '8 files; 8 units; 25 percent; depth 2');
+    for (const depth of [0, 1]) {
+      const folded = scan(`depth${depth}`, ['--depth', String(depth)]);
+      assert.equal(folded.result.depth, depth);
+      assert.ok(folded.report.includes(`Directory depth: ${depth}.`));
+      for (const r of folded.result.refusalRules) {
+        assert.equal(r.directories.length, 1);
+        assert.equal(r.directories[0].directory, depth === 0 ? '.' : 'alpha');
+        assert.equal(r.directories[0].units, r.units);
+      }
+    }
+    const clean = scan('clean', ['--include', 'clean.ts']);
+    assert.deepEqual([clean.result.units, clean.result.entered, clean.result.refused], [1, 1, 0]);
+    assert.deepEqual(clean.result.refusalRules, []);
+    assert.ok(clean.report.includes('No units were refused.'));
+    const invalid = run(process.execPath, [script, repo, '--depth', '-1']);
+    assert.notEqual(invalid.status, 0);
+    assert.match(invalid.stderr, /depth must be a nonnegative integer/);
+    add('census', 'report', 'depth and clean report', true, 'depth 0 and 1 fold; negative depth refuses; clean report has zero refusals');
+  } catch (e) {
+    add('census', 'report', 'report assertions', false, String(e.stack ?? e));
+  } finally {
+    fs.rmSync(repo, { recursive: true, force: true });
+  }
+}
+
+// The intake fixture covers every changed unit and proves that preview runs no lane.
+{
+  const r = run('node', [path.join(here, 'fixtures/pr-intake/test.mjs')]);
+  const text = (r.stdout ?? '') + (r.stderr ?? '');
+  add('repo', 'pr intake', 'coverage and preview', r.status === 0, text.trim().split('\n').pop());
+}
+
+// ----- witness args: a WITNESS's args are the input as drawn, before either side ran (langs/ts/design/witness-args.md) -----
+// every witness lane B wrote above for a listed unit is replayed (exec/replay-args.mjs): input i drawn again as the
+// parent's side drew it, the parent run on it; the args must equal the draw, the replay must give the parent's
+// observation, and every argument the parent's call wrote must show its value before the write. `witnessArgs` in a
+// pair's expect.json lists the units (`writes`: some witness has a written argument; `pure`: none has); readme_ledger
+// applyAll is listed here, its pair untouched
+{
+  const listed = { readme_ledger: { applyAll: 'writes' } };
+  for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().filter((n) => !onlyPairs || onlyPairs.has(n)) : []) {
+    const d = path.join(pairsDir, name);
+    let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')); } catch { /* no expect: nothing listed */ }
+    for (const [unit, kind] of Object.entries({ ...(listed[name] ?? {}), ...(exp.witnessArgs ?? {}) })) {
+      const result = path.join(tmp, `pair_${name}`, `b_${unit}.json`);
+      if (!fs.existsSync(result)) { fs.mkdirSync(path.dirname(result), { recursive: true }); run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', result]); } // the pair's own lane B step did not run (its theorem stopped it): lane B runs here, as that step runs it
+      if (!fs.existsSync(result)) { add('witness-args', name, `${unit} ${kind}`, false, 'no lane B result for the unit'); continue; }
+      const r = run('node', [path.join(here, '../exec/replay-args.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--result', result, '--kind', kind]);
+      let got = null; try { got = JSON.parse((r.stdout ?? '').trim().split('\n').pop()); } catch { /* no JSON fails */ }
+      const detail = got ? (got.error ?? `${got.witnesses.map((w) => `input ${w.input}: draw ${w.sameDraw ? 'kept' : 'LOST'}, replay ${w.sameObservation ? 'agrees' : 'DIFFERS'}${w.written?.length ? `, written ${w.written.map((x) => `arg${x.position} (${x.gained.join(', ') || 'changed'}) shown ${x.shownBefore ? 'before' : 'AFTER'} the write`).join('; ')}` : ''}`).join(' | ')}${got.why ? '; ' + got.why : ''}`) : (r.stderr || r.stdout || '').trim().slice(-160);
+      add('witness-args', name, `${unit} ${kind}: args are the draw`, r.status === 0 && got?.ok === true, detail);
+    }
+  }
+}
+
+
+// A witness names the statement that returned or requested the differing value.
+{
+  const listed = [
+    ['proto_write', 'own', 'hasOwnProperty'],
+    ['dict_order', 'keyList', 'Object.keys'],
+    ['witness_args', 'scaled', '+ 1'],
+    ['map_block', 'sizes', 's + 2'],
+    ['callback_patterns', 'above', 'sink.note(id)'],
+    ['branch_types', 'isFive', 'y === 5'],
+    ['void_promise', 'handout', 'done: b'],
+    ['operands_coercion', 'absent', '=== undefined'],
+    ['numbers_bits', 'flags', '| 8'],
+    ['optional_calls', 'labelOf', '": "'],
+  ];
+  const { topLevelFunctions } = await import('../common.mjs');
+  for (const [name, unit, token] of listed) {
+    if (onlyPairs && !onlyPairs.has(name)) continue;
+    const d = path.join(pairsDir, name), candidate = pairFile(d, 'candidate');
+    const result = path.join(tmp, `pair_${name}`, `b_${unit}.json`);
+    if (!fs.existsSync(result)) {
+      fs.mkdirSync(path.dirname(result), { recursive: true });
+      run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', candidate, '--unit', unit, '--n', '30', '--no-project', '--out', result]);
+    }
+    let got = null; try { got = JSON.parse(fs.readFileSync(result, 'utf8')); } catch { /* A missing result fails. */ }
+    const sf = ts.createSourceFile(candidate, fs.readFileSync(candidate, 'utf8'), ts.ScriptTarget.Latest, true);
+    const u = topLevelFunctions(sf).get(unit);
+    const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
+    const end = sf.getLineAndCharacterOfPosition(u.node.end - 1).line + 1;
+    const site = got?.witnesses?.[0]?.where?.lines?.candidate;
+    const parentSite = got?.witnesses?.[0]?.where?.lines?.parent;
+    const ok = got?.verdict === 'WITNESS' && site && parentSite && path.resolve(site.file) === path.resolve(candidate)
+      && start <= site.start && site.start <= site.end && site.end <= end && site.text.includes(token)
+      && !/^export\s/.test(site.text);
+    add('witness-lines', name, `${unit} contains ${token}`, !!ok, site ? `${site.file}:${site.start} ${JSON.stringify(site.text)}` : 'no statement site');
+  }
+  const fixture = path.join(here, 'fixtures/witness-lines');
+  const result = path.join(tmp, 'witness-lines-advice.json');
+  const r = run('node', [path.join(here, '../check.mjs'), '--parent', path.join(fixture, 'parent.ts'), '--candidate', path.join(fixture, 'candidate.ts'), '--unit', 'frozen', '--n', '3', '--no-project', '--out', result]);
+  let got = null; try { got = JSON.parse(fs.readFileSync(result, 'utf8')); } catch { /* A missing certificate fails. */ }
+  const advice = got?.witness?.where?.advice;
+  const expected = '[migration] A later write to a frozen object throws in strict code, and the proof lane has no fault for it. Keep the object unfrozen inside the function, or freeze a copy you never write.';
+  add('witness-lines', 'advice', 'the site supplies the lint rewrite', r.status === 0 && got?.verdict === 'WITNESS' && advice?.rule === 'freeze' && advice?.label === 'migration' && advice?.advice === expected, JSON.stringify(advice) ?? 'no advice');
+}
+
+// ----- convert: each transform's fixture through the converter and pr.mjs (langs/ts/design/converter.md) -----
+// before.ts is committed in a scratch repository and converted; the result must be after.ts, applied with every
+// changed function PASS-proved or PASS-bounded; then wrong.ts (a near rewrite that changes behaviour) must be a WITNESS
+{
+  const convDir = path.join(here, 'fixtures/convert');
+  const converter = path.join(here, '../convert.mjs'), prTool = path.join(here, '../pr.mjs');
+  const cache = path.join(tmp, 'convert-cache');
+  const count = (rs) => Object.entries(rs.reduce((c, r) => ({ ...c, [r.verdict ?? 'none']: (c[r.verdict ?? 'none'] ?? 0) + 1 }), {})).map(([k, v]) => `${v} ${k}`).join(', ');
+  for (const name of fs.existsSync(convDir) ? fs.readdirSync(convDir).sort() : []) {
+    const d = path.join(convDir, name);
+    const work = fs.mkdtempSync(path.join(tmp, `convert-${name}-`));
+    const unit = path.join(work, 'unit.ts');
+    fs.copyFileSync(path.join(d, 'before.ts'), unit);
+    const g = [['init', '-q'], ['add', '-A'], ['-c', 'user.email=lean@local', '-c', 'user.name=lean', 'commit', '-qm', 'before']].map((a) => spawnSync('git', ['-C', work, ...a], { encoding: 'utf8' }));
+    if (g.some((r) => r.status !== 0)) { add('convert', name, 'scratch repository', false, g.map((r) => r.stderr).join(' ').trim().slice(0, 160)); continue; }
+    const json = path.join(tmp, `convert-${name}.json`);
+    const c = run('node', [converter, work, '--no-project', '--n', '30', '--dafny-seconds', '30', '--cache-dir', cache, '--json', json]);
+    const got = fs.readFileSync(unit, 'utf8'), want = fs.readFileSync(path.join(d, 'after.ts'), 'utf8');
+    const at = got.split('\n').findIndex((l, i) => l !== want.split('\n')[i]);
+    add('convert', name, 'before converts to after.ts', got === want, got === want ? 'same text' : `differs at line ${at + 1}: ${JSON.stringify(got.split('\n')[at] ?? '')}`);
+    let rep = null; try { rep = JSON.parse(fs.readFileSync(json, 'utf8'))[0]; } catch { /* no report fails below */ }
+    const file = rep?.files?.[0], rs = (rep?.rows ?? []).filter((r) => !r.caller);
+    // an optional expect.json per fixture holds the counts ({"applied": N, "listed": M}): 0 applied is a pass when the lint admits every site
+    const want_ = fs.existsSync(path.join(d, 'expect.json')) ? JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')) : null;
+    const nApplied = file?.applied?.length ?? 0;
+    const counted = want_ ? nApplied === want_.applied && (file?.listed?.length ?? 0) === want_.listed && (nApplied === 0 || rs.length > 0) : nApplied > 0 && rs.length > 0;
+    const ok = c.status === 0 && counted && !file?.reverted && rs.every((r) => r.verdict === 'PASS-proved' || r.verdict === 'PASS-bounded');
+    add('convert', name, 'applied and proved, no WITNESS', ok, rep ? `${file?.applied?.length ?? 0} applied, ${file?.listed?.length ?? 0} listed; ${count(rs)}${file?.reverted ? '; reverted: ' + file.reverted : ''}` : (c.stderr || c.stdout).trim().slice(-160));
+    fs.writeFileSync(unit, fs.readFileSync(path.join(d, 'wrong.ts'), 'utf8'));
+    const wj = path.join(tmp, `convert-${name}-wrong.json`);
+    const w = run('node', [prTool, '--repo', work, '--base', 'HEAD', '--no-project', '--n', '30', '--dafny-seconds', '30', '--cache-dir', cache, '--json', wj, '--out', path.join(tmp, `convert-${name}-wrong.md`)]);
+    let wr = null; try { wr = JSON.parse(fs.readFileSync(wj, 'utf8')).rows; } catch { /* no rows fails below */ }
+    const hit = (wr ?? []).filter((r) => r.verdict === 'WITNESS');
+    add('convert', name, 'wrong after refuted', hit.length > 0, hit.length ? hit.map((r) => `${r.unit} WITNESS at input ${r.witness?.input ?? '?'}`).join(', ') : `no WITNESS: ${wr ? count(wr) : (w.stderr || w.stdout).trim().slice(-160)}`);
+  }
 }
 
 // ----- table -----

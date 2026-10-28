@@ -35,26 +35,33 @@ const apply = (text, s) => { let edit = null; s.fix({ replaceTextRange: (range, 
 
 try {
   const opts = [{ project: false }];
-  // a parameter read as a record: the conditional proposal, its label, and the annotation as a suggestion
-  const rec = runRule(path.join(fixtures, 'any_record_conditional.ts'), opts);
-  const r0 = rec.reports.filter((r) => /^lean \(any-type\)/.test(r.message));
-  ok(r0.length === 1 && r0[0].loc.start.line === 2, `one any-type report at line 2: ${JSON.stringify(rec.reports.map((r) => r.message))}`);
-  ok(/\[conditional: every use of node is covered by this type: /.test(r0[0]?.message ?? ''), `the label and its precondition are shown: ${r0[0]?.message}`);
-  ok(/annotate node as \{ kind: string; text: string; children: \{ id: unknown \}\[\] \}$/.test(r0[0]?.message ?? ''), `the proposal is shown: ${r0[0]?.message}`);
-  ok(r0[0]?.suggest?.length === 1 && /^annotate node as \{/.test(r0[0].suggest[0].desc), 'the annotation is offered as a suggestion');
-  if (r0[0]?.suggest?.length) {
-    const fixed = apply(rec.text, r0[0].suggest[0]);
-    ok(fixed.includes('export function title(node: { kind: string; text: string; children: { id: unknown }[] }): string {'), `the suggestion replaces the written any at the declaration: ${fixed.split('\n')[1]}`);
-    ok(fixed.split('\n').slice(2).join('\n') === rec.text.split('\n').slice(2).join('\n'), 'nothing else in the file changes');
-    const copy = path.join(tmp, 'fixed.ts'); fs.writeFileSync(copy, fixed);
-    const again = lintFile(copy, null, { project: false, anyType: true });
-    ok(again.length === 0, `the annotated copy is inside the subset with no any-type finding: ${JSON.stringify(again.map((f) => `${f.rule}: ${f.msg}`))}`);
+  // the two proposals, a record and a primitive: the conditional label, the proposal, and the annotation as the quick fix
+  for (const [file, name, line, proposal, kind, header] of [
+    ['any_record_conditional.ts', 'node', 2, '{ kind: string; text: string; children: { id: unknown }[] }', 'record', 'export function title(node: { kind: string; text: string; children: { id: unknown }[] }): string {'],
+    ['any_primitive_conditional.ts', 'count', 2, 'number', 'primitive', 'export function doubled(count: number): number {'],
+  ]) {
+    const rec = runRule(path.join(fixtures, file), opts);
+    const r0 = rec.reports.filter((r) => /^lean \(any-type\)/.test(r.message));
+    ok(r0.length === 1 && r0[0].loc.start.line === line, `${file}: one any-type report at line ${line}: ${JSON.stringify(rec.reports.map((r) => r.message))}`);
+    ok(r0[0]?.message.includes(`[conditional: every use of ${name} is covered by this type: `), `${file}: the label and its precondition are shown: ${r0[0]?.message}`);
+    ok((r0[0]?.message ?? '').endsWith(`annotate ${name} as ${proposal}`), `${file}: the proposal is shown: ${r0[0]?.message}`);
+    const json = lintFile(path.join(fixtures, file), null, { project: false, anyType: true }).filter((f) => f.rule === 'any-type');
+    ok(json.length === 1 && json[0].proposalKind === kind, `${file}: the proposal is a ${kind}: ${JSON.stringify(json.map((f) => f.proposalKind))}`);
+    ok(r0[0]?.suggest?.length === 1 && r0[0].suggest[0].desc === `annotate ${name} as ${proposal}`, `${file}: the annotation is offered as a quick fix`);
+    if (r0[0]?.suggest?.length) {
+      const fixed = apply(rec.text, r0[0].suggest[0]);
+      ok(fixed.split('\n')[line - 1] === header, `${file}: the quick fix replaces the written any at the declaration: ${fixed.split('\n')[line - 1]}`);
+      ok(fixed.split('\n').slice(line).join('\n') === rec.text.split('\n').slice(line).join('\n'), `${file}: nothing else in the file changes`);
+      const copy = path.join(tmp, `fixed-${kind}.ts`); fs.writeFileSync(copy, fixed);
+      const again = lintFile(copy, null, { project: false, anyType: true });
+      ok(again.length === 0, `${file}: the annotated copy is inside the subset with no any-type finding: ${JSON.stringify(again.map((f) => `${f.rule}: ${f.msg}`))}`);
+    }
   }
-  // conflicting evidence and no evidence: migration, no suggestion
-  for (const [file, word] of [['any_conflict_migration.ts', 'conflicts'], ['any_unused_migration.ts', 'no evidence']]) {
+  // conflicting evidence: migration; no evidence: flag-only; neither offers a fix
+  for (const [file, label, word] of [['any_conflict_migration.ts', 'migration', 'conflicts'], ['any_unused_flag_only.ts', 'flag-only', 'no evidence']]) {
     const { reports } = runRule(path.join(fixtures, file), opts);
     const r = reports.filter((x) => /^lean \(any-type\)/.test(x.message));
-    ok(r.length === 1 && r[0].message.includes('[migration]') && r[0].message.includes(word) && r[0].suggest.length === 0, `${file}: one migration report, no suggestion: ${JSON.stringify(reports.map((x) => x.message))}`);
+    ok(r.length === 1 && r[0].message.includes(`[${label}]`) && r[0].message.includes(word) && r[0].suggest.length === 0, `${file}: one ${label} report, no quick fix: ${JSON.stringify(reports.map((x) => x.message))}`);
   }
   // an any from an unresolved import: unresolved-module only
   const env = runRule(path.join(fixtures, 'any_unresolved_import_migration.ts'), opts);

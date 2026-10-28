@@ -295,6 +295,64 @@ def summaries_of(funcs, pf, cf, aliased, unguarded, hyps, adapters):
     return out
 
 
+COLLECTION_TYPE = re.compile(r'^(?:string|(?:seq|set|iset|multiset|map|imap)\s*<.*>)$')
+
+
+def _tuple_parts(t):
+    """The component types of a Dafny tuple type `(A, B, ...)`, or None when `t` is not a tuple of two or more."""
+    t = t.strip()
+    if not (t.startswith('(') and t.endswith(')')) or balanced(t, 0) != len(t):
+        return None
+    parts = split_top(t[1:-1].replace('->', '\x00'))
+    return [p.replace('\x00', '->') for p in parts] if len(parts) > 1 else None
+
+
+def component_hints(ret, lhs, rhs):
+    """The proof hint for an equality between two tuples: a collection compared inside a tuple is not compared by its
+    elements (tuple equality is equality of the components, and Dafny reaches a sequence's extensionality only from an
+    equality goal of that sequence's own type, so two `Map(s, f)` with pointwise-equal callbacks prove alone and not as a
+    component). For a goal `lhs == rhs` whose type is a tuple, one assert per component whose type is a collection
+    (seq, string, set, iset, multiset, map, imap), nested tuples walked: each is the same equality on a projection, a
+    consequence of the goal, so it can only help the prover reach it, never prove more."""
+    out = []
+
+    def walk(t, path):
+        parts = _tuple_parts(t)
+        if parts is None:
+            if path and COLLECTION_TYPE.match(t.strip()):
+                out.append(f'assert {lhs}{path} == {rhs}{path};')
+            return
+        for i, p in enumerate(parts):
+            walk(p, f'{path}.{i}')
+    walk(ret, '')
+    return out
+
+
+FILTER_SAME = re.compile(r'^lemma\s+([A-Za-z_][A-Za-z0-9_]*)_same\(s: seq<(.+)>, p: \2 -> bool, q: \2 -> bool\)\s*$', re.M)
+
+
+def filter_hints(text_all, pf, cf, funcs, f):
+    """The proof hint for two filters of one sequence: a filter is a recursive function of its predicate, and two
+    predicates written differently (`!(a != b)` against `a == b`, a guard of a loop against a chain's callback) are two
+    lambdas the prover does not unfold under the recursion. For every filter helper of the translator's vocabulary that
+    carries its proved congruence lemma (`<F>_same`: predicates equal on every element keep the same elements) and that
+    both sides of f use (f's body or its own helpers), the lemma body states that congruence for all sequences and
+    predicates, each instance proved by a call of the lemma. It is a rule over the vocabulary, never over one unit; it is
+    a proved fact, so it can only help the prover reach a goal that holds."""
+    def uses(parsed, name):
+        return any(re.search(r'\b' + re.escape(name) + r'\s*\(', strip_comments(fn['body'])) for base, fn in parsed.items() if _owner(base, funcs) == f)
+    out = []
+    for name, elem in sorted(set(FILTER_SAME.findall(strip_comments(text_all)))):
+        if not re.search(r'\bfunction\s+' + re.escape(name) + r'\s*\(', strip_comments(text_all)):
+            continue
+        if not (uses(pf, name) and uses(cf, name)):
+            continue
+        out.append(f'forall fs_0: seq<{elem}>, fp_0: {elem} -> bool, fq_0: {elem} -> bool | forall fi_0 :: 0 <= fi_0 < |fs_0| ==> fp_0(fs_0[fi_0]) == fq_0(fs_0[fi_0])')
+        out.append(f'  ensures {name}(fs_0, fp_0) == {name}(fs_0, fq_0)')
+        out.append(f'{{ {name}_same(fs_0, fp_0, fq_0); }}')
+    return out
+
+
 def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_name=None):
     check_forbidden(parent_text, 'parent')
     check_forbidden(cand_text, 'candidate')
@@ -381,6 +439,16 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             if not name.endswith(suffix):
                 raise Refusal(f'{label}: in-range mark for {name} does not end in {suffix}')
             inrange.add(name[: -len(suffix)])
+    # the source an in-range unit means (`// SOURCE <name>: <key>`: its text and every same-file unit it reaches): two
+    # Dafny-identical bodies agree only inside the model, so an aliased unit drops the in-range obligation only when the
+    # two sources are the same; Dafny-identical bodies of different sources keep it, as any other unit does
+    sources = {}
+    for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
+        for m in re.finditer(r'^// SOURCE ([A-Za-z_][A-Za-z0-9_]*): (\S+)$', text, flags=re.M):
+            name = m.group(1)
+            if name.endswith(suffix):
+                sources.setdefault(name[: -len(suffix)], {})[label] = m.group(2)
+    same_source = {f for f, k in sources.items() if k.get('parent') is not None and k.get('parent') == k.get('candidate')}
     for f, h in hyps.items():  # compared with the parameters by position: the lemma states the parent's, over the parent's names
         if f in adapters and h.get('parent') is not None and h.get('candidate') is not None:
             continue  # an adapted heap-core unit: the lemma assumes the parent's hypothesis over the parent's inputs; the candidate runs on A(x)
@@ -517,19 +585,23 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         if f in hyps:
             out.append(f'  requires {hyps[f]["parent"]}')
         adapted = adapted_args(f, [n for n, _ in sig["params"]], adapters, cf)
-        if f in inrange and f in hyps and f not in aliased:
+        if f in inrange and f in hyps and (f not in aliased or f not in same_source):
             out.append(f'  ensures !{f}_parent({names}).0.oob && !{f}_candidate({adapted}).0.oob')
         out.append(f'  ensures {f}_parent({names}) == {f}_candidate({adapted})')
         if sm.get('induction'):
             out.append(f'  decreases {sm["induction"]["measure"]}')
+        hints = filter_hints((prelude_text or '') + '\n' + parent_text + '\n' + cand_text, pf, cf, funcs, f)  # two filters of one sequence: predicates compared by element
+        hints += component_hints(sig['ret'], f'{f}_parent({names})', f'{f}_candidate({adapted})')  # a tuple's collections compared first
         out.append('{ // PROOF Equal_' + f)
         out.extend('  ' + ln for ln in sm.get('lines', []))
+        out.extend('  ' + ln for ln in hints)
         out.append('} // END Equal_' + f)
         if sm.get('rests'):  # the same statement proved from the bodies alone: a function the bodies prove needs no summary
             out.append(f'lemma EqualDirect_{f}{tp}({params})')
             out.append(f'  requires !InScope_{f}({names})')
             out.append(f'  ensures {f}_parent({names}) == {f}_candidate({adapted_args(f, [n for n, _ in sig["params"]], adapters, cf)})')
             out.append('{ // PROOF EqualDirect_' + f)
+            out.extend('  ' + ln for ln in hints)
             out.append('} // END EqualDirect_' + f)
         if canon_fuel and f in hyps and f not in aliased and f not in unguarded and f not in adapters and sig['params'] and sig['params'][0][1] == 'HWorld' and sig['ret'].replace(' ', '').startswith('(HWorld,'):
             hw = sig['params'][0][0]
