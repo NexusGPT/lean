@@ -55,7 +55,7 @@ class Unsupported extends Error {}
 import { dn } from '../common.mjs';
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
-import { copySourceWhy } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
+import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -2663,7 +2663,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   }
   function objectLit(n, expected) {
     { const pp = n.properties.find(literalProtoMember); if (pp) fail(pp, 'prototype: `__proto__:` in a literal sets the prototype, not a key'); }
-    for (const p of n.properties) if (ts.isSpreadAssignment(p)) { const why = copySourceWhy(checker, p.expression, p); if (why) fail(p, `spread-source: ${why}`); } // a record spread reads the source's declared fields, so its keys must be ones the unit built (common.mjs, one test with the lint)
+    for (const p of n.properties) if (ts.isSpreadAssignment(p)) { const cs = copySource(checker, p.expression, p); if (cs.kind === 'refuse') fail(p, `spread-source: ${cs.why}`); } // a copy carries everything its source carries (common.mjs copySource, one test with the lint)
     if (literalRecord(typeOf(n))) {
       const t = typeOf(n), d = dtype(t, n), fields = new Map();
       for (const p of n.properties) if (!ts.isMethodDeclaration(p) && !ts.isGetAccessorDeclaration(p)) {
@@ -2759,7 +2759,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       else if (ts.isPropertyAssignment(p)) fields.push(fieldCode(keyOf(p), p.initializer));
     }
-    const base = first && ts.isSpreadAssignment(first) ? expr(first.expression) : null;
+    const base = first && ts.isSpreadAssignment(first) ? (copySource(checker, first.expression, first).kind === 'copy' ? `${external(`spread_copy_${mangle(rname)}`, [rname], rname)}(${expr(first.expression)})` : expr(first.expression)) : null; // a source the unit did not build: an uninterpreted copy, Spread_T(x), which carries what x carries beyond its declared fields
     const render = (fs) => { // the fields in source order, a later key winning over an earlier one (a computed key may repeat a named one)
       const seen = new Map(); for (const [k, v] of fs) seen.set(k, v); const list = [...seen];
       if (base !== null) return list.length ? `${base}.(${list.map(([k, v]) => `${dn(k)} := ${outerParens(v)}`).join(', ')})` : base;

@@ -10,30 +10,29 @@ declared `Get_`). On the base 9d6229a, against the fields copied by hand, both l
 `{ ...s, a: s.a + 1 }` of `Bag { a; b; [k: string]: unknown }` (lane B WITNESS, input holding `k0`), `{ a: 1, ...s,
 b: s.b }` with `a?: number` (lane B WITNESS, `a: undefined` overwrites) and `{ ...s }` of a plain record.
 
-The reading: a record copy reads only keys the unit built. One predicate, `copySourceWhy` (common.mjs), read by the lint
-(rule `spread-source`, on a spread member and on each source of `Object.assign` onto a literal), the value reading
-(`objectLit`, its backstop) and the heap core (`coreUnit`). A source is built when it is an object literal of named or
-shorthand members (its keys are its text), or a `const` of the same function whose initializer is built and which the
-function uses only to read or write a declared field (`o.f`, `o.f = v`) or to spread again: no call, return, argument,
-element access, `delete` or shorthand member hands it on, so no code adds a key. The record spread comes first in its
-literal (a later one writes over the members before it), and a built copy holds no key the literal's record type does
-not declare. A dictionary source (no declared field, a string index) holds every key it carries in both readings
-(`DictMerge`, the core's dictionary cell) and is read as before.
+The invariant: a copy carries everything its source carries, known or not. One predicate, `copySource` (common.mjs),
+read by the lint (rule `spread-source`), the value reading (`objectLit`) and the heap core. A source the unit built (an
+object literal of named members, or a `const` of the function built from one and used only for field reads, field
+writes or another spread) is read by its keys, as before. Any other record source is an uninterpreted copy,
+`spread_copy_T(x)`, updated by the members written after it: two sides copying the same value prove, and the fields
+copied by hand never do. No lemma says a field of the copy equals the source's: a record value holds its declared
+fields alone, so equal fields would make the copy equal the source, and the hand copy `T(s.a, s.b)` equal to it too (the
+general hole `return s` against `return { a: s.a, b: s.b }`, the open-record datatype row). A field read through a copy
+therefore stays unproved (object_methods record_refactor). The heap core leaves such a copy to the value lane (a cell
+holds declared fields alone).
 
 ```
-// const base = { a: x, b: y }; return { ...base, b: y + "!" }   (pair heap_3, unit built)
-var (hw_, r0_) := Alloc_R_d812e7b6(hw_, x, y);
-var base := r0_;
-var (hw_, r1_) := Alloc_R_d812e7b6(hw_, Get_R_d812e7b6_a(hw_, base), (y + "!"));
+// return { ...s, a: n }   (pair heap_3, unit set_a, value lane, both sides)
+ext_spread_copy_Bag_Bag(s).(a := n)
 ```
 
-Refused (escape spread_source): a record spread of a parameter, field, `this`, module constant or call result, a record
-spread after other members, and `Object.assign({}, s)` of such a source.
+Refused, where the term cannot be formed (escape spread_source): a record spread after other members, a built copy
+holding a key its literal's type does not declare, and `Object.assign` onto a literal from a source the unit did not
+build (the call is read as a function of its arguments' values, which hold declared fields alone; two sources are a
+later spread).
 
-Lane B: `exec/spec.mjs` draws keys a type does not declare only for a record with an index signature (since 36807a8),
-so the open-record unit witnesses and a plain record parameter is PASS-bounded. A record parameter needs the same draw
-for lane B to witness the plain case (an undeclared key on a record that reaches a spread, `Object.assign`, for-in or
-`Object.keys`); this lane does not edit exec.
+Lane B: `exec/spec.mjs` draws undeclared keys only on a record with an index signature, so copy_bag witnesses and
+copy_rec is PASS-bounded. The open-record row needs the same draw for a plain record parameter (zero to one extra key).
 
 ## 2. A node read through a key, tested for presence
 

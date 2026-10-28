@@ -1,6 +1,36 @@
 {
- "scope": ["built", "rename", "clear", "mark_read", "touch"],
- "equal": {"built": true, "rename": true, "clear": true, "mark_read": false, "touch": true},
- "why": "heap-3 (design/heap-3.md). built: a spread of a const the function built from a literal reads that literal's keys, so it equals the fields written out. rename, clear: a node read through a key is the node when the key is owned, Object.prototype's member (truthy) for a prototype name, and undefined otherwise; the test reads DictIn_, a plain field write through a foreign member is one transition the same on both sides, so the guard and the branch around the write are equal, and === undefined equals == null (the values are nodes, never null). mark_read: dropping the guard makes an absent key throw at the write (lane B WITNESS on an empty dictionary); the lemma does not hold. touch: untouched.",
- "b": {"built": "PASS-bounded", "rename": "PASS-bounded", "clear": "PASS-bounded", "markRead": "WITNESS", "touch": "PASS-bounded"}
+ "scope": [
+  "built",
+  "rename",
+  "clear",
+  "mark_read",
+  "touch",
+  "copy_bag",
+  "bump_bag",
+  "copy_rec",
+  "set_a"
+ ],
+ "equal": {
+  "built": true,
+  "rename": true,
+  "clear": true,
+  "mark_read": false,
+  "touch": true,
+  "copy_bag": false,
+  "bump_bag": false,
+  "copy_rec": false,
+  "set_a": true
+ },
+ "why": "heap-3 (design/heap-3.md). built: a spread of a const the function built from a literal reads that literal's keys, so it equals the fields written out. rename, clear: a node read through a key is the node when the key is owned, Object.prototype's member (truthy) for a prototype name, and undefined otherwise; the test reads DictIn_, a plain field write through a foreign member is one transition the same on both sides, so the guard and the branch around the write are equal, and === undefined equals == null (the values are nodes, never null). mark_read: dropping the guard makes an absent key throw at the write (lane B WITNESS on an empty dictionary); the lemma does not hold. touch: untouched. copy_bag, bump_bag, copy_rec: a spread of a value the function did not build is an uninterpreted copy Spread_T(s) (it carries what s carries beyond its declared fields), never equal to the fields copied by hand: not proved (on the base 9d6229a all three were proved); lane B witnesses the open record (k0 drawn) and finds nothing on the plain record (copy_rec: it draws no undeclared key on a plain record parameter, the draw the open-record datatype row needs). set_a: the same copy on both sides is proved.",
+ "b": {
+  "built": "PASS-bounded",
+  "rename": "PASS-bounded",
+  "clear": "PASS-bounded",
+  "markRead": "WITNESS",
+  "touch": "PASS-bounded",
+  "copyBag": "WITNESS",
+  "bumpBag": "WITNESS",
+  "copyRec": "PASS-bounded",
+  "setA": "PASS-bounded"
+ }
 }

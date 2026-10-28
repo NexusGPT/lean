@@ -9,6 +9,15 @@ export function built(x: number, y: string): Rec {
   return { ...base, b: y + "!" };
 }
 
+// an open record copied by a spread: an uninterpreted copy of s, which carries what s carries beyond its fields
+export interface Bag { a: number; b: string; [k: string]: unknown }
+export function copyBag(s: Bag): Bag { return { ...s }; }
+export function bumpBag(s: Bag): Bag { return { ...s, a: s.a + 1 }; }
+// a plain record copied by a spread
+export function copyRec(s: Rec): Rec { return { ...s }; }
+// the same copy on both sides
+export function setA(s: Bag, n: number): Bag { return { ...s, a: n }; }
+
 // a node read through a key, guarded by its truthiness
 export function rename(box: Inbox, id: string, title: string): void {
   const chat = box.chats[id];

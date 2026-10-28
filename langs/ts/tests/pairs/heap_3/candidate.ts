@@ -8,6 +8,13 @@ export function built(x: number, y: string): Rec {
   return { a: x, b: y + "!" };
 }
 
+// the declared fields copied by hand: the extra keys are dropped
+export interface Bag { a: number; b: string; [k: string]: unknown }
+export function copyBag(s: Bag): Bag { return { a: s.a, b: s.b }; }
+export function bumpBag(s: Bag): Bag { return { a: s.a + 1, b: s.b }; }
+export function copyRec(s: Rec): Rec { return { a: s.a, b: s.b }; }
+export function setA(s: Bag, n: number): Bag { return { ...s, a: n }; }
+
 // the guard turned into a branch around the write
 export function rename(box: Inbox, id: string, title: string): void {
   const chat = box.chats[id];

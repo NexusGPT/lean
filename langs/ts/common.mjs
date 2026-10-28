@@ -1345,7 +1345,7 @@ export function copySourceWhy(checker, src, site = null) {
     w(fn);
     return only;
   };
-  if (!built(src, 0)) return 'a value of a record type may carry keys its type does not name, and the copy takes them all; spread a literal, or a const this function builds from a literal, or copy the fields by name (`{ a: x.a, b: x.b }`)';
+  if (!built(src, 0)) return COPY_NOT_BUILT;
   const lit = site && ts.isSpreadAssignment(site) ? site.parent : null;
   const ctx = lit ? checker.getContextualType(lit) : null;
   const target = ctx && (ctx.flags & TF.Union ? ctx.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [ctx]);
@@ -1354,4 +1354,20 @@ export function copySourceWhy(checker, src, site = null) {
     if (extra) return `the copy holds the key \`${extra}\`, which ${checker.typeToString(target[0])} does not declare`;
   }
   return null;
+}
+const COPY_NOT_BUILT = 'a value of a record type may carry keys its type does not name, and the copy takes them all; spread a literal, or a const this function builds from a literal, or copy the fields by name (`{ a: x.a, b: x.b }`)';
+// The invariant a record copy keeps: a copy carries everything its source carries, known or not. A source the unit built
+// is read by its keys ('built'); any other record source is an uninterpreted copy of it, `Spread_T(x)`, updated by the
+// members written after it ('copy'): two sides copying the same value prove, and a copy of the declared fields by hand
+// never does, since nothing says what the copy holds beyond its source (a field of the copy equal to the source's would
+// make the copy equal to the hand copy: a record value holds its declared fields alone). The term needs the spread first
+// in its literal, and a built copy holds no key the literal's record type does not declare ('refuse', with the reason).
+// A source that is no record (a dictionary, an array, a primitive) is 'plain'. One test for the lint, objectLit, the core.
+export function copySource(checker, src, site = null) {
+  const TF = ts.TypeFlags; let x = src; while (ts.isParenthesizedExpression(x)) x = x.expression;
+  let t = null; try { t = checker.getTypeAtLocation(x); } catch { return { kind: 'refuse', why: 'the copied value has no type' }; }
+  const record = !!t && (t.flags & TF.Union ? t.types : [t]).some((y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0);
+  if (!record) return { kind: 'plain' };
+  const why = copySourceWhy(checker, src, site);
+  return why === null ? { kind: 'built' } : why === COPY_NOT_BUILT ? { kind: 'copy' } : { kind: 'refuse', why };
 }
