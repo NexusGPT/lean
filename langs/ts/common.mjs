@@ -1723,9 +1723,12 @@ export function payloadStatement(checker, n, id) {
   let sig = null; try { sig = checker.getSignatureFromDeclaration(unit); } catch { return null; }
   const rt = sig ? checker.getReturnTypeOfSignature(sig) : null;
   if (!rt || rt.flags & (ts.TypeFlags.Void | ts.TypeFlags.Undefined | ts.TypeFlags.Never)) return null;
-  let s = null; try { s = checker.getSymbolAtLocation(id); } catch { return null; }
-  const d = s?.valueDeclaration;
-  if (!d || fnOf(d) !== unit || !(ts.isParameter(d) || ts.isVariableDeclaration(d)) || !ts.isIdentifier(d.name)) return null;
+  let s = null;
+  if (ts.isIdentifier(id)) {
+    try { s = checker.getSymbolAtLocation(id); } catch { return null; }
+    const d = s?.valueDeclaration;
+    if (!d || fnOf(d) !== unit || !(ts.isParameter(d) || ts.isVariableDeclaration(d)) || !ts.isIdentifier(d.name)) return null;
+  } else if (!pureReadOf(checker, id, unit, true)) return null; // `m.get(k)!`, `xs.find(p)!`: the operand is read before the statement, so it must read only
   let st = n; while (st && !ts.isStatement(st)) { if (ts.isFunctionLike(st)) return null; st = st.parent; }
   if (!st || !(ts.isReturnStatement(st) || ts.isExpressionStatement(st) || ts.isVariableStatement(st) || (ts.isIfStatement(st) && n.pos >= st.expression.pos && n.end <= st.expression.end))) return null;
   for (let p = st.parent; p !== unit.body; p = p.parent) if (!p || !(ts.isBlock(p) || ts.isIfStatement(p))) return null;
@@ -1733,7 +1736,39 @@ export function payloadStatement(checker, n, id) {
   let writes = false;
   const w = (x) => { if (writes) return; if (ts.isIdentifier(x) && writeTarget(x)) { let t = null; try { t = checker.getSymbolAtLocation(x); } catch { /* none */ } if (t === s) writes = true; } if (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) { let o = x.operand; while (ts.isParenthesizedExpression(o)) o = o.expression; if (ts.isIdentifier(o) && checker.getSymbolAtLocation(o) === s && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(x.operator)) writes = true; } ts.forEachChild(x, w); };
   w(head);
+  if (!ts.isIdentifier(id) && !pureReadOf(checker, head, unit, false)) return null; // the statement neither writes nor calls out, so reading the operand first reads the same value
   return writes ? null : st;
+}
+// an expression that only reads: identifiers of the unit or the module, literals, operators other than writes, property
+// reads that are not accessors, and calls of the reading methods get, has, at, find, findLast, findIndex, includes,
+// indexOf on a Map or an array (a callback an arrow with an expression body that only reads); `top` asks for one such call
+function pureReadOf(checker, e, unit, top) {
+  const READS = new Set(['get', 'has', 'at', 'find', 'findLast', 'findIndex', 'includes', 'indexOf']);
+  let ok = true;
+  const w = (x) => {
+    if (!ok) return;
+    if (ts.isArrowFunction(x)) { if (ts.isBlock(x.body) || x.parameters.some((p) => !ts.isIdentifier(p.name))) ok = false; else w(x.body); return; }
+    if (ts.isFunctionLike(x) || ts.isNewExpression(x) || ts.isAwaitExpression(x) || ts.isYieldExpression(x) || ts.isDeleteExpression(x) || ts.isTaggedTemplateExpression(x) || ts.isClassExpression(x)) { ok = false; return; }
+    if (ts.isBinaryExpression(x) && x.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && x.operatorToken.kind <= ts.SyntaxKind.LastAssignment) { ok = false; return; }
+    if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(x.operator)) { ok = false; return; }
+    if (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) {
+      let ps = null; try { ps = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(x) ? x.name : x.argumentExpression); } catch { /* none */ }
+      if (ps?.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d))) { ok = false; return; }
+    }
+    if (ts.isCallExpression(x)) {
+      const c = x.expression;
+      if (!ts.isPropertyAccessExpression(c) || !READS.has(c.name.text) || x.questionDotToken || c.questionDotToken) { ok = false; return; }
+      let rt = null; try { rt = checker.getTypeAtLocation(c.expression); } catch { ok = false; return; }
+      const nm = (rt?.aliasSymbol ?? rt?.getSymbol?.())?.getName?.();
+      if (!(isArrayLike(checker, rt) || nm === 'Map' || nm === 'ReadonlyMap')) { ok = false; return; }
+      w(c.expression); x.arguments.forEach(w); return;
+    }
+    ts.forEachChild(x, w);
+  };
+  let e0 = e; while (ts.isParenthesizedExpression(e0)) e0 = e0.expression;
+  if (top && !ts.isCallExpression(e0)) return false;
+  w(e);
+  return ok;
 }
 // where an absence-carried let's option is carried: declared in a unit's own flow (no try, catch or switch around it, the
 // unit neither async nor a generator); the translator's fault and promise paths do not carry it

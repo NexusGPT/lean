@@ -2112,8 +2112,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         // the option's payload where the statement's test (absenceGuard) showed it present; anywhere else refused
         const id = payloadRead(checker, n);
         if (id) {
-          if (!guardedReads.has(n) || !ts.isIdentifier(id)) fail(n, 'non-null-assertion: `x!` on a value that may be null or undefined, outside a statement lean tests first');
-          return `${absenceBinding(id)}.value`;
+          if (!guardedReads.has(n)) fail(n, 'non-null-assertion: `x!` on a value that may be null or undefined, outside a statement lean tests first');
+          return `${operandNames.get(n) ?? absenceBinding(id)}.value`; // a read operand (m.get(k), xs.find(p)) was bound before the test
         }
         if (nonNullOnAbsent(checker, n) || isOptional(t)) fail(n, 'non-null-assertion: `x!` on a value that may be null or undefined');
         return expr(n.expression);
@@ -4955,23 +4955,28 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // a payload read (`x!` on a value that may be absent, a read of an absent let TypeScript did not check) in the unit's own
   // statement flow: the option is tested before the statement; where it is absent the unit's result is one opaque value
   // named by the whole file's text, so two different files never agree there and the same file agrees with itself
-  const guardedReads = new Set(), guardedStmts = new WeakSet();
+  const guardedReads = new Set(), guardedStmts = new WeakSet(), operandNames = new Map();
   function absenceBinding(id) { const sym = checker.getSymbolAtLocation(id); const D = letTypeOf(sym) ?? dtype(symType(sym, id), id); if (!optionalD(D)) fail(id, 'non-null-assertion: the value read is not held as an option here'); return dn(id.text); }
   function absenceGuard(s, u, again) {
     if (guardedStmts.has(s)) return null;
     const head = ts.isIfStatement(s) ? s.expression : (ts.isReturnStatement(s) || ts.isExpressionStatement(s) || ts.isVariableStatement(s)) ? s : null;
     if (!head) return null;
     const reads = [];
-    const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isNonNullExpression(x) || ts.isIdentifier(x)) { const id = payloadRead(checker, x); if (id && ts.isIdentifier(id) && payloadStatement(checker, x, id) === s) reads.push([x, id]); } ts.forEachChild(x, w); };
+    const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isNonNullExpression(x) || ts.isIdentifier(x)) { const id = payloadRead(checker, x); if (id && payloadStatement(checker, x, id) === s) reads.push([x, id]); } ts.forEachChild(x, w); };
     w(head);
     if (!reads.length || loopCtx.length || yieldState || u.isAsync) return null; // each read then fails where it is read
     const D = dtype(retType(u), u.node);
     if (D === 'Unit') return null;
-    const names = [...new Set(reads.map(([, id]) => absenceBinding(id)))];
+    const binds = [];
+    const names = [...new Set(reads.map(([x, id]) => {
+      if (ts.isIdentifier(id)) return absenceBinding(id);
+      const OD = dtype(typeOf(id), id); if (!optionalD(OD)) fail(x, 'non-null-assertion: the value read is not held as an option here');
+      const v = `ab${tempCount++}_`; binds.push(capture(() => `var ${v}: ${OD} := ${outerParens(expr(id))};`)); operandNames.set(x, v); return v; // a read-only operand, read once before the statement (payloadStatement: the statement writes and calls nothing else)
+    }))];
     for (const [x] of reads) guardedReads.add(x);
     guardedStmts.add(s);
     const absent = `${external(`absent_read_${mangle(D)}_${createHash('sha256').update(sf.text).digest('hex').slice(0, 16)}`, [], D)}()`;
-    return `if ${names.map((v) => `!${v}.Some?`).join(' || ')} then\n${indentBlock(wrapLet(retIn(absent)))}\nelse\n${indentBlock(wrapLet(again()))}`;
+    return `${binds.map((b) => `${b}\n`).join('')}if ${names.map((v) => `!${v}.Some?`).join(' || ')} then\n${indentBlock(wrapLet(retIn(absent)))}\nelse\n${indentBlock(wrapLet(again()))}`;
   }
   function tr(list, fin, u) {
     if (!list.length) return fin();

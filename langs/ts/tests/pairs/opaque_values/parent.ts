@@ -15,5 +15,9 @@ export function optPlus(x?: number): number { return x! + 1; }
 export function mapAbsent(m: Map<string, number>, k: string): number { const g = m.get(k); return g!; }
 // `x!` after the test that narrows it
 export function narrowed(x?: number): number { if (x === undefined) return 0; return x! + 1; }
+// a Map read and a find asserted present inside a statement that only reads: the operand is read once, tested, then its payload
+export function mapPresent(x: number): number { const m = new Map<string, number>([["a", x]]); return m.get("a")! * 2; }
+export function findPresent(x: number): number { const xs = [x, x + 1]; return xs.find((y) => y > x)! - x; }
+export function mapDirect(m: Map<string, number>, k: string): number { return m.get(k)!; }
 // untouched
 export function plain(x: number): number { return x + 1; }

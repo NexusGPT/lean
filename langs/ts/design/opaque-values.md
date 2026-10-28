@@ -15,13 +15,17 @@ function makes (`let v: number; const set = () => { v = x; }; if (x > 1000) set(
   or a write inside a nested function). Its Dafny type is `Option<T>` (`Nullish<T>` when T admits null), starting at
   `None` (`Nullish.Undef`); a write is `Some(e)`. A local procedure's write is spliced at its call (local-procedures.md),
   so the option holds exactly what the flow wrote.
-- `payloadRead(n)`: `x!` on a parameter or local whose type admits absence, or a read of a carried let TypeScript did
-  not check whose type there excludes absence. The value read must be present.
+- `payloadRead(n)`: `x!` on a value whose type admits absence, or a read of a carried let TypeScript did not check
+  whose type there excludes absence. The value read must be present.
 - `payloadStatement(n)`: the statement whose start tests that read: a return, a declaration, an expression statement
   or an if condition of the unit's own flow (reached through blocks and if branches only), in a unit that is neither
-  async nor a generator and returns a value, and that does not write the variable.
+  async nor a generator and returns a value, and that does not write the variable. The operand is a parameter or local
+  of the unit, or a read-only call (`m.get(k)`, `xs.find(p)`: get, has, at, find, findLast, findIndex, includes or
+  indexOf on a Map or an array, a callback an arrow with an expression body) in a statement that writes and calls
+  nothing else, so reading the operand once before the statement reads the value the statement would read.
 
-The translator (`absenceGuard`, before `tr`) tests the option before such a statement. Where it is present the read is
+The translator (`absenceGuard`, before `tr`) binds a read-only operand (`var ab0_: Option<int> := ...;`) and tests
+the option before such a statement. Where it is present the read is
 its payload (`v.value`, which Dafny checks); where it is absent the unit's result is one bodiless value named by the
 whole file's text, `absent_read_<T>_<sha256 of the file>`. Two different files never share that name, so a lemma whose
 absent path is reachable is not proved; the same file agrees with itself. lateInit (parent), on its absent path:
@@ -45,8 +49,9 @@ own flow, which the option holds as Some. A cost, not a risk: on the absent path
 
 ## What stays refused
 
-- non-null-assertion: `x!` whose operand is not a parameter or local (`m.get(k)!`, `xs.find(p)!`, `u.name!.length`),
-  and `x!` outside a tested statement (in a loop, a try, a switch, a nested function). Escape
+- non-null-assertion: `x!` whose operand is neither a parameter or local nor a read-only call (`u.name!.length`,
+  `f(x)!`), `x!` in a statement that also calls or writes (`f(m.get(k)!)`), and `x!` outside a tested statement (in a
+  loop, a try, a switch, a nested function). Escape
   `fixtures/escapes/ts/opaque_values.ts` (`x!` in a loop), `non_null_assertion.ts` (`u.name!.length`).
 - definite-assignment: a carried let declared inside a try, a switch, an async or a nested function, and a payload
   read of it outside a tested statement (a read in a nested function). Escape `definite_assignment.ts`.
