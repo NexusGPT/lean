@@ -56,9 +56,11 @@ export const knownInput = (spec, i) => { const g = i - (spec.walkFrom ?? 0); ret
 // after the inputs that lean on 0, 1 and -1): in it the first number leaf, walked or drawn, is replaced by a special
 // value, and every later one too (one time in two in every other special-number input), NaN, then Infinity, then
 // -Infinity, turning from one special-number input to the next; the decisions use a stream of their own, so every
-// other value of every input is the one drawn before
+// other value of every input is the one drawn before. Negative zero is the fourth special value (6.1.6.1: a number
+// of its own, told from zero by Object.is and by a division, design/signed-zero.md): the fourth special-number input
+// (generated input 15) and every fourth after it start from it
 export const SPECIAL = 4;
-const NUM_SPECIAL = [NaN, Infinity, -Infinity];
+const NUM_SPECIAL = [NaN, Infinity, -Infinity, -0];
 // whether a spec admits a number of any value: a number, or a union with a number option (a literal type does not)
 const admitsNumber = (spec) => !!spec && (spec.kind === 'number' || (spec.kind === 'union' && spec.options.some((o) => o && o.kind === 'number')));
 
