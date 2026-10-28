@@ -28,7 +28,7 @@ const LIBRARY_RESULT_MORE = {
   'Array.from': 'fresh', 'Array.of': 'fresh', 'Object.keys': 'fresh', 'Object.values': 'fresh', 'Object.entries': 'fresh', 'Object.fromEntries': 'fresh', 'Object.create': 'fresh', 'JSON.parse': 'fresh', 'Promise.all': 'fresh', 'Promise.allSettled': 'fresh',
   'Array.prototype.find': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
 };
-import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText } from '../library-rows.mjs';
+import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText, memberRow, freshRegexFlags, regexNeverAdvanced } from '../library-rows.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
@@ -1020,7 +1020,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if ((name === 'shift' || name === 'reverse' || name === 'splice' || name === 'sort' || name === 'pop') && isArrayExpr(r)) { // the in-place rows of the library table, as statements whose result is dropped
         if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
         if (name === 'pop' && e.arguments.length) v(e, 'unsupported-call', 'pop takes no argument');
-        if (name === 'sort') { const cb = e.arguments[0]; if (e.arguments.length !== 1 || !ts.isArrowFunction(cb) || cb.parameters.length !== 2) return v(e, 'unsupported-call', 'sort as a statement needs one comparator, an arrow of two parameters (the default order compares strings)'); return callback(cb, 2); }
+        if (name === 'sort') { const cb = e.arguments[0]; if (e.arguments.length !== 1 || !ts.isArrowFunction(cb) || cb.parameters.length !== 2) return v(e, 'unsupported-call', memberRow('sort-default-statement').message()); return callback(cb, 2); }
         if ((name === 'shift' || name === 'reverse') && e.arguments.length) v(e, 'unsupported-call', `${name} takes no argument`);
         if (name === 'splice' && (e.arguments.length < 2 || e.arguments.some(ts.isSpreadElement))) v(e, 'unsupported-call', 'splice as a statement needs a start, a count and plain items');
         return e.arguments.forEach((a) => expr(a));
@@ -1654,6 +1654,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       expr(recv);
       if (parts.every(isPromiseT) && ['then', 'catch', 'finally'].includes(name)) return argsOf(e); // a promise chain: an outside call; its handlers are opaque callbacks
       if (parts.every(isRecordish)) return argsOf(e); // a method of a record type (an interface with methods, a class instance): uninterpreted, keyed by the type
+      if (name === 'toString' && !e.arguments.length) return v(e, 'unsupported-call', memberRow('tostring-object').message(checker.typeToString(rt)));
+      if (parts.length > 1) return v(e, 'unsupported-call', memberRow('method-on-union').message(name, checker.typeToString(rt)));
       return v(e, 'unsupported-call', `method .${name}() on ${checker.typeToString(rt)} is outside the subset`);
     }
     if (e.expression.kind === K.SuperKeyword && currentClass && currentFn && ts.isConstructorDeclaration(currentFn)) return argsOf(e); // `super(args)` in a constructor: the parent's constructor on this handle, a transition
@@ -1671,11 +1673,11 @@ export function lintFile(file, ranges = null, opts = {}) {
     const admit = () => { expr(recv); e.arguments.forEach((a) => expr(a)); return true; };
     if (arr && ARRAY_VALUE_MUTATORS.has(name)) {
       if (!noSpread() || (name !== 'splice' && e.arguments.length)) return refuse('unsupported-call', name === 'splice' ? 'splice as a value takes plain arguments' : `${name} takes no argument`);
-      if (e.flags & ts.NodeFlags.OptionalChain) return refuse('unsupported-call', `.${name}() in an optional chain changes a receiver that may be absent; check it first`);
+      if (e.flags & ts.NodeFlags.OptionalChain) return refuse('unsupported-call', memberRow('optional-chain-mutator').message(name));
       if (freshArray(checker, recv, isGlobal)) return admit(); // nobody else holds the receiver: only the value is read
       const r = unparenX(recv);
       const o = ts.isIdentifier(r) ? declOf(r) : null;
-      if (!o || o.kind !== 'local') return refuse('unsupported-call', `.${name}() as a value changes \`${recv.getText(sf).slice(0, 40)}\`; call it on a local array or on a fresh one`);
+      if (!o || o.kind !== 'local') return refuse('unsupported-call', memberRow('world-field-mutator').message(name, recv.getText(sf).slice(0, 40)));
       if (isParam(o.decl)) return refuse('param-mutation', `.${name}() as a value changes the parameter \`${r.text}\`; copy it to a local first`);
       if (aliasHere(o.decl, e)) return refuse('alias-mutation', `\`${r.text}\` is another name for a value this function was handed; copy it first`);
       if (!ownedHere(o.decl) || callbackStack.length || forEachDepth) return refuse('closure-mutation', `.${name}() as a value inside a callback changes \`${r.text}\`; use a for-of loop`);
@@ -1713,7 +1715,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (LOCALE_READS.has(name) && (str || parts.every((t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike))))) {
       if (str && name === 'toLocaleString') return false;
       if (!str && name !== 'toLocaleString') return false;
-      if (callbackStack.length) return refuse('unsupported-call', `.${name}() reads the host's locale (a world read); call it outside the callback`);
+      if (callbackStack.length && !callbackStack.every((c) => loopCallbacks.has(c))) return refuse('unsupported-call', memberRow('locale-in-callback').message(name)); // every enclosing callback is a loop body, so the transitions run in index order
       if (!noSpread()) return refuse('unsupported-call', `.${name}() takes plain arguments`);
       return admit();
     }
@@ -1723,7 +1725,10 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (e.arguments.length !== 1 || !noSpread()) return refuse('unsupported-call', 'matchAll takes one pattern');
       if (ts.isRegularExpressionLiteral(a)) return a.text.slice(a.text.lastIndexOf('/') + 1).includes('g') ? admit() : refuse('unsupported-call', 'matchAll needs the g flag; without it the call throws a TypeError');
       if (isStr(tOf(a))) return admit();
-      return refuse('unsupported-call', "matchAll starts at its pattern's lastIndex, which another call may have moved; pass a regular expression literal with the g flag, or a string");
+      const fresh = freshRegexFlags(a, isGlobal); // `new RegExp(source, "g")`: a new object, lastIndex 0
+      if (fresh !== null) return fresh.includes('g') && !fresh.includes('y') ? admit() : refuse('unsupported-call', 'matchAll needs the g flag (and not y); without it the call throws a TypeError');
+      if (ts.isIdentifier(a) && regexNeverAdvanced(checker, a, sf, isGlobal) !== null) return admit(); // a const g pattern nothing in the file advances: lastIndex stays 0 (library-rows.mjs, row matchall-named)
+      return refuse('unsupported-call', memberRow('matchall-named').message());
     }
     if (str && name === 'search') return e.arguments.length === 1 && noSpread() ? admit() : refuse('unsupported-call', 'search takes one pattern');
     return false;
@@ -1824,6 +1829,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           else if (!(o.kind === 'global' && ['String', 'Number', 'Boolean', 'parseInt', 'parseFloat', 'isNaN', 'isFinite'].includes(f.text))) found = true;
         } else if (ts.isPropertyAccessExpression(f)) {
           const r = f.expression, t = nonNull(tOf(r));
+          if (LOCALE_READS.has(f.name.text) && t.length && t.every((x) => !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike)))) { found = true; return; } // a locale read is a world transition: the callback is a loop body (library-rows.mjs, LIBRARY_MEMBER_ROWS)
           const pureGlobal = ts.isIdentifier(r) && ['Math', 'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean'].includes(r.text) && declOf(r).kind === 'global' && !(r.text === 'Math' && f.name.text === 'random');
           if (!pureGlobal && !t.every((x) => isArrayLike(checker, x) || isStr(x) || isNum(x) || isSetT(x) || isMapT(x))) found = true;
           if (['map', 'filter', 'find', 'findIndex', 'some', 'every', 'flatMap', 'reduce', 'forEach'].includes(f.name.text) && n.arguments[0]) found ||= callbackNeedsLoop(n.arguments[0], seen);
@@ -2072,7 +2078,11 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (cs.length === 1 && isRecordish(cs[0]) && (checker.getPropertyOfType(cs[0], name) || hasStringIndex(cs[0]))) continue;
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)}: constrain the type parameter to one record declaring it`);
       }
-      if (!isRecordish(t)) return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
+      if (!isRecordish(t)) {
+        if (['push', 'unshift', 'pop', 'shift', 'splice'].includes(name) && isArrayLike(checker, t) && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.expression === e && ['apply', 'call', 'bind'].includes(e.parent.name.text)) return v(e, 'unsupported-member', memberRow('push-apply-value').message(name));
+        if ((name === 'index' || name === 'groups') && /^RegExp(Exec|Match)Array$/.test(t.symbol?.name ?? '')) return v(e, 'unsupported-member', memberRow(name === 'index' ? 'match-index' : 'match-groups').message());
+        return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
+      }
       if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length) return v(e, 'unsupported-member', `property .${name} is not declared on ${checker.typeToString(t)}`);
     }
   }

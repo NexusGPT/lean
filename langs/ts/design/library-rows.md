@@ -58,3 +58,98 @@ and a fill or reverse that changes nothing would need the `noopAllowed` case pus
 | n8n packages/nodes-base/nodes/Elastic/ElasticSecurity/GenericFunctions.ts:14 | tolerateTrailingSlash | `substr` | enters, translates |
 | driftbench tools/docs/check-links.ts:201 | unreachablePages | `queue.shift()` in a loop | enters; translation waits on its callee `markdownFiles` |
 | nexus .../htmlTemplates/utils/extractHandlebarsPlaceholders.ts:95 | extractHandlebarsPlaceholders | `matchAll(TOKEN_REGEX)` | stays out: a named pattern |
+
+### 2026-10-28 library members: the member table grows from the census
+
+**Construct.** The census at 6661006 names the library members the lint stops on: `unsupported-member` 209 findings on the
+nexus tree and 576 on the n8n tree, `unsupported-call` 162 and 162. `LIBRARY_MEMBER_ROWS` in `langs/ts/library-rows.mjs` is the
+table of the ten members with the most findings that no other lane owns. Each row has its census count, its ECMA-262
+section, `status` (`admitted` with its reading, or `refused` with the rule) and the message the lint prints; the lint takes
+the messages of these members from the table, so a refusal and its row cannot drift apart.
+
+| row | members | status | findings (nexus, n8n) |
+|---|---|---|---|
+| push-apply-value | `a.push.apply(a, b)`, `a.push.call(a, x)` | refused, `unsupported-member`; write `a.push(...b)` | 0, 234 |
+| tostring-object | `v.toString()` on a value that may be an object | refused, `unsupported-call`; narrow with `typeof` | 4, 55 |
+| locale-in-callback | `toLocaleLowerCase`, `toLocaleUpperCase`, `toLocaleString` in a map, filter, find, findIndex, some, every, flatMap or reduce callback | admitted, a transition per element | 8, 29 |
+| match-index | `m.index` of a global, exec-loop or matchAll match | refused, `unsupported-member`; the non-global literal match stays read | 24, 4 |
+| match-groups | `m.groups` | refused, `unsupported-member`; name the capture by position | 3, 25 |
+| method-on-union | `v.indexOf(x)` on `string | string[]` | refused, `unsupported-call`; narrow first | 0, 21 |
+| matchall-named | `s.matchAll(RE)` with a const g pattern nothing in the file advances, or `new RegExp(src, "g")` | admitted, uninterpreted | 15, 2 |
+| sort-default-statement | `c.sort()` as a statement | refused; write `c = [...c].sort()` | 3, 6 |
+| optional-chain-mutator | `c?.pop()`, `c?.shift()`, `c?.splice()` | refused | 4, 3 |
+| world-field-mutator | `this.items.shift()` as a value | refused | 5, 4 |
+
+**Readings and their ground.**
+- A locale read depends on the host's locale data (ECMA-402): a world read, the transition the translator already emits for
+  a locale read outside a callback. `map`, `filter`, `find`, `findIndex`, `some`, `every`, `flatMap` and `reduce` call their
+  callback once per element in index order, and `some`, `every`, `find` and `findIndex` stop at the deciding element. The translator
+  reads such a callback as a loop that threads the world (the effectful callback reading), so the lint only had to stop
+  refusing it. A locale read in a sort comparator, in a `.then` callback or in a callback nested in one of those stays
+  refused: the comparator's transitions have no defined order, and the translator refuses them too. `callbackNeedsLoop`
+  now counts a locale read as an effect, so the callback takes the loop-body checks (the parameter forms) the other
+  effectful callbacks take.
+- `matchAll` (22.1.3.14) copies its pattern and starts the copy at the original's `lastIndex`; it leaves the original
+  unchanged. `match` and `replace(All)` with the g flag set `lastIndex` to 0 first and end at 0, `split` builds a copy and
+  `search` saves and restores it. A `const` g pattern that is a fresh literal or `new RegExp(source, "<flags>")`, that the
+  file does not export, and whose every mention in the file is the first argument of one of those six String methods keeps
+  `lastIndex` 0, so the matches are one function of the pattern and the string, read through the same uninterpreted
+  `matchAll` the literal form uses. `regexNeverAdvanced` decides it.
+
+```
+var (wld, t0_) := ext_Module_file_get_TOKEN_84vwit_World(wld);
+var (wld, out) := tokens_loop0(ext_Ext_RegExpStringIterator_to_seq_..(ext_call_args_str_matchAll_string_Ext_RegExp(html, t0_)), 0, wld, out);
+```
+
+**What stays refused, and why.**
+- A pattern that is a parameter, an imported name, an exported const, or any name that `exec`, `test` or a `lastIndex`
+  write touches: its `lastIndex` is state the unit does not own (`library_matchall_named`, `library_members_matchall_exec`,
+  `library_members_matchall_exported`).
+- `c?.pop()`: the translator reads it as an uninterpreted call on the present value and does not rebind `c` (probe: a
+  reduced unit whose lint was relaxed translated, and its Dafny kept the old `c`), so a later read of `c` would see the old
+  array. `this.items.shift()` as a value: the array lives in the world and the translator rebinds a local only.
+- `toString()` on an object reads `Object.prototype.toString` or the object's own method (validated: `{}`, an object with
+  its own `toString`, and `Object.create(null)` which throws). A prototype the unit does not own stays refused.
+- `a.push.apply(a, b)` is `a.push(...b)` (validated on four inputs) but the translator rebinds only the receiver of a
+  push statement, so the function-value form needs a case in `translate.mjs`, which this lane does not own.
+- Match fields: `m.index` is a function of the pattern and the string for a non-global literal only; `m.groups` is an
+  object the match builds, which the sequence reading of a match does not carry.
+
+**Soundness.** An admitted row never makes two different behaviours equal: the locale read is a transition keyed by the
+value, so two runs under two locales are never equal; the `matchAll` reading is sound exactly when `lastIndex` stays 0,
+which the predicate checks over the whole file and the export list. The cases considered: a pattern advanced by `exec`
+in another unit of the file, an `export { RE }` and an `export const`, a script file whose top-level const is a global,
+a `y` flag, a pattern passed on as an argument or stored (all refused, fixtures above).
+
+**What lane B sees.** Real code on generated inputs: the locale read runs under the host's locale, so a change from lower
+case to upper case is a WITNESS (pair `library_members`, `lowerAll`); a change of what a match contributes
+(`wordLetters`) is a WITNESS. The refused rows are judged by lane B alone in `library_members_refused`: each changed use
+a WITNESS, each untouched use PASS-bounded.
+
+**Validation by run.** `tests/pairs/library_members/validate.mjs` runs each row on three inputs or more on the engine
+(`node validate.mjs --log <dir>`; the logs of this lane are in `results-library-members/validation/`).
+
+**Measure** (census at 6661006 against this lane; `node langs/ts/census.mjs <tree> --out <json> --report <md>`, runs in `results-library-members/`).
+
+| tree | inside the subset before | after | `unsupported-call` findings (units) before | after | `unsupported-member` findings (units) |
+|---|---|---|---|---|---|
+| nexus (26,520 units) | 23,753 | 23,758 | 162 (120) | 146 (109) | 209 (66), unchanged |
+| n8n (6,337 units) | 4,314 | 4,315 | 162 (101) | 161 (100) | 576 (351), unchanged |
+
+The `unsupported-member` findings are all refused rows (their messages now name the escape) or members of types that extend
+an unresolved module (express, typeorm, `@nexus/*`: `req.body`, `req.params`, `message.id`, about 330 of the 785); those
+units also carry TS2339, so the first rule that names them would only change.
+
+**Six real instances (W/work/bench, units that enter now and translate with `--core --fn`).**
+| file:line | unit | construct | now |
+|---|---|---|---|
+| nexus apps/backend/src/notification-preferences/infrastructure/templates/notification-template.service.ts:312 | NotificationTemplateService.renderWeeklyAgentPerformanceReport | `a.conversations.toLocaleString()` in a `.map` callback | enters, translates |
+| nexus apps/frontend/src/common/components/Pickers/PluginPicker/CategoryChips.tsx:62 | CategoryChips | `facet.count.toLocaleString()` in a `.map` callback of the JSX | enters, translates |
+| nexus apps/frontend/src/modules/AgentCreation/utils/documentExtractor.ts:34 | extractDocuments | `content.matchAll(uploadedDocumentsRegex)` | enters, translates |
+| nexus apps/frontend/src/modules/Analytics/export/inline-css-variables.ts:107 | collectCssVariableNames | `markup.matchAll(VAR_CALL)` | enters, translates |
+| nexus apps/frontend/src/modules/Playground/components/ChatMessage/DocumentPreviewCard.tsx:37 | extractDocumentLinks | `markdown.matchAll(DOCUMENT_URL_REGEX)` | enters, translates |
+| n8n packages/cli/src/services/curl.service.ts:224 | lowerCaseContentTypeKey | `key.matchAll(regex)`, a local `new RegExp(KEY, 'gi')` | enters, translates |
+
+Four stay out by the bound: n8n `packages/nodes-base/nodes/Jira/GenericFunctions.ts:220` (a locale read in a sort comparator),
+`ParameterPolicyRow.tsx:39` (its pattern is also run with `test`), `resolve-template.ts:17` (the pattern is exported) and
+`sandbox-url-extractor.ts:18` (the pattern comes from another file's function).
