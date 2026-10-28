@@ -1,0 +1,24 @@
+{
+ "identity": "4f775f5a44c445452bc5903289aa7e7eca2c657fd22b11e1e3c50a9d754bfa78",
+ "leanVersion": "1c55a2c94d2d07e20053c70d24c38d6221e2c819",
+ "rows": [],
+ "order": [
+  {
+   "group": "changed",
+   "units": []
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 0,
+  "total": 0
+ }
+}

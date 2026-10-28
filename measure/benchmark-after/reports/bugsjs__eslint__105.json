@@ -1,0 +1,769 @@
+{
+ "identity": "6752542a4bc3d9c6c4c40b9178c2b2578371f6b990e744e8d6a7d5994ba76330",
+ "leanVersion": "1c55a2c94d2d07e20053c70d24c38d6221e2c819",
+ "rows": [
+  {
+   "file": "lib/config/config-file.js",
+   "unit": "configMissingError",
+   "lines": [
+    192,
+    200
+   ],
+   "coverage": "refused:ts-strict",
+   "verdict": "ASK",
+   "laneB": "ASK",
+   "laneA": null,
+   "witness": null,
+   "reason": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_head_86139_config-file.js: ASK(CommonJS wrapper): require is not defined",
+   "advice": [
+    {
+     "line": 195,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'messageTemplate' does not exist on type 'Error'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 196,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'messageData' does not exist on type 'Error'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ]
+  },
+  {
+   "file": "lib/config/config-file.js",
+   "unit": "loadConfigFile",
+   "lines": [
+    209,
+    245
+   ],
+   "coverage": "refused:unsupported-member",
+   "verdict": "PASS-bounded",
+   "laneB": "PASS-bounded",
+   "laneA": null,
+   "witness": null,
+   "reason": "property .filePath is not declared on Object",
+   "advice": [
+    {
+     "line": 210,
+     "rule": "unsupported-member",
+     "msg": "property .filePath is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 210,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'filePath' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 216,
+     "rule": "unsupported-member",
+     "msg": "property .configName is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 216,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'configName' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 217,
+     "rule": "unsupported-member",
+     "msg": "property .configs is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 217,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'configs' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 217,
+     "rule": "unsupported-member",
+     "msg": "property .configName is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 217,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'configName' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ]
+  },
+  {
+   "file": "lib/config/config-file.js",
+   "unit": "getEslintCoreConfigPath",
+   "lines": [
+    368,
+    387
+   ],
+   "coverage": "refused:global-read",
+   "verdict": "ASK",
+   "laneB": "ASK",
+   "laneA": null,
+   "witness": null,
+   "reason": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_head_86139_config-file.js: ASK(CommonJS wrapper): require is not defined",
+   "advice": [
+    {
+     "line": 375,
+     "rule": "global-read",
+     "msg": "`__dirname` cannot be resolved",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 375,
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name '__dirname'.",
+     "do": "[migration] The project cannot resolve this import; the proof reads it as opaque."
+    },
+    {
+     "line": 383,
+     "rule": "global-read",
+     "msg": "`__dirname` cannot be resolved",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 383,
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name '__dirname'.",
+     "do": "[migration] The project cannot resolve this import; the proof reads it as opaque."
+    }
+   ]
+  },
+  {
+   "file": "lib/config/config-file.js",
+   "unit": "applyExtends",
+   "lines": [
+    399,
+    440
+   ],
+   "coverage": "refused:unsupported-member",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 0,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     "v537o",
+     "Hello, World! 2024-01-31 10:30"
+    ],
+    "parent": {
+     "outcome": {
+      "threw": {
+       "$error": "TypeError",
+       "message": "filePath.charAt is not a function"
+      }
+     },
+     "heap": {
+      "roots": [
+       {
+        "$fake": "arg0"
+       },
+       "v537o",
+       "Hello, World! 2024-01-31 10:30"
+      ],
+      "own": {},
+      "outcome": null,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg0.extends",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.extends",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.extends",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:path.isAbsolute",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.isAbsolute",
+       "args": [
+        {
+         "$fake": "arg0.extends"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "arg0.extends.charAt",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "threw": {
+       "$error": "TypeError",
+       "message": "parentPath.startsWith is not a function\nReferenced from: v537o"
+      }
+     },
+     "heap": {
+      "roots": [
+       {
+        "$fake": "arg0"
+       },
+       "v537o",
+       "Hello, World! 2024-01-31 10:30"
+      ],
+      "own": {},
+      "outcome": null,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg0.extends",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.extends",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.extends",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.extends.startsWith",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "where": {
+     "field": "outcome",
+     "lines": {
+      "kind": "completion",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_base_86139_config-file.js",
+       "start": 82,
+       "end": 82,
+       "text": "return path.isAbsolute(filePath) || !/\\w|@/.test(filePath.charAt(0));"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_head_86139_config-file.js",
+       "start": 434,
+       "end": 434,
+       "text": "throw e;"
+      }
+     }
+    },
+    "through": [
+     {
+      "callee": "getEslintCoreConfigPath",
+      "changed": true,
+      "path": [
+       "applyExtends",
+       "getEslintCoreConfigPath"
+      ],
+      "side": "candidate only"
+     },
+     {
+      "callee": "configMissingError",
+      "changed": true,
+      "path": [
+       "applyExtends",
+       "getEslintCoreConfigPath",
+       "configMissingError"
+      ],
+      "side": "candidate only"
+     },
+     {
+      "callee": "resolve",
+      "changed": true,
+      "path": [
+       "applyExtends",
+       "load",
+       "resolve"
+      ]
+     },
+     {
+      "callee": "loadConfigFile",
+      "changed": true,
+      "path": [
+       "applyExtends",
+       "load",
+       "loadConfigFile"
+      ]
+     }
+    ]
+   },
+   "reason": "property .extends is not declared on Object",
+   "advice": [
+    {
+     "line": 400,
+     "rule": "unsupported-member",
+     "msg": "property .extends is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 400,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'extends' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 403,
+     "rule": "unsupported-member",
+     "msg": "property .extends is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 403,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'extends' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 404,
+     "rule": "unsupported-member",
+     "msg": "property .extends is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 404,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'extends' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 411,
+     "rule": "param-assign",
+     "msg": "`parentPath` is a parameter of a callback or a local function; copy it to a local first",
+     "do": "[conditional: every use of the parameter after the copy, nested functions included, names the local, and the function does not read `arguments`] Copy the parameter to a local first (`let n = x`), then change the local. A parameter reassigned in the unit's own body is already read as that local; the copy is needed inside a callback, for a rest or generator parameter, for a parameter also changed in place, and when a closure reads it before a later write."
+    },
+    {
+     "line": 411,
+     "rule": "type-assertion",
+     "msg": "`parentPath` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "do": null
+    }
+   ],
+   "note": "input 0: outcome; lib/config/config-file.js:434"
+  },
+  {
+   "file": "lib/config/config-file.js",
+   "unit": "resolve",
+   "lines": [
+    497,
+    520
+   ],
+   "coverage": "refused:ts-strict",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 0,
+    "args": [
+     "plugin:",
+     "日本"
+    ],
+    "parent": {
+     "outcome": {
+      "returned": {
+       "configName": "plugin:",
+       "filePath": {
+        "$fake": "module:module._findPath()#1"
+       }
+      }
+     },
+     "heap": {
+      "roots": [
+       "plugin:",
+       "日本"
+      ],
+      "own": {},
+      "outcome": {
+       "$ref": 0
+      },
+      "anchors": 0,
+      "heap": [
+       {
+        "kind": "record",
+        "edges": {
+         "filePath": {
+          "$fake": "module:module._findPath()#1"
+         },
+         "configName": "plugin:"
+        }
+       }
+      ]
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "module:path.isAbsolute",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.isAbsolute",
+       "args": [
+        "plugin:"
+       ]
+      },
+      {
+       "op": "call",
+       "path": "module:debug()#3",
+       "args": [
+        "Attempting to resolve eslint-plugin-"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        "<root>/lib/config",
+        "../../../"
+       ]
+      },
+      {
+       "op": "call",
+       "path": "module:path-is-inside",
+       "args": [
+        "日本",
+        null
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.join",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        "日本"
+       ]
+      },
+      {
+       "op": "call",
+       "path": "module:path.join",
+       "args": [
+        {
+         "$fake": "module:path.resolve()#2"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.join",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.join",
+       "args": [
+        {
+         "$fake": "module:path.join()#1"
+        },
+        "node_modules"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:module._findPath",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:module._findPath",
+       "args": [
+        "eslint-plugin-",
+        [
+         false,
+         {
+          "$undefined": true
+         },
+         true
+        ]
+       ]
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "returned": {
+       "configFullName": "plugin:",
+       "configName": "plugin:",
+       "filePath": {
+        "$fake": "module:module._findPath()#1"
+       }
+      }
+     },
+     "heap": {
+      "roots": [
+       "plugin:",
+       "日本"
+      ],
+      "own": {},
+      "outcome": {
+       "$ref": 0
+      },
+      "anchors": 0,
+      "heap": [
+       {
+        "kind": "record",
+        "edges": {
+         "filePath": {
+          "$fake": "module:module._findPath()#1"
+         },
+         "configName": "plugin:",
+         "configFullName": "plugin:"
+        }
+       }
+      ]
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "module:path.isAbsolute",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.isAbsolute",
+       "args": [
+        "plugin:"
+       ]
+      },
+      {
+       "op": "call",
+       "path": "module:debug()#3",
+       "args": [
+        "Attempting to resolve eslint-plugin-"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        "<root>/lib/config",
+        "../../../"
+       ]
+      },
+      {
+       "op": "call",
+       "path": "module:path-is-inside",
+       "args": [
+        "日本",
+        null
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.join",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        "日本"
+       ]
+      },
+      {
+       "op": "call",
+       "path": "module:path.join",
+       "args": [
+        {
+         "$fake": "module:path.resolve()#2"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.join",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.join",
+       "args": [
+        {
+         "$fake": "module:path.join()#1"
+        },
+        "node_modules"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:module._findPath",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:module._findPath",
+       "args": [
+        "eslint-plugin-",
+        [
+         false,
+         {
+          "$undefined": true
+         },
+         true
+        ]
+       ]
+      }
+     ],
+     "pending": []
+    },
+    "where": {
+     "field": "outcome",
+     "lines": {
+      "kind": "completion",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_base_86139_config-file.js",
+       "start": 481,
+       "end": 481,
+       "text": "return { filePath, configName };"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_head_86139_config-file.js",
+       "start": 511,
+       "end": 511,
+       "text": "return { filePath, configName, configFullName };"
+      }
+     }
+    }
+   },
+   "reason": "TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.   Type 'undefined' is not assignable to type 'string'.",
+   "advice": [
+    {
+     "line": 510,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.   Type 'undefined' is not assignable to type 'string'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 515,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.   Type 'undefined' is not assignable to type 'string'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "note": "input 0: outcome; lib/config/config-file.js:511"
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "configMissingError",
+     "lines": [
+      192,
+      200
+     ]
+    },
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "loadConfigFile",
+     "lines": [
+      209,
+      245
+     ]
+    },
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "getEslintCoreConfigPath",
+     "lines": [
+      368,
+      387
+     ]
+    },
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "applyExtends",
+     "lines": [
+      399,
+      440
+     ]
+    },
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "resolve",
+     "lines": [
+      497,
+      520
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": [
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "load",
+     "lines": [
+      531,
+      578
+     ]
+    }
+   ]
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 6,
+  "total": 6
+ }
+}

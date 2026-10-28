@@ -1,0 +1,38 @@
+{
+ "identity": "a0af60eb17d1c972c7c746bc3fca3559b9a11ceffb2dff06f726f85d3d6b4a29",
+ "leanVersion": "1c55a2c94d2d07e20053c70d24c38d6221e2c819",
+ "rows": [
+  {
+   "file": "lib/core/scripts.js",
+   "unit": "(file)",
+   "lines": [
+    1,
+    1
+   ],
+   "coverage": "skipped:not-typescript",
+   "decision": "skipped",
+   "verdict": null,
+   "reason": "not-typescript",
+   "advice": []
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": []
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 0,
+  "total": 0
+ }
+}

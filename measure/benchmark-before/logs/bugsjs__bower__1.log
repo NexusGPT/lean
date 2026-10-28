@@ -1,0 +1,27 @@
+$ cd /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/base && node /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/base/langs/ts/pr.mjs --repo /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/bower --base 7b11a57c6f834641e3bd92b9781f262be1329700 --head 5bc735533ddfe381d655cd45d4a5e635bb056e1a --unit-seconds 120 --time-budget 900 --fresh --cache-dir /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/benchmark-before/cache/bugsjs__bower__1 --runs-dir /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/benchmark-before/lean-runs/bugsjs__bower__1 --json /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/benchmark-before/reports/bugsjs__bower__1.json --out /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/benchmark-before/reports/bugsjs__bower__1.md
+node:internal/modules/cjs/loader:1517
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module './vendor/typescript/lib/typescript.js'
+Require stack:
+- /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/base/langs/ts/common.mjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1517:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1617:12)
+    at require (node:internal/modules/helpers:153:16)
+    at file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/base/langs/ts/common.mjs:10:19
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/base/langs/ts/common.mjs'
+  ]
+}
+
+Node.js v24.18.0
+
+EXIT 1

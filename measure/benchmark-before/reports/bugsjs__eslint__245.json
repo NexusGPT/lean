@@ -1,0 +1,1235 @@
+{
+ "identity": "b24961464bd20a4d8272fbdb3c5fe655e7cde899c4cc327de5dda4bc6f3402d6",
+ "leanVersion": "fea80f883efbce3d83436d19a1a4b6778e4914a5",
+ "rows": [
+  {
+   "file": "lib/config/config-file.js",
+   "unit": "normalizePackageName",
+   "lines": [
+    416,
+    451
+   ],
+   "verdict": "PASS-bounded",
+   "coverage": "checked",
+   "certificate": {
+    "tool": "lean-ts v3",
+    "identity": "b24961464bd20a4d8272fbdb3c5fe655e7cde899c4cc327de5dda4bc6f3402d6",
+    "unit": "normalizePackageName",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_base_14171_config-file.js",
+     "sha256": "25516b9dffe72fc7"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_head_14171_config-file.js",
+     "sha256": "cecd7f7c5917e2ac"
+    },
+    "lanes": {
+     "B": {
+      "verdict": "PASS-bounded",
+      "reason": null,
+      "bound": {
+       "n": 100,
+       "seed": 1,
+       "ms": 2000,
+       "reached": {
+        "body": 100,
+        "guard": 0
+       },
+       "states": [
+        {
+         "input": 0,
+         "args": [
+          "\\",
+          "@wwQ/BO"
+         ]
+        },
+        {
+         "input": 1,
+         "args": [
+          "v213i",
+          "v8h8m"
+         ]
+        },
+        {
+         "input": 2,
+         "args": [
+          "vg34h",
+          "vju3f"
+         ]
+        },
+        {
+         "input": 3,
+         "args": [
+          " ",
+          "v68ln"
+         ]
+        },
+        {
+         "input": 4,
+         "args": [
+          "\\",
+          "vl95r"
+         ]
+        },
+        {
+         "input": 5,
+         "args": [
+          "\\",
+          "/"
+         ]
+        },
+        {
+         "input": 6,
+         "args": [
+          "vgy1k",
+          "-1"
+         ]
+        },
+        {
+         "input": 7,
+         "args": [
+          "\\",
+          "日本"
+         ]
+        },
+        {
+         "input": 8,
+         "args": [
+          "@l3g/FQ",
+          "\\"
+         ]
+        },
+        {
+         "input": 9,
+         "args": [
+          "\\",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         ]
+        },
+        {
+         "input": 10,
+         "args": [
+          "twelve-chars",
+          "Hello, World! 2024-01-31 10:30"
+         ]
+        },
+        {
+         "input": 11,
+         "args": [
+          "\\",
+          "/"
+         ]
+        },
+        {
+         "input": 12,
+         "args": [
+          "ve9d",
+          "/"
+         ]
+        },
+        {
+         "input": 13,
+         "args": [
+          "v4gl",
+          "v9lpw"
+         ]
+        },
+        {
+         "input": 14,
+         "args": [
+          "\\",
+          "v2cyq"
+         ]
+        },
+        {
+         "input": 15,
+         "args": [
+          "undefined",
+          "  padded  "
+         ]
+        },
+        {
+         "input": 16,
+         "args": [
+          "  padded  ",
+          "@A/"
+         ]
+        },
+        {
+         "input": 17,
+         "args": [
+          "a,b,c",
+          "/path/to/file.txt"
+         ]
+        },
+        {
+         "input": 18,
+         "args": [
+          "@Av9/Ev",
+          "@Av9/Ev"
+         ]
+        },
+        {
+         "input": 19,
+         "args": [
+          "user@example.com",
+          "@n/t"
+         ]
+        },
+        {
+         "input": 20,
+         "args": [
+          "",
+          "\\"
+         ]
+        },
+        {
+         "input": 21,
+         "args": [
+          "@",
+          "a"
+         ]
+        },
+        {
+         "input": 22,
+         "args": [
+          "\\",
+          "v72wk"
+         ]
+        },
+        {
+         "input": 23,
+         "args": [
+          " ",
+          "@p,O/OR"
+         ]
+        },
+        {
+         "input": 24,
+         "args": [
+          "viagv",
+          "x y"
+         ]
+        },
+        {
+         "input": 25,
+         "args": [
+          "0",
+          "vl88u"
+         ]
+        },
+        {
+         "input": 26,
+         "args": [
+          "\\",
+          "v"
+         ]
+        },
+        {
+         "input": 27,
+         "args": [
+          "v82yg",
+          "@"
+         ]
+        },
+        {
+         "input": 28,
+         "args": [
+          "v4ljl",
+          "v6c78"
+         ]
+        },
+        {
+         "input": 29,
+         "args": [
+          "\\",
+          "vad8t"
+         ]
+        },
+        {
+         "input": 30,
+         "args": [
+          "\\",
+          "twelve-chars"
+         ]
+        },
+        {
+         "input": 31,
+         "args": [
+          "\\",
+          "@E/"
+         ]
+        },
+        {
+         "input": 32,
+         "args": [
+          "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+          "@e7/C"
+         ]
+        },
+        {
+         "input": 33,
+         "args": [
+          "v8jf3",
+          "\\"
+         ]
+        },
+        {
+         "input": 34,
+         "args": [
+          "\\",
+          "vc5q6"
+         ]
+        },
+        {
+         "input": 35,
+         "args": [
+          "va6n6",
+          "undefined"
+         ]
+        },
+        {
+         "input": 36,
+         "args": [
+          "\\",
+          "v5l4w"
+         ]
+        },
+        {
+         "input": 37,
+         "args": [
+          "\\",
+          "a,b,c"
+         ]
+        },
+        {
+         "input": 38,
+         "args": [
+          "\\",
+          "vdkvb"
+         ]
+        },
+        {
+         "input": 39,
+         "args": [
+          "user@example.com",
+          "e"
+         ]
+        },
+        {
+         "input": 40,
+         "args": [
+          "@",
+          ""
+         ]
+        },
+        {
+         "input": 41,
+         "args": [
+          "@L/",
+          "a"
+         ]
+        },
+        {
+         "input": 42,
+         "args": [
+          "I",
+          "vdytv"
+         ]
+        },
+        {
+         "input": 43,
+         "args": [
+          " ",
+          "@A1/"
+         ]
+        },
+        {
+         "input": 44,
+         "args": [
+          "\\",
+          "@H/eM8"
+         ]
+        },
+        {
+         "input": 45,
+         "args": [
+          "@",
+          "v59o4"
+         ]
+        },
+        {
+         "input": 46,
+         "args": [
+          "@",
+          "@ l/a9"
+         ]
+        },
+        {
+         "input": 47,
+         "args": [
+          "b",
+          "ÄÖü"
+         ]
+        },
+        {
+         "input": 48,
+         "args": [
+          "\\",
+          "日本"
+         ]
+        },
+        {
+         "input": 49,
+         "args": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "van8o"
+         ]
+        },
+        {
+         "input": 50,
+         "args": [
+          "twelve-chars",
+          "Hello, World! 2024-01-31 10:30"
+         ]
+        },
+        {
+         "input": 51,
+         "args": [
+          "p",
+          "p"
+         ]
+        },
+        {
+         "input": 52,
+         "args": [
+          "\\",
+          "@"
+         ]
+        },
+        {
+         "input": 53,
+         "args": [
+          "\\",
+          "line one\nline two"
+         ]
+        },
+        {
+         "input": 54,
+         "args": [
+          "vig14",
+          "null"
+         ]
+        },
+        {
+         "input": 55,
+         "args": [
+          "undefined",
+          "  padded  "
+         ]
+        },
+        {
+         "input": 56,
+         "args": [
+          "v6g75",
+          "/"
+         ]
+        },
+        {
+         "input": 57,
+         "args": [
+          "\\",
+          "@"
+         ]
+        },
+        {
+         "input": 58,
+         "args": [
+          "/path/to/file.txt",
+          "\\"
+         ]
+        },
+        {
+         "input": 59,
+         "args": [
+          "v6pf",
+          "@c/JLD"
+         ]
+        },
+        {
+         "input": 60,
+         "args": [
+          "",
+          "vkie7"
+         ]
+        },
+        {
+         "input": 61,
+         "args": [
+          "\\",
+          "va74r"
+         ]
+        },
+        {
+         "input": 62,
+         "args": [
+          "abc",
+          " "
+         ]
+        },
+        {
+         "input": 63,
+         "args": [
+          " ",
+          "@UL/5"
+         ]
+        },
+        {
+         "input": 64,
+         "args": [
+          "x y",
+          "v7xwe"
+         ]
+        },
+        {
+         "input": 65,
+         "args": [
+          "0",
+          "\\"
+         ]
+        },
+        {
+         "input": 66,
+         "args": [
+          "@",
+          "vc6i5"
+         ]
+        },
+        {
+         "input": 67,
+         "args": [
+          "\\",
+          "日本"
+         ]
+        },
+        {
+         "input": 68,
+         "args": [
+          "日本",
+          "\\"
+         ]
+        },
+        {
+         "input": 69,
+         "args": [
+          "\\",
+          "v889x"
+         ]
+        },
+        {
+         "input": 70,
+         "args": [
+          "twelve-chars",
+          "@iC/KN"
+         ]
+        },
+        {
+         "input": 71,
+         "args": [
+          "@m,R/",
+          "Hello, World! 2024-01-31 10:30"
+         ]
+        },
+        {
+         "input": 72,
+         "args": [
+          "\\",
+          "vgvri"
+         ]
+        },
+        {
+         "input": 73,
+         "args": [
+          "\\",
+          "line one\nline two"
+         ]
+        },
+        {
+         "input": 74,
+         "args": [
+          "/",
+          "null"
+         ]
+        },
+        {
+         "input": 75,
+         "args": [
+          "/",
+          "@8O/"
+         ]
+        },
+        {
+         "input": 76,
+         "args": [
+          "vkxau",
+          "  padded  "
+         ]
+        },
+        {
+         "input": 77,
+         "args": [
+          "\\",
+          "/path/to/file.txt"
+         ]
+        },
+        {
+         "input": 78,
+         "args": [
+          "/path/to/file.txt",
+          "@rT/q9"
+         ]
+        },
+        {
+         "input": 79,
+         "args": [
+          "user@example.com",
+          "@FQd/n"
+         ]
+        },
+        {
+         "input": 80,
+         "args": [
+          "\\",
+          ""
+         ]
+        },
+        {
+         "input": 81,
+         "args": [
+          "\\",
+          "\\"
+         ]
+        },
+        {
+         "input": 82,
+         "args": [
+          "abc",
+          " "
+         ]
+        },
+        {
+         "input": 83,
+         "args": [
+          " ",
+          "x y"
+         ]
+        },
+        {
+         "input": 84,
+         "args": [
+          "x y",
+          "v"
+         ]
+        },
+        {
+         "input": 85,
+         "args": [
+          "/",
+          "/"
+         ]
+        },
+        {
+         "input": 86,
+         "args": [
+          "@FXn/",
+          "-1"
+         ]
+        },
+        {
+         "input": 87,
+         "args": [
+          "J",
+          "ÄÖü"
+         ]
+        },
+        {
+         "input": 88,
+         "args": [
+          "\\",
+          "v5w68"
+         ]
+        },
+        {
+         "input": 89,
+         "args": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "\\"
+         ]
+        },
+        {
+         "input": 90,
+         "args": [
+          "twelve-chars",
+          "/"
+         ]
+        },
+        {
+         "input": 91,
+         "args": [
+          "v6rlt",
+          "vfgn"
+         ]
+        },
+        {
+         "input": 92,
+         "args": [
+          "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+          "line one\nline two"
+         ]
+        },
+        {
+         "input": 93,
+         "args": [
+          "/",
+          "@y/pX6"
+         ]
+        },
+        {
+         "input": 94,
+         "args": [
+          "v5o90",
+          "null"
+         ]
+        },
+        {
+         "input": 95,
+         "args": [
+          "v4p6v",
+          "vbzd7"
+         ]
+        },
+        {
+         "input": 96,
+         "args": [
+          "v3gl6",
+          "@"
+         ]
+        },
+        {
+         "input": 97,
+         "args": [
+          "v8vol",
+          "vdopw"
+         ]
+        },
+        {
+         "input": 98,
+         "args": [
+          "vfjci",
+          "@g/o4"
+         ]
+        },
+        {
+         "input": 99,
+         "args": [
+          "\\",
+          "vb6em"
+         ]
+        }
+       ],
+       "heaps": {
+        "assignments": 0,
+        "pool": 2,
+        "shapes": {}
+       },
+       "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+       "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+       "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+       "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+       "library": {
+        "records": 0,
+        "ops": {},
+        "calls": {},
+        "sampled": [],
+        "outOfModel": 0,
+        "callbackEffects": 0,
+        "defectRecords": 0,
+        "defects": []
+       },
+       "environmentPrograms": {
+        "runs": 12,
+        "maxCommands": 6,
+        "seed": 1,
+        "commands": "call, invoke, fire, tick, settle, next, throw, return",
+        "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+       }
+      },
+      "witnesses": null
+     },
+     "A": {
+      "verdict": "ASK:unproved",
+      "identity": null,
+      "lemmas": {
+       "Equal_normalize_package_name": false
+      },
+      "reading": null,
+      "canonical": null,
+      "heapCore": [],
+      "dafny": "Dafny program verifier finished with 5 verified, 5 errors",
+      "theoremSha256": "cc2114afea17edc6",
+      "preludeSha256": "eb56981d88b61c6a",
+      "dafnyVersion": "4.11.0",
+      "timeLimitSeconds": 30,
+      "dir": "/var/folders/r2/k83h9fg92j7f6pfxshk0nn280000gn/T/lean-check-9dXW8a",
+      "restsOn": [],
+      "cells": {
+       "cells": [],
+       "obligations": []
+      }
+     }
+    },
+    "tools": {
+     "node": "v24.18.0",
+     "dafny": "4.11.0",
+     "z3": "Z3 version 5.3.2 - 64 bit",
+     "z3Source": "z3 on PATH"
+    },
+    "unitTextEqual": false,
+    "observation": {
+     "layer": "values and the reachable object graph",
+     "renders": null,
+     "effects": "the trace of environment requests and pending work",
+     "schedule": "synchronous; pending work recorded, never fired"
+    },
+    "library": {
+     "records": 0,
+     "ops": {},
+     "outOfModel": 0,
+     "callbackEffects": 0,
+     "defects": 0
+    },
+    "verdict": "PASS-bounded"
+   },
+   "laneB": "PASS-bounded",
+   "laneA": "ASK:unproved",
+   "witness": null,
+   "reason": null,
+   "advice": []
+  },
+  {
+   "file": "lib/eslint.js",
+   "unit": "parseJsonConfig",
+   "lines": [
+    88,
+    128
+   ],
+   "coverage": "refused:type-assertion",
+   "verdict": "ASK",
+   "laneB": "ASK",
+   "laneA": null,
+   "witness": null,
+   "reason": "parent: unit parseJsonConfig not exported",
+   "advice": [
+    {
+     "line": 99,
+     "rule": "type-assertion",
+     "msg": "`items` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "do": null
+    },
+    {
+     "line": 121,
+     "rule": "unsupported-member",
+     "msg": "property .start is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 121,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'start' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 122,
+     "rule": "unsupported-member",
+     "msg": "property .start is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 122,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'start' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ]
+  },
+  {
+   "file": "lib/rules/no-empty-character-class.js",
+   "unit": "(file)",
+   "lines": [
+    1,
+    1
+   ],
+   "coverage": "skipped:not-typescript",
+   "decision": "skipped",
+   "verdict": null,
+   "reason": "not-typescript",
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-lonely-if.js",
+   "unit": "(file)",
+   "lines": [
+    1,
+    1
+   ],
+   "coverage": "skipped:not-typescript",
+   "decision": "skipped",
+   "verdict": null,
+   "reason": "not-typescript",
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-useless-escape.js",
+   "unit": "union",
+   "lines": [
+    18,
+    23
+   ],
+   "coverage": "refused:unsupported-call",
+   "verdict": "ASK",
+   "laneB": "ASK",
+   "laneA": null,
+   "witness": null,
+   "reason": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_head_14171_no-useless-escape.js: ASK(CommonJS wrapper): module is not defined",
+   "advice": [
+    {
+     "line": 19,
+     "rule": "unsupported-call",
+     "msg": "new Set(...) reads an array, a Map, a Set or one of their iterators; build the entries as an array first",
+     "do": "[migration] This method has no translation; see langs/ts/subset.md for the covered methods."
+    }
+   ]
+  },
+  {
+   "file": "lib/rules/no-useless-escape.js",
+   "unit": "parseRegExp",
+   "lines": [
+    92,
+    115
+   ],
+   "coverage": "refused:callback-form",
+   "verdict": "ASK",
+   "laneB": "ASK",
+   "laneA": null,
+   "witness": null,
+   "reason": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_head_14171_no-useless-escape.js: ASK(CommonJS wrapper): module is not defined",
+   "advice": [
+    {
+     "line": 95,
+     "rule": "callback-form",
+     "msg": "an effectful array callback takes the element (and an index), or the accumulator and the element; an extra parameter is outside the subset",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    }
+   ]
+  },
+  {
+   "file": "lib/util/glob-util.js",
+   "unit": "processPath",
+   "lines": [
+    42,
+    75
+   ],
+   "coverage": "refused:unresolved-module",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 0,
+    "args": [
+     null
+    ],
+    "parent": {
+     "outcome": {
+      "returned": {
+       "$fn": "anonymous",
+       "src": "b6fb5d05fca4"
+      }
+     },
+     "heap": {
+      "roots": [
+       null
+      ],
+      "own": {},
+      "outcome": {
+       "$fn": "anonymous",
+       "src": "b6fb5d05fca4"
+      },
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "module:process.cwd",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:process.cwd",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "returned": {
+       "$fn": "anonymous",
+       "src": "69475da6a28f"
+      }
+     },
+     "heap": {
+      "roots": [
+       null
+      ],
+      "own": {},
+      "outcome": {
+       "$fn": "anonymous",
+       "src": "69475da6a28f"
+      },
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "module:process.cwd",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:process.cwd",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "where": {
+     "field": "outcome",
+     "lines": {
+      "kind": "completion",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/util/.lean_base_14171_glob-util.js",
+       "start": 65,
+       "end": 74,
+       "text": "return function(pathname) {\n        let newPath = pathname;\n        const resolvedPath = path.resolve(cwd, pathname);\n\n        if (shell.test(\"-d\", resolvedPath)) {\n            newPath = pathname.repl"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/util/.lean_head_14171_glob-util.js",
+       "start": 65,
+       "end": 74,
+       "text": "return function(pathname) {\n        let newPath = pathname;\n        const resolvedPath = path.resolve(cwd, pathname);\n\n        if (shell.test(\"-d\", resolvedPath)) {\n            newPath = pathname.repl"
+      }
+     }
+    }
+   },
+   "reason": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+   "advice": [
+    {
+     "line": 43,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "do": "[migration] The project cannot resolve this import; the proof reads it as opaque."
+    },
+    {
+     "line": 46,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    },
+    {
+     "line": 65,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    }
+   ],
+   "note": "input 0: outcome; lib/util/glob-util.js:65 [conditional]"
+  },
+  {
+   "file": "lib/util/glob-util.js",
+   "unit": "listFilesToProcess",
+   "lines": [
+    106,
+    180
+   ],
+   "coverage": "refused:unresolved-module",
+   "verdict": "PASS-bounded",
+   "laneB": "PASS-bounded",
+   "laneA": null,
+   "witness": null,
+   "reason": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+   "advice": [
+    {
+     "line": 111,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "do": "[migration] The project cannot resolve this import; the proof reads it as opaque."
+    },
+    {
+     "line": 127,
+     "rule": "ts-strict",
+     "msg": "TS18048: 'options' is possibly 'undefined'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 131,
+     "rule": "ts-strict",
+     "msg": "TS18048: 'options' is possibly 'undefined'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 145,
+     "rule": "dynamic-key",
+     "msg": "use a finite union of declared string keys, or a Record<string, T> dictionary",
+     "do": "[migration] Only array indices, string indices and declared keys are readable; a computed key needs a `Record<string, T>` type. An open key (a string, a number) on a plain record of data fields is read as an uninterpreted lookup; on a union, a class instance, a record with a method or a getter, or with a symbol or a key call, narrow the receiver, name the field, or bind the key first. In a literal whose type has declared keys, a computed key of literal type names its field and a union of literals is a case split on the key; a `string` key there needs a `Record<string, T>` type."
+    },
+    {
+     "line": 148,
+     "rule": "param-mutation",
+     "msg": "push on `files`, which is not a local array",
+     "do": "[migration] This changes what the caller handed in through an alias or a callback. Change it through the parameter itself, or return a new value: `[...xs, v]`, `{ ...r, f: v }`. An array kept in a Map the function builds itself (`const m = new Map<K, T[]>()`, filled with array literals) takes `m.get(k)?.push(x)` while no other name holds its arrays."
+    },
+    {
+     "line": 149,
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "do": "[migration] Only a local array changes by index. Return a new array otherwise."
+    },
+    {
+     "line": 153,
+     "rule": "foreach",
+     "msg": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter",
+     "do": "[migration] Write `for (const x of xs) { ... }`; a loop may update a local, a callback may not."
+    },
+    {
+     "line": 165,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'dotfiles' does not exist on type '{ cwd?: string | undefined; ignore?: boolean | undefined; ignorePath?: string | undefined; ignorePattern?: string | undefined; }'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "normalizePackageName",
+     "lines": [
+      416,
+      451
+     ]
+    },
+    {
+     "file": "lib/eslint.js",
+     "unit": "parseJsonConfig",
+     "lines": [
+      88,
+      128
+     ]
+    },
+    {
+     "file": "lib/rules/no-useless-escape.js",
+     "unit": "union",
+     "lines": [
+      18,
+      23
+     ]
+    },
+    {
+     "file": "lib/rules/no-useless-escape.js",
+     "unit": "parseRegExp",
+     "lines": [
+      92,
+      115
+     ]
+    },
+    {
+     "file": "lib/util/glob-util.js",
+     "unit": "processPath",
+     "lines": [
+      42,
+      75
+     ]
+    },
+    {
+     "file": "lib/util/glob-util.js",
+     "unit": "listFilesToProcess",
+     "lines": [
+      106,
+      180
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": [
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "applyExtends",
+     "lines": [
+      353,
+      407
+     ]
+    },
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "resolve",
+     "lines": [
+      461,
+      483
+     ]
+    },
+    {
+     "file": "lib/config/config-file.js",
+     "unit": "load",
+     "lines": [
+      494,
+      541
+     ]
+    },
+    {
+     "file": "lib/eslint.js",
+     "unit": "modifyConfigsFromComments",
+     "lines": [
+      318,
+      396
+     ]
+    },
+    {
+     "file": "lib/util/glob-util.js",
+     "unit": "resolveFileGlobPatterns",
+     "lines": [
+      87,
+      92
+     ]
+    }
+   ]
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 11,
+  "total": 11
+ }
+}

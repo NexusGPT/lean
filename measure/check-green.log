@@ -1,0 +1,32 @@
+✔ parsed (442.302375ms)
+✔ normalised (6.927708ms)
+✔ capture (51.675334ms)
+✔ error (3.798959ms)
+✔ congruence (8.568833ms)
+✔ alias (74.3645ms)
+✔ must not decide: environment not established (0.634209ms)
+✔ must not decide: changed module cell (0.737875ms)
+✔ must not decide: source observation (0.48125ms)
+✔ must not decide: indirect source observation (0.713375ms)
+✔ must not decide: callee observes source (0.458375ms)
+✔ must not decide: ASI return (0.662875ms)
+✔ must not decide: empty statement (9.357375ms)
+✔ must not decide: template raw text (129.32475ms)
+✔ must not decide: const write (3.973375ms)
+✔ must not decide: inferred function name (6.928417ms)
+✔ must not decide: shorthand changes key (65.481375ms)
+✔ must not decide: eval (0.687334ms)
+✔ must not decide: TDZ (0.570125ms)
+✔ must not decide: callee argument change (0.61075ms)
+✔ must not decide: recursive callee (0.591292ms)
+✔ independent declarations reorder (6.972375ms)
+✔ AST comparison retains declaration kind (0.507375ms)
+✔ check certificate names the rung and retains lane B (14241.769167ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16553.65925

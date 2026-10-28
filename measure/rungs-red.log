@@ -1,0 +1,582 @@
+✖ parsed (9.857916ms)
+✖ normalised (1.835791ms)
+✖ capture (0.492542ms)
+✖ error (2.1385ms)
+✖ congruence (2.274709ms)
+✖ alias (0.268792ms)
+✖ must not decide: environment not established (0.328834ms)
+✖ must not decide: changed module cell (0.105625ms)
+✖ must not decide: source observation (0.081334ms)
+✖ must not decide: indirect source observation (0.1305ms)
+✖ must not decide: callee observes source (0.066541ms)
+✖ must not decide: ASI return (0.052916ms)
+✖ must not decide: empty statement (0.045292ms)
+✖ must not decide: template raw text (0.037208ms)
+✖ must not decide: const write (0.034541ms)
+✖ must not decide: inferred function name (0.163625ms)
+✖ must not decide: shorthand changes key (0.381625ms)
+✖ must not decide: eval (0.121625ms)
+✖ must not decide: TDZ (0.09ms)
+✖ must not decide: callee argument change (0.078166ms)
+✖ must not decide: recursive callee (0.076542ms)
+✖ independent declarations reorder (0.214792ms)
+✖ AST comparison retains declaration kind (0.209333ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 0
+ℹ fail 23
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2159.982042
+
+✖ failing tests:
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:21:89
+✖ parsed (9.857916ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:24:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:21:89
+✖ normalised (1.835791ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:24:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:21:89
+✖ capture (0.492542ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:24:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:21:89
+✖ error (2.1385ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:24:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:21:89
+✖ congruence (2.274709ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:24:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:21:89
+✖ alias (0.268792ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:24:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: environment not established (0.328834ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: changed module cell (0.105625ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: source observation (0.081334ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: indirect source observation (0.1305ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: callee observes source (0.066541ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: ASI return (0.052916ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: empty statement (0.045292ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: template raw text (0.037208ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: const write (0.034541ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: inferred function name (0.163625ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: shorthand changes key (0.381625ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: eval (0.121625ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: TDZ (0.09ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: callee argument change (0.078166ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:40
+✖ must not decide: recursive callee (0.076542ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:46:92)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:47:1
+✖ independent declarations reorder (0.214792ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at decide (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:18:9)
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:47:61)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:48:1
+✖ AST comparison retains declaration kind (0.209333ms)
+  AssertionError [ERR_ASSERTION]: Cannot find module '/Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/rungs.mjs' imported from /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:49:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

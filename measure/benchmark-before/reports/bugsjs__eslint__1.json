@@ -1,0 +1,38 @@
+{
+ "identity": "fb8281c93d99ea14fa74a9762b33be778b9a1923b5f5c0a4f44100c7c53dff2a",
+ "leanVersion": "fea80f883efbce3d83436d19a1a4b6778e4914a5",
+ "rows": [
+  {
+   "file": "lib/rules/no-obj-calls.js",
+   "unit": "(file)",
+   "lines": [
+    1,
+    1
+   ],
+   "coverage": "skipped:not-typescript",
+   "decision": "skipped",
+   "verdict": null,
+   "reason": "not-typescript",
+   "advice": []
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": []
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 0,
+  "total": 0
+ }
+}

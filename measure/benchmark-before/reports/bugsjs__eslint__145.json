@@ -1,0 +1,115 @@
+{
+ "identity": "c78998496ef5919c40664edcddced749270d37b753d22eece7e176f3f41c19c0",
+ "leanVersion": "fea80f883efbce3d83436d19a1a4b6778e4914a5",
+ "rows": [
+  {
+   "file": "lib/linter.js",
+   "unit": "prepareConfig",
+   "lines": [
+    456,
+    506
+   ],
+   "coverage": "refused:ts-strict",
+   "verdict": "PASS-bounded",
+   "laneB": "PASS-bounded",
+   "laneA": null,
+   "witness": null,
+   "reason": "TS2339: Property 'globals' does not exist on type 'Object'.",
+   "advice": [
+    {
+     "line": 457,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'globals' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 457,
+     "rule": "unsupported-member",
+     "msg": "property .globals is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 461,
+     "rule": "unsupported-member",
+     "msg": "property .rules is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 461,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'rules' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 462,
+     "rule": "unsupported-member",
+     "msg": "property .rules is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 462,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'rules' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 463,
+     "rule": "unsupported-member",
+     "msg": "property .rules is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 463,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'rules' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/linter.js",
+     "unit": "prepareConfig",
+     "lines": [
+      456,
+      506
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": [
+    {
+     "file": "lib/linter.js",
+     "unit": "Linter.verify",
+     "lines": [
+      764,
+      942
+     ]
+    },
+    {
+     "file": "lib/linter.js",
+     "unit": "Linter.verifyAndFix",
+     "lines": [
+      1203,
+      1257
+     ]
+    }
+   ]
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 3,
+  "total": 3
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "identity": "05ddb1b93f8a5b12b562f814442fd50873def03349ed65873e16440f866b5842",
+ "leanVersion": "fea80f883efbce3d83436d19a1a4b6778e4914a5",
+ "rows": [
+  {
+   "file": "lib/rules/no-multiple-empty-lines.js",
+   "unit": "(file)",
+   "lines": [
+    1,
+    1
+   ],
+   "coverage": "skipped:not-typescript",
+   "decision": "skipped",
+   "verdict": null,
+   "reason": "not-typescript",
+   "advice": []
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": []
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 0,
+  "total": 0
+ }
+}

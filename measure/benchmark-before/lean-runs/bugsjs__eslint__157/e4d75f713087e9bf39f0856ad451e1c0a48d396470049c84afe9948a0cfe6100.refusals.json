@@ -1,0 +1,66 @@
+{
+ "identity": "e4d75f713087e9bf39f0856ad451e1c0a48d396470049c84afe9948a0cfe6100",
+ "records": [
+  {
+   "check": "refused:ts-strict",
+   "unit": "RuleTester.run",
+   "file": "lib/testers/rule-tester.js",
+   "location": {
+    "start": 184,
+    "end": 184
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 184,
+     "rule": "ts-strict",
+     "msg": "TS2696: The 'Object' type is assignable to very few other types. Did you mean to use the 'any' type instead?   Property 'rules' is missing in type 'Object' but required in type '{ rules: {}; }'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 214,
+     "rule": "ts-strict",
+     "msg": "TS2662: Cannot find name 'describe'. Did you mean the static member 'RuleTester.describe'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 214,
+     "rule": "ts-strict",
+     "msg": "TS2662: Cannot find name 'describe'. Did you mean the static member 'RuleTester.describe'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 219,
+     "rule": "ts-strict",
+     "msg": "TS2323: Cannot redeclare exported variable '__computed'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 225,
+     "rule": "ts-strict",
+     "msg": "TS2662: Cannot find name 'it'. Did you mean the static member 'RuleTester.it'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 225,
+     "rule": "ts-strict",
+     "msg": "TS2662: Cannot find name 'it'. Did you mean the static member 'RuleTester.it'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 230,
+     "rule": "ts-strict",
+     "msg": "TS2323: Cannot redeclare exported variable '__computed'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 262,
+     "rule": "dynamic-key",
+     "msg": "an open key may select a method; call a method by its declared name, and index records of data fields",
+     "do": "[migration] Only array indices, string indices and declared keys are readable; a computed key needs a `Record<string, T>` type. An open key (a string, a number) on a plain record of data fields is read as an uninterpreted lookup; on a union, a class instance, a record with a method or a getter, or with a symbol or a key call, narrow the receiver, name the field, or bind the key first. In a literal whose type has declared keys, a computed key of literal type names its field and a union of literals is a case split on the key; a `string` key there needs a `Record<string, T>` type."
+    }
+   ],
+   "reason": "TS2696: The 'Object' type is assignable to very few other types. Did you mean to use the 'any' type instead?   Property 'rules' is missing in type 'Object' but required in type '{ rules: {}; }'."
+  }
+ ]
+}

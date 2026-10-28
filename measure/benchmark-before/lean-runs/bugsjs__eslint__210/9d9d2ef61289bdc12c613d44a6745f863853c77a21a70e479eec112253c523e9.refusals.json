@@ -1,0 +1,16 @@
+{
+ "identity": "9d9d2ef61289bdc12c613d44a6745f863853c77a21a70e479eec112253c523e9",
+ "records": [
+  {
+   "check": "failed:loader",
+   "unit": "isFunctionName",
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "location": {
+    "start": 18,
+    "end": 20
+   },
+   "kind": "coverage",
+   "reason": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_head_64004_prefer-arrow-callback.js: ASK(CommonJS wrapper): module is not defined"
+  }
+ ]
+}

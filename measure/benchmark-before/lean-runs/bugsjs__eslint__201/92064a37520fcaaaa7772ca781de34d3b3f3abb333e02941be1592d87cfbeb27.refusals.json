@@ -1,0 +1,204 @@
+{
+ "identity": "92064a37520fcaaaa7772ca781de34d3b3f3abb333e02941be1592d87cfbeb27",
+ "records": [
+  {
+   "check": "refused:var",
+   "unit": "loadConfig",
+   "file": "lib/config.js",
+   "location": {
+    "start": 66,
+    "end": 66
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 66,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 72,
+     "rule": "global-read",
+     "msg": "`yaml` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 72,
+     "rule": "global-read",
+     "msg": "`stripComments` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 72,
+     "rule": "global-read",
+     "msg": "`fs` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 74,
+     "rule": "global-read",
+     "msg": "`debug` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 86,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 90,
+     "rule": "global-read",
+     "msg": "`assign` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 95,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'extends' does not exist on type '{}'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "`var` is outside the subset; use let or const"
+  },
+  {
+   "check": "lane-B",
+   "unit": "loadConfig",
+   "file": "lib/config.js",
+   "location": {
+    "start": 90,
+    "end": 90
+   },
+   "kind": "witness",
+   "input": [
+    "eslint-config-"
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/config.js",
+     "start": 119,
+     "end": 119,
+     "text": "return config;"
+    },
+    "candidate": {
+     "file": "lib/config.js",
+     "start": 90,
+     "end": 90,
+     "text": "assign(config, packagedConfig);"
+    }
+   },
+   "advice": [
+    {
+     "line": 66,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 72,
+     "rule": "global-read",
+     "msg": "`yaml` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 72,
+     "rule": "global-read",
+     "msg": "`stripComments` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 72,
+     "rule": "global-read",
+     "msg": "`fs` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 74,
+     "rule": "global-read",
+     "msg": "`debug` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 86,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 90,
+     "rule": "global-read",
+     "msg": "`assign` is module state that can change; the subset reads constants only",
+     "do": "[migration] This name cannot be resolved in the project; a proof needs its type. A global the lib or an @types package declares (`navigator`, `location`, `btoa`) is read from the world; a global only the project declares (a build-time define, a `declare` in its own .d.ts) has no lib meaning: import it from a module, or pass it in as an argument."
+    },
+    {
+     "line": 95,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'extends' does not exist on type '{}'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "the two versions differ on outcome"
+  },
+  {
+   "check": "lane-B",
+   "unit": "getPersonalConfig",
+   "file": "lib/config.js",
+   "location": {
+    "start": 182,
+    "end": 182
+   },
+   "kind": "witness",
+   "input": [],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/config.js",
+     "start": 111,
+     "end": 111,
+     "text": "throw e;"
+    },
+    "candidate": {
+     "file": "lib/config.js",
+     "start": 182,
+     "end": 182,
+     "text": "return config;"
+    }
+   },
+   "reason": "the two versions differ on outcome through loadConfig"
+  },
+  {
+   "check": "lane-B",
+   "unit": "getLocalConfig",
+   "file": "lib/config.js",
+   "location": {
+    "start": 56,
+    "end": 56
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "$fake": "arg0"
+    },
+    "vhuf8"
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/config.js",
+     "start": 111,
+     "end": 111,
+     "text": "throw e;"
+    },
+    "candidate": {
+     "file": "lib/config.js",
+     "start": 56,
+     "end": 56,
+     "text": "return isAbsolutePath(filePath) || !/\\w/.test(filePath[0]);"
+    }
+   },
+   "reason": "the two versions differ on outcome through loadConfig"
+  }
+ ]
+}

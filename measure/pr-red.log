@@ -1,0 +1,49 @@
+Initialized empty Git repository in /Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/measure/pr-fixture-ns10H7/.git/
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+[master (root-commit) 413016b] parent
+ 1 file changed, 1 insertion(+)
+ create mode 100644 f.ts
+✖ PR lint-refused unit receives a certified proof, retaining bounded evidence (7866.093709ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9697.422
+
+✖ failing tests:
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/pr.test.mjs:9:1
+✖ PR lint-refused unit receives a certified proof, retaining bounded evidence (7866.093709ms)
+  AssertionError [ERR_ASSERTION]: {"file":"f.ts","unit":"f","lines":[1,1],"coverage":"refused:var","verdict":"PASS-bounded","laneB":"PASS-bounded","laneA":null,"witness":null,"reason":"`var` is outside the subset; use let or const","advice":[{"line":1,"rule":"var","msg":"`var` is outside the subset; use let or const","do":"[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."}]}
+  + actual - expected
+  
+  + 'PASS-bounded'
+  - 'PASS-proved'
+          ^
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/pr.test.mjs:21:9)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'PASS-bounded',
+    expected: 'PASS-proved',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

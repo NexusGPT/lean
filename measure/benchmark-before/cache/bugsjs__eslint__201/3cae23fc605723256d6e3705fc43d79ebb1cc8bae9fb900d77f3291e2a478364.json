@@ -1,0 +1,1532 @@
+{
+ "key": "3cae23fc605723256d6e3705fc43d79ebb1cc8bae9fb900d77f3291e2a478364",
+ "context": "98369e088b9e8f7101e9d53ec260595e9281a595dc99e18fa3051f0dc5061f4b",
+ "row": {
+  "file": "lib/config.js",
+  "unit": "getLocalConfig",
+  "lines": [
+   191,
+   228
+  ],
+  "verdict": "WITNESS",
+  "coverage": "checked",
+  "laneB": "WITNESS",
+  "laneA": null,
+  "caller": true,
+  "certificate": {
+   "tool": "lean-ts v3",
+   "identity": "92064a37520fcaaaa7772ca781de34d3b3f3abb333e02941be1592d87cfbeb27",
+   "unit": "getLocalConfig",
+   "parent": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+    "sha256": "8130ac6c9b65f757"
+   },
+   "candidate": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+    "sha256": "3c1a9ce805b72269"
+   },
+   "lanes": {
+    "B": {
+     "verdict": "WITNESS",
+     "unit": "getLocalConfig",
+     "witnesses": [
+      {
+       "input": 16,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        "vhuf8"
+       ],
+       "parent": {
+        "outcome": {
+         "threw": {
+          "$error": "Error",
+          "message": "fault: module:path-is-absolute\nReferenced from: 1"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          "vhuf8"
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles",
+          "args": [
+           "vhuf8"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Loading 39"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.0"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:fs.readFileSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.readFileSync",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.0"
+           },
+           "utf8"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:strip-json-comments",
+          "args": [
+           false
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad",
+          "args": [
+           {
+            "$fake": "module:strip-json-comments()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad()#1.extends.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad()#1.extends.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:s61k.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:s61k.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:s61k.extends"
+           }
+          ]
+         },
+         {
+          "op": "fault",
+          "path": "module:path-is-absolute",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "threw": {
+          "$error": "Error",
+          "message": "fault: module:path-is-absolute"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          "vhuf8"
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles",
+          "args": [
+           "vhuf8"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Loading 39"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.0"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:fs.readFileSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.readFileSync",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.0"
+           },
+           "utf8"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:strip-json-comments",
+          "args": [
+           false
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad",
+          "args": [
+           {
+            "$fake": "module:strip-json-comments()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad()#1.extends.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad()#1.extends.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:object-assign",
+          "args": [
+           {},
+           {
+            "$fake": "module:s61k"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:./util.mergeConfigs",
+          "args": [
+           {},
+           {
+            "$fake": "module:js-yaml.safeLoad()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.basename",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.basename",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.0"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs()#1.hasOwnProperty",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:./util.mergeConfigs()#1.hasOwnProperty",
+          "args": [
+           "eslintConfig"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs()#1.eslintConfig",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Using 1"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:./util.mergeConfigs",
+          "args": [
+           {},
+           {}
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.1",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Loading 109"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.1"
+           }
+          ]
+         },
+         {
+          "op": "fault",
+          "path": "module:path-is-absolute",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+          "start": 111,
+          "end": 111,
+          "text": "throw e;"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+          "start": 56,
+          "end": 56,
+          "text": "return isAbsolutePath(filePath) || !/\\w/.test(filePath[0]);"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "loadConfig",
+         "changed": true,
+         "path": [
+          "getLocalConfig",
+          "loadConfig"
+         ]
+        }
+       ]
+      },
+      {
+       "input": 25,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        "ve8b1"
+       ],
+       "parent": {
+        "outcome": {
+         "threw": {
+          "$error": "Error",
+          "message": "fault: module:path-is-absolute"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          "ve8b1"
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles",
+          "args": [
+           "ve8b1"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Loading "
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           []
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:eslint-config-.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:eslint-config-.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:eslint-config-.extends"
+           }
+          ]
+         },
+         {
+          "op": "fault",
+          "path": "module:path-is-absolute",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "threw": {
+          "$error": "Error",
+          "message": "fault: module:path.basename"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          "ve8b1"
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles",
+          "args": [
+           "ve8b1"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Loading "
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           []
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:object-assign",
+          "args": [
+           {},
+           {
+            "$fake": "module:eslint-config-"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.basename",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.basename",
+          "args": [
+           []
+          ]
+         },
+         {
+          "op": "fault",
+          "path": "module:path.basename",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+          "start": 56,
+          "end": 56,
+          "text": "return isAbsolutePath(filePath) || !/\\w/.test(filePath[0]);"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+          "start": 212,
+          "end": 219,
+          "text": "if (path.basename(localConfigFile) !== LOCAL_CONFIG_FILENAME) {\n\n            // Don't consider a local config file found if the package.json doesn't have the eslintConfig field.\n            if (!local"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "loadConfig",
+         "changed": true,
+         "path": [
+          "getLocalConfig",
+          "loadConfig"
+         ]
+        }
+       ]
+      },
+      {
+       "input": 43,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        "H"
+       ],
+       "parent": {
+        "outcome": {
+         "threw": {
+          "$error": "Error",
+          "message": "fault: module:path-is-absolute"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          "H"
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles",
+          "args": [
+           "H"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Loading 57"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.0"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles()#1.0.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles()#1.0.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:si4n.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:si4n.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:si4n.extends"
+           }
+          ]
+         },
+         {
+          "op": "fault",
+          "path": "module:path-is-absolute",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "threw": {
+          "$error": "Error",
+          "message": "fault: module:path-is-absolute"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          "H"
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles",
+          "args": [
+           "H"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Loading 57"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.0"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles()#1.0.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.0.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "arg0.findLocalConfigFiles()#1.0.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:object-assign",
+          "args": [
+           {},
+           {
+            "$fake": "module:si4n"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.basename",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.basename",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.0"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "arg0.findLocalConfigFiles()#1.1",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Loading 28"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "arg0.findLocalConfigFiles()#1.1"
+           }
+          ]
+         },
+         {
+          "op": "fault",
+          "path": "module:path-is-absolute",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "where": {
+        "field": "trace",
+        "index": 10,
+        "parent": {
+         "op": "get",
+         "path": "module:si4n.extends",
+         "args": []
+        },
+        "candidate": {
+         "op": "call",
+         "path": "module:object-assign",
+         "args": [
+          {},
+          {
+           "$fake": "module:si4n"
+          }
+         ]
+        },
+        "lines": {
+         "kind": "effect",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+          "start": 91,
+          "end": 113,
+          "text": "if (config.extends) {\n\n            var parentPath = config.extends;\n            if (isFilePath(parentPath)) {\n                // If the `extends` path is relative, use the directory of the current con"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+          "start": 90,
+          "end": 90,
+          "text": "assign(config, packagedConfig);"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "loadConfig",
+         "changed": true,
+         "path": [
+          "getLocalConfig",
+          "loadConfig"
+         ]
+        }
+       ]
+      }
+     ],
+     "bound": {
+      "n": 100,
+      "seed": 1,
+      "ms": 2000,
+      "reached": {
+       "body": 44,
+       "guard": 0
+      },
+      "states": [
+       {
+        "input": 0,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         ""
+        ]
+       },
+       {
+        "input": 1,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "vk85x"
+        ]
+       },
+       {
+        "input": 2,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "abc"
+        ]
+       },
+       {
+        "input": 3,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "v26ew"
+        ]
+       },
+       {
+        "input": 4,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "x y"
+        ]
+       },
+       {
+        "input": 5,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "0"
+        ]
+       },
+       {
+        "input": 6,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "-1"
+        ]
+       },
+       {
+        "input": 7,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "Using "
+        ]
+       },
+       {
+        "input": 8,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "vb60q"
+        ]
+       },
+       {
+        "input": 9,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+       },
+       {
+        "input": 10,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "eslintConfig"
+        ]
+       },
+       {
+        "input": 11,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "vce6u"
+        ]
+       },
+       {
+        "input": 12,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+        ]
+       },
+       {
+        "input": 13,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "vg9o8"
+        ]
+       },
+       {
+        "input": 14,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "null"
+        ]
+       },
+       {
+        "input": 15,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         ".eslintrc"
+        ]
+       },
+       {
+        "input": 16,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "vhuf8"
+        ]
+       },
+       {
+        "input": 17,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         ".eslintrc"
+        ]
+       },
+       {
+        "input": 18,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "v5hdu"
+        ]
+       },
+       {
+        "input": 19,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "user@example.com"
+        ]
+       },
+       {
+        "input": 20,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         ""
+        ]
+       },
+       {
+        "input": 21,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "eslintConfig"
+        ]
+       },
+       {
+        "input": 22,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "abc"
+        ]
+       },
+       {
+        "input": 23,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "vfixb"
+        ]
+       },
+       {
+        "input": 24,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "x y"
+        ]
+       },
+       {
+        "input": 25,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "ve8b1"
+        ]
+       },
+       {
+        "input": 26,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "E"
+        ]
+       },
+       {
+        "input": 27,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "ÄÖü"
+        ]
+       },
+       {
+        "input": 28,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "日本"
+        ]
+       },
+       {
+        "input": 29,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "x"
+        ]
+       },
+       {
+        "input": 30,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "twelve-chars"
+        ]
+       },
+       {
+        "input": 31,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         ".eslintrc"
+        ]
+       },
+       {
+        "input": 32,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "ve1ht"
+        ]
+       },
+       {
+        "input": 33,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "v5hr6"
+        ]
+       },
+       {
+        "input": 34,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "v13qi"
+        ]
+       },
+       {
+        "input": 35,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "viyfn"
+        ]
+       },
+       {
+        "input": 36,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "vfbua"
+        ]
+       },
+       {
+        "input": 37,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "M"
+        ]
+       },
+       {
+        "input": 38,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "/path/to/file.txt"
+        ]
+       },
+       {
+        "input": 39,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "user@example.com"
+        ]
+       },
+       {
+        "input": 40,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         ""
+        ]
+       },
+       {
+        "input": 41,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "a"
+        ]
+       },
+       {
+        "input": 42,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "v5b0v"
+        ]
+       },
+       {
+        "input": 43,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         "H"
+        ]
+       }
+      ],
+      "heaps": {
+       "assignments": 0,
+       "pool": 2,
+       "shapes": {}
+      },
+      "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+      "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+      "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+      "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+      "library": {
+       "records": 4,
+       "ops": {
+        "Array.prototype.toString": 4
+       },
+       "calls": {
+        "Array.prototype.toString": 4
+       },
+       "sampled": [],
+       "outOfModel": 0,
+       "callbackEffects": 0,
+       "defectRecords": 0,
+       "defects": []
+      }
+     },
+     "spec": {
+      "params": [
+       {
+        "name": "thisConfig",
+        "optional": false,
+        "spec": {
+         "kind": "service",
+         "name": "Object",
+         "members": {
+          "hasOwnProperty": {
+           "kind": "method",
+           "returns": {
+            "kind": "boolean"
+           }
+          }
+         }
+        }
+       },
+       {
+        "name": "directory",
+        "optional": false,
+        "spec": {
+         "kind": "string"
+        }
+       }
+      ],
+      "returns": {
+       "kind": "ref",
+       "key": "Object"
+      },
+      "literals": [
+       0,
+       1,
+       -1
+      ],
+      "strings": [
+       "Loading ",
+       ".eslintrc",
+       "eslintConfig",
+       "Using ",
+       "",
+       "x"
+      ]
+     },
+     "unitTextEqual": true
+    }
+   },
+   "verdict": "WITNESS"
+  },
+  "witness": {
+   "input": 16,
+   "args": [
+    {
+     "$fake": "arg0"
+    },
+    "vhuf8"
+   ],
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+      "start": 111,
+      "end": 111,
+      "text": "throw e;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+      "start": 56,
+      "end": 56,
+      "text": "return isAbsolutePath(filePath) || !/\\w/.test(filePath[0]);"
+     }
+    },
+    "cause": "callee"
+   },
+   "through": [
+    {
+     "callee": "loadConfig",
+     "changed": true,
+     "path": [
+      "getLocalConfig",
+      "loadConfig"
+     ]
+    }
+   ]
+  },
+  "reason": null,
+  "advice": []
+ }
+}

@@ -1,0 +1,75 @@
+{
+ "identity": "b1389ad128723b3e48ef84418bfea86daccd6c4767f612a977d942a9486c25d2",
+ "records": [
+  {
+   "check": "refused:var",
+   "unit": "processPath",
+   "file": "lib/cli-engine.js",
+   "location": {
+    "start": 309,
+    "end": 309
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 309,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 325,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    }
+   ],
+   "reason": "`var` is outside the subset; use let or const"
+  },
+  {
+   "check": "lane-B",
+   "unit": "processPath",
+   "file": "lib/cli-engine.js",
+   "location": {
+    "start": 325,
+    "end": 333
+   },
+   "kind": "witness",
+   "input": [
+    [
+     "x"
+    ]
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/cli-engine.js",
+     "start": 325,
+     "end": 333,
+     "text": "return function(pathname) {\n        var newPath = pathname;\n\n        if (shell.test(\"-d\", pathname)) {\n            newPath = pathname + suffix;\n        }\n\n        return newPath.replace(/\\\\/g, \"/\");\n "
+    },
+    "candidate": {
+     "file": "lib/cli-engine.js",
+     "start": 325,
+     "end": 333,
+     "text": "return function(pathname) {\n        var newPath = pathname;\n\n        if (shell.test(\"-d\", pathname)) {\n            newPath = pathname + suffix;\n        }\n\n        return newPath.replace(/\\\\/g, \"/\").re"
+    }
+   },
+   "advice": [
+    {
+     "line": 309,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 325,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    }
+   ],
+   "reason": "the two versions differ on outcome"
+  }
+ ]
+}

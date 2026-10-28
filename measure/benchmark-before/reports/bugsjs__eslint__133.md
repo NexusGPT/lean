@@ -1,0 +1,12 @@
+# lean report: c53e03417a9710f6be69937b328585b90e1c16b3 → e37b05fd1b427c18cb723e1c460729d12e98ac12
+
+Identity: a6e5725b898851cb07df3f31800166512c9f267ba0f946d8840dd14caf11ca58; lean fea80f883efbce3d83436d19a1a4b6778e4914a5
+
+Values: undefined at undefined, sha256 undefined; lane B draws its listed values first, and each certificate names the file by this hash
+
+0 changed function(s): **0 in scope · 0 WITNESS · 0 PASS-proved · 0 PASS-decided · 0 PASS-bounded · 0 ASK · 0 REFUSE · 0 NEW**
+
+| file | function | verdict | coverage | lane B | lane A | note |
+|---|---|---|---|---|---|---|
+
+A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny; PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.

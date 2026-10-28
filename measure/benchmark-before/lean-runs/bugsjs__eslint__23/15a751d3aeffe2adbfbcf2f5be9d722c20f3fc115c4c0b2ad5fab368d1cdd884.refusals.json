@@ -1,0 +1,82 @@
+{
+ "identity": "15a751d3aeffe2adbfbcf2f5be9d722c20f3fc115c4c0b2ad5fab368d1cdd884",
+ "records": [
+  {
+   "check": "refused:callback-form",
+   "unit": "resolveFileGlobPatterns",
+   "file": "lib/util/glob-util.js",
+   "location": {
+    "start": 89,
+    "end": 89
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 89,
+     "rule": "callback-form",
+     "msg": "an effectful array callback needs an inline arrow so its world transitions are read in array order",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    },
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'Function' is not assignable to parameter of type '(value: string, index: number, array: string[]) => string'.   Type 'Function' provides no match for the signature '(value: string, index: number, array: string[]): string'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "an effectful array callback needs an inline arrow so its world transitions are read in array order"
+  },
+  {
+   "check": "lane-B",
+   "unit": "resolveFileGlobPatterns",
+   "file": "lib/util/glob-util.js",
+   "location": {
+    "start": 89,
+    "end": 89
+   },
+   "kind": "witness",
+   "input": [
+    [
+     "vgjqz",
+     "",
+     "a",
+     "abc",
+     " "
+    ],
+    {
+     "$fake": "arg1"
+    }
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/util/glob-util.js",
+     "start": 89,
+     "end": 89,
+     "text": "return patterns.map(processPathExtensions);"
+    },
+    "candidate": {
+     "file": "lib/util/glob-util.js",
+     "start": 89,
+     "end": 89,
+     "text": "return patterns.filter(p => p.length).map(processPathExtensions);"
+    }
+   },
+   "advice": [
+    {
+     "line": 89,
+     "rule": "callback-form",
+     "msg": "an effectful array callback needs an inline arrow so its world transitions are read in array order",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    },
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'Function' is not assignable to parameter of type '(value: string, index: number, array: string[]) => string'.   Type 'Function' provides no match for the signature '(value: string, index: number, array: string[]): string'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "the two versions differ on outcome"
+  }
+ ]
+}

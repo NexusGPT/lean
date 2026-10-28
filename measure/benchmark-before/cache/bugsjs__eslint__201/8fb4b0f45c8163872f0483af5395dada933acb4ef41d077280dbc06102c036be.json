@@ -1,0 +1,1559 @@
+{
+ "key": "8fb4b0f45c8163872f0483af5395dada933acb4ef41d077280dbc06102c036be",
+ "context": "98369e088b9e8f7101e9d53ec260595e9281a595dc99e18fa3051f0dc5061f4b",
+ "row": {
+  "file": "lib/config.js",
+  "unit": "getPersonalConfig",
+  "lines": [
+   174,
+   183
+  ],
+  "verdict": "WITNESS",
+  "coverage": "checked",
+  "laneB": "WITNESS",
+  "laneA": null,
+  "caller": true,
+  "certificate": {
+   "tool": "lean-ts v3",
+   "identity": "92064a37520fcaaaa7772ca781de34d3b3f3abb333e02941be1592d87cfbeb27",
+   "unit": "getPersonalConfig",
+   "parent": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+    "sha256": "8130ac6c9b65f757"
+   },
+   "candidate": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+    "sha256": "3c1a9ce805b72269"
+   },
+   "lanes": {
+    "B": {
+     "verdict": "WITNESS",
+     "unit": "getPersonalConfig",
+     "witnesses": [
+      {
+       "input": 7,
+       "args": [],
+       "parent": {
+        "outcome": {
+         "threw": {
+          "$error": "Error",
+          "message": "fault: module:path-is-absolute\nReferenced from: 14"
+         }
+        },
+        "heap": {
+         "roots": [],
+         "own": {},
+         "outcome": null,
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "module:fs.existsSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.existsSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Using personal config"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.join()#1.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.join()#1.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:s6yn.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:s6yn.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:s6yn.extends"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:s6yn.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:path.dirname",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.dirname",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path.join",
+          "args": [
+           {
+            "$undefined": true
+           },
+           {
+            "$fake": "module:s6yn.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "fault",
+          "path": "module:path-is-absolute",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "returned": {}
+        },
+        "heap": {
+         "roots": [],
+         "own": {},
+         "outcome": {
+          "$ref": 0
+         },
+         "anchors": 0,
+         "heap": [
+          {
+           "kind": "record",
+           "edges": {}
+          }
+         ]
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "module:fs.existsSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.existsSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Using personal config"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.join()#1.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.join()#1.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:object-assign",
+          "args": [
+           {},
+           {
+            "$fake": "module:s6yn"
+           }
+          ]
+         }
+        ],
+        "pending": []
+       },
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+          "start": 111,
+          "end": 111,
+          "text": "throw e;"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+          "start": 182,
+          "end": 182,
+          "text": "return config;"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "loadConfig",
+         "changed": true,
+         "path": [
+          "getPersonalConfig",
+          "loadConfig"
+         ]
+        }
+       ]
+      },
+      {
+       "input": 16,
+       "args": [],
+       "parent": {
+        "outcome": {
+         "threw": {
+          "$error": "Error",
+          "message": "fault: module:path-is-absolute\nReferenced from: -42"
+         }
+        },
+        "heap": {
+         "roots": [],
+         "own": {},
+         "outcome": null,
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "module:fs.existsSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.existsSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Using personal config"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:fs.readFileSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.readFileSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           },
+           "utf8"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:strip-json-comments",
+          "args": [
+           false
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad",
+          "args": [
+           {
+            "$fake": "module:strip-json-comments()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad()#1.extends.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad()#1.extends.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:s9qn.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:s9qn.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:s9qn.extends"
+           }
+          ]
+         },
+         {
+          "op": "fault",
+          "path": "module:path-is-absolute",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "returned": {
+          "$fake": "module:./util.mergeConfigs()#1"
+         }
+        },
+        "heap": {
+         "roots": [],
+         "own": {},
+         "outcome": {
+          "$fake": "module:./util.mergeConfigs()#1"
+         },
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "module:fs.existsSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.existsSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Using personal config"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:fs.readFileSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.readFileSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           },
+           "utf8"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:strip-json-comments",
+          "args": [
+           false
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad",
+          "args": [
+           {
+            "$fake": "module:strip-json-comments()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad()#1.extends.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad()#1.extends.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:object-assign",
+          "args": [
+           {},
+           {
+            "$fake": "module:s9qn"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:./util.mergeConfigs",
+          "args": [
+           {},
+           {
+            "$fake": "module:js-yaml.safeLoad()#1"
+           }
+          ]
+         }
+        ],
+        "pending": []
+       },
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+          "start": 111,
+          "end": 111,
+          "text": "throw e;"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+          "start": 182,
+          "end": 182,
+          "text": "return config;"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "loadConfig",
+         "changed": true,
+         "path": [
+          "getPersonalConfig",
+          "loadConfig"
+         ]
+        }
+       ]
+      },
+      {
+       "input": 82,
+       "args": [],
+       "parent": {
+        "outcome": {
+         "returned": ""
+        },
+        "heap": {
+         "roots": [],
+         "own": {},
+         "outcome": "",
+         "anchors": 0,
+         "heap": []
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "module:fs.existsSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.existsSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Using personal config"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.join()#1.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.join()#1.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:s12kc.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:s12kc.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:s12kc.extends"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:s12kc.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:path.dirname",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.dirname",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path.join",
+          "args": [
+           {
+            "$fake": "module:path.dirname()#1"
+           },
+           {
+            "$fake": "module:s12kc.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:fs.readFileSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.readFileSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           },
+           "utf8"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:strip-json-comments",
+          "args": [
+           {
+            "$fake": "module:fs.readFileSync()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad",
+          "args": [
+           {
+            "$fake": "module:strip-json-comments()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad()#1.extends",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:path.dirname",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.dirname",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path.join",
+          "args": [
+           true,
+           {
+            "$fake": "module:js-yaml.safeLoad()#1.extends"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:./util.mergeConfigs",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#2"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:js-yaml.safeLoad",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:fs.readFileSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.readFileSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#2"
+           },
+           "utf8"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:strip-json-comments",
+          "args": [
+           {
+            "$fake": "module:fs.readFileSync()#2"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:js-yaml.safeLoad",
+          "args": [
+           {
+            "$undefined": true
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:./util.mergeConfigs",
+          "args": [
+           true,
+           {
+            "$fake": "module:js-yaml.safeLoad()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:./util.mergeConfigs",
+          "args": [
+           "",
+           {
+            "$fake": "module:s12kc"
+           }
+          ]
+         }
+        ],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "returned": {}
+        },
+        "heap": {
+         "roots": [],
+         "own": {},
+         "outcome": {
+          "$ref": 0
+         },
+         "anchors": 0,
+         "heap": [
+          {
+           "kind": "record",
+           "edges": {}
+          }
+         ]
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "module:fs.existsSync",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:fs.existsSync",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:debug()#1",
+          "args": [
+           "Using personal config"
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:path-is-absolute",
+          "args": [
+           {
+            "$fake": "module:path.join()#1"
+           }
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.0",
+          "args": []
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.indexOf",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.join()#1.indexOf",
+          "args": [
+           "eslint-config-"
+          ]
+         },
+         {
+          "op": "get",
+          "path": "module:path.join()#1.startsWith",
+          "args": []
+         },
+         {
+          "op": "call",
+          "path": "module:path.join()#1.startsWith",
+          "args": [
+           "."
+          ]
+         },
+         {
+          "op": "call",
+          "path": "module:object-assign",
+          "args": [
+           {},
+           {
+            "$fake": "module:s12kc"
+           }
+          ]
+         }
+        ],
+        "pending": []
+       },
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+          "start": 178,
+          "end": 178,
+          "text": "return config;"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+          "start": 182,
+          "end": 182,
+          "text": "return config;"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "loadConfig",
+         "changed": true,
+         "path": [
+          "getPersonalConfig",
+          "loadConfig"
+         ]
+        }
+       ]
+      }
+     ],
+     "bound": {
+      "n": 100,
+      "seed": 1,
+      "ms": 2000,
+      "reached": {
+       "body": 83,
+       "guard": 0
+      },
+      "states": [
+       {
+        "input": 0,
+        "args": []
+       },
+       {
+        "input": 1,
+        "args": []
+       },
+       {
+        "input": 2,
+        "args": []
+       },
+       {
+        "input": 3,
+        "args": []
+       },
+       {
+        "input": 4,
+        "args": []
+       },
+       {
+        "input": 5,
+        "args": []
+       },
+       {
+        "input": 6,
+        "args": []
+       },
+       {
+        "input": 7,
+        "args": []
+       },
+       {
+        "input": 8,
+        "args": []
+       },
+       {
+        "input": 9,
+        "args": []
+       },
+       {
+        "input": 10,
+        "args": []
+       },
+       {
+        "input": 11,
+        "args": []
+       },
+       {
+        "input": 12,
+        "args": []
+       },
+       {
+        "input": 13,
+        "args": []
+       },
+       {
+        "input": 14,
+        "args": []
+       },
+       {
+        "input": 15,
+        "args": []
+       },
+       {
+        "input": 16,
+        "args": []
+       },
+       {
+        "input": 17,
+        "args": []
+       },
+       {
+        "input": 18,
+        "args": []
+       },
+       {
+        "input": 19,
+        "args": []
+       },
+       {
+        "input": 20,
+        "args": []
+       },
+       {
+        "input": 21,
+        "args": []
+       },
+       {
+        "input": 22,
+        "args": []
+       },
+       {
+        "input": 23,
+        "args": []
+       },
+       {
+        "input": 24,
+        "args": []
+       },
+       {
+        "input": 25,
+        "args": []
+       },
+       {
+        "input": 26,
+        "args": []
+       },
+       {
+        "input": 27,
+        "args": []
+       },
+       {
+        "input": 28,
+        "args": []
+       },
+       {
+        "input": 29,
+        "args": []
+       },
+       {
+        "input": 30,
+        "args": []
+       },
+       {
+        "input": 31,
+        "args": []
+       },
+       {
+        "input": 32,
+        "args": []
+       },
+       {
+        "input": 33,
+        "args": []
+       },
+       {
+        "input": 34,
+        "args": []
+       },
+       {
+        "input": 35,
+        "args": []
+       },
+       {
+        "input": 36,
+        "args": []
+       },
+       {
+        "input": 37,
+        "args": []
+       },
+       {
+        "input": 38,
+        "args": []
+       },
+       {
+        "input": 39,
+        "args": []
+       },
+       {
+        "input": 40,
+        "args": []
+       },
+       {
+        "input": 41,
+        "args": []
+       },
+       {
+        "input": 42,
+        "args": []
+       },
+       {
+        "input": 43,
+        "args": []
+       },
+       {
+        "input": 44,
+        "args": []
+       },
+       {
+        "input": 45,
+        "args": []
+       },
+       {
+        "input": 46,
+        "args": []
+       },
+       {
+        "input": 47,
+        "args": []
+       },
+       {
+        "input": 48,
+        "args": []
+       },
+       {
+        "input": 49,
+        "args": []
+       },
+       {
+        "input": 50,
+        "args": []
+       },
+       {
+        "input": 51,
+        "args": []
+       },
+       {
+        "input": 52,
+        "args": []
+       },
+       {
+        "input": 53,
+        "args": []
+       },
+       {
+        "input": 54,
+        "args": []
+       },
+       {
+        "input": 55,
+        "args": []
+       },
+       {
+        "input": 56,
+        "args": []
+       },
+       {
+        "input": 57,
+        "args": []
+       },
+       {
+        "input": 58,
+        "args": []
+       },
+       {
+        "input": 59,
+        "args": []
+       },
+       {
+        "input": 60,
+        "args": []
+       },
+       {
+        "input": 61,
+        "args": []
+       },
+       {
+        "input": 62,
+        "args": []
+       },
+       {
+        "input": 63,
+        "args": []
+       },
+       {
+        "input": 64,
+        "args": []
+       },
+       {
+        "input": 65,
+        "args": []
+       },
+       {
+        "input": 66,
+        "args": []
+       },
+       {
+        "input": 67,
+        "args": []
+       },
+       {
+        "input": 68,
+        "args": []
+       },
+       {
+        "input": 69,
+        "args": []
+       },
+       {
+        "input": 70,
+        "args": []
+       },
+       {
+        "input": 71,
+        "args": []
+       },
+       {
+        "input": 72,
+        "args": []
+       },
+       {
+        "input": 73,
+        "args": []
+       },
+       {
+        "input": 74,
+        "args": []
+       },
+       {
+        "input": 75,
+        "args": []
+       },
+       {
+        "input": 76,
+        "args": []
+       },
+       {
+        "input": 77,
+        "args": []
+       },
+       {
+        "input": 78,
+        "args": []
+       },
+       {
+        "input": 79,
+        "args": []
+       },
+       {
+        "input": 80,
+        "args": []
+       },
+       {
+        "input": 81,
+        "args": []
+       },
+       {
+        "input": 82,
+        "args": []
+       }
+      ],
+      "heaps": {
+       "assignments": 0,
+       "pool": 2,
+       "shapes": {}
+      },
+      "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+      "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+      "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+      "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+      "library": {
+       "records": 0,
+       "ops": {},
+       "calls": {},
+       "sampled": [],
+       "outOfModel": 0,
+       "callbackEffects": 0,
+       "defectRecords": 0,
+       "defects": []
+      }
+     },
+     "spec": {
+      "params": [],
+      "returns": {
+       "kind": "service",
+       "name": "Object",
+       "members": {
+        "hasOwnProperty": {
+         "kind": "method",
+         "returns": {
+          "kind": "boolean"
+         }
+        }
+       }
+      },
+      "literals": [],
+      "strings": [
+       "Using personal config"
+      ]
+     },
+     "unitTextEqual": true
+    }
+   },
+   "verdict": "WITNESS"
+  },
+  "witness": {
+   "input": 7,
+   "args": [],
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_47946_config.js",
+      "start": 111,
+      "end": 111,
+      "text": "throw e;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_47946_config.js",
+      "start": 182,
+      "end": 182,
+      "text": "return config;"
+     }
+    },
+    "cause": "callee"
+   },
+   "through": [
+    {
+     "callee": "loadConfig",
+     "changed": true,
+     "path": [
+      "getPersonalConfig",
+      "loadConfig"
+     ]
+    }
+   ]
+  },
+  "reason": null,
+  "advice": []
+ }
+}

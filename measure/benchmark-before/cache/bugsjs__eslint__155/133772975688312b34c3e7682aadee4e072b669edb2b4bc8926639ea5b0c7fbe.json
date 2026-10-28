@@ -1,0 +1,288 @@
+{
+ "key": "133772975688312b34c3e7682aadee4e072b669edb2b4bc8926639ea5b0c7fbe",
+ "context": "98369e088b9e8f7101e9d53ec260595e9281a595dc99e18fa3051f0dc5061f4b",
+ "row": {
+  "file": "lib/rules/prefer-const.js",
+  "unit": "getIdentifierIfShouldBeConst",
+  "lines": [
+   89,
+   147
+  ],
+  "verdict": "WITNESS",
+  "coverage": "checked",
+  "certificate": {
+   "tool": "lean-ts v3",
+   "identity": "265de906f43e4419e09ca3f94965b2f03e3e097b7f5f6e5dfa5c1af8d9cc7ec6",
+   "unit": "getIdentifierIfShouldBeConst",
+   "parent": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_base_81002_prefer-const.js",
+    "sha256": "773d98296f21c030"
+   },
+   "candidate": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_head_81002_prefer-const.js",
+    "sha256": "e2f62db360cce529"
+   },
+   "lanes": {
+    "B": {
+     "verdict": "WITNESS",
+     "reason": null,
+     "bound": {
+      "n": 100,
+      "seed": 1,
+      "ms": 2000,
+      "reached": {
+       "body": 4,
+       "guard": 0
+      },
+      "states": [
+       {
+        "input": 0,
+        "args": [
+         {
+          "defs": "x",
+          "eslintUsed": {
+           "$fake": "arg0.eslintUsed"
+          },
+          "references": "AssignmentExpression",
+          "scope": {
+           "type": "global"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 1,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         false
+        ]
+       },
+       {
+        "input": 2,
+        "args": [
+         {
+          "defs": "xx",
+          "eslintUsed": {
+           "$fake": "arg0.eslintUsed"
+          },
+          "references": " ",
+          "scope": {
+           "$fake": "arg0.scope"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 3,
+        "args": [
+         {
+          "defs": "xx",
+          "eslintUsed": {
+           "$fake": "arg0.eslintUsed"
+          },
+          "references": "x y",
+          "scope": {
+           "$fake": "arg0.scope"
+          }
+         },
+         false
+        ]
+       }
+      ],
+      "heaps": {
+       "assignments": 0,
+       "pool": 2,
+       "shapes": {}
+      },
+      "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+      "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+      "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+      "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+      "library": {
+       "records": 0,
+       "ops": {},
+       "calls": {},
+       "sampled": [],
+       "outOfModel": 0,
+       "callbackEffects": 0,
+       "defectRecords": 0,
+       "defects": []
+      }
+     },
+     "witnesses": [
+      {
+       "input": 1,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        false
+       ],
+       "where": {
+        "field": "trace",
+        "index": 3,
+        "parent": {
+         "op": "get",
+         "path": "arg0.references",
+         "args": []
+        },
+        "candidate": {
+         "op": "get",
+         "path": "arg0.defs",
+         "args": []
+        },
+        "lines": {
+         "kind": "effect",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_base_81002_prefer-const.js",
+          "start": 97,
+          "end": 97,
+          "text": "const references = variable.references;"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_head_81002_prefer-const.js",
+          "start": 101,
+          "end": 103,
+          "text": "if (variable.defs.length > 1) {\n        return null;\n    }"
+         }
+        }
+       }
+      },
+      {
+       "input": 2,
+       "args": [
+        {
+         "defs": "xx",
+         "eslintUsed": {
+          "$fake": "arg0.eslintUsed"
+         },
+         "references": " ",
+         "scope": {
+          "$fake": "arg0.scope"
+         }
+        },
+        true
+       ],
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_base_81002_prefer-const.js",
+          "start": 102,
+          "end": 118,
+          "text": "if (reference.isWrite()) {\n            const isReassigned = (\n                writer !== null &&\n                writer.identifier !== reference.identifier\n            );\n\n            if (isReassigned"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_head_81002_prefer-const.js",
+          "start": 102,
+          "end": 102,
+          "text": "return null;"
+         }
+        }
+       }
+      },
+      {
+       "input": 3,
+       "args": [
+        {
+         "defs": "xx",
+         "eslintUsed": {
+          "$fake": "arg0.eslintUsed"
+         },
+         "references": "x y",
+         "scope": {
+          "$fake": "arg0.scope"
+         }
+        },
+        false
+       ],
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_base_81002_prefer-const.js",
+          "start": 102,
+          "end": 118,
+          "text": "if (reference.isWrite()) {\n            const isReassigned = (\n                writer !== null &&\n                writer.identifier !== reference.identifier\n            );\n\n            if (isReassigned"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_head_81002_prefer-const.js",
+          "start": 102,
+          "end": 102,
+          "text": "return null;"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "tools": {
+    "node": "v24.18.0"
+   },
+   "unitTextEqual": false,
+   "observation": {
+    "layer": "values and the reachable object graph",
+    "renders": null,
+    "effects": "the trace of environment requests and pending work",
+    "schedule": "synchronous; pending work recorded, never fired"
+   },
+   "library": {
+    "records": 0,
+    "ops": {},
+    "outOfModel": 0,
+    "callbackEffects": 0,
+    "defects": 0
+   },
+   "verdict": "WITNESS"
+  },
+  "laneB": "WITNESS",
+  "laneA": null,
+  "witness": {
+   "input": 1,
+   "args": [
+    {
+     "$fake": "arg0"
+    },
+    false
+   ],
+   "where": {
+    "field": "trace",
+    "index": 3,
+    "parent": {
+     "op": "get",
+     "path": "arg0.references",
+     "args": []
+    },
+    "candidate": {
+     "op": "get",
+     "path": "arg0.defs",
+     "args": []
+    },
+    "lines": {
+     "kind": "effect",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_base_81002_prefer-const.js",
+      "start": 97,
+      "end": 97,
+      "text": "const references = variable.references;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/rules/.lean_head_81002_prefer-const.js",
+      "start": 101,
+      "end": 103,
+      "text": "if (variable.defs.length > 1) {\n        return null;\n    }"
+     }
+    }
+   }
+  },
+  "reason": null,
+  "advice": []
+ }
+}

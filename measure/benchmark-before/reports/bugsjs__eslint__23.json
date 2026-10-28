@@ -1,0 +1,649 @@
+{
+ "identity": "15a751d3aeffe2adbfbcf2f5be9d722c20f3fc115c4c0b2ad5fab368d1cdd884",
+ "leanVersion": "fea80f883efbce3d83436d19a1a4b6778e4914a5",
+ "rows": [
+  {
+   "file": "lib/util/glob-util.js",
+   "unit": "resolveFileGlobPatterns",
+   "lines": [
+    85,
+    90
+   ],
+   "coverage": "refused:callback-form",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 59,
+    "args": [
+     [
+      "vgjqz",
+      "",
+      "a",
+      "abc",
+      " "
+     ],
+     {
+      "$fake": "arg1"
+     }
+    ],
+    "parent": {
+     "outcome": {
+      "returned": [
+       {
+        "$fake": "module:./path-util.convertPathToPosix()#1"
+       },
+       {
+        "$fake": "module:./path-util.convertPathToPosix()#2"
+       },
+       {
+        "$fake": "module:./path-util.convertPathToPosix()#3"
+       },
+       [],
+       {
+        "$fake": "module:./path-util.convertPathToPosix()#5"
+       }
+      ]
+     },
+     "heap": {
+      "roots": [
+       {
+        "$ref": 0
+       },
+       {
+        "$fake": "arg1"
+       }
+      ],
+      "own": {},
+      "outcome": {
+       "$ref": 1
+      },
+      "anchors": 1,
+      "heap": [
+       {
+        "kind": "array",
+        "edges": [
+         "vgjqz",
+         "",
+         "a",
+         "abc",
+         " "
+        ]
+       },
+       {
+        "kind": "array",
+        "edges": [
+         {
+          "$fake": "module:./path-util.convertPathToPosix()#1"
+         },
+         {
+          "$fake": "module:./path-util.convertPathToPosix()#2"
+         },
+         {
+          "$fake": "module:./path-util.convertPathToPosix()#3"
+         },
+         {
+          "$ref": 2
+         },
+         {
+          "$fake": "module:./path-util.convertPathToPosix()#5"
+         }
+        ]
+       },
+       {
+        "kind": "array",
+        "edges": []
+       }
+      ]
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg1.cwd",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:process.cwd",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:process.cwd",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg1.extensions",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        "vgjqz"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        {
+         "$fake": "module:path.resolve()#1"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        "vgjqz/**/*.js"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        ""
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        {
+         "$fake": "module:path.resolve()#2"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        ""
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        "a"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        ""
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        "a/**/*.js"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        "abc"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        {
+         "$fake": "module:path.resolve()#4"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        "abc/**/*.js"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        " "
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        []
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        " /**/*.js"
+       ]
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "returned": [
+       {
+        "$fake": "module:./path-util.convertPathToPosix()#1"
+       },
+       {
+        "$fake": "module:./path-util.convertPathToPosix()#2"
+       },
+       {
+        "$fake": "module:./path-util.convertPathToPosix()#3"
+       },
+       []
+      ]
+     },
+     "heap": {
+      "roots": [
+       {
+        "$ref": 0
+       },
+       {
+        "$fake": "arg1"
+       }
+      ],
+      "own": {},
+      "outcome": {
+       "$ref": 1
+      },
+      "anchors": 1,
+      "heap": [
+       {
+        "kind": "array",
+        "edges": [
+         "vgjqz",
+         "",
+         "a",
+         "abc",
+         " "
+        ]
+       },
+       {
+        "kind": "array",
+        "edges": [
+         {
+          "$fake": "module:./path-util.convertPathToPosix()#1"
+         },
+         {
+          "$fake": "module:./path-util.convertPathToPosix()#2"
+         },
+         {
+          "$fake": "module:./path-util.convertPathToPosix()#3"
+         },
+         {
+          "$ref": 2
+         }
+        ]
+       },
+       {
+        "kind": "array",
+        "edges": []
+       }
+      ]
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg1.cwd",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:process.cwd",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:process.cwd",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg1.extensions",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        "vgjqz"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        {
+         "$fake": "module:path.resolve()#1"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        "vgjqz/**/*.js"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        "a"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        {
+         "$fake": "module:path.resolve()#2"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        "a"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        "abc"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        ""
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        "abc/**/*.js"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:path.resolve",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:path.resolve",
+       "args": [
+        {
+         "$fake": "module:process.cwd()#1"
+        },
+        " "
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:shelljs.test",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:shelljs.test",
+       "args": [
+        "-d",
+        {
+         "$fake": "module:path.resolve()#4"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:./path-util.convertPathToPosix",
+       "args": [
+        " /**/*.js"
+       ]
+      }
+     ],
+     "pending": []
+    },
+    "where": {
+     "field": "outcome",
+     "lines": {
+      "kind": "completion",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/util/.lean_base_95930_glob-util.js",
+       "start": 89,
+       "end": 89,
+       "text": "return patterns.map(processPathExtensions);"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/util/.lean_head_95930_glob-util.js",
+       "start": 89,
+       "end": 89,
+       "text": "return patterns.filter(p => p.length).map(processPathExtensions);"
+      }
+     }
+    }
+   },
+   "reason": "an effectful array callback needs an inline arrow so its world transitions are read in array order",
+   "advice": [
+    {
+     "line": 89,
+     "rule": "callback-form",
+     "msg": "an effectful array callback needs an inline arrow so its world transitions are read in array order",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    },
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'Function' is not assignable to parameter of type '(value: string, index: number, array: string[]) => string'.   Type 'Function' provides no match for the signature '(value: string, index: number, array: string[]): string'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "note": "input 59: outcome; lib/util/glob-util.js:89 [conditional]"
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/util/glob-util.js",
+     "unit": "resolveFileGlobPatterns",
+     "lines": [
+      85,
+      90
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ }
+}

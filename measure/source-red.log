@@ -1,0 +1,104 @@
+✖ source escape: shorthand source escape (247.426375ms)
+✖ source escape: export object source escape (8.39775ms)
+✖ source escape: script global source escape (1.076042ms)
+✖ source escape: receiver source escape (0.92075ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2161.518083
+
+✖ failing tests:
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:69:4
+✖ source escape: shorthand source escape (247.426375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'decided-equal'
+  - 'undecided'
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:71:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'decided-equal',
+    expected: 'undecided',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:69:4
+✖ source escape: export object source escape (8.39775ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'decided-equal'
+  - 'undecided'
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:71:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'decided-equal',
+    expected: 'undecided',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:69:4
+✖ source escape: script global source escape (1.076042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'decided-equal'
+  - 'undecided'
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:71:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'decided-equal',
+    expected: 'undecided',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:69:4
+✖ source escape: receiver source escape (0.92075ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'decided-equal'
+  - 'undecided'
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/cheap-rungs/langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs:71:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'decided-equal',
+    expected: 'undecided',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

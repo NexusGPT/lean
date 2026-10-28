@@ -1,0 +1,818 @@
+{
+ "key": "06fd581cadf9af0de28c238009dc7e0df163e0b5e0c1927d4dcf78b2ca69983e",
+ "context": "98369e088b9e8f7101e9d53ec260595e9281a595dc99e18fa3051f0dc5061f4b",
+ "row": {
+  "file": "lib/config/config-file.js",
+  "unit": "normalizePackageName",
+  "lines": [
+   416,
+   451
+  ],
+  "verdict": "PASS-bounded",
+  "coverage": "checked",
+  "certificate": {
+   "tool": "lean-ts v3",
+   "identity": "b24961464bd20a4d8272fbdb3c5fe655e7cde899c4cc327de5dda4bc6f3402d6",
+   "unit": "normalizePackageName",
+   "parent": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_base_14171_config-file.js",
+    "sha256": "25516b9dffe72fc7"
+   },
+   "candidate": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/config/.lean_head_14171_config-file.js",
+    "sha256": "cecd7f7c5917e2ac"
+   },
+   "lanes": {
+    "B": {
+     "verdict": "PASS-bounded",
+     "reason": null,
+     "bound": {
+      "n": 100,
+      "seed": 1,
+      "ms": 2000,
+      "reached": {
+       "body": 100,
+       "guard": 0
+      },
+      "states": [
+       {
+        "input": 0,
+        "args": [
+         "\\",
+         "@wwQ/BO"
+        ]
+       },
+       {
+        "input": 1,
+        "args": [
+         "v213i",
+         "v8h8m"
+        ]
+       },
+       {
+        "input": 2,
+        "args": [
+         "vg34h",
+         "vju3f"
+        ]
+       },
+       {
+        "input": 3,
+        "args": [
+         " ",
+         "v68ln"
+        ]
+       },
+       {
+        "input": 4,
+        "args": [
+         "\\",
+         "vl95r"
+        ]
+       },
+       {
+        "input": 5,
+        "args": [
+         "\\",
+         "/"
+        ]
+       },
+       {
+        "input": 6,
+        "args": [
+         "vgy1k",
+         "-1"
+        ]
+       },
+       {
+        "input": 7,
+        "args": [
+         "\\",
+         "日本"
+        ]
+       },
+       {
+        "input": 8,
+        "args": [
+         "@l3g/FQ",
+         "\\"
+        ]
+       },
+       {
+        "input": 9,
+        "args": [
+         "\\",
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ]
+       },
+       {
+        "input": 10,
+        "args": [
+         "twelve-chars",
+         "Hello, World! 2024-01-31 10:30"
+        ]
+       },
+       {
+        "input": 11,
+        "args": [
+         "\\",
+         "/"
+        ]
+       },
+       {
+        "input": 12,
+        "args": [
+         "ve9d",
+         "/"
+        ]
+       },
+       {
+        "input": 13,
+        "args": [
+         "v4gl",
+         "v9lpw"
+        ]
+       },
+       {
+        "input": 14,
+        "args": [
+         "\\",
+         "v2cyq"
+        ]
+       },
+       {
+        "input": 15,
+        "args": [
+         "undefined",
+         "  padded  "
+        ]
+       },
+       {
+        "input": 16,
+        "args": [
+         "  padded  ",
+         "@A/"
+        ]
+       },
+       {
+        "input": 17,
+        "args": [
+         "a,b,c",
+         "/path/to/file.txt"
+        ]
+       },
+       {
+        "input": 18,
+        "args": [
+         "@Av9/Ev",
+         "@Av9/Ev"
+        ]
+       },
+       {
+        "input": 19,
+        "args": [
+         "user@example.com",
+         "@n/t"
+        ]
+       },
+       {
+        "input": 20,
+        "args": [
+         "",
+         "\\"
+        ]
+       },
+       {
+        "input": 21,
+        "args": [
+         "@",
+         "a"
+        ]
+       },
+       {
+        "input": 22,
+        "args": [
+         "\\",
+         "v72wk"
+        ]
+       },
+       {
+        "input": 23,
+        "args": [
+         " ",
+         "@p,O/OR"
+        ]
+       },
+       {
+        "input": 24,
+        "args": [
+         "viagv",
+         "x y"
+        ]
+       },
+       {
+        "input": 25,
+        "args": [
+         "0",
+         "vl88u"
+        ]
+       },
+       {
+        "input": 26,
+        "args": [
+         "\\",
+         "v"
+        ]
+       },
+       {
+        "input": 27,
+        "args": [
+         "v82yg",
+         "@"
+        ]
+       },
+       {
+        "input": 28,
+        "args": [
+         "v4ljl",
+         "v6c78"
+        ]
+       },
+       {
+        "input": 29,
+        "args": [
+         "\\",
+         "vad8t"
+        ]
+       },
+       {
+        "input": 30,
+        "args": [
+         "\\",
+         "twelve-chars"
+        ]
+       },
+       {
+        "input": 31,
+        "args": [
+         "\\",
+         "@E/"
+        ]
+       },
+       {
+        "input": 32,
+        "args": [
+         "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+         "@e7/C"
+        ]
+       },
+       {
+        "input": 33,
+        "args": [
+         "v8jf3",
+         "\\"
+        ]
+       },
+       {
+        "input": 34,
+        "args": [
+         "\\",
+         "vc5q6"
+        ]
+       },
+       {
+        "input": 35,
+        "args": [
+         "va6n6",
+         "undefined"
+        ]
+       },
+       {
+        "input": 36,
+        "args": [
+         "\\",
+         "v5l4w"
+        ]
+       },
+       {
+        "input": 37,
+        "args": [
+         "\\",
+         "a,b,c"
+        ]
+       },
+       {
+        "input": 38,
+        "args": [
+         "\\",
+         "vdkvb"
+        ]
+       },
+       {
+        "input": 39,
+        "args": [
+         "user@example.com",
+         "e"
+        ]
+       },
+       {
+        "input": 40,
+        "args": [
+         "@",
+         ""
+        ]
+       },
+       {
+        "input": 41,
+        "args": [
+         "@L/",
+         "a"
+        ]
+       },
+       {
+        "input": 42,
+        "args": [
+         "I",
+         "vdytv"
+        ]
+       },
+       {
+        "input": 43,
+        "args": [
+         " ",
+         "@A1/"
+        ]
+       },
+       {
+        "input": 44,
+        "args": [
+         "\\",
+         "@H/eM8"
+        ]
+       },
+       {
+        "input": 45,
+        "args": [
+         "@",
+         "v59o4"
+        ]
+       },
+       {
+        "input": 46,
+        "args": [
+         "@",
+         "@ l/a9"
+        ]
+       },
+       {
+        "input": 47,
+        "args": [
+         "b",
+         "ÄÖü"
+        ]
+       },
+       {
+        "input": 48,
+        "args": [
+         "\\",
+         "日本"
+        ]
+       },
+       {
+        "input": 49,
+        "args": [
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+         "van8o"
+        ]
+       },
+       {
+        "input": 50,
+        "args": [
+         "twelve-chars",
+         "Hello, World! 2024-01-31 10:30"
+        ]
+       },
+       {
+        "input": 51,
+        "args": [
+         "p",
+         "p"
+        ]
+       },
+       {
+        "input": 52,
+        "args": [
+         "\\",
+         "@"
+        ]
+       },
+       {
+        "input": 53,
+        "args": [
+         "\\",
+         "line one\nline two"
+        ]
+       },
+       {
+        "input": 54,
+        "args": [
+         "vig14",
+         "null"
+        ]
+       },
+       {
+        "input": 55,
+        "args": [
+         "undefined",
+         "  padded  "
+        ]
+       },
+       {
+        "input": 56,
+        "args": [
+         "v6g75",
+         "/"
+        ]
+       },
+       {
+        "input": 57,
+        "args": [
+         "\\",
+         "@"
+        ]
+       },
+       {
+        "input": 58,
+        "args": [
+         "/path/to/file.txt",
+         "\\"
+        ]
+       },
+       {
+        "input": 59,
+        "args": [
+         "v6pf",
+         "@c/JLD"
+        ]
+       },
+       {
+        "input": 60,
+        "args": [
+         "",
+         "vkie7"
+        ]
+       },
+       {
+        "input": 61,
+        "args": [
+         "\\",
+         "va74r"
+        ]
+       },
+       {
+        "input": 62,
+        "args": [
+         "abc",
+         " "
+        ]
+       },
+       {
+        "input": 63,
+        "args": [
+         " ",
+         "@UL/5"
+        ]
+       },
+       {
+        "input": 64,
+        "args": [
+         "x y",
+         "v7xwe"
+        ]
+       },
+       {
+        "input": 65,
+        "args": [
+         "0",
+         "\\"
+        ]
+       },
+       {
+        "input": 66,
+        "args": [
+         "@",
+         "vc6i5"
+        ]
+       },
+       {
+        "input": 67,
+        "args": [
+         "\\",
+         "日本"
+        ]
+       },
+       {
+        "input": 68,
+        "args": [
+         "日本",
+         "\\"
+        ]
+       },
+       {
+        "input": 69,
+        "args": [
+         "\\",
+         "v889x"
+        ]
+       },
+       {
+        "input": 70,
+        "args": [
+         "twelve-chars",
+         "@iC/KN"
+        ]
+       },
+       {
+        "input": 71,
+        "args": [
+         "@m,R/",
+         "Hello, World! 2024-01-31 10:30"
+        ]
+       },
+       {
+        "input": 72,
+        "args": [
+         "\\",
+         "vgvri"
+        ]
+       },
+       {
+        "input": 73,
+        "args": [
+         "\\",
+         "line one\nline two"
+        ]
+       },
+       {
+        "input": 74,
+        "args": [
+         "/",
+         "null"
+        ]
+       },
+       {
+        "input": 75,
+        "args": [
+         "/",
+         "@8O/"
+        ]
+       },
+       {
+        "input": 76,
+        "args": [
+         "vkxau",
+         "  padded  "
+        ]
+       },
+       {
+        "input": 77,
+        "args": [
+         "\\",
+         "/path/to/file.txt"
+        ]
+       },
+       {
+        "input": 78,
+        "args": [
+         "/path/to/file.txt",
+         "@rT/q9"
+        ]
+       },
+       {
+        "input": 79,
+        "args": [
+         "user@example.com",
+         "@FQd/n"
+        ]
+       },
+       {
+        "input": 80,
+        "args": [
+         "\\",
+         ""
+        ]
+       },
+       {
+        "input": 81,
+        "args": [
+         "\\",
+         "\\"
+        ]
+       },
+       {
+        "input": 82,
+        "args": [
+         "abc",
+         " "
+        ]
+       },
+       {
+        "input": 83,
+        "args": [
+         " ",
+         "x y"
+        ]
+       },
+       {
+        "input": 84,
+        "args": [
+         "x y",
+         "v"
+        ]
+       },
+       {
+        "input": 85,
+        "args": [
+         "/",
+         "/"
+        ]
+       },
+       {
+        "input": 86,
+        "args": [
+         "@FXn/",
+         "-1"
+        ]
+       },
+       {
+        "input": 87,
+        "args": [
+         "J",
+         "ÄÖü"
+        ]
+       },
+       {
+        "input": 88,
+        "args": [
+         "\\",
+         "v5w68"
+        ]
+       },
+       {
+        "input": 89,
+        "args": [
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+         "\\"
+        ]
+       },
+       {
+        "input": 90,
+        "args": [
+         "twelve-chars",
+         "/"
+        ]
+       },
+       {
+        "input": 91,
+        "args": [
+         "v6rlt",
+         "vfgn"
+        ]
+       },
+       {
+        "input": 92,
+        "args": [
+         "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+         "line one\nline two"
+        ]
+       },
+       {
+        "input": 93,
+        "args": [
+         "/",
+         "@y/pX6"
+        ]
+       },
+       {
+        "input": 94,
+        "args": [
+         "v5o90",
+         "null"
+        ]
+       },
+       {
+        "input": 95,
+        "args": [
+         "v4p6v",
+         "vbzd7"
+        ]
+       },
+       {
+        "input": 96,
+        "args": [
+         "v3gl6",
+         "@"
+        ]
+       },
+       {
+        "input": 97,
+        "args": [
+         "v8vol",
+         "vdopw"
+        ]
+       },
+       {
+        "input": 98,
+        "args": [
+         "vfjci",
+         "@g/o4"
+        ]
+       },
+       {
+        "input": 99,
+        "args": [
+         "\\",
+         "vb6em"
+        ]
+       }
+      ],
+      "heaps": {
+       "assignments": 0,
+       "pool": 2,
+       "shapes": {}
+      },
+      "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+      "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+      "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+      "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+      "library": {
+       "records": 0,
+       "ops": {},
+       "calls": {},
+       "sampled": [],
+       "outOfModel": 0,
+       "callbackEffects": 0,
+       "defectRecords": 0,
+       "defects": []
+      },
+      "environmentPrograms": {
+       "runs": 12,
+       "maxCommands": 6,
+       "seed": 1,
+       "commands": "call, invoke, fire, tick, settle, next, throw, return",
+       "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+      }
+     },
+     "witnesses": null
+    },
+    "A": {
+     "verdict": "ASK:unproved",
+     "identity": null,
+     "lemmas": {
+      "Equal_normalize_package_name": false
+     },
+     "reading": null,
+     "canonical": null,
+     "heapCore": [],
+     "dafny": "Dafny program verifier finished with 5 verified, 5 errors",
+     "theoremSha256": "cc2114afea17edc6",
+     "preludeSha256": "eb56981d88b61c6a",
+     "dafnyVersion": "4.11.0",
+     "timeLimitSeconds": 30,
+     "dir": "/var/folders/r2/k83h9fg92j7f6pfxshk0nn280000gn/T/lean-check-9dXW8a",
+     "restsOn": [],
+     "cells": {
+      "cells": [],
+      "obligations": []
+     }
+    }
+   },
+   "tools": {
+    "node": "v24.18.0",
+    "dafny": "4.11.0",
+    "z3": "Z3 version 5.3.2 - 64 bit",
+    "z3Source": "z3 on PATH"
+   },
+   "unitTextEqual": false,
+   "observation": {
+    "layer": "values and the reachable object graph",
+    "renders": null,
+    "effects": "the trace of environment requests and pending work",
+    "schedule": "synchronous; pending work recorded, never fired"
+   },
+   "library": {
+    "records": 0,
+    "ops": {},
+    "outOfModel": 0,
+    "callbackEffects": 0,
+    "defects": 0
+   },
+   "verdict": "PASS-bounded"
+  },
+  "laneB": "PASS-bounded",
+  "laneA": "ASK:unproved",
+  "witness": null,
+  "reason": null,
+  "advice": []
+ }
+}

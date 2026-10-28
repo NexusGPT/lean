@@ -61,3 +61,12 @@ test("check certificate names the rung and retains lane B", async () => {
   assert.equal(got.certificate.lanes.B.verdict,"PASS-bounded");
  }
 });
+for (const [name,source] of [
+ ["shorthand source escape", "import {inspect} from 'env'; export function f(){return inspect({f})}"],
+ ["export object source escape", "import {inspect} from 'env'; export function f(){return inspect(exports)}"],
+ ["script global source escape", "function f(){return inspect(globalThis)}"],
+ ["receiver source escape", "export function f(){return inspect(this)}"],
+]) test("source escape: "+name, () => {
+ const changed=source.replace("function f(){","function f(){/* trivia */");
+ assert.equal(decide(source,changed).status,"undecided");
+});

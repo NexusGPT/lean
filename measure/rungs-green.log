@@ -1,0 +1,31 @@
+✔ parsed (21.769166ms)
+✔ normalised (450.29625ms)
+✔ capture (5.844875ms)
+✔ error (5.975833ms)
+✔ congruence (5.382ms)
+✔ alias (7.075917ms)
+✔ must not decide: environment not established (0.531542ms)
+✔ must not decide: changed module cell (0.630583ms)
+✔ must not decide: source observation (0.471042ms)
+✔ must not decide: indirect source observation (0.925125ms)
+✔ must not decide: callee observes source (0.4805ms)
+✔ must not decide: ASI return (37.553666ms)
+✔ must not decide: empty statement (129.717708ms)
+✔ must not decide: template raw text (183.38925ms)
+✔ must not decide: const write (1.349917ms)
+✔ must not decide: inferred function name (265.903792ms)
+✔ must not decide: shorthand changes key (40.692292ms)
+✔ must not decide: eval (0.766834ms)
+✔ must not decide: TDZ (0.570333ms)
+✔ must not decide: callee argument change (0.604708ms)
+✔ must not decide: recursive callee (0.608417ms)
+✔ independent declarations reorder (7.006167ms)
+✔ AST comparison retains declaration kind (0.485541ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2795.210459

@@ -1,0 +1,249 @@
+{
+ "identity": "2e8e8cea8d81a792b6ec111422149ba3969b22fc109128079559cc4aefeb8e51",
+ "leanVersion": "fea80f883efbce3d83436d19a1a4b6778e4914a5",
+ "rows": [
+  {
+   "file": "lib/ignored-paths.js",
+   "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+   "lines": [
+    200,
+    235
+   ],
+   "coverage": "refused:ts-strict",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 6,
+    "args": [],
+    "parent": {
+     "outcome": {
+      "threw": {
+       "$error": "TypeError",
+       "message": "ig.add is not a function"
+      }
+     },
+     "heap": {
+      "roots": [],
+      "own": {},
+      "outcome": null,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {
+      "this.options": {
+       "$fake": "this.options"
+      },
+      "this.ig": {
+       "custom": {
+        "$fake": "this.ig.custom"
+       },
+       "default": {
+        "$fake": "this.ig.default"
+       }
+      }
+     },
+     "trace": [
+      {
+       "op": "call",
+       "path": "module:ignore",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:ignore()#1.add",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:ignore()#1.add",
+       "args": [
+        [
+         "/node_modules/*",
+         "/bower_components/*"
+        ]
+       ]
+      },
+      {
+       "op": "get",
+       "path": "this.options",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "this.options.ignore",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:ignore()#1.add()#1.add",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "this.ig",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "threw": {
+       "$error": "TypeError",
+       "message": "ig.add is not a function"
+      }
+     },
+     "heap": {
+      "roots": [],
+      "own": {},
+      "outcome": null,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {
+      "this.options": {
+       "$fake": "this.options"
+      }
+     },
+     "trace": [
+      {
+       "op": "call",
+       "path": "module:ignore",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:ignore()#1.add",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:ignore()#1.add",
+       "args": [
+        [
+         "/node_modules/*",
+         "/bower_components/*"
+        ]
+       ]
+      },
+      {
+       "op": "get",
+       "path": "this.options",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "this.options.dotfiles",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:ignore()#1.add()#1.add",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "where": {
+     "field": "receiver",
+     "lines": {
+      "kind": "completion fallback",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_base_44343_ignored-paths.js",
+       "start": 205,
+       "end": 205,
+       "text": "ig.add(this.ig.custom);"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint/lib/.lean_head_44343_ignored-paths.js",
+       "start": 207,
+       "end": 207,
+       "text": "ig.add([\".*/*\", \"!../\"]);"
+      }
+     }
+    }
+   },
+   "reason": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+   "advice": [
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 92,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'addPattern' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 99,
+     "rule": "ts-strict",
+     "msg": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 102,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'ignoreFiles' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 103,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'add' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 106,
+     "rule": "ts-strict",
+     "msg": "TS2769: No overload matches this call.   Overload 1 of 2, '(...items: ConcatArray<never>[]): never[]', gave the following error.     Argument of type 'string[]' is not assignable to parameter of type 'ConcatArray<never>'.       The types returned by 'slice(...)' are incompatible between these types.         Type 'string[]' is not assignable to type 'never[]'.           Type 'string' is not assignable to type 'never'.   Overload 2 of 2, '(...items: ConcatArray<never>[]): never[]', gave the following error.     Argument of type 'string[]' is not assignable to parameter of type 'ConcatArray<never>'.       The types returned by 'slice(...)' are incompatible between these types.         Type 'string[]' is not assignable to type 'never[]'.           Type 'string' is not assignable to type 'never'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 106,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'patterns' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 107,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'cwd' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "note": "input 6: receiver; lib/ignored-paths.js:207"
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/ignored-paths.js",
+     "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+     "lines": [
+      200,
+      235
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ }
+}
