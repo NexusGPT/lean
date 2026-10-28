@@ -20,7 +20,11 @@
 // elements and their children lists (render alone cuts a deep element's children to one {$deep} object).
 // `children` is read one way by every reader (kidsOf): nothing is no child, an array is the children, anything else (one
 // element, one text, a rendered value cut by a depth bound) is one child.
-import { render, renderTree } from './exec/fake.mjs';
+import { render } from './exec/fake.mjs';
+
+// an op's node rendered to its last element: render's depth bound restarts at every element, as in the observed trees
+// (exec/run.mjs renderTree, the same rule); a value inside a prop keeps the bound
+const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 
 const KINDS = ['insert', 'remove', 'text', 'attribute', 'move'];
 const MAX_DEPTH = 64, MAX_OPS = 500; // the walk is total: past the depth a differing subtree is one remove and one insert; past the op budget the list is cut and says so

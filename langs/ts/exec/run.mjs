@@ -22,7 +22,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork } from 'node:child_process';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
-import { Environment, render, renderTree, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
+import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
@@ -258,7 +258,9 @@ function reactRuntime(env) {
   env.react = runtime;
   return proxy;
 }
-// a rendered tree: renderTree (fake.mjs), render's depth bound restarting at every element
+// a rendered tree, observed to its last element: render's depth bound (six object levels) restarts at every element, so
+// an element is never cut because of where it sits; a value inside a prop keeps the bound
+const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 const isJsxValue = (v) => (Array.isArray(v) ? v.some(isJsxValue) : !!v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el'));
 // the layer a front-end verdict names (research 18, 19: every verdict names its layer and its admitted set)
 export const FRONT_END_OBSERVATION = Object.freeze({ layer: 'element tree', renders: 'one', handlers: 'each invoked once on a fake event, its result and requests recorded', effects: 'run once after the render, in registration order; cleanups recorded as pending', schedule: 'synchronous; microtasks drained after the call; timers recorded as pending, never fired' });

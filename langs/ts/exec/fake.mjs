@@ -303,9 +303,6 @@ export function render(v, depth = 0, seen = new Set(), share = null) {
   seen.add(v);
   return renderBody(v, depth, seen, share);
 }
-// a rendered tree, observed to its last element: render's depth bound (six object levels) restarts at every element, so
-// an element is never cut because of where it sits; a value inside a prop keeps the bound
-export const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 function renderBody(v, depth, seen, share) {
   if (Array.isArray(v)) return v.map((x) => render(x, depth + 1, seen, share));
   if (v instanceof Date) return { $date: Number.isNaN(v.getTime()) ? 'invalid' : v.toISOString() };
