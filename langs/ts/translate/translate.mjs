@@ -43,6 +43,7 @@ import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobal
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
+import { cellWrite, captureKind, heldFunction } from '../react.mjs'; import { mentions } from '../handlers.mjs'; // a ref cell write in a held function: a cell step of the handler (design/ref-cell.md)
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
@@ -1429,7 +1430,7 @@ export function translate(file, fnName, opts = {}) {
     calleeName = `${spread ? 'call_seq' : 'call_args'}_${calleeName}`; // disjoint call forms: f(...xs) never collides with a function named f_seq(xs)
     if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && calleeName.endsWith(`_${n.expression.text}`) && reachOf.reachesFile(n.expression)) calleeName += `_${hash(reachOf.keyText(n.expression))}`; // a binding of this file called by name (a constant holding a function value) is named by the code it reaches (design/reach-keys.md)
     const throwingUnitValue = (a) => ts.isIdentifier(a) && originOf(checker, a, sf, currentUnit?.node ?? null).kind === 'unit' && (exceptionUnits.has(a.text) || effectfulUnits.has(a.text)); // stage 5 rank 20: handed to an outside call, an opaque value named by its text
-    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
+    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? (cellWriter(a) && reactHandler(a)) || opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
     if (!isEff) {
       let code;
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
@@ -2087,6 +2088,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         if (n.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return opaqueFn(n);
         // a pure lambda when the body is in the subset without effects; otherwise an opaque value keyed by its text (a
         // handler, a thunk with calls inside): the same text on both sides is the same value, a changed one differs
+        if (cellWriter(n)) return reactHandler(n) ?? opaqueFn(n); // a held function writing a ref cell: its statements as steps, the write a cell step (design/ref-cell.md); unread, one value keyed by its text
         try { return lambda(n, n.parameters.length); } catch (e) { if (!(e instanceof Unsupported)) throw e; return reactHandler(n) ?? opaqueFn(n); }
       }
       case K.TaggedTemplateExpression: {
@@ -2869,9 +2871,33 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   }
   // deferred calls are data: their callee, arguments, order and return behavior, without running the world. The arrow
   // is read by handlers.mjs (shared with lane B's interpreter); here its steps are rendered as Dafny values
+  // a function React holds itself (a JSX attribute value, an effect or useCallback argument, a const held so) with a
+  // statement `r.current = v` on a ref cell of the unit (react.mjs, cellWrite: the one predicate the lint admits it by)
+  function cellWriter(cb) {
+    const ub = currentUnit?.body ?? null;
+    if (!ub || !ts.isArrowFunction(cb) || !ts.isBlock(cb.body) || !heldFunction(checker, cb, ub)) return false;
+    return cb.body.statements.some((st) => ts.isExpressionStatement(st) && ts.isBinaryExpression(st.expression) && st.expression.operatorToken.kind === K.EqualsToken && !!cellWrite(checker, st.expression.left, ub));
+  }
   function reactHandler(cb) {
-    const h = readHandler(checker, sf, cb, { isSetter: (s) => (currentSlots && setterSlot.has(s) ? setterSlot.get(s) : null), unitBody: currentUnit?.body ?? null, unitNode: currentUnit?.node ?? null });
+    // cell steps: a ref cell write is a step of the handler, which writes the box and renders nothing (React docs,
+    // useRef); an effect holding one is read as a handler too (held), the effect's steps run when React runs it
+    const h = readHandler(checker, sf, cb, { isSetter: (s) => (currentSlots && setterSlot.has(s) ? setterSlot.get(s) : null), unitBody: currentUnit?.body ?? null, unitNode: currentUnit?.node ?? null, cellSteps: true, held: cellWriter(cb) });
     if (!h) return null;
+    // the cell a step writes, by a reference to it inside the handler, and the cell's hook ordinal in the unit (the n-th
+    // useRef call: two ordinals are two cells of one render)
+    const cellRef = (sym) => { let f = null; const w = (x) => { if (f) return; if (ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym) { f = x; return; } ts.forEachChild(x, w); }; w(cb.body); return f; };
+    const ordinal = (sym) => { const id = cellRef(sym), k = id && captureKind(checker, id, cb, currentUnit?.body ?? null); return k?.kind === 'ref-cell' && k.at >= 0 ? k.at : null; };
+    // a run of adjacent cell steps on distinct cells, no value reading a cell of the run, commutes: each writes its own box
+    // and reads none the others write, so the run is put in the order of the cells' ordinals; any other run keeps its order
+    const steps = [...h.steps];
+    for (let i = 0; i < steps.length;) {
+      if (steps[i].kind !== 'cell') { i++; continue; }
+      let j = i; while (j < steps.length && steps[j].kind === 'cell') j++;
+      const run = steps.slice(i, j), keys = new Map(run.map((st) => [st, ordinal(st.cell)]));
+      const free = run.length > 1 && run.every((st) => keys.get(st) !== null) && new Set(run.map((st) => st.cell)).size === run.length && run.every((st) => { const m = mentions(checker, st.value, h.locals); return run.every((o) => !m.has(o.cell)); });
+      if (free) steps.splice(i, run.length, ...[...run].sort((x, y) => keys.get(x) - keys.get(y)));
+      i = j;
+    }
     anyType();
     addPrelude('ReactExpr', 'datatype ReactExpr = ReactAtom(atom: Any) | ReactExpr(op: string, operands: seq<ReactExpr>) | ReactParam(index: int)');
     addPrelude('ReactStep', 'datatype ReactStep = ReactCall(callee: string, receiver: seq<ReactExpr>, args: seq<ReactExpr>, returnsResult: bool) | ReactReturn(value: ReactExpr) | ReactSet(slot: int, next: Any) | ReactSetExpr(slot: int, nextExpr: ReactExpr)');
@@ -2915,7 +2941,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return `ReactSet(${i}, ${convertD(code, D, anyType())})`;
     };
     const callOf = (s) => (s.kind === 'set' ? { name: 'value', recv: [s.callee], args: s.args, returns: s.returns } : s);
-    const codes = h.steps.map((s) => s.kind !== 'return' ? (setStep(s) ?? ((c) => `ReactCall(${strEsc(c.name)}, [${c.recv.map(box).join(', ')}], [${c.args.map(box).join(', ')}], ${c.returns})`)(callOf(s))) : `ReactReturn(${s.value ? box(s.value) : `ReactAtom(${convertD('Unit', 'Unit', anyType())})`})`);
+    const cellStep = (s) => { if (s.kind !== 'cell') return null; const id = cellRef(s.cell); if (!id) { refused = true; return null; } return `ReactCall("ref:set", [${box(id)}], [${box(s.value)}], false)`; }; // the box, then its next value
+    const codes = steps.map((s) => s.kind !== 'return' ? (cellStep(s) ?? setStep(s) ?? ((c) => `ReactCall(${strEsc(c.name)}, [${c.recv.map(box).join(', ')}], [${c.args.map(box).join(', ')}], ${c.returns})`)(callOf(s))) : `ReactReturn(${s.value ? box(s.value) : `ReactAtom(${convertD('Unit', 'Unit', anyType())})`})`);
     if (refused) return null;
     const d = dtype(typeOf(cb), cb);
     return `${external(`react_handler_${mangle(d)}`, ['ReactHandler'], d)}(ReactHandler([${codes.join(', ')}]))`;
@@ -2965,7 +2992,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   const mayThrowInside = (body) => { let f = false; const w = (x) => { if (f) return; if (ts.isFunctionLike(x)) return; if (ts.isThrowStatement(x) || ts.isTryStatement(x) || ((ts.isCallExpression(x) || ts.isNewExpression(x)) && exceptionUnits.has(unitNameOfCall(x)))) { f = true; return; } ts.forEachChild(x, w); }; w(body); return f; };
   function lambda(cb, arity, paramTypes = [], opaqueOk = false) {
     if (opaqueOk && ts.isIdentifier(cb)) { const o0 = originOf(checker, cb, sf, currentUnit?.node ?? null); if (o0.kind === 'unit' && (exceptionUnits.has(cb.text) || effectfulUnits.has(cb.text))) return opaqueFn(fns.get(cb.text)?.fn ?? cb); }
-    if (opaqueOk && !ts.isIdentifier(cb) && (containsEffect(cb.body) || mayThrowInside(cb.body) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword))) return reactHandler(cb) ?? opaqueFn(cb);
+    if (opaqueOk && !ts.isIdentifier(cb) && (containsEffect(cb.body) || mayThrowInside(cb.body) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword) || cellWriter(cb))) return reactHandler(cb) ?? opaqueFn(cb); // a held function writing a ref cell: its cell steps (design/ref-cell.md)
     if (ts.isIdentifier(cb)) {
       // a named callback: a same-file function or a local function value, applied through a lambda of the expected shape
       const o = originOf(checker, cb, sf, currentUnit?.node ?? null);

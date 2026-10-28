@@ -7,7 +7,10 @@
   "tally",
   "write_read",
   "write_reorder",
-  "effect_write"
+  "effect_write",
+  "chain_reorder",
+  "held_reorder",
+  "write_value"
  ],
  "equal": {
   "row": true,
@@ -16,10 +19,13 @@
   "cell_init": false,
   "tally": true,
   "write_read": false,
-  "write_reorder": false,
-  "effect_write": true
+  "write_reorder": true,
+  "effect_write": true,
+  "chain_reorder": false,
+  "held_reorder": true,
+  "write_value": false
  },
- "why": "the capture table carries three kinds alike in the lint and the interpreter: a hook result whose method is a request (another path at the click is a WITNESS; two pure render consts in another order prove, the held handler keyed by the hook and the method), a ref cell read as a cell (another initial value is another content, a WITNESS through the held handler's key), and a prop read through a nested binding (a fired setter over a ref cell and a nested prop is interpreted, every fire agreeing); a ref cell write inside a held function is a cell step (no re-render): lane A keeps the writing handler as a function value keyed by its text and captures, so a dropped write and two writes in another order are not proved, while lane B's interpreter steps the cells and the second click witnesses the dropped write; two writes in another order leave the same cells (PASS-bounded, every fire agreeing); a render-time write stays refused (escape handler_capture_unknown, renderWrite)",
+ "why": "the capture table carries three kinds alike in the lint and the interpreter: a hook result whose method is a request (another path at the click is a WITNESS; two pure render consts in another order prove, the held handler keyed by the hook and the method), a ref cell read as a cell (another initial value is another content, a WITNESS through the held handler's key), and a prop read through a nested binding (a fired setter over a ref cell and a nested prop is interpreted, every fire agreeing); a ref cell write inside a function React holds (a JSX handler, an effect, a useCallback argument) is a cell step of the handler's statements over the world, no re-render (design/ref-cell.md): a dropped write and another written value are not proved, and lane B's interpreter steps the cells so the second click witnesses them; two writes of distinct cells, no value reading the other cell, commute (the run is put in the order of the cells' hook ordinals), so another order proves, in a JSX handler and in a useCallback argument alike; a write moved past a write whose value reads its cell does not commute: not proved, and the second click saves the old content (WITNESS); a render-time write stays refused (escape handler_capture_unknown, renderWrite)",
  "b": {
   "Row": "PASS-bounded",
   "Nav": "WITNESS",
@@ -28,7 +34,10 @@
   "Tally": "PASS-bounded",
   "WriteRead": "WITNESS",
   "WriteReorder": "PASS-bounded",
-  "EffectWrite": "PASS-bounded"
+  "EffectWrite": "PASS-bounded",
+  "ChainReorder": "WITNESS",
+  "HeldReorder": "PASS-bounded",
+  "WriteValue": "WITNESS"
  },
  "handlers": {
   "Tally": {
