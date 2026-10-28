@@ -171,6 +171,7 @@ export function translate(file, fnName, opts = {}) {
   const reachOf = makeReach(checker, sf);
   const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
   const heapHyps = [];
+  const inheritedReads = new Set(); // `<unit>\u0000<method>`: an inherited method the unit reads through its keyed transition (design/inherited-method.md)
   const cellLines = []; // `// CELLS <unit>: <json>`: the persistent cells the unit touches (module cells, fields of this, outside roots), each read or written, each matched against the transition the emitted text carries; a touched cell with no transition is an obligation, and lane A says ASK:obligation
   // the state-completeness audit (research 14 design (c)): what a unit reads and writes outside its own frame. A module
   // cell is a module-level `let` or an object-valued const (moduleState); a field of `this` is a class method's world;
@@ -233,6 +234,7 @@ export function translate(file, fnName, opts = {}) {
       if (c.alias && !/\bHWorld\b/.test(text)) return false; // a change through a call result reaches the cell only in the heap core
       if (/_block_/.test(text)) return true; // an opaque unit: one uninterpreted transition of the world, every cell inside it rides in that transition
       if (c.kind === 'module') return (!c.read || has(new RegExp(`Module_file_get_${esc(c.name)}_`))) && (!c.write || has(new RegExp(`Module_file_set_${esc(c.name)}_`))) && (!c.mutator || /\bWorld\b/.test(text));
+      if (c.kind === 'this' && c.read && !c.write && !c.mutator && !c.alias && inheritedReads.has(`${u.name}\u0000${c.name}`)) return true; // an inherited method read through its keyed transition (design/inherited-method.md)
       if (c.kind === 'this') return (!c.read || has(new RegExp(`(_get_${esc(c.name)}(_|\\()|Get_\\w+_${esc(c.name)}\\(|\\.${esc(c.name)}_f\\b|_${esc(c.name)}_Ext_\\w+\\(self\\))`))) && (!c.write || has(new RegExp(`(_set_${esc(c.name)}(_|\\()|Set_\\w+_${esc(c.name)}\\(|${esc(c.name)}_f :=)`))) && (!c.mutator || /\bH?World\b/.test(text)); // a heap-core method's mutator is a heap write of its HWorld
       return (!c.read || has(/(global_handle_|global_get_|module_require|module_import)/)) && !c.write;
     };
@@ -3838,6 +3840,11 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       // an inherited method or a function-typed field: an uninterpreted external of the receiver and the arguments
       const T = selfType(currentUnit);
+      // a method a base class declares (this file or another): the transition is named by the base, the method and the
+      // code its run reaches (reach.mjs inheritedKeyText, design/inherited-method.md), so a changed base is another
+      // transition; where the reading does not hold the name stays unkeyed and the cell audit keeps the read an obligation
+      const inherited = reachOf.inheritedKeyText(n);
+      if (inherited.key) { inheritedReads.add(`${currentUnit.name}\u0000${name}`); return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_of_${inherited.base}_${createHash('sha256').update(inherited.key).digest('hex').slice(0, 16)}`, n, [...n.arguments], SELF, T, true); }
       return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
     }
     {

@@ -1,0 +1,33 @@
+{
+ "scope": [
+  "item_render",
+  "item_tag",
+  "item_title",
+  "item_next",
+  "item_show",
+  "item_word",
+  "item_size"
+ ],
+ "equal": {
+  "item_render": false,
+  "item_tag": true,
+  "item_title": true,
+  "item_word": false,
+  "item_size": true
+ },
+ "why": "the candidate imports base_next.ts, where pad (reached by the inherited format) changed and the count initializer changed: render reads format through a transition keyed by format's reach, a different key on each side, so it is not proved and lane B witnesses it; tag and title read label, whose reach is the same text on both sides, so the unrelated base change still proves (title is a refactor through a local); next reads bump, which writes this.count, and show reads describe, which calls word that Item overrides: neither enters the keyed reading, so check.mjs keeps the read an obligation (next ASK) or lane B witnesses the changed override (show); word changed; size untouched. same.ts is the parent copied: check.mjs proves render and tag on it",
+ "b": {
+  "Item.render": "WITNESS",
+  "Item.tag": "PASS-bounded",
+  "Item.title": "PASS-bounded",
+  "Item.show": "WITNESS",
+  "Item.word": "WITNESS",
+  "Item.size": "PASS-bounded"
+ },
+ "check": {
+  "Item.render": { "verdict": "WITNESS" },
+  "Item.tag": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
+  "Item.title": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
+  "Item.next": { "verdict": "ASK", "laneA": "ASK:obligation", "reason": "this bump: read without a transition" }
+ }
+}
