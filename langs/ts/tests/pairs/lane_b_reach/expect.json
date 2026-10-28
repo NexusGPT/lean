@@ -1,0 +1,21 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "lane B's representation families (exec/repr.mjs, design/lane-b-reach.md), one unit per family: the two versions agree on every plain value of the declared type and differ on one runtime form the type admits (an own key it does not declare, a key on the prototype, a getter, a non-enumerable key, a symbol key, no prototype, an Object.prototype name as a key, a hole, an own key beside the indices, two arguments as one object, a value converting itself, a thenable). Each is WITNESS with its family alone (LEAN_REACH=<family>) and PASS-bounded with the tier off (LEAN_REACH=none), on the base f409bd8 PASS-bounded, except sharedReference, which the enumerated heaps already witness at input 0; untouched is the same text. Lane A is not run: the units read the representations through reflection the subset refuses.",
+ "b": {
+  "extraKey": "WITNESS",
+  "inheritedKey": "WITNESS",
+  "accessorKey": "WITNESS",
+  "nonEnumerableKey": "WITNESS",
+  "symbolKey": "WITNESS",
+  "nullPrototype": "WITNESS",
+  "protoNameKey": "WITNESS",
+  "sparseArray": "WITNESS",
+  "arrayExtraProperty": "WITNESS",
+  "sharedReference": "WITNESS",
+  "coercionHooks": "WITNESS",
+  "thenable": "WITNESS",
+  "untouched": "PASS-bounded"
+ }
+}
