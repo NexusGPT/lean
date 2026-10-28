@@ -1437,11 +1437,22 @@ export function applyCall(n, checker) {
     list = rest[0] ?? null;
   }
   const out = { method, args: kind === 'call' ? rest : [], spread: list, via: kind };
-  if (list && !arrayT(list)) return { ...out, receiver: thisArg, exact: false, why: `the list \`${list.getText().slice(0, 40)}\` is not an array type: apply on null or undefined passes no argument where a spread throws` };
+  if (list && !arrayT(list)) return { ...out, receiver: thisArg, exact: false, why: `the list \`${list.getText().slice(0, 40)}\` is not an array type: apply lists its length and indexes (CreateListFromArrayLike) where a spread iterates, so a string or a Set differ, and apply on null or undefined passes nothing where a spread throws` };
+  const rootOf = (x) => { x = strip(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) x = strip(x.expression); return x; };
+  const worldRoot = (x) => { // a field of `this` or a module binding is a cell of the world: each read is a transition (lane B traces it), so the apply form's two reads are not the direct call's one
+    const r = rootOf(x);
+    if (r.kind === ts.SyntaxKind.ThisKeyword) return 'a field of the receiver `this`';
+    if (!ts.isIdentifier(r)) return null;
+    const d = checker.getSymbolAtLocation(r)?.valueDeclaration;
+    for (let p = d?.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return null;
+    return 'a module binding';
+  };
+  const libRoot = (x) => { const r = rootOf(x); const d = ts.isIdentifier(r) ? checker.getSymbolAtLocation(r)?.valueDeclaration : null; return !!d && LIB_FILE.test(d.getSourceFile().fileName); }; // `Array.prototype`: a constant of the language, read with no effect
+  { const w = worldRoot(thisArg) ?? (libRoot(base) ? null : worldRoot(base)); if (w) return { ...out, receiver: thisArg, exact: false, why: `the receiver \`${thisArg.getText().slice(0, 40)}\` is ${w}, a cell of the world read once per mention: the apply form reads it twice, the direct call once` }; }
   if (samePath(base, thisArg)) return { ...out, receiver: base, exact: true, own: true };
   const intrinsic = libOf(checker.getSymbolAtLocation(callee.name), ['Array', 'ReadonlyArray']) && (samePath(base) || (ts.isArrayLiteralExpression(strip(base)) && !strip(base).elements.length));
   if (intrinsic && samePath(thisArg) && arrayT(thisArg) && !/\n/.test(thisArg.getText())) return { ...out, receiver: thisArg, exact: true, own: false };
-  return { ...out, receiver: thisArg, exact: false, why: intrinsic ? `\`this\` (\`${thisArg.getText().slice(0, 40)}\`) is not a plain path to an array` : `\`this\` (\`${thisArg.getText().slice(0, 40)}\`) is another value than the method's base \`${base.getText().slice(0, 40)}\`` };
+  return { ...out, receiver: thisArg, exact: false, why: intrinsic ? `\`this\` (\`${thisArg.getText().slice(0, 40)}\`) is not an array reached by a plain path` : `\`this\` (\`${thisArg.getText().slice(0, 40)}\`) is another value than the method's base \`${base.getText().slice(0, 40)}\`` };
 }
 
 // normaliseApplyCalls(loaded): the loaded program with every exact apply/call (applyCall) written as the direct call.

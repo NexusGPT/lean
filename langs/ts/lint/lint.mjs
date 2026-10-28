@@ -199,7 +199,9 @@ function forInDelete(s, checker, sf) {
 
 export function lintFile(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
-  const { sf, checker, diagnostics } = normaliseApplyCalls(opts.loaded ?? loadProgram(file, { project: opts.project ?? true })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
+  const given = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
+  const { sf, checker, diagnostics } = normaliseApplyCalls(given); // an exact apply/call is read as the direct call (common.mjs applyCall)
+  const ownText = given.sf.text; // what the owner wrote: the normalised text has the same length, so a finding quotes this at the same positions
   const out = [];
   const units = topLevelFunctions(sf);
   const exceptionUnits = exceptionUnitsOf(sf, checker, units);
@@ -251,7 +253,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   // site: the label of the advised rewrite as decided at this site ({ label, precondition }), for the rules that decide it
   const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
-    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
+    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
   };
   // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
   // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
@@ -2387,7 +2389,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (IMPLICIT_ANY.has(d.code)) continue; // implicit any: opaque, admitted
     if (d.code === 18046 && !ownUnknown(d)) continue; // an unknown the unit did not write: opaque, admitted
     if (d.code === 2683 || d.code === 7041) { // an implicit receiver: an input the function does not declare, which the translator refuses
-      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: sf.text.slice(d.start, d.start + (d.length ?? 4)) });
+      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: ownText.slice(d.start, d.start + (d.length ?? 4)) });
       continue;
     }
     if (d.code === 2339 || d.code === 2551) {
