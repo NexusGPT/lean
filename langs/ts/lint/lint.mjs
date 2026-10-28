@@ -15,6 +15,7 @@ import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedu
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { nonNullOnAbsent } from '../common.mjs';
+import { definiteAssignmentRead } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -605,7 +606,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.VariableStatement: {
         const list = s.declarationList;
         if (!(list.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const))) v(s, 'var', '`var` is outside the subset; use let or const');
-        for (const d of list.declarations) varDecl(d);
+        for (const d of list.declarations) { if (definiteAssignmentRead(checker, d)) v(d, 'definite-assignment', '`let v!: T` may be read before its first assignment, where it is undefined; assign it first or give it a start value'); varDecl(d); }
         return;
       }
       case K.ExpressionStatement: return exprStmt(s.expression);

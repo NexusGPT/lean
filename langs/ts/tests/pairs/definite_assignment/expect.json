@@ -1,0 +1,29 @@
+{
+  "why": "`let v!: T` turns off TypeScript's check that v is assigned before it is read; read first, v is undefined. The translator gave such a variable an uninterpreted start value of its type (uninit_T), which proved late's `return v` equal to `return v + 0` (undefined against NaN when flag is false). A definite-assignment declaration is now refused by the lint and the translator (common.mjs definiteAssignmentRead) unless nothing in its block mentions it before the declaration and its first later mention is a plain assignment that does not read it. late: lane B witnesses, lane A says nothing (parent against itself PASS-bounded). early, assigned first, keeps today's reading and is proved on a refactor; plain untouched, proved.",
+  "candidateOnly": [
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "late",
+      "verdict": "WITNESS"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "early",
+      "verdict": "PASS-proved"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "plain",
+      "verdict": "PASS-proved"
+    },
+    {
+      "file": "parent.ts",
+      "parent": "parent.ts",
+      "unit": "late",
+      "verdict": "PASS-bounded"
+    }
+  ]
+}
