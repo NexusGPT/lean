@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/array-callback-return.js",
+ "unit": "(edit 5f260046a9c4)",
+ "editIds": [
+  "5f260046a9c4291da9c4a72428ed04cb58e9ece03941a2121470f5422b4ca13e"
+ ],
+ "lines": [
+  189,
+  189
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

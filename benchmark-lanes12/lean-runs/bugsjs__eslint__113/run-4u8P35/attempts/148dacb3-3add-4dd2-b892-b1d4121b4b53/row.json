@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unused-vars.js",
+ "unit": "(edit c40de88b8ac7)",
+ "editIds": [
+  "c40de88b8ac7878af9e6284af128b287b509459e895d76efc6928e7cb85a00ff"
+ ],
+ "lines": [
+  36,
+  36
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

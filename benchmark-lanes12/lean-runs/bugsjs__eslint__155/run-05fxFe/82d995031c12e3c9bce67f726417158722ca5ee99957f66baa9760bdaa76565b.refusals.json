@@ -1,0 +1,71 @@
+{
+ "identity": "82d995031c12e3c9bce67f726417158722ca5ee99957f66baa9760bdaa76565b",
+ "records": [
+  {
+   "check": "lane-B",
+   "unit": "getIdentifierIfShouldBeConst",
+   "file": "lib/rules/prefer-const.js",
+   "location": {
+    "start": 101,
+    "end": 103
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "$fake": "arg0"
+    },
+    false
+   ],
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "lib/rules/prefer-const.js",
+     "start": 97,
+     "end": 97,
+     "text": "const references = variable.references;"
+    },
+    "candidate": {
+     "file": "lib/rules/prefer-const.js",
+     "start": 101,
+     "end": 103,
+     "text": "if (variable.defs.length > 1) {\n        return null;\n    }"
+    }
+   },
+   "reason": "the two versions differ on trace"
+  },
+  {
+   "check": "lane-B",
+   "unit": "groupByDestructuring",
+   "file": "lib/rules/prefer-const.js",
+   "location": {
+    "start": 101,
+    "end": 103
+   },
+   "kind": "witness",
+   "input": [
+    [
+     {
+      "$fake": "arg0[0]"
+     }
+    ],
+    false
+   ],
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "lib/rules/prefer-const.js",
+     "start": 97,
+     "end": 97,
+     "text": "const references = variable.references;"
+    },
+    "candidate": {
+     "file": "lib/rules/prefer-const.js",
+     "start": 101,
+     "end": 103,
+     "text": "if (variable.defs.length > 1) {\n        return null;\n    }"
+    }
+   },
+   "reason": "the two versions differ on trace through getIdentifierIfShouldBeConst"
+  }
+ ]
+}

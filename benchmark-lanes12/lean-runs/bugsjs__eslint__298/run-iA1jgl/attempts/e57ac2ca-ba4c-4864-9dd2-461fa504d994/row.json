@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/space-before-keywords.js",
+ "unit": "(edit 7e94121d725c)",
+ "editIds": [
+  "7e94121d725cad80abc0c4384b6dc6bf06f352041bca22284e92a165a2bb5b85"
+ ],
+ "lines": [
+  187,
+  187
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

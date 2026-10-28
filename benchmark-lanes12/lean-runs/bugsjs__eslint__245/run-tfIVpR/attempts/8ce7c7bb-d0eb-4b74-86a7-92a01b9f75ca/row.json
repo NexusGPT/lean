@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-lonely-if.js",
+ "unit": "(edit fb559c978f58)",
+ "editIds": [
+  "fb559c978f58d30dec98b5214271f4c1af7f13703125bcb763dacb09aa8f13a2"
+ ],
+ "lines": [
+  58,
+  58
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

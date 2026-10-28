@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/prefer-arrow-callback.js",
+ "unit": "(edit d1e7a8c7ebe0)",
+ "editIds": [
+  "d1e7a8c7ebe0ada208fb15d783f63f3172d5d2a87dd8382c482b6591149ea611"
+ ],
+ "lines": [
+  287,
+  287
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

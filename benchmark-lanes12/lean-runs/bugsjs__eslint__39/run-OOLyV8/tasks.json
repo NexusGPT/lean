@@ -1,0 +1,69 @@
+{
+ "change": "a65ba19d8ea4050917a5503b3fa5d143f078777641b870424936ea41f9d9215e",
+ "tasks": [
+  {
+   "id": "273de770f26a967d51ccd58dacb5f6b409028691ff2291056c4ca285bee2bec5",
+   "file": "lib/rules/key-spacing.js",
+   "unit": "initOptions",
+   "lines": [
+    120,
+    147
+   ],
+   "lanes": [
+    "B",
+    "A"
+   ],
+   "editIds": [
+    "a64f231e6c34455c1de9f0c151294336b98a23d52bca8b7185b609390ef8bdeb",
+    "d24b15d9094fbdbf76d3aa77b33c811f7680e32bcd0e879a98b0979d9a8a69dd"
+   ],
+   "attemptId": "6d607a92-2603-4655-ba1f-c8ee2bf3be8c",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__39/run-OOLyV8/attempts/6d607a92-2603-4655-ba1f-c8ee2bf3be8c"
+  },
+  {
+   "id": "3b06ed005fa81cdef7f9ce3da55745df5443d93436edbf9c5af9a36afc9ac12c",
+   "file": "lib/rules/key-spacing.js",
+   "unit": "(edit 7aa981b0ffef)",
+   "lines": [
+    292,
+    292
+   ],
+   "lanes": [],
+   "editIds": [
+    "7aa981b0ffef981bd9110c918b315c64dd17f4e4dc1eed59e4f675964e7dfa83"
+   ],
+   "attemptId": "1eda3b19-967c-4ca1-a8a6-b1e805ac7814",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__39/run-OOLyV8/attempts/1eda3b19-967c-4ca1-a8a6-b1e805ac7814"
+  },
+  {
+   "id": "918c8f788e74e946c717462cb62350da42684582b952b0b8d860ede4e26d52d8",
+   "file": "lib/rules/key-spacing.js",
+   "unit": "(edit 5d74289a9951)",
+   "lines": [
+    293,
+    293
+   ],
+   "lanes": [],
+   "editIds": [
+    "5d74289a995126205d4ec652fefeff9d959e49d5123b3223a8b8aa0878dd96d8"
+   ],
+   "attemptId": "a70a8b18-0402-496f-b622-f3a5508b0ea0",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__39/run-OOLyV8/attempts/a70a8b18-0402-496f-b622-f3a5508b0ea0"
+  },
+  {
+   "id": "546df7256f3441fa94627f3e322064dfd1ea965478678c461098c49a970a8c3c",
+   "file": "lib/rules/key-spacing.js",
+   "unit": "(edit 77ba56dc8530)",
+   "lines": [
+    294,
+    294
+   ],
+   "lanes": [],
+   "editIds": [
+    "77ba56dc8530b3d80d1d58b0738d904c5b6b1c2b99b137e4d2d8eb7d08aec33f"
+   ],
+   "attemptId": "ff5929b3-8d32-4c5f-9f67-ec5ab40cd4f2",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__39/run-OOLyV8/attempts/ff5929b3-8d32-4c5f-9f67-ec5ab40cd4f2"
+  }
+ ]
+}

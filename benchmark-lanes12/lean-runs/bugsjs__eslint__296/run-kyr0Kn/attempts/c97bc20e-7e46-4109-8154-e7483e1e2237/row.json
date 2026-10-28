@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/camelcase.js",
+ "unit": "(edit e005c081c415)",
+ "editIds": [
+  "e005c081c415d77df3343c3ed18e4fe33e609ef765a10c53ae430f6c7543823f"
+ ],
+ "lines": [
+  131,
+  131
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/util/source-code.js",
+ "unit": "(edit caaa7d6cd657)",
+ "editIds": [
+  "caaa7d6cd65772dc2e68bde51f946a4b106659a321f526ee3ff8827b98c270c9"
+ ],
+ "lines": [
+  242,
+  242
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

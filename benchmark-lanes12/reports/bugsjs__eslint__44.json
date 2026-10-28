@@ -1,0 +1,327 @@
+{
+ "identity": "4fbb2e0feb1576f5264b518db4da0b8cf736017307c6014d6941f25fcc7677aa",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/prefer-const.js",
+   "unit": "(edit f7aad172b6fe)",
+   "editIds": [
+    "f7aad172b6fed23853c487d5bbdbb321793743204baf69d4b81feaad327fe9e1"
+   ],
+   "lines": [
+    12,
+    12
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/prefer-const.js",
+   "unit": "(edit 3c4f47526bd7)",
+   "editIds": [
+    "3c4f47526bd729ce3ff80ec65f4531f4dc04c0dc02b90851a22d60d989266f49"
+   ],
+   "lines": [
+    12,
+    12
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "8569a9062fcfd26bd09226b3753ff23c424682ab",
+  "head": "571ecb59ae234889b1933936c6adbd02346a39e1",
+  "files": [
+   {
+    "id": "9b3291493337ddf063d5fceb3248164dae449db9f08ad1e0ebed11636cefec13",
+    "file": "lib/rules/prefer-const.js",
+    "oldPath": "lib/rules/prefer-const.js",
+    "newPath": "lib/rules/prefer-const.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "07d8da82a105c42f654a5ff2dfa7a86f13baa51e",
+    "newOid": "53bdc2ab7b0582cf66763524183f9f0ba784b261",
+    "status": "M",
+    "edits": [
+     "f7aad172b6fed23853c487d5bbdbb321793743204baf69d4b81feaad327fe9e1",
+     "3c4f47526bd729ce3ff80ec65f4531f4dc04c0dc02b90851a22d60d989266f49"
+    ],
+    "hunks": [
+     {
+      "id": "bed229127a16ac23e8b6f4086e98dddffbfac22510be99ddf141b278d7e7dcfc",
+      "old": {
+       "start": 12,
+       "count": 1
+      },
+      "new": {
+       "start": 12,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "e8ec3b2b6edc8e510677cebac4c9bdbec184e86331257f5235681abfe2e31cf0",
+    "newHash": "10439c754aa41fbe1e76e24a3252f2c00c23ed2f69b7bc429664efde8dafc0ca",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isInitOfForStatement",
+       "side": "old",
+       "file": "lib/rules/prefer-const.js",
+       "start": 31,
+       "end": 33,
+       "offset": 995,
+       "stop": 1111,
+       "id": "37616547b04a776c8334fb642f105034170373bdcecdfec82b71ac3f9a3b82e1"
+      },
+      {
+       "name": "canBecomeVariableDeclaration",
+       "side": "old",
+       "file": "lib/rules/prefer-const.js",
+       "start": 41,
+       "end": 56,
+       "offset": 1341,
+       "stop": 1767,
+       "id": "e83fd8821fb6665c48598ace571a8f8ea9b33792919f621eb76adaed4b3c5432"
+      },
+      {
+       "name": "getIdentifierIfShouldBeConst",
+       "side": "old",
+       "file": "lib/rules/prefer-const.js",
+       "start": 83,
+       "end": 141,
+       "offset": 2988,
+       "stop": 4816,
+       "id": "3ec426c69ee9faf484be32caa4e56f2f700b0181363fd660bc86a69e16defbd5"
+      },
+      {
+       "name": "getDestructuringHost",
+       "side": "old",
+       "file": "lib/rules/prefer-const.js",
+       "start": 153,
+       "end": 167,
+       "offset": 5166,
+       "stop": 5488,
+       "id": "8b1e1106726d906827e7b798fbf7214a2f8b205002f970b24d21d87f8c1e225a"
+      },
+      {
+       "name": "groupByDestructuring",
+       "side": "old",
+       "file": "lib/rules/prefer-const.js",
+       "start": 180,
+       "end": 214,
+       "offset": 5949,
+       "stop": 7087,
+       "id": "1b7ac11528a28e72caec5b1ff70f1b50f19f8b54f1607ad4f4a4bf7a762096e4"
+      },
+      {
+       "name": "findUp",
+       "side": "old",
+       "file": "lib/rules/prefer-const.js",
+       "start": 224,
+       "end": 232,
+       "offset": 7484,
+       "stop": 7698,
+       "id": "ad7ef832abceeb1d912db0e77b7af5b6aac89f1fbf6169a8e48f2c96b87c9535"
+      }
+     ],
+     "new": [
+      {
+       "name": "isInitOfForStatement",
+       "side": "new",
+       "file": "lib/rules/prefer-const.js",
+       "start": 31,
+       "end": 33,
+       "offset": 1035,
+       "stop": 1151,
+       "id": "8f654f735f29db70f5752a31653eb546501cf5437146e862e496ba078d1c883c"
+      },
+      {
+       "name": "canBecomeVariableDeclaration",
+       "side": "new",
+       "file": "lib/rules/prefer-const.js",
+       "start": 41,
+       "end": 56,
+       "offset": 1381,
+       "stop": 1807,
+       "id": "9a09b520931c74d68f06bd925764592ec2b0a203a8070a4032a7b39f0ffb38d6"
+      },
+      {
+       "name": "getIdentifierIfShouldBeConst",
+       "side": "new",
+       "file": "lib/rules/prefer-const.js",
+       "start": 83,
+       "end": 141,
+       "offset": 3028,
+       "stop": 4856,
+       "id": "44f6d54e8bebdee4f041545c41d587160ee2b7589f8bdace0971464918665826"
+      },
+      {
+       "name": "getDestructuringHost",
+       "side": "new",
+       "file": "lib/rules/prefer-const.js",
+       "start": 153,
+       "end": 167,
+       "offset": 5206,
+       "stop": 5528,
+       "id": "3692ce97fdb9503deb48c94094323a4d3c73ac87b99916ca9cd3772bd3223f27"
+      },
+      {
+       "name": "groupByDestructuring",
+       "side": "new",
+       "file": "lib/rules/prefer-const.js",
+       "start": 180,
+       "end": 214,
+       "offset": 5989,
+       "stop": 7127,
+       "id": "6a97a587f1fa045e770babd7ceac8ea741dd74d8a95ba96173b493d9eb074c11"
+      },
+      {
+       "name": "findUp",
+       "side": "new",
+       "file": "lib/rules/prefer-const.js",
+       "start": 224,
+       "end": 232,
+       "offset": 7524,
+       "stop": 7738,
+       "id": "3110d1814ec162ae8366353ed10c70c406c51ea182a930937cf76f610441c0db"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "f7aad172b6fed23853c487d5bbdbb321793743204baf69d4b81feaad327fe9e1",
+    "fileId": "9b3291493337ddf063d5fceb3248164dae449db9f08ad1e0ebed11636cefec13",
+    "file": "lib/rules/prefer-const.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bed229127a16ac23e8b6f4086e98dddffbfac22510be99ddf141b278d7e7dcfc",
+    "side": "old",
+    "old": {
+     "start": 12,
+     "count": 1
+    },
+    "new": {
+     "start": 12,
+     "count": 0
+    },
+    "offsets": {
+     "start": 342,
+     "end": 404
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "3c4f47526bd729ce3ff80ec65f4531f4dc04c0dc02b90851a22d60d989266f49",
+    "fileId": "9b3291493337ddf063d5fceb3248164dae449db9f08ad1e0ebed11636cefec13",
+    "file": "lib/rules/prefer-const.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bed229127a16ac23e8b6f4086e98dddffbfac22510be99ddf141b278d7e7dcfc",
+    "side": "new",
+    "old": {
+     "start": 12,
+     "count": 0
+    },
+    "new": {
+     "start": 12,
+     "count": 1
+    },
+    "offsets": {
+     "start": 342,
+     "end": 444
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "4fbb2e0feb1576f5264b518db4da0b8cf736017307c6014d6941f25fcc7677aa",
+  "reconciliation": {
+   "expected": [
+    "f7aad172b6fed23853c487d5bbdbb321793743204baf69d4b81feaad327fe9e1",
+    "3c4f47526bd729ce3ff80ec65f4531f4dc04c0dc02b90851a22d60d989266f49"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "f7aad172b6fed23853c487d5bbdbb321793743204baf69d4b81feaad327fe9e1",
+    "3c4f47526bd729ce3ff80ec65f4531f4dc04c0dc02b90851a22d60d989266f49"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "f7aad172b6fed23853c487d5bbdbb321793743204baf69d4b81feaad327fe9e1",
+      "3c4f47526bd729ce3ff80ec65f4531f4dc04c0dc02b90851a22d60d989266f49"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "382825ed38ec34a56fc0ddda8dbc6348f178ac286fc67395a17d343a48351fa0",
+   "5e0f0ba43c252413888ba012d93983dca98267c50656326884b0c6bc52b1ae72"
+  ],
+  "terminal": [
+   "382825ed38ec34a56fc0ddda8dbc6348f178ac286fc67395a17d343a48351fa0",
+   "5e0f0ba43c252413888ba012d93983dca98267c50656326884b0c6bc52b1ae72"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__44/run-MlBkXl/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__44/run-MlBkXl"
+}

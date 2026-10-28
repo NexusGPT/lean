@@ -1,0 +1,22 @@
+{
+ "repo": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint",
+ "base": "0b85004acdca863873d5e3cdcfcbe6fe4ac106b6",
+ "head": "d2bc9b04f1ddffc2739477bbecdd942379b41ebd",
+ "n": 100,
+ "dafnySeconds": 30,
+ "project": true,
+ "scope": [],
+ "timeBudget": 900,
+ "unitBudget": null,
+ "unitSeconds": "120",
+ "reuse": false,
+ "fresh": true,
+ "cacheDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/cache/bugsjs__eslint__43",
+ "runsDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__43/run-Q7VsMl",
+ "filesRoot": null,
+ "preview": false,
+ "adapters": null,
+ "selectedPaths": null,
+ "expectedLedgerId": "4c8f002e11e7e10d05927abe39c78a6956d6a4bf5932cd9bdbed921493d7fb72",
+ "_runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__43/run-Q7VsMl"
+}

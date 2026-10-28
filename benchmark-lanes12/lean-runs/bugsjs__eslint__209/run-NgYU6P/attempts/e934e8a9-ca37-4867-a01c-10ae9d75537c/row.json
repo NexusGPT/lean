@@ -1,0 +1,21 @@
+{
+ "file": "lib/formatters/junit.js",
+ "unit": "(edit 727e58859eef)",
+ "editIds": [
+  "727e58859eef259e14fa789cddb41f96c6ee0dcc244525595ab10ccae8f631a3"
+ ],
+ "lines": [
+  52,
+  52
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

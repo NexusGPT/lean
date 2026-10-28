@@ -1,0 +1,74 @@
+{
+ "file": "lib/cli.js",
+ "unit": "quietFixPredicate",
+ "lines": [
+  38,
+  40
+ ],
+ "verdict": "ASK",
+ "coverage": "failed:loader",
+ "certificate": {
+  "tool": "lean-ts v3",
+  "identity": "4aa238ec2d608952df58bdaf27acf9c3f4a16ce4251bda5488fea05bd18638fa",
+  "unit": "quietFixPredicate",
+  "parent": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__310/run-Iq5fBT/sources/lib/.lean_base_29119_cli.js",
+   "sha256": "21cf3b3d5e5ba4e2"
+  },
+  "candidate": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__310/run-Iq5fBT/sources/lib/.lean_head_29119_cli.js",
+   "sha256": "33001e624027e4b8"
+  },
+  "lanes": {
+   "B": {
+    "candidateOnly": true,
+    "unit": "quietFixPredicate",
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__310/run-Iq5fBT/sources/lib/.lean_head_29119_cli.js",
+    "assumptions": {
+     "externalPackages": "declared packages, their aliases and resolved node_modules targets are recording fakes; declared packages need no installation",
+     "sourceImports": "local and aliased source resolve with TypeScript; named exports link with Node",
+     "undeclaredPackages": "Node supplies the error; missing external packages are ASK, not repository linkage refusals",
+     "dynamicImports": "literal specifiers are resolved before inputs; computed specifiers are checked only when drawn",
+     "loadVerdicts": "REFUSE only for local linkage; generated/build output and all evaluation failures are ASK with their environment class; test modules are excluded before loading",
+     "observation": "bounded inputs under fakes, no equality or correctness claim"
+    },
+    "verdict": "ASK",
+    "kind": "load",
+    "phase": "evaluation",
+    "environmentClass": "CommonJS wrapper",
+    "loaded": false,
+    "inputs": 0,
+    "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__310/run-Iq5fBT/sources/lib/.lean_head_29119_cli.js: ASK(CommonJS wrapper): require is not defined",
+    "error": "ReferenceError: require is not defined\n    at /Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__310/run-Iq5fBT/sources/lib/.lean_head_29119_cli.js:14:12\n    at SourceTextModule.evaluate (node:internal/vm/module:233:26)\n    at loadCandidate (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/langs/ts/exec/new-unit.mjs:158:15)\n    at async runNew (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/langs/ts/exec/new-unit.mjs:221:5)\n    at async file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/langs/ts/exec/new-unit.mjs:250:91",
+    "bound": {
+     "n": 100,
+     "seed": 1,
+     "ms": 2000,
+     "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+     "inputs": "from parameter types with boundary values first"
+    }
+   }
+  },
+  "tools": {
+   "node": "v24.18.0"
+  },
+  "unitTextEqual": null,
+  "observation": {
+   "layer": "values and the reachable object graph",
+   "renders": null,
+   "effects": "the trace of environment requests and pending work",
+   "schedule": "synchronous; pending work recorded, never fired"
+  },
+  "verdict": "ASK"
+ },
+ "laneB": "ASK",
+ "laneA": null,
+ "witness": null,
+ "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__310/run-Iq5fBT/sources/lib/.lean_head_29119_cli.js: ASK(CommonJS wrapper): require is not defined",
+ "advice": [],
+ "editIds": [
+  "36e6653354f1052f90811579a9b5d427db9763d2e3ef8bca1c30e3c57a3b5d83",
+  "f18e678c066a5b43592b4ee2b7ef4cb6c8b2baaa3074f9762e52ee1f54bb0181",
+  "c49befccdc74b44106a643851f8d4493f486373716d869f5d69c6d7e86922db1"
+ ]
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-return-await.js",
+ "unit": "(edit d3d79e059888)",
+ "editIds": [
+  "d3d79e059888816aa294548a980d30aa464f1fe7fb0382701c33b2e647eeac91"
+ ],
+ "lines": [
+  31,
+  31
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

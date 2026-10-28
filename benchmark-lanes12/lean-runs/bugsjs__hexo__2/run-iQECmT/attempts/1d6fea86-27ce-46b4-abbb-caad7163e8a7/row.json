@@ -1,0 +1,21 @@
+{
+ "file": "lib/box/file.js",
+ "unit": "(edit e3843c27fdfb)",
+ "editIds": [
+  "e3843c27fdfb913105d189bc6f15926afd89e95182cf542469697b48ec2a85f8"
+ ],
+ "lines": [
+  43,
+  43
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

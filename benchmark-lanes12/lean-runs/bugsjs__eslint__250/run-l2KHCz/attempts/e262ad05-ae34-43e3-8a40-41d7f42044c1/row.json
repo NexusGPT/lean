@@ -1,0 +1,21 @@
+{
+ "file": "lib/options.js",
+ "unit": "(edit 66c7286b0f2e)",
+ "editIds": [
+  "66c7286b0f2e68e18879950771f7096a547ddef0ddf75ce1d0a945addb95b75d"
+ ],
+ "lines": [
+  220,
+  220
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

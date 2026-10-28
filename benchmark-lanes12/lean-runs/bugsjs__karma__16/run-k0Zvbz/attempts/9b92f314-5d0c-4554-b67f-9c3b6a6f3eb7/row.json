@@ -1,0 +1,21 @@
+{
+ "file": "lib/middleware/common.js",
+ "unit": "(edit 2b1a1b45766b)",
+ "editIds": [
+  "2b1a1b45766b7bd22dca0cf89e326d993b77f02178ed198f47e55eb5ce21b21a"
+ ],
+ "lines": [
+  39,
+  39
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

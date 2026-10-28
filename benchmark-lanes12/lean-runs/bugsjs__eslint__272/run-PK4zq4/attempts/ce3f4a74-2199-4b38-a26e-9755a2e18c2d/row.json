@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-self-compare.js",
+ "unit": "(edit f6e6ca9bee0a)",
+ "editIds": [
+  "f6e6ca9bee0acb8d74c1b9e5dcef771aaa2dbe16899e4dbe9a65f3279508b878"
+ ],
+ "lines": [
+  36,
+  36
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

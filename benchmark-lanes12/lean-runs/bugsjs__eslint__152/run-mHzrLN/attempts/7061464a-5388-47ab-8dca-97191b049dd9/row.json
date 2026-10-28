@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-extra-parens.js",
+ "unit": "(edit df6142ed6eec)",
+ "editIds": [
+  "df6142ed6eecd4c95c90a7906ffdb6146198f6a6509122405be6372406cc59bc"
+ ],
+ "lines": [
+  447,
+  447
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

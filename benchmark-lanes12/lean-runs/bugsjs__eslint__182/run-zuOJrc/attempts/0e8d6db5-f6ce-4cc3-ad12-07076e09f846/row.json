@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/multiline-comment-style.js",
+ "unit": "(edit 481d2fdbfcb9)",
+ "editIds": [
+  "481d2fdbfcb9c220857e7c0e18934d77a59c3bf567e3247e95da94cf3d447b3b"
+ ],
+ "lines": [
+  129,
+  129
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

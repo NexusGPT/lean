@@ -1,0 +1,21 @@
+{
+ "file": "lib/server.js",
+ "unit": "(edit 08d779aa58ba)",
+ "editIds": [
+  "08d779aa58ba14e3209dc9301032ad613f2c41b7f1a93f97ccab23cd3d0b34fd"
+ ],
+ "lines": [
+  398,
+  398
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

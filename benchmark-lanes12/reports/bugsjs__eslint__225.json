@@ -1,0 +1,539 @@
+{
+ "identity": "3a7e9ddf6e7d5ebac278bfe2108c8e0aa723ef1c3590ba3bd727c08fdf09b2a8",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/config/config-validator.js",
+   "unit": "(edit c79b2618504c)",
+   "editIds": [
+    "c79b2618504cc01af03ef8e73e7605ddd76259e692a625495480f2e3aaa7d1f9"
+   ],
+   "lines": [
+    92,
+    92
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-validator.js",
+   "unit": "(edit 26d36099549b)",
+   "editIds": [
+    "26d36099549b472eca89b78dadc43612cd853283ba9aaf68b6f9081f84aa487f"
+   ],
+   "lines": [
+    92,
+    92
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-validator.js",
+   "unit": "(edit e1edfbeb69b9)",
+   "editIds": [
+    "e1edfbeb69b9cd2097e6053ca87debd0eb713fa0cdafce406a705e9a732648ad"
+   ],
+   "lines": [
+    93,
+    93
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-validator.js",
+   "unit": "(edit 1fe05bc0bfc9)",
+   "editIds": [
+    "1fe05bc0bfc9d7e291778201a2236e7977f4c5079f11abf8de2fd9d7da731adc"
+   ],
+   "lines": [
+    94,
+    94
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "51c8cf057a56f87d0b6416006da672ea8cb48315",
+  "head": "69ccd1641f7b666a3bc07585a72ff76fef791498",
+  "files": [
+   {
+    "id": "38220b64eab11208e4daa616f05eb8fdd9d26329eb82303152b7b79789f39391",
+    "file": "lib/config/config-validator.js",
+    "oldPath": "lib/config/config-validator.js",
+    "newPath": "lib/config/config-validator.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "5aeb635c1d4a7e29b941028c350df2c0b3fd5482",
+    "newOid": "f2307dc637d6b5fc8a50448d3c21ec8bb90c5aba",
+    "status": "M",
+    "edits": [
+     "c79b2618504cc01af03ef8e73e7605ddd76259e692a625495480f2e3aaa7d1f9",
+     "26d36099549b472eca89b78dadc43612cd853283ba9aaf68b6f9081f84aa487f",
+     "e1edfbeb69b9cd2097e6053ca87debd0eb713fa0cdafce406a705e9a732648ad",
+     "1fe05bc0bfc9d7e291778201a2236e7977f4c5079f11abf8de2fd9d7da731adc"
+    ],
+    "hunks": [
+     {
+      "id": "c251d3e865ebf830f8aecb1e30a8347b7ab376f07a0ca2cdb43c6c1a8dea3af8",
+      "old": {
+       "start": 92,
+       "count": 1
+      },
+      "new": {
+       "start": 92,
+       "count": 3
+      }
+     }
+    ],
+    "class": "config",
+    "oldHash": "5d4f30eaec841300806dd55262554995b56ba7edb7fe2c68544758905fd2dcc1",
+    "newHash": "4444c1aaee4476f561cc89457c699da49a3ab652cabe3c19cf44ac633007ecbe",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "getRuleOptionsSchema",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 32,
+       "end": 56,
+       "offset": 871,
+       "stop": 1533,
+       "id": "c5b5afe908234ac84d7da9a29dbbbccd25687e76962d6b25d53e61cab4d643ff"
+      },
+      {
+       "name": "validateRuleSeverity",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 63,
+       "end": 71,
+       "offset": 1764,
+       "stop": 2225,
+       "id": "b30ebce0621ee32e5beec9e9dc3b8d879fa61047d1a3ecb917b2017deef4e9f3"
+      },
+      {
+       "name": "validateRuleSchema",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 80,
+       "end": 95,
+       "offset": 2496,
+       "stop": 2999,
+       "id": "a2cd63b1dab4c066bb905d79d8c8026ac0288f48da6686d222d9287e81a43517"
+      },
+      {
+       "name": "validateRuleOptions",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 105,
+       "end": 115,
+       "offset": 3321,
+       "stop": 3791,
+       "id": "45a9032138856c466a754f780857663fe1901d3a2e6eb579702f7d429dcb5bd5"
+      },
+      {
+       "name": "validateEnvironment",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 124,
+       "end": 138,
+       "offset": 4065,
+       "stop": 4439,
+       "id": "c54d19e9bb2f9200224a8237ce58daf7c6566d6ad5c247447be7231c0e850939"
+      },
+      {
+       "name": "validateRules",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 147,
+       "end": 155,
+       "offset": 4703,
+       "stop": 4936,
+       "id": "deb6b4bb2f22ba7ae06eb6ecb207f9f0e68eedea4ca69e9e9098a3074964df67"
+      },
+      {
+       "name": "formatErrors",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 162,
+       "end": 181,
+       "offset": 5103,
+       "stop": 6131,
+       "id": "a346a3790b8a4402221b827e3d82b8912c9527689a2290c2e90f4c643c2d9816"
+      },
+      {
+       "name": "validateConfigSchema",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 208,
+       "end": 218,
+       "offset": 7200,
+       "stop": 7591,
+       "id": "f49c5150db3453e842c73b5c46927f745366603994068e45976ef9b84f5666bc"
+      },
+      {
+       "name": "validate",
+       "side": "old",
+       "file": "lib/config/config-validator.js",
+       "start": 228,
+       "end": 232,
+       "offset": 7904,
+       "stop": 8121,
+       "id": "b650e312e16f78df9d7054bf006602526f16abe8d42c6d765c2ddeafa7f97204"
+      }
+     ],
+     "new": [
+      {
+       "name": "getRuleOptionsSchema",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 32,
+       "end": 56,
+       "offset": 871,
+       "stop": 1533,
+       "id": "a7b152a329189facbea02aa6b057320b1ed843d6f6734ab59e43f099da987f4d"
+      },
+      {
+       "name": "validateRuleSeverity",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 63,
+       "end": 71,
+       "offset": 1764,
+       "stop": 2225,
+       "id": "8fd7cd7c88c0436e363e641ae83b2aab9e1eedaa6badabdd65c5b3c08f2de711"
+      },
+      {
+       "name": "validateRuleSchema",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 80,
+       "end": 97,
+       "offset": 2496,
+       "stop": 3043,
+       "id": "b66741d943af865ac71d7a6196a1e3ada950e630e10beef680b2d4f8beddde42"
+      },
+      {
+       "name": "validateRuleOptions",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 107,
+       "end": 117,
+       "offset": 3365,
+       "stop": 3835,
+       "id": "5abdc230c4c65b17ad56d49d0d53e1dc2383018893046b3a1ff0b4d1730cd615"
+      },
+      {
+       "name": "validateEnvironment",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 126,
+       "end": 140,
+       "offset": 4109,
+       "stop": 4483,
+       "id": "a90f06ade0fdd21108be8df1d44cf52d47754ae29a48d91f3a54cfb02e0259c5"
+      },
+      {
+       "name": "validateRules",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 149,
+       "end": 157,
+       "offset": 4747,
+       "stop": 4980,
+       "id": "ff2317b940b66670d57cf588baabdb296dc80f19b793e08fcc6cb214ea26f3bb"
+      },
+      {
+       "name": "formatErrors",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 164,
+       "end": 183,
+       "offset": 5147,
+       "stop": 6175,
+       "id": "7e5937a9e718e4a02de29ec1744483b053c55c2afb6d01387d4e20c754f67ec3"
+      },
+      {
+       "name": "validateConfigSchema",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 210,
+       "end": 220,
+       "offset": 7244,
+       "stop": 7635,
+       "id": "afa388e134f81a7b573070448bdd9eaa30443d2f4f3252b3ede88f9b8d2408dd"
+      },
+      {
+       "name": "validate",
+       "side": "new",
+       "file": "lib/config/config-validator.js",
+       "start": 230,
+       "end": 234,
+       "offset": 7948,
+       "stop": 8165,
+       "id": "c6b44cac2953b991e1edffbd872478b0811f334c9b9473bc0de3722768becec7"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "c79b2618504cc01af03ef8e73e7605ddd76259e692a625495480f2e3aaa7d1f9",
+    "fileId": "38220b64eab11208e4daa616f05eb8fdd9d26329eb82303152b7b79789f39391",
+    "file": "lib/config/config-validator.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "c251d3e865ebf830f8aecb1e30a8347b7ab376f07a0ca2cdb43c6c1a8dea3af8",
+    "side": "old",
+    "old": {
+     "start": 92,
+     "count": 1
+    },
+    "new": {
+     "start": 92,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2863,
+     "end": 2982
+    },
+    "links": [
+     {
+      "id": "a2cd63b1dab4c066bb905d79d8c8026ac0288f48da6686d222d9287e81a43517",
+      "file": "lib/config/config-validator.js",
+      "unit": "validateRuleSchema",
+      "side": "old",
+      "start": 80,
+      "end": 95
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "26d36099549b472eca89b78dadc43612cd853283ba9aaf68b6f9081f84aa487f",
+    "fileId": "38220b64eab11208e4daa616f05eb8fdd9d26329eb82303152b7b79789f39391",
+    "file": "lib/config/config-validator.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "c251d3e865ebf830f8aecb1e30a8347b7ab376f07a0ca2cdb43c6c1a8dea3af8",
+    "side": "new",
+    "old": {
+     "start": 92,
+     "count": 0
+    },
+    "new": {
+     "start": 92,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2863,
+     "end": 2916
+    },
+    "links": [
+     {
+      "id": "b66741d943af865ac71d7a6196a1e3ada950e630e10beef680b2d4f8beddde42",
+      "file": "lib/config/config-validator.js",
+      "unit": "validateRuleSchema",
+      "side": "new",
+      "start": 80,
+      "end": 97
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "e1edfbeb69b9cd2097e6053ca87debd0eb713fa0cdafce406a705e9a732648ad",
+    "fileId": "38220b64eab11208e4daa616f05eb8fdd9d26329eb82303152b7b79789f39391",
+    "file": "lib/config/config-validator.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "c251d3e865ebf830f8aecb1e30a8347b7ab376f07a0ca2cdb43c6c1a8dea3af8",
+    "side": "new",
+    "old": {
+     "start": 92,
+     "count": 0
+    },
+    "new": {
+     "start": 93,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2916,
+     "end": 3001
+    },
+    "links": [
+     {
+      "id": "b66741d943af865ac71d7a6196a1e3ada950e630e10beef680b2d4f8beddde42",
+      "file": "lib/config/config-validator.js",
+      "unit": "validateRuleSchema",
+      "side": "new",
+      "start": 80,
+      "end": 97
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "1fe05bc0bfc9d7e291778201a2236e7977f4c5079f11abf8de2fd9d7da731adc",
+    "fileId": "38220b64eab11208e4daa616f05eb8fdd9d26329eb82303152b7b79789f39391",
+    "file": "lib/config/config-validator.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "c251d3e865ebf830f8aecb1e30a8347b7ab376f07a0ca2cdb43c6c1a8dea3af8",
+    "side": "new",
+    "old": {
+     "start": 92,
+     "count": 0
+    },
+    "new": {
+     "start": 94,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3001,
+     "end": 3026
+    },
+    "links": [
+     {
+      "id": "b66741d943af865ac71d7a6196a1e3ada950e630e10beef680b2d4f8beddde42",
+      "file": "lib/config/config-validator.js",
+      "unit": "validateRuleSchema",
+      "side": "new",
+      "start": 80,
+      "end": 97
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   }
+  ],
+  "id": "3a7e9ddf6e7d5ebac278bfe2108c8e0aa723ef1c3590ba3bd727c08fdf09b2a8",
+  "reconciliation": {
+   "expected": [
+    "c79b2618504cc01af03ef8e73e7605ddd76259e692a625495480f2e3aaa7d1f9",
+    "26d36099549b472eca89b78dadc43612cd853283ba9aaf68b6f9081f84aa487f",
+    "e1edfbeb69b9cd2097e6053ca87debd0eb713fa0cdafce406a705e9a732648ad",
+    "1fe05bc0bfc9d7e291778201a2236e7977f4c5079f11abf8de2fd9d7da731adc"
+   ],
+   "unit": [],
+   "artifact": [
+    "c79b2618504cc01af03ef8e73e7605ddd76259e692a625495480f2e3aaa7d1f9",
+    "26d36099549b472eca89b78dadc43612cd853283ba9aaf68b6f9081f84aa487f",
+    "e1edfbeb69b9cd2097e6053ca87debd0eb713fa0cdafce406a705e9a732648ad",
+    "1fe05bc0bfc9d7e291778201a2236e7977f4c5079f11abf8de2fd9d7da731adc"
+   ],
+   "unassigned": [],
+   "classes": {
+    "config": {
+     "unit": [],
+     "artifact": [
+      "c79b2618504cc01af03ef8e73e7605ddd76259e692a625495480f2e3aaa7d1f9",
+      "26d36099549b472eca89b78dadc43612cd853283ba9aaf68b6f9081f84aa487f",
+      "e1edfbeb69b9cd2097e6053ca87debd0eb713fa0cdafce406a705e9a732648ad",
+      "1fe05bc0bfc9d7e291778201a2236e7977f4c5079f11abf8de2fd9d7da731adc"
+     ],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "4e0adecc955919144ba3c9f40c08161fd220d66881477db5ceeae14032a11809",
+   "11e4b2982960e88e1f09e7eca33e9dbd4e17bae03bef6d7dc81e23a46ba1c1ea",
+   "096d4b1d13de112e5b7a003852e9d1651300758bc8995b7f1f4fe29ead9d8034",
+   "a9bb1de3371be634a377f6161c1cd5c05c5c854e0d79f2f8ac7d033b9de9f49b"
+  ],
+  "terminal": [
+   "4e0adecc955919144ba3c9f40c08161fd220d66881477db5ceeae14032a11809",
+   "11e4b2982960e88e1f09e7eca33e9dbd4e17bae03bef6d7dc81e23a46ba1c1ea",
+   "096d4b1d13de112e5b7a003852e9d1651300758bc8995b7f1f4fe29ead9d8034",
+   "a9bb1de3371be634a377f6161c1cd5c05c5c854e0d79f2f8ac7d033b9de9f49b"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__225/run-xFDEXo/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__225/run-xFDEXo"
+}

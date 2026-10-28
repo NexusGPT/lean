@@ -1,0 +1,509 @@
+{
+ "identity": "587c8754901b5a0d0f24f581aecff2ba24e02b6d5f026b4d2344f28e7267db4d",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit bb0a3e48faaa)",
+   "editIds": [
+    "bb0a3e48faaaf7cf5c1cd19664f6b1fda21e139aa95267998f0ab3dd76a9daaa"
+   ],
+   "lines": [
+    278,
+    278
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit e43d27e43c02)",
+   "editIds": [
+    "e43d27e43c02a65c7a720a345193b8220b9245a24c61ece1c67707895d7b0ea4"
+   ],
+   "lines": [
+    283,
+    283
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit 64d44e074c03)",
+   "editIds": [
+    "64d44e074c03407714b19de20cf45586708d8bcac94cbafb4621e80c44556b1a"
+   ],
+   "lines": [
+    284,
+    284
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit 9fc64832e397)",
+   "editIds": [
+    "9fc64832e397b5c413f2740d81c1943a4f58049dc7c81b0f7348f96f6b995545"
+   ],
+   "lines": [
+    287,
+    287
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit ff129c6b44ff)",
+   "editIds": [
+    "ff129c6b44ffa2b63775f83397cb6f96307bba77753dea28b0d6d6d96b835572"
+   ],
+   "lines": [
+    288,
+    288
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "7ea3e4ba09f1ef5857f17dc80313a1fd68dbbea5",
+  "head": "3c25d9ab2dca9c877c03ae70fe12f592d8d37b18",
+  "files": [
+   {
+    "id": "92a6b0707be3d8d74a49b82476513f4dcd1ac8762c5c33b26dc1b4a811e4663a",
+    "file": "lib/rules/prefer-arrow-callback.js",
+    "oldPath": "lib/rules/prefer-arrow-callback.js",
+    "newPath": "lib/rules/prefer-arrow-callback.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "dd2505cb533dcbb34ae3cf879d9a791d74f91d23",
+    "newOid": "80ae2d4a69c4a41a7d4fed6af513b0915367b6c9",
+    "status": "M",
+    "edits": [
+     "bb0a3e48faaaf7cf5c1cd19664f6b1fda21e139aa95267998f0ab3dd76a9daaa",
+     "e43d27e43c02a65c7a720a345193b8220b9245a24c61ece1c67707895d7b0ea4",
+     "64d44e074c03407714b19de20cf45586708d8bcac94cbafb4621e80c44556b1a",
+     "9fc64832e397b5c413f2740d81c1943a4f58049dc7c81b0f7348f96f6b995545",
+     "ff129c6b44ffa2b63775f83397cb6f96307bba77753dea28b0d6d6d96b835572"
+    ],
+    "hunks": [
+     {
+      "id": "30fd19b5db7d5d0fe9be2f1a12baa59c48df77bd34a6956da30669ab691b9b3f",
+      "old": {
+       "start": 277,
+       "count": 0
+      },
+      "new": {
+       "start": 278,
+       "count": 1
+      }
+     },
+     {
+      "id": "e257fc37638364bf685f25a7b35fc9e0233698e0b9371a570ec0d6f1ee12024c",
+      "old": {
+       "start": 283,
+       "count": 1
+      },
+      "new": {
+       "start": 284,
+       "count": 1
+      }
+     },
+     {
+      "id": "060f57c3ee50ca141fdab2e605a5eed1d6328848acc59aead2f96dde02d50cc4",
+      "old": {
+       "start": 287,
+       "count": 1
+      },
+      "new": {
+       "start": 288,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "588cef3d0548273683df513399ec083c5ba2f1492fe036bad9918f9ee5a86781",
+    "newHash": "31942dffec4d8d72aabb2e0d2ad23b455b15fb34fdaa9c46a0e59673e93d68c7",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isFunctionName",
+       "side": "old",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 17,
+       "end": 19,
+       "offset": 490,
+       "stop": 592,
+       "id": "53890c27143d200d50a3bc1848e2a167df3cb123b01c72b6bda0a710d671174f"
+      },
+      {
+       "name": "checkMetaProperty",
+       "side": "old",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 28,
+       "end": 30,
+       "offset": 933,
+       "stop": 1072,
+       "id": "b3a346aeff627d643586a1183546dfa14749908a55ca61871b7985642dad70e7"
+      },
+      {
+       "name": "getVariableOfArguments",
+       "side": "old",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 37,
+       "end": 56,
+       "offset": 1260,
+       "stop": 1817,
+       "id": "19f0c7fd44f84f73fe79ac4523b6ec68ce2d648039728552e2f311907b70a8b1"
+      },
+      {
+       "name": "getCallbackInfo",
+       "side": "old",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 65,
+       "end": 116,
+       "offset": 2091,
+       "stop": 3704,
+       "id": "5f2b0fbadc732d20758f4373feb6d1a91fe86b4bd1ab7b730bde5ae6d81602ac"
+      },
+      {
+       "name": "hasDuplicateParams",
+       "side": "old",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 125,
+       "end": 127,
+       "offset": 4154,
+       "stop": 4339,
+       "id": "f03841fff05d33dfbcdf8df378f7d3f1498413705a0af2df39e3c9e935ae906f"
+      }
+     ],
+     "new": [
+      {
+       "name": "isFunctionName",
+       "side": "new",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 17,
+       "end": 19,
+       "offset": 490,
+       "stop": 592,
+       "id": "84208b6fdbdf7140a3ba49008341d200bb2cbe00c620964704ba956b5e16b6ef"
+      },
+      {
+       "name": "checkMetaProperty",
+       "side": "new",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 28,
+       "end": 30,
+       "offset": 933,
+       "stop": 1072,
+       "id": "2a1b9619f36a89d864eac27df9d655271245737626f71133e9133f4299af0fc9"
+      },
+      {
+       "name": "getVariableOfArguments",
+       "side": "new",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 37,
+       "end": 56,
+       "offset": 1260,
+       "stop": 1817,
+       "id": "ff3903af5786e49d89e311e308b7d2c2b64ca92a755df478b24d272cc0235321"
+      },
+      {
+       "name": "getCallbackInfo",
+       "side": "new",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 65,
+       "end": 116,
+       "offset": 2091,
+       "stop": 3704,
+       "id": "6aec148a901ca667ed85e36b1b08799d6b5887610e236dd42534c930cd6cd7fd"
+      },
+      {
+       "name": "hasDuplicateParams",
+       "side": "new",
+       "file": "lib/rules/prefer-arrow-callback.js",
+       "start": 125,
+       "end": 127,
+       "offset": 4154,
+       "stop": 4339,
+       "id": "ffaa4ec2f87f0fa0e1e14288e23ba298a22fe338f70c5d7fedd801be567e77b3"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "bb0a3e48faaaf7cf5c1cd19664f6b1fda21e139aa95267998f0ab3dd76a9daaa",
+    "fileId": "92a6b0707be3d8d74a49b82476513f4dcd1ac8762c5c33b26dc1b4a811e4663a",
+    "file": "lib/rules/prefer-arrow-callback.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "30fd19b5db7d5d0fe9be2f1a12baa59c48df77bd34a6956da30669ab691b9b3f",
+    "side": "new",
+    "old": {
+     "start": 277,
+     "count": 0
+    },
+    "new": {
+     "start": 278,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9577,
+     "end": 9654
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "e43d27e43c02a65c7a720a345193b8220b9245a24c61ece1c67707895d7b0ea4",
+    "fileId": "92a6b0707be3d8d74a49b82476513f4dcd1ac8762c5c33b26dc1b4a811e4663a",
+    "file": "lib/rules/prefer-arrow-callback.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e257fc37638364bf685f25a7b35fc9e0233698e0b9371a570ec0d6f1ee12024c",
+    "side": "old",
+    "old": {
+     "start": 283,
+     "count": 1
+    },
+    "new": {
+     "start": 284,
+     "count": 0
+    },
+    "offsets": {
+     "start": 9905,
+     "end": 10040
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "64d44e074c03407714b19de20cf45586708d8bcac94cbafb4621e80c44556b1a",
+    "fileId": "92a6b0707be3d8d74a49b82476513f4dcd1ac8762c5c33b26dc1b4a811e4663a",
+    "file": "lib/rules/prefer-arrow-callback.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e257fc37638364bf685f25a7b35fc9e0233698e0b9371a570ec0d6f1ee12024c",
+    "side": "new",
+    "old": {
+     "start": 283,
+     "count": 0
+    },
+    "new": {
+     "start": 284,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9982,
+     "end": 10132
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9fc64832e397b5c413f2740d81c1943a4f58049dc7c81b0f7348f96f6b995545",
+    "fileId": "92a6b0707be3d8d74a49b82476513f4dcd1ac8762c5c33b26dc1b4a811e4663a",
+    "file": "lib/rules/prefer-arrow-callback.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "060f57c3ee50ca141fdab2e605a5eed1d6328848acc59aead2f96dde02d50cc4",
+    "side": "old",
+    "old": {
+     "start": 287,
+     "count": 1
+    },
+    "new": {
+     "start": 288,
+     "count": 0
+    },
+    "offsets": {
+     "start": 10200,
+     "end": 10315
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "ff129c6b44ffa2b63775f83397cb6f96307bba77753dea28b0d6d6d96b835572",
+    "fileId": "92a6b0707be3d8d74a49b82476513f4dcd1ac8762c5c33b26dc1b4a811e4663a",
+    "file": "lib/rules/prefer-arrow-callback.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "060f57c3ee50ca141fdab2e605a5eed1d6328848acc59aead2f96dde02d50cc4",
+    "side": "new",
+    "old": {
+     "start": 287,
+     "count": 0
+    },
+    "new": {
+     "start": 288,
+     "count": 1
+    },
+    "offsets": {
+     "start": 10292,
+     "end": 10422
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "587c8754901b5a0d0f24f581aecff2ba24e02b6d5f026b4d2344f28e7267db4d",
+  "reconciliation": {
+   "expected": [
+    "bb0a3e48faaaf7cf5c1cd19664f6b1fda21e139aa95267998f0ab3dd76a9daaa",
+    "e43d27e43c02a65c7a720a345193b8220b9245a24c61ece1c67707895d7b0ea4",
+    "64d44e074c03407714b19de20cf45586708d8bcac94cbafb4621e80c44556b1a",
+    "9fc64832e397b5c413f2740d81c1943a4f58049dc7c81b0f7348f96f6b995545",
+    "ff129c6b44ffa2b63775f83397cb6f96307bba77753dea28b0d6d6d96b835572"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "bb0a3e48faaaf7cf5c1cd19664f6b1fda21e139aa95267998f0ab3dd76a9daaa",
+    "e43d27e43c02a65c7a720a345193b8220b9245a24c61ece1c67707895d7b0ea4",
+    "64d44e074c03407714b19de20cf45586708d8bcac94cbafb4621e80c44556b1a",
+    "9fc64832e397b5c413f2740d81c1943a4f58049dc7c81b0f7348f96f6b995545",
+    "ff129c6b44ffa2b63775f83397cb6f96307bba77753dea28b0d6d6d96b835572"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "bb0a3e48faaaf7cf5c1cd19664f6b1fda21e139aa95267998f0ab3dd76a9daaa",
+      "e43d27e43c02a65c7a720a345193b8220b9245a24c61ece1c67707895d7b0ea4",
+      "64d44e074c03407714b19de20cf45586708d8bcac94cbafb4621e80c44556b1a",
+      "9fc64832e397b5c413f2740d81c1943a4f58049dc7c81b0f7348f96f6b995545",
+      "ff129c6b44ffa2b63775f83397cb6f96307bba77753dea28b0d6d6d96b835572"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "056859cb19a0580343ca60cf10c3dcb3cb5338f2f2306e1a8a50f28091d2750c",
+   "107e9755f5c202aaedaf1fdb5a23acd3ba1d67ae2be4341a6fa7afabba79fe22",
+   "52d81a8b3b7c0418d8af9fbba0b06ed43887fb7ae39a1d66094a2c22de95fb0d",
+   "38175c31cc99063fb40f1658b8b751cc97c8c4c60d1b4b9e3d87d85853c94d26",
+   "6d46ccf69e779d235a47c76749e89afa849457e6f14948dd92f950e9b57c0569"
+  ],
+  "terminal": [
+   "056859cb19a0580343ca60cf10c3dcb3cb5338f2f2306e1a8a50f28091d2750c",
+   "107e9755f5c202aaedaf1fdb5a23acd3ba1d67ae2be4341a6fa7afabba79fe22",
+   "52d81a8b3b7c0418d8af9fbba0b06ed43887fb7ae39a1d66094a2c22de95fb0d",
+   "38175c31cc99063fb40f1658b8b751cc97c8c4c60d1b4b9e3d87d85853c94d26",
+   "6d46ccf69e779d235a47c76749e89afa849457e6f14948dd92f950e9b57c0569"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__88/run-SpiK9b/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__88/run-SpiK9b"
+}

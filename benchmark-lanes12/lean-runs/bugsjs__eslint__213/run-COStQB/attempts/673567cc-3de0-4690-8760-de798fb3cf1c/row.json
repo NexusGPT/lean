@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/max-len.js",
+ "unit": "(edit afe44a72887a)",
+ "editIds": [
+  "afe44a72887a9c45c434be5f6cf14fe88971795322c10fbdac469aaa42184566"
+ ],
+ "lines": [
+  217,
+  217
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

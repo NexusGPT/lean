@@ -1,0 +1,95 @@
+{
+ "identity": "a09b2320b2c0e27d6b7900cb0479142d13468ea889e179355c24a8466a176c2a",
+ "records": [
+  {
+   "check": "refused:type-assertion",
+   "unit": "processCodePathToExit",
+   "file": "lib/code-path-analysis/code-path-analyzer.js",
+   "location": {
+    "start": 423,
+    "end": 423
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 423,
+     "rule": "type-assertion",
+     "msg": "`codePath` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result"
+    }
+   ],
+   "reason": "`codePath` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result"
+  },
+  {
+   "check": "lane-B",
+   "unit": "processCodePathToExit",
+   "file": "lib/code-path-analysis/code-path-analyzer.js",
+   "location": {
+    "start": 138,
+    "end": 138
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "$fake": "arg0"
+    },
+    {
+     "$fake": "arg1"
+    }
+   ],
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "lib/code-path-analysis/code-path-analyzer.js",
+     "start": 519,
+     "end": 523,
+     "text": "if (!dontForward && (!node.parent || node.type !== node.parent.type)) {\n\n        // Emits onCodePathSegmentStart events if updated.\n        forwardCurrentToHead(analyzer, node);\n    }"
+    },
+    "candidate": {
+     "file": "lib/code-path-analysis/code-path-analyzer.js",
+     "start": 138,
+     "end": 138,
+     "text": "const codePath = analyzer.codePath;"
+    }
+   },
+   "advice": [
+    {
+     "line": 423,
+     "rule": "type-assertion",
+     "msg": "`codePath` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result"
+    }
+   ],
+   "reason": "the two versions differ on trace"
+  },
+  {
+   "check": "lane-B",
+   "unit": "CodePathAnalyzer.leaveNode",
+   "file": "lib/code-path-analysis/code-path-analyzer.js",
+   "location": {
+    "start": 138,
+    "end": 138
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "$fake": "arg0"
+    }
+   ],
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "lib/code-path-analysis/code-path-analyzer.js",
+     "start": 519,
+     "end": 523,
+     "text": "if (!dontForward && (!node.parent || node.type !== node.parent.type)) {\n\n        // Emits onCodePathSegmentStart events if updated.\n        forwardCurrentToHead(analyzer, node);\n    }"
+    },
+    "candidate": {
+     "file": "lib/code-path-analysis/code-path-analyzer.js",
+     "start": 138,
+     "end": 138,
+     "text": "const codePath = analyzer.codePath;"
+    }
+   },
+   "reason": "the two versions differ on trace through processCodePathToExit"
+  }
+ ]
+}

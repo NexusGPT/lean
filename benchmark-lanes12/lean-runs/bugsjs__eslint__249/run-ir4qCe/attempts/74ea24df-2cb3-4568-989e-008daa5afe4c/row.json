@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/getter-return.js",
+ "unit": "(edit aedd6a8b7b78)",
+ "editIds": [
+  "aedd6a8b7b78edb7bb433cf136c42826b07837ab8560ea126e51b397e7d24602"
+ ],
+ "lines": [
+  111,
+  111
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

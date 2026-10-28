@@ -1,0 +1,20 @@
+{
+ "file": "lib/middleware/common.js",
+ "unit": "(edit c6fcb73b063e)",
+ "editIds": [
+  "c6fcb73b063e583cb643752aa3944c47797e849f687ddf5969d3201d1400714e"
+ ],
+ "lines": [
+  59,
+  59
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

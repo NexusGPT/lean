@@ -1,0 +1,80 @@
+{
+ "change": "587c8754901b5a0d0f24f581aecff2ba24e02b6d5f026b4d2344f28e7267db4d",
+ "tasks": [
+  {
+   "id": "056859cb19a0580343ca60cf10c3dcb3cb5338f2f2306e1a8a50f28091d2750c",
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit bb0a3e48faaa)",
+   "lines": [
+    278,
+    278
+   ],
+   "lanes": [],
+   "editIds": [
+    "bb0a3e48faaaf7cf5c1cd19664f6b1fda21e139aa95267998f0ab3dd76a9daaa"
+   ],
+   "attemptId": "e381a917-d58a-4fe6-9b2f-69e290fcfce3",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__88/run-SpiK9b/attempts/e381a917-d58a-4fe6-9b2f-69e290fcfce3"
+  },
+  {
+   "id": "107e9755f5c202aaedaf1fdb5a23acd3ba1d67ae2be4341a6fa7afabba79fe22",
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit e43d27e43c02)",
+   "lines": [
+    283,
+    283
+   ],
+   "lanes": [],
+   "editIds": [
+    "e43d27e43c02a65c7a720a345193b8220b9245a24c61ece1c67707895d7b0ea4"
+   ],
+   "attemptId": "a3c5d029-090e-432d-b470-be37baf45532",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__88/run-SpiK9b/attempts/a3c5d029-090e-432d-b470-be37baf45532"
+  },
+  {
+   "id": "52d81a8b3b7c0418d8af9fbba0b06ed43887fb7ae39a1d66094a2c22de95fb0d",
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit 64d44e074c03)",
+   "lines": [
+    284,
+    284
+   ],
+   "lanes": [],
+   "editIds": [
+    "64d44e074c03407714b19de20cf45586708d8bcac94cbafb4621e80c44556b1a"
+   ],
+   "attemptId": "e6f3b911-7d54-46d4-a7e0-9b69c3ef4f11",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__88/run-SpiK9b/attempts/e6f3b911-7d54-46d4-a7e0-9b69c3ef4f11"
+  },
+  {
+   "id": "38175c31cc99063fb40f1658b8b751cc97c8c4c60d1b4b9e3d87d85853c94d26",
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit 9fc64832e397)",
+   "lines": [
+    287,
+    287
+   ],
+   "lanes": [],
+   "editIds": [
+    "9fc64832e397b5c413f2740d81c1943a4f58049dc7c81b0f7348f96f6b995545"
+   ],
+   "attemptId": "ce8c94cf-fa17-4c33-9a66-6a175c2bbda2",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__88/run-SpiK9b/attempts/ce8c94cf-fa17-4c33-9a66-6a175c2bbda2"
+  },
+  {
+   "id": "6d46ccf69e779d235a47c76749e89afa849457e6f14948dd92f950e9b57c0569",
+   "file": "lib/rules/prefer-arrow-callback.js",
+   "unit": "(edit ff129c6b44ff)",
+   "lines": [
+    288,
+    288
+   ],
+   "lanes": [],
+   "editIds": [
+    "ff129c6b44ffa2b63775f83397cb6f96307bba77753dea28b0d6d6d96b835572"
+   ],
+   "attemptId": "59efb90b-34ee-47bf-8de2-69ce0eabcb8c",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__88/run-SpiK9b/attempts/59efb90b-34ee-47bf-8de2-69ce0eabcb8c"
+  }
+ ]
+}

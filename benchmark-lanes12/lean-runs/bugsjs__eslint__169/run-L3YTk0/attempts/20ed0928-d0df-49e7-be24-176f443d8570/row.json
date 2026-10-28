@@ -1,0 +1,21 @@
+{
+ "file": "lib/ast-utils.js",
+ "unit": "(edit 12dc634e0e62)",
+ "editIds": [
+  "12dc634e0e6213074acfdc674052f341a5212792c3d0fb07943c1eb00b288a6c"
+ ],
+ "lines": [
+  726,
+  726
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

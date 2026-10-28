@@ -1,0 +1,20 @@
+{
+ "file": "lib/middleware/karma.js",
+ "unit": "(edit f50e344551bb)",
+ "editIds": [
+  "f50e344551bb6171799be55778766901f37d3e511fc9cb260b3ca8492da7755a"
+ ],
+ "lines": [
+  203,
+  203
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/func-names.js",
+ "unit": "(edit b8669763fd92)",
+ "editIds": [
+  "b8669763fd92be16f3ba3fd9c7def36a08b08acf42b92f78084116ecf2322c8e"
+ ],
+ "lines": [
+  16,
+  16
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

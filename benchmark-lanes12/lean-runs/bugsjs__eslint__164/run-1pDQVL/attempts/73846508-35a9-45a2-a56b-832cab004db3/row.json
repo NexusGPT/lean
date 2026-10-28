@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/lines-around-directive.js",
+ "unit": "(edit 67d03267dc66)",
+ "editIds": [
+  "67d03267dc661bd6ca2847870ca28beda88650f204e3737fa5e5167ed6657973"
+ ],
+ "lines": [
+  68,
+  68
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

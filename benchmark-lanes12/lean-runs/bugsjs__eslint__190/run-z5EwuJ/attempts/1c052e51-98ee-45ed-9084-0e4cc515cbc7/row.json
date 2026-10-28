@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/init-declarations.js",
+ "unit": "(edit 1f121a380977)",
+ "editIds": [
+  "1f121a38097729a0977710661f0bca2eb7746fb52fa25b378794b14607b5222b"
+ ],
+ "lines": [
+  16,
+  16
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,297 @@
+{
+ "file": "lib/rules/operator-assignment.js",
+ "unit": "isNonCommutativeOperatorWithShorthand",
+ "lines": [
+  30,
+  32
+ ],
+ "verdict": "WITNESS",
+ "coverage": "checked",
+ "certificate": {
+  "tool": "lean-ts v3",
+  "identity": "89abbe7dcb4b54f3cd311d703edf8e50c48f14ee75d119fcaa1fddf05ddaeb93",
+  "unit": "isNonCommutativeOperatorWithShorthand",
+  "parent": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_base_62892_operator-assignment.js",
+   "sha256": "f2d7ad0ead2892a1"
+  },
+  "candidate": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_head_62892_operator-assignment.js",
+   "sha256": "0a1584de082180f5"
+  },
+  "lanes": {
+   "B": {
+    "verdict": "WITNESS",
+    "reason": null,
+    "bound": {
+     "n": 100,
+     "seed": 1,
+     "ms": 2000,
+     "reached": {
+      "body": 19,
+      "guard": 0
+     },
+     "states": [
+      {
+       "input": 0,
+       "args": [
+        "vf7yi"
+       ]
+      },
+      {
+       "input": 1,
+       "args": [
+        "a"
+       ]
+      },
+      {
+       "input": 2,
+       "args": [
+        "+"
+       ]
+      },
+      {
+       "input": 3,
+       "args": [
+        "vftsi"
+       ]
+      },
+      {
+       "input": 4,
+       "args": [
+        "veukt"
+       ]
+      },
+      {
+       "input": 5,
+       "args": [
+        "0"
+       ]
+      },
+      {
+       "input": 6,
+       "args": [
+        "vdiyf"
+       ]
+      },
+      {
+       "input": 7,
+       "args": [
+        "ÄÖü"
+       ]
+      },
+      {
+       "input": 8,
+       "args": [
+        "日本"
+       ]
+      },
+      {
+       "input": 9,
+       "args": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+       ]
+      },
+      {
+       "input": 10,
+       "args": [
+        "vc3h"
+       ]
+      },
+      {
+       "input": 11,
+       "args": [
+        "vimid"
+       ]
+      },
+      {
+       "input": 12,
+       "args": [
+        "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+       ]
+      },
+      {
+       "input": 13,
+       "args": [
+        "line one\nline two"
+       ]
+      },
+      {
+       "input": 14,
+       "args": [
+        "/"
+       ]
+      },
+      {
+       "input": 15,
+       "args": [
+        "vlera"
+       ]
+      },
+      {
+       "input": 16,
+       "args": [
+        "+"
+       ]
+      },
+      {
+       "input": 17,
+       "args": [
+        "%"
+       ]
+      },
+      {
+       "input": 18,
+       "args": [
+        "+"
+       ]
+      }
+     ],
+     "heaps": {
+      "assignments": 0,
+      "pool": 2,
+      "shapes": {}
+     },
+     "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+     "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+     "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+     "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+     "library": {
+      "records": 0,
+      "ops": {},
+      "calls": {},
+      "sampled": [],
+      "outOfModel": 0,
+      "callbackEffects": 0,
+      "defectRecords": 0,
+      "defects": []
+     }
+    },
+    "witnesses": [
+     {
+      "input": 2,
+      "args": [
+       "+"
+      ],
+      "where": {
+       "field": "outcome",
+       "lines": {
+        "kind": "completion",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_base_62892_operator-assignment.js",
+         "start": 31,
+         "end": 31,
+         "text": "return [\"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_head_62892_operator-assignment.js",
+         "start": 31,
+         "end": 31,
+         "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+        }
+       }
+      }
+     },
+     {
+      "input": 16,
+      "args": [
+       "+"
+      ],
+      "where": {
+       "field": "outcome",
+       "lines": {
+        "kind": "completion",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_base_62892_operator-assignment.js",
+         "start": 31,
+         "end": 31,
+         "text": "return [\"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_head_62892_operator-assignment.js",
+         "start": 31,
+         "end": 31,
+         "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+        }
+       }
+      }
+     },
+     {
+      "input": 18,
+      "args": [
+       "+"
+      ],
+      "where": {
+       "field": "outcome",
+       "lines": {
+        "kind": "completion",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_base_62892_operator-assignment.js",
+         "start": 31,
+         "end": 31,
+         "text": "return [\"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_head_62892_operator-assignment.js",
+         "start": 31,
+         "end": 31,
+         "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+        }
+       }
+      }
+     }
+    ]
+   }
+  },
+  "tools": {
+   "node": "v24.18.0"
+  },
+  "unitTextEqual": false,
+  "observation": {
+   "layer": "values and the reachable object graph",
+   "renders": null,
+   "effects": "the trace of environment requests and pending work",
+   "schedule": "synchronous; pending work recorded, never fired"
+  },
+  "library": {
+   "records": 0,
+   "ops": {},
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defects": 0
+  },
+  "verdict": "WITNESS"
+ },
+ "laneB": "WITNESS",
+ "laneA": null,
+ "witness": {
+  "input": 2,
+  "args": [
+   "+"
+  ],
+  "where": {
+   "field": "outcome",
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_base_62892_operator-assignment.js",
+     "start": 31,
+     "end": 31,
+     "text": "return [\"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__224/run-WeZbsQ/sources/lib/rules/.lean_head_62892_operator-assignment.js",
+     "start": 31,
+     "end": 31,
+     "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+    }
+   }
+  }
+ },
+ "reason": null,
+ "advice": [],
+ "editIds": [
+  "27f695085afd674f431a0c0bddf1014e03d4414537e7a71140c4ab945756c88c",
+  "070aecf3e8381249658e4d3b3c00270117077923f6c0db9ddfb8674fac2969b7"
+ ]
+}

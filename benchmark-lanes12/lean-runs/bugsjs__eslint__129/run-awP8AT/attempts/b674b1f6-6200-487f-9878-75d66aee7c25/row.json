@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-var.js",
+ "unit": "(edit 30c983c4958e)",
+ "editIds": [
+  "30c983c4958e4bea42edd1541838433134f82b7f8d470c760c6efa0556108123"
+ ],
+ "lines": [
+  281,
+  281
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-extend-native.js",
+ "unit": "(edit db5ba08bd855)",
+ "editIds": [
+  "db5ba08bd855a9b78ad656893f7db23540696d0664177dc1816b0f38bc198b7a"
+ ],
+ "lines": [
+  71,
+  71
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

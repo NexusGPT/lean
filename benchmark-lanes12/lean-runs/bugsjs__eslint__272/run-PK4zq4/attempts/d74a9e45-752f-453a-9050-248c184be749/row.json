@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-self-compare.js",
+ "unit": "(edit b7cda782ea3c)",
+ "editIds": [
+  "b7cda782ea3cb27dc1baf0178c156abf332b79a62adf8fb1e125c4377ad1cb72"
+ ],
+ "lines": [
+  34,
+  34
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

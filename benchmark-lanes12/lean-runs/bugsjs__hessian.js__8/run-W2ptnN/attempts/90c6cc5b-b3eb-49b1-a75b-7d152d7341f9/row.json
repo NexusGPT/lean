@@ -1,0 +1,20 @@
+{
+ "file": "lib/utils.js",
+ "unit": "(edit 199c0c8aeac5)",
+ "editIds": [
+  "199c0c8aeac56ba762d576c4fd4155072a1c19d27a5093e5ccdb92b255117dcf"
+ ],
+ "lines": [
+  46,
+  46
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

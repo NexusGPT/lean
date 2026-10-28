@@ -1,0 +1,114 @@
+{
+ "identity": "623caad018178f060545f78849e9b164a24a8d5a2bf7a744c02399a45024def8",
+ "records": [
+  {
+   "check": "refused:var",
+   "unit": "getTopLoopNode",
+   "file": "lib/rules/no-loop-func.js",
+   "location": {
+    "start": 76,
+    "end": 76
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 76,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 77,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    }
+   ],
+   "reason": "`var` is outside the subset; use let or const"
+  },
+  {
+   "check": "lane-B",
+   "unit": "getTopLoopNode",
+   "file": "lib/rules/no-loop-func.js",
+   "location": {
+    "start": 84,
+    "end": 84
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "parent": 0,
+     "range": []
+    },
+    0
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/rules/no-loop-func.js",
+     "start": 84,
+     "end": 84,
+     "text": "return retv;"
+    },
+    "candidate": {
+     "file": "lib/rules/no-loop-func.js",
+     "start": 84,
+     "end": 84,
+     "text": "return retv;"
+    }
+   },
+   "advice": [
+    {
+     "line": 76,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 77,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    }
+   ],
+   "reason": "the two versions differ on outcome"
+  },
+  {
+   "check": "lane-B",
+   "unit": "isSafe",
+   "file": "lib/rules/no-loop-func.js",
+   "location": {
+    "start": 147,
+    "end": 147
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "$fake": "arg0"
+    },
+    {
+     "range": []
+    },
+    {
+     "$fake": "arg2"
+    }
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/rules/no-loop-func.js",
+     "start": 120,
+     "end": 123,
+     "text": "var border = getTopLoopNode(\n        loopNode,\n        (kind === \"let\") ? declaration : null\n    ).range[0];"
+    },
+    "candidate": {
+     "file": "lib/rules/no-loop-func.js",
+     "start": 147,
+     "end": 147,
+     "text": "return Boolean(variable) && variable.references.every(isSafeReference);"
+    }
+   },
+   "reason": "the two versions differ on outcome through getTopLoopNode"
+  }
+ ]
+}

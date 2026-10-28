@@ -1,0 +1,137 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "bb4703e199cbbf62203730be275c81a0f7d68d47",
+ "head": "4ccb6d60b90487c1752f72d2bfa71cc83a7ed2f2",
+ "files": [
+  {
+   "id": "50eba5fbd289b4369a78ce229232a04d4d5ade94e8691c8a17fa7438fbbd3e01",
+   "file": "lib/request.js",
+   "oldPath": "lib/request.js",
+   "newPath": "lib/request.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "c1392396c19457901c179f0ef7b841bea8ed5b1f",
+   "newOid": "3bae7ad9bc9d679b731948e6856b144a2495190a",
+   "status": "M",
+   "edits": [
+    "91b3a66aeeb122cd6730f4994b08425fbc73e5214b2f48ad5162826a2292df85",
+    "7117cfd8579346fe84a116df621ddc3fb2bf34402ea282aa84047a8ab8c37fb8"
+   ],
+   "hunks": [
+    {
+     "id": "336b705273d6d9533abe4edf2a6e705d00c249a55d0d02a58210a16d0172236a",
+     "old": {
+      "start": 361,
+      "count": 1
+     },
+     "new": {
+      "start": 361,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "3fb5a94750be722eedb1294b0965fd5e981571a6230435bb83ef6c134a148aa6",
+   "newHash": "208ce794b939bb8612c071d39e4544bc92f6ceeef8d6fcad91ca18db02545e59",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "91b3a66aeeb122cd6730f4994b08425fbc73e5214b2f48ad5162826a2292df85",
+   "fileId": "50eba5fbd289b4369a78ce229232a04d4d5ade94e8691c8a17fa7438fbbd3e01",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "336b705273d6d9533abe4edf2a6e705d00c249a55d0d02a58210a16d0172236a",
+   "side": "old",
+   "old": {
+    "start": 361,
+    "count": 1
+   },
+   "new": {
+    "start": 361,
+    "count": 0
+   },
+   "offsets": {
+    "start": 8230,
+    "end": 8277
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "7117cfd8579346fe84a116df621ddc3fb2bf34402ea282aa84047a8ab8c37fb8",
+   "fileId": "50eba5fbd289b4369a78ce229232a04d4d5ade94e8691c8a17fa7438fbbd3e01",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "336b705273d6d9533abe4edf2a6e705d00c249a55d0d02a58210a16d0172236a",
+   "side": "new",
+   "old": {
+    "start": 361,
+    "count": 0
+   },
+   "new": {
+    "start": 361,
+    "count": 1
+   },
+   "offsets": {
+    "start": 8230,
+    "end": 8280
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "f542a4c90f24ebd2d2e4cbb359c1b3e87793b272d00746cfb64fbaf2f004df19",
+ "reconciliation": {
+  "expected": [
+   "91b3a66aeeb122cd6730f4994b08425fbc73e5214b2f48ad5162826a2292df85",
+   "7117cfd8579346fe84a116df621ddc3fb2bf34402ea282aa84047a8ab8c37fb8"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "91b3a66aeeb122cd6730f4994b08425fbc73e5214b2f48ad5162826a2292df85",
+   "7117cfd8579346fe84a116df621ddc3fb2bf34402ea282aa84047a8ab8c37fb8"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "91b3a66aeeb122cd6730f4994b08425fbc73e5214b2f48ad5162826a2292df85",
+     "7117cfd8579346fe84a116df621ddc3fb2bf34402ea282aa84047a8ab8c37fb8"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

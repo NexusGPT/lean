@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/semi-spacing.js",
+ "unit": "(edit dc108c25cd8f)",
+ "editIds": [
+  "dc108c25cd8fb1a2cfb6ae1c885e7c84f94659683aa0dbca664d10d19ec5f29c"
+ ],
+ "lines": [
+  210,
+  210
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

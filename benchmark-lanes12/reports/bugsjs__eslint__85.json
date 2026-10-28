@@ -1,0 +1,1573 @@
+{
+ "identity": "a20309103666184602996762e8754fdb10978e6fc18e63e6457dcf05825b7353",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "getLineIndices",
+   "lines": [
+    290,
+    315
+   ],
+   "coverage": "refused:unsupported-member",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 1,
+    "args": [
+     {
+      "text": {
+       "$fake": "arg0.text"
+      }
+     }
+    ],
+    "parent": {
+     "outcome": {
+      "returned": [
+       0,
+       {
+        "$nan": true
+       },
+       {
+        "$nan": true
+       }
+      ]
+     },
+     "heap": {
+      "roots": [
+       {
+        "$ref": 0
+       }
+      ],
+      "own": {},
+      "outcome": {
+       "$ref": 1
+      },
+      "anchors": 1,
+      "heap": [
+       {
+        "kind": "record",
+        "edges": {
+         "text": {
+          "$fake": "arg0.text"
+         }
+        }
+       },
+       {
+        "kind": "array",
+        "edges": [
+         0,
+         {
+          "$nan": true
+         },
+         {
+          "$nan": true
+         }
+        ]
+       }
+      ]
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg0.text.match",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "arg0.text.match",
+       "args": [
+        {}
+       ]
+      },
+      {
+       "op": "get",
+       "path": "arg0.text.match()#1.0",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.text.match()#1.1",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "returned": [
+       0
+      ]
+     },
+     "heap": {
+      "roots": [
+       {
+        "$ref": 0
+       }
+      ],
+      "own": {},
+      "outcome": {
+       "$ref": 1
+      },
+      "anchors": 1,
+      "heap": [
+       {
+        "kind": "record",
+        "edges": {
+         "text": {
+          "$fake": "arg0.text"
+         }
+        }
+       },
+       {
+        "kind": "array",
+        "edges": [
+         0
+        ]
+       }
+      ]
+     },
+     "receiver": {},
+     "trace": [],
+     "pending": []
+    },
+    "where": {
+     "field": "outcome",
+     "lines": {
+      "kind": "completion",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__85/run-T1qTV1/sources/lib/.lean_base_37419_ast-utils.js",
+       "start": 299,
+       "end": 299,
+       "text": "return lineIndexCache.get(sourceCode);"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__85/run-T1qTV1/sources/lib/.lean_head_37419_ast-utils.js",
+       "start": 314,
+       "end": 314,
+       "text": "return lineIndexCache.get(sourceCode);"
+      }
+     }
+    }
+   },
+   "reason": "`.index` of a match is read for a match of a non-global regular expression literal bound to a const (`const m = /re/.exec(s)`, `s.match(/re/)`), or take the first position with `s.search(/re/)`; a match from a global pattern, an exec loop or matchAll depends on lastIndex",
+   "advice": [
+    {
+     "line": 308,
+     "rule": "unsupported-member",
+     "msg": "`.index` of a match is read for a match of a non-global regular expression literal bound to a const (`const m = /re/.exec(s)`, `s.match(/re/)`), or take the first position with `s.search(/re/)`; a match from a global pattern, an exec loop or matchAll depends on lastIndex",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    }
+   ],
+   "editIds": [
+    "e96debdb373033dde63593056d3a7cac5c18c094c6a5bc3bef07e899a3cf1aec",
+    "5f5a55a9ec3bf2aafc6bfa1e27e1de34dcf5b1c2fffdbfd2a8f70c360baf6a7e",
+    "4caa8f6529862208d1528efedd5738393e06db597c46a86c0f03210c05c879b3",
+    "ab95fe93b5043d5e80b27252fe819c1903c6b81165069d886dd8e9aa4bf38dde",
+    "2462c248f642b5759c2937c619dd4c7e431df33c895dfe6d525937c1f08c656b",
+    "28adcca0aef34d6ecb17fd0badcb7b10d5d9f5639253ab6b0602e8d9a6c45f80",
+    "1b77e85ff849e9eaeb63749e4a647fa3d7998e64955d0aa1d034cf5b0fe9a520",
+    "22e4740f3f7e08288b26770b1c9c498cb65519e6814e9f7253dcb59ea1f83eda",
+    "33cf962b54ad94fefe4fe85bb748c43aee2a0c648f2b906b443dabe07ccb50d0",
+    "f2555cae7f87cc99ca82adacf3cef431a6801eb4a79e6b94053b4312151649c0",
+    "3dee3212f48167ad9d6cc54861c53bcb899e7e2c3e4dfd5ddf851197cd1d04ad",
+    "287062258b6f07103b7e718e8eb7a666ee08b71a71e77a57cdcb68d437017133",
+    "ad9b530dd9e402b269f1ed292f6de1cdb29981c4373ac84211f0b64096e5be58",
+    "692d341be2e4fc1729961d95ce4234b63b090d15eedcad8939790c11360e862e",
+    "c61320a23b268f6a7001f8ae2f61f65f94fcbf59cf52be97cdc87c7677bc5d9a",
+    "7bf1de86d35755b1ed7a866898cd324ea81975b39c9966717b33caaeca45ee9d",
+    "f05d8a70d101107bc5f5c598d5f971341da79c899f918959ba99861001eb14d2",
+    "f4a9f84ab37d5296d0b18784ef9a77d65c9e799cfa760a9a537655834b8dfc4d",
+    "d1214d26d7138ac3884f012bb080c8c0ff7e7ca464f6bb89a2338f7be2412c30"
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "lines": [
+      290,
+      315
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "995554cfac870b82e64881a8b6ba2f1422c0bacc",
+  "head": "0506eca8f4127e2981724880e671cb9fc625adce",
+  "files": [
+   {
+    "id": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "oldPath": "lib/ast-utils.js",
+    "newPath": "lib/ast-utils.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "38f6cc9617e6ad4c676540e949165d6f6f8887b5",
+    "newOid": "4f23e5ff688c101227d0f804a3391d4d9295d23e",
+    "status": "M",
+    "edits": [
+     "e96debdb373033dde63593056d3a7cac5c18c094c6a5bc3bef07e899a3cf1aec",
+     "5f5a55a9ec3bf2aafc6bfa1e27e1de34dcf5b1c2fffdbfd2a8f70c360baf6a7e",
+     "4caa8f6529862208d1528efedd5738393e06db597c46a86c0f03210c05c879b3",
+     "ab95fe93b5043d5e80b27252fe819c1903c6b81165069d886dd8e9aa4bf38dde",
+     "2462c248f642b5759c2937c619dd4c7e431df33c895dfe6d525937c1f08c656b",
+     "28adcca0aef34d6ecb17fd0badcb7b10d5d9f5639253ab6b0602e8d9a6c45f80",
+     "1b77e85ff849e9eaeb63749e4a647fa3d7998e64955d0aa1d034cf5b0fe9a520",
+     "22e4740f3f7e08288b26770b1c9c498cb65519e6814e9f7253dcb59ea1f83eda",
+     "33cf962b54ad94fefe4fe85bb748c43aee2a0c648f2b906b443dabe07ccb50d0",
+     "f2555cae7f87cc99ca82adacf3cef431a6801eb4a79e6b94053b4312151649c0",
+     "3dee3212f48167ad9d6cc54861c53bcb899e7e2c3e4dfd5ddf851197cd1d04ad",
+     "287062258b6f07103b7e718e8eb7a666ee08b71a71e77a57cdcb68d437017133",
+     "ad9b530dd9e402b269f1ed292f6de1cdb29981c4373ac84211f0b64096e5be58",
+     "692d341be2e4fc1729961d95ce4234b63b090d15eedcad8939790c11360e862e",
+     "c61320a23b268f6a7001f8ae2f61f65f94fcbf59cf52be97cdc87c7677bc5d9a",
+     "7bf1de86d35755b1ed7a866898cd324ea81975b39c9966717b33caaeca45ee9d",
+     "f05d8a70d101107bc5f5c598d5f971341da79c899f918959ba99861001eb14d2",
+     "f4a9f84ab37d5296d0b18784ef9a77d65c9e799cfa760a9a537655834b8dfc4d",
+     "d1214d26d7138ac3884f012bb080c8c0ff7e7ca464f6bb89a2338f7be2412c30"
+    ],
+    "hunks": [
+     {
+      "id": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+      "old": {
+       "start": 293,
+       "count": 2
+      },
+      "new": {
+       "start": 293,
+       "count": 17
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "5f7cb3f7d35a74828004e65e96a997237ebed24e1a04ec9d978265e953275bd4",
+    "newHash": "b7a834f8d5876c57c71b056f0156e4d99bdf3a73e7dc3ecebf1bfc3684b240c9",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isModifyingReference",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 35,
+       "end": 51,
+       "offset": 1301,
+       "stop": 1833,
+       "id": "3b30d2bdc1c056c7e88431d8978ced9dfccef182b2e54bf9f9fe821c4c184cc8"
+      },
+      {
+       "name": "startsWithUpperCase",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 59,
+       "end": 61,
+       "offset": 2021,
+       "stop": 2102,
+       "id": "57317e684b16f7a43437b40589ca37c8b2a6b9cd5537e70043942c23fcdb6a89"
+      },
+      {
+       "name": "isES5Constructor",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 68,
+       "end": 70,
+       "offset": 2278,
+       "stop": 2372,
+       "id": "be1b1b8e88f67cf33de89b45140b85d0d8e4669b2844e1211c9f8b8a549e07e0"
+      },
+      {
+       "name": "getUpperFunction",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 77,
+       "end": 85,
+       "offset": 2529,
+       "stop": 2719,
+       "id": "313bb47f07bf831e44415edfb031c092511013ff3c176d4ce1ae1fddaf744733"
+      },
+      {
+       "name": "isFunction",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 98,
+       "end": 100,
+       "offset": 3024,
+       "stop": 3117,
+       "id": "d305ae0d59c811d89b02e7222d989aa31c894d8afe268957d7ac685ae1e152ad"
+      },
+      {
+       "name": "isLoop",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 115,
+       "end": 117,
+       "offset": 3432,
+       "stop": 3517,
+       "id": "b2110b5257cc376b43df90576184b0c6351f8d8aebb9e57e55f1dd422e8c291d"
+      },
+      {
+       "name": "isInLoop",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 125,
+       "end": 135,
+       "offset": 3685,
+       "stop": 3869,
+       "id": "73075bb810d01cd237375789ce1d4c8d1bdd56a0326957f52d2b123f25fd96e8"
+      },
+      {
+       "name": "isNullOrUndefined",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 143,
+       "end": 149,
+       "offset": 4066,
+       "stop": 4321,
+       "id": "a897eec761475d63b1b9ef050008e33a32a1b758db3b562b3afeef660e569810"
+      },
+      {
+       "name": "isCallee",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 156,
+       "end": 158,
+       "offset": 4475,
+       "stop": 4583,
+       "id": "656d5420fa8e7dac7194c7a4d9acdc555de1f0d400672f5b44325b90a23d8575"
+      },
+      {
+       "name": "isReflectApply",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 165,
+       "end": 174,
+       "offset": 4757,
+       "stop": 5062,
+       "id": "fa9e06e3d6c97fc49f468aeb332ed07bf89f56f854c41e09710f9b011ace03a8"
+      },
+      {
+       "name": "isArrayFromMethod",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 181,
+       "end": 190,
+       "offset": 5230,
+       "stop": 5554,
+       "id": "9b5162ebf788a4e294be708069d3af28ec915d4c316ce9de5f8ec0160a35b419"
+      },
+      {
+       "name": "isMethodWhichHasThisArg",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 197,
+       "end": 211,
+       "offset": 5752,
+       "stop": 6093,
+       "id": "8d2a68d940268b65b881d77cb355b022d908c89f5a29984e759d608657d6efcf"
+      },
+      {
+       "name": "hasJSDocThisTag",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 219,
+       "end": 231,
+       "offset": 6370,
+       "stop": 6876,
+       "id": "28b9678cdbd89b603e5914dd2f340c60febac1b63d9239970837572d1425630a"
+      },
+      {
+       "name": "isParenthesised",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 240,
+       "end": 247,
+       "offset": 7122,
+       "stop": 7484,
+       "id": "0e32d01f06116e00a7c64dc0b80645b8881f0e3030fdd5f7643510af44118453"
+      },
+      {
+       "name": "getArrowToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 256,
+       "end": 264,
+       "offset": 7719,
+       "stop": 7928,
+       "id": "75fa0f04651adc5b57798423f8c3156c61b2b3f2669bb8911d3b48e3f61b434f"
+      },
+      {
+       "name": "getOpeningParenOfParams",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 273,
+       "end": 281,
+       "offset": 8149,
+       "stop": 8406,
+       "id": "22ba7a1125a9c8b101d9a0b22948f8c8d251a05a3827c66cff6bb59b207d1610"
+      },
+      {
+       "name": "getLineIndices",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 290,
+       "end": 300,
+       "offset": 8691,
+       "stop": 9228,
+       "id": "c6fe6cf0f686fe76e69f68384abfce9ac1343fda3e58e995ff1132a005893654"
+      }
+     ],
+     "new": [
+      {
+       "name": "isModifyingReference",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 35,
+       "end": 51,
+       "offset": 1301,
+       "stop": 1833,
+       "id": "e9ac9c0a55dbd42b284d9dce210ccf7c9074a3acf887d6dfac2638c346768da3"
+      },
+      {
+       "name": "startsWithUpperCase",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 59,
+       "end": 61,
+       "offset": 2021,
+       "stop": 2102,
+       "id": "ebfcde7cb7288f660cfb06c49f32663e38430c5cc2e639aeddd46ed782885bc3"
+      },
+      {
+       "name": "isES5Constructor",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 68,
+       "end": 70,
+       "offset": 2278,
+       "stop": 2372,
+       "id": "ec1199cc1c20ce2c05387791ae55d0050b0f40ed27827af4920e19639f3bba87"
+      },
+      {
+       "name": "getUpperFunction",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 77,
+       "end": 85,
+       "offset": 2529,
+       "stop": 2719,
+       "id": "f9da00d6b9d215dac578e28dd2274414965190cbe773f46a65b32d93acb24c8b"
+      },
+      {
+       "name": "isFunction",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 98,
+       "end": 100,
+       "offset": 3024,
+       "stop": 3117,
+       "id": "50994080601fed88a9f7d4cd9970d1e86728114cca44dce996000a1359d7acd4"
+      },
+      {
+       "name": "isLoop",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 115,
+       "end": 117,
+       "offset": 3432,
+       "stop": 3517,
+       "id": "b24e7d4164a0a0108b0437ed145a17752a5d5c9ceedfcc39de2a49f44f83b37a"
+      },
+      {
+       "name": "isInLoop",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 125,
+       "end": 135,
+       "offset": 3685,
+       "stop": 3869,
+       "id": "703d6660f8b61f5a80363440a67786f31d7b913e77ee7b467178b0614f8928b4"
+      },
+      {
+       "name": "isNullOrUndefined",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 143,
+       "end": 149,
+       "offset": 4066,
+       "stop": 4321,
+       "id": "3473dce42471a88b8946a6e84362fdab1373ee26d918edfa4707bbf5edae1677"
+      },
+      {
+       "name": "isCallee",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 156,
+       "end": 158,
+       "offset": 4475,
+       "stop": 4583,
+       "id": "9d7249e06e231638cb6043859e55a3c1ffa9e2391f0550456b6eed4b997d7341"
+      },
+      {
+       "name": "isReflectApply",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 165,
+       "end": 174,
+       "offset": 4757,
+       "stop": 5062,
+       "id": "86a5a09cda1f9c1503411e8d780fe7dbefb79a5031fd9f5480f9c137772e4425"
+      },
+      {
+       "name": "isArrayFromMethod",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 181,
+       "end": 190,
+       "offset": 5230,
+       "stop": 5554,
+       "id": "54f6278c4f5b8d4b8a78ef3f875ea1a800d9337f3a1a8a3c75396b4f12b362df"
+      },
+      {
+       "name": "isMethodWhichHasThisArg",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 197,
+       "end": 211,
+       "offset": 5752,
+       "stop": 6093,
+       "id": "bdfa1b16a81423d82a68abbc5423f51a0c5cb2dcf505571bb6b4c658eb67d168"
+      },
+      {
+       "name": "hasJSDocThisTag",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 219,
+       "end": 231,
+       "offset": 6370,
+       "stop": 6876,
+       "id": "1927f17a356b8e18b2da2baaa4475f79bb5746b503dc3126bf267a903b167b0c"
+      },
+      {
+       "name": "isParenthesised",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 240,
+       "end": 247,
+       "offset": 7122,
+       "stop": 7484,
+       "id": "2f3342a36a6e20bd302299fac3868a1dbafe14b03b1ca726e48d9a12b011324c"
+      },
+      {
+       "name": "getArrowToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 256,
+       "end": 264,
+       "offset": 7719,
+       "stop": 7928,
+       "id": "bc5e84ccdcde1fb510edad811dee6bc7d51856826529019c28ee0dca35f7fa2a"
+      },
+      {
+       "name": "getOpeningParenOfParams",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 273,
+       "end": 281,
+       "offset": 8149,
+       "stop": 8406,
+       "id": "3eb12f3340075cb682522d32adf725ed50e2a1995e72907dc2780987f18aca2f"
+      },
+      {
+       "name": "getLineIndices",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 290,
+       "end": 315,
+       "offset": 8691,
+       "stop": 9797,
+       "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "e96debdb373033dde63593056d3a7cac5c18c094c6a5bc3bef07e899a3cf1aec",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "old",
+    "old": {
+     "start": 293,
+     "count": 1
+    },
+    "new": {
+     "start": 293,
+     "count": 0
+    },
+    "offsets": {
+     "start": 8773,
+     "end": 8882
+    },
+    "links": [
+     {
+      "id": "c6fe6cf0f686fe76e69f68384abfce9ac1343fda3e58e995ff1132a005893654",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "old",
+      "start": 290,
+      "end": 300
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "c6fe6cf0f686fe76e69f68384abfce9ac1343fda3e58e995ff1132a005893654",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "old",
+     "start": 290,
+     "end": 300
+    }
+   },
+   {
+    "id": "5f5a55a9ec3bf2aafc6bfa1e27e1de34dcf5b1c2fffdbfd2a8f70c360baf6a7e",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "old",
+    "old": {
+     "start": 294,
+     "count": 1
+    },
+    "new": {
+     "start": 293,
+     "count": 0
+    },
+    "offsets": {
+     "start": 8882,
+     "end": 8986
+    },
+    "links": [
+     {
+      "id": "c6fe6cf0f686fe76e69f68384abfce9ac1343fda3e58e995ff1132a005893654",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "old",
+      "start": 290,
+      "end": 300
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "c6fe6cf0f686fe76e69f68384abfce9ac1343fda3e58e995ff1132a005893654",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "old",
+     "start": 290,
+     "end": 300
+    }
+   },
+   {
+    "id": "4caa8f6529862208d1528efedd5738393e06db597c46a86c0f03210c05c879b3",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 293,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8773,
+     "end": 8806
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "ab95fe93b5043d5e80b27252fe819c1903c6b81165069d886dd8e9aa4bf38dde",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 294,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8806,
+     "end": 8868
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "2462c248f642b5759c2937c619dd4c7e431df33c895dfe6d525937c1f08c656b",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 295,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8868,
+     "end": 8887
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "28adcca0aef34d6ecb17fd0badcb7b10d5d9f5639253ab6b0602e8d9a6c45f80",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 296,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8887,
+     "end": 8888
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "1b77e85ff849e9eaeb63749e4a647fa3d7998e64955d0aa1d034cf5b0fe9a520",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 297,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8888,
+     "end": 8899
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "22e4740f3f7e08288b26770b1c9c498cb65519e6814e9f7253dcb59ea1f83eda",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 298,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8899,
+     "end": 8971
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "33cf962b54ad94fefe4fe85bb748c43aee2a0c648f2b906b443dabe07ccb50d0",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 299,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8971,
+     "end": 9043
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "f2555cae7f87cc99ca82adacf3cef431a6801eb4a79e6b94053b4312151649c0",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 300,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9043,
+     "end": 9114
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "3dee3212f48167ad9d6cc54861c53bcb899e7e2c3e4dfd5ddf851197cd1d04ad",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 301,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9114,
+     "end": 9184
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "287062258b6f07103b7e718e8eb7a666ee08b71a71e77a57cdcb68d437017133",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 302,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9184,
+     "end": 9257
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "ad9b530dd9e402b269f1ed292f6de1cdb29981c4373ac84211f0b64096e5be58",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 303,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9257,
+     "end": 9332
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "692d341be2e4fc1729961d95ce4234b63b090d15eedcad8939790c11360e862e",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 304,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9332,
+     "end": 9403
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "c61320a23b268f6a7001f8ae2f61f65f94fcbf59cf52be97cdc87c7677bc5d9a",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 305,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9403,
+     "end": 9415
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "7bf1de86d35755b1ed7a866898cd324ea81975b39c9966717b33caaeca45ee9d",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 306,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9415,
+     "end": 9416
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "f05d8a70d101107bc5f5c598d5f971341da79c899f918959ba99861001eb14d2",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 307,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9416,
+     "end": 9484
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "f4a9f84ab37d5296d0b18784ef9a77d65c9e799cfa760a9a537655834b8dfc4d",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 308,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9484,
+     "end": 9545
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   },
+   {
+    "id": "d1214d26d7138ac3884f012bb080c8c0ff7e7ca464f6bb89a2338f7be2412c30",
+    "fileId": "e6b971e6874082e2a0b1fc98e161b9a170460ebbc0c33cdaa0b9d07f58a28daa",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f21f5059e3b0650254890779ff37d96baa2e65dadc0b5c642da61d71350d85a3",
+    "side": "new",
+    "old": {
+     "start": 293,
+     "count": 0
+    },
+    "new": {
+     "start": 309,
+     "count": 1
+    },
+    "offsets": {
+     "start": 9545,
+     "end": 9555
+    },
+    "links": [
+     {
+      "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+      "file": "lib/ast-utils.js",
+      "unit": "getLineIndices",
+      "side": "new",
+      "start": 290,
+      "end": 315
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "99356060fc94a09647f4dcc22e9617b7ccf9e40f7edcf02e6d477c0da08d545f",
+     "file": "lib/ast-utils.js",
+     "unit": "getLineIndices",
+     "side": "new",
+     "start": 290,
+     "end": 315
+    }
+   }
+  ],
+  "id": "9528a7d30921ab756f30f0dd99d415f8e827d252d8a7dc72b3d6c9950fcd70f5",
+  "reconciliation": {
+   "expected": [
+    "e96debdb373033dde63593056d3a7cac5c18c094c6a5bc3bef07e899a3cf1aec",
+    "5f5a55a9ec3bf2aafc6bfa1e27e1de34dcf5b1c2fffdbfd2a8f70c360baf6a7e",
+    "4caa8f6529862208d1528efedd5738393e06db597c46a86c0f03210c05c879b3",
+    "ab95fe93b5043d5e80b27252fe819c1903c6b81165069d886dd8e9aa4bf38dde",
+    "2462c248f642b5759c2937c619dd4c7e431df33c895dfe6d525937c1f08c656b",
+    "28adcca0aef34d6ecb17fd0badcb7b10d5d9f5639253ab6b0602e8d9a6c45f80",
+    "1b77e85ff849e9eaeb63749e4a647fa3d7998e64955d0aa1d034cf5b0fe9a520",
+    "22e4740f3f7e08288b26770b1c9c498cb65519e6814e9f7253dcb59ea1f83eda",
+    "33cf962b54ad94fefe4fe85bb748c43aee2a0c648f2b906b443dabe07ccb50d0",
+    "f2555cae7f87cc99ca82adacf3cef431a6801eb4a79e6b94053b4312151649c0",
+    "3dee3212f48167ad9d6cc54861c53bcb899e7e2c3e4dfd5ddf851197cd1d04ad",
+    "287062258b6f07103b7e718e8eb7a666ee08b71a71e77a57cdcb68d437017133",
+    "ad9b530dd9e402b269f1ed292f6de1cdb29981c4373ac84211f0b64096e5be58",
+    "692d341be2e4fc1729961d95ce4234b63b090d15eedcad8939790c11360e862e",
+    "c61320a23b268f6a7001f8ae2f61f65f94fcbf59cf52be97cdc87c7677bc5d9a",
+    "7bf1de86d35755b1ed7a866898cd324ea81975b39c9966717b33caaeca45ee9d",
+    "f05d8a70d101107bc5f5c598d5f971341da79c899f918959ba99861001eb14d2",
+    "f4a9f84ab37d5296d0b18784ef9a77d65c9e799cfa760a9a537655834b8dfc4d",
+    "d1214d26d7138ac3884f012bb080c8c0ff7e7ca464f6bb89a2338f7be2412c30"
+   ],
+   "unit": [
+    "e96debdb373033dde63593056d3a7cac5c18c094c6a5bc3bef07e899a3cf1aec",
+    "5f5a55a9ec3bf2aafc6bfa1e27e1de34dcf5b1c2fffdbfd2a8f70c360baf6a7e",
+    "4caa8f6529862208d1528efedd5738393e06db597c46a86c0f03210c05c879b3",
+    "ab95fe93b5043d5e80b27252fe819c1903c6b81165069d886dd8e9aa4bf38dde",
+    "2462c248f642b5759c2937c619dd4c7e431df33c895dfe6d525937c1f08c656b",
+    "28adcca0aef34d6ecb17fd0badcb7b10d5d9f5639253ab6b0602e8d9a6c45f80",
+    "1b77e85ff849e9eaeb63749e4a647fa3d7998e64955d0aa1d034cf5b0fe9a520",
+    "22e4740f3f7e08288b26770b1c9c498cb65519e6814e9f7253dcb59ea1f83eda",
+    "33cf962b54ad94fefe4fe85bb748c43aee2a0c648f2b906b443dabe07ccb50d0",
+    "f2555cae7f87cc99ca82adacf3cef431a6801eb4a79e6b94053b4312151649c0",
+    "3dee3212f48167ad9d6cc54861c53bcb899e7e2c3e4dfd5ddf851197cd1d04ad",
+    "287062258b6f07103b7e718e8eb7a666ee08b71a71e77a57cdcb68d437017133",
+    "ad9b530dd9e402b269f1ed292f6de1cdb29981c4373ac84211f0b64096e5be58",
+    "692d341be2e4fc1729961d95ce4234b63b090d15eedcad8939790c11360e862e",
+    "c61320a23b268f6a7001f8ae2f61f65f94fcbf59cf52be97cdc87c7677bc5d9a",
+    "7bf1de86d35755b1ed7a866898cd324ea81975b39c9966717b33caaeca45ee9d",
+    "f05d8a70d101107bc5f5c598d5f971341da79c899f918959ba99861001eb14d2",
+    "f4a9f84ab37d5296d0b18784ef9a77d65c9e799cfa760a9a537655834b8dfc4d",
+    "d1214d26d7138ac3884f012bb080c8c0ff7e7ca464f6bb89a2338f7be2412c30"
+   ],
+   "artifact": [],
+   "unassigned": [],
+   "classes": {
+    "source": {
+     "unit": [
+      "e96debdb373033dde63593056d3a7cac5c18c094c6a5bc3bef07e899a3cf1aec",
+      "5f5a55a9ec3bf2aafc6bfa1e27e1de34dcf5b1c2fffdbfd2a8f70c360baf6a7e",
+      "4caa8f6529862208d1528efedd5738393e06db597c46a86c0f03210c05c879b3",
+      "ab95fe93b5043d5e80b27252fe819c1903c6b81165069d886dd8e9aa4bf38dde",
+      "2462c248f642b5759c2937c619dd4c7e431df33c895dfe6d525937c1f08c656b",
+      "28adcca0aef34d6ecb17fd0badcb7b10d5d9f5639253ab6b0602e8d9a6c45f80",
+      "1b77e85ff849e9eaeb63749e4a647fa3d7998e64955d0aa1d034cf5b0fe9a520",
+      "22e4740f3f7e08288b26770b1c9c498cb65519e6814e9f7253dcb59ea1f83eda",
+      "33cf962b54ad94fefe4fe85bb748c43aee2a0c648f2b906b443dabe07ccb50d0",
+      "f2555cae7f87cc99ca82adacf3cef431a6801eb4a79e6b94053b4312151649c0",
+      "3dee3212f48167ad9d6cc54861c53bcb899e7e2c3e4dfd5ddf851197cd1d04ad",
+      "287062258b6f07103b7e718e8eb7a666ee08b71a71e77a57cdcb68d437017133",
+      "ad9b530dd9e402b269f1ed292f6de1cdb29981c4373ac84211f0b64096e5be58",
+      "692d341be2e4fc1729961d95ce4234b63b090d15eedcad8939790c11360e862e",
+      "c61320a23b268f6a7001f8ae2f61f65f94fcbf59cf52be97cdc87c7677bc5d9a",
+      "7bf1de86d35755b1ed7a866898cd324ea81975b39c9966717b33caaeca45ee9d",
+      "f05d8a70d101107bc5f5c598d5f971341da79c899f918959ba99861001eb14d2",
+      "f4a9f84ab37d5296d0b18784ef9a77d65c9e799cfa760a9a537655834b8dfc4d",
+      "d1214d26d7138ac3884f012bb080c8c0ff7e7ca464f6bb89a2338f7be2412c30"
+     ],
+     "artifact": [],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "efd70a3b2608774c390974d6b410c2e3d092a5c63e63538c894e6b50e9fa4497"
+  ],
+  "terminal": [
+   "efd70a3b2608774c390974d6b410c2e3d092a5c63e63538c894e6b50e9fa4497"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [
+    "efd70a3b2608774c390974d6b410c2e3d092a5c63e63538c894e6b50e9fa4497/B",
+    "efd70a3b2608774c390974d6b410c2e3d092a5c63e63538c894e6b50e9fa4497/A"
+   ],
+   "terminal": [
+    "efd70a3b2608774c390974d6b410c2e3d092a5c63e63538c894e6b50e9fa4497/B",
+    "efd70a3b2608774c390974d6b410c2e3d092a5c63e63538c894e6b50e9fa4497/A"
+   ],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__85/run-T1qTV1/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__85/run-T1qTV1",
+ "callersChecked": 0
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/consistent-return.js",
+ "unit": "(edit a459b552caf1)",
+ "editIds": [
+  "a459b552caf1de0c90c9bc72771f7c1179f8cfab1b8c872e1859810b18301d7e"
+ ],
+ "lines": [
+  47,
+  47
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

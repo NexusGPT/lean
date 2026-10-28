@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-multiple-empty-lines.js",
+ "unit": "(edit 752beb4212b4)",
+ "editIds": [
+  "752beb4212b4af109bb6c5be7d48069563136df20fb2f72f27da43634c2d20f8"
+ ],
+ "lines": [
+  114,
+  114
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

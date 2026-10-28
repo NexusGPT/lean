@@ -1,0 +1,21 @@
+{
+ "file": "lib/ast-utils.js",
+ "unit": "(edit e8de5925dcd1)",
+ "editIds": [
+  "e8de5925dcd1afede537b4f37aab5894f9187339df2145b28710135edb583cf9"
+ ],
+ "lines": [
+  116,
+  116
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

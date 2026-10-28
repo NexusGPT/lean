@@ -1,0 +1,21 @@
+{
+ "file": "lib/router/index.js",
+ "unit": "(edit 047a96f4b30a)",
+ "editIds": [
+  "047a96f4b30aabdd3cc696fd14e4a97040c0b62e7555be541e8aef45ee009c81"
+ ],
+ "lines": [
+  346,
+  346
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

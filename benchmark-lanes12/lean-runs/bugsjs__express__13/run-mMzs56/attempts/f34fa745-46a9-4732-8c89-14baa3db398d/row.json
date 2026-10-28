@@ -1,0 +1,21 @@
+{
+ "file": "lib/router/index.js",
+ "unit": "(edit 398847f5fc15)",
+ "editIds": [
+  "398847f5fc152245868e775ddc0bd14c406d5689e1066cf07bbaded3897ef197"
+ ],
+ "lines": [
+  334,
+  334
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

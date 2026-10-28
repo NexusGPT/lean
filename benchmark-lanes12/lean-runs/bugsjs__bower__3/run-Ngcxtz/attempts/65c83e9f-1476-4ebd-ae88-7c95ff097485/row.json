@@ -1,0 +1,21 @@
+{
+ "file": "lib/core/scripts.js",
+ "unit": "(edit 47234004cd22)",
+ "editIds": [
+  "47234004cd2232c9e3945ec3c5bf9eb63582abb3f91c475525abc9e82d44f8d9"
+ ],
+ "lines": [
+  87,
+  87
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

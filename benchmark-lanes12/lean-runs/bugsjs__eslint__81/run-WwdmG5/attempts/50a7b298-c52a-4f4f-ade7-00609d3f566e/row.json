@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/quotes.js",
+ "unit": "(edit 70b6538f977d)",
+ "editIds": [
+  "70b6538f977d5b6c20e3e7af76b32d330ec38c936a634050b573a00a8ba4bb6a"
+ ],
+ "lines": [
+  113,
+  113
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

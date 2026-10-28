@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-extra-parens.js",
+ "unit": "(edit dcd99aed4dc5)",
+ "editIds": [
+  "dcd99aed4dc52eb14219354962640e2605a21a27de4ab3fb7d25edad4d8eeab8"
+ ],
+ "lines": [
+  523,
+  523
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/getter-return.js",
+ "unit": "(edit 92371f5ca5ce)",
+ "editIds": [
+  "92371f5ca5ce6ac845c0cdf12e4a163ea13acf71fe62145cc667431a9acee357"
+ ],
+ "lines": [
+  116,
+  116
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-multiple-empty-lines.js",
+ "unit": "(edit 0730ae79370b)",
+ "editIds": [
+  "0730ae79370bc67247fac0444d79199e67cab6aa8563943c9eb13b388752e8c5"
+ ],
+ "lines": [
+  168,
+  168
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

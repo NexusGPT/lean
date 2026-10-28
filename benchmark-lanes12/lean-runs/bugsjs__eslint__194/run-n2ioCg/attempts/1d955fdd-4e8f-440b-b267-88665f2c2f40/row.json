@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-cond-assign.js",
+ "unit": "(edit 68526480b2cd)",
+ "editIds": [
+  "68526480b2cd3007a3d64fc6dc2a3a73b9d1c5f2f7192faebb687f20c599aa7f"
+ ],
+ "lines": [
+  7,
+  7
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

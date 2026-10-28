@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/consistent-return.js",
+ "unit": "(edit 9c0e86cead6a)",
+ "editIds": [
+  "9c0e86cead6a1adc8b8b8f80d2f21ffdf39038fc5488902d11d215548c3473d4"
+ ],
+ "lines": [
+  39,
+  39
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

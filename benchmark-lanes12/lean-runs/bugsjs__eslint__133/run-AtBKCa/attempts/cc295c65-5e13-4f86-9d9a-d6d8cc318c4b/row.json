@@ -1,0 +1,21 @@
+{
+ "file": "lib/token-store/index.js",
+ "unit": "(edit 8bd70a87d70c)",
+ "editIds": [
+  "8bd70a87d70c41404e4c32a29a02f97188ddb2b01e7f1a121391aaa167561cd9"
+ ],
+ "lines": [
+  48,
+  48
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/brace-style.js",
+ "unit": "(edit 2b0a17e66a33)",
+ "editIds": [
+  "2b0a17e66a336c6607b3957b0d2555bfab133d0ab22b9a250d56ca453c7e0c40"
+ ],
+ "lines": [
+  71,
+  71
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

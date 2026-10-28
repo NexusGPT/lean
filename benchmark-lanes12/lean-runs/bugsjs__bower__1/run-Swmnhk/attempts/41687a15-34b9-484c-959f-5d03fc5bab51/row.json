@@ -1,0 +1,20 @@
+{
+ "file": "lib/core/resolvers/Resolver.js",
+ "unit": "(edit 4f1eacb0e7f4)",
+ "editIds": [
+  "4f1eacb0e7f41b194e0756e48729c59a72dc3d934fe73fdcc574b5a9e82c9fd6"
+ ],
+ "lines": [
+  135,
+  135
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:parse-failure",
+ "reason": "parse-failure",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

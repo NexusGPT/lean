@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-duplicate-case.js",
+ "unit": "(edit 7ec9426449b9)",
+ "editIds": [
+  "7ec9426449b91614fd9fab075edea61d77cc4a4637359658717db5fc343c8167"
+ ],
+ "lines": [
+  30,
+  30
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

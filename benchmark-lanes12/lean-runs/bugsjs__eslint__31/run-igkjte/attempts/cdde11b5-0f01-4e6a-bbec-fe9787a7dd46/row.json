@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/id-match.js",
+ "unit": "(edit 4303cd89710d)",
+ "editIds": [
+  "4303cd89710d0121ce69d795d8f93edeb97e805148f041c0a558089e3887e88f"
+ ],
+ "lines": [
+  96,
+  96
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

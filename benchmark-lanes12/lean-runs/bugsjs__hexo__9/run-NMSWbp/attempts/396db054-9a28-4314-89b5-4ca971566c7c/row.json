@@ -1,0 +1,21 @@
+{
+ "file": "lib/plugins/helper/paginator.js",
+ "unit": "(edit 1d72ce124585)",
+ "editIds": [
+  "1d72ce124585335197c2ca470d4fdec9da64f6cd79a8dabc6bac25104e154d2b"
+ ],
+ "lines": [
+  8,
+  8
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

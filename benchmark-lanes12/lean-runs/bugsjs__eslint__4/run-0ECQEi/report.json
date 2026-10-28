@@ -1,0 +1,463 @@
+{
+ "identity": "2557e51ec5fb18409fcc164a0553f8101fe0e01e7b0a588861a4c85d51b38ded",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/no-dupe-keys.js",
+   "unit": "(edit e340d30423f2)",
+   "editIds": [
+    "e340d30423f2410b02e1fae48bff22ed13e5fef848ee3d5fa7439ca26c2cd479"
+   ],
+   "lines": [
+    110,
+    110
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-dupe-keys.js",
+   "unit": "(edit d3fab30944d6)",
+   "editIds": [
+    "d3fab30944d669b0da37f51a9bd5ad20e57df135236a88196ce2ba3a3cf3fd79"
+   ],
+   "lines": [
+    111,
+    111
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-dupe-keys.js",
+   "unit": "(edit d852965b72cf)",
+   "editIds": [
+    "d852965b72cf893124d6e8a5ca5264f69f74c4cffb9013efb38e0fc39c410196"
+   ],
+   "lines": [
+    112,
+    112
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-dupe-keys.js",
+   "unit": "(edit cd60738d7271)",
+   "editIds": [
+    "cd60738d7271de8e171d21aba21aa0dbdc59e0f6f9aa334aa806e7c00c20f45c"
+   ],
+   "lines": [
+    113,
+    113
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-dupe-keys.js",
+   "unit": "(edit 430746211094)",
+   "editIds": [
+    "4307462110942df9110110dc971fd82f12a2dcd9d26b182f2cecdbd279cca5aa"
+   ],
+   "lines": [
+    114,
+    114
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "e456fd3cf50f003dd03fbe57c86dfc871cf7e831",
+  "head": "cc09e0a3100aa42ed59479bcd4040d88c414bbf5",
+  "files": [
+   {
+    "id": "b4170aad4170e4e83acfd37eb432e0fad1a03b03a6b30aac806e064b3c261311",
+    "file": "lib/rules/no-dupe-keys.js",
+    "oldPath": "lib/rules/no-dupe-keys.js",
+    "newPath": "lib/rules/no-dupe-keys.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "75b233b5006ee6a08ec15d4d3db5d3dbf1938070",
+    "newOid": "f34c323f1ed491ef5d7a9c0d1946c605a92948b1",
+    "status": "M",
+    "edits": [
+     "e340d30423f2410b02e1fae48bff22ed13e5fef848ee3d5fa7439ca26c2cd479",
+     "d3fab30944d669b0da37f51a9bd5ad20e57df135236a88196ce2ba3a3cf3fd79",
+     "d852965b72cf893124d6e8a5ca5264f69f74c4cffb9013efb38e0fc39c410196",
+     "cd60738d7271de8e171d21aba21aa0dbdc59e0f6f9aa334aa806e7c00c20f45c",
+     "4307462110942df9110110dc971fd82f12a2dcd9d26b182f2cecdbd279cca5aa"
+    ],
+    "hunks": [
+     {
+      "id": "b851bacfec0158b670ef4c5ffc621a00b2a1db37ecc46aad70a78e9188eec79f",
+      "old": {
+       "start": 109,
+       "count": 0
+      },
+      "new": {
+       "start": 110,
+       "count": 5
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "34da5119237061c0847b5433a3829d23257f83f45257336bd0b505a7114f5419",
+    "newHash": "4cc2075eb37188540f6edd006a58adcf9d564b1761b44de505d39cf5169a1ecc",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "ObjectInfo.constructor",
+       "side": "old",
+       "file": "lib/rules/no-dupe-keys.js",
+       "start": 30,
+       "end": 34,
+       "offset": 855,
+       "stop": 978,
+       "id": "ff46e66177277dd6ed38fcf4bf0270de2c59cc491d256cbb65404e90c667eb9a"
+      },
+      {
+       "name": "ObjectInfo.getPropertyInfo",
+       "side": "old",
+       "file": "lib/rules/no-dupe-keys.js",
+       "start": 41,
+       "end": 48,
+       "offset": 1193,
+       "stop": 1441,
+       "id": "ee12fdb7e4aff41c9ab626370b4279674800535bbd7785d6ab9afa5c215247eb"
+      },
+      {
+       "name": "ObjectInfo.isPropertyDefined",
+       "side": "old",
+       "file": "lib/rules/no-dupe-keys.js",
+       "start": 55,
+       "end": 62,
+       "offset": 1663,
+       "stop": 1880,
+       "id": "09dabd04f13446e40d7e07e1adb591d5c27e586988d04be08a95e60dae3a5cfb"
+      },
+      {
+       "name": "ObjectInfo.defineProperty",
+       "side": "old",
+       "file": "lib/rules/no-dupe-keys.js",
+       "start": 69,
+       "end": 78,
+       "offset": 2020,
+       "stop": 2259,
+       "id": "661d10863defba3d4417ea8cdd966c3f8c4a76053ba8e636be67c7f038253fdf"
+      }
+     ],
+     "new": [
+      {
+       "name": "ObjectInfo.constructor",
+       "side": "new",
+       "file": "lib/rules/no-dupe-keys.js",
+       "start": 30,
+       "end": 34,
+       "offset": 855,
+       "stop": 978,
+       "id": "83aac2c0aa268bd89b4fd89141560672f47e59bd8700539a4e1d357870674f63"
+      },
+      {
+       "name": "ObjectInfo.getPropertyInfo",
+       "side": "new",
+       "file": "lib/rules/no-dupe-keys.js",
+       "start": 41,
+       "end": 48,
+       "offset": 1193,
+       "stop": 1441,
+       "id": "3dc00ae4f36c8976abb659e750c4065cdc6d339845f76e190f14cc506573dddb"
+      },
+      {
+       "name": "ObjectInfo.isPropertyDefined",
+       "side": "new",
+       "file": "lib/rules/no-dupe-keys.js",
+       "start": 55,
+       "end": 62,
+       "offset": 1663,
+       "stop": 1880,
+       "id": "a4941ac1065d906effca78fa776aa12918cbd98c40a19b4bdcde4d6ae757a86b"
+      },
+      {
+       "name": "ObjectInfo.defineProperty",
+       "side": "new",
+       "file": "lib/rules/no-dupe-keys.js",
+       "start": 69,
+       "end": 78,
+       "offset": 2020,
+       "stop": 2259,
+       "id": "4629d04deeecd89575960fd276b853eadd9c372d18e4382f6bfa85b2cd6a6ff0"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "e340d30423f2410b02e1fae48bff22ed13e5fef848ee3d5fa7439ca26c2cd479",
+    "fileId": "b4170aad4170e4e83acfd37eb432e0fad1a03b03a6b30aac806e064b3c261311",
+    "file": "lib/rules/no-dupe-keys.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b851bacfec0158b670ef4c5ffc621a00b2a1db37ecc46aad70a78e9188eec79f",
+    "side": "new",
+    "old": {
+     "start": 109,
+     "count": 0
+    },
+    "new": {
+     "start": 110,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3029,
+     "end": 3068
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "d3fab30944d669b0da37f51a9bd5ad20e57df135236a88196ce2ba3a3cf3fd79",
+    "fileId": "b4170aad4170e4e83acfd37eb432e0fad1a03b03a6b30aac806e064b3c261311",
+    "file": "lib/rules/no-dupe-keys.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b851bacfec0158b670ef4c5ffc621a00b2a1db37ecc46aad70a78e9188eec79f",
+    "side": "new",
+    "old": {
+     "start": 109,
+     "count": 0
+    },
+    "new": {
+     "start": 111,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3068,
+     "end": 3131
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "d852965b72cf893124d6e8a5ca5264f69f74c4cffb9013efb38e0fc39c410196",
+    "fileId": "b4170aad4170e4e83acfd37eb432e0fad1a03b03a6b30aac806e064b3c261311",
+    "file": "lib/rules/no-dupe-keys.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b851bacfec0158b670ef4c5ffc621a00b2a1db37ecc46aad70a78e9188eec79f",
+    "side": "new",
+    "old": {
+     "start": 109,
+     "count": 0
+    },
+    "new": {
+     "start": 112,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3131,
+     "end": 3159
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "cd60738d7271de8e171d21aba21aa0dbdc59e0f6f9aa334aa806e7c00c20f45c",
+    "fileId": "b4170aad4170e4e83acfd37eb432e0fad1a03b03a6b30aac806e064b3c261311",
+    "file": "lib/rules/no-dupe-keys.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b851bacfec0158b670ef4c5ffc621a00b2a1db37ecc46aad70a78e9188eec79f",
+    "side": "new",
+    "old": {
+     "start": 109,
+     "count": 0
+    },
+    "new": {
+     "start": 113,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3159,
+     "end": 3177
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4307462110942df9110110dc971fd82f12a2dcd9d26b182f2cecdbd279cca5aa",
+    "fileId": "b4170aad4170e4e83acfd37eb432e0fad1a03b03a6b30aac806e064b3c261311",
+    "file": "lib/rules/no-dupe-keys.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b851bacfec0158b670ef4c5ffc621a00b2a1db37ecc46aad70a78e9188eec79f",
+    "side": "new",
+    "old": {
+     "start": 109,
+     "count": 0
+    },
+    "new": {
+     "start": 114,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3177,
+     "end": 3178
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "2557e51ec5fb18409fcc164a0553f8101fe0e01e7b0a588861a4c85d51b38ded",
+  "reconciliation": {
+   "expected": [
+    "e340d30423f2410b02e1fae48bff22ed13e5fef848ee3d5fa7439ca26c2cd479",
+    "d3fab30944d669b0da37f51a9bd5ad20e57df135236a88196ce2ba3a3cf3fd79",
+    "d852965b72cf893124d6e8a5ca5264f69f74c4cffb9013efb38e0fc39c410196",
+    "cd60738d7271de8e171d21aba21aa0dbdc59e0f6f9aa334aa806e7c00c20f45c",
+    "4307462110942df9110110dc971fd82f12a2dcd9d26b182f2cecdbd279cca5aa"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "e340d30423f2410b02e1fae48bff22ed13e5fef848ee3d5fa7439ca26c2cd479",
+    "d3fab30944d669b0da37f51a9bd5ad20e57df135236a88196ce2ba3a3cf3fd79",
+    "d852965b72cf893124d6e8a5ca5264f69f74c4cffb9013efb38e0fc39c410196",
+    "cd60738d7271de8e171d21aba21aa0dbdc59e0f6f9aa334aa806e7c00c20f45c",
+    "4307462110942df9110110dc971fd82f12a2dcd9d26b182f2cecdbd279cca5aa"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "e340d30423f2410b02e1fae48bff22ed13e5fef848ee3d5fa7439ca26c2cd479",
+      "d3fab30944d669b0da37f51a9bd5ad20e57df135236a88196ce2ba3a3cf3fd79",
+      "d852965b72cf893124d6e8a5ca5264f69f74c4cffb9013efb38e0fc39c410196",
+      "cd60738d7271de8e171d21aba21aa0dbdc59e0f6f9aa334aa806e7c00c20f45c",
+      "4307462110942df9110110dc971fd82f12a2dcd9d26b182f2cecdbd279cca5aa"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "181fc1ae4a803f79f01a0ec1e53337e839721a096de4b4da848e4ea6232ecc91",
+   "f9f3de8195ca269ff59847a49e602d0146808f333a9f38722f153bdc77432110",
+   "6c107db23bea22f53666e2b8c505505e1817840b18dd3d30736079a33b0dd27b",
+   "0335cf6bad866012a8987e0e5e218764add0e151df7d0938e7908b1c8ced4ffc",
+   "11474476e873b498d4e07b943f37974a92d0482302401af42fa4447e16015bf3"
+  ],
+  "terminal": [
+   "181fc1ae4a803f79f01a0ec1e53337e839721a096de4b4da848e4ea6232ecc91",
+   "f9f3de8195ca269ff59847a49e602d0146808f333a9f38722f153bdc77432110",
+   "6c107db23bea22f53666e2b8c505505e1817840b18dd3d30736079a33b0dd27b",
+   "0335cf6bad866012a8987e0e5e218764add0e151df7d0938e7908b1c8ced4ffc",
+   "11474476e873b498d4e07b943f37974a92d0482302401af42fa4447e16015bf3"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__4/run-0ECQEi/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__4/run-0ECQEi"
+}

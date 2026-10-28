@@ -1,0 +1,20 @@
+{
+ "file": "lib/token-store/utils.js",
+ "unit": "(edit f2f1aba8dcfc)",
+ "editIds": [
+  "f2f1aba8dcfc49445ce757e86deeeb82f0de5d306542b663e348d5086463a66d"
+ ],
+ "lines": [
+  94,
+  94
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

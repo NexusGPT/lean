@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-fallthrough.js",
+ "unit": "(edit 8e1f4cdd98b4)",
+ "editIds": [
+  "8e1f4cdd98b4c4d7daf06d04f3047dd12bb8a8c442c3b51b7c310da69a532724"
+ ],
+ "lines": [
+  40,
+  40
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

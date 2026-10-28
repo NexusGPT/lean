@@ -1,0 +1,287 @@
+{
+ "identity": "10902608600241bf04a79ee4b9e2e6b00a73d6226ac9df60a5abf48c52db9505",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/operator-assignment.js",
+   "unit": "(edit 56867ebffdb8)",
+   "editIds": [
+    "56867ebffdb81c77d7015f4d24e9606da79895cb18671806732335925f53692c"
+   ],
+   "lines": [
+    138,
+    138
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/operator-assignment.js",
+   "unit": "(edit ceb4c177abf8)",
+   "editIds": [
+    "ceb4c177abf89dc83ce2556e9247ab4c8bcbbc4c82372cf5cdbaef902aa19e70"
+   ],
+   "lines": [
+    138,
+    138
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "5e3bca7cd8cfa8bc2e8b597ba9641cb11daa9d8c",
+  "head": "9122c8d96281671b824c0dcf4da0c7e7be8cae30",
+  "files": [
+   {
+    "id": "67bce022cbecabd1f97245a52c3d3b5d22a2074e4659d8cad588d804dd49741e",
+    "file": "lib/rules/operator-assignment.js",
+    "oldPath": "lib/rules/operator-assignment.js",
+    "newPath": "lib/rules/operator-assignment.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "a6bbb177a7cf992caf3e973a61be0807894a061d",
+    "newOid": "43f21abc87a2dfa2d8e3908c4f0352fe20179b9a",
+    "status": "M",
+    "edits": [
+     "56867ebffdb81c77d7015f4d24e9606da79895cb18671806732335925f53692c",
+     "ceb4c177abf89dc83ce2556e9247ab4c8bcbbc4c82372cf5cdbaef902aa19e70"
+    ],
+    "hunks": [
+     {
+      "id": "5cbde16fe5288287ed5db4d73a4a8a1da2e31b47d6165bba337f417d05eb3063",
+      "old": {
+       "start": 138,
+       "count": 1
+      },
+      "new": {
+       "start": 138,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "5ff230389d3f293f075dbdae7bf9982d544c089e5d4b278832ae0bb3d1aa7797",
+    "newHash": "9744b6fd97f1a80133357d8ce8e445af5666390c33a6e83b528bcb5912ff97fe",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isCommutativeOperatorWithShorthand",
+       "side": "old",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 18,
+       "end": 20,
+       "offset": 556,
+       "stop": 669,
+       "id": "e71a6f678257aca21b9d55392091321fde86a17072f39c15bba3fb7c62c0eb41"
+      },
+      {
+       "name": "isNonCommutativeOperatorWithShorthand",
+       "side": "old",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 29,
+       "end": 31,
+       "offset": 934,
+       "stop": 1075,
+       "id": "0c9184c18e71baf83cffdde569c4ed603d9f4d6f33c28ff854b43ab4be0605f3"
+      },
+      {
+       "name": "same",
+       "side": "old",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 47,
+       "end": 71,
+       "offset": 1598,
+       "stop": 2103,
+       "id": "8a23e8b539d2f4ac4a2f23ebecbbc2f6bd2de2b944f42839202bbfeb63f6159c"
+      },
+      {
+       "name": "canBeFixed",
+       "side": "old",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 79,
+       "end": 82,
+       "offset": 2414,
+       "stop": 2619,
+       "id": "271c04ce662c0f59b6ed7e3fb58e98b7e410d48990d618d997ef4731cd76c2de"
+      }
+     ],
+     "new": [
+      {
+       "name": "isCommutativeOperatorWithShorthand",
+       "side": "new",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 18,
+       "end": 20,
+       "offset": 556,
+       "stop": 669,
+       "id": "c66242bca541ebc63775470e31254f7717960827138ac53c2c4f506c5eee93ee"
+      },
+      {
+       "name": "isNonCommutativeOperatorWithShorthand",
+       "side": "new",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 29,
+       "end": 31,
+       "offset": 934,
+       "stop": 1075,
+       "id": "0de13335bfe88bff45ef9bb6df045bd0d1363c7344cb94f0de8dbfbbc4172298"
+      },
+      {
+       "name": "same",
+       "side": "new",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 47,
+       "end": 71,
+       "offset": 1598,
+       "stop": 2103,
+       "id": "394850460f112d7858c525585eb8959148a288e05cff9798735915641aa3ffa7"
+      },
+      {
+       "name": "canBeFixed",
+       "side": "new",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 79,
+       "end": 82,
+       "offset": 2414,
+       "stop": 2619,
+       "id": "b1b3e6507cce276dca5c9c582a0b69e06ec111001f54895053826fdfe229aaea"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "56867ebffdb81c77d7015f4d24e9606da79895cb18671806732335925f53692c",
+    "fileId": "67bce022cbecabd1f97245a52c3d3b5d22a2074e4659d8cad588d804dd49741e",
+    "file": "lib/rules/operator-assignment.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5cbde16fe5288287ed5db4d73a4a8a1da2e31b47d6165bba337f417d05eb3063",
+    "side": "old",
+    "old": {
+     "start": 138,
+     "count": 1
+    },
+    "new": {
+     "start": 138,
+     "count": 0
+    },
+    "offsets": {
+     "start": 4607,
+     "end": 4724
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "ceb4c177abf89dc83ce2556e9247ab4c8bcbbc4c82372cf5cdbaef902aa19e70",
+    "fileId": "67bce022cbecabd1f97245a52c3d3b5d22a2074e4659d8cad588d804dd49741e",
+    "file": "lib/rules/operator-assignment.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5cbde16fe5288287ed5db4d73a4a8a1da2e31b47d6165bba337f417d05eb3063",
+    "side": "new",
+    "old": {
+     "start": 138,
+     "count": 0
+    },
+    "new": {
+     "start": 138,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4607,
+     "end": 4730
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "10902608600241bf04a79ee4b9e2e6b00a73d6226ac9df60a5abf48c52db9505",
+  "reconciliation": {
+   "expected": [
+    "56867ebffdb81c77d7015f4d24e9606da79895cb18671806732335925f53692c",
+    "ceb4c177abf89dc83ce2556e9247ab4c8bcbbc4c82372cf5cdbaef902aa19e70"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "56867ebffdb81c77d7015f4d24e9606da79895cb18671806732335925f53692c",
+    "ceb4c177abf89dc83ce2556e9247ab4c8bcbbc4c82372cf5cdbaef902aa19e70"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "56867ebffdb81c77d7015f4d24e9606da79895cb18671806732335925f53692c",
+      "ceb4c177abf89dc83ce2556e9247ab4c8bcbbc4c82372cf5cdbaef902aa19e70"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "07844bdc9aa6d4f0c284ad3e781f621c79beb5809ea9ac7d010cd2aa62e9c430",
+   "b423d512eb845005717727bbd568640c8a7b5a73ee453cc833ea542e74ad30e4"
+  ],
+  "terminal": [
+   "07844bdc9aa6d4f0c284ad3e781f621c79beb5809ea9ac7d010cd2aa62e9c430",
+   "b423d512eb845005717727bbd568640c8a7b5a73ee453cc833ea542e74ad30e4"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__83/run-gccs3o/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__83/run-gccs3o"
+}

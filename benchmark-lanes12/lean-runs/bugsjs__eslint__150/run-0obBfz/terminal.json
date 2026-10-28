@@ -1,0 +1,226 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__150/run-0obBfz",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "16bb8027756859dd72012c140d49c46c7764b4e9",
+  "head": "8082d255825cd54be005a74c096b354164b7d326",
+  "files": [
+   {
+    "id": "04765a39b70cdca01117feb75d37886b9f68f770513fd76043d3e240bdd0552e",
+    "file": "lib/rules/no-unused-expressions.js",
+    "oldPath": "lib/rules/no-unused-expressions.js",
+    "newPath": "lib/rules/no-unused-expressions.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "b640895646744824e75e84d4ed98d25706efe864",
+    "newOid": "cdabca204a64df0e8ce8c14e3effdf7bedbe83c2",
+    "status": "M",
+    "edits": [
+     "29c057b3bc857c72cb9e5cfa8f4ba25cff152780a1c4c90c212cde356f6f0900",
+     "85128a774fa0d018d5bce7afc66c500c180b5388a4d251066a11d98a8e74d560"
+    ],
+    "hunks": [
+     {
+      "id": "6ea9009adf4a051b2e65cbe46c16e02622eccb07465495fdde319e346aec49bd",
+      "old": {
+       "start": 104,
+       "count": 1
+      },
+      "new": {
+       "start": 104,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "594b7c9d75bb093b5a01484c5b48862ccfd25e0209c306c721a00707f8593523",
+    "newHash": "14bd235faf9f1266a41eb4a7782c5aa2f96dae43c5669e0a85e7af6847f92547",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "29c057b3bc857c72cb9e5cfa8f4ba25cff152780a1c4c90c212cde356f6f0900",
+    "fileId": "04765a39b70cdca01117feb75d37886b9f68f770513fd76043d3e240bdd0552e",
+    "file": "lib/rules/no-unused-expressions.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "6ea9009adf4a051b2e65cbe46c16e02622eccb07465495fdde319e346aec49bd",
+    "side": "old",
+    "old": {
+     "start": 104,
+     "count": 1
+    },
+    "new": {
+     "start": 104,
+     "count": 0
+    },
+    "offsets": {
+     "start": 3727,
+     "end": 3816
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "85128a774fa0d018d5bce7afc66c500c180b5388a4d251066a11d98a8e74d560",
+    "fileId": "04765a39b70cdca01117feb75d37886b9f68f770513fd76043d3e240bdd0552e",
+    "file": "lib/rules/no-unused-expressions.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "6ea9009adf4a051b2e65cbe46c16e02622eccb07465495fdde319e346aec49bd",
+    "side": "new",
+    "old": {
+     "start": 104,
+     "count": 0
+    },
+    "new": {
+     "start": 104,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3727,
+     "end": 3822
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "ccabdd1209771725209136e66f7603f5afbc3d8b63b2614ffaa046d05cda19e3",
+  "reconciliation": {
+   "expected": [
+    "29c057b3bc857c72cb9e5cfa8f4ba25cff152780a1c4c90c212cde356f6f0900",
+    "85128a774fa0d018d5bce7afc66c500c180b5388a4d251066a11d98a8e74d560"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "29c057b3bc857c72cb9e5cfa8f4ba25cff152780a1c4c90c212cde356f6f0900",
+    "85128a774fa0d018d5bce7afc66c500c180b5388a4d251066a11d98a8e74d560"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "29c057b3bc857c72cb9e5cfa8f4ba25cff152780a1c4c90c212cde356f6f0900",
+      "85128a774fa0d018d5bce7afc66c500c180b5388a4d251066a11d98a8e74d560"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "9ea1ce061df85c0d819aa36a87f1348bf866d70953b8250079a0db4f5782827a",
+   "attemptId": "dbd5db60-86bb-4b98-9ff4-d8c1f756bfd4",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__150/run-0obBfz/attempts/dbd5db60-86bb-4b98-9ff4-d8c1f756bfd4/row.json",
+    "sha256": "970500519b87e774d957cf98e85d40af31d7e8fd3fb06a3119ade0a7ea92f04b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a3bfaebcf99a01006e4ef0156cbd3dd2f45a8e591c1449374d19538b1c89351f",
+   "attemptId": "6228867a-4f69-45e7-ad9f-8e51bb1229f5",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__150/run-0obBfz/attempts/6228867a-4f69-45e7-ad9f-8e51bb1229f5/row.json",
+    "sha256": "c4d6d283e2857486561caf99c255c45450d6b90e25aec9722ccf56651ce83f50"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/no-unused-expressions.js",
+   "unit": "(edit 29c057b3bc85)",
+   "editIds": [
+    "29c057b3bc857c72cb9e5cfa8f4ba25cff152780a1c4c90c212cde356f6f0900"
+   ],
+   "lines": [
+    104,
+    104
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-unused-expressions.js",
+   "unit": "(edit 85128a774fa0)",
+   "editIds": [
+    "85128a774fa0d018d5bce7afc66c500c180b5388a4d251066a11d98a8e74d560"
+   ],
+   "lines": [
+    104,
+    104
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "9ea1ce061df85c0d819aa36a87f1348bf866d70953b8250079a0db4f5782827a",
+   "a3bfaebcf99a01006e4ef0156cbd3dd2f45a8e591c1449374d19538b1c89351f"
+  ],
+  "terminal": [
+   "9ea1ce061df85c0d819aa36a87f1348bf866d70953b8250079a0db4f5782827a",
+   "a3bfaebcf99a01006e4ef0156cbd3dd2f45a8e591c1449374d19538b1c89351f"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

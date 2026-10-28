@@ -1,0 +1,20 @@
+{
+ "file": "lib/config/config-rule.js",
+ "unit": "(edit 30fba4030f9c)",
+ "editIds": [
+  "30fba4030f9ca8cdf84eba40a6c4308a078ccae157eebe59519837d4a2b2288a"
+ ],
+ "lines": [
+  288,
+  288
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

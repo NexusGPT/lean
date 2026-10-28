@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/space-in-parens.js",
+ "unit": "(edit c11c30607c9a)",
+ "editIds": [
+  "c11c30607c9a8ac91ec8e25000a4bff6a5b7b687eb699ebb4496d1ddcafc8960"
+ ],
+ "lines": [
+  48,
+  48
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

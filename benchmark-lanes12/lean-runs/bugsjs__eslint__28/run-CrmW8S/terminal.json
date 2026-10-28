@@ -1,0 +1,2335 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "ccae7eeeb9dcac287ae13aa1a41ea4b4460e5dcd",
+  "head": "735ed0f0149f67b6e1c2bea539b0630d4a3ee9a9",
+  "files": [
+   {
+    "id": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "oldPath": "lib/rules/no-duplicate-case.js",
+    "newPath": "lib/rules/no-duplicate-case.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "46df4defd328f047d02dfeada93610727519096d",
+    "newOid": "e1df7eab0d734325f1b832743632090bdf45cadb",
+    "status": "M",
+    "edits": [
+     "36940ab9db0ecf4af4087d7fbde083c0164626307f966f786d77242cdeedbdd5",
+     "0e384246a3ee6d5ef45d74b3e34be778c9fd842aec375fe8034662b02ab073f9",
+     "b0554fdd8a38964b38b306c879c25694498af6e0561087ef8523a78acbf743cf",
+     "461e5f8a53c6c08bf40e6ae186e97ece0779cee55fe2a3e820a445d5bc5ce54c",
+     "9facc9ee2fd2bbe3f5211029ca00ab099dee21dcf8f2e493754460634346a654",
+     "bfd0e52dc34c756f56f309f7a86d00a33b89c0594fd132b2bb2d3efdd93124af",
+     "47c5f8953369c778fa84bc777e7ef496939ba225057765397e53f65059d10871",
+     "5133922ae0fe3e3fdb725ecc8abc6b465e906ba2c38a45b908d72d6d8be2b3fc",
+     "c1de70b21086a94ff3c8c6c832a59a45572d306c0edb196fdeaecb1f88794abc",
+     "8cbf23bbafb4dce1cf2ea3d557700c0aefafe99dcba38bbadb86a7b1cf13fbc3",
+     "1cc7282e26230d7a67cdcd73a1e7f42dfe609dc615dc1cb1e7f984cd60cafc21",
+     "5dd368fbb18dbba098548874e9355fd8b1078f0443054d69319f176283c9c417",
+     "418ae4696440841c8efa0e183b818dadec6013c870e8533640c189c6a92c25ab",
+     "666b15c3ed6c087e0fd1174bd0599df36d042e56469d7e5c53fdce271708386b",
+     "52834ddfc8282bc8e1a43cd47764c6ea79fb860ae0986eaf1edc3de1fbdc582d",
+     "7ec9426449b91614fd9fab075edea61d77cc4a4637359658717db5fc343c8167",
+     "67f89bc07e0864cbc7957a8142cc4d65379f822ed6d71324cde9302dda7742c2",
+     "cec24820a8cf9fe7d49348a5dbf136d5a95518f9dcb57156ea70d97a40edee56",
+     "5a8fceacc69c0fe4f46ca8234c151d5c61559f6727633f5425ecac1e33872091",
+     "5492b9182dd290686600125f7f4fc012383b173382da12b0d4d1efc77622ebc1",
+     "c73998c69f77b5f48ce2b82976bc8ec8caf404093154f93f9507fcb76b4e6e44",
+     "cba9e26dcca5638db8091452e06dd6ebe66a964ca52acc084520765c07bf10a1",
+     "88862b237d34237f1f2df0dfad1db6df1659f998d3b779ec3ddce806283096e9",
+     "d3f9df47704292155cf445fc28637d36be4622c340740f562d8a842af2dc2df2",
+     "aa4daa7b53e342abe467513823997d0db377f8e2c5f06d1056bc1ff6a0644e27",
+     "301296472cc7c1afb5b28a555522d151cb510ed33e5602e1d3e283ffb7b97561",
+     "4429e93e9e5f1d2064fbc8b44bb27efb69c8df237befc72852a5a27933028a14",
+     "c24c19e115ccecdaa9eeb4af69618f5c22e6252b2bd83f63b3d8696c5d9a1de8",
+     "9bd611f3873c17d35e7288e42eeeb5742e1f7506b86df96ce2c683a803e867a2",
+     "0135db60519ffb523179fade07d76d3d64fb2966035e7350295296f1b0b2eb00",
+     "c0a0de213a4d5273096203bb5ba3b6c81f4a5d6079da50959b5d0b92d74b111e",
+     "dffcf618bd3f8ee98fa385f4dbe3cf47116402eeb4d83bc5d3865623786e55cf"
+    ],
+    "hunks": [
+     {
+      "id": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+      "old": {
+       "start": 14,
+       "count": 0
+      },
+      "new": {
+       "start": 15,
+       "count": 18
+      }
+     },
+     {
+      "id": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+      "old": {
+       "start": 22,
+       "count": 13
+      },
+      "new": {
+       "start": 40,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "144cfd7ece3ee37200b4b30e79dcdf37af72ee161daa9a38608a96f29f297f81",
+    "newHash": "185612fc457f80bcc9c03fa27d2cce61357b96de99530c389cd8166a1171a25a",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "36940ab9db0ecf4af4087d7fbde083c0164626307f966f786d77242cdeedbdd5",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 15,
+     "count": 1
+    },
+    "offsets": {
+     "start": 390,
+     "end": 398
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "0e384246a3ee6d5ef45d74b3e34be778c9fd842aec375fe8034662b02ab073f9",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 16,
+     "count": 1
+    },
+    "offsets": {
+     "start": 398,
+     "end": 460
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b0554fdd8a38964b38b306c879c25694498af6e0561087ef8523a78acbf743cf",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 17,
+     "count": 1
+    },
+    "offsets": {
+     "start": 460,
+     "end": 499
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "461e5f8a53c6c08bf40e6ae186e97ece0779cee55fe2a3e820a445d5bc5ce54c",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 18,
+     "count": 1
+    },
+    "offsets": {
+     "start": 499,
+     "end": 576
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9facc9ee2fd2bbe3f5211029ca00ab099dee21dcf8f2e493754460634346a654",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 19,
+     "count": 1
+    },
+    "offsets": {
+     "start": 576,
+     "end": 592
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "bfd0e52dc34c756f56f309f7a86d00a33b89c0594fd132b2bb2d3efdd93124af",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 20,
+     "count": 1
+    },
+    "offsets": {
+     "start": 592,
+     "end": 600
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "47c5f8953369c778fa84bc777e7ef496939ba225057765397e53f65059d10871",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 21,
+     "count": 1
+    },
+    "offsets": {
+     "start": 600,
+     "end": 636
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "5133922ae0fe3e3fdb725ecc8abc6b465e906ba2c38a45b908d72d6d8be2b3fc",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 22,
+     "count": 1
+    },
+    "offsets": {
+     "start": 636,
+     "end": 661
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c1de70b21086a94ff3c8c6c832a59a45572d306c0edb196fdeaecb1f88794abc",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 23,
+     "count": 1
+    },
+    "offsets": {
+     "start": 661,
+     "end": 694
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "8cbf23bbafb4dce1cf2ea3d557700c0aefafe99dcba38bbadb86a7b1cf13fbc3",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 24,
+     "count": 1
+    },
+    "offsets": {
+     "start": 694,
+     "end": 762
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1cc7282e26230d7a67cdcd73a1e7f42dfe609dc615dc1cb1e7f984cd60cafc21",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 25,
+     "count": 1
+    },
+    "offsets": {
+     "start": 762,
+     "end": 805
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "5dd368fbb18dbba098548874e9355fd8b1078f0443054d69319f176283c9c417",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 26,
+     "count": 1
+    },
+    "offsets": {
+     "start": 805,
+     "end": 861
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "418ae4696440841c8efa0e183b818dadec6013c870e8533640c189c6a92c25ab",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 27,
+     "count": 1
+    },
+    "offsets": {
+     "start": 861,
+     "end": 926
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "666b15c3ed6c087e0fd1174bd0599df36d042e56469d7e5c53fdce271708386b",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 28,
+     "count": 1
+    },
+    "offsets": {
+     "start": 926,
+     "end": 944
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "52834ddfc8282bc8e1a43cd47764c6ea79fb860ae0986eaf1edc3de1fbdc582d",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 29,
+     "count": 1
+    },
+    "offsets": {
+     "start": 944,
+     "end": 958
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "7ec9426449b91614fd9fab075edea61d77cc4a4637359658717db5fc343c8167",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 30,
+     "count": 1
+    },
+    "offsets": {
+     "start": 958,
+     "end": 968
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "67f89bc07e0864cbc7957a8142cc4d65379f822ed6d71324cde9302dda7742c2",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 31,
+     "count": 1
+    },
+    "offsets": {
+     "start": 968,
+     "end": 991
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "cec24820a8cf9fe7d49348a5dbf136d5a95518f9dcb57156ea70d97a40edee56",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "09787bb13e7d69473cc1d575a0ca777e7baf86ca5a063531f30ceeaae20883f4",
+    "side": "new",
+    "old": {
+     "start": 14,
+     "count": 0
+    },
+    "new": {
+     "start": 32,
+     "count": 1
+    },
+    "offsets": {
+     "start": 991,
+     "end": 997
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "5a8fceacc69c0fe4f46ca8234c151d5c61559f6727633f5425ecac1e33872091",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 22,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 579,
+     "end": 618
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "5492b9182dd290686600125f7f4fc012383b173382da12b0d4d1efc77622ebc1",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 23,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 618,
+     "end": 681
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c73998c69f77b5f48ce2b82976bc8ec8caf404093154f93f9507fcb76b4e6e44",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 24,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 681,
+     "end": 730
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "cba9e26dcca5638db8091452e06dd6ebe66a964ca52acc084520765c07bf10a1",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 25,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 730,
+     "end": 791
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "88862b237d34237f1f2df0dfad1db6df1659f998d3b779ec3ddce806283096e9",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 26,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 791,
+     "end": 846
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "d3f9df47704292155cf445fc28637d36be4622c340740f562d8a842af2dc2df2",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 27,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 846,
+     "end": 924
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "aa4daa7b53e342abe467513823997d0db377f8e2c5f06d1056bc1ff6a0644e27",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 28,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 924,
+     "end": 977
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "301296472cc7c1afb5b28a555522d151cb510ed33e5602e1d3e283ffb7b97561",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 29,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 977,
+     "end": 1069
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "4429e93e9e5f1d2064fbc8b44bb27efb69c8df237befc72852a5a27933028a14",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 30,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1069,
+     "end": 1124
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c24c19e115ccecdaa9eeb4af69618f5c22e6252b2bd83f63b3d8696c5d9a1de8",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 31,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1124,
+     "end": 1213
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "9bd611f3873c17d35e7288e42eeeb5742e1f7506b86df96ce2c683a803e867a2",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 32,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1213,
+     "end": 1273
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "0135db60519ffb523179fade07d76d3d64fb2966035e7350295296f1b0b2eb00",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 33,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1273,
+     "end": 1377
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c0a0de213a4d5273096203bb5ba3b6c81f4a5d6079da50959b5d0b92d74b111e",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "old",
+    "old": {
+     "start": 34,
+     "count": 1
+    },
+    "new": {
+     "start": 40,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1377,
+     "end": 1387
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "dffcf618bd3f8ee98fa385f4dbe3cf47116402eeb4d83bc5d3865623786e55cf",
+    "fileId": "615807d8389bcd9a875d05361cf7c625b9b9a4c815fc9945edfc3787692f1ce9",
+    "file": "lib/rules/no-duplicate-case.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e93f75f298545ee7d04b32736161442b2be307f082ca490bbfd8b282aa112e6c",
+    "side": "new",
+    "old": {
+     "start": 22,
+     "count": 0
+    },
+    "new": {
+     "start": 40,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1186,
+     "end": 1239
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "98337d66a9a1276066d83f9b67b3978d5105fb2a63568ab6201029f4833790c9",
+  "reconciliation": {
+   "expected": [
+    "36940ab9db0ecf4af4087d7fbde083c0164626307f966f786d77242cdeedbdd5",
+    "0e384246a3ee6d5ef45d74b3e34be778c9fd842aec375fe8034662b02ab073f9",
+    "b0554fdd8a38964b38b306c879c25694498af6e0561087ef8523a78acbf743cf",
+    "461e5f8a53c6c08bf40e6ae186e97ece0779cee55fe2a3e820a445d5bc5ce54c",
+    "9facc9ee2fd2bbe3f5211029ca00ab099dee21dcf8f2e493754460634346a654",
+    "bfd0e52dc34c756f56f309f7a86d00a33b89c0594fd132b2bb2d3efdd93124af",
+    "47c5f8953369c778fa84bc777e7ef496939ba225057765397e53f65059d10871",
+    "5133922ae0fe3e3fdb725ecc8abc6b465e906ba2c38a45b908d72d6d8be2b3fc",
+    "c1de70b21086a94ff3c8c6c832a59a45572d306c0edb196fdeaecb1f88794abc",
+    "8cbf23bbafb4dce1cf2ea3d557700c0aefafe99dcba38bbadb86a7b1cf13fbc3",
+    "1cc7282e26230d7a67cdcd73a1e7f42dfe609dc615dc1cb1e7f984cd60cafc21",
+    "5dd368fbb18dbba098548874e9355fd8b1078f0443054d69319f176283c9c417",
+    "418ae4696440841c8efa0e183b818dadec6013c870e8533640c189c6a92c25ab",
+    "666b15c3ed6c087e0fd1174bd0599df36d042e56469d7e5c53fdce271708386b",
+    "52834ddfc8282bc8e1a43cd47764c6ea79fb860ae0986eaf1edc3de1fbdc582d",
+    "7ec9426449b91614fd9fab075edea61d77cc4a4637359658717db5fc343c8167",
+    "67f89bc07e0864cbc7957a8142cc4d65379f822ed6d71324cde9302dda7742c2",
+    "cec24820a8cf9fe7d49348a5dbf136d5a95518f9dcb57156ea70d97a40edee56",
+    "5a8fceacc69c0fe4f46ca8234c151d5c61559f6727633f5425ecac1e33872091",
+    "5492b9182dd290686600125f7f4fc012383b173382da12b0d4d1efc77622ebc1",
+    "c73998c69f77b5f48ce2b82976bc8ec8caf404093154f93f9507fcb76b4e6e44",
+    "cba9e26dcca5638db8091452e06dd6ebe66a964ca52acc084520765c07bf10a1",
+    "88862b237d34237f1f2df0dfad1db6df1659f998d3b779ec3ddce806283096e9",
+    "d3f9df47704292155cf445fc28637d36be4622c340740f562d8a842af2dc2df2",
+    "aa4daa7b53e342abe467513823997d0db377f8e2c5f06d1056bc1ff6a0644e27",
+    "301296472cc7c1afb5b28a555522d151cb510ed33e5602e1d3e283ffb7b97561",
+    "4429e93e9e5f1d2064fbc8b44bb27efb69c8df237befc72852a5a27933028a14",
+    "c24c19e115ccecdaa9eeb4af69618f5c22e6252b2bd83f63b3d8696c5d9a1de8",
+    "9bd611f3873c17d35e7288e42eeeb5742e1f7506b86df96ce2c683a803e867a2",
+    "0135db60519ffb523179fade07d76d3d64fb2966035e7350295296f1b0b2eb00",
+    "c0a0de213a4d5273096203bb5ba3b6c81f4a5d6079da50959b5d0b92d74b111e",
+    "dffcf618bd3f8ee98fa385f4dbe3cf47116402eeb4d83bc5d3865623786e55cf"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "36940ab9db0ecf4af4087d7fbde083c0164626307f966f786d77242cdeedbdd5",
+    "0e384246a3ee6d5ef45d74b3e34be778c9fd842aec375fe8034662b02ab073f9",
+    "b0554fdd8a38964b38b306c879c25694498af6e0561087ef8523a78acbf743cf",
+    "461e5f8a53c6c08bf40e6ae186e97ece0779cee55fe2a3e820a445d5bc5ce54c",
+    "9facc9ee2fd2bbe3f5211029ca00ab099dee21dcf8f2e493754460634346a654",
+    "bfd0e52dc34c756f56f309f7a86d00a33b89c0594fd132b2bb2d3efdd93124af",
+    "47c5f8953369c778fa84bc777e7ef496939ba225057765397e53f65059d10871",
+    "5133922ae0fe3e3fdb725ecc8abc6b465e906ba2c38a45b908d72d6d8be2b3fc",
+    "c1de70b21086a94ff3c8c6c832a59a45572d306c0edb196fdeaecb1f88794abc",
+    "8cbf23bbafb4dce1cf2ea3d557700c0aefafe99dcba38bbadb86a7b1cf13fbc3",
+    "1cc7282e26230d7a67cdcd73a1e7f42dfe609dc615dc1cb1e7f984cd60cafc21",
+    "5dd368fbb18dbba098548874e9355fd8b1078f0443054d69319f176283c9c417",
+    "418ae4696440841c8efa0e183b818dadec6013c870e8533640c189c6a92c25ab",
+    "666b15c3ed6c087e0fd1174bd0599df36d042e56469d7e5c53fdce271708386b",
+    "52834ddfc8282bc8e1a43cd47764c6ea79fb860ae0986eaf1edc3de1fbdc582d",
+    "7ec9426449b91614fd9fab075edea61d77cc4a4637359658717db5fc343c8167",
+    "67f89bc07e0864cbc7957a8142cc4d65379f822ed6d71324cde9302dda7742c2",
+    "cec24820a8cf9fe7d49348a5dbf136d5a95518f9dcb57156ea70d97a40edee56",
+    "5a8fceacc69c0fe4f46ca8234c151d5c61559f6727633f5425ecac1e33872091",
+    "5492b9182dd290686600125f7f4fc012383b173382da12b0d4d1efc77622ebc1",
+    "c73998c69f77b5f48ce2b82976bc8ec8caf404093154f93f9507fcb76b4e6e44",
+    "cba9e26dcca5638db8091452e06dd6ebe66a964ca52acc084520765c07bf10a1",
+    "88862b237d34237f1f2df0dfad1db6df1659f998d3b779ec3ddce806283096e9",
+    "d3f9df47704292155cf445fc28637d36be4622c340740f562d8a842af2dc2df2",
+    "aa4daa7b53e342abe467513823997d0db377f8e2c5f06d1056bc1ff6a0644e27",
+    "301296472cc7c1afb5b28a555522d151cb510ed33e5602e1d3e283ffb7b97561",
+    "4429e93e9e5f1d2064fbc8b44bb27efb69c8df237befc72852a5a27933028a14",
+    "c24c19e115ccecdaa9eeb4af69618f5c22e6252b2bd83f63b3d8696c5d9a1de8",
+    "9bd611f3873c17d35e7288e42eeeb5742e1f7506b86df96ce2c683a803e867a2",
+    "0135db60519ffb523179fade07d76d3d64fb2966035e7350295296f1b0b2eb00",
+    "c0a0de213a4d5273096203bb5ba3b6c81f4a5d6079da50959b5d0b92d74b111e",
+    "dffcf618bd3f8ee98fa385f4dbe3cf47116402eeb4d83bc5d3865623786e55cf"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "36940ab9db0ecf4af4087d7fbde083c0164626307f966f786d77242cdeedbdd5",
+      "0e384246a3ee6d5ef45d74b3e34be778c9fd842aec375fe8034662b02ab073f9",
+      "b0554fdd8a38964b38b306c879c25694498af6e0561087ef8523a78acbf743cf",
+      "461e5f8a53c6c08bf40e6ae186e97ece0779cee55fe2a3e820a445d5bc5ce54c",
+      "9facc9ee2fd2bbe3f5211029ca00ab099dee21dcf8f2e493754460634346a654",
+      "bfd0e52dc34c756f56f309f7a86d00a33b89c0594fd132b2bb2d3efdd93124af",
+      "47c5f8953369c778fa84bc777e7ef496939ba225057765397e53f65059d10871",
+      "5133922ae0fe3e3fdb725ecc8abc6b465e906ba2c38a45b908d72d6d8be2b3fc",
+      "c1de70b21086a94ff3c8c6c832a59a45572d306c0edb196fdeaecb1f88794abc",
+      "8cbf23bbafb4dce1cf2ea3d557700c0aefafe99dcba38bbadb86a7b1cf13fbc3",
+      "1cc7282e26230d7a67cdcd73a1e7f42dfe609dc615dc1cb1e7f984cd60cafc21",
+      "5dd368fbb18dbba098548874e9355fd8b1078f0443054d69319f176283c9c417",
+      "418ae4696440841c8efa0e183b818dadec6013c870e8533640c189c6a92c25ab",
+      "666b15c3ed6c087e0fd1174bd0599df36d042e56469d7e5c53fdce271708386b",
+      "52834ddfc8282bc8e1a43cd47764c6ea79fb860ae0986eaf1edc3de1fbdc582d",
+      "7ec9426449b91614fd9fab075edea61d77cc4a4637359658717db5fc343c8167",
+      "67f89bc07e0864cbc7957a8142cc4d65379f822ed6d71324cde9302dda7742c2",
+      "cec24820a8cf9fe7d49348a5dbf136d5a95518f9dcb57156ea70d97a40edee56",
+      "5a8fceacc69c0fe4f46ca8234c151d5c61559f6727633f5425ecac1e33872091",
+      "5492b9182dd290686600125f7f4fc012383b173382da12b0d4d1efc77622ebc1",
+      "c73998c69f77b5f48ce2b82976bc8ec8caf404093154f93f9507fcb76b4e6e44",
+      "cba9e26dcca5638db8091452e06dd6ebe66a964ca52acc084520765c07bf10a1",
+      "88862b237d34237f1f2df0dfad1db6df1659f998d3b779ec3ddce806283096e9",
+      "d3f9df47704292155cf445fc28637d36be4622c340740f562d8a842af2dc2df2",
+      "aa4daa7b53e342abe467513823997d0db377f8e2c5f06d1056bc1ff6a0644e27",
+      "301296472cc7c1afb5b28a555522d151cb510ed33e5602e1d3e283ffb7b97561",
+      "4429e93e9e5f1d2064fbc8b44bb27efb69c8df237befc72852a5a27933028a14",
+      "c24c19e115ccecdaa9eeb4af69618f5c22e6252b2bd83f63b3d8696c5d9a1de8",
+      "9bd611f3873c17d35e7288e42eeeb5742e1f7506b86df96ce2c683a803e867a2",
+      "0135db60519ffb523179fade07d76d3d64fb2966035e7350295296f1b0b2eb00",
+      "c0a0de213a4d5273096203bb5ba3b6c81f4a5d6079da50959b5d0b92d74b111e",
+      "dffcf618bd3f8ee98fa385f4dbe3cf47116402eeb4d83bc5d3865623786e55cf"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "3cf619b236645b6740f29aeb9abe09d74c2f3ce081de83a35ef681d7119ed1d6",
+   "attemptId": "96f0083e-3196-4930-b18d-fc2a322428d8",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/96f0083e-3196-4930-b18d-fc2a322428d8/row.json",
+    "sha256": "b3a2bb45f6672c4bed7137510785b1a3f084616e6d48ad9f070c2c6252fceb68"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "9e5baf67be39423a206051f9dff1a91347b6b7a588a24b76c6f8837cdfe91d8b",
+   "attemptId": "4db5bfe6-0371-4319-9091-53ba544c1849",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/4db5bfe6-0371-4319-9091-53ba544c1849/row.json",
+    "sha256": "78fe67915e07bb853edcb39fdd7670daa33049088d7f05baa09f38770befc95b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "781ae246693d6df314d5413fa659332224a09a0e89a10319904bc99ac6ea6ea4",
+   "attemptId": "894f2f09-aab0-4aa0-9030-b0a543ccb36a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/894f2f09-aab0-4aa0-9030-b0a543ccb36a/row.json",
+    "sha256": "b312475f85128694706318f9c9696ccf98f2d3f5791694f806bf4a9f6ceb9c43"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1e9737fb1e3c48ae012818e64b81f402e3658c1c04158868a96a2f6227373bc8",
+   "attemptId": "edd82623-c815-41d7-9818-f7e00df06de2",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/edd82623-c815-41d7-9818-f7e00df06de2/row.json",
+    "sha256": "ccc652ff1aafe1604e5e987a5a12b38defe3e2c71fc6648b0da260050a9701ef"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "784ed6c4d9b06b0ef60d45af29068905adb1850132ffd13112477aa84070a032",
+   "attemptId": "feb02ba7-f9c4-4e65-9411-dd198b0e4219",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/feb02ba7-f9c4-4e65-9411-dd198b0e4219/row.json",
+    "sha256": "7aa55b55e51293ad60bd41bc877fed8d9cec73d8e390e5e0a4b1377b4f1fc456"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "bb98f9e665c5ff87a7f0835b9fbb18e1fe3675288cf4045a0aaefb70a2e50a1c",
+   "attemptId": "74a65f0f-805b-41b3-9524-9e9500e9de79",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/74a65f0f-805b-41b3-9524-9e9500e9de79/row.json",
+    "sha256": "627a84af6378a149a6f85cf8c869025e9520f701e0333d9f759a0cbe62920500"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a05b8bd6aa3c4fb3cdf5ec90a8884c9e03f67900701712958e939c27cac05022",
+   "attemptId": "1f96b16c-ccf4-4165-9c2b-11580347cc3a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/1f96b16c-ccf4-4165-9c2b-11580347cc3a/row.json",
+    "sha256": "a8ca57e8486f6c49e5234157972fa3e2f98fb6e15a52c406c20f7620c02ba1ec"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "12ea9d9cbffd9a5827342c55bec2edbde08b6b20c65acd2a22aefee0666c0298",
+   "attemptId": "081bb6e0-0d5b-4a8c-ab16-410aacbbc309",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/081bb6e0-0d5b-4a8c-ab16-410aacbbc309/row.json",
+    "sha256": "2ccbacd9d77a6c2b75dd4cb8bc477c31e2c478a72ed093f5dbbba0d57810297a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "20a978b7597e87054cedce43053ed582da637f00dbdd39d895156099c73360ea",
+   "attemptId": "d6118760-71c7-4871-8774-1e939e016910",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/d6118760-71c7-4871-8774-1e939e016910/row.json",
+    "sha256": "55f5db10cd21f228c539562583fc6e5774269fcd42a5ee8b39ae979e55529acc"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "2faf54108dfe6161c42d0882f4f202a7dcd5f0b38c7f445cf01c6a36ff734bca",
+   "attemptId": "ef3adaf0-0165-4924-9e79-6076fade1c8f",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/ef3adaf0-0165-4924-9e79-6076fade1c8f/row.json",
+    "sha256": "1edbabc761d031accd92743153b7ffae0a63dd394cd27dc04efdf34fb3286e9a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "7cd6b8b7b8f9a54582ad85834126d4d7026572515883baba2fdbc45d8d83f7d1",
+   "attemptId": "a4b4f09e-4194-4c7b-97de-7c8ffe0e1488",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/a4b4f09e-4194-4c7b-97de-7c8ffe0e1488/row.json",
+    "sha256": "deafc8a23800746706490955b4984cbfd3919405a10dc64418b3127810f9c766"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "ebd03311feb938b572556fa35b53fc29a0a5c4639b37234bf70b3b7116db2520",
+   "attemptId": "7012f758-e46b-409b-8f68-9f4583e3c34e",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/7012f758-e46b-409b-8f68-9f4583e3c34e/row.json",
+    "sha256": "36cdc48de7ec14a89dc29fa65436bfdfc5e4fef32feb33a7e92c173bad0be21a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "66c9879eaeb79d6fc4f8e02f5061edb70cb9dde0bd95b5afb31ec4a8b3ebcb9e",
+   "attemptId": "87496ad4-54e6-4d30-b72f-4b631a58eb5e",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/87496ad4-54e6-4d30-b72f-4b631a58eb5e/row.json",
+    "sha256": "557ad0678563803666d84668cd5246db9c5f327ff67033b5194b93ef15439e07"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "df8f2d8b8d7eabf2a115ccddc7a19db3f71718f454a4b85b26b491821fbddbd6",
+   "attemptId": "b0777499-d58d-417e-aa24-bb2b39f70db8",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/b0777499-d58d-417e-aa24-bb2b39f70db8/row.json",
+    "sha256": "d9b9705cccc2e7680b4a7b4dea6e5ccc3feb2964a00c8e84ede18315e7afb83c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "cab3bc1d9a3eb4bf0d6d4efc2dc74d986f1f2c9c2b1b13d3f8ed1e2f765241c7",
+   "attemptId": "d7ae202c-ef3e-4939-ae20-f2520774559f",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/d7ae202c-ef3e-4939-ae20-f2520774559f/row.json",
+    "sha256": "e0fb52d6d662d1b85fde210ba756acca2bdf0c778a6e965ef7a19b8930914e1d"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "4836e6e48abaad26913ae3548fc570c71221b0151dba3ee3e9fb5ba51da0bf76",
+   "attemptId": "0b022dcd-0c26-43fb-a4a8-d6ac541d8bf7",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/0b022dcd-0c26-43fb-a4a8-d6ac541d8bf7/row.json",
+    "sha256": "b9e0e0ec5c15ba71d57d18faa3619f13dc7aec3cc64a0b0d08dcf58bebe4e40a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "31e42ca1321ba27dd6b63c7b469bec2e5bbb5efd8c9a398352d63ccfb69fde06",
+   "attemptId": "4a66d66f-ff86-4bd5-8603-f3962b469f6e",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/4a66d66f-ff86-4bd5-8603-f3962b469f6e/row.json",
+    "sha256": "9566f8abae50e7e97924ff0589d5bedea16d662aa0786ec585dd4b4681c9c5d7"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "675c0d1eb8145d03e22959bf3ae8ce77998a31bd994ef5eb1e438a1542e76ceb",
+   "attemptId": "18e02f47-11b9-4f79-9bcc-4bddf67a05fb",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/18e02f47-11b9-4f79-9bcc-4bddf67a05fb/row.json",
+    "sha256": "5a0461d5f6e09686552ad913e86b7d3f413f4fc2dde990e059c441e0f5818913"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "f52fd97d27674b5815dfc9065cf59cdf4d7f595cb9898c6e4548e882f0a5feb3",
+   "attemptId": "32d24a1e-0c72-4086-9610-8f572db5201c",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/32d24a1e-0c72-4086-9610-8f572db5201c/row.json",
+    "sha256": "953a822fb3445bae7d8815f4281dc8247d62347d442b2feda68199a9291615e8"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "16b555295b525e2d8615f5a052be9cbdb056452b798aa0339da925b8fa899028",
+   "attemptId": "62477688-2b42-40f2-8893-7490fc6d91ef",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/62477688-2b42-40f2-8893-7490fc6d91ef/row.json",
+    "sha256": "22e091964457939326f9547a8e1b9306df37a5b3e828ad137ab2776041f0da5a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1bda99ecc00cfa74f3901296317111423ee61d30b8799309f3f3d32c6b0503a6",
+   "attemptId": "81297637-6e3f-45ae-a3df-215b86c421aa",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/81297637-6e3f-45ae-a3df-215b86c421aa/row.json",
+    "sha256": "995dea884139f4798911136781bb37d0b4e5721511d630b14d29c50bf76db1ff"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "c2ef351a93a8e4e399337687ef8ec0825a21a4f451fd4018aa54d46aa103fcb4",
+   "attemptId": "cc89f191-eef8-4dc1-b651-6074e3e96d73",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/cc89f191-eef8-4dc1-b651-6074e3e96d73/row.json",
+    "sha256": "25cc451ec3ab18aacf78e818046fb452879ed3770b502de381cfab4f4b50b027"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "bec837915a6d78985c6295ae5bae11706fdc79f24badef7783a996167d830ca8",
+   "attemptId": "3b913c23-fce3-4bac-8941-43b64e4ece77",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/3b913c23-fce3-4bac-8941-43b64e4ece77/row.json",
+    "sha256": "ca3fd23eddfbb4018fb914fdced36769b46113f588bba5089e79d4cc22099207"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "3f136cf0df8038e8bd337987e9bf4be7e40c89f3f673604096d57453e05d4643",
+   "attemptId": "71fc2f5b-0f71-4259-a123-392acdaee854",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/71fc2f5b-0f71-4259-a123-392acdaee854/row.json",
+    "sha256": "242bfedd9e6a002198fd4e8ac84d50fe669d70a2496bcdf713b8b8c992008096"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "7d7c178c82aeb14dd9dcb9000a64c6aadb3d3c8eea7187af9ad82b12dd7dbbae",
+   "attemptId": "78d3bdd4-46cb-495a-9364-a2f5a55b980c",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/78d3bdd4-46cb-495a-9364-a2f5a55b980c/row.json",
+    "sha256": "ed9bb3596c407ef87d2eecf02f06c36a26ec5e3d9f3f71426da6d27dbaff52eb"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "beb4f75d6b760185d2ff55c28eafc3d48de6f953343da5553cf9b32707d56974",
+   "attemptId": "acaa5dea-943a-4412-bc9a-af0629a4e8f1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/acaa5dea-943a-4412-bc9a-af0629a4e8f1/row.json",
+    "sha256": "f77d5deefa29b3e6435f74be53660cb1a0ef9a8121c9f1e6200937f2e73a06e9"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "fa70dfbe8b6c9e787dc7e1c5791c38d1178d66ba372ba7c30543870eef18fa72",
+   "attemptId": "ead2c3a6-f517-48f2-a1ec-823fd5871ae8",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/ead2c3a6-f517-48f2-a1ec-823fd5871ae8/row.json",
+    "sha256": "40a289d64fb127eb46445744fd1b306efdc6a04182f2541de2322126ce78b5f3"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "bf653cb11dc3f9d318f2c83d2ed717adc0d96396aeaed4d17702bc37e16c6c2a",
+   "attemptId": "7cc25006-611b-4957-8d07-57c17fba1745",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/7cc25006-611b-4957-8d07-57c17fba1745/row.json",
+    "sha256": "8a29b8daa53d76c489c0f1cf58635ea3079473570e6b3e118afc52c87b8650c8"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "53bb99c0c3f4f191d091fe4859160528729861f71535d8159891e6d053130230",
+   "attemptId": "862e3a76-cd3e-47ff-80d9-4b96c3294d39",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/862e3a76-cd3e-47ff-80d9-4b96c3294d39/row.json",
+    "sha256": "10c5d7a338672e420acf57c552af1950fb1d475339f94d253dbb009426dd5204"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "50c69a0e7db0cc082b613ee94c47e75d501bbb731a68a18f34b1d0a54aafd8c3",
+   "attemptId": "fa432cc3-100d-40c0-b8d0-ac769d2398c0",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/fa432cc3-100d-40c0-b8d0-ac769d2398c0/row.json",
+    "sha256": "bd20469deb6e02918e0bb2e8bbdbf07bd7a69e05277b3306351f5ce0d686681c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "831e831c425259286089b309bd6de613aecc4cbcf93b71d1a04641a95f85dae3",
+   "attemptId": "6d637364-0d60-42c1-9d80-b187542e1e6c",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/6d637364-0d60-42c1-9d80-b187542e1e6c/row.json",
+    "sha256": "8b18de887e52a40bab1bba63125247dda174a93ddba0040471417f200ae8990a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "234f2a14bee5c3cceae54e1dc823829f9c83294bb959405d52779c9af07e84f0",
+   "attemptId": "76948d33-23e5-4042-a173-988879e1d505",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__28/run-CrmW8S/attempts/76948d33-23e5-4042-a173-988879e1d505/row.json",
+    "sha256": "96793b5017490bc23261138d326b1b8b74c0d1f6c46fad5596912e44a7d6783f"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 36940ab9db0e)",
+   "editIds": [
+    "36940ab9db0ecf4af4087d7fbde083c0164626307f966f786d77242cdeedbdd5"
+   ],
+   "lines": [
+    15,
+    15
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 0e384246a3ee)",
+   "editIds": [
+    "0e384246a3ee6d5ef45d74b3e34be778c9fd842aec375fe8034662b02ab073f9"
+   ],
+   "lines": [
+    16,
+    16
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit b0554fdd8a38)",
+   "editIds": [
+    "b0554fdd8a38964b38b306c879c25694498af6e0561087ef8523a78acbf743cf"
+   ],
+   "lines": [
+    17,
+    17
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 461e5f8a53c6)",
+   "editIds": [
+    "461e5f8a53c6c08bf40e6ae186e97ece0779cee55fe2a3e820a445d5bc5ce54c"
+   ],
+   "lines": [
+    18,
+    18
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 9facc9ee2fd2)",
+   "editIds": [
+    "9facc9ee2fd2bbe3f5211029ca00ab099dee21dcf8f2e493754460634346a654"
+   ],
+   "lines": [
+    19,
+    19
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit bfd0e52dc34c)",
+   "editIds": [
+    "bfd0e52dc34c756f56f309f7a86d00a33b89c0594fd132b2bb2d3efdd93124af"
+   ],
+   "lines": [
+    20,
+    20
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 47c5f8953369)",
+   "editIds": [
+    "47c5f8953369c778fa84bc777e7ef496939ba225057765397e53f65059d10871"
+   ],
+   "lines": [
+    21,
+    21
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 5133922ae0fe)",
+   "editIds": [
+    "5133922ae0fe3e3fdb725ecc8abc6b465e906ba2c38a45b908d72d6d8be2b3fc"
+   ],
+   "lines": [
+    22,
+    22
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit c1de70b21086)",
+   "editIds": [
+    "c1de70b21086a94ff3c8c6c832a59a45572d306c0edb196fdeaecb1f88794abc"
+   ],
+   "lines": [
+    23,
+    23
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 8cbf23bbafb4)",
+   "editIds": [
+    "8cbf23bbafb4dce1cf2ea3d557700c0aefafe99dcba38bbadb86a7b1cf13fbc3"
+   ],
+   "lines": [
+    24,
+    24
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 1cc7282e2623)",
+   "editIds": [
+    "1cc7282e26230d7a67cdcd73a1e7f42dfe609dc615dc1cb1e7f984cd60cafc21"
+   ],
+   "lines": [
+    25,
+    25
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 5dd368fbb18d)",
+   "editIds": [
+    "5dd368fbb18dbba098548874e9355fd8b1078f0443054d69319f176283c9c417"
+   ],
+   "lines": [
+    26,
+    26
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 418ae4696440)",
+   "editIds": [
+    "418ae4696440841c8efa0e183b818dadec6013c870e8533640c189c6a92c25ab"
+   ],
+   "lines": [
+    27,
+    27
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 666b15c3ed6c)",
+   "editIds": [
+    "666b15c3ed6c087e0fd1174bd0599df36d042e56469d7e5c53fdce271708386b"
+   ],
+   "lines": [
+    28,
+    28
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 52834ddfc828)",
+   "editIds": [
+    "52834ddfc8282bc8e1a43cd47764c6ea79fb860ae0986eaf1edc3de1fbdc582d"
+   ],
+   "lines": [
+    29,
+    29
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 7ec9426449b9)",
+   "editIds": [
+    "7ec9426449b91614fd9fab075edea61d77cc4a4637359658717db5fc343c8167"
+   ],
+   "lines": [
+    30,
+    30
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 67f89bc07e08)",
+   "editIds": [
+    "67f89bc07e0864cbc7957a8142cc4d65379f822ed6d71324cde9302dda7742c2"
+   ],
+   "lines": [
+    31,
+    31
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit cec24820a8cf)",
+   "editIds": [
+    "cec24820a8cf9fe7d49348a5dbf136d5a95518f9dcb57156ea70d97a40edee56"
+   ],
+   "lines": [
+    32,
+    32
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 5a8fceacc69c)",
+   "editIds": [
+    "5a8fceacc69c0fe4f46ca8234c151d5c61559f6727633f5425ecac1e33872091"
+   ],
+   "lines": [
+    22,
+    22
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 5492b9182dd2)",
+   "editIds": [
+    "5492b9182dd290686600125f7f4fc012383b173382da12b0d4d1efc77622ebc1"
+   ],
+   "lines": [
+    23,
+    23
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit c73998c69f77)",
+   "editIds": [
+    "c73998c69f77b5f48ce2b82976bc8ec8caf404093154f93f9507fcb76b4e6e44"
+   ],
+   "lines": [
+    24,
+    24
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit cba9e26dcca5)",
+   "editIds": [
+    "cba9e26dcca5638db8091452e06dd6ebe66a964ca52acc084520765c07bf10a1"
+   ],
+   "lines": [
+    25,
+    25
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 88862b237d34)",
+   "editIds": [
+    "88862b237d34237f1f2df0dfad1db6df1659f998d3b779ec3ddce806283096e9"
+   ],
+   "lines": [
+    26,
+    26
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit d3f9df477042)",
+   "editIds": [
+    "d3f9df47704292155cf445fc28637d36be4622c340740f562d8a842af2dc2df2"
+   ],
+   "lines": [
+    27,
+    27
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit aa4daa7b53e3)",
+   "editIds": [
+    "aa4daa7b53e342abe467513823997d0db377f8e2c5f06d1056bc1ff6a0644e27"
+   ],
+   "lines": [
+    28,
+    28
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 301296472cc7)",
+   "editIds": [
+    "301296472cc7c1afb5b28a555522d151cb510ed33e5602e1d3e283ffb7b97561"
+   ],
+   "lines": [
+    29,
+    29
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 4429e93e9e5f)",
+   "editIds": [
+    "4429e93e9e5f1d2064fbc8b44bb27efb69c8df237befc72852a5a27933028a14"
+   ],
+   "lines": [
+    30,
+    30
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit c24c19e115cc)",
+   "editIds": [
+    "c24c19e115ccecdaa9eeb4af69618f5c22e6252b2bd83f63b3d8696c5d9a1de8"
+   ],
+   "lines": [
+    31,
+    31
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 9bd611f3873c)",
+   "editIds": [
+    "9bd611f3873c17d35e7288e42eeeb5742e1f7506b86df96ce2c683a803e867a2"
+   ],
+   "lines": [
+    32,
+    32
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit 0135db60519f)",
+   "editIds": [
+    "0135db60519ffb523179fade07d76d3d64fb2966035e7350295296f1b0b2eb00"
+   ],
+   "lines": [
+    33,
+    33
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit c0a0de213a4d)",
+   "editIds": [
+    "c0a0de213a4d5273096203bb5ba3b6c81f4a5d6079da50959b5d0b92d74b111e"
+   ],
+   "lines": [
+    34,
+    34
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-duplicate-case.js",
+   "unit": "(edit dffcf618bd3f)",
+   "editIds": [
+    "dffcf618bd3f8ee98fa385f4dbe3cf47116402eeb4d83bc5d3865623786e55cf"
+   ],
+   "lines": [
+    40,
+    40
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "3cf619b236645b6740f29aeb9abe09d74c2f3ce081de83a35ef681d7119ed1d6",
+   "9e5baf67be39423a206051f9dff1a91347b6b7a588a24b76c6f8837cdfe91d8b",
+   "781ae246693d6df314d5413fa659332224a09a0e89a10319904bc99ac6ea6ea4",
+   "1e9737fb1e3c48ae012818e64b81f402e3658c1c04158868a96a2f6227373bc8",
+   "784ed6c4d9b06b0ef60d45af29068905adb1850132ffd13112477aa84070a032",
+   "bb98f9e665c5ff87a7f0835b9fbb18e1fe3675288cf4045a0aaefb70a2e50a1c",
+   "a05b8bd6aa3c4fb3cdf5ec90a8884c9e03f67900701712958e939c27cac05022",
+   "12ea9d9cbffd9a5827342c55bec2edbde08b6b20c65acd2a22aefee0666c0298",
+   "20a978b7597e87054cedce43053ed582da637f00dbdd39d895156099c73360ea",
+   "2faf54108dfe6161c42d0882f4f202a7dcd5f0b38c7f445cf01c6a36ff734bca",
+   "7cd6b8b7b8f9a54582ad85834126d4d7026572515883baba2fdbc45d8d83f7d1",
+   "ebd03311feb938b572556fa35b53fc29a0a5c4639b37234bf70b3b7116db2520",
+   "66c9879eaeb79d6fc4f8e02f5061edb70cb9dde0bd95b5afb31ec4a8b3ebcb9e",
+   "df8f2d8b8d7eabf2a115ccddc7a19db3f71718f454a4b85b26b491821fbddbd6",
+   "cab3bc1d9a3eb4bf0d6d4efc2dc74d986f1f2c9c2b1b13d3f8ed1e2f765241c7",
+   "4836e6e48abaad26913ae3548fc570c71221b0151dba3ee3e9fb5ba51da0bf76",
+   "31e42ca1321ba27dd6b63c7b469bec2e5bbb5efd8c9a398352d63ccfb69fde06",
+   "675c0d1eb8145d03e22959bf3ae8ce77998a31bd994ef5eb1e438a1542e76ceb",
+   "f52fd97d27674b5815dfc9065cf59cdf4d7f595cb9898c6e4548e882f0a5feb3",
+   "16b555295b525e2d8615f5a052be9cbdb056452b798aa0339da925b8fa899028",
+   "1bda99ecc00cfa74f3901296317111423ee61d30b8799309f3f3d32c6b0503a6",
+   "c2ef351a93a8e4e399337687ef8ec0825a21a4f451fd4018aa54d46aa103fcb4",
+   "bec837915a6d78985c6295ae5bae11706fdc79f24badef7783a996167d830ca8",
+   "3f136cf0df8038e8bd337987e9bf4be7e40c89f3f673604096d57453e05d4643",
+   "7d7c178c82aeb14dd9dcb9000a64c6aadb3d3c8eea7187af9ad82b12dd7dbbae",
+   "beb4f75d6b760185d2ff55c28eafc3d48de6f953343da5553cf9b32707d56974",
+   "fa70dfbe8b6c9e787dc7e1c5791c38d1178d66ba372ba7c30543870eef18fa72",
+   "bf653cb11dc3f9d318f2c83d2ed717adc0d96396aeaed4d17702bc37e16c6c2a",
+   "53bb99c0c3f4f191d091fe4859160528729861f71535d8159891e6d053130230",
+   "50c69a0e7db0cc082b613ee94c47e75d501bbb731a68a18f34b1d0a54aafd8c3",
+   "831e831c425259286089b309bd6de613aecc4cbcf93b71d1a04641a95f85dae3",
+   "234f2a14bee5c3cceae54e1dc823829f9c83294bb959405d52779c9af07e84f0"
+  ],
+  "terminal": [
+   "3cf619b236645b6740f29aeb9abe09d74c2f3ce081de83a35ef681d7119ed1d6",
+   "9e5baf67be39423a206051f9dff1a91347b6b7a588a24b76c6f8837cdfe91d8b",
+   "781ae246693d6df314d5413fa659332224a09a0e89a10319904bc99ac6ea6ea4",
+   "1e9737fb1e3c48ae012818e64b81f402e3658c1c04158868a96a2f6227373bc8",
+   "784ed6c4d9b06b0ef60d45af29068905adb1850132ffd13112477aa84070a032",
+   "bb98f9e665c5ff87a7f0835b9fbb18e1fe3675288cf4045a0aaefb70a2e50a1c",
+   "a05b8bd6aa3c4fb3cdf5ec90a8884c9e03f67900701712958e939c27cac05022",
+   "12ea9d9cbffd9a5827342c55bec2edbde08b6b20c65acd2a22aefee0666c0298",
+   "20a978b7597e87054cedce43053ed582da637f00dbdd39d895156099c73360ea",
+   "2faf54108dfe6161c42d0882f4f202a7dcd5f0b38c7f445cf01c6a36ff734bca",
+   "7cd6b8b7b8f9a54582ad85834126d4d7026572515883baba2fdbc45d8d83f7d1",
+   "ebd03311feb938b572556fa35b53fc29a0a5c4639b37234bf70b3b7116db2520",
+   "66c9879eaeb79d6fc4f8e02f5061edb70cb9dde0bd95b5afb31ec4a8b3ebcb9e",
+   "df8f2d8b8d7eabf2a115ccddc7a19db3f71718f454a4b85b26b491821fbddbd6",
+   "cab3bc1d9a3eb4bf0d6d4efc2dc74d986f1f2c9c2b1b13d3f8ed1e2f765241c7",
+   "4836e6e48abaad26913ae3548fc570c71221b0151dba3ee3e9fb5ba51da0bf76",
+   "31e42ca1321ba27dd6b63c7b469bec2e5bbb5efd8c9a398352d63ccfb69fde06",
+   "675c0d1eb8145d03e22959bf3ae8ce77998a31bd994ef5eb1e438a1542e76ceb",
+   "f52fd97d27674b5815dfc9065cf59cdf4d7f595cb9898c6e4548e882f0a5feb3",
+   "16b555295b525e2d8615f5a052be9cbdb056452b798aa0339da925b8fa899028",
+   "1bda99ecc00cfa74f3901296317111423ee61d30b8799309f3f3d32c6b0503a6",
+   "c2ef351a93a8e4e399337687ef8ec0825a21a4f451fd4018aa54d46aa103fcb4",
+   "bec837915a6d78985c6295ae5bae11706fdc79f24badef7783a996167d830ca8",
+   "3f136cf0df8038e8bd337987e9bf4be7e40c89f3f673604096d57453e05d4643",
+   "7d7c178c82aeb14dd9dcb9000a64c6aadb3d3c8eea7187af9ad82b12dd7dbbae",
+   "beb4f75d6b760185d2ff55c28eafc3d48de6f953343da5553cf9b32707d56974",
+   "fa70dfbe8b6c9e787dc7e1c5791c38d1178d66ba372ba7c30543870eef18fa72",
+   "bf653cb11dc3f9d318f2c83d2ed717adc0d96396aeaed4d17702bc37e16c6c2a",
+   "53bb99c0c3f4f191d091fe4859160528729861f71535d8159891e6d053130230",
+   "50c69a0e7db0cc082b613ee94c47e75d501bbb731a68a18f34b1d0a54aafd8c3",
+   "831e831c425259286089b309bd6de613aecc4cbcf93b71d1a04641a95f85dae3",
+   "234f2a14bee5c3cceae54e1dc823829f9c83294bb959405d52779c9af07e84f0"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

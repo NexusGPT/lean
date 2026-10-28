@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-extra-parens.js",
+ "unit": "(edit 69687b73ba18)",
+ "editIds": [
+  "69687b73ba18cdcac80ea48c3cc5a4bc821c2d02282b66b02e838648b108c766"
+ ],
+ "lines": [
+  509,
+  509
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

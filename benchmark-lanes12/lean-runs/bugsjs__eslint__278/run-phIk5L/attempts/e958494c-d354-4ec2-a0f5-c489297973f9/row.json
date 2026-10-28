@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-var.js",
+ "unit": "(edit 0192c5b308cc)",
+ "editIds": [
+  "0192c5b308ccfe9f5c6f4c4ca875ae133e638cf2807c51729492c4088fdd64e9"
+ ],
+ "lines": [
+  21,
+  21
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

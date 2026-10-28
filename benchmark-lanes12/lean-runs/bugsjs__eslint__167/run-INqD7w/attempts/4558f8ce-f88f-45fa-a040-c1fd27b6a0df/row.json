@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/array-bracket-newline.js",
+ "unit": "(edit 01608bb65f4c)",
+ "editIds": [
+  "01608bb65f4cd5124daa2563a843cd9d22b5b978064bed6be0f83d448314fcd7"
+ ],
+ "lines": [
+  199,
+  199
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

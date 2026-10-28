@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-unused-vars.js",
+ "unit": "(edit 3ce527e2878c)",
+ "editIds": [
+  "3ce527e2878c0d921669514ffceb0a81851befcd3bfe8adf7b7cee78df7f3149"
+ ],
+ "lines": [
+  431,
+  431
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

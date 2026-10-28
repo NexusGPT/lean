@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/space-before-blocks.js",
+ "unit": "(edit a09e07b290e9)",
+ "editIds": [
+  "a09e07b290e98c782d3e5301917fa7b7aeae5f96dc602190c14c301663d535d8"
+ ],
+ "lines": [
+  18,
+  18
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

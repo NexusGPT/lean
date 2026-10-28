@@ -1,0 +1,65 @@
+{
+ "identity": "1e8a7d34ebb46aadd6d3d0b779debbe93ed6f790426098c7eb91fddbaa4a1d75",
+ "records": [
+  {
+   "check": "lane-B",
+   "unit": "getIdentifierIfShouldBeConst",
+   "file": "lib/rules/prefer-const.js",
+   "location": {
+    "start": 90,
+    "end": 92
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "$fake": "arg0"
+    },
+    true
+   ],
+   "lines": {
+    "kind": "effect; parent record absent",
+    "candidate": {
+     "file": "lib/rules/prefer-const.js",
+     "start": 90,
+     "end": 92,
+     "text": "if (variable.eslintUsed && variable.scope.type === \"global\") {\n        return null;\n    }"
+    }
+   },
+   "reason": "the two versions differ on trace"
+  },
+  {
+   "check": "lane-B",
+   "unit": "groupByDestructuring",
+   "file": "lib/rules/prefer-const.js",
+   "location": {
+    "start": 90,
+    "end": 92
+   },
+   "kind": "witness",
+   "input": [
+    [
+     {
+      "$fake": "arg0[0]"
+     }
+    ],
+    false
+   ],
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "lib/rules/prefer-const.js",
+     "start": 180,
+     "end": 180,
+     "text": "const reference = references[j];"
+    },
+    "candidate": {
+     "file": "lib/rules/prefer-const.js",
+     "start": 90,
+     "end": 92,
+     "text": "if (variable.eslintUsed && variable.scope.type === \"global\") {\n        return null;\n    }"
+    }
+   },
+   "reason": "the two versions differ on trace through getIdentifierIfShouldBeConst"
+  }
+ ]
+}

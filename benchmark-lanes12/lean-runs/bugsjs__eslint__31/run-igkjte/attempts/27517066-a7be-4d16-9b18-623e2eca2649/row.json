@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/id-match.js",
+ "unit": "(edit 4f7e42cc8c44)",
+ "editIds": [
+  "4f7e42cc8c442d48ed8c6a86bc22b22cae02d59ef8b4c71d26eed9d9e502d2f7"
+ ],
+ "lines": [
+  89,
+  89
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

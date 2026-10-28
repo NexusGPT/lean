@@ -1,0 +1,21 @@
+{
+ "file": "lib/config/plugins.js",
+ "unit": "(edit 4a4435ea612e)",
+ "editIds": [
+  "4a4435ea612e47f90a3df51b8a04eb804e77155b9c058a302194e63038e4a643"
+ ],
+ "lines": [
+  81,
+  81
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

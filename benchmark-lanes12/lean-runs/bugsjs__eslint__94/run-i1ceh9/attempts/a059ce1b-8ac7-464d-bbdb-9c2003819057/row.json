@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/space-infix-ops.js",
+ "unit": "(edit 60158cb6168b)",
+ "editIds": [
+  "60158cb6168b84d496413d6e834925e7ed37cd655be16c33f5ceb8795e4ddd7d"
+ ],
+ "lines": [
+  60,
+  60
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

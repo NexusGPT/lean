@@ -1,0 +1,232 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "3fe3a4f1ce014dcb84cc4886b874c51739ba3f7e",
+ "head": "11e3347d842e628ba9945103b48257a51a334b48",
+ "files": [
+  {
+   "id": "67550e18c5b30ba73498145c09ac1c2324204c375d1c899c6b062b98a47f8692",
+   "file": "lib/rules/sort-keys.js",
+   "oldPath": "lib/rules/sort-keys.js",
+   "newPath": "lib/rules/sort-keys.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "1c8a97b1d0b7f06e5d19096df9ff090d18d04009",
+   "newOid": "3acb2272090e94b201f5ce01160314fc9b6b0880",
+   "status": "M",
+   "edits": [
+    "bde2b3f5be5e1fb7aa6b7d4fa7128f336e7609a462b1388769ef3f3e3319cbf4",
+    "8e47a4cd912779691e0fae3a25d80d74cfff063f63fe847d98b003381cf70b1d",
+    "8e0009366990808b92cce4fe2c24c289b55735aaae63a2ccd089c61049a4a022",
+    "38ac0b7568dd6bedc4880aadd8c302b941c8ca44c23bab9ebff159fa1dcb2a09"
+   ],
+   "hunks": [
+    {
+     "id": "baa613fdcbad3e2009057df5328899add1f84fa3251ef921cd6ba7435c508023",
+     "old": {
+      "start": 126,
+      "count": 0
+     },
+     "new": {
+      "start": 127,
+      "count": 4
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "649303197ad9f0da81571a691d2239b045d476ab4613178141599ac2630add2d",
+   "newHash": "ab1538175b18c6593535e035c58bbdb43bc8d29efe28f459c510941ffd3564bb",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "getPropertyName",
+      "side": "old",
+      "file": "lib/rules/sort-keys.js",
+      "start": 31,
+      "end": 33,
+      "offset": 975,
+      "stop": 1083,
+      "id": "4fa44886055b6fa19d61c91a3720408f095919eb56d13cc6296c1326bd688966"
+     }
+    ],
+    "new": [
+     {
+      "name": "getPropertyName",
+      "side": "new",
+      "file": "lib/rules/sort-keys.js",
+      "start": 31,
+      "end": 33,
+      "offset": 975,
+      "stop": 1083,
+      "id": "46bce00da69727e7507af4ee7d1e1932ef6fbef4118a5ed676c3558d58d07001"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "bde2b3f5be5e1fb7aa6b7d4fa7128f336e7609a462b1388769ef3f3e3319cbf4",
+   "fileId": "67550e18c5b30ba73498145c09ac1c2324204c375d1c899c6b062b98a47f8692",
+   "file": "lib/rules/sort-keys.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "baa613fdcbad3e2009057df5328899add1f84fa3251ef921cd6ba7435c508023",
+   "side": "new",
+   "old": {
+    "start": 126,
+    "count": 0
+   },
+   "new": {
+    "start": 127,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3473,
+    "end": 3533
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8e47a4cd912779691e0fae3a25d80d74cfff063f63fe847d98b003381cf70b1d",
+   "fileId": "67550e18c5b30ba73498145c09ac1c2324204c375d1c899c6b062b98a47f8692",
+   "file": "lib/rules/sort-keys.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "baa613fdcbad3e2009057df5328899add1f84fa3251ef921cd6ba7435c508023",
+   "side": "new",
+   "old": {
+    "start": 126,
+    "count": 0
+   },
+   "new": {
+    "start": 128,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3533,
+    "end": 3561
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8e0009366990808b92cce4fe2c24c289b55735aaae63a2ccd089c61049a4a022",
+   "fileId": "67550e18c5b30ba73498145c09ac1c2324204c375d1c899c6b062b98a47f8692",
+   "file": "lib/rules/sort-keys.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "baa613fdcbad3e2009057df5328899add1f84fa3251ef921cd6ba7435c508023",
+   "side": "new",
+   "old": {
+    "start": 126,
+    "count": 0
+   },
+   "new": {
+    "start": 129,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3561,
+    "end": 3579
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "38ac0b7568dd6bedc4880aadd8c302b941c8ca44c23bab9ebff159fa1dcb2a09",
+   "fileId": "67550e18c5b30ba73498145c09ac1c2324204c375d1c899c6b062b98a47f8692",
+   "file": "lib/rules/sort-keys.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "baa613fdcbad3e2009057df5328899add1f84fa3251ef921cd6ba7435c508023",
+   "side": "new",
+   "old": {
+    "start": 126,
+    "count": 0
+   },
+   "new": {
+    "start": 130,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3579,
+    "end": 3580
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "e33d90a7a46fd31404c112a16eb8c825ededdc445385f5afb2cc9dc431c8c002",
+ "reconciliation": {
+  "expected": [
+   "bde2b3f5be5e1fb7aa6b7d4fa7128f336e7609a462b1388769ef3f3e3319cbf4",
+   "8e47a4cd912779691e0fae3a25d80d74cfff063f63fe847d98b003381cf70b1d",
+   "8e0009366990808b92cce4fe2c24c289b55735aaae63a2ccd089c61049a4a022",
+   "38ac0b7568dd6bedc4880aadd8c302b941c8ca44c23bab9ebff159fa1dcb2a09"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "bde2b3f5be5e1fb7aa6b7d4fa7128f336e7609a462b1388769ef3f3e3319cbf4",
+   "8e47a4cd912779691e0fae3a25d80d74cfff063f63fe847d98b003381cf70b1d",
+   "8e0009366990808b92cce4fe2c24c289b55735aaae63a2ccd089c61049a4a022",
+   "38ac0b7568dd6bedc4880aadd8c302b941c8ca44c23bab9ebff159fa1dcb2a09"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "bde2b3f5be5e1fb7aa6b7d4fa7128f336e7609a462b1388769ef3f3e3319cbf4",
+     "8e47a4cd912779691e0fae3a25d80d74cfff063f63fe847d98b003381cf70b1d",
+     "8e0009366990808b92cce4fe2c24c289b55735aaae63a2ccd089c61049a4a022",
+     "38ac0b7568dd6bedc4880aadd8c302b941c8ca44c23bab9ebff159fa1dcb2a09"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "change": "6e938bd3cb12b6ca066176f0a5fc17832dddd086e43e2b6b8ba445a5378bd5ae",
+ "tasks": [
+  {
+   "id": "a9b373a3fb87b5b75855decc1ca509ff3c781b7eb50b1839f5f8b575c13769ba",
+   "file": "lib/testers/rule-tester.js",
+   "unit": "RuleTester.run",
+   "lines": [
+    250,
+    558
+   ],
+   "lanes": [
+    "B",
+    "A"
+   ],
+   "editIds": [
+    "54713329b1695460c5a32ad65c6cbd872f835d45fa7801fcca97fced53074803",
+    "6bc76b7b5102417cf937047503ffc46d74c3c222a7148ec2306dc891e305c8e2",
+    "0cdd76ceb286213099ea11e83e89679eb5596fe0928d59a72f74abddda7e0d62",
+    "aac74d9ce5703d07ee4470828113d29d7968ae844e6f01e6f98883cff06da5f5",
+    "77ed0db6520bda543023308536ecb23da228d0b16e55601cf301e6e87d61ef25",
+    "ba7ae0bc590043ae7b9b745191f3be1a3377b744b9a2f474cc82dda6916ebb5c",
+    "c6f92d72e099f96d237c39762ac717b829fa78cbbf044c90687755a0efb8ec09",
+    "1eeb77bdbdbc2eb86fdfb889d5c6d283679a3ddf7ed252b0073e40eb31698b3f"
+   ],
+   "attemptId": "8612fb82-37f5-42b6-8679-e4858623117d",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__157/run-XOpRfU/attempts/8612fb82-37f5-42b6-8679-e4858623117d"
+  }
+ ]
+}

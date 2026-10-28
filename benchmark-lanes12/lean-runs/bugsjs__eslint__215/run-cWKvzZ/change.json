@@ -1,0 +1,137 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "3798aea829851c643614fd899ead4cc87351cdaf",
+ "head": "a830e73d8386c9bbd94d5a8be43ce1fc2356e50f",
+ "files": [
+  {
+   "id": "f7e9ec31dec543d25e997bcd20b54e529b37f3965baebb9d817621503dff9306",
+   "file": "lib/rules/brace-style.js",
+   "oldPath": "lib/rules/brace-style.js",
+   "newPath": "lib/rules/brace-style.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "34835bdc36f8eb50cc12761a6eb049833e9659f9",
+   "newOid": "197767b07c19a5151893350f7c1af6b814cb6862",
+   "status": "M",
+   "edits": [
+    "9498bafff794a8073ed1aa0aa620ab040366ae5779036e7e976fb93499186b9b",
+    "2d58614f58631781a99723f400e88b5919a6b311d262c803d4a302ebf3e8a2e5"
+   ],
+   "hunks": [
+    {
+     "id": "6e6da2dc57dcbb957d009a44589e8ef9ebf2c725f026d13f953ac560fc900bf9",
+     "old": {
+      "start": 146,
+      "count": 1
+     },
+     "new": {
+      "start": 146,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "1f69a97efc1e7352e48575e4563714c4239a8c3211148adeee951bf2ce9cc125",
+   "newHash": "cf3defaecf7c106c806305c6de11f7004963b7165f147f0b38d1842a3da11c14",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "9498bafff794a8073ed1aa0aa620ab040366ae5779036e7e976fb93499186b9b",
+   "fileId": "f7e9ec31dec543d25e997bcd20b54e529b37f3965baebb9d817621503dff9306",
+   "file": "lib/rules/brace-style.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6e6da2dc57dcbb957d009a44589e8ef9ebf2c725f026d13f953ac560fc900bf9",
+   "side": "old",
+   "old": {
+    "start": 146,
+    "count": 1
+   },
+   "new": {
+    "start": 146,
+    "count": 0
+   },
+   "offsets": {
+    "start": 5881,
+    "end": 5990
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "2d58614f58631781a99723f400e88b5919a6b311d262c803d4a302ebf3e8a2e5",
+   "fileId": "f7e9ec31dec543d25e997bcd20b54e529b37f3965baebb9d817621503dff9306",
+   "file": "lib/rules/brace-style.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6e6da2dc57dcbb957d009a44589e8ef9ebf2c725f026d13f953ac560fc900bf9",
+   "side": "new",
+   "old": {
+    "start": 146,
+    "count": 0
+   },
+   "new": {
+    "start": 146,
+    "count": 1
+   },
+   "offsets": {
+    "start": 5881,
+    "end": 5988
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "ff872c68601cf061e5fb854896131872b3364694fc97d52e666570b983c9ad7f",
+ "reconciliation": {
+  "expected": [
+   "9498bafff794a8073ed1aa0aa620ab040366ae5779036e7e976fb93499186b9b",
+   "2d58614f58631781a99723f400e88b5919a6b311d262c803d4a302ebf3e8a2e5"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "9498bafff794a8073ed1aa0aa620ab040366ae5779036e7e976fb93499186b9b",
+   "2d58614f58631781a99723f400e88b5919a6b311d262c803d4a302ebf3e8a2e5"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "9498bafff794a8073ed1aa0aa620ab040366ae5779036e7e976fb93499186b9b",
+     "2d58614f58631781a99723f400e88b5919a6b311d262c803d4a302ebf3e8a2e5"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

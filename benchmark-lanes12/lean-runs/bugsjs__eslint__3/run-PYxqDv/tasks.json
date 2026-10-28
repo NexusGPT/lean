@@ -1,0 +1,27 @@
+{
+ "change": "36263203feb4b4e58965b37fa3ea5be66416ce72f5c2cc21e11df325254ba12e",
+ "tasks": [
+  {
+   "id": "7a0fb20f37cc7ee8f23bacd0706cb852d034de525f66b70c657c5414cfe03aba",
+   "file": "lib/rules/prefer-template.js",
+   "unit": "hasNonLiteral",
+   "lines": [
+    30,
+    38
+   ],
+   "lanes": [
+    "B",
+    "A"
+   ],
+   "editIds": [
+    "b80a3d54c791d4717621051371ab53bc17542a1e8a6b73b65c2fb82e45fb9c37",
+    "20e4f32ae0ae16be953cf88c2393de92ff1da012f7aefd36a5a51b089c7bc178",
+    "d1ac8cdd89a45cbbea13dc1697cd5d3f154368f35d22d94145046248ba82b25f",
+    "96a3fcf1375fbbcb307157920d5b0b5510c6cbdfa348448c51eb560d2d70efbc",
+    "ebc8fd734a23b2cc9e05312cd9f3175f4094a6b3a89d0c6f301d8aac957beeba"
+   ],
+   "attemptId": "9332b84e-27d7-46b9-bed7-18fc61ade60e",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__3/run-PYxqDv/attempts/9332b84e-27d7-46b9-bed7-18fc61ade60e"
+  }
+ ]
+}

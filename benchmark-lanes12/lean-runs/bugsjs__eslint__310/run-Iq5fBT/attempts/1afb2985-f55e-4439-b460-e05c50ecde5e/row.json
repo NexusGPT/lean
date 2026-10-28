@@ -1,0 +1,21 @@
+{
+ "file": "lib/cli.js",
+ "unit": "(edit 078fea1a2a61)",
+ "editIds": [
+  "078fea1a2a619e844b5bf4aec0e265056e6c73ae841160980ece0a9ebedd3cac"
+ ],
+ "lines": [
+  36,
+  36
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

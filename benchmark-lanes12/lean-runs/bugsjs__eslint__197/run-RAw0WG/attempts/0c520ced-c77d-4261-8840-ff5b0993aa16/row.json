@@ -1,0 +1,20 @@
+{
+ "file": "lib/formatters/junit.js",
+ "unit": "(edit 58eac598912c)",
+ "editIds": [
+  "58eac598912cee516dbfe3569cae8fe96d8faee95463381c918767da62640c30"
+ ],
+ "lines": [
+  45,
+  45
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

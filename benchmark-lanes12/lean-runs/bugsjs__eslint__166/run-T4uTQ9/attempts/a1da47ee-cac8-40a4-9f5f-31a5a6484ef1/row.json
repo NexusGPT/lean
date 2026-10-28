@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-useless-computed-key.js",
+ "unit": "(edit a15582b3a089)",
+ "editIds": [
+  "a15582b3a089285085bd5f52d07e43d92eb7a30d1c8eea916f4d4bd2792eb13c"
+ ],
+ "lines": [
+  37,
+  37
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

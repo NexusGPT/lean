@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/complexity.js",
+ "unit": "(edit 3f8605064701)",
+ "editIds": [
+  "3f86050647012f5f4a072a730754b4c94dfdb9c51df67fa798b7033276880b9e"
+ ],
+ "lines": [
+  135,
+  135
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

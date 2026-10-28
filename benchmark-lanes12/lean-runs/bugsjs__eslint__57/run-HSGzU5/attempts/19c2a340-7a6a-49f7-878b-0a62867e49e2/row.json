@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/one-var.js",
+ "unit": "(edit 2e471d6b089c)",
+ "editIds": [
+  "2e471d6b089c09035bd77b711c10397de5dd9ae657ec3e82a195f23cd6a073ec"
+ ],
+ "lines": [
+  291,
+  291
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

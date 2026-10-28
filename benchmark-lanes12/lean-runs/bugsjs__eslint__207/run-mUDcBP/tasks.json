@@ -1,0 +1,25 @@
+{
+ "change": "861e9094780abf6f35e1e170c3fda77f5009118616d43f94552f12eb2b978a21",
+ "tasks": [
+  {
+   "id": "e00d6ebc357bd9a18c3464b9c61b11c8f4be1bee6d101fadd765595ba5833cc6",
+   "file": "lib/rules/object-curly-newline.js",
+   "unit": "areLineBreaksRequired",
+   "lines": [
+    111,
+    129
+   ],
+   "lanes": [
+    "B",
+    "A"
+   ],
+   "editIds": [
+    "bd0b6328705fd0cae322343b16545c747515007515f1b9ce79777d66bae469ff",
+    "4b514235c9906cae5ec59713fc2adf87ef95de8ea88092bd536f6f7f036c09b7",
+    "14a9f609b1a95b497d69afbb9745320e625f48c112475ba626c04d0a5d604e1e"
+   ],
+   "attemptId": "e07b5073-b713-4c9a-a052-a4e5bf12da11",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__207/run-mUDcBP/attempts/e07b5073-b713-4c9a-a052-a4e5bf12da11"
+  }
+ ]
+}

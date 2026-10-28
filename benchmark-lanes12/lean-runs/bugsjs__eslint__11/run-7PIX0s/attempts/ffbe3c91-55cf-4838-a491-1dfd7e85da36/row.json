@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/curly.js",
+ "unit": "(edit 890144ff5b50)",
+ "editIds": [
+  "890144ff5b500918656c5dbb35e1edd34ff2154770ef94d92a8271e889443cc9"
+ ],
+ "lines": [
+  294,
+  294
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

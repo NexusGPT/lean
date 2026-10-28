@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/brace-style.js",
+ "unit": "(edit 50de7fb51688)",
+ "editIds": [
+  "50de7fb5168829efcfa68bf592b3997c1f77a2b43dd483933bf954d3421f8e19"
+ ],
+ "lines": [
+  78,
+  78
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

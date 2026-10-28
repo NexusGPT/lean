@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-cond-assign.js",
+ "unit": "(edit 361f9ad3a565)",
+ "editIds": [
+  "361f9ad3a565b4ba4a86f221afabf516bfafef66eacbb7163fba21a17c613e93"
+ ],
+ "lines": [
+  8,
+  8
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

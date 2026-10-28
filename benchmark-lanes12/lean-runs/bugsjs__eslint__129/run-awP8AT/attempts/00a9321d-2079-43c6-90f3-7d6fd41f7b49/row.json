@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-var.js",
+ "unit": "(edit 857e98b819a3)",
+ "editIds": [
+  "857e98b819a34564e198ccee269ea306685c6ac2553970fd25e62a29a60b0cff"
+ ],
+ "lines": [
+  275,
+  275
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

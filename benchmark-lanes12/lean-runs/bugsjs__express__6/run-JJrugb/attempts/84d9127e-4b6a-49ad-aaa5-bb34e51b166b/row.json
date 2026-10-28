@@ -1,0 +1,21 @@
+{
+ "file": "lib/application.js",
+ "unit": "(edit ef05e1b5de36)",
+ "editIds": [
+  "ef05e1b5de362ed041c6d1e6622f605002c57c215ff0fb9a101474f8ea16a5aa"
+ ],
+ "lines": [
+  536,
+  536
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

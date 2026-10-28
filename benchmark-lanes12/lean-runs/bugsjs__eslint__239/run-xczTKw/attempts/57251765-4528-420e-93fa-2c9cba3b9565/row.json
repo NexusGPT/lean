@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/capitalized-comments.js",
+ "unit": "(edit 1478bb939e90)",
+ "editIds": [
+  "1478bb939e9076618637ee54ab772071434b6453b9d20674783787382422bd43"
+ ],
+ "lines": [
+  236,
+  236
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

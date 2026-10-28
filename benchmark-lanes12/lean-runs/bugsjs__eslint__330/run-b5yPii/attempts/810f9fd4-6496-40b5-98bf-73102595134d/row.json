@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/semi-spacing.js",
+ "unit": "(edit 8f0725c2c177)",
+ "editIds": [
+  "8f0725c2c17755a18b46f6787d6d0e26be0bf79c9fb6b568fb6be7b874e6c4c7"
+ ],
+ "lines": [
+  60,
+  60
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,65 @@
+{
+ "change": "d0249c1ad090c3cd443680fd2738a662a37e147950bc03e03a1d511cf93323b3",
+ "tasks": [
+  {
+   "id": "229b4fa73ddeda0f9a3be80104fb8eb6bb95069f1b53e9dedca1d9f5275dfab4",
+   "file": "lib/rules/dot-notation.js",
+   "unit": "(edit 7320c903835a)",
+   "lines": [
+    82,
+    82
+   ],
+   "lanes": [],
+   "editIds": [
+    "7320c903835a2d26db6118c423511f7da111f3587a44cd901b8e79b3921dca57"
+   ],
+   "attemptId": "e1de08e8-1e42-42e3-84ad-1b598fce5841",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__175/run-clBO35/attempts/e1de08e8-1e42-42e3-84ad-1b598fce5841"
+  },
+  {
+   "id": "3abf9868ba42c7a863b3e33e9b9176bd54c201a8016689073b56b2040c81576e",
+   "file": "lib/rules/dot-notation.js",
+   "unit": "(edit d4b6d917e15c)",
+   "lines": [
+    83,
+    83
+   ],
+   "lanes": [],
+   "editIds": [
+    "d4b6d917e15cd22f65d544bdf45617aa5575a9a3d1af9d618709d693922da042"
+   ],
+   "attemptId": "079ceee8-08a0-4f34-bdb2-47b2dcf0e0b8",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__175/run-clBO35/attempts/079ceee8-08a0-4f34-bdb2-47b2dcf0e0b8"
+  },
+  {
+   "id": "41e347dc7cec1a8f121c45f57efd131feeb1f595e9ff44467a2b26ebc6a112ce",
+   "file": "lib/rules/dot-notation.js",
+   "unit": "(edit 035dd5babee1)",
+   "lines": [
+    84,
+    84
+   ],
+   "lanes": [],
+   "editIds": [
+    "035dd5babee1e669767e2a3e97922361a623c211313fdcd1ad75db79b416ef66"
+   ],
+   "attemptId": "44e1bc5e-65b8-4a02-bd06-87201760abb9",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__175/run-clBO35/attempts/44e1bc5e-65b8-4a02-bd06-87201760abb9"
+  },
+  {
+   "id": "2257d920f322fc89eb80a3595114159655bfbdd2611828591e65cb6d914413ca",
+   "file": "lib/rules/dot-notation.js",
+   "unit": "(edit 60a516e34918)",
+   "lines": [
+    86,
+    86
+   ],
+   "lanes": [],
+   "editIds": [
+    "60a516e34918a93a91d18a00654f3b304111c354a774078f576f3328642431b6"
+   ],
+   "attemptId": "5a0fff91-c59b-47e3-942f-2aa33dca14e1",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__175/run-clBO35/attempts/5a0fff91-c59b-47e3-942f-2aa33dca14e1"
+  }
+ ]
+}

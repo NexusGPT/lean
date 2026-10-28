@@ -1,0 +1,163 @@
+{
+ "change": "bfe3bc45d4cfd8ac36940562c61d502c861ca0b6f55e4df153e6699f64b77db4",
+ "tasks": [
+  {
+   "id": "2067029eac51a7f315e4b2a2322e85ff02f976b1e571c0780c78b993822e94d7",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "isClassConstructor",
+   "lines": [
+    41,
+    46
+   ],
+   "lanes": [
+    "B",
+    "A"
+   ],
+   "editIds": [
+    "5ae9d345f46363546da6550049c406185ee637cd1b999abba115db76a1773693",
+    "073ae3fb58957797c348014d6fb1a0bf8c3e8bec9c32ae3aa313fba605479791",
+    "2050ecdfca14dc83f82531d7f19f9540225414d0fd3d1e77c357bd5566ef6e1c",
+    "72a985fbad2434b6df39ef71ef933ed37dc19e2b760701de3b2caa17f95b0d6e",
+    "4fa14cdf253c0b00d7867700ac09f87680d5c9346eef2c5799e3dab612276b4d",
+    "c1fe0c03868dd40245b25db65c2e11ec3eaeb77102256d6a1a0ad79f66a04d43"
+   ],
+   "attemptId": "e6e69d1f-a04d-4989-9796-d6334a2b9528",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/e6e69d1f-a04d-4989-9796-d6334a2b9528"
+  },
+  {
+   "id": "fdf94d7f8613dc5a5f1a1bcd2e5a9fe6597f9ebba1e8c960d3eb7f38e07a928a",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit 99cdadf1614b)",
+   "lines": [
+    36,
+    36
+   ],
+   "lanes": [],
+   "editIds": [
+    "99cdadf1614b56a8c72e770926065479128823bf7fd8c9b0b236814c06872e0a"
+   ],
+   "attemptId": "a7c3c123-c583-4ec3-8d76-5b93b49f33df",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/a7c3c123-c583-4ec3-8d76-5b93b49f33df"
+  },
+  {
+   "id": "f564118f0dd1d680a9bae95440cec71656c05e51739b395eb339f670d87b32b5",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit 699dc586e317)",
+   "lines": [
+    37,
+    37
+   ],
+   "lanes": [],
+   "editIds": [
+    "699dc586e317002f6979d05b708292cc825b3c15d92df7ee68e70c9eef14c059"
+   ],
+   "attemptId": "463b5491-1f96-462a-b8e7-b3a9000a14dc",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/463b5491-1f96-462a-b8e7-b3a9000a14dc"
+  },
+  {
+   "id": "4ca6b3c790b7e37c438392532c6bc6b68ddc1c0448113a133755d061e217e2c8",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit baec30c5c5fe)",
+   "lines": [
+    38,
+    38
+   ],
+   "lanes": [],
+   "editIds": [
+    "baec30c5c5fe9b298da073a308ecf87d9b3523646a4f8c2254829427eda41f29"
+   ],
+   "attemptId": "6353135b-1422-44f8-88b2-12c4a7b8cef0",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/6353135b-1422-44f8-88b2-12c4a7b8cef0"
+  },
+  {
+   "id": "62c9c857803516a3f939224c670aae60d1cc637380701e1c8deac1ca3dfe84a8",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit 9c0e86cead6a)",
+   "lines": [
+    39,
+    39
+   ],
+   "lanes": [],
+   "editIds": [
+    "9c0e86cead6a1adc8b8b8f80d2f21ffdf39038fc5488902d11d215548c3473d4"
+   ],
+   "attemptId": "122c2b65-1084-45aa-bac7-135fb779d62e",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/122c2b65-1084-45aa-bac7-135fb779d62e"
+  },
+  {
+   "id": "c64040ac4f6e20b3743601de3671c089fc175c0410e40589a39a2e3fe3715b53",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit bda6ebd02f84)",
+   "lines": [
+    40,
+    40
+   ],
+   "lanes": [],
+   "editIds": [
+    "bda6ebd02f844b02b44c3e70ea972cc718dd240f0a7acf09ff74a2d14baa2815"
+   ],
+   "attemptId": "505dfebf-cee6-441e-a79c-8d67274da444",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/505dfebf-cee6-441e-a79c-8d67274da444"
+  },
+  {
+   "id": "8da760d74b53f6626fffae4358c7232ff1c3fca85aca7487a6ad590bbd5dc60b",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit a459b552caf1)",
+   "lines": [
+    47,
+    47
+   ],
+   "lanes": [],
+   "editIds": [
+    "a459b552caf1de0c90c9bc72771f7c1179f8cfab1b8c872e1859810b18301d7e"
+   ],
+   "attemptId": "283b592e-1898-4185-8843-f5a3b40739a8",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/283b592e-1898-4185-8843-f5a3b40739a8"
+  },
+  {
+   "id": "f878787027f6d78a58828007132ffd12ef70318bcd63c32b43332d73bc7ff53f",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit ba9958b8ff09)",
+   "lines": [
+    80,
+    80
+   ],
+   "lanes": [],
+   "editIds": [
+    "ba9958b8ff09323487f44c6b225bbafa12f9f80c36d08b48365b360dabafef75"
+   ],
+   "attemptId": "20851334-ce9b-4066-a6a4-7a4834495431",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/20851334-ce9b-4066-a6a4-7a4834495431"
+  },
+  {
+   "id": "4b6ff7ba1c0e3fa62463f3372ad452f3712340d6a7fcd12c4847e759f3f53f25",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit f840432c2b3c)",
+   "lines": [
+    92,
+    92
+   ],
+   "lanes": [],
+   "editIds": [
+    "f840432c2b3cf480f7d558983ceb505a183ed68445c73e2b76daf9e646ca450e"
+   ],
+   "attemptId": "7030b321-f40f-4770-b717-3e0f27215caf",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/7030b321-f40f-4770-b717-3e0f27215caf"
+  },
+  {
+   "id": "4746dab588237e7bbdf6d403323bfd08148f58b4e3043e45cc2fdb4a13c5a766",
+   "file": "lib/rules/consistent-return.js",
+   "unit": "(edit aa30b09e0f54)",
+   "lines": [
+    93,
+    93
+   ],
+   "lanes": [],
+   "editIds": [
+    "aa30b09e0f54e7ace081d67818a326b05f0fb9b6e913bec914a7dfd76ee21adc"
+   ],
+   "attemptId": "ac3ab7be-1855-4745-96c5-ac178718757b",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/attempts/ac3ab7be-1855-4745-96c5-ac178718757b"
+  }
+ ]
+}

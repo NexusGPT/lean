@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/lines-around-comment.js",
+ "unit": "(edit a012f688bb57)",
+ "editIds": [
+  "a012f688bb571ace8cec7d8f8abd89de8e87d95d9bbd0a7d1f101ba962765d2d"
+ ],
+ "lines": [
+  62,
+  62
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

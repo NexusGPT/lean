@@ -1,0 +1,1907 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "21ab784726043815334f682304db67c0e57f6cf9",
+  "head": "60ac28a674807e7cbc20ce85f840d19bb7035155",
+  "files": [
+   {
+    "id": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "oldPath": "lib/rules/object-curly-spacing.js",
+    "newPath": "lib/rules/object-curly-spacing.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "306a58d2811a4beb8ff6490ed951901e532092ca",
+    "newOid": "0abf3259182b3fd91a878f52e1eb55bf4f7632af",
+    "status": "M",
+    "edits": [
+     "4f3a17e45de5fd16dc59488d7692253d3d7f784872ee7d11599e58c24dbc0fc8",
+     "e1f4a5725fbf9beae5ce8838990de875a12a414cae36ff2f7c8c82048aa5ee73",
+     "e61bd137525ee330f43333197c4dbf44afee303e251d241864b274f2468c8086",
+     "98deefeb509b861518f002e009f996313550904c4a01c0a41d89539f98094542",
+     "fec22396d7d66b26924fef3cfcad78cf535d91da616cac260e88fd2c8aa6ab5d",
+     "39b48aaf9fab5ded325274abe537a90438df89622412257da6677a4052ea86a3",
+     "312bcb9629341d52be3d60ea583527a2046685392e1385831c0c14e0bd6494d2",
+     "1fe64ed4363afa7ed29b0b5ff8778c5fcced0d5e3b4c2500eb151c0ba95711c2",
+     "6a085f0d18bd1df41016f7c1d07190767b6a7092539d49aec5f04008c83ed18d",
+     "f6021cb4fef3ea1d7677d0656c1d87832a4cde8155fbdd0486e1866d1a0688fc",
+     "7e64bdb096140eda05d045216ebf61318a973d89e477d14a92ca19969f6a8ff7",
+     "173bf4904c03b7a7c5b533c9e9e971c080638a4f7574b92e4f54f05e28e20223",
+     "bb098b06db80b5e80492c32c5769867f0fa200d38aacd4567b69e4bc43be8820",
+     "9b371d5121cc12576817c4613b2bf8bc34fafee0f534591d4b81f843c860f245",
+     "b118da8e795a909beb77b563869372750c26df0d0a6ae78c4e89670e02f596fd",
+     "432a4d65318efe34e59aea08a168bd40b839270466b7316e1daf1cee80a409f5",
+     "c2ed162c6c747eb1b823109489c07af2f4878edf88bd61fdef230fab91cfc919",
+     "aa169774df5c5bdb48ae9ce2d62132cf4d2842cce98c66d0a4e7ef3188292c00",
+     "3a05f8d9dfee44747b0e8d01f6ea4d673a2b83c3cd146cfd7f3d7061266cf067",
+     "493a639b0f4e0b4c2624a2a697180c57ab6f70cec947c1de17b9ca2d913fe0cc",
+     "f5b851d077a856e3af64c7ba079676117f84adb322bf143603004d896482a965",
+     "0686e9c50a46f5dedb74188d89a4b9180a31508342aab51d9e29e44284544d4a",
+     "8b0602e655e99dbe10f81da3f2f62936249d810f935aa8f84d130cc8baf2acc3",
+     "67d4bde288b49dfe8adb8fbf31f9c34fb0651e772e10be499b6ac83e916ab68e",
+     "e4ff71fa6d8217aca6aecb381ba435dde54aa798d22131f666f7c6385868f883",
+     "b49600cdd902f6ad095c55d78f777ae0a1c80aa91232847ee60f81be13b4ba0a"
+    ],
+    "hunks": [
+     {
+      "id": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+      "old": {
+       "start": 182,
+       "count": 0
+      },
+      "new": {
+       "start": 183,
+       "count": 24
+      }
+     },
+     {
+      "id": "5b8ffcba2c7ab14a182965589f8b236e4852df468f80297f60a52e4a68e0834b",
+      "old": {
+       "start": 194,
+       "count": 1
+      },
+      "new": {
+       "start": 218,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "39d2928ad8ca615c39a033a31807f6f9281afe4063431bde10de0b034a9a225b",
+    "newHash": "8f27d79f17bf228a7449d9c2a69beeca2ba67bcfb9109c4bdc28cb08cf414d4d",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "4f3a17e45de5fd16dc59488d7692253d3d7f784872ee7d11599e58c24dbc0fc8",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 183,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7028,
+     "end": 7040
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "e1f4a5725fbf9beae5ce8838990de875a12a414cae36ff2f7c8c82048aa5ee73",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 184,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7040,
+     "end": 7085
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "e61bd137525ee330f43333197c4dbf44afee303e251d241864b274f2468c8086",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 185,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7085,
+     "end": 7096
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "98deefeb509b861518f002e009f996313550904c4a01c0a41d89539f98094542",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 186,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7096,
+     "end": 7177
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "fec22396d7d66b26924fef3cfcad78cf535d91da616cac260e88fd2c8aa6ab5d",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 187,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7177,
+     "end": 7258
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "39b48aaf9fab5ded325274abe537a90438df89622412257da6677a4052ea86a3",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 188,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7258,
+     "end": 7286
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "312bcb9629341d52be3d60ea583527a2046685392e1385831c0c14e0bd6494d2",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 189,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7286,
+     "end": 7297
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1fe64ed4363afa7ed29b0b5ff8778c5fcced0d5e3b4c2500eb151c0ba95711c2",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 190,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7297,
+     "end": 7365
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6a085f0d18bd1df41016f7c1d07190767b6a7092539d49aec5f04008c83ed18d",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 191,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7365,
+     "end": 7444
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f6021cb4fef3ea1d7677d0656c1d87832a4cde8155fbdd0486e1866d1a0688fc",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 192,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7444,
+     "end": 7477
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "7e64bdb096140eda05d045216ebf61318a973d89e477d14a92ca19969f6a8ff7",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 193,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7477,
+     "end": 7516
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "173bf4904c03b7a7c5b533c9e9e971c080638a4f7574b92e4f54f05e28e20223",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 194,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7516,
+     "end": 7528
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "bb098b06db80b5e80492c32c5769867f0fa200d38aacd4567b69e4bc43be8820",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 195,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7528,
+     "end": 7577
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9b371d5121cc12576817c4613b2bf8bc34fafee0f534591d4b81f843c860f245",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 196,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7577,
+     "end": 7655
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b118da8e795a909beb77b563869372750c26df0d0a6ae78c4e89670e02f596fd",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 197,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7655,
+     "end": 7719
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "432a4d65318efe34e59aea08a168bd40b839270466b7316e1daf1cee80a409f5",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 198,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7719,
+     "end": 7720
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c2ed162c6c747eb1b823109489c07af2f4878edf88bd61fdef230fab91cfc919",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 199,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7720,
+     "end": 7765
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "aa169774df5c5bdb48ae9ce2d62132cf4d2842cce98c66d0a4e7ef3188292c00",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 200,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7765,
+     "end": 7838
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3a05f8d9dfee44747b0e8d01f6ea4d673a2b83c3cd146cfd7f3d7061266cf067",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 201,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7838,
+     "end": 7895
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "493a639b0f4e0b4c2624a2a697180c57ab6f70cec947c1de17b9ca2d913fe0cc",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 202,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7895,
+     "end": 7909
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f5b851d077a856e3af64c7ba079676117f84adb322bf143603004d896482a965",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 203,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7909,
+     "end": 7910
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "0686e9c50a46f5dedb74188d89a4b9180a31508342aab51d9e29e44284544d4a",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 204,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7910,
+     "end": 7936
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "8b0602e655e99dbe10f81da3f2f62936249d810f935aa8f84d130cc8baf2acc3",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 205,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7936,
+     "end": 7946
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "67d4bde288b49dfe8adb8fbf31f9c34fb0651e772e10be499b6ac83e916ab68e",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "19deb9357a4e059918aeda6ff5206230d87e46155926627b951323ecf64bceab",
+    "side": "new",
+    "old": {
+     "start": 182,
+     "count": 0
+    },
+    "new": {
+     "start": 206,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7946,
+     "end": 7947
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "e4ff71fa6d8217aca6aecb381ba435dde54aa798d22131f666f7c6385868f883",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5b8ffcba2c7ab14a182965589f8b236e4852df468f80297f60a52e4a68e0834b",
+    "side": "old",
+    "old": {
+     "start": 194,
+     "count": 1
+    },
+    "new": {
+     "start": 218,
+     "count": 0
+    },
+    "offsets": {
+     "start": 7429,
+     "end": 7483
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b49600cdd902f6ad095c55d78f777ae0a1c80aa91232847ee60f81be13b4ba0a",
+    "fileId": "3203bfcb9c606cf3d1aeb5cb26a40289537d8e17171d1fe4465c45134dfcc1f9",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5b8ffcba2c7ab14a182965589f8b236e4852df468f80297f60a52e4a68e0834b",
+    "side": "new",
+    "old": {
+     "start": 194,
+     "count": 0
+    },
+    "new": {
+     "start": 218,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8348,
+     "end": 8402
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "08504b9235511c048b5d4cd1c04fef6f332e2d169072b4c4cbd2000d05046a6a",
+  "reconciliation": {
+   "expected": [
+    "4f3a17e45de5fd16dc59488d7692253d3d7f784872ee7d11599e58c24dbc0fc8",
+    "e1f4a5725fbf9beae5ce8838990de875a12a414cae36ff2f7c8c82048aa5ee73",
+    "e61bd137525ee330f43333197c4dbf44afee303e251d241864b274f2468c8086",
+    "98deefeb509b861518f002e009f996313550904c4a01c0a41d89539f98094542",
+    "fec22396d7d66b26924fef3cfcad78cf535d91da616cac260e88fd2c8aa6ab5d",
+    "39b48aaf9fab5ded325274abe537a90438df89622412257da6677a4052ea86a3",
+    "312bcb9629341d52be3d60ea583527a2046685392e1385831c0c14e0bd6494d2",
+    "1fe64ed4363afa7ed29b0b5ff8778c5fcced0d5e3b4c2500eb151c0ba95711c2",
+    "6a085f0d18bd1df41016f7c1d07190767b6a7092539d49aec5f04008c83ed18d",
+    "f6021cb4fef3ea1d7677d0656c1d87832a4cde8155fbdd0486e1866d1a0688fc",
+    "7e64bdb096140eda05d045216ebf61318a973d89e477d14a92ca19969f6a8ff7",
+    "173bf4904c03b7a7c5b533c9e9e971c080638a4f7574b92e4f54f05e28e20223",
+    "bb098b06db80b5e80492c32c5769867f0fa200d38aacd4567b69e4bc43be8820",
+    "9b371d5121cc12576817c4613b2bf8bc34fafee0f534591d4b81f843c860f245",
+    "b118da8e795a909beb77b563869372750c26df0d0a6ae78c4e89670e02f596fd",
+    "432a4d65318efe34e59aea08a168bd40b839270466b7316e1daf1cee80a409f5",
+    "c2ed162c6c747eb1b823109489c07af2f4878edf88bd61fdef230fab91cfc919",
+    "aa169774df5c5bdb48ae9ce2d62132cf4d2842cce98c66d0a4e7ef3188292c00",
+    "3a05f8d9dfee44747b0e8d01f6ea4d673a2b83c3cd146cfd7f3d7061266cf067",
+    "493a639b0f4e0b4c2624a2a697180c57ab6f70cec947c1de17b9ca2d913fe0cc",
+    "f5b851d077a856e3af64c7ba079676117f84adb322bf143603004d896482a965",
+    "0686e9c50a46f5dedb74188d89a4b9180a31508342aab51d9e29e44284544d4a",
+    "8b0602e655e99dbe10f81da3f2f62936249d810f935aa8f84d130cc8baf2acc3",
+    "67d4bde288b49dfe8adb8fbf31f9c34fb0651e772e10be499b6ac83e916ab68e",
+    "e4ff71fa6d8217aca6aecb381ba435dde54aa798d22131f666f7c6385868f883",
+    "b49600cdd902f6ad095c55d78f777ae0a1c80aa91232847ee60f81be13b4ba0a"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "4f3a17e45de5fd16dc59488d7692253d3d7f784872ee7d11599e58c24dbc0fc8",
+    "e1f4a5725fbf9beae5ce8838990de875a12a414cae36ff2f7c8c82048aa5ee73",
+    "e61bd137525ee330f43333197c4dbf44afee303e251d241864b274f2468c8086",
+    "98deefeb509b861518f002e009f996313550904c4a01c0a41d89539f98094542",
+    "fec22396d7d66b26924fef3cfcad78cf535d91da616cac260e88fd2c8aa6ab5d",
+    "39b48aaf9fab5ded325274abe537a90438df89622412257da6677a4052ea86a3",
+    "312bcb9629341d52be3d60ea583527a2046685392e1385831c0c14e0bd6494d2",
+    "1fe64ed4363afa7ed29b0b5ff8778c5fcced0d5e3b4c2500eb151c0ba95711c2",
+    "6a085f0d18bd1df41016f7c1d07190767b6a7092539d49aec5f04008c83ed18d",
+    "f6021cb4fef3ea1d7677d0656c1d87832a4cde8155fbdd0486e1866d1a0688fc",
+    "7e64bdb096140eda05d045216ebf61318a973d89e477d14a92ca19969f6a8ff7",
+    "173bf4904c03b7a7c5b533c9e9e971c080638a4f7574b92e4f54f05e28e20223",
+    "bb098b06db80b5e80492c32c5769867f0fa200d38aacd4567b69e4bc43be8820",
+    "9b371d5121cc12576817c4613b2bf8bc34fafee0f534591d4b81f843c860f245",
+    "b118da8e795a909beb77b563869372750c26df0d0a6ae78c4e89670e02f596fd",
+    "432a4d65318efe34e59aea08a168bd40b839270466b7316e1daf1cee80a409f5",
+    "c2ed162c6c747eb1b823109489c07af2f4878edf88bd61fdef230fab91cfc919",
+    "aa169774df5c5bdb48ae9ce2d62132cf4d2842cce98c66d0a4e7ef3188292c00",
+    "3a05f8d9dfee44747b0e8d01f6ea4d673a2b83c3cd146cfd7f3d7061266cf067",
+    "493a639b0f4e0b4c2624a2a697180c57ab6f70cec947c1de17b9ca2d913fe0cc",
+    "f5b851d077a856e3af64c7ba079676117f84adb322bf143603004d896482a965",
+    "0686e9c50a46f5dedb74188d89a4b9180a31508342aab51d9e29e44284544d4a",
+    "8b0602e655e99dbe10f81da3f2f62936249d810f935aa8f84d130cc8baf2acc3",
+    "67d4bde288b49dfe8adb8fbf31f9c34fb0651e772e10be499b6ac83e916ab68e",
+    "e4ff71fa6d8217aca6aecb381ba435dde54aa798d22131f666f7c6385868f883",
+    "b49600cdd902f6ad095c55d78f777ae0a1c80aa91232847ee60f81be13b4ba0a"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "4f3a17e45de5fd16dc59488d7692253d3d7f784872ee7d11599e58c24dbc0fc8",
+      "e1f4a5725fbf9beae5ce8838990de875a12a414cae36ff2f7c8c82048aa5ee73",
+      "e61bd137525ee330f43333197c4dbf44afee303e251d241864b274f2468c8086",
+      "98deefeb509b861518f002e009f996313550904c4a01c0a41d89539f98094542",
+      "fec22396d7d66b26924fef3cfcad78cf535d91da616cac260e88fd2c8aa6ab5d",
+      "39b48aaf9fab5ded325274abe537a90438df89622412257da6677a4052ea86a3",
+      "312bcb9629341d52be3d60ea583527a2046685392e1385831c0c14e0bd6494d2",
+      "1fe64ed4363afa7ed29b0b5ff8778c5fcced0d5e3b4c2500eb151c0ba95711c2",
+      "6a085f0d18bd1df41016f7c1d07190767b6a7092539d49aec5f04008c83ed18d",
+      "f6021cb4fef3ea1d7677d0656c1d87832a4cde8155fbdd0486e1866d1a0688fc",
+      "7e64bdb096140eda05d045216ebf61318a973d89e477d14a92ca19969f6a8ff7",
+      "173bf4904c03b7a7c5b533c9e9e971c080638a4f7574b92e4f54f05e28e20223",
+      "bb098b06db80b5e80492c32c5769867f0fa200d38aacd4567b69e4bc43be8820",
+      "9b371d5121cc12576817c4613b2bf8bc34fafee0f534591d4b81f843c860f245",
+      "b118da8e795a909beb77b563869372750c26df0d0a6ae78c4e89670e02f596fd",
+      "432a4d65318efe34e59aea08a168bd40b839270466b7316e1daf1cee80a409f5",
+      "c2ed162c6c747eb1b823109489c07af2f4878edf88bd61fdef230fab91cfc919",
+      "aa169774df5c5bdb48ae9ce2d62132cf4d2842cce98c66d0a4e7ef3188292c00",
+      "3a05f8d9dfee44747b0e8d01f6ea4d673a2b83c3cd146cfd7f3d7061266cf067",
+      "493a639b0f4e0b4c2624a2a697180c57ab6f70cec947c1de17b9ca2d913fe0cc",
+      "f5b851d077a856e3af64c7ba079676117f84adb322bf143603004d896482a965",
+      "0686e9c50a46f5dedb74188d89a4b9180a31508342aab51d9e29e44284544d4a",
+      "8b0602e655e99dbe10f81da3f2f62936249d810f935aa8f84d130cc8baf2acc3",
+      "67d4bde288b49dfe8adb8fbf31f9c34fb0651e772e10be499b6ac83e916ab68e",
+      "e4ff71fa6d8217aca6aecb381ba435dde54aa798d22131f666f7c6385868f883",
+      "b49600cdd902f6ad095c55d78f777ae0a1c80aa91232847ee60f81be13b4ba0a"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "0d1b7d910f7c742c7cbc08aee2a4c50818adc70eaaf8d5c7e03d4d0a64d0efb7",
+   "attemptId": "b0b1e109-4447-49ed-956a-35a0ea099ea1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/b0b1e109-4447-49ed-956a-35a0ea099ea1/row.json",
+    "sha256": "8f3e2a4cc04d1c5e306f377f41bfb2a5788b473202e2d529756fb321ab10ea92"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "dc2cb1a2c9103c9dc86db6a051e1e41a037af9401e292f2a9b23cc9809268a97",
+   "attemptId": "8fc61627-1b56-4529-987a-d8a2c967cd48",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/8fc61627-1b56-4529-987a-d8a2c967cd48/row.json",
+    "sha256": "1cd6f3f097f139a2918a10060b9b4421f9787ca38d9d4835297e89416649c90d"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "0669ee65a36826c03d0ebcc1d4c744fad742fef92b96e7498591c85a5bcf69a2",
+   "attemptId": "84b7ce25-6859-4180-89cf-c2904b269a6f",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/84b7ce25-6859-4180-89cf-c2904b269a6f/row.json",
+    "sha256": "354c9811a57433dc89615d3ee9be2b54933ab7b57ffdb6f4a18eaa4b3dfbb7cc"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1d2ce0ca02e31e3e21a6368fa56bdb5853d60e53cda61cb5c309cd91a4b78415",
+   "attemptId": "4fe1c89f-c53e-4782-8ed8-478794267e5d",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/4fe1c89f-c53e-4782-8ed8-478794267e5d/row.json",
+    "sha256": "1dd29d3325a1aabcd1427b600f19cf50b282ecfa7128b9599b2909bf439b18c7"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "27b2b4fe9693b90526dade6114dd47918e9fc62714ab442195523ddffd9e77fc",
+   "attemptId": "cebf672b-9732-4f5c-a947-29160c98e1ee",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/cebf672b-9732-4f5c-a947-29160c98e1ee/row.json",
+    "sha256": "19f12ea5a8dfefc6f06e11cb99b1e8442465117c6ca162573ad788ec7c39716b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "63822cd012fd19cc960bd37005f1ae02854dbba4d3fe1403ac649ecf0e54a73f",
+   "attemptId": "12c9f644-080e-4d7e-b290-fa77f0ff21b5",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/12c9f644-080e-4d7e-b290-fa77f0ff21b5/row.json",
+    "sha256": "5a12d89a0b82a4930624b1e65a9e10a79de3da668180f0292a72d68ce644db53"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "ecef3e7c70f49db74f841e41256df6c575c472714b415c5ef377a88b01387929",
+   "attemptId": "2ad69455-d507-4a68-8d27-8b5d58a5680d",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/2ad69455-d507-4a68-8d27-8b5d58a5680d/row.json",
+    "sha256": "2410e9eb2e12a8a4696b60507dbb4827824a91e050ebb7ae75f79f5ce10a6910"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "7277f77f5f62d8b490c0f18065b90326a2ca6cd7d3fdb9a975876d1f3967d222",
+   "attemptId": "3e23bbe2-3e5a-4f23-bbf1-72b69dc40737",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/3e23bbe2-3e5a-4f23-bbf1-72b69dc40737/row.json",
+    "sha256": "03e0a33e57c285b300546eb6ffc782d247009a5e3c8a1a5db148ef6a8f61fb72"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a5c1c77cbdba2f8b400ecdde0daedca6cc37ecc71cc084933b7ad71b8806ba9a",
+   "attemptId": "e777315b-f847-4823-a174-b19c0ffd94d5",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/e777315b-f847-4823-a174-b19c0ffd94d5/row.json",
+    "sha256": "8707d9fef240fcd351a54647ee3c3355f5787e6846bb499740800aa17e84ba40"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "7fdfbd8e62db59e78ff1cc88999253c3653ef82128d01ff09d7ee290800ffeb1",
+   "attemptId": "d28aa043-f263-4d8f-ad5a-216354ae8473",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/d28aa043-f263-4d8f-ad5a-216354ae8473/row.json",
+    "sha256": "619569c4deb0839690f376560cd37bb5618fbcb82c0ee6f31f53835aef56ad0c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "0efe366fbc292ee10d84eba4d0bfef04ad75f178457923a46dc239ada036f680",
+   "attemptId": "d9520e6a-74ad-4974-9397-cecd216f9278",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/d9520e6a-74ad-4974-9397-cecd216f9278/row.json",
+    "sha256": "a50a2dd4a195d3c3acdf74750013d366fc13cac5be50108af2408d15169dc669"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "ddf4bafc1fe1c78cc7e31ec27cc71ae24ee1b91be15689b30b8dc5a994a02d82",
+   "attemptId": "6adff3d6-bf53-4a35-815f-5b87f66181a8",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/6adff3d6-bf53-4a35-815f-5b87f66181a8/row.json",
+    "sha256": "a5fb4da144585009625bb596134a15db657bca4fca857c7d2510b37c894ac3a6"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1727132b692b1f92808e4d30fc11c1022b02e5d029aea56371e0105537cd52c3",
+   "attemptId": "e3aa012c-3c2f-4234-a064-9570d672dca1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/e3aa012c-3c2f-4234-a064-9570d672dca1/row.json",
+    "sha256": "c24023659c54905703f7843b4cc441cd12d6e51d286a2b8eb9e33d23e6ddab68"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "e2ff3d5f75ac9de8fcad7e67c6cb3111ea1bff3ea4fbf35fbbc63f77c695f0da",
+   "attemptId": "0ce3ba07-87f7-4aaa-bf17-beb2b4bed06a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/0ce3ba07-87f7-4aaa-bf17-beb2b4bed06a/row.json",
+    "sha256": "902c35c67356e0d8f6a1d1ed09545183130a78dc96500d1022d13ac03c6d504e"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "08b642e14bcc71adfd07692288250108981d7f4bed742dd944a88270cc9b715c",
+   "attemptId": "5c5699fe-6643-468c-8d69-e509b4e13657",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/5c5699fe-6643-468c-8d69-e509b4e13657/row.json",
+    "sha256": "43d456b19e96810db512ce7f157013c32e52d0adad2b561ea454ccc4fe80a264"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "2f9bf48656faddc62b38f948a4210dc68d65fa8bc73ae7e871fce763f4bbfdc1",
+   "attemptId": "95fc4010-9f46-4e13-aa59-0365c2704600",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/95fc4010-9f46-4e13-aa59-0365c2704600/row.json",
+    "sha256": "5dde4b5f4037b7de9aec1faef7d528647c0d205da5a76292d0df9f3832b0dc2d"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "2eebf74cea0168bcad8107aac9ce1737c0ccdf7166746b4bba32435ec5b1e6e9",
+   "attemptId": "c59cd61f-43a1-402b-9c8a-83941e51895d",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/c59cd61f-43a1-402b-9c8a-83941e51895d/row.json",
+    "sha256": "abe2ad8e2ba18e6e2e0f60dd9a880fa88ce6f512ee63e404190e47d7307b3e42"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "0ff3b32e1540f04b7d5b72d25879f83fee3a436f1e3158c15740864d10b5c795",
+   "attemptId": "90e13cd6-7315-42c8-b578-6337b44e2b22",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/90e13cd6-7315-42c8-b578-6337b44e2b22/row.json",
+    "sha256": "500f346c9d09519132eb444b8b968c9edb77ea9def6e289e3e8c752bf8846113"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "dc25cf034ba1360784f65648c1935e4563a23d44fae53c02ea01adeae04926de",
+   "attemptId": "6cdee63d-0fb1-4c21-9067-acf4faf78212",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/6cdee63d-0fb1-4c21-9067-acf4faf78212/row.json",
+    "sha256": "ad9bc3ed3e90a14bebe7452aa82273a34127d71acbc7f02ed34cbfd8fdd87fae"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a952694b851d96b6046c47884749339acd06e11565dabea2c96b5a4fcdf5b051",
+   "attemptId": "3ce1b8ce-1794-411f-8d06-340689ea4abf",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/3ce1b8ce-1794-411f-8d06-340689ea4abf/row.json",
+    "sha256": "426f35b9bd13864735e16a0f8232a7b99f968b1a91086306a60f575526be4923"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1e99a4b849be924a8c044a3f00fb314816cea7ba0d54dd68c0c48cbbf9393ac1",
+   "attemptId": "386b17b6-804b-4166-a418-c4074de164ad",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/386b17b6-804b-4166-a418-c4074de164ad/row.json",
+    "sha256": "3c4f3dec54a740230dde2d52e58c04fcfea384c570a2d1335f38c34fe4a1472c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a52905cb2a3a37734554323d7660b51cda9937e4c84d8a684c5c35d6a616c3e1",
+   "attemptId": "debd910c-7a64-4318-8ebb-a28eebd40386",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/debd910c-7a64-4318-8ebb-a28eebd40386/row.json",
+    "sha256": "4423c6e76f6a1f39a3d9f7579a219f4c16d194fb3f01251253dc24436d7a0087"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "4d7d061efc7e7b58d8508ca1f3e27cbf9d83e5064538ec7f3ba80c390f23e110",
+   "attemptId": "4cd8ea04-2040-4e07-a46e-d9b3063f6445",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/4cd8ea04-2040-4e07-a46e-d9b3063f6445/row.json",
+    "sha256": "0fb3a4d3e4073e816782da7c1d45379c6de708e8f9d26a4e6ed4568ea8c6db5c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "6c2cccb11d89db6701551a516fc842208177da2e7f71631d4b1f426667f61eb8",
+   "attemptId": "9d86e877-e421-437c-8fac-0d754355e3ba",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/9d86e877-e421-437c-8fac-0d754355e3ba/row.json",
+    "sha256": "0e47f20cabe27b89fb3f0b9aea7a17dd428afb18a7b4f11e9456e84178b85085"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "dc5c6c6b34384b947719a344aec1ee0d67fea63836f5e661b2123e6982528bd1",
+   "attemptId": "eec2dfee-b5bc-4e2e-b57b-647895ecf765",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/eec2dfee-b5bc-4e2e-b57b-647895ecf765/row.json",
+    "sha256": "b20132f29e4996468f06857bbc77d1014b3085548a4cbead5e05316b245c3af8"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "7a49b5020b8ac6d6a554030d288813120579e3c0aaf281a37e7b2a84ee208f09",
+   "attemptId": "7f53b80a-9ff2-44b7-9480-825a018d582a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__137/run-yYECMx/attempts/7f53b80a-9ff2-44b7-9480-825a018d582a/row.json",
+    "sha256": "83cc340d8e2adf35f95d4584e04ee0b6db58b9fdc4c9b3a0d04b79c637a5c338"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 4f3a17e45de5)",
+   "editIds": [
+    "4f3a17e45de5fd16dc59488d7692253d3d7f784872ee7d11599e58c24dbc0fc8"
+   ],
+   "lines": [
+    183,
+    183
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit e1f4a5725fbf)",
+   "editIds": [
+    "e1f4a5725fbf9beae5ce8838990de875a12a414cae36ff2f7c8c82048aa5ee73"
+   ],
+   "lines": [
+    184,
+    184
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit e61bd137525e)",
+   "editIds": [
+    "e61bd137525ee330f43333197c4dbf44afee303e251d241864b274f2468c8086"
+   ],
+   "lines": [
+    185,
+    185
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 98deefeb509b)",
+   "editIds": [
+    "98deefeb509b861518f002e009f996313550904c4a01c0a41d89539f98094542"
+   ],
+   "lines": [
+    186,
+    186
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit fec22396d7d6)",
+   "editIds": [
+    "fec22396d7d66b26924fef3cfcad78cf535d91da616cac260e88fd2c8aa6ab5d"
+   ],
+   "lines": [
+    187,
+    187
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 39b48aaf9fab)",
+   "editIds": [
+    "39b48aaf9fab5ded325274abe537a90438df89622412257da6677a4052ea86a3"
+   ],
+   "lines": [
+    188,
+    188
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 312bcb962934)",
+   "editIds": [
+    "312bcb9629341d52be3d60ea583527a2046685392e1385831c0c14e0bd6494d2"
+   ],
+   "lines": [
+    189,
+    189
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 1fe64ed4363a)",
+   "editIds": [
+    "1fe64ed4363afa7ed29b0b5ff8778c5fcced0d5e3b4c2500eb151c0ba95711c2"
+   ],
+   "lines": [
+    190,
+    190
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 6a085f0d18bd)",
+   "editIds": [
+    "6a085f0d18bd1df41016f7c1d07190767b6a7092539d49aec5f04008c83ed18d"
+   ],
+   "lines": [
+    191,
+    191
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit f6021cb4fef3)",
+   "editIds": [
+    "f6021cb4fef3ea1d7677d0656c1d87832a4cde8155fbdd0486e1866d1a0688fc"
+   ],
+   "lines": [
+    192,
+    192
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 7e64bdb09614)",
+   "editIds": [
+    "7e64bdb096140eda05d045216ebf61318a973d89e477d14a92ca19969f6a8ff7"
+   ],
+   "lines": [
+    193,
+    193
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 173bf4904c03)",
+   "editIds": [
+    "173bf4904c03b7a7c5b533c9e9e971c080638a4f7574b92e4f54f05e28e20223"
+   ],
+   "lines": [
+    194,
+    194
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit bb098b06db80)",
+   "editIds": [
+    "bb098b06db80b5e80492c32c5769867f0fa200d38aacd4567b69e4bc43be8820"
+   ],
+   "lines": [
+    195,
+    195
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 9b371d5121cc)",
+   "editIds": [
+    "9b371d5121cc12576817c4613b2bf8bc34fafee0f534591d4b81f843c860f245"
+   ],
+   "lines": [
+    196,
+    196
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit b118da8e795a)",
+   "editIds": [
+    "b118da8e795a909beb77b563869372750c26df0d0a6ae78c4e89670e02f596fd"
+   ],
+   "lines": [
+    197,
+    197
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 432a4d65318e)",
+   "editIds": [
+    "432a4d65318efe34e59aea08a168bd40b839270466b7316e1daf1cee80a409f5"
+   ],
+   "lines": [
+    198,
+    198
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit c2ed162c6c74)",
+   "editIds": [
+    "c2ed162c6c747eb1b823109489c07af2f4878edf88bd61fdef230fab91cfc919"
+   ],
+   "lines": [
+    199,
+    199
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit aa169774df5c)",
+   "editIds": [
+    "aa169774df5c5bdb48ae9ce2d62132cf4d2842cce98c66d0a4e7ef3188292c00"
+   ],
+   "lines": [
+    200,
+    200
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 3a05f8d9dfee)",
+   "editIds": [
+    "3a05f8d9dfee44747b0e8d01f6ea4d673a2b83c3cd146cfd7f3d7061266cf067"
+   ],
+   "lines": [
+    201,
+    201
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 493a639b0f4e)",
+   "editIds": [
+    "493a639b0f4e0b4c2624a2a697180c57ab6f70cec947c1de17b9ca2d913fe0cc"
+   ],
+   "lines": [
+    202,
+    202
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit f5b851d077a8)",
+   "editIds": [
+    "f5b851d077a856e3af64c7ba079676117f84adb322bf143603004d896482a965"
+   ],
+   "lines": [
+    203,
+    203
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 0686e9c50a46)",
+   "editIds": [
+    "0686e9c50a46f5dedb74188d89a4b9180a31508342aab51d9e29e44284544d4a"
+   ],
+   "lines": [
+    204,
+    204
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 8b0602e655e9)",
+   "editIds": [
+    "8b0602e655e99dbe10f81da3f2f62936249d810f935aa8f84d130cc8baf2acc3"
+   ],
+   "lines": [
+    205,
+    205
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 67d4bde288b4)",
+   "editIds": [
+    "67d4bde288b49dfe8adb8fbf31f9c34fb0651e772e10be499b6ac83e916ab68e"
+   ],
+   "lines": [
+    206,
+    206
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit e4ff71fa6d82)",
+   "editIds": [
+    "e4ff71fa6d8217aca6aecb381ba435dde54aa798d22131f666f7c6385868f883"
+   ],
+   "lines": [
+    194,
+    194
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit b49600cdd902)",
+   "editIds": [
+    "b49600cdd902f6ad095c55d78f777ae0a1c80aa91232847ee60f81be13b4ba0a"
+   ],
+   "lines": [
+    218,
+    218
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "0d1b7d910f7c742c7cbc08aee2a4c50818adc70eaaf8d5c7e03d4d0a64d0efb7",
+   "dc2cb1a2c9103c9dc86db6a051e1e41a037af9401e292f2a9b23cc9809268a97",
+   "0669ee65a36826c03d0ebcc1d4c744fad742fef92b96e7498591c85a5bcf69a2",
+   "1d2ce0ca02e31e3e21a6368fa56bdb5853d60e53cda61cb5c309cd91a4b78415",
+   "27b2b4fe9693b90526dade6114dd47918e9fc62714ab442195523ddffd9e77fc",
+   "63822cd012fd19cc960bd37005f1ae02854dbba4d3fe1403ac649ecf0e54a73f",
+   "ecef3e7c70f49db74f841e41256df6c575c472714b415c5ef377a88b01387929",
+   "7277f77f5f62d8b490c0f18065b90326a2ca6cd7d3fdb9a975876d1f3967d222",
+   "a5c1c77cbdba2f8b400ecdde0daedca6cc37ecc71cc084933b7ad71b8806ba9a",
+   "7fdfbd8e62db59e78ff1cc88999253c3653ef82128d01ff09d7ee290800ffeb1",
+   "0efe366fbc292ee10d84eba4d0bfef04ad75f178457923a46dc239ada036f680",
+   "ddf4bafc1fe1c78cc7e31ec27cc71ae24ee1b91be15689b30b8dc5a994a02d82",
+   "1727132b692b1f92808e4d30fc11c1022b02e5d029aea56371e0105537cd52c3",
+   "e2ff3d5f75ac9de8fcad7e67c6cb3111ea1bff3ea4fbf35fbbc63f77c695f0da",
+   "08b642e14bcc71adfd07692288250108981d7f4bed742dd944a88270cc9b715c",
+   "2f9bf48656faddc62b38f948a4210dc68d65fa8bc73ae7e871fce763f4bbfdc1",
+   "2eebf74cea0168bcad8107aac9ce1737c0ccdf7166746b4bba32435ec5b1e6e9",
+   "0ff3b32e1540f04b7d5b72d25879f83fee3a436f1e3158c15740864d10b5c795",
+   "dc25cf034ba1360784f65648c1935e4563a23d44fae53c02ea01adeae04926de",
+   "a952694b851d96b6046c47884749339acd06e11565dabea2c96b5a4fcdf5b051",
+   "1e99a4b849be924a8c044a3f00fb314816cea7ba0d54dd68c0c48cbbf9393ac1",
+   "a52905cb2a3a37734554323d7660b51cda9937e4c84d8a684c5c35d6a616c3e1",
+   "4d7d061efc7e7b58d8508ca1f3e27cbf9d83e5064538ec7f3ba80c390f23e110",
+   "6c2cccb11d89db6701551a516fc842208177da2e7f71631d4b1f426667f61eb8",
+   "dc5c6c6b34384b947719a344aec1ee0d67fea63836f5e661b2123e6982528bd1",
+   "7a49b5020b8ac6d6a554030d288813120579e3c0aaf281a37e7b2a84ee208f09"
+  ],
+  "terminal": [
+   "0d1b7d910f7c742c7cbc08aee2a4c50818adc70eaaf8d5c7e03d4d0a64d0efb7",
+   "dc2cb1a2c9103c9dc86db6a051e1e41a037af9401e292f2a9b23cc9809268a97",
+   "0669ee65a36826c03d0ebcc1d4c744fad742fef92b96e7498591c85a5bcf69a2",
+   "1d2ce0ca02e31e3e21a6368fa56bdb5853d60e53cda61cb5c309cd91a4b78415",
+   "27b2b4fe9693b90526dade6114dd47918e9fc62714ab442195523ddffd9e77fc",
+   "63822cd012fd19cc960bd37005f1ae02854dbba4d3fe1403ac649ecf0e54a73f",
+   "ecef3e7c70f49db74f841e41256df6c575c472714b415c5ef377a88b01387929",
+   "7277f77f5f62d8b490c0f18065b90326a2ca6cd7d3fdb9a975876d1f3967d222",
+   "a5c1c77cbdba2f8b400ecdde0daedca6cc37ecc71cc084933b7ad71b8806ba9a",
+   "7fdfbd8e62db59e78ff1cc88999253c3653ef82128d01ff09d7ee290800ffeb1",
+   "0efe366fbc292ee10d84eba4d0bfef04ad75f178457923a46dc239ada036f680",
+   "ddf4bafc1fe1c78cc7e31ec27cc71ae24ee1b91be15689b30b8dc5a994a02d82",
+   "1727132b692b1f92808e4d30fc11c1022b02e5d029aea56371e0105537cd52c3",
+   "e2ff3d5f75ac9de8fcad7e67c6cb3111ea1bff3ea4fbf35fbbc63f77c695f0da",
+   "08b642e14bcc71adfd07692288250108981d7f4bed742dd944a88270cc9b715c",
+   "2f9bf48656faddc62b38f948a4210dc68d65fa8bc73ae7e871fce763f4bbfdc1",
+   "2eebf74cea0168bcad8107aac9ce1737c0ccdf7166746b4bba32435ec5b1e6e9",
+   "0ff3b32e1540f04b7d5b72d25879f83fee3a436f1e3158c15740864d10b5c795",
+   "dc25cf034ba1360784f65648c1935e4563a23d44fae53c02ea01adeae04926de",
+   "a952694b851d96b6046c47884749339acd06e11565dabea2c96b5a4fcdf5b051",
+   "1e99a4b849be924a8c044a3f00fb314816cea7ba0d54dd68c0c48cbbf9393ac1",
+   "a52905cb2a3a37734554323d7660b51cda9937e4c84d8a684c5c35d6a616c3e1",
+   "4d7d061efc7e7b58d8508ca1f3e27cbf9d83e5064538ec7f3ba80c390f23e110",
+   "6c2cccb11d89db6701551a516fc842208177da2e7f71631d4b1f426667f61eb8",
+   "dc5c6c6b34384b947719a344aec1ee0d67fea63836f5e661b2123e6982528bd1",
+   "7a49b5020b8ac6d6a554030d288813120579e3c0aaf281a37e7b2a84ee208f09"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

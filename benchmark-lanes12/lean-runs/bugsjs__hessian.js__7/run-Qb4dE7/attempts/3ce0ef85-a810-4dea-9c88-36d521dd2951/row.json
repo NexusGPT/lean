@@ -1,0 +1,20 @@
+{
+ "file": "lib/v1/encoder.js",
+ "unit": "(edit fad15d9e330a)",
+ "editIds": [
+  "fad15d9e330af3357518d24a4f4b6e42d096086a7d4e90d238949c5e6eb0debd"
+ ],
+ "lines": [
+  330,
+  330
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

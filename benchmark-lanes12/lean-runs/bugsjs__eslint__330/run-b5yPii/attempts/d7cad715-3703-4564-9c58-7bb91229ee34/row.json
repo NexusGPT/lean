@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/semi-spacing.js",
+ "unit": "(edit e4558f70ee91)",
+ "editIds": [
+  "e4558f70ee91a7adb170b7db95f266357fed7a9ad80399d5aaf1b8bed99444a5"
+ ],
+ "lines": [
+  65,
+  65
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/getter-return.js",
+ "unit": "(edit 4cc7e8cc7d77)",
+ "editIds": [
+  "4cc7e8cc7d778fe7949cf67007b59bc7b570a15cf6779faa65815e23fb826120"
+ ],
+ "lines": [
+  17,
+  17
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

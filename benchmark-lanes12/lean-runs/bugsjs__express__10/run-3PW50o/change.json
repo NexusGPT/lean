@@ -1,0 +1,656 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "8b6dc6ceec1b36e74ee9c6d362aa04e46237c227",
+ "head": "40144c0b5af0ff2b19ec40fde4fc83c339f0a3c7",
+ "files": [
+  {
+   "id": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "oldPath": "lib/router/index.js",
+   "newPath": "lib/router/index.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "d2ed86e0bc8205035dbad34b860f2c0fda40eff4",
+   "newOid": "917c6002c8bbb888a6ffdb51136913e80b665718",
+   "status": "M",
+   "edits": [
+    "4c5b51fb3754f4d0a4596443d5616e1e4119b5b0c0295b2e1223006d85367876",
+    "c1b7e272cf09fbcc06b4edf4918b4697416b17329df42bdd8f36b6361e1d2e93",
+    "50ecfc0b07782c58ad583242a772043bef9d11c9a5fa0e7727ab30fb7a693c38",
+    "9ffac794405a609bdc429c869af9675a04b8799353f9d28585ce073abf42ce30",
+    "853b23a0b31b3745863db1fbaecc9f68c3ea10c686ec466276000de04f9422ca",
+    "bb49bbbccc904440eb4e33179dbdf8c4cb45afcf302c7611757ad607c1ec6a8a",
+    "1c506c4ab59ae86a4a0530de5eb9aa9d6f88921e912000239d9bf62810987e35",
+    "0ff989e634760da60bf9aa1a1c9d5fa512b162cd068dd2a59a8b50076c26ecd5",
+    "1ebffd95ce7d03401266f779f88a8dfe89e8dc0d83cd47c48ceb311cbd6e4a8b",
+    "13e7fc2b5cdae4ea56eea34af6a03eac0d4b2f46fa6674c769f1965a19351ebb",
+    "c339ac911196f9b684136bd804ae8dfbc9c5c09aa65810550d7882b0b242231a"
+   ],
+   "hunks": [
+    {
+     "id": "d79d629c5901ba4fee7a89d52d33ae7c5ef1a4410cf845b98fe5c824832869f8",
+     "old": {
+      "start": 283,
+      "count": 5
+     },
+     "new": {
+      "start": 282,
+      "count": 0
+     }
+    },
+    {
+     "id": "cd1fd44ca4c2e4436f43c8ff77ef1ecffda7e25ed8a23aa0402d0a7a1f4170b0",
+     "old": {
+      "start": 288,
+      "count": 0
+     },
+     "new": {
+      "start": 284,
+      "count": 6
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "800447a04e4959f6a8156b4d454b9cfebd03d590677cb5b2389715b5056893ff",
+   "newHash": "d10d25c9d9b865b48329f2339392aad5d44a9469138bb02630c4080be167bdf7",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "appendMethods",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 509,
+      "end": 516,
+      "offset": 11882,
+      "stop": 12074,
+      "id": "07c9bca0c9da4135a3203cf0177f05dcad9682f6fdccb94b602d79d2bb0040ed"
+     },
+     {
+      "name": "getPathname",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 519,
+      "end": 525,
+      "offset": 12103,
+      "stop": 12219,
+      "id": "565201a45674e1f3ef5dd41a34276364ae31a1fa59f700f62bafe858ca679216"
+     },
+     {
+      "name": "getProtohost",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 528,
+      "end": 542,
+      "offset": 12258,
+      "stop": 12650,
+      "id": "af5a0f66906f88b6282b39320d076aa00c12433b55ef18a659e2c85b7a8e4b8c"
+     },
+     {
+      "name": "gettype",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 545,
+      "end": 555,
+      "offset": 12682,
+      "stop": 12879,
+      "id": "f87afe123d02b7b273ebb7c3371b52eba3efb92e20811af466e5c13a109e89fb"
+     },
+     {
+      "name": "matchLayer",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 565,
+      "end": 571,
+      "offset": 12979,
+      "stop": 13091,
+      "id": "68abca77b3cba6401475499bc4c028e953dbd84ffcf682dd0cbea06763e6f3cc"
+     },
+     {
+      "name": "mergeParams",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 574,
+      "end": 610,
+      "offset": 13128,
+      "stop": 13786,
+      "id": "00e95821048feb8233393ca68f82a10f93d3401aef47f5a94af8e948b91bcece"
+     },
+     {
+      "name": "restore",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 613,
+      "end": 630,
+      "offset": 13824,
+      "stop": 14227,
+      "id": "8aff4f93398d063c373825c4904536466869d050dca2f38837e20d4d92ef8a10"
+     },
+     {
+      "name": "sendOptionsResponse",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 633,
+      "end": 641,
+      "offset": 14257,
+      "stop": 14436,
+      "id": "42dc948a3fcac563780f15d76f20b70234b44926e0a58530b1a51b8ecbd76096"
+     },
+     {
+      "name": "wrap",
+      "side": "old",
+      "file": "lib/router/index.js",
+      "start": 644,
+      "end": 655,
+      "offset": 14457,
+      "stop": 14711,
+      "id": "9be79c6b8048243863f2f4af87038339b7f42723475248bd13c7d17c901530d2"
+     }
+    ],
+    "new": [
+     {
+      "name": "appendMethods",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 510,
+      "end": 517,
+      "offset": 11936,
+      "stop": 12128,
+      "id": "5d09bc3b4c0a005fb8bda89a3fe0c9eee8e575f77112decfcfff7cef62776b2e"
+     },
+     {
+      "name": "getPathname",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 520,
+      "end": 526,
+      "offset": 12157,
+      "stop": 12273,
+      "id": "190771a7ebe10e14663307701d74a96b02f3f5fa7d524bb5468189d8a5a4f31c"
+     },
+     {
+      "name": "getProtohost",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 529,
+      "end": 543,
+      "offset": 12312,
+      "stop": 12704,
+      "id": "7e925e1d00d46e816077edeb95d69adb0e73e400955388e766dd7c7baf80f23a"
+     },
+     {
+      "name": "gettype",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 546,
+      "end": 556,
+      "offset": 12736,
+      "stop": 12933,
+      "id": "688fd380efb015e08f2081236124209b78c0cf2783849bbd2a5b2233e09bd259"
+     },
+     {
+      "name": "matchLayer",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 566,
+      "end": 572,
+      "offset": 13033,
+      "stop": 13145,
+      "id": "f0ba670cabe1a1ad88272ed1b36aae1381d0029a943fe79fa5d9aec4594ff03b"
+     },
+     {
+      "name": "mergeParams",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 575,
+      "end": 611,
+      "offset": 13182,
+      "stop": 13840,
+      "id": "674414c9c9af48454e152fdc4e2510a4da59186659f4c23f616b2a4eb94a76db"
+     },
+     {
+      "name": "restore",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 614,
+      "end": 631,
+      "offset": 13878,
+      "stop": 14281,
+      "id": "9abdd13d260e3f8f94e8f00608271a11acbb52c893bf0fa4c21e2189e4253fea"
+     },
+     {
+      "name": "sendOptionsResponse",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 634,
+      "end": 642,
+      "offset": 14311,
+      "stop": 14490,
+      "id": "dd13db16e42ff78eb28ef0188fd7f667bf70ec21e08294a0bffed5503df92f69"
+     },
+     {
+      "name": "wrap",
+      "side": "new",
+      "file": "lib/router/index.js",
+      "start": 645,
+      "end": 656,
+      "offset": 14511,
+      "stop": 14765,
+      "id": "6a5e60b1094b0370e20edbeb1f6209affadc309eba32a93b0ae6275950094acf"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "4c5b51fb3754f4d0a4596443d5616e1e4119b5b0c0295b2e1223006d85367876",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "d79d629c5901ba4fee7a89d52d33ae7c5ef1a4410cf845b98fe5c824832869f8",
+   "side": "old",
+   "old": {
+    "start": 283,
+    "count": 1
+   },
+   "new": {
+    "start": 282,
+    "count": 0
+   },
+   "offsets": {
+    "start": 6721,
+    "end": 6757
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "c1b7e272cf09fbcc06b4edf4918b4697416b17329df42bdd8f36b6361e1d2e93",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "d79d629c5901ba4fee7a89d52d33ae7c5ef1a4410cf845b98fe5c824832869f8",
+   "side": "old",
+   "old": {
+    "start": 284,
+    "count": 1
+   },
+   "new": {
+    "start": 282,
+    "count": 0
+   },
+   "offsets": {
+    "start": 6757,
+    "end": 6819
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "50ecfc0b07782c58ad583242a772043bef9d11c9a5fa0e7727ab30fb7a693c38",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "d79d629c5901ba4fee7a89d52d33ae7c5ef1a4410cf845b98fe5c824832869f8",
+   "side": "old",
+   "old": {
+    "start": 285,
+    "count": 1
+   },
+   "new": {
+    "start": 282,
+    "count": 0
+   },
+   "offsets": {
+    "start": 6819,
+    "end": 6820
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "9ffac794405a609bdc429c869af9675a04b8799353f9d28585ce073abf42ce30",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "d79d629c5901ba4fee7a89d52d33ae7c5ef1a4410cf845b98fe5c824832869f8",
+   "side": "old",
+   "old": {
+    "start": 286,
+    "count": 1
+   },
+   "new": {
+    "start": 282,
+    "count": 0
+   },
+   "offsets": {
+    "start": 6820,
+    "end": 6880
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "853b23a0b31b3745863db1fbaecc9f68c3ea10c686ec466276000de04f9422ca",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "d79d629c5901ba4fee7a89d52d33ae7c5ef1a4410cf845b98fe5c824832869f8",
+   "side": "old",
+   "old": {
+    "start": 287,
+    "count": 1
+   },
+   "new": {
+    "start": 282,
+    "count": 0
+   },
+   "offsets": {
+    "start": 6880,
+    "end": 6944
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "bb49bbbccc904440eb4e33179dbdf8c4cb45afcf302c7611757ad607c1ec6a8a",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "cd1fd44ca4c2e4436f43c8ff77ef1ecffda7e25ed8a23aa0402d0a7a1f4170b0",
+   "side": "new",
+   "old": {
+    "start": 288,
+    "count": 0
+   },
+   "new": {
+    "start": 284,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6755,
+    "end": 6805
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "1c506c4ab59ae86a4a0530de5eb9aa9d6f88921e912000239d9bf62810987e35",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "cd1fd44ca4c2e4436f43c8ff77ef1ecffda7e25ed8a23aa0402d0a7a1f4170b0",
+   "side": "new",
+   "old": {
+    "start": 288,
+    "count": 0
+   },
+   "new": {
+    "start": 285,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6805,
+    "end": 6842
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "0ff989e634760da60bf9aa1a1c9d5fa512b162cd068dd2a59a8b50076c26ecd5",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "cd1fd44ca4c2e4436f43c8ff77ef1ecffda7e25ed8a23aa0402d0a7a1f4170b0",
+   "side": "new",
+   "old": {
+    "start": 288,
+    "count": 0
+   },
+   "new": {
+    "start": 286,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6842,
+    "end": 6905
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "1ebffd95ce7d03401266f779f88a8dfe89e8dc0d83cd47c48ceb311cbd6e4a8b",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "cd1fd44ca4c2e4436f43c8ff77ef1ecffda7e25ed8a23aa0402d0a7a1f4170b0",
+   "side": "new",
+   "old": {
+    "start": 288,
+    "count": 0
+   },
+   "new": {
+    "start": 287,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6905,
+    "end": 6906
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "13e7fc2b5cdae4ea56eea34af6a03eac0d4b2f46fa6674c769f1965a19351ebb",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "cd1fd44ca4c2e4436f43c8ff77ef1ecffda7e25ed8a23aa0402d0a7a1f4170b0",
+   "side": "new",
+   "old": {
+    "start": 288,
+    "count": 0
+   },
+   "new": {
+    "start": 288,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6906,
+    "end": 6967
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "c339ac911196f9b684136bd804ae8dfbc9c5c09aa65810550d7882b0b242231a",
+   "fileId": "996e0ff53c88dcc958090f1a686f415b44790447d8cab16a3f5e88ba22a6324a",
+   "file": "lib/router/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "cd1fd44ca4c2e4436f43c8ff77ef1ecffda7e25ed8a23aa0402d0a7a1f4170b0",
+   "side": "new",
+   "old": {
+    "start": 288,
+    "count": 0
+   },
+   "new": {
+    "start": 289,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6967,
+    "end": 7032
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "c9f115d5d3b50e4ea9f141efca970da2cf4c211b5e37fcd9320f06bfa4a93ea0",
+ "reconciliation": {
+  "expected": [
+   "4c5b51fb3754f4d0a4596443d5616e1e4119b5b0c0295b2e1223006d85367876",
+   "c1b7e272cf09fbcc06b4edf4918b4697416b17329df42bdd8f36b6361e1d2e93",
+   "50ecfc0b07782c58ad583242a772043bef9d11c9a5fa0e7727ab30fb7a693c38",
+   "9ffac794405a609bdc429c869af9675a04b8799353f9d28585ce073abf42ce30",
+   "853b23a0b31b3745863db1fbaecc9f68c3ea10c686ec466276000de04f9422ca",
+   "bb49bbbccc904440eb4e33179dbdf8c4cb45afcf302c7611757ad607c1ec6a8a",
+   "1c506c4ab59ae86a4a0530de5eb9aa9d6f88921e912000239d9bf62810987e35",
+   "0ff989e634760da60bf9aa1a1c9d5fa512b162cd068dd2a59a8b50076c26ecd5",
+   "1ebffd95ce7d03401266f779f88a8dfe89e8dc0d83cd47c48ceb311cbd6e4a8b",
+   "13e7fc2b5cdae4ea56eea34af6a03eac0d4b2f46fa6674c769f1965a19351ebb",
+   "c339ac911196f9b684136bd804ae8dfbc9c5c09aa65810550d7882b0b242231a"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "4c5b51fb3754f4d0a4596443d5616e1e4119b5b0c0295b2e1223006d85367876",
+   "c1b7e272cf09fbcc06b4edf4918b4697416b17329df42bdd8f36b6361e1d2e93",
+   "50ecfc0b07782c58ad583242a772043bef9d11c9a5fa0e7727ab30fb7a693c38",
+   "9ffac794405a609bdc429c869af9675a04b8799353f9d28585ce073abf42ce30",
+   "853b23a0b31b3745863db1fbaecc9f68c3ea10c686ec466276000de04f9422ca",
+   "bb49bbbccc904440eb4e33179dbdf8c4cb45afcf302c7611757ad607c1ec6a8a",
+   "1c506c4ab59ae86a4a0530de5eb9aa9d6f88921e912000239d9bf62810987e35",
+   "0ff989e634760da60bf9aa1a1c9d5fa512b162cd068dd2a59a8b50076c26ecd5",
+   "1ebffd95ce7d03401266f779f88a8dfe89e8dc0d83cd47c48ceb311cbd6e4a8b",
+   "13e7fc2b5cdae4ea56eea34af6a03eac0d4b2f46fa6674c769f1965a19351ebb",
+   "c339ac911196f9b684136bd804ae8dfbc9c5c09aa65810550d7882b0b242231a"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "4c5b51fb3754f4d0a4596443d5616e1e4119b5b0c0295b2e1223006d85367876",
+     "c1b7e272cf09fbcc06b4edf4918b4697416b17329df42bdd8f36b6361e1d2e93",
+     "50ecfc0b07782c58ad583242a772043bef9d11c9a5fa0e7727ab30fb7a693c38",
+     "9ffac794405a609bdc429c869af9675a04b8799353f9d28585ce073abf42ce30",
+     "853b23a0b31b3745863db1fbaecc9f68c3ea10c686ec466276000de04f9422ca",
+     "bb49bbbccc904440eb4e33179dbdf8c4cb45afcf302c7611757ad607c1ec6a8a",
+     "1c506c4ab59ae86a4a0530de5eb9aa9d6f88921e912000239d9bf62810987e35",
+     "0ff989e634760da60bf9aa1a1c9d5fa512b162cd068dd2a59a8b50076c26ecd5",
+     "1ebffd95ce7d03401266f779f88a8dfe89e8dc0d83cd47c48ceb311cbd6e4a8b",
+     "13e7fc2b5cdae4ea56eea34af6a03eac0d4b2f46fa6674c769f1965a19351ebb",
+     "c339ac911196f9b684136bd804ae8dfbc9c5c09aa65810550d7882b0b242231a"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

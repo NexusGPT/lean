@@ -1,0 +1,155 @@
+{
+ "change": "7485fe28044e475ee5d6c4744ca2461c1e645e92f0375a327c34bc2048fdf641",
+ "tasks": [
+  {
+   "id": "a07f24e0eb6999dac2d951e42aad781b60635594f110e1f4a52f53490243967e",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit 23f7bd67ddf9)",
+   "lines": [
+    233,
+    233
+   ],
+   "lanes": [],
+   "editIds": [
+    "23f7bd67ddf9905a790bc478786499ada3aa4b6592b4425c9b19df21236e8710"
+   ],
+   "attemptId": "a78a6bb2-866c-4cc2-ae8a-3ee52b705356",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/a78a6bb2-866c-4cc2-ae8a-3ee52b705356"
+  },
+  {
+   "id": "d5576fd52bca5d3ba4c151e57b24a72375cadec2b0179f7f94a9041731f32777",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit d36617876cad)",
+   "lines": [
+    233,
+    233
+   ],
+   "lanes": [],
+   "editIds": [
+    "d36617876cadc0268fb20e532d3dfa8d690905cdf47574ddf1ee58cc8c02b271"
+   ],
+   "attemptId": "80fa1e2c-2aa4-4f57-b2d9-517a7ed7fabf",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/80fa1e2c-2aa4-4f57-b2d9-517a7ed7fabf"
+  },
+  {
+   "id": "e10c04589ff110f5fd94f21f5827a4c94c6dec02e888794ac316b63c1f2c24d7",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit 6cc22b5177c4)",
+   "lines": [
+    234,
+    234
+   ],
+   "lanes": [],
+   "editIds": [
+    "6cc22b5177c41e338116c4f532209d17e9cafeaf6811260f9225b0cc9ef0a3d7"
+   ],
+   "attemptId": "c9c27f90-216e-4f6d-9372-f8f0193fcaa9",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/c9c27f90-216e-4f6d-9372-f8f0193fcaa9"
+  },
+  {
+   "id": "4096663b0f606eb61a378837e1463b0db27a62186a0b0c90ed9f96aed24a7735",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit 54d7c31eff18)",
+   "lines": [
+    235,
+    235
+   ],
+   "lanes": [],
+   "editIds": [
+    "54d7c31eff1848bfa8c1af0c1212ac818ae69dcd00113eabb41b4ec8c3a1306a"
+   ],
+   "attemptId": "e9544abd-8e41-4685-8642-9c3e579bc03a",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/e9544abd-8e41-4685-8642-9c3e579bc03a"
+  },
+  {
+   "id": "dcfdcca35df4a543bd4b2dd6a363a2a217280cabec8088b8d5ed4354c10b83d9",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit 6f7fb3b404cb)",
+   "lines": [
+    236,
+    236
+   ],
+   "lanes": [],
+   "editIds": [
+    "6f7fb3b404cb2063d3e8231faee2a6879852beeaa6f7fea7315429c18ab28dff"
+   ],
+   "attemptId": "d92ed9cc-0cd1-47b1-b39c-0093952c4a8d",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/d92ed9cc-0cd1-47b1-b39c-0093952c4a8d"
+  },
+  {
+   "id": "84b14aafcf392bbbe45749ca4ea1bc0b6d7af3197df8b4015d9359c7a33ae1a4",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit c0a48e3bc6d9)",
+   "lines": [
+    241,
+    241
+   ],
+   "lanes": [],
+   "editIds": [
+    "c0a48e3bc6d9419c1f24bc7c6652f5e7cba2922da6fd168185e8d6fb6e1bf579"
+   ],
+   "attemptId": "2f8ceace-5c02-45da-8e9e-800a025019e3",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/2f8ceace-5c02-45da-8e9e-800a025019e3"
+  },
+  {
+   "id": "136749f4b484d98212cdb2f1d1f6df0295ea694ec35bb5f954f9d46c73a741ab",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit 77faad9a0e45)",
+   "lines": [
+    244,
+    244
+   ],
+   "lanes": [],
+   "editIds": [
+    "77faad9a0e453d86a708d62a6871a10734e41629e34581d5da2ac5cc56ad2e97"
+   ],
+   "attemptId": "586e3fb1-855e-4d92-b598-cdd3d43502f4",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/586e3fb1-855e-4d92-b598-cdd3d43502f4"
+  },
+  {
+   "id": "80216a9244e2a1f1df18ca45830010fea9166e75c5bc4a3e0f2ec6781f8af345",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit 5eab1edbeb30)",
+   "lines": [
+    245,
+    245
+   ],
+   "lanes": [],
+   "editIds": [
+    "5eab1edbeb306f81709e8697abfc9b2f81102372c0467ab846edb782b4220a88"
+   ],
+   "attemptId": "987d175f-5d92-4301-81aa-9ac801998e6e",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/987d175f-5d92-4301-81aa-9ac801998e6e"
+  },
+  {
+   "id": "b979926ec0a7cba13b7a5933aacae87cae9ac01dd424376f66d5a01977c76103",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit b303f88dfc94)",
+   "lines": [
+    246,
+    246
+   ],
+   "lanes": [],
+   "editIds": [
+    "b303f88dfc941640d6db2d3b7d53f7a63835fec4c684036906cafcf7952c7ede"
+   ],
+   "attemptId": "ca8aaaae-8f98-46fc-b55b-33fb329cca05",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/ca8aaaae-8f98-46fc-b55b-33fb329cca05"
+  },
+  {
+   "id": "ee0507a5d04590a70d4cadb0acaac26f286168395625a701bd608fbac0faae67",
+   "file": "lib/rules/object-shorthand.js",
+   "unit": "(edit b078432617ce)",
+   "lines": [
+    247,
+    247
+   ],
+   "lanes": [],
+   "editIds": [
+    "b078432617ce27f97ab1ca2fb3dd7d32040da06b7f33206f0f54f69870fda5be"
+   ],
+   "attemptId": "719d7c76-d6ce-442b-8564-20c32e688a4c",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__49/run-88SiJO/attempts/719d7c76-d6ce-442b-8564-20c32e688a4c"
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/space-before-keywords.js",
+ "unit": "(edit 823a752a3a23)",
+ "editIds": [
+  "823a752a3a234fad737f9b9e219bb7ed683a19dfb5fe45d71bc855ce75d34bd7"
+ ],
+ "lines": [
+  184,
+  184
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

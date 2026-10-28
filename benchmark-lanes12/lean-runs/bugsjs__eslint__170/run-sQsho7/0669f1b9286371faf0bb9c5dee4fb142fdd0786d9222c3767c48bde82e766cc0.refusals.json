@@ -1,0 +1,38 @@
+{
+ "identity": "0669f1b9286371faf0bb9c5dee4fb142fdd0786d9222c3767c48bde82e766cc0",
+ "records": [
+  {
+   "check": "failed:loader",
+   "unit": "isOpeningParen",
+   "file": "lib/rules/new-parens.js",
+   "location": {
+    "start": 18,
+    "end": 20
+   },
+   "kind": "coverage",
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__170/run-sQsho7/sources/lib/rules/.lean_head_18101_new-parens.js: ASK(CommonJS wrapper): module is not defined"
+  },
+  {
+   "check": "failed:loader",
+   "unit": "isClosingParen",
+   "file": "lib/rules/new-parens.js",
+   "location": {
+    "start": 28,
+    "end": 30
+   },
+   "kind": "coverage",
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__170/run-sQsho7/sources/lib/rules/.lean_head_18101_new-parens.js: ASK(CommonJS wrapper): module is not defined"
+  },
+  {
+   "check": "failed:loader",
+   "unit": "isInRange",
+   "file": "lib/rules/new-parens.js",
+   "location": {
+    "start": 39,
+    "end": 44
+   },
+   "kind": "coverage",
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__170/run-sQsho7/sources/lib/rules/.lean_head_18101_new-parens.js: ASK(CommonJS wrapper): module is not defined"
+  }
+ ]
+}

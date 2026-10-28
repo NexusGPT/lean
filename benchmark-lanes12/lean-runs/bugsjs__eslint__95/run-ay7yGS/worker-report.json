@@ -1,0 +1,737 @@
+{
+ "identity": "c4452e6a9d95c5ea68ba6b4b74b47b1cb2de3858df224c2ed844b729d5bc2619",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/formatters/codeframe.js",
+   "unit": "formatMessage",
+   "lines": [
+    48,
+    71
+   ],
+   "coverage": "refused:unsupported-member",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 0,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     {
+      "$fake": "arg1"
+     }
+    ],
+    "parent": {
+     "outcome": {
+      "threw": {
+       "$error": "Error",
+       "message": "fault: module:chalk.dim"
+      }
+     },
+     "heap": {
+      "roots": [
+       {
+        "$fake": "arg0"
+       },
+       {
+        "$fake": "arg1"
+       }
+      ],
+      "own": {},
+      "outcome": null,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg0.fatal",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.severity",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:chalk.yellow",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:chalk.yellow",
+       "args": [
+        "warning"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:chalk.bold",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.message",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.message.replace",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "arg0.message.replace",
+       "args": [
+        {},
+        ""
+       ]
+      },
+      {
+       "op": "call",
+       "path": "module:chalk.bold",
+       "args": [
+        {
+         "$fake": "arg0.message.replace()#1"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "arg0.fatal",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:chalk.dim",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.ruleId",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:chalk.dim",
+       "args": [
+        "(s15yx)"
+       ]
+      },
+      {
+       "op": "fault",
+       "path": "module:chalk.dim",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "threw": {
+       "$error": "Error",
+       "message": "fault: module:chalk.dim"
+      }
+     },
+     "heap": {
+      "roots": [
+       {
+        "$fake": "arg0"
+       },
+       {
+        "$fake": "arg1"
+       }
+      ],
+      "own": {},
+      "outcome": null,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg0.fatal",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.severity",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:chalk.yellow",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:chalk.yellow",
+       "args": [
+        "warning"
+       ]
+      },
+      {
+       "op": "get",
+       "path": "module:chalk.bold",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.message",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.message.replace",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "arg0.message.replace",
+       "args": [
+        {},
+        "$1"
+       ]
+      },
+      {
+       "op": "call",
+       "path": "module:chalk.bold",
+       "args": [
+        {
+         "$fake": "arg0.message.replace()#1"
+        }
+       ]
+      },
+      {
+       "op": "get",
+       "path": "arg0.fatal",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:chalk.dim",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.ruleId",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:chalk.dim",
+       "args": [
+        "(s15yx)"
+       ]
+      },
+      {
+       "op": "fault",
+       "path": "module:chalk.dim",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "where": {
+     "field": "trace",
+     "index": 7,
+     "parent": {
+      "op": "call",
+      "path": "arg0.message.replace",
+      "args": [
+       {},
+       ""
+      ]
+     },
+     "candidate": {
+      "op": "call",
+      "path": "arg0.message.replace",
+      "args": [
+       {},
+       "$1"
+      ]
+     },
+     "lines": {
+      "kind": "effect",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__95/run-ay7yGS/sources/lib/formatters/.lean_base_52317_codeframe.js",
+       "start": 50,
+       "end": 50,
+       "text": "const msg = `${chalk.bold(message.message.replace(/\\.$/, \"\"))}`;"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__95/run-ay7yGS/sources/lib/formatters/.lean_head_52317_codeframe.js",
+       "start": 50,
+       "end": 50,
+       "text": "const msg = `${chalk.bold(message.message.replace(/([^ ])\\.$/, \"$1\"))}`;"
+      }
+     }
+    }
+   },
+   "reason": "property .fatal is not declared on Object",
+   "advice": [
+    {
+     "line": 49,
+     "rule": "unsupported-member",
+     "msg": "property .fatal is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 49,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'fatal' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 49,
+     "rule": "unsupported-member",
+     "msg": "property .severity is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 49,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'severity' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 50,
+     "rule": "unsupported-member",
+     "msg": "property .message is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 50,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'message' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 51,
+     "rule": "unsupported-member",
+     "msg": "property .fatal is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 51,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'fatal' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "editIds": [
+    "3d17f9039a4f8f328612fb46ea7cdff7230d272048f83a1ab113510ff685dab1",
+    "74dd2be9fdd7a6eb4dc1643fede9fce8827b5b58fcc71f43c0c1c2c514ffffab"
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/formatters/codeframe.js",
+     "unit": "formatMessage",
+     "lines": [
+      48,
+      71
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "88d5d4dbd09dd7f23e9fff79087bc13adaac051b",
+  "head": "3715d96915434dc3ac0334f4992c84c6f4b24fea",
+  "files": [
+   {
+    "id": "ddcaed4255f3d6f4710699ed2d487186913d727cf96b3871ceb5d142eaeb3d30",
+    "file": "lib/formatters/codeframe.js",
+    "oldPath": "lib/formatters/codeframe.js",
+    "newPath": "lib/formatters/codeframe.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "ed50ae608d48b0e2f65e9782ae3b9dce1aa1643c",
+    "newOid": "0b97a0d81803317221b9d60e66046de606ca0180",
+    "status": "M",
+    "edits": [
+     "3d17f9039a4f8f328612fb46ea7cdff7230d272048f83a1ab113510ff685dab1",
+     "74dd2be9fdd7a6eb4dc1643fede9fce8827b5b58fcc71f43c0c1c2c514ffffab"
+    ],
+    "hunks": [
+     {
+      "id": "06bb9c1b55567447e2ead671b48b3e8fae2d77f3cf2e3bacac2b94dfee02f00a",
+      "old": {
+       "start": 50,
+       "count": 1
+      },
+      "new": {
+       "start": 50,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "183f1ef8d4024b90532ed4e8099f81466bee23223978c65e3e42cb682527b5c7",
+    "newHash": "0669b911042e0c5634164cbdd1564060512deb6fe9e4bfef94242b224a67c420",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "pluralize",
+       "side": "old",
+       "file": "lib/formatters/codeframe.js",
+       "start": 21,
+       "end": 23,
+       "offset": 664,
+       "stop": 745,
+       "id": "6e0aa84ccca0b8c39166fb29aa55af065e23a5a4feac50972016928b316f4d72"
+      },
+      {
+       "name": "formatFilePath",
+       "side": "old",
+       "file": "lib/formatters/codeframe.js",
+       "start": 32,
+       "end": 40,
+       "offset": 1120,
+       "stop": 1337,
+       "id": "0ebd8f238a28e9ff7fd1d117c97bc2c74d35afd5e93dac8d3e592b6190c0fa81"
+      },
+      {
+       "name": "formatMessage",
+       "side": "old",
+       "file": "lib/formatters/codeframe.js",
+       "start": 48,
+       "end": 71,
+       "offset": 1610,
+       "stop": 2490,
+       "id": "b6c08861906d50f56d5ffb78ede9d28861e097f0d5dc3aba2c6d25c545d8df7c"
+      },
+      {
+       "name": "formatSummary",
+       "side": "old",
+       "file": "lib/formatters/codeframe.js",
+       "start": 81,
+       "end": 109,
+       "offset": 2880,
+       "stop": 3797,
+       "id": "a913835c6bfd7962ecd10bb770bedc162b9129d99e0e5ae210a816dd050af660"
+      }
+     ],
+     "new": [
+      {
+       "name": "pluralize",
+       "side": "new",
+       "file": "lib/formatters/codeframe.js",
+       "start": 21,
+       "end": 23,
+       "offset": 664,
+       "stop": 745,
+       "id": "364c94f517e2a1ce93ff110f3b96ffba3c317d0f24a9ec645c5564c28a9ad612"
+      },
+      {
+       "name": "formatFilePath",
+       "side": "new",
+       "file": "lib/formatters/codeframe.js",
+       "start": 32,
+       "end": 40,
+       "offset": 1120,
+       "stop": 1337,
+       "id": "10f8c164e916a44e4b840ada57ddda28f8fc4796157662820e7a0d3289d46291"
+      },
+      {
+       "name": "formatMessage",
+       "side": "new",
+       "file": "lib/formatters/codeframe.js",
+       "start": 48,
+       "end": 71,
+       "offset": 1610,
+       "stop": 2498,
+       "id": "fe3fbfc803a7ce95e18268743ddfa1ba71658f1726daf51b5e4efad01edc77f3"
+      },
+      {
+       "name": "formatSummary",
+       "side": "new",
+       "file": "lib/formatters/codeframe.js",
+       "start": 81,
+       "end": 109,
+       "offset": 2888,
+       "stop": 3805,
+       "id": "7df1cf3968048ecaa338b1987001920b78a930503d31465fa315d26b1c6778f7"
+      }
+     ]
+    }
+   },
+   {
+    "id": "75889feafa8f0caa93469bf7cb3496b3ef43230baf041e599b078652365b2129",
+    "file": "lib/formatters/stylish.js",
+    "oldPath": "lib/formatters/stylish.js",
+    "newPath": "lib/formatters/stylish.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "023ebc1dc093e4e2948139d5772082226cf83685",
+    "newOid": "e586fe857c7ea929b230f1e9ac9399a46b9f8426",
+    "status": "M",
+    "edits": [
+     "4f94d1c057fe7bfba169f87149e089fa017816e7706ba777a8798406f770eaa3",
+     "df5bb572acf8210b5137e3035a74792f9d94b57c68307022b847c9da55258b3c"
+    ],
+    "hunks": [
+     {
+      "id": "2050db29d544b920fb7241d1797b941cb9a5dcf62bb5b362d324d09fe30e14a2",
+      "old": {
+       "start": 68,
+       "count": 1
+      },
+      "new": {
+       "start": 68,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "2c5e15ad5d8e8beaac089b0edc3d65aceb7e11fe5f4ae8f6501a5ec29ac83cc4",
+    "newHash": "10ffd3984b2c8a8829e805f495ea8b5b572f7f2f85651728c0060bb69ab5eb6a",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "pluralize",
+       "side": "old",
+       "file": "lib/formatters/stylish.js",
+       "start": 21,
+       "end": 23,
+       "offset": 645,
+       "stop": 726,
+       "id": "233803b412ff83090a7e057b58eb0911540071f9d2bff7b7b482936dc47ea180"
+      }
+     ],
+     "new": [
+      {
+       "name": "pluralize",
+       "side": "new",
+       "file": "lib/formatters/stylish.js",
+       "start": 21,
+       "end": 23,
+       "offset": 645,
+       "stop": 726,
+       "id": "72a22c2bf0c6df890ed821c02716ef9e19f27a73017a18aebec9169629a3e3ce"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "3d17f9039a4f8f328612fb46ea7cdff7230d272048f83a1ab113510ff685dab1",
+    "fileId": "ddcaed4255f3d6f4710699ed2d487186913d727cf96b3871ceb5d142eaeb3d30",
+    "file": "lib/formatters/codeframe.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "06bb9c1b55567447e2ead671b48b3e8fae2d77f3cf2e3bacac2b94dfee02f00a",
+    "side": "old",
+    "old": {
+     "start": 50,
+     "count": 1
+    },
+    "new": {
+     "start": 50,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1765,
+     "end": 1834
+    },
+    "links": [
+     {
+      "id": "b6c08861906d50f56d5ffb78ede9d28861e097f0d5dc3aba2c6d25c545d8df7c",
+      "file": "lib/formatters/codeframe.js",
+      "unit": "formatMessage",
+      "side": "old",
+      "start": 48,
+      "end": 71
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "b6c08861906d50f56d5ffb78ede9d28861e097f0d5dc3aba2c6d25c545d8df7c",
+     "file": "lib/formatters/codeframe.js",
+     "unit": "formatMessage",
+     "side": "old",
+     "start": 48,
+     "end": 71
+    }
+   },
+   {
+    "id": "74dd2be9fdd7a6eb4dc1643fede9fce8827b5b58fcc71f43c0c1c2c514ffffab",
+    "fileId": "ddcaed4255f3d6f4710699ed2d487186913d727cf96b3871ceb5d142eaeb3d30",
+    "file": "lib/formatters/codeframe.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "06bb9c1b55567447e2ead671b48b3e8fae2d77f3cf2e3bacac2b94dfee02f00a",
+    "side": "new",
+    "old": {
+     "start": 50,
+     "count": 0
+    },
+    "new": {
+     "start": 50,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1765,
+     "end": 1842
+    },
+    "links": [
+     {
+      "id": "fe3fbfc803a7ce95e18268743ddfa1ba71658f1726daf51b5e4efad01edc77f3",
+      "file": "lib/formatters/codeframe.js",
+      "unit": "formatMessage",
+      "side": "new",
+      "start": 48,
+      "end": 71
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "fe3fbfc803a7ce95e18268743ddfa1ba71658f1726daf51b5e4efad01edc77f3",
+     "file": "lib/formatters/codeframe.js",
+     "unit": "formatMessage",
+     "side": "new",
+     "start": 48,
+     "end": 71
+    }
+   },
+   {
+    "id": "4f94d1c057fe7bfba169f87149e089fa017816e7706ba777a8798406f770eaa3",
+    "fileId": "75889feafa8f0caa93469bf7cb3496b3ef43230baf041e599b078652365b2129",
+    "file": "lib/formatters/stylish.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2050db29d544b920fb7241d1797b941cb9a5dcf62bb5b362d324d09fe30e14a2",
+    "side": "old",
+    "old": {
+     "start": 68,
+     "count": 1
+    },
+    "new": {
+     "start": 68,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2048,
+     "end": 2104
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "df5bb572acf8210b5137e3035a74792f9d94b57c68307022b847c9da55258b3c",
+    "fileId": "75889feafa8f0caa93469bf7cb3496b3ef43230baf041e599b078652365b2129",
+    "file": "lib/formatters/stylish.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2050db29d544b920fb7241d1797b941cb9a5dcf62bb5b362d324d09fe30e14a2",
+    "side": "new",
+    "old": {
+     "start": 68,
+     "count": 0
+    },
+    "new": {
+     "start": 68,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2048,
+     "end": 2112
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "280f4d6e7aa076279ed6952e9dd785f2dbe3939d57f910d5f335382b41f018bf",
+  "reconciliation": {
+   "expected": [
+    "3d17f9039a4f8f328612fb46ea7cdff7230d272048f83a1ab113510ff685dab1",
+    "74dd2be9fdd7a6eb4dc1643fede9fce8827b5b58fcc71f43c0c1c2c514ffffab",
+    "4f94d1c057fe7bfba169f87149e089fa017816e7706ba777a8798406f770eaa3",
+    "df5bb572acf8210b5137e3035a74792f9d94b57c68307022b847c9da55258b3c"
+   ],
+   "unit": [
+    "3d17f9039a4f8f328612fb46ea7cdff7230d272048f83a1ab113510ff685dab1",
+    "74dd2be9fdd7a6eb4dc1643fede9fce8827b5b58fcc71f43c0c1c2c514ffffab"
+   ],
+   "artifact": [],
+   "unassigned": [
+    "4f94d1c057fe7bfba169f87149e089fa017816e7706ba777a8798406f770eaa3",
+    "df5bb572acf8210b5137e3035a74792f9d94b57c68307022b847c9da55258b3c"
+   ],
+   "classes": {
+    "source": {
+     "unit": [
+      "3d17f9039a4f8f328612fb46ea7cdff7230d272048f83a1ab113510ff685dab1",
+      "74dd2be9fdd7a6eb4dc1643fede9fce8827b5b58fcc71f43c0c1c2c514ffffab"
+     ],
+     "artifact": [],
+     "unassigned": [
+      "4f94d1c057fe7bfba169f87149e089fa017816e7706ba777a8798406f770eaa3",
+      "df5bb572acf8210b5137e3035a74792f9d94b57c68307022b847c9da55258b3c"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "callersChecked": 0
+}

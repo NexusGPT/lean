@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/padded-blocks.js",
+ "unit": "(edit aec50a1e7100)",
+ "editIds": [
+  "aec50a1e710085c158af4402c7f9a666ab697ac141156f70875dd5d13db81e42"
+ ],
+ "lines": [
+  37,
+  37
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

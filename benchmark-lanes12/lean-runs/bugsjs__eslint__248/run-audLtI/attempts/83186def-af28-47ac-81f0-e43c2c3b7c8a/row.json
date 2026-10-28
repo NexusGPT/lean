@@ -1,0 +1,50 @@
+{
+ "file": "lib/eslint.js",
+ "unit": "modifyRulesFromComments",
+ "lines": [
+  152,
+  181
+ ],
+ "coverage": "refused:var",
+ "verdict": "ASK",
+ "laneB": "ASK",
+ "laneA": null,
+ "witness": null,
+ "reason": "parent: unit modifyRulesFromComments not exported",
+ "advice": [
+  {
+   "line": 153,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  },
+  {
+   "line": 155,
+   "rule": "callback-form",
+   "msg": "the callback must be an arrow function",
+   "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+  },
+  {
+   "line": 179,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  }
+ ],
+ "editIds": [
+  "7046c85cb8b7c8abefe0cfdb3728e9d975b154b0791c4799b4bdf961aa93242c",
+  "4b00ce55e543ef49b1c6dcdd48518d67bf82233900edbc2dec3c2131a3404da1",
+  "143824c7197f8f0667591f41244c7341b609fe5a49e19e4d077d52916761341a",
+  "2109782236e90b8ad09bb18c079baa082fd398879b0e3c2e33d279786b54e9f5",
+  "29a08b4b9dbe5c3ff9a283ced2fe9722e2a46faf30aadc296fc5a05e3f693057",
+  "1a29766097856a1643c89c9454d9c299b3d0c88fc9063d7f0449bd19623d2d33",
+  "e79a42d9fbe262cd26398c974987bd6c0e2b3a4ae8a78a3885bf7ead5cfce116",
+  "21e7ecc97f1e8342793938a5d673fece62ae2d58ff6f22a869a0cdc22ddd25ee",
+  "378c11348ccf9479e41830601aff7325d54716aac7fe3e7aa40f1e92c2944a73",
+  "a7e01af9e8266298eb7907844c9dbbef72bd3a479145cb6ffb95ea2e473082ed",
+  "b874e76c2e16dfd63100d6bd38a3b6340c68e3e4add113a95c5a523c34e976dd",
+  "2d3461e05ef31f449de7147fd968f91b29a245435be73ba5967fbec2b4a8b35f",
+  "3f2826470f1a49c73f0995eba5ddd164baeeafd9c339fcf368eb2a387c3fe2b0",
+  "422512210aca687ed0ec18d0eb9124f4b628e87e07b7b6361fb269503fa77b0d"
+ ]
+}

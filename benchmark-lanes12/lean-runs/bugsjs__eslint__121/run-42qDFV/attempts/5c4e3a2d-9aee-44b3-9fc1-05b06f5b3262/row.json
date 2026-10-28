@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/dot-notation.js",
+ "unit": "(edit 0dc00f168c7b)",
+ "editIds": [
+  "0dc00f168c7bb695421a024ec15f571f0b37e67c1a6b28fb3f32107728a94c1c"
+ ],
+ "lines": [
+  8,
+  8
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "change": "4909af94688bca6a51741649a5b85901a4cf71418fc924f93f8c5b5281e91ed4",
+ "tasks": [
+  {
+   "id": "2a3ced1087565ffc964c8b43abfba4fedcd813f043293224aa0bc7cdd9159550",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 7ac6d1817f10)",
+   "lines": [
+    1046,
+    1046
+   ],
+   "lanes": [],
+   "editIds": [
+    "7ac6d1817f107ff2152200745efaf6730759cc1b6a3daab4c13615624eafa4b2"
+   ],
+   "attemptId": "a02c134c-cd00-4632-bf35-cfc3b6d287ae",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__12/run-JihWWS/attempts/a02c134c-cd00-4632-bf35-cfc3b6d287ae"
+  }
+ ]
+}

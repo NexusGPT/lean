@@ -1,0 +1,137 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "cb1c91a336e338a84ce5ceaaa8fe4b07444c49cc",
+ "head": "1efbc26e37005ad8025b2cca7ca548826aa49c70",
+ "files": [
+  {
+   "id": "426ec27506c7e0c4f1578d50353359440a044483875cd2164a385aeec70fa725",
+   "file": "lib/rules/newline-per-chained-call.js",
+   "oldPath": "lib/rules/newline-per-chained-call.js",
+   "newPath": "lib/rules/newline-per-chained-call.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "77d150d04ff7ebf04c597bb6b0bd23ba7af03f67",
+   "newOid": "05696dc2a5003e82f796c924005968561c5f46fa",
+   "status": "M",
+   "edits": [
+    "db8f02d2e86270c6f1b708cb4fcedbc1b002cca5facae8936f138a6ffb4da552",
+    "7a75e9091bc2b2eade9c2f5e2bebf80ab4099d0b8d3a9610b2018d4405c0674a"
+   ],
+   "hunks": [
+    {
+     "id": "e4eb194d739237c0d6d28eaf377cdb4135f6925f9602a9ab5ee50e0d1f87da5e",
+     "old": {
+      "start": 39,
+      "count": 1
+     },
+     "new": {
+      "start": 39,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "12a0920de4fa2babf8b80162154525f249dbeb8a275e33844974cdf924bad2bf",
+   "newHash": "abfe0c60269ab66261cfef41204d699905106363eab1dfbd4aa480fcd88e1c63",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "db8f02d2e86270c6f1b708cb4fcedbc1b002cca5facae8936f138a6ffb4da552",
+   "fileId": "426ec27506c7e0c4f1578d50353359440a044483875cd2164a385aeec70fa725",
+   "file": "lib/rules/newline-per-chained-call.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "e4eb194d739237c0d6d28eaf377cdb4135f6925f9602a9ab5ee50e0d1f87da5e",
+   "side": "old",
+   "old": {
+    "start": 39,
+    "count": 1
+   },
+   "new": {
+    "start": 39,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1214,
+    "end": 1273
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "7a75e9091bc2b2eade9c2f5e2bebf80ab4099d0b8d3a9610b2018d4405c0674a",
+   "fileId": "426ec27506c7e0c4f1578d50353359440a044483875cd2164a385aeec70fa725",
+   "file": "lib/rules/newline-per-chained-call.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "e4eb194d739237c0d6d28eaf377cdb4135f6925f9602a9ab5ee50e0d1f87da5e",
+   "side": "new",
+   "old": {
+    "start": 39,
+    "count": 0
+   },
+   "new": {
+    "start": 39,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1214,
+    "end": 1290
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "1e7f71e3ef35a30d839ea46217bc30ea791f309ec02a764182e6aea928a8e5ef",
+ "reconciliation": {
+  "expected": [
+   "db8f02d2e86270c6f1b708cb4fcedbc1b002cca5facae8936f138a6ffb4da552",
+   "7a75e9091bc2b2eade9c2f5e2bebf80ab4099d0b8d3a9610b2018d4405c0674a"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "db8f02d2e86270c6f1b708cb4fcedbc1b002cca5facae8936f138a6ffb4da552",
+   "7a75e9091bc2b2eade9c2f5e2bebf80ab4099d0b8d3a9610b2018d4405c0674a"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "db8f02d2e86270c6f1b708cb4fcedbc1b002cca5facae8936f138a6ffb4da552",
+     "7a75e9091bc2b2eade9c2f5e2bebf80ab4099d0b8d3a9610b2018d4405c0674a"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

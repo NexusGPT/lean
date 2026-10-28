@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unused-vars.js",
+ "unit": "(edit bc1dc0b789fc)",
+ "editIds": [
+  "bc1dc0b789fcd25dc7d763efa24959c6dc14c6d083c2540fdedba6b79ecdd3a6"
+ ],
+ "lines": [
+  18,
+  18
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (exported property assignment)",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

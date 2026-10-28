@@ -1,0 +1,20 @@
+{
+ "file": "lib/cli.js",
+ "unit": "(edit a578d3aaebd9)",
+ "editIds": [
+  "a578d3aaebd9ab536c392f7547541e9567708fce6cc2207735222a57909d6581"
+ ],
+ "lines": [
+  148,
+  148
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

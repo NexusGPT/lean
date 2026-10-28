@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/space-in-parens.js",
+ "unit": "(edit cb3adbd27e3c)",
+ "editIds": [
+  "cb3adbd27e3c86da25024e171922e1dfe64ce923b2f96640f2c5b1afe0964a16"
+ ],
+ "lines": [
+  101,
+  101
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

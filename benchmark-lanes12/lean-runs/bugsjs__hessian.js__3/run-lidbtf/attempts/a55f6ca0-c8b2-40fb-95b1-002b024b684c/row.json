@@ -1,0 +1,20 @@
+{
+ "file": "package.json",
+ "unit": "(edit 1fa2c5cf27f3)",
+ "editIds": [
+  "1fa2c5cf27f36ebff72b7f8793f62dc1154443d7e2d043501b036076acae03d9"
+ ],
+ "lines": [
+  37,
+  37
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "non-source",
+  "parent": null
+ },
+ "advice": []
+}

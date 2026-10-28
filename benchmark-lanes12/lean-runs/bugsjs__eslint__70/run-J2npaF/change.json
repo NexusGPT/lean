@@ -1,0 +1,222 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "a9d4cb21f6f9d85115a734c3b863a4f2da98fda4",
+ "head": "86110c8791392ac43e38d06af2d007c0c8dba50b",
+ "files": [
+  {
+   "id": "92132cb1e4cc4bb41ca64d23cbca79016c31a68ca240fa6adea8c811f6122fbb",
+   "file": "lib/rules/padded-blocks.js",
+   "oldPath": "lib/rules/padded-blocks.js",
+   "newPath": "lib/rules/padded-blocks.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "7c378d92025ae05752fd1b9423a80de9ec0c9150",
+   "newOid": "7ec24c65d7dba698197a7e270a1515f6513a72a7",
+   "status": "M",
+   "edits": [
+    "da7754629056ebff2dcdeeb5778a2924d9511094db607e93fcd9552395fc041e",
+    "f7423c212a571bec0b2e2aa64951afca0d6ee28fa3fd26957a9d817947312be1",
+    "597c55ad102b98663bbd132b76804b118f51f4e24146b31f7a68597be18a88b2",
+    "275be0632a0673714f825d97daee655c518e0d2f4531b641bcdf1e0e07e7bdd3"
+   ],
+   "hunks": [
+    {
+     "id": "b78dc4d02168f57166defa9610eeb3db673fd662b615774458afc2803a4f991d",
+     "old": {
+      "start": 193,
+      "count": 1
+     },
+     "new": {
+      "start": 193,
+      "count": 1
+     }
+    },
+    {
+     "id": "13e280cc86c69eb26504b042c6fb8b3892b6a57abc947f67c08aae9e27986601",
+     "old": {
+      "start": 207,
+      "count": 1
+     },
+     "new": {
+      "start": 207,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "a8a6d4e1f138f47c07094c4a279c06ead33f6f6d183c3e6f2e2b5a7e1fb19d8d",
+   "newHash": "b51a660603c7a276b53293ea8dbf1c2f8cbdc936b0d22172ea94d1ed1badae1a",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "da7754629056ebff2dcdeeb5778a2924d9511094db607e93fcd9552395fc041e",
+   "fileId": "92132cb1e4cc4bb41ca64d23cbca79016c31a68ca240fa6adea8c811f6122fbb",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "b78dc4d02168f57166defa9610eeb3db673fd662b615774458afc2803a4f991d",
+   "side": "old",
+   "old": {
+    "start": 193,
+    "count": 1
+   },
+   "new": {
+    "start": 193,
+    "count": 0
+   },
+   "offsets": {
+    "start": 6953,
+    "end": 7052
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "f7423c212a571bec0b2e2aa64951afca0d6ee28fa3fd26957a9d817947312be1",
+   "fileId": "92132cb1e4cc4bb41ca64d23cbca79016c31a68ca240fa6adea8c811f6122fbb",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "b78dc4d02168f57166defa9610eeb3db673fd662b615774458afc2803a4f991d",
+   "side": "new",
+   "old": {
+    "start": 193,
+    "count": 0
+   },
+   "new": {
+    "start": 193,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6953,
+    "end": 7081
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "597c55ad102b98663bbd132b76804b118f51f4e24146b31f7a68597be18a88b2",
+   "fileId": "92132cb1e4cc4bb41ca64d23cbca79016c31a68ca240fa6adea8c811f6122fbb",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "13e280cc86c69eb26504b042c6fb8b3892b6a57abc947f67c08aae9e27986601",
+   "side": "old",
+   "old": {
+    "start": 207,
+    "count": 1
+   },
+   "new": {
+    "start": 207,
+    "count": 0
+   },
+   "offsets": {
+    "start": 7573,
+    "end": 7677
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "275be0632a0673714f825d97daee655c518e0d2f4531b641bcdf1e0e07e7bdd3",
+   "fileId": "92132cb1e4cc4bb41ca64d23cbca79016c31a68ca240fa6adea8c811f6122fbb",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "13e280cc86c69eb26504b042c6fb8b3892b6a57abc947f67c08aae9e27986601",
+   "side": "new",
+   "old": {
+    "start": 207,
+    "count": 0
+   },
+   "new": {
+    "start": 207,
+    "count": 1
+   },
+   "offsets": {
+    "start": 7602,
+    "end": 7736
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "f30320cf01fd66722ddd68ac9ca7370f787301e3bc5d5dd9ac414a7b3f675e7f",
+ "reconciliation": {
+  "expected": [
+   "da7754629056ebff2dcdeeb5778a2924d9511094db607e93fcd9552395fc041e",
+   "f7423c212a571bec0b2e2aa64951afca0d6ee28fa3fd26957a9d817947312be1",
+   "597c55ad102b98663bbd132b76804b118f51f4e24146b31f7a68597be18a88b2",
+   "275be0632a0673714f825d97daee655c518e0d2f4531b641bcdf1e0e07e7bdd3"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "da7754629056ebff2dcdeeb5778a2924d9511094db607e93fcd9552395fc041e",
+   "f7423c212a571bec0b2e2aa64951afca0d6ee28fa3fd26957a9d817947312be1",
+   "597c55ad102b98663bbd132b76804b118f51f4e24146b31f7a68597be18a88b2",
+   "275be0632a0673714f825d97daee655c518e0d2f4531b641bcdf1e0e07e7bdd3"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "da7754629056ebff2dcdeeb5778a2924d9511094db607e93fcd9552395fc041e",
+     "f7423c212a571bec0b2e2aa64951afca0d6ee28fa3fd26957a9d817947312be1",
+     "597c55ad102b98663bbd132b76804b118f51f4e24146b31f7a68597be18a88b2",
+     "275be0632a0673714f825d97daee655c518e0d2f4531b641bcdf1e0e07e7bdd3"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

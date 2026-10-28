@@ -1,0 +1,20 @@
+{
+ "file": "lib/util/npm-util.js",
+ "unit": "(edit 3948ca073d0d)",
+ "editIds": [
+  "3948ca073d0df5f2e5203cbc95532097a86301a8d653518a352ea7420a2d490c"
+ ],
+ "lines": [
+  127,
+  127
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

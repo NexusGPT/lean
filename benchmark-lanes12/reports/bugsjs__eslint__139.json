@@ -1,0 +1,1212 @@
+{
+ "identity": "e1650f34d9b1ae26eb37ec2d393555aa52c7d9515c3adc2843a8a00db55e8766",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit 4b900b40e73c)",
+   "editIds": [
+    "4b900b40e73c6de0a8a22a8b8d28d4362919d776dbfc7fc9cc9fc6d9853e4c56"
+   ],
+   "lines": [
+    629,
+    629
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit 6cc4f68e5168)",
+   "editIds": [
+    "6cc4f68e51688ebe74fb4de439335ec3d52b8de82ad3fff9b4eef5bfe8972aeb"
+   ],
+   "lines": [
+    630,
+    630
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit 30b42bc39ea6)",
+   "editIds": [
+    "30b42bc39ea61c510c0b28c02fade99703bbd7faff84ea339085ddbdb78ad42c"
+   ],
+   "lines": [
+    631,
+    631
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit a6d9fb1e2c1a)",
+   "editIds": [
+    "a6d9fb1e2c1a31b888bb5fdbb401639e64b64b63e1cb6c2c71db3a9be1ba7e14"
+   ],
+   "lines": [
+    641,
+    641
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit ca9d7760f686)",
+   "editIds": [
+    "ca9d7760f6869ecb9ca6b1e5c65f061656c062e70cecba04f74ad21050e480da"
+   ],
+   "lines": [
+    642,
+    642
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit 4630ce499b34)",
+   "editIds": [
+    "4630ce499b34d05a49c405d120ed302cc29431cfdae773bdd5b907dcf2325426"
+   ],
+   "lines": [
+    643,
+    643
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit 7eb93eb51f4b)",
+   "editIds": [
+    "7eb93eb51f4bb0fd0535707693fec8048ad665c14ec2e4ae6719a858a047ba10"
+   ],
+   "lines": [
+    644,
+    644
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit 38b66943d41d)",
+   "editIds": [
+    "38b66943d41d6f29e392f8fa9b79d10da2498aa509b2c67961e032a2e6e2a5b6"
+   ],
+   "lines": [
+    645,
+    645
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit fc58989a9d18)",
+   "editIds": [
+    "fc58989a9d18d7fe1db3b2b609db00c478b1b815a6f67ed7779de544ee952493"
+   ],
+   "lines": [
+    646,
+    646
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "7c95d5d0a44b7f4f7f885621deb7007a7faa3a4b",
+  "head": "354054e04e3f3580f1cac8a1bb496560b8c55d46",
+  "files": [
+   {
+    "id": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "oldPath": "lib/ast-utils.js",
+    "newPath": "lib/ast-utils.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "e65284ff790535cca7968103358b70a04bf49441",
+    "newOid": "47cc71990f92dfbc4a8c8c7dfbffdb490057667a",
+    "status": "M",
+    "edits": [
+     "4b900b40e73c6de0a8a22a8b8d28d4362919d776dbfc7fc9cc9fc6d9853e4c56",
+     "6cc4f68e51688ebe74fb4de439335ec3d52b8de82ad3fff9b4eef5bfe8972aeb",
+     "30b42bc39ea61c510c0b28c02fade99703bbd7faff84ea339085ddbdb78ad42c",
+     "a6d9fb1e2c1a31b888bb5fdbb401639e64b64b63e1cb6c2c71db3a9be1ba7e14",
+     "ca9d7760f6869ecb9ca6b1e5c65f061656c062e70cecba04f74ad21050e480da",
+     "4630ce499b34d05a49c405d120ed302cc29431cfdae773bdd5b907dcf2325426",
+     "7eb93eb51f4bb0fd0535707693fec8048ad665c14ec2e4ae6719a858a047ba10",
+     "38b66943d41d6f29e392f8fa9b79d10da2498aa509b2c67961e032a2e6e2a5b6",
+     "fc58989a9d18d7fe1db3b2b609db00c478b1b815a6f67ed7779de544ee952493"
+    ],
+    "hunks": [
+     {
+      "id": "5417c630980520f92c54a715ef37544d7e9bab3f5eff58a22e34c4f9954c04f4",
+      "old": {
+       "start": 628,
+       "count": 0
+      },
+      "new": {
+       "start": 629,
+       "count": 3
+      }
+     },
+     {
+      "id": "cab7c2e66df0221aaad375f26f438dea3b6b944c2230ee07ff3f25368bd5a3ea",
+      "old": {
+       "start": 637,
+       "count": 0
+      },
+      "new": {
+       "start": 641,
+       "count": 6
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "c1fe45a4c281fb9a71a3932dbeb7f02da75c781af5315443a146042bd3f01199",
+    "newHash": "5fb92621f51b6f22a077c9e540ff6867cc26fd8b03b9a3eafc57d0fe9703ac47",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isModifyingReference",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 44,
+       "end": 60,
+       "offset": 1725,
+       "stop": 2257,
+       "id": "31e8ae09409acd30e1d0dd71df2e98fce29575abbcf78cff749d3236ffacdab5"
+      },
+      {
+       "name": "startsWithUpperCase",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 68,
+       "end": 70,
+       "offset": 2445,
+       "stop": 2526,
+       "id": "1fa9396838ede53e21df03a4e24936a40c943cc4ca252f6708704111b192e355"
+      },
+      {
+       "name": "isES5Constructor",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 77,
+       "end": 79,
+       "offset": 2702,
+       "stop": 2796,
+       "id": "5dc3556caa66cc1f7822c6f2cfb42fdcd8f427167ed0405753bb1a2dc1392c6a"
+      },
+      {
+       "name": "getUpperFunction",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 86,
+       "end": 94,
+       "offset": 2953,
+       "stop": 3143,
+       "id": "4bc5c9c89a74336b0616585de2e97398d83e931be10a9116f9a1c87de912671d"
+      },
+      {
+       "name": "isFunction",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 107,
+       "end": 109,
+       "offset": 3448,
+       "stop": 3541,
+       "id": "98115b6394faac99f7ec9c78922da1a215e81a8526b19531cbb2eaf803d10cf3"
+      },
+      {
+       "name": "isLoop",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 124,
+       "end": 126,
+       "offset": 3856,
+       "stop": 3941,
+       "id": "4ff00285b85cff7597130d663f42a18497366646f491a9ff7a0a6b0ee230a65f"
+      },
+      {
+       "name": "isInLoop",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 134,
+       "end": 144,
+       "offset": 4109,
+       "stop": 4293,
+       "id": "32fa2f0a24feb8513cfb6345ff19732f7f5046cce19d16daaa4eca7000fcb7c8"
+      },
+      {
+       "name": "isNullOrUndefined",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 152,
+       "end": 158,
+       "offset": 4490,
+       "stop": 4731,
+       "id": "7152afa46c13d2ebb69bd4fafad6fed8979b10c7da53abe43719104a6aef23b0"
+      },
+      {
+       "name": "isCallee",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 165,
+       "end": 167,
+       "offset": 4885,
+       "stop": 4993,
+       "id": "235fab26f442bd210525c1415c0177b82fd074b2c3da3b0a53898736812acee4"
+      },
+      {
+       "name": "isReflectApply",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 174,
+       "end": 183,
+       "offset": 5167,
+       "stop": 5472,
+       "id": "a8e18fe5be8e74b1ae142f14719959929a6d46be1a1858ab44fb28cd3eb63bed"
+      },
+      {
+       "name": "isArrayFromMethod",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 190,
+       "end": 199,
+       "offset": 5640,
+       "stop": 5964,
+       "id": "c593db72440fdc4ace99bd786d49a6bbde0a844a0e9a5f9332896a78db7ea8f5"
+      },
+      {
+       "name": "isMethodWhichHasThisArg",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 206,
+       "end": 220,
+       "offset": 6162,
+       "stop": 6503,
+       "id": "af7bcaa92d971bf482643e5347d065166d4300c60a66b2575330e7be8f4518ab"
+      },
+      {
+       "name": "negate",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 227,
+       "end": 229,
+       "offset": 6657,
+       "stop": 6710,
+       "id": "c74bc63f54aeaf42bb687fb10e9303cc4ffea7e504888dd5db1b46b64a5e3f41"
+      },
+      {
+       "name": "hasJSDocThisTag",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 237,
+       "end": 249,
+       "offset": 6987,
+       "stop": 7491,
+       "id": "989d4ac0fb041a26b8adaf586aa2664800b7d304f6109d0cf92737ce2ede51e2"
+      },
+      {
+       "name": "isParenthesised",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 258,
+       "end": 265,
+       "offset": 7737,
+       "stop": 8099,
+       "id": "a26e9c1401bb8fa7dfbd9f70985dff2f89522f6caf2974d3053b1a91705544ce"
+      },
+      {
+       "name": "isArrowToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 273,
+       "end": 275,
+       "offset": 8274,
+       "stop": 8370,
+       "id": "47402f6c30bbf02583288eccc2ee6060659d9f43e349932d3c7e01088faa6804"
+      },
+      {
+       "name": "isCommaToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 283,
+       "end": 285,
+       "offset": 8543,
+       "stop": 8638,
+       "id": "1622969d4da5cf5d08f13eb331ca552f7ffb110f7d2c3a48310621dd771929dc"
+      },
+      {
+       "name": "isSemicolonToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 293,
+       "end": 295,
+       "offset": 8819,
+       "stop": 8918,
+       "id": "219a6a6858906d66bc939f272f6e3d67847d0a428939d1da55369245f1258f2d"
+      },
+      {
+       "name": "isColonToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 303,
+       "end": 305,
+       "offset": 9091,
+       "stop": 9186,
+       "id": "9fa5afe7a008aa5d26c910bc4d669a7c944a43477da130f6dae5a52e7f60ae56"
+      },
+      {
+       "name": "isOpeningParenToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 313,
+       "end": 315,
+       "offset": 9389,
+       "stop": 9491,
+       "id": "ce07e79a978a4e1cd4e9e27a3aa4234b0fcae1f5747549dea84ba0b65c1e79f8"
+      },
+      {
+       "name": "isClosingParenToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 323,
+       "end": 325,
+       "offset": 9692,
+       "stop": 9794,
+       "id": "dccb5b49facf52afa73276923b5bf2a00d05a3a9424d57db0ec6549fba76be17"
+      },
+      {
+       "name": "isOpeningBracketToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 333,
+       "end": 335,
+       "offset": 10003,
+       "stop": 10107,
+       "id": "532085c5fc360ec00077b7c69f09a4c2f61b1a82ea2faae054dd2a6a3d41de2d"
+      },
+      {
+       "name": "isClosingBracketToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 343,
+       "end": 345,
+       "offset": 10314,
+       "stop": 10418,
+       "id": "75f8d4561abbb20253c50a51a60032d8b8e7d50135958c1c23275982d8688f24"
+      },
+      {
+       "name": "isOpeningBraceToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 353,
+       "end": 355,
+       "offset": 10609,
+       "stop": 10711,
+       "id": "35004fb11d9bdb2944e50107560b816e35c7d3a2d9c0ba83f8b6491fe90702ef"
+      },
+      {
+       "name": "isClosingBraceToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 363,
+       "end": 365,
+       "offset": 10900,
+       "stop": 11002,
+       "id": "9c5da8dc2c8b4384ee65eda7a2c57fbe03128f409d752b10bcd0250ac4aaf7b4"
+      },
+      {
+       "name": "isCommentToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 373,
+       "end": 375,
+       "offset": 11179,
+       "stop": 11301,
+       "id": "3c31800b5c72755630526534880cfe724a9a5ea91cefca5ba7f848d6dba5deb2"
+      },
+      {
+       "name": "isKeywordToken",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 383,
+       "end": 385,
+       "offset": 11478,
+       "stop": 11549,
+       "id": "0ef55f5845e31ad9bb339d707806d6694ea0ea2546cd07e9472551686ff77424"
+      },
+      {
+       "name": "getOpeningParenOfParams",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 394,
+       "end": 398,
+       "offset": 11770,
+       "stop": 11971,
+       "id": "4831e75589680ac17ee364aba4d7710077ab0c966f58e7c2126af1f490c0ef83"
+      },
+      {
+       "name": "createGlobalLinebreakMatcher",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 405,
+       "end": 407,
+       "offset": 12219,
+       "stop": 12316,
+       "id": "6baec29e10aa2ed76cbbf01e3a85659aafde9c28b3f9ee03382c88715e2b7c6b"
+      }
+     ],
+     "new": [
+      {
+       "name": "isModifyingReference",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 44,
+       "end": 60,
+       "offset": 1725,
+       "stop": 2257,
+       "id": "ba44d3f0e9ec0759b5d5520333dcc43c694d009fe3c7483759f22b3389e33820"
+      },
+      {
+       "name": "startsWithUpperCase",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 68,
+       "end": 70,
+       "offset": 2445,
+       "stop": 2526,
+       "id": "b4accd3be9e3ba49c25d42d981a7d57cd9491fb971bca9d843f40f4a7f0b3fce"
+      },
+      {
+       "name": "isES5Constructor",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 77,
+       "end": 79,
+       "offset": 2702,
+       "stop": 2796,
+       "id": "4b675d8d77c24afb366f54da47385f9b4675bfe793e3efaf39e293a3e3a4296b"
+      },
+      {
+       "name": "getUpperFunction",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 86,
+       "end": 94,
+       "offset": 2953,
+       "stop": 3143,
+       "id": "bc613df2a88ee3ffb99592bfffbb9c37fd559487325654a161461b105f3e66e6"
+      },
+      {
+       "name": "isFunction",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 107,
+       "end": 109,
+       "offset": 3448,
+       "stop": 3541,
+       "id": "faf38fac03baf82b127e3dd433e4483f93eba0c6749b3ed64d270cc2c55caf73"
+      },
+      {
+       "name": "isLoop",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 124,
+       "end": 126,
+       "offset": 3856,
+       "stop": 3941,
+       "id": "ae370261f74c936dfe2087ffd9547749d7aa2d2681d17261cb46d14ccd2e0416"
+      },
+      {
+       "name": "isInLoop",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 134,
+       "end": 144,
+       "offset": 4109,
+       "stop": 4293,
+       "id": "274c1662e8d6a573160ea3d4ae76fb8f1a66b6ecb1e90da7864697c71456fa39"
+      },
+      {
+       "name": "isNullOrUndefined",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 152,
+       "end": 158,
+       "offset": 4490,
+       "stop": 4731,
+       "id": "92076baeeea6f4c7f29129ef416e2e6c1fb6bab6758828301d441acac3e8f4a9"
+      },
+      {
+       "name": "isCallee",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 165,
+       "end": 167,
+       "offset": 4885,
+       "stop": 4993,
+       "id": "e345b85c7753200a3f925779f5c3afed67411c373f0fb6d9d3cd2f52f17e5cb0"
+      },
+      {
+       "name": "isReflectApply",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 174,
+       "end": 183,
+       "offset": 5167,
+       "stop": 5472,
+       "id": "678987f761dae7e820e2f680b7277beaa841caffb1eed74e8a667edc1503ff0e"
+      },
+      {
+       "name": "isArrayFromMethod",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 190,
+       "end": 199,
+       "offset": 5640,
+       "stop": 5964,
+       "id": "8a9192d57a15ee5d70d76790fcc560fe2a2e4d78bc242fa4154fd2029399df86"
+      },
+      {
+       "name": "isMethodWhichHasThisArg",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 206,
+       "end": 220,
+       "offset": 6162,
+       "stop": 6503,
+       "id": "d58c674385d98948f2e1e817d577172187331aae01394e79436f3d1a8dcd9208"
+      },
+      {
+       "name": "negate",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 227,
+       "end": 229,
+       "offset": 6657,
+       "stop": 6710,
+       "id": "b1408e3c1decdb8588cb65af6cdf376596d9a8ac693ce114a0ed1caeb8f2dd91"
+      },
+      {
+       "name": "hasJSDocThisTag",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 237,
+       "end": 249,
+       "offset": 6987,
+       "stop": 7491,
+       "id": "e10f27ab73ee69ec896a675691abef3d0a8672209b9ad330edd602d83c5fa48d"
+      },
+      {
+       "name": "isParenthesised",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 258,
+       "end": 265,
+       "offset": 7737,
+       "stop": 8099,
+       "id": "3eaae97f391f52080fe0317c081d3ca770084820793977755ade3627ca5de834"
+      },
+      {
+       "name": "isArrowToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 273,
+       "end": 275,
+       "offset": 8274,
+       "stop": 8370,
+       "id": "5483968f7c8518205aee1e0b453f2850333504591ee4ad6074b22cd28ee3c520"
+      },
+      {
+       "name": "isCommaToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 283,
+       "end": 285,
+       "offset": 8543,
+       "stop": 8638,
+       "id": "d958ca3c257c08fd210ecb7e8f53a9b4e2564efa6b87ef596389d7d77d6798e9"
+      },
+      {
+       "name": "isSemicolonToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 293,
+       "end": 295,
+       "offset": 8819,
+       "stop": 8918,
+       "id": "4b7059c53bf25124eedb223f95bbe2dc8404393094f424ceb291c4de5fdfbccb"
+      },
+      {
+       "name": "isColonToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 303,
+       "end": 305,
+       "offset": 9091,
+       "stop": 9186,
+       "id": "65c720fc4c4959f8db433f7f1ffc5baba24ab20960e34b409d97dde96f312673"
+      },
+      {
+       "name": "isOpeningParenToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 313,
+       "end": 315,
+       "offset": 9389,
+       "stop": 9491,
+       "id": "aeb18aba09ac425df9fd11c476d1032c3ecd1d94869642c5cd4c73a6b4cd4ed1"
+      },
+      {
+       "name": "isClosingParenToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 323,
+       "end": 325,
+       "offset": 9692,
+       "stop": 9794,
+       "id": "fc85805ddaaa7eccb731b69c3984906cd5887f390307a9810bf88250b8299e0c"
+      },
+      {
+       "name": "isOpeningBracketToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 333,
+       "end": 335,
+       "offset": 10003,
+       "stop": 10107,
+       "id": "ee5dcf76be9d63c17c1363f328adc9502c7c8fa198efca526d969b1723958535"
+      },
+      {
+       "name": "isClosingBracketToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 343,
+       "end": 345,
+       "offset": 10314,
+       "stop": 10418,
+       "id": "59aa476e72d8585489b9550afc6d70625f967357147800867e96929ca66ce675"
+      },
+      {
+       "name": "isOpeningBraceToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 353,
+       "end": 355,
+       "offset": 10609,
+       "stop": 10711,
+       "id": "205d011da6498042a51db0b68eb27a5a4c771a68594571701b54033293a92237"
+      },
+      {
+       "name": "isClosingBraceToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 363,
+       "end": 365,
+       "offset": 10900,
+       "stop": 11002,
+       "id": "d99d811feafe9b35b6ae5d7dd06e5dac2c562f8bde51e5e2bb9289d9f4282bb8"
+      },
+      {
+       "name": "isCommentToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 373,
+       "end": 375,
+       "offset": 11179,
+       "stop": 11301,
+       "id": "76ea45ede5cc4530188e5a1496f7f9f91aa9d564a7d3bf472d0a791ced667f18"
+      },
+      {
+       "name": "isKeywordToken",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 383,
+       "end": 385,
+       "offset": 11478,
+       "stop": 11549,
+       "id": "07a8625e21aa569e717f08169a725cf3fafd848a083659a364b443e6f9261f6e"
+      },
+      {
+       "name": "getOpeningParenOfParams",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 394,
+       "end": 398,
+       "offset": 11770,
+       "stop": 11971,
+       "id": "0c3c439dd15f530db4c539c1428461e2a2995b0bf073a2e4ecd9234f349445ee"
+      },
+      {
+       "name": "createGlobalLinebreakMatcher",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 405,
+       "end": 407,
+       "offset": 12219,
+       "stop": 12316,
+       "id": "f0fcf7ad19da95469297ea6a3849d6cb2cebcdc77538bda6fb6cefdd00440487"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "4b900b40e73c6de0a8a22a8b8d28d4362919d776dbfc7fc9cc9fc6d9853e4c56",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5417c630980520f92c54a715ef37544d7e9bab3f5eff58a22e34c4f9954c04f4",
+    "side": "new",
+    "old": {
+     "start": 628,
+     "count": 0
+    },
+    "new": {
+     "start": 629,
+     "count": 1
+    },
+    "offsets": {
+     "start": 19526,
+     "end": 19564
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6cc4f68e51688ebe74fb4de439335ec3d52b8de82ad3fff9b4eef5bfe8972aeb",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5417c630980520f92c54a715ef37544d7e9bab3f5eff58a22e34c4f9954c04f4",
+    "side": "new",
+    "old": {
+     "start": 628,
+     "count": 0
+    },
+    "new": {
+     "start": 630,
+     "count": 1
+    },
+    "offsets": {
+     "start": 19564,
+     "end": 19610
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "30b42bc39ea61c510c0b28c02fade99703bbd7faff84ea339085ddbdb78ad42c",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5417c630980520f92c54a715ef37544d7e9bab3f5eff58a22e34c4f9954c04f4",
+    "side": "new",
+    "old": {
+     "start": 628,
+     "count": 0
+    },
+    "new": {
+     "start": 631,
+     "count": 1
+    },
+    "offsets": {
+     "start": 19610,
+     "end": 19636
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "a6d9fb1e2c1a31b888bb5fdbb401639e64b64b63e1cb6c2c71db3a9be1ba7e14",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "cab7c2e66df0221aaad375f26f438dea3b6b944c2230ee07ff3f25368bd5a3ea",
+    "side": "new",
+    "old": {
+     "start": 637,
+     "count": 0
+    },
+    "new": {
+     "start": 641,
+     "count": 1
+    },
+    "offsets": {
+     "start": 19942,
+     "end": 19990
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ca9d7760f6869ecb9ca6b1e5c65f061656c062e70cecba04f74ad21050e480da",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "cab7c2e66df0221aaad375f26f438dea3b6b944c2230ee07ff3f25368bd5a3ea",
+    "side": "new",
+    "old": {
+     "start": 637,
+     "count": 0
+    },
+    "new": {
+     "start": 642,
+     "count": 1
+    },
+    "offsets": {
+     "start": 19990,
+     "end": 20059
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4630ce499b34d05a49c405d120ed302cc29431cfdae773bdd5b907dcf2325426",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "cab7c2e66df0221aaad375f26f438dea3b6b944c2230ee07ff3f25368bd5a3ea",
+    "side": "new",
+    "old": {
+     "start": 637,
+     "count": 0
+    },
+    "new": {
+     "start": 643,
+     "count": 1
+    },
+    "offsets": {
+     "start": 20059,
+     "end": 20096
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "7eb93eb51f4bb0fd0535707693fec8048ad665c14ec2e4ae6719a858a047ba10",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "cab7c2e66df0221aaad375f26f438dea3b6b944c2230ee07ff3f25368bd5a3ea",
+    "side": "new",
+    "old": {
+     "start": 637,
+     "count": 0
+    },
+    "new": {
+     "start": 644,
+     "count": 1
+    },
+    "offsets": {
+     "start": 20096,
+     "end": 20118
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "38b66943d41d6f29e392f8fa9b79d10da2498aa509b2c67961e032a2e6e2a5b6",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "cab7c2e66df0221aaad375f26f438dea3b6b944c2230ee07ff3f25368bd5a3ea",
+    "side": "new",
+    "old": {
+     "start": 637,
+     "count": 0
+    },
+    "new": {
+     "start": 645,
+     "count": 1
+    },
+    "offsets": {
+     "start": 20118,
+     "end": 20160
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "fc58989a9d18d7fe1db3b2b609db00c478b1b815a6f67ed7779de544ee952493",
+    "fileId": "7a90e2ada90373f24d061c8eca0a64fde1ae26227aab7594b195593ca25e3948",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "cab7c2e66df0221aaad375f26f438dea3b6b944c2230ee07ff3f25368bd5a3ea",
+    "side": "new",
+    "old": {
+     "start": 637,
+     "count": 0
+    },
+    "new": {
+     "start": 646,
+     "count": 1
+    },
+    "offsets": {
+     "start": 20160,
+     "end": 20187
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "e1650f34d9b1ae26eb37ec2d393555aa52c7d9515c3adc2843a8a00db55e8766",
+  "reconciliation": {
+   "expected": [
+    "4b900b40e73c6de0a8a22a8b8d28d4362919d776dbfc7fc9cc9fc6d9853e4c56",
+    "6cc4f68e51688ebe74fb4de439335ec3d52b8de82ad3fff9b4eef5bfe8972aeb",
+    "30b42bc39ea61c510c0b28c02fade99703bbd7faff84ea339085ddbdb78ad42c",
+    "a6d9fb1e2c1a31b888bb5fdbb401639e64b64b63e1cb6c2c71db3a9be1ba7e14",
+    "ca9d7760f6869ecb9ca6b1e5c65f061656c062e70cecba04f74ad21050e480da",
+    "4630ce499b34d05a49c405d120ed302cc29431cfdae773bdd5b907dcf2325426",
+    "7eb93eb51f4bb0fd0535707693fec8048ad665c14ec2e4ae6719a858a047ba10",
+    "38b66943d41d6f29e392f8fa9b79d10da2498aa509b2c67961e032a2e6e2a5b6",
+    "fc58989a9d18d7fe1db3b2b609db00c478b1b815a6f67ed7779de544ee952493"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "4b900b40e73c6de0a8a22a8b8d28d4362919d776dbfc7fc9cc9fc6d9853e4c56",
+    "6cc4f68e51688ebe74fb4de439335ec3d52b8de82ad3fff9b4eef5bfe8972aeb",
+    "30b42bc39ea61c510c0b28c02fade99703bbd7faff84ea339085ddbdb78ad42c",
+    "a6d9fb1e2c1a31b888bb5fdbb401639e64b64b63e1cb6c2c71db3a9be1ba7e14",
+    "ca9d7760f6869ecb9ca6b1e5c65f061656c062e70cecba04f74ad21050e480da",
+    "4630ce499b34d05a49c405d120ed302cc29431cfdae773bdd5b907dcf2325426",
+    "7eb93eb51f4bb0fd0535707693fec8048ad665c14ec2e4ae6719a858a047ba10",
+    "38b66943d41d6f29e392f8fa9b79d10da2498aa509b2c67961e032a2e6e2a5b6",
+    "fc58989a9d18d7fe1db3b2b609db00c478b1b815a6f67ed7779de544ee952493"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "4b900b40e73c6de0a8a22a8b8d28d4362919d776dbfc7fc9cc9fc6d9853e4c56",
+      "6cc4f68e51688ebe74fb4de439335ec3d52b8de82ad3fff9b4eef5bfe8972aeb",
+      "30b42bc39ea61c510c0b28c02fade99703bbd7faff84ea339085ddbdb78ad42c",
+      "a6d9fb1e2c1a31b888bb5fdbb401639e64b64b63e1cb6c2c71db3a9be1ba7e14",
+      "ca9d7760f6869ecb9ca6b1e5c65f061656c062e70cecba04f74ad21050e480da",
+      "4630ce499b34d05a49c405d120ed302cc29431cfdae773bdd5b907dcf2325426",
+      "7eb93eb51f4bb0fd0535707693fec8048ad665c14ec2e4ae6719a858a047ba10",
+      "38b66943d41d6f29e392f8fa9b79d10da2498aa509b2c67961e032a2e6e2a5b6",
+      "fc58989a9d18d7fe1db3b2b609db00c478b1b815a6f67ed7779de544ee952493"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "fa903e6476cec12d9464133fd769b08403346883ed2479e11ca8e1e5d2df3bd7",
+   "c5a9b334ca5fdb39195cbfe5fb60b43f63de0c47394f83020a857a0d4cb7e41d",
+   "e529fb4ed4211030ee5d423957c91b54f33953b19c836272dfa5dce7f196ed33",
+   "3eba25b92b3a0e6baa4f11a3c64791ae7dd86a600bfa41f85b2b2beafaccd34d",
+   "6124de88010d5d10be4e43b3ac35ff40e99c7c47a7cc1c884256aee67bb29931",
+   "5470977dbb9b3f5d8e735d1fa78190901ad79a4f9bb11f2ffb38f4232bed18b9",
+   "9031570b9a77af044e10347addc1d8f9f44052fa3c3552fd9568bffa48492a6f",
+   "a89db51681fe6c83c32194577220129fdbe3550263563e986a9b9d2b3f0485d3",
+   "6b8bb646d1370a55789e3eb76ed1dea49b4f19895d685aecb363c40949675cce"
+  ],
+  "terminal": [
+   "fa903e6476cec12d9464133fd769b08403346883ed2479e11ca8e1e5d2df3bd7",
+   "c5a9b334ca5fdb39195cbfe5fb60b43f63de0c47394f83020a857a0d4cb7e41d",
+   "e529fb4ed4211030ee5d423957c91b54f33953b19c836272dfa5dce7f196ed33",
+   "3eba25b92b3a0e6baa4f11a3c64791ae7dd86a600bfa41f85b2b2beafaccd34d",
+   "6124de88010d5d10be4e43b3ac35ff40e99c7c47a7cc1c884256aee67bb29931",
+   "5470977dbb9b3f5d8e735d1fa78190901ad79a4f9bb11f2ffb38f4232bed18b9",
+   "9031570b9a77af044e10347addc1d8f9f44052fa3c3552fd9568bffa48492a6f",
+   "a89db51681fe6c83c32194577220129fdbe3550263563e986a9b9d2b3f0485d3",
+   "6b8bb646d1370a55789e3eb76ed1dea49b4f19895d685aecb363c40949675cce"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__139/run-DngMgL/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__139/run-DngMgL"
+}

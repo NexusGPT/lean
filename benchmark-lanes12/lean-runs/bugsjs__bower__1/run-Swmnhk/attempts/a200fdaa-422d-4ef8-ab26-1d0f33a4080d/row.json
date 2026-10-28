@@ -1,0 +1,20 @@
+{
+ "file": "lib/core/PackageRepository.js",
+ "unit": "(edit bfba5f438caf)",
+ "editIds": [
+  "bfba5f438caf74bc6712bf900e256880f7e4a0e7221926841827f6733caab7c3"
+ ],
+ "lines": [
+  52,
+  52
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

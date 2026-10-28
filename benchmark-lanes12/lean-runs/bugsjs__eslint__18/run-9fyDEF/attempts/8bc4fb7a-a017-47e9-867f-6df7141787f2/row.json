@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/func-name-matching.js",
+ "unit": "(edit 7b3afada97d3)",
+ "editIds": [
+  "7b3afada97d3333d170aeb358968f63596ad5f7c36e7fc1e15c5af7db65727ab"
+ ],
+ "lines": [
+  162,
+  162
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

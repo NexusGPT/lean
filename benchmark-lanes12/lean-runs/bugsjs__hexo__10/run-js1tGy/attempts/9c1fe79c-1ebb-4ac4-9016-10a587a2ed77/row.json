@@ -1,0 +1,21 @@
+{
+ "file": "lib/hexo/index.js",
+ "unit": "(edit 398ac128e581)",
+ "editIds": [
+  "398ac128e581e4e3d10e7fc8b8c8adec8dcc3688e2232e288fba6f3e28aa7598"
+ ],
+ "lines": [
+  304,
+  304
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

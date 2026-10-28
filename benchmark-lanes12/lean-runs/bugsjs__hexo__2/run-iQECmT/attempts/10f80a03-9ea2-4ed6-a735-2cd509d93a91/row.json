@@ -1,0 +1,20 @@
+{
+ "file": "lib/box/file.js",
+ "unit": "(edit ee236f476e91)",
+ "editIds": [
+  "ee236f476e9109f940f0dfa01f0f15d5886c5da4a67f20af6217a0776684e196"
+ ],
+ "lines": [
+  53,
+  53
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

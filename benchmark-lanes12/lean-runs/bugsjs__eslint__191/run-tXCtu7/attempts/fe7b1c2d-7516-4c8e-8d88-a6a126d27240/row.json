@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/generator-star-spacing.js",
+ "unit": "(edit d4bc895c563e)",
+ "editIds": [
+  "d4bc895c563e4e2f8271ee394af804b83f2a176e8ee31a17789046a4ca25340d"
+ ],
+ "lines": [
+  57,
+  57
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

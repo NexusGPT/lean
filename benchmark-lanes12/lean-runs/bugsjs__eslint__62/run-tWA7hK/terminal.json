@@ -1,0 +1,1155 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__62/run-tWA7hK",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "b3b95b8033172a206c79dd7daadee205e395e9b6",
+  "head": "4401fcc9613854f030daeb3bc4587708fd5536bd",
+  "files": [
+   {
+    "id": "78eba8974032271397c3b0cbe53dadfa0d4c23e38c29c58f3fc3f1a95e9ce5e5",
+    "file": "lib/linter.js",
+    "oldPath": "lib/linter.js",
+    "newPath": "lib/linter.js",
+    "oldMode": "100755",
+    "newMode": "100755",
+    "oldOid": "a49453e0698bcca558f03518502db9aac5824c24",
+    "newOid": "bb17ac21647fba2dadbb35567f3b6801293b368e",
+    "status": "M",
+    "edits": [
+     "a9561215ba83c6a8e3afd7a5851b1bdd3c13a8ee765ef44f652c092e13fff6bc",
+     "e011e5bfc6fafa17ff2489b3842cd08930bff6726824ff730e4829e12a8b57d1",
+     "814e75bbe2a38bde79fa0730868353792074d28bb5592fcd6d67aa5e0c02060f",
+     "af59abc7fe773e3450c91094aec85e345cfef1334eb343b7b4354c2bf8805f07",
+     "10713682110e432b645920cbc22dd309ae95b714942bfdd76912e21d8c37654d",
+     "c3a20bf9769d333fb081e7ee8ecd2bfe2e1a76093388b788ea85dca39df74406",
+     "601632a41d0465d81cb34b672de636c44b06923c6451872a161da0f5634a3b45"
+    ],
+    "hunks": [
+     {
+      "id": "bf0616e5f1409996290409c8aba756c360b11c84c147d8cc201c673c4c0fa3f8",
+      "old": {
+       "start": 522,
+       "count": 2
+      },
+      "new": {
+       "start": 522,
+       "count": 5
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "ad14d7f9e73b86fc25ec51317544410e8dd12f343a0bf45acbcb2652f9e40237",
+    "newHash": "0b67b7f6b6cfa3b532a32f10a9dd3e6d39e0e76856c57f4ac10538b2b3ee2d87",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "parseBooleanConfig",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 59,
+       "end": 84,
+       "offset": 2221,
+       "stop": 2806,
+       "id": "0b35228caa1015253d4a3a59fbed35dbf256cb83c9f2360ecd3e1c9489cc7502"
+      },
+      {
+       "name": "parseJsonConfig",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 93,
+       "end": 133,
+       "offset": 3101,
+       "stop": 4399,
+       "id": "09d9bf458b231acf9708e927793dc6cc3b0cc34efbd6ecf9f5e4348e2d76d43a"
+      },
+      {
+       "name": "parseListConfig",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 140,
+       "end": 154,
+       "offset": 4563,
+       "stop": 4879,
+       "id": "9517d65f4423c3afcb20fec65ff229b9e68e507d65ea36f924d37f59b220432c"
+      },
+      {
+       "name": "addDeclaredGlobals",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 166,
+       "end": 246,
+       "offset": 5288,
+       "stop": 7923,
+       "id": "ca9c68c037d5dc93e6520c85ec7d677ea817f1d1468b3e253dc73779f6fde1db"
+      },
+      {
+       "name": "disableReporting",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 256,
+       "end": 273,
+       "offset": 8227,
+       "stop": 8632,
+       "id": "c0cb9850d8c44c22bbf0a91b6f7f82c3a0f11f5eec65fd29b530088625e7688d"
+      },
+      {
+       "name": "enableReporting",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 283,
+       "end": 311,
+       "offset": 8934,
+       "stop": 9822,
+       "id": "18e83df1d67dab770b7abe2186a85a71b018f7fb4903d29b3ec6b9c556101804"
+      },
+      {
+       "name": "modifyConfigsFromComments",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 323,
+       "end": 403,
+       "offset": 10322,
+       "stop": 13526,
+       "id": "de526be1e3c80f031f0589ed01c76ec76ac8d0531f98f69488f0377bbf5464eb"
+      },
+      {
+       "name": "isDisabledByReportingConfig",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 412,
+       "end": 426,
+       "offset": 13845,
+       "stop": 14423,
+       "id": "3e94655c204b53ea4f4bceca6e792bcaedde242bf1a3febb8e1e8e84c6ea7313"
+      },
+      {
+       "name": "normalizeEcmaVersion",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 434,
+       "end": 448,
+       "offset": 14686,
+       "stop": 15113,
+       "id": "8acb3a059b66f48e2499f3b4dcfbfe8fbb499712dfc8397b4e11549e18a942b0"
+      },
+      {
+       "name": "prepareConfig",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 456,
+       "end": 506,
+       "offset": 15334,
+       "stop": 17149,
+       "id": "26c4f7487690b9f551e3e92ce604c5eb9487397890a927a18856fe8ff08139b2"
+      },
+      {
+       "name": "createStubRule",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 513,
+       "end": 533,
+       "offset": 17319,
+       "stop": 17802,
+       "id": "245cb2a3213dcaf73335ec8926183026363b81f2f168078c72f69a29ad374141"
+      },
+      {
+       "name": "getRuleReplacementMessage",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 540,
+       "end": 548,
+       "offset": 17956,
+       "stop": 18207,
+       "id": "e35afa616b21ebef663ecbfd7d55183a212bdab1410d828e6b1259f6d0ca48f2"
+      },
+      {
+       "name": "findEslintEnv",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 557,
+       "end": 567,
+       "offset": 18502,
+       "stop": 18738,
+       "id": "8b60af8467c8fba46c67b091a4399e0c1f198e70abdef4ee488967013d6ef0e2"
+      },
+      {
+       "name": "stripUnicodeBOM",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 575,
+       "end": 586,
+       "offset": 18875,
+       "stop": 19211,
+       "id": "38865f0d4740506d577e1f878be4d2bf15ee607ab6877497949c295243084e47"
+      },
+      {
+       "name": "getRuleSeverity",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 594,
+       "end": 602,
+       "offset": 19473,
+       "stop": 19677,
+       "id": "d19b70a2101632ebce60400ff75917b349281cda6e16f25c4401ab4e1db3e437"
+      },
+      {
+       "name": "getRuleOptions",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 609,
+       "end": 615,
+       "offset": 19862,
+       "stop": 19996,
+       "id": "316748adc8e4c7d9ed0e371d12769b5f8546dbe1e4db76cd9b326acd3190d963"
+      },
+      {
+       "name": "parse",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 630,
+       "end": 694,
+       "offset": 20581,
+       "stop": 22327,
+       "id": "02c483417e211f2f343770a9737cd8ea58d1ba171025adef086f58b972f232bc"
+      },
+      {
+       "name": "Linter.constructor",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 706,
+       "end": 723,
+       "offset": 22637,
+       "stop": 23180,
+       "id": "00ebc8440a912c5def639632479c0278fd3261e39af08c6510b3f3586830545f"
+      },
+      {
+       "name": "Linter.reset",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 729,
+       "end": 738,
+       "offset": 23273,
+       "stop": 23553,
+       "id": "143bf524867d4a3d61ee64e291f07e6c97c507fbe3351d0673a589fa32fe7d63"
+      },
+      {
+       "name": "Linter.verify",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 764,
+       "end": 942,
+       "offset": 25171,
+       "stop": 31641,
+       "id": "95fdd52ed2bcc851487606231f54c007a897207286a9c26bbe3bb6c06b4d8f2b"
+      },
+      {
+       "name": "Linter.report",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 959,
+       "end": 1024,
+       "offset": 32438,
+       "stop": 34607,
+       "id": "abe8210a2f6360e2cd579a2b5d5add49161cc8d05844e46fd18523dff168b859"
+      },
+      {
+       "name": "Linter.getSourceCode",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1030,
+       "end": 1032,
+       "offset": 34747,
+       "stop": 34802,
+       "id": "673a5dda013fb96cd011d7ff77b64671f6654802aa397bac85cc4b28e02f88b4"
+      },
+      {
+       "name": "Linter.getAncestors",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1038,
+       "end": 1040,
+       "offset": 34947,
+       "stop": 35010,
+       "id": "b6610ed023dc15070d5777fec61f7d7e157ab1184486f65823e697bc99240e78"
+      },
+      {
+       "name": "Linter.getScope",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1046,
+       "end": 1084,
+       "offset": 35150,
+       "stop": 36486,
+       "id": "92b16ce9a1f4f2a6045e5e9ddb6940b45e310a4aedb833ea3cf4a5d63227eb6b"
+      },
+      {
+       "name": "Linter.markVariableAsUsed",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1092,
+       "end": 1116,
+       "offset": 36743,
+       "stop": 37627,
+       "id": "959b33c027351ebfa87586f9a382d1769254f41d71ca5e0c4188dbe0400b4129"
+      },
+      {
+       "name": "Linter.getFilename",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1123,
+       "end": 1129,
+       "offset": 37851,
+       "stop": 38006,
+       "id": "6ffbabd3363ec6ddb66c4462afb0af7b9e71745e2f0046ec031124a806c9ff1c"
+      },
+      {
+       "name": "Linter.defineRule",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1137,
+       "end": 1139,
+       "offset": 38250,
+       "stop": 38335,
+       "id": "6b2e5e37e2fa4173b7008674388deeb51991b782e3ec474326a9da5157bd4bd4"
+      },
+      {
+       "name": "Linter.defineRules",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1146,
+       "end": 1150,
+       "offset": 38496,
+       "stop": 38672,
+       "id": "ee8789a9a6a32b2bded6884ca7ea7246b946f91c983c7625ba3229281ff351e3"
+      },
+      {
+       "name": "Linter.defaults",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1156,
+       "end": 1158,
+       "offset": 38821,
+       "stop": 38915,
+       "id": "2b3975618e567b03746ce15c36ca290dad21c25601860d79bff8be4395022f26"
+      },
+      {
+       "name": "Linter.getRules",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1164,
+       "end": 1166,
+       "offset": 39021,
+       "stop": 39086,
+       "id": "85f6ab06566cba062de6486052430c0c94eae96b8aba68b58960cc8204b18f8a"
+      },
+      {
+       "name": "Linter.getDeclaredVariables",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1187,
+       "end": 1189,
+       "offset": 40005,
+       "stop": 40129,
+       "id": "3d3b552c871ff98e03f744c2899692f205317392373a0cd39041c4b1ebf35647"
+      },
+      {
+       "name": "Linter.verifyAndFix",
+       "side": "old",
+       "file": "lib/linter.js",
+       "start": 1204,
+       "end": 1260,
+       "offset": 40848,
+       "stop": 42877,
+       "id": "7da2a5692eac8f74c7172f69e9d65014cdc77b0f4ecbe3f21d08912b276e3de9"
+      }
+     ],
+     "new": [
+      {
+       "name": "parseBooleanConfig",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 59,
+       "end": 84,
+       "offset": 2221,
+       "stop": 2806,
+       "id": "b60b17a652ddfaa7c6ab48c5da54386e2b1b45c28a6d5e62d05016be78056239"
+      },
+      {
+       "name": "parseJsonConfig",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 93,
+       "end": 133,
+       "offset": 3101,
+       "stop": 4399,
+       "id": "ce71ffdfca061bf939e08016366e9e2ec603c12916b273d3ebddf83c44c1e87b"
+      },
+      {
+       "name": "parseListConfig",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 140,
+       "end": 154,
+       "offset": 4563,
+       "stop": 4879,
+       "id": "b6d800082a3453357ac63de59df9975911bd551981b4f2b9768dd16ea68619ce"
+      },
+      {
+       "name": "addDeclaredGlobals",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 166,
+       "end": 246,
+       "offset": 5288,
+       "stop": 7923,
+       "id": "a82b0579347d3c38ef3dc73b3fbc57858d19e598d1048a0ab520ec01dff32de4"
+      },
+      {
+       "name": "disableReporting",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 256,
+       "end": 273,
+       "offset": 8227,
+       "stop": 8632,
+       "id": "fe62a5d0a80374058492b3e25b870e05f13666cdb3214d4848d022c27eccbf31"
+      },
+      {
+       "name": "enableReporting",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 283,
+       "end": 311,
+       "offset": 8934,
+       "stop": 9822,
+       "id": "9d730e67f06fd02e5b8634eb8129197e98814b7e9a2179cb4180f996e863f1ad"
+      },
+      {
+       "name": "modifyConfigsFromComments",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 323,
+       "end": 403,
+       "offset": 10322,
+       "stop": 13526,
+       "id": "5e0b5ed7c0fa479fd43027d09f88cfb2098590eb317b39d8b0f5230f13282c72"
+      },
+      {
+       "name": "isDisabledByReportingConfig",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 412,
+       "end": 426,
+       "offset": 13845,
+       "stop": 14423,
+       "id": "0223cef25e1a2b3a92f1c60e1b80e8e1f5f12ed5fb83641c89466c21ee4f916e"
+      },
+      {
+       "name": "normalizeEcmaVersion",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 434,
+       "end": 448,
+       "offset": 14686,
+       "stop": 15113,
+       "id": "06ea3cb1d2702e20569474165638028d1af3fa11f0fe8ecc27a1b20af0c98961"
+      },
+      {
+       "name": "prepareConfig",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 456,
+       "end": 506,
+       "offset": 15334,
+       "stop": 17149,
+       "id": "776bf52ded0d2d9e216a71f1a274ac4635f140e174da720c7598dd5a58a196bd"
+      },
+      {
+       "name": "createStubRule",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 513,
+       "end": 536,
+       "offset": 17319,
+       "stop": 17881,
+       "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f"
+      },
+      {
+       "name": "getRuleReplacementMessage",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 543,
+       "end": 551,
+       "offset": 18035,
+       "stop": 18286,
+       "id": "e2566706d218771fb209042b268f82d38627951f003a9ee8e1e32f83c7d48379"
+      },
+      {
+       "name": "findEslintEnv",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 560,
+       "end": 570,
+       "offset": 18581,
+       "stop": 18817,
+       "id": "6e6d807246cf687598f774dd4006a06aa9ca32cd04028b0c48becdf8533ad5b4"
+      },
+      {
+       "name": "stripUnicodeBOM",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 578,
+       "end": 589,
+       "offset": 18954,
+       "stop": 19290,
+       "id": "06a4389120c6e32f6d0ec8ef2d1eb9de96ed203688d7dcc3cac4e72e3d7a35f4"
+      },
+      {
+       "name": "getRuleSeverity",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 597,
+       "end": 605,
+       "offset": 19552,
+       "stop": 19756,
+       "id": "24f8205d6d9fa8ce7cc17129beb62dad9e5e57f63f91406cd761e2b6bc77c5f1"
+      },
+      {
+       "name": "getRuleOptions",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 612,
+       "end": 618,
+       "offset": 19941,
+       "stop": 20075,
+       "id": "acaa2a2c43f6506a3f3f888df9ed5e4f86034360a63af70a653136f71acdd1df"
+      },
+      {
+       "name": "parse",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 633,
+       "end": 697,
+       "offset": 20660,
+       "stop": 22406,
+       "id": "f90a138859577b289fffe2f668d2acb1ecd40f068cc9ee897e51ce09b142547f"
+      },
+      {
+       "name": "Linter.constructor",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 709,
+       "end": 726,
+       "offset": 22716,
+       "stop": 23259,
+       "id": "a8eb9ef10559603a1480780bec83d8dfcaf82f7e1ecd2184257837603d6b339c"
+      },
+      {
+       "name": "Linter.reset",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 732,
+       "end": 741,
+       "offset": 23352,
+       "stop": 23632,
+       "id": "531c856784043cb0f6f7aa644621bfdb84509d02e0e339db1a49a9fb1b53ca4b"
+      },
+      {
+       "name": "Linter.verify",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 767,
+       "end": 945,
+       "offset": 25250,
+       "stop": 31720,
+       "id": "ae2166c1acb521703cef6174736840f3d255281e3435f981cb697bcd27cd84ef"
+      },
+      {
+       "name": "Linter.report",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 962,
+       "end": 1027,
+       "offset": 32517,
+       "stop": 34686,
+       "id": "d5e311fd8c8c63328255eba2becaad24d4eb658c4033314e36c907f8f46766ed"
+      },
+      {
+       "name": "Linter.getSourceCode",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1033,
+       "end": 1035,
+       "offset": 34826,
+       "stop": 34881,
+       "id": "95a2a271aabca676046cefd118b2e891572229ec456d43a9c387875ae5fff8d1"
+      },
+      {
+       "name": "Linter.getAncestors",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1041,
+       "end": 1043,
+       "offset": 35026,
+       "stop": 35089,
+       "id": "66010dacfb6a022ced6d4ea78c00e42172b666e95ee5940e34c05f6490ce432f"
+      },
+      {
+       "name": "Linter.getScope",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1049,
+       "end": 1087,
+       "offset": 35229,
+       "stop": 36565,
+       "id": "602b1db1275e0d72d962d1ab5c664995238a90bcf52415fc96e1f9ec0f9aabde"
+      },
+      {
+       "name": "Linter.markVariableAsUsed",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1095,
+       "end": 1119,
+       "offset": 36822,
+       "stop": 37706,
+       "id": "4f8727441653970fcecf4d63894947ed4610c2b7ff54caf7b3eb74c67d9db59a"
+      },
+      {
+       "name": "Linter.getFilename",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1126,
+       "end": 1132,
+       "offset": 37930,
+       "stop": 38085,
+       "id": "65ca87e456ac0edb4eb8a39a3e947945106f89dc086b3dd4e4ac5addc7d7378b"
+      },
+      {
+       "name": "Linter.defineRule",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1140,
+       "end": 1142,
+       "offset": 38329,
+       "stop": 38414,
+       "id": "a1e4b0f25d830c9eea259cd7efa19b4d3fe01fa9847a0ca1d8aed0e3cda55896"
+      },
+      {
+       "name": "Linter.defineRules",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1149,
+       "end": 1153,
+       "offset": 38575,
+       "stop": 38751,
+       "id": "a64a585b47c7d8f44a10f83ea0c2946b46a95c7600abcd14ae1c8c5ae2a97ad1"
+      },
+      {
+       "name": "Linter.defaults",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1159,
+       "end": 1161,
+       "offset": 38900,
+       "stop": 38994,
+       "id": "2c2201b2ce3229a5a201c39dcaf6c51f3d757da73786ec5297deedd41aca7795"
+      },
+      {
+       "name": "Linter.getRules",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1167,
+       "end": 1169,
+       "offset": 39100,
+       "stop": 39165,
+       "id": "3f193820a8e898d5463adb7d500fa1e259fc6d53a23791c531886f58533f586a"
+      },
+      {
+       "name": "Linter.getDeclaredVariables",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1190,
+       "end": 1192,
+       "offset": 40084,
+       "stop": 40208,
+       "id": "9dc3780974902d4e85461c9ee8f37a424c8eb4658b2ae0c29bd5e05da756ae94"
+      },
+      {
+       "name": "Linter.verifyAndFix",
+       "side": "new",
+       "file": "lib/linter.js",
+       "start": 1207,
+       "end": 1263,
+       "offset": 40927,
+       "stop": 42956,
+       "id": "86503b63b013daf344903e95bf12000ed99e74f181dbfb483f04d8e02697fac1"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "a9561215ba83c6a8e3afd7a5851b1bdd3c13a8ee765ef44f652c092e13fff6bc",
+    "fileId": "78eba8974032271397c3b0cbe53dadfa0d4c23e38c29c58f3fc3f1a95e9ce5e5",
+    "file": "lib/linter.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bf0616e5f1409996290409c8aba756c360b11c84c147d8cc201c673c4c0fa3f8",
+    "side": "old",
+    "old": {
+     "start": 522,
+     "count": 1
+    },
+    "new": {
+     "start": 522,
+     "count": 0
+    },
+    "offsets": {
+     "start": 17580,
+     "end": 17608
+    },
+    "links": [
+     {
+      "id": "245cb2a3213dcaf73335ec8926183026363b81f2f168078c72f69a29ad374141",
+      "file": "lib/linter.js",
+      "unit": "createStubRule",
+      "side": "old",
+      "start": 513,
+      "end": 533
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "245cb2a3213dcaf73335ec8926183026363b81f2f168078c72f69a29ad374141",
+     "file": "lib/linter.js",
+     "unit": "createStubRule",
+     "side": "old",
+     "start": 513,
+     "end": 533
+    }
+   },
+   {
+    "id": "e011e5bfc6fafa17ff2489b3842cd08930bff6726824ff730e4829e12a8b57d1",
+    "fileId": "78eba8974032271397c3b0cbe53dadfa0d4c23e38c29c58f3fc3f1a95e9ce5e5",
+    "file": "lib/linter.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bf0616e5f1409996290409c8aba756c360b11c84c147d8cc201c673c4c0fa3f8",
+    "side": "old",
+    "old": {
+     "start": 523,
+     "count": 1
+    },
+    "new": {
+     "start": 522,
+     "count": 0
+    },
+    "offsets": {
+     "start": 17608,
+     "end": 17655
+    },
+    "links": [
+     {
+      "id": "245cb2a3213dcaf73335ec8926183026363b81f2f168078c72f69a29ad374141",
+      "file": "lib/linter.js",
+      "unit": "createStubRule",
+      "side": "old",
+      "start": 513,
+      "end": 533
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "245cb2a3213dcaf73335ec8926183026363b81f2f168078c72f69a29ad374141",
+     "file": "lib/linter.js",
+     "unit": "createStubRule",
+     "side": "old",
+     "start": 513,
+     "end": 533
+    }
+   },
+   {
+    "id": "814e75bbe2a38bde79fa0730868353792074d28bb5592fcd6d67aa5e0c02060f",
+    "fileId": "78eba8974032271397c3b0cbe53dadfa0d4c23e38c29c58f3fc3f1a95e9ce5e5",
+    "file": "lib/linter.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bf0616e5f1409996290409c8aba756c360b11c84c147d8cc201c673c4c0fa3f8",
+    "side": "new",
+    "old": {
+     "start": 522,
+     "count": 0
+    },
+    "new": {
+     "start": 522,
+     "count": 1
+    },
+    "offsets": {
+     "start": 17580,
+     "end": 17604
+    },
+    "links": [
+     {
+      "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+      "file": "lib/linter.js",
+      "unit": "createStubRule",
+      "side": "new",
+      "start": 513,
+      "end": 536
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+     "file": "lib/linter.js",
+     "unit": "createStubRule",
+     "side": "new",
+     "start": 513,
+     "end": 536
+    }
+   },
+   {
+    "id": "af59abc7fe773e3450c91094aec85e345cfef1334eb343b7b4354c2bf8805f07",
+    "fileId": "78eba8974032271397c3b0cbe53dadfa0d4c23e38c29c58f3fc3f1a95e9ce5e5",
+    "file": "lib/linter.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bf0616e5f1409996290409c8aba756c360b11c84c147d8cc201c673c4c0fa3f8",
+    "side": "new",
+    "old": {
+     "start": 522,
+     "count": 0
+    },
+    "new": {
+     "start": 523,
+     "count": 1
+    },
+    "offsets": {
+     "start": 17604,
+     "end": 17637
+    },
+    "links": [
+     {
+      "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+      "file": "lib/linter.js",
+      "unit": "createStubRule",
+      "side": "new",
+      "start": 513,
+      "end": 536
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+     "file": "lib/linter.js",
+     "unit": "createStubRule",
+     "side": "new",
+     "start": 513,
+     "end": 536
+    }
+   },
+   {
+    "id": "10713682110e432b645920cbc22dd309ae95b714942bfdd76912e21d8c37654d",
+    "fileId": "78eba8974032271397c3b0cbe53dadfa0d4c23e38c29c58f3fc3f1a95e9ce5e5",
+    "file": "lib/linter.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bf0616e5f1409996290409c8aba756c360b11c84c147d8cc201c673c4c0fa3f8",
+    "side": "new",
+    "old": {
+     "start": 522,
+     "count": 0
+    },
+    "new": {
+     "start": 524,
+     "count": 1
+    },
+    "offsets": {
+     "start": 17637,
+     "end": 17686
+    },
+    "links": [
+     {
+      "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+      "file": "lib/linter.js",
+      "unit": "createStubRule",
+      "side": "new",
+      "start": 513,
+      "end": 536
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+     "file": "lib/linter.js",
+     "unit": "createStubRule",
+     "side": "new",
+     "start": 513,
+     "end": 536
+    }
+   },
+   {
+    "id": "c3a20bf9769d333fb081e7ee8ecd2bfe2e1a76093388b788ea85dca39df74406",
+    "fileId": "78eba8974032271397c3b0cbe53dadfa0d4c23e38c29c58f3fc3f1a95e9ce5e5",
+    "file": "lib/linter.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bf0616e5f1409996290409c8aba756c360b11c84c147d8cc201c673c4c0fa3f8",
+    "side": "new",
+    "old": {
+     "start": 522,
+     "count": 0
+    },
+    "new": {
+     "start": 525,
+     "count": 1
+    },
+    "offsets": {
+     "start": 17686,
+     "end": 17714
+    },
+    "links": [
+     {
+      "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+      "file": "lib/linter.js",
+      "unit": "createStubRule",
+      "side": "new",
+      "start": 513,
+      "end": 536
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "ShorthandPropertyAssignment"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+     "file": "lib/linter.js",
+     "unit": "createStubRule",
+     "side": "new",
+     "start": 513,
+     "end": 536
+    }
+   },
+   {
+    "id": "601632a41d0465d81cb34b672de636c44b06923c6451872a161da0f5634a3b45",
+    "fileId": "78eba8974032271397c3b0cbe53dadfa0d4c23e38c29c58f3fc3f1a95e9ce5e5",
+    "file": "lib/linter.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bf0616e5f1409996290409c8aba756c360b11c84c147d8cc201c673c4c0fa3f8",
+    "side": "new",
+    "old": {
+     "start": 522,
+     "count": 0
+    },
+    "new": {
+     "start": 526,
+     "count": 1
+    },
+    "offsets": {
+     "start": 17714,
+     "end": 17734
+    },
+    "links": [
+     {
+      "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+      "file": "lib/linter.js",
+      "unit": "createStubRule",
+      "side": "new",
+      "start": 513,
+      "end": 536
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "849e6ba6f4bc16ab1416d7b5c0f80a3bcbee41ed449e681065cde583eb60067f",
+     "file": "lib/linter.js",
+     "unit": "createStubRule",
+     "side": "new",
+     "start": 513,
+     "end": 536
+    }
+   }
+  ],
+  "id": "d103648c5f9f0a6a70167486c5aaf8dd81e1a881e1f17f2fe8a3d90711daedf0",
+  "reconciliation": {
+   "expected": [
+    "a9561215ba83c6a8e3afd7a5851b1bdd3c13a8ee765ef44f652c092e13fff6bc",
+    "e011e5bfc6fafa17ff2489b3842cd08930bff6726824ff730e4829e12a8b57d1",
+    "814e75bbe2a38bde79fa0730868353792074d28bb5592fcd6d67aa5e0c02060f",
+    "af59abc7fe773e3450c91094aec85e345cfef1334eb343b7b4354c2bf8805f07",
+    "10713682110e432b645920cbc22dd309ae95b714942bfdd76912e21d8c37654d",
+    "c3a20bf9769d333fb081e7ee8ecd2bfe2e1a76093388b788ea85dca39df74406",
+    "601632a41d0465d81cb34b672de636c44b06923c6451872a161da0f5634a3b45"
+   ],
+   "unit": [
+    "a9561215ba83c6a8e3afd7a5851b1bdd3c13a8ee765ef44f652c092e13fff6bc",
+    "e011e5bfc6fafa17ff2489b3842cd08930bff6726824ff730e4829e12a8b57d1",
+    "814e75bbe2a38bde79fa0730868353792074d28bb5592fcd6d67aa5e0c02060f",
+    "af59abc7fe773e3450c91094aec85e345cfef1334eb343b7b4354c2bf8805f07",
+    "10713682110e432b645920cbc22dd309ae95b714942bfdd76912e21d8c37654d",
+    "c3a20bf9769d333fb081e7ee8ecd2bfe2e1a76093388b788ea85dca39df74406",
+    "601632a41d0465d81cb34b672de636c44b06923c6451872a161da0f5634a3b45"
+   ],
+   "artifact": [],
+   "unassigned": [],
+   "classes": {
+    "source": {
+     "unit": [
+      "a9561215ba83c6a8e3afd7a5851b1bdd3c13a8ee765ef44f652c092e13fff6bc",
+      "e011e5bfc6fafa17ff2489b3842cd08930bff6726824ff730e4829e12a8b57d1",
+      "814e75bbe2a38bde79fa0730868353792074d28bb5592fcd6d67aa5e0c02060f",
+      "af59abc7fe773e3450c91094aec85e345cfef1334eb343b7b4354c2bf8805f07",
+      "10713682110e432b645920cbc22dd309ae95b714942bfdd76912e21d8c37654d",
+      "c3a20bf9769d333fb081e7ee8ecd2bfe2e1a76093388b788ea85dca39df74406",
+      "601632a41d0465d81cb34b672de636c44b06923c6451872a161da0f5634a3b45"
+     ],
+     "artifact": [],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "b4b5e8dcbc20ea32d11328ac82b4d76ba85836e087d14d4c14391cce5475b8cd",
+   "attemptId": "aef6a40e-29cc-42aa-af00-f9cd65434f50",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__62/run-tWA7hK/attempts/aef6a40e-29cc-42aa-af00-f9cd65434f50/row.json",
+    "sha256": "88b3f5e3931d23b4aaf5fcd0eec7ef3019666de6595b49da83ab32a430e8bda5"
+   },
+   "lanes": {
+    "B": "done",
+    "A": "not-run"
+   }
+  },
+  {
+   "id": "06bd9b4d14779b8440bb7c973a146cfde3d9479ac3cc4c0028efb1ea12c89abb",
+   "attemptId": "9edc02b1-bb4a-4f30-b813-893c4c0b80cf",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__62/run-tWA7hK/attempts/9edc02b1-bb4a-4f30-b813-893c4c0b80cf/row.json",
+    "sha256": "f08483e1aa050d2d4f8d559174d058a5ee195953727cdaa7bea6867ce6d56514"
+   },
+   "lanes": {
+    "B": "done"
+   }
+  },
+  {
+   "id": "e6dc997fac03ca93356dec394c1a701083c4c7e8d8ff2b50af8f893ae6a463c7",
+   "attemptId": "720d8e91-c7d1-4695-a71f-09c369a65632",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__62/run-tWA7hK/attempts/720d8e91-c7d1-4695-a71f-09c369a65632/row.json",
+    "sha256": "05c4f782d1598f92ea4c9de8677e1de2ca4c0ef33bb972a8374dcf39d8fd0d13"
+   },
+   "lanes": {
+    "B": "done"
+   }
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/linter.js",
+   "unit": "createStubRule",
+   "lines": [
+    513,
+    536
+   ],
+   "coverage": "refused:ts-strict",
+   "verdict": "PASS-bounded",
+   "laneB": "PASS-bounded",
+   "laneA": null,
+   "witness": null,
+   "reason": "TS2339: Property 'report' does not exist on type 'Object'.",
+   "advice": [
+    {
+     "line": 523,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'report' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "editIds": [
+    "a9561215ba83c6a8e3afd7a5851b1bdd3c13a8ee765ef44f652c092e13fff6bc",
+    "e011e5bfc6fafa17ff2489b3842cd08930bff6726824ff730e4829e12a8b57d1",
+    "814e75bbe2a38bde79fa0730868353792074d28bb5592fcd6d67aa5e0c02060f",
+    "af59abc7fe773e3450c91094aec85e345cfef1334eb343b7b4354c2bf8805f07",
+    "10713682110e432b645920cbc22dd309ae95b714942bfdd76912e21d8c37654d",
+    "c3a20bf9769d333fb081e7ee8ecd2bfe2e1a76093388b788ea85dca39df74406",
+    "601632a41d0465d81cb34b672de636c44b06923c6451872a161da0f5634a3b45"
+   ]
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "b4b5e8dcbc20ea32d11328ac82b4d76ba85836e087d14d4c14391cce5475b8cd",
+   "06bd9b4d14779b8440bb7c973a146cfde3d9479ac3cc4c0028efb1ea12c89abb",
+   "e6dc997fac03ca93356dec394c1a701083c4c7e8d8ff2b50af8f893ae6a463c7"
+  ],
+  "terminal": [
+   "b4b5e8dcbc20ea32d11328ac82b4d76ba85836e087d14d4c14391cce5475b8cd",
+   "06bd9b4d14779b8440bb7c973a146cfde3d9479ac3cc4c0028efb1ea12c89abb",
+   "e6dc997fac03ca93356dec394c1a701083c4c7e8d8ff2b50af8f893ae6a463c7"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [
+    "b4b5e8dcbc20ea32d11328ac82b4d76ba85836e087d14d4c14391cce5475b8cd/B",
+    "b4b5e8dcbc20ea32d11328ac82b4d76ba85836e087d14d4c14391cce5475b8cd/A",
+    "06bd9b4d14779b8440bb7c973a146cfde3d9479ac3cc4c0028efb1ea12c89abb/B",
+    "e6dc997fac03ca93356dec394c1a701083c4c7e8d8ff2b50af8f893ae6a463c7/B"
+   ],
+   "terminal": [
+    "b4b5e8dcbc20ea32d11328ac82b4d76ba85836e087d14d4c14391cce5475b8cd/B",
+    "b4b5e8dcbc20ea32d11328ac82b4d76ba85836e087d14d4c14391cce5475b8cd/A",
+    "06bd9b4d14779b8440bb7c973a146cfde3d9479ac3cc4c0028efb1ea12c89abb/B",
+    "e6dc997fac03ca93356dec394c1a701083c4c7e8d8ff2b50af8f893ae6a463c7/B"
+   ],
+   "complete": true
+  },
+  "complete": true
+ }
+}

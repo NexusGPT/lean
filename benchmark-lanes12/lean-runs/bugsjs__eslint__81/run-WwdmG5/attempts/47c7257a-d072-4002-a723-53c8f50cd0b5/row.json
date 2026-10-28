@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/quotes.js",
+ "unit": "(edit 33bfebc5324c)",
+ "editIds": [
+  "33bfebc5324c91f979133f1d83d73fb29948efb84a0e1a71b10cc4ccea1b292a"
+ ],
+ "lines": [
+  127,
+  127
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

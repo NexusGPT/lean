@@ -1,0 +1,20 @@
+{
+ "file": "lib/watcher.js",
+ "unit": "(edit a74e6b4aff45)",
+ "editIds": [
+  "a74e6b4aff45de40cf42ef86ecce16abb04c6ad67c02fa68fb044a03f2efe0b2"
+ ],
+ "lines": [
+  73,
+  73
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-undef-init.js",
+ "unit": "(edit 7382a571f4f8)",
+ "editIds": [
+  "7382a571f4f8cd00062b9aa80d7381a16c799925995de250568b88bd393edfad"
+ ],
+ "lines": [
+  48,
+  48
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

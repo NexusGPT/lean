@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/keyword-spacing.js",
+ "unit": "(edit 65f3ea90cdab)",
+ "editIds": [
+  "65f3ea90cdab54505eb7ad297b93b49a93790819841e4919e4f9859680a98f6e"
+ ],
+ "lines": [
+  355,
+  355
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/id-match.js",
+ "unit": "(edit 5cd774c223e1)",
+ "editIds": [
+  "5cd774c223e1cb7b5854294227276e0bede86ee445e41898c9fd065086540b83"
+ ],
+ "lines": [
+  118,
+  118
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/launchers/Base.js",
+ "unit": "(edit f914dd1baa00)",
+ "editIds": [
+  "f914dd1baa00d51c4200b9b099f14df5c564da9579d3bccd9c17cd0aa486a127"
+ ],
+ "lines": [
+  108,
+  108
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

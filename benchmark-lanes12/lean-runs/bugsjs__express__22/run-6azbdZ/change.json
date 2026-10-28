@@ -1,0 +1,359 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "d5815922caca984435cbd4d75aeaf12afe73b8cb",
+ "head": "ac36701865976607edd7a34d895dd9f3e2e70122",
+ "files": [
+  {
+   "id": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "oldPath": "lib/request.js",
+   "newPath": "lib/request.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "3d41617ebdfc03af747e15f0794ac8f65e63706a",
+   "newOid": "10c1421aeaa050d5ace9f00d88860c5dbd67ffac",
+   "status": "M",
+   "edits": [
+    "7c93311293cf99d7680d1f37a5ffb1fae41b5a883428e208d9230f567c411442",
+    "e9133524f7104b0243360eb7828742ba096be7258c428c7118d4a8ac4d1f76b2",
+    "cf5a7f8016bd3e93186bd0c2d5412a8bb5187aebed0dd949bc3983d911048e35",
+    "08f98405fb4004e4dbe9cc6e19a78ac69777783e8956d44d28979ebae2380035",
+    "bec23728934159280f180b848509df5f96de889875441a410dd24752d143e00e",
+    "73a2f298de26a70f223c32d477ec1197986d45e0d76d7991ce23dcd084c55cc6",
+    "5bc82afba418961af5f72d347cc22434b1cae73876470a9bb5acd8c9a347a8dc",
+    "8fb9f47903f79e667c39c60d3d823d9d4a1efd2158dbc07ca6c267a70bbefd2f"
+   ],
+   "hunks": [
+    {
+     "id": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+     "old": {
+      "start": 479,
+      "count": 1
+     },
+     "new": {
+      "start": 479,
+      "count": 7
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "def5db832e4cef474d14697b68ee521eff094496f8c7fe06e5b2d1f382a3aead",
+   "newHash": "61402585a9bb11f7a0aba9cd3999038db4bd71ab5da9724635abb60ce9b53772",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "7c93311293cf99d7680d1f37a5ffb1fae41b5a883428e208d9230f567c411442",
+   "fileId": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+   "side": "old",
+   "old": {
+    "start": 479,
+    "count": 1
+   },
+   "new": {
+    "start": 479,
+    "count": 0
+   },
+   "offsets": {
+    "start": 10873,
+    "end": 10902
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "e9133524f7104b0243360eb7828742ba096be7258c428c7118d4a8ac4d1f76b2",
+   "fileId": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+   "side": "new",
+   "old": {
+    "start": 479,
+    "count": 0
+   },
+   "new": {
+    "start": 479,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10873,
+    "end": 10904
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "cf5a7f8016bd3e93186bd0c2d5412a8bb5187aebed0dd949bc3983d911048e35",
+   "fileId": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+   "side": "new",
+   "old": {
+    "start": 479,
+    "count": 0
+   },
+   "new": {
+    "start": 480,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10904,
+    "end": 10932
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "08f98405fb4004e4dbe9cc6e19a78ac69777783e8956d44d28979ebae2380035",
+   "fileId": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+   "side": "new",
+   "old": {
+    "start": 479,
+    "count": 0
+   },
+   "new": {
+    "start": 481,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10932,
+    "end": 10941
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "bec23728934159280f180b848509df5f96de889875441a410dd24752d143e00e",
+   "fileId": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+   "side": "new",
+   "old": {
+    "start": 479,
+    "count": 0
+   },
+   "new": {
+    "start": 482,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10941,
+    "end": 10982
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "73a2f298de26a70f223c32d477ec1197986d45e0d76d7991ce23dcd084c55cc6",
+   "fileId": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+   "side": "new",
+   "old": {
+    "start": 479,
+    "count": 0
+   },
+   "new": {
+    "start": 483,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10982,
+    "end": 10998
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5bc82afba418961af5f72d347cc22434b1cae73876470a9bb5acd8c9a347a8dc",
+   "fileId": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+   "side": "new",
+   "old": {
+    "start": 479,
+    "count": 0
+   },
+   "new": {
+    "start": 484,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10998,
+    "end": 11029
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8fb9f47903f79e667c39c60d3d823d9d4a1efd2158dbc07ca6c267a70bbefd2f",
+   "fileId": "1e2f545e433ff557cdd365313b479a2f331f904379df40454c06a1c0dc2674bc",
+   "file": "lib/request.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dd53581e4b463019897d187340f0b9df1bbe6d9d5d235e2784e5151d0055946a",
+   "side": "new",
+   "old": {
+    "start": 479,
+    "count": 0
+   },
+   "new": {
+    "start": 485,
+    "count": 1
+   },
+   "offsets": {
+    "start": 11029,
+    "end": 11041
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "d4e1f7330284ac22db428bf82a269424989c7ae9efe721fa5caf52167755e30c",
+ "reconciliation": {
+  "expected": [
+   "7c93311293cf99d7680d1f37a5ffb1fae41b5a883428e208d9230f567c411442",
+   "e9133524f7104b0243360eb7828742ba096be7258c428c7118d4a8ac4d1f76b2",
+   "cf5a7f8016bd3e93186bd0c2d5412a8bb5187aebed0dd949bc3983d911048e35",
+   "08f98405fb4004e4dbe9cc6e19a78ac69777783e8956d44d28979ebae2380035",
+   "bec23728934159280f180b848509df5f96de889875441a410dd24752d143e00e",
+   "73a2f298de26a70f223c32d477ec1197986d45e0d76d7991ce23dcd084c55cc6",
+   "5bc82afba418961af5f72d347cc22434b1cae73876470a9bb5acd8c9a347a8dc",
+   "8fb9f47903f79e667c39c60d3d823d9d4a1efd2158dbc07ca6c267a70bbefd2f"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "7c93311293cf99d7680d1f37a5ffb1fae41b5a883428e208d9230f567c411442",
+   "e9133524f7104b0243360eb7828742ba096be7258c428c7118d4a8ac4d1f76b2",
+   "cf5a7f8016bd3e93186bd0c2d5412a8bb5187aebed0dd949bc3983d911048e35",
+   "08f98405fb4004e4dbe9cc6e19a78ac69777783e8956d44d28979ebae2380035",
+   "bec23728934159280f180b848509df5f96de889875441a410dd24752d143e00e",
+   "73a2f298de26a70f223c32d477ec1197986d45e0d76d7991ce23dcd084c55cc6",
+   "5bc82afba418961af5f72d347cc22434b1cae73876470a9bb5acd8c9a347a8dc",
+   "8fb9f47903f79e667c39c60d3d823d9d4a1efd2158dbc07ca6c267a70bbefd2f"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "7c93311293cf99d7680d1f37a5ffb1fae41b5a883428e208d9230f567c411442",
+     "e9133524f7104b0243360eb7828742ba096be7258c428c7118d4a8ac4d1f76b2",
+     "cf5a7f8016bd3e93186bd0c2d5412a8bb5187aebed0dd949bc3983d911048e35",
+     "08f98405fb4004e4dbe9cc6e19a78ac69777783e8956d44d28979ebae2380035",
+     "bec23728934159280f180b848509df5f96de889875441a410dd24752d143e00e",
+     "73a2f298de26a70f223c32d477ec1197986d45e0d76d7991ce23dcd084c55cc6",
+     "5bc82afba418961af5f72d347cc22434b1cae73876470a9bb5acd8c9a347a8dc",
+     "8fb9f47903f79e667c39c60d3d823d9d4a1efd2158dbc07ca6c267a70bbefd2f"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

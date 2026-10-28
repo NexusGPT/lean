@@ -1,0 +1,65 @@
+{
+ "change": "6335ef63e02c3a00126c0c68d0018123f6ca1d0c61506b0809aeb3174d4b9fd0",
+ "tasks": [
+  {
+   "id": "e0956323cb57148e18596346ccfcff8c7f46615d2016b691874ab2b3a65ce5ec",
+   "file": "lib/v1/encoder.js",
+   "unit": "(edit 4a964fdc2d5e)",
+   "lines": [
+    302,
+    302
+   ],
+   "lanes": [],
+   "editIds": [
+    "4a964fdc2d5e36f7589197d9e23ad250c077317882d2636433567b8e6c9aed0a"
+   ],
+   "attemptId": "8a02596a-740f-4f47-8616-a473ccc6dac1",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik/attempts/8a02596a-740f-4f47-8616-a473ccc6dac1"
+  },
+  {
+   "id": "e1c98c7954e18686907ef823f271d970f90cbf1e4c64c8a3b73906f9a1a8d8ad",
+   "file": "lib/v1/encoder.js",
+   "unit": "(edit c1f740295a1a)",
+   "lines": [
+    302,
+    302
+   ],
+   "lanes": [],
+   "editIds": [
+    "c1f740295a1a8f93aaa96296441240bd8cdebfc4b6ea28a9e462c356a44228db"
+   ],
+   "attemptId": "b0407902-304f-43f0-8ad5-e7c13aacf0d5",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik/attempts/b0407902-304f-43f0-8ad5-e7c13aacf0d5"
+  },
+  {
+   "id": "35e0ea143ae4ba714bbc00cd261b7126043ff6edbc9275c4e450def5ebeacd48",
+   "file": "lib/v1/encoder.js",
+   "unit": "(edit 282f664a9f0f)",
+   "lines": [
+    303,
+    303
+   ],
+   "lanes": [],
+   "editIds": [
+    "282f664a9f0f1fca89da516f389c8ab95c8c6eef46f917470289d9a35f1864d8"
+   ],
+   "attemptId": "eb90247d-fc46-439e-9c39-dcb7284b824a",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik/attempts/eb90247d-fc46-439e-9c39-dcb7284b824a"
+  },
+  {
+   "id": "e9e51ac6964b50bea3087d6460e6e48828f2594c579705a117aacc5c93153090",
+   "file": "lib/v1/encoder.js",
+   "unit": "(edit 4a1370700cbd)",
+   "lines": [
+    304,
+    304
+   ],
+   "lanes": [],
+   "editIds": [
+    "4a1370700cbd0151f71ed34293a6af39b7767d5c9d90932149f27c44b30d8b08"
+   ],
+   "attemptId": "b2eed943-7147-4313-befb-b5ea7ba9df15",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik/attempts/b2eed943-7147-4313-befb-b5ea7ba9df15"
+  }
+ ]
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unexpected-multiline.js",
+ "unit": "(edit 545f1216a968)",
+ "editIds": [
+  "545f1216a968c6fe4808417480531df668c9e164307fa3d0cce7de1c40821747"
+ ],
+ "lines": [
+  87,
+  87
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

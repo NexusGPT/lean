@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-extra-boolean-cast.js",
+ "unit": "(edit 750e3e6122f3)",
+ "editIds": [
+  "750e3e6122f32ca50749bd2b3c82c98a47dd0ba4a4431db93817e6a5112014dd"
+ ],
+ "lines": [
+  12,
+  12
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

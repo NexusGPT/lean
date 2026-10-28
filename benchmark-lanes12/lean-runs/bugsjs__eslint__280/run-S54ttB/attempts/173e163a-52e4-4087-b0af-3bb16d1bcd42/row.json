@@ -1,0 +1,20 @@
+{
+ "file": "lib/testers/rule-tester.js",
+ "unit": "(edit 04024b20b266)",
+ "editIds": [
+  "04024b20b266e8c21f9d9c6b2a66331dcefc5fd171f718a5500d20f890bdc997"
+ ],
+ "lines": [
+  500,
+  500
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

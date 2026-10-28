@@ -1,0 +1,447 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__276/run-KQQhmv",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "76c3bd7bba4f4dd7356c7f48c39247ce0cb01360",
+  "head": "8f8b71f37f23bcc727454b5c70206d6459a83e78",
+  "files": [
+   {
+    "id": "f9b87f30e7393ee2ea300977344508d16fbb02673ceb7ff1a592eede904046e8",
+    "file": "lib/rules/brace-style.js",
+    "oldPath": "lib/rules/brace-style.js",
+    "newPath": "lib/rules/brace-style.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "e7eb19dae9058917c68e106df007aa847e74e05f",
+    "newOid": "a44d0163a6381fb76ca303bd860f5a0e3c81f157",
+    "status": "M",
+    "edits": [
+     "d66c13d0cb43a7e8810fff65ce5c78c37820ae19c2f24fc761f590130b6bf2b3",
+     "b268a895d6dd50ccebf5e6e5cdfce0dfef618b4420488702bc5e1f6232049ce8",
+     "a1de30c413e8dce3c00b9146e0d7c2f87bef31bc41420e9716df45c04415172d",
+     "b9f3eeea7ff4739be7177bf082860622fa2b419ce54ccc38952ba4922ca870df",
+     "137f62ae9396dd353de81c56a598aeb103707c9370791cc45b8dd2a81dfadc93"
+    ],
+    "hunks": [
+     {
+      "id": "186aa96efac2da465421fb39e3f7f0e973bdedfd52cdcdf15c909d96ae6d634d",
+      "old": {
+       "start": 67,
+       "count": 1
+      },
+      "new": {
+       "start": 67,
+       "count": 2
+      }
+     },
+     {
+      "id": "e2e331c0990f693279c816ebeb9a10a4c47d96342b2233b89ea79ac66eede100",
+      "old": {
+       "start": 71,
+       "count": 1
+      },
+      "new": {
+       "start": 72,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "3e554c719e0829bc516e00a940aa819bfdb191b023efbeece297082cd1d1721a",
+    "newHash": "8c9ef3efbf1e755eeb41c026b646ae6dc26d3486312c55f8174e0487c8db0857",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "d66c13d0cb43a7e8810fff65ce5c78c37820ae19c2f24fc761f590130b6bf2b3",
+    "fileId": "f9b87f30e7393ee2ea300977344508d16fbb02673ceb7ff1a592eede904046e8",
+    "file": "lib/rules/brace-style.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "186aa96efac2da465421fb39e3f7f0e973bdedfd52cdcdf15c909d96ae6d634d",
+    "side": "old",
+    "old": {
+     "start": 67,
+     "count": 1
+    },
+    "new": {
+     "start": 67,
+     "count": 0
+    },
+    "offsets": {
+     "start": 3315,
+     "end": 3335
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b268a895d6dd50ccebf5e6e5cdfce0dfef618b4420488702bc5e1f6232049ce8",
+    "fileId": "f9b87f30e7393ee2ea300977344508d16fbb02673ceb7ff1a592eede904046e8",
+    "file": "lib/rules/brace-style.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "186aa96efac2da465421fb39e3f7f0e973bdedfd52cdcdf15c909d96ae6d634d",
+    "side": "new",
+    "old": {
+     "start": 67,
+     "count": 0
+    },
+    "new": {
+     "start": 67,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3315,
+     "end": 3335
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "a1de30c413e8dce3c00b9146e0d7c2f87bef31bc41420e9716df45c04415172d",
+    "fileId": "f9b87f30e7393ee2ea300977344508d16fbb02673ceb7ff1a592eede904046e8",
+    "file": "lib/rules/brace-style.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "186aa96efac2da465421fb39e3f7f0e973bdedfd52cdcdf15c909d96ae6d634d",
+    "side": "new",
+    "old": {
+     "start": 67,
+     "count": 0
+    },
+    "new": {
+     "start": 68,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3335,
+     "end": 3397
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b9f3eeea7ff4739be7177bf082860622fa2b419ce54ccc38952ba4922ca870df",
+    "fileId": "f9b87f30e7393ee2ea300977344508d16fbb02673ceb7ff1a592eede904046e8",
+    "file": "lib/rules/brace-style.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e2e331c0990f693279c816ebeb9a10a4c47d96342b2233b89ea79ac66eede100",
+    "side": "old",
+    "old": {
+     "start": 71,
+     "count": 1
+    },
+    "new": {
+     "start": 72,
+     "count": 0
+    },
+    "offsets": {
+     "start": 3390,
+     "end": 3464
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "137f62ae9396dd353de81c56a598aeb103707c9370791cc45b8dd2a81dfadc93",
+    "fileId": "f9b87f30e7393ee2ea300977344508d16fbb02673ceb7ff1a592eede904046e8",
+    "file": "lib/rules/brace-style.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e2e331c0990f693279c816ebeb9a10a4c47d96342b2233b89ea79ac66eede100",
+    "side": "new",
+    "old": {
+     "start": 71,
+     "count": 0
+    },
+    "new": {
+     "start": 72,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3452,
+     "end": 3532
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "1be9ddcab1f60dd2cc1fa4f8169b85622eb69e1d9022d96e37f3d7ba999452ab",
+  "reconciliation": {
+   "expected": [
+    "d66c13d0cb43a7e8810fff65ce5c78c37820ae19c2f24fc761f590130b6bf2b3",
+    "b268a895d6dd50ccebf5e6e5cdfce0dfef618b4420488702bc5e1f6232049ce8",
+    "a1de30c413e8dce3c00b9146e0d7c2f87bef31bc41420e9716df45c04415172d",
+    "b9f3eeea7ff4739be7177bf082860622fa2b419ce54ccc38952ba4922ca870df",
+    "137f62ae9396dd353de81c56a598aeb103707c9370791cc45b8dd2a81dfadc93"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "d66c13d0cb43a7e8810fff65ce5c78c37820ae19c2f24fc761f590130b6bf2b3",
+    "b268a895d6dd50ccebf5e6e5cdfce0dfef618b4420488702bc5e1f6232049ce8",
+    "a1de30c413e8dce3c00b9146e0d7c2f87bef31bc41420e9716df45c04415172d",
+    "b9f3eeea7ff4739be7177bf082860622fa2b419ce54ccc38952ba4922ca870df",
+    "137f62ae9396dd353de81c56a598aeb103707c9370791cc45b8dd2a81dfadc93"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "d66c13d0cb43a7e8810fff65ce5c78c37820ae19c2f24fc761f590130b6bf2b3",
+      "b268a895d6dd50ccebf5e6e5cdfce0dfef618b4420488702bc5e1f6232049ce8",
+      "a1de30c413e8dce3c00b9146e0d7c2f87bef31bc41420e9716df45c04415172d",
+      "b9f3eeea7ff4739be7177bf082860622fa2b419ce54ccc38952ba4922ca870df",
+      "137f62ae9396dd353de81c56a598aeb103707c9370791cc45b8dd2a81dfadc93"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "0f66c56abcc277b25b9f3cc0ddcaeefa7522752cde0150157a96fb01b9d159d6",
+   "attemptId": "5afdb4e1-6f6c-48e3-9750-d694fcf3f780",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__276/run-KQQhmv/attempts/5afdb4e1-6f6c-48e3-9750-d694fcf3f780/row.json",
+    "sha256": "95643fcfe648a25ebd2c4bc8905fb6e73779013700fd0367a872ebf213fbb3ef"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "f8ae6ed173c7fc439069af9669121c330a078177a92f19c90438b9eafba8962b",
+   "attemptId": "31991a7e-29b0-4d5b-b34e-e96e1aba2f10",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__276/run-KQQhmv/attempts/31991a7e-29b0-4d5b-b34e-e96e1aba2f10/row.json",
+    "sha256": "ba2e1b694838a6e872ad061f4c99148bae7ebbcfdf066a62e8e9f5fbae574f2c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "7bd34eaa8e03197a1665497669f65ae18d9761d4fdd80e8b2d5e214544506f06",
+   "attemptId": "d5afd5bd-c927-4207-aed4-4f88be36ee9f",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__276/run-KQQhmv/attempts/d5afd5bd-c927-4207-aed4-4f88be36ee9f/row.json",
+    "sha256": "693b6364b4c562960d8f207d881d6e83a46f27a2d0a4ab1fdf85dde9bc2a3d56"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a71f7f8a030ea5bd13716bf58c6eee888f724765dc9d7a96dd7c7f2acdd6335b",
+   "attemptId": "b852bbb9-de69-45a1-ac7d-e4d1ca0db582",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__276/run-KQQhmv/attempts/b852bbb9-de69-45a1-ac7d-e4d1ca0db582/row.json",
+    "sha256": "bf68f6bc35d8f749309d4668cbb3a4f6a4fc4c917ae589a72341d4706fa80f5a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "45327fa55a8fda8ba1f7cb8fee6b0c6709f4b304fe4e239183e08d7d9510cb8b",
+   "attemptId": "486d8a79-35ce-4f7e-aafb-fea93f691325",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__276/run-KQQhmv/attempts/486d8a79-35ce-4f7e-aafb-fea93f691325/row.json",
+    "sha256": "7706f9817e56f827586809673aa5ab3816a148d97d22d60a94eb150aa8db4e28"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/brace-style.js",
+   "unit": "(edit d66c13d0cb43)",
+   "editIds": [
+    "d66c13d0cb43a7e8810fff65ce5c78c37820ae19c2f24fc761f590130b6bf2b3"
+   ],
+   "lines": [
+    67,
+    67
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/brace-style.js",
+   "unit": "(edit b268a895d6dd)",
+   "editIds": [
+    "b268a895d6dd50ccebf5e6e5cdfce0dfef618b4420488702bc5e1f6232049ce8"
+   ],
+   "lines": [
+    67,
+    67
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/brace-style.js",
+   "unit": "(edit a1de30c413e8)",
+   "editIds": [
+    "a1de30c413e8dce3c00b9146e0d7c2f87bef31bc41420e9716df45c04415172d"
+   ],
+   "lines": [
+    68,
+    68
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/brace-style.js",
+   "unit": "(edit b9f3eeea7ff4)",
+   "editIds": [
+    "b9f3eeea7ff4739be7177bf082860622fa2b419ce54ccc38952ba4922ca870df"
+   ],
+   "lines": [
+    71,
+    71
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/brace-style.js",
+   "unit": "(edit 137f62ae9396)",
+   "editIds": [
+    "137f62ae9396dd353de81c56a598aeb103707c9370791cc45b8dd2a81dfadc93"
+   ],
+   "lines": [
+    72,
+    72
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "0f66c56abcc277b25b9f3cc0ddcaeefa7522752cde0150157a96fb01b9d159d6",
+   "f8ae6ed173c7fc439069af9669121c330a078177a92f19c90438b9eafba8962b",
+   "7bd34eaa8e03197a1665497669f65ae18d9761d4fdd80e8b2d5e214544506f06",
+   "a71f7f8a030ea5bd13716bf58c6eee888f724765dc9d7a96dd7c7f2acdd6335b",
+   "45327fa55a8fda8ba1f7cb8fee6b0c6709f4b304fe4e239183e08d7d9510cb8b"
+  ],
+  "terminal": [
+   "0f66c56abcc277b25b9f3cc0ddcaeefa7522752cde0150157a96fb01b9d159d6",
+   "f8ae6ed173c7fc439069af9669121c330a078177a92f19c90438b9eafba8962b",
+   "7bd34eaa8e03197a1665497669f65ae18d9761d4fdd80e8b2d5e214544506f06",
+   "a71f7f8a030ea5bd13716bf58c6eee888f724765dc9d7a96dd7c7f2acdd6335b",
+   "45327fa55a8fda8ba1f7cb8fee6b0c6709f4b304fe4e239183e08d7d9510cb8b"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

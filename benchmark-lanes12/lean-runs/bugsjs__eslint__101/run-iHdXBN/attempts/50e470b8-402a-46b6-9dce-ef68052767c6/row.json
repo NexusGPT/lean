@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-useless-escape.js",
+ "unit": "(edit e676e10612d6)",
+ "editIds": [
+  "e676e10612d6a70ecc86c537d4618bf56688d44bdcb4932920085aaeb2f276bf"
+ ],
+ "lines": [
+  55,
+  55
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

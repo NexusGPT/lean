@@ -1,0 +1,21 @@
+{
+ "file": "index.js",
+ "unit": "(edit 31ff4c00d53f)",
+ "editIds": [
+  "31ff4c00d53fc599429583f6001871d70d6f45b0c77058c0a306a7fa209cc822"
+ ],
+ "lines": [
+  3,
+  3
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

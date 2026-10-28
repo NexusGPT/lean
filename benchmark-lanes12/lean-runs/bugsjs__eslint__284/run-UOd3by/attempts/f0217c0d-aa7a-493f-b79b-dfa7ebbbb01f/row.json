@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-param-reassign.js",
+ "unit": "(edit 8d24c5478cd4)",
+ "editIds": [
+  "8d24c5478cd498da572034b77123cbf21bc2d79cd7ffb4080d196e25dd44f814"
+ ],
+ "lines": [
+  104,
+  104
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

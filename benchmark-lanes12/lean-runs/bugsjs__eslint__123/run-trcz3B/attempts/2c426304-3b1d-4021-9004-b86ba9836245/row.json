@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/semi.js",
+ "unit": "(edit 2acddf8408ad)",
+ "editIds": [
+  "2acddf8408ad48873738e1221327b21a7072bc2f84ca46715b219b8777475338"
+ ],
+ "lines": [
+  130,
+  130
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

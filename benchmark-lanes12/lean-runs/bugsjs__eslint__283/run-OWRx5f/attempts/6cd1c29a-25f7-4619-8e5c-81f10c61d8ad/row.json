@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/max-statements-per-line.js",
+ "unit": "(edit 935b7ce150c9)",
+ "editIds": [
+  "935b7ce150c9bc74b8036b374754b28db4bb115a5aff51f0549c45ba546dcbc6"
+ ],
+ "lines": [
+  103,
+  103
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

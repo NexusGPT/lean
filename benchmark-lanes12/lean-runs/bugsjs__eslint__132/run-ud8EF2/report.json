@@ -1,0 +1,461 @@
+{
+ "identity": "1e05daf80698f0da63071e6fedc886faecff80c5a96d32ec888ac53f3c2f87e8",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/ast-utils.js",
+   "unit": "(edit cab906fe35e7)",
+   "editIds": [
+    "cab906fe35e7c0e1ab2ff00bb6d9a3dd5cafc583595498a2cd481c9808732dee"
+   ],
+   "lines": [
+    563,
+    563
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-parens.js",
+   "unit": "(edit 583c08343409)",
+   "editIds": [
+    "583c083434094804ce0f66c57871bfee27a9e046dbbb88801239984b6808969f"
+   ],
+   "lines": [
+    590,
+    590
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "8e1fee1986b38f3686a1f42bdb01f8dc51ed4a98",
+  "head": "0d95715811863778cf1facb454440d79ef546ca7",
+  "files": [
+   {
+    "id": "8fa70103eaefc224619d4d3f366027b679d14a8321c67ee64c354e68c45a6409",
+    "file": "lib/ast-utils.js",
+    "oldPath": "lib/ast-utils.js",
+    "newPath": "lib/ast-utils.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "66b39d922ab257a53f151cbbd30e9db52846408b",
+    "newOid": "9e171ea316fc319f87dde8052a6ab84d53b9946f",
+    "status": "M",
+    "edits": [
+     "cab906fe35e7c0e1ab2ff00bb6d9a3dd5cafc583595498a2cd481c9808732dee"
+    ],
+    "hunks": [
+     {
+      "id": "7646fc30d583fc32f69e7984295fe5bf3b0756f01c2613f5ee9dec0fa9bd76cd",
+      "old": {
+       "start": 562,
+       "count": 0
+      },
+      "new": {
+       "start": 563,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "fa1eb1f8d40cf305afab63a6d8ee0d9d42b5337d67527f65caf84531b794992c",
+    "newHash": "e6c2485e0f690d18d95a838fdb5d6ed2615e33cdcc0c562b709cacb19f449348",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isModifyingReference",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 34,
+       "end": 50,
+       "offset": 1268,
+       "stop": 1800,
+       "id": "f326a3d58382927d17bb32b2eeb89814dfead0fe3b25e0e036b210a97621537a"
+      },
+      {
+       "name": "startsWithUpperCase",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 58,
+       "end": 60,
+       "offset": 1988,
+       "stop": 2069,
+       "id": "c4c491fd0d11e73eeb000068b78b93731e1e5dae015439fb2d16633ac27adcfa"
+      },
+      {
+       "name": "isES5Constructor",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 67,
+       "end": 69,
+       "offset": 2245,
+       "stop": 2339,
+       "id": "bb2d253e9e2a326956e9af8c8e54aa45950eb741845e833e228c3124e4f6eecf"
+      },
+      {
+       "name": "getUpperFunction",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 76,
+       "end": 84,
+       "offset": 2496,
+       "stop": 2686,
+       "id": "ba2b4df9fc1881310f87b9af20b4332ccf28297710936f300fb0dd72806f3cc4"
+      },
+      {
+       "name": "isNullOrUndefined",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 92,
+       "end": 98,
+       "offset": 2883,
+       "stop": 3138,
+       "id": "9502d72da2c0f248b404b1f04d6549743cc0bacecfd2cc54e8ea771cce47f67f"
+      },
+      {
+       "name": "isCallee",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 105,
+       "end": 107,
+       "offset": 3292,
+       "stop": 3400,
+       "id": "9577f622c0b8584c298a5fdabc6d122586b447a5a4b73027ef078fecfd51bcab"
+      },
+      {
+       "name": "isReflectApply",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 114,
+       "end": 123,
+       "offset": 3574,
+       "stop": 3879,
+       "id": "55b484f8b54392f451198c6a0b89e949487e5e167b73d5fecae35688e712655f"
+      },
+      {
+       "name": "isArrayFromMethod",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 130,
+       "end": 139,
+       "offset": 4047,
+       "stop": 4371,
+       "id": "332b3f4e4172f322632dac772f17b5da5d66cf7d3b6f26073639b56a212662e7"
+      },
+      {
+       "name": "isMethodWhichHasThisArg",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 146,
+       "end": 160,
+       "offset": 4569,
+       "stop": 4910,
+       "id": "e44098f6939cab5ade72bc1136cbfe894a5cb21935b4f52a7b8d56dc20321503"
+      },
+      {
+       "name": "hasJSDocThisTag",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 168,
+       "end": 182,
+       "offset": 5187,
+       "stop": 5724,
+       "id": "057b7184ee6e243ba67f58429f6871a175fc54b7a93a2e5ec1dfeb3eee32137f"
+      },
+      {
+       "name": "isParenthesised",
+       "side": "old",
+       "file": "lib/ast-utils.js",
+       "start": 191,
+       "end": 198,
+       "offset": 5970,
+       "stop": 6332,
+       "id": "04b7b70059ae3fa8f7804ec88e30d27891ddc6752d3a69d733d002f1cd94c8e6"
+      }
+     ],
+     "new": [
+      {
+       "name": "isModifyingReference",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 34,
+       "end": 50,
+       "offset": 1268,
+       "stop": 1800,
+       "id": "2696a10fc414b5947cd1c928ed34254f540918195a821cc633a6e26d0cc2ef05"
+      },
+      {
+       "name": "startsWithUpperCase",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 58,
+       "end": 60,
+       "offset": 1988,
+       "stop": 2069,
+       "id": "3ce07c5ea22e30181fcffa8034e5ef3a0671c75521b3c8ef056a92c33b0f7dd6"
+      },
+      {
+       "name": "isES5Constructor",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 67,
+       "end": 69,
+       "offset": 2245,
+       "stop": 2339,
+       "id": "1e65ea8d35ed247eaad69ca42fa531f9a071e47f5c82d5afb1580f801934219b"
+      },
+      {
+       "name": "getUpperFunction",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 76,
+       "end": 84,
+       "offset": 2496,
+       "stop": 2686,
+       "id": "b5ca0c9ddbe6143bde232c01260c3f8363f77c8a665d4cdc576716fc2a4cbff2"
+      },
+      {
+       "name": "isNullOrUndefined",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 92,
+       "end": 98,
+       "offset": 2883,
+       "stop": 3138,
+       "id": "64bd19bcc1fd1612172ddcb385bd531b05510c1077b246c0c66f09dd71df6257"
+      },
+      {
+       "name": "isCallee",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 105,
+       "end": 107,
+       "offset": 3292,
+       "stop": 3400,
+       "id": "ece4891825657198821e9ed8c2f1a0d2f057d5459e1713271d0369966cb79068"
+      },
+      {
+       "name": "isReflectApply",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 114,
+       "end": 123,
+       "offset": 3574,
+       "stop": 3879,
+       "id": "385b12fffcc09e718ce47f8bda23e768da27e2b02fca8a4ea5032f75bb2dea25"
+      },
+      {
+       "name": "isArrayFromMethod",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 130,
+       "end": 139,
+       "offset": 4047,
+       "stop": 4371,
+       "id": "5d8782bdefddabae43ad0d138e0bf9c0dc3626a719511bea5395704735554dfa"
+      },
+      {
+       "name": "isMethodWhichHasThisArg",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 146,
+       "end": 160,
+       "offset": 4569,
+       "stop": 4910,
+       "id": "da43688a66e3ce17cacc5b5da90c9f6e30248def1a4c41ef73085e2f14d25e3d"
+      },
+      {
+       "name": "hasJSDocThisTag",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 168,
+       "end": 182,
+       "offset": 5187,
+       "stop": 5724,
+       "id": "3c77ea543ef1c7ec7cf89ae346e1f275404864c79c762cfec4a3ea86f0889fc1"
+      },
+      {
+       "name": "isParenthesised",
+       "side": "new",
+       "file": "lib/ast-utils.js",
+       "start": 191,
+       "end": 198,
+       "offset": 5970,
+       "stop": 6332,
+       "id": "af7f2f7afb48ba490401b467adca67fef4a326af7c31cabe101a3fb171b42cc4"
+      }
+     ]
+    }
+   },
+   {
+    "id": "9fd8e70cb978f98d0c20056fe133377b6fa5c80c59787ee3a1e07b62ba4932fe",
+    "file": "lib/rules/no-extra-parens.js",
+    "oldPath": "lib/rules/no-extra-parens.js",
+    "newPath": "lib/rules/no-extra-parens.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "1d355cf0a313f4717f5a355b1df2e82111c85aae",
+    "newOid": "dc42e748920b038faec59c3203761d8b4a4517ae",
+    "status": "M",
+    "edits": [
+     "583c083434094804ce0f66c57871bfee27a9e046dbbb88801239984b6808969f"
+    ],
+    "hunks": [
+     {
+      "id": "2a0415d58c554b9a893715a4b39b9a27c57a68327123da599982167b1800f65a",
+      "old": {
+       "start": 589,
+       "count": 0
+      },
+      "new": {
+       "start": 590,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "03d5bd5019d8386a80348e622ac56469fe95054b1031f022f0e725eacae12fe8",
+    "newHash": "efc50f429ff56507d69ddf7734531f73a6351d4e5f9746a239175ee41a99d426",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "cab906fe35e7c0e1ab2ff00bb6d9a3dd5cafc583595498a2cd481c9808732dee",
+    "fileId": "8fa70103eaefc224619d4d3f366027b679d14a8321c67ee64c354e68c45a6409",
+    "file": "lib/ast-utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "7646fc30d583fc32f69e7984295fe5bf3b0756f01c2613f5ee9dec0fa9bd76cd",
+    "side": "new",
+    "old": {
+     "start": 562,
+     "count": 0
+    },
+    "new": {
+     "start": 563,
+     "count": 1
+    },
+    "offsets": {
+     "start": 18704,
+     "end": 18740
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "583c083434094804ce0f66c57871bfee27a9e046dbbb88801239984b6808969f",
+    "fileId": "9fd8e70cb978f98d0c20056fe133377b6fa5c80c59787ee3a1e07b62ba4932fe",
+    "file": "lib/rules/no-extra-parens.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2a0415d58c554b9a893715a4b39b9a27c57a68327123da599982167b1800f65a",
+    "side": "new",
+    "old": {
+     "start": 589,
+     "count": 0
+    },
+    "new": {
+     "start": 590,
+     "count": 1
+    },
+    "offsets": {
+     "start": 22464,
+     "end": 22509
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "1e05daf80698f0da63071e6fedc886faecff80c5a96d32ec888ac53f3c2f87e8",
+  "reconciliation": {
+   "expected": [
+    "cab906fe35e7c0e1ab2ff00bb6d9a3dd5cafc583595498a2cd481c9808732dee",
+    "583c083434094804ce0f66c57871bfee27a9e046dbbb88801239984b6808969f"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "cab906fe35e7c0e1ab2ff00bb6d9a3dd5cafc583595498a2cd481c9808732dee",
+    "583c083434094804ce0f66c57871bfee27a9e046dbbb88801239984b6808969f"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "cab906fe35e7c0e1ab2ff00bb6d9a3dd5cafc583595498a2cd481c9808732dee",
+      "583c083434094804ce0f66c57871bfee27a9e046dbbb88801239984b6808969f"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "994820363bbbc9a0c4b95c29df6d58094d028e89d71e78b264cf6666cb5eb09f",
+   "195d0a134d9f8a7d2aa42efad0ba74d20f49effd01c3c6480366a228f3d50dfe"
+  ],
+  "terminal": [
+   "994820363bbbc9a0c4b95c29df6d58094d028e89d71e78b264cf6666cb5eb09f",
+   "195d0a134d9f8a7d2aa42efad0ba74d20f49effd01c3c6480366a228f3d50dfe"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__132/run-ud8EF2/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__132/run-ud8EF2"
+}

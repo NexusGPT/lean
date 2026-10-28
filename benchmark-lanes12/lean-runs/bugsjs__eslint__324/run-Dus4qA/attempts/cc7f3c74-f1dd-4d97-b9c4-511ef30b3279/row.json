@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-redeclare.js",
+ "unit": "(edit f27385e708f9)",
+ "editIds": [
+  "f27385e708f949fec396df235c0f3d4223dc231262cf195738c0f2bab61d8d66"
+ ],
+ "lines": [
+  18,
+  18
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

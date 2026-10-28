@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-invalid-regexp.js",
+ "unit": "(edit 83ddb14cd4a2)",
+ "editIds": [
+  "83ddb14cd4a26760b16a02af469d6d51a9f924d83dcc51fc431dd6f31843468b"
+ ],
+ "lines": [
+  107,
+  107
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

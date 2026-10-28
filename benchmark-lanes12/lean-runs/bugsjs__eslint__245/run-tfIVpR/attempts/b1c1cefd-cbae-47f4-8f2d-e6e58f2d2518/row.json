@@ -1,0 +1,21 @@
+{
+ "file": "lib/ast-utils.js",
+ "unit": "(edit de8c7d6d95fc)",
+ "editIds": [
+  "de8c7d6d95fcfd4cd19d95e487f04570da0f2905b45d18deb5897b9c4af28daa"
+ ],
+ "lines": [
+  24,
+  24
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

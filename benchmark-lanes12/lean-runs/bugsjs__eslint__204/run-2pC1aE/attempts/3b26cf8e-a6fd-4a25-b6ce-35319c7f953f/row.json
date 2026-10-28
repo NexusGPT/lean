@@ -1,0 +1,20 @@
+{
+ "file": "lib/eslint.js",
+ "unit": "(edit 4871b69ffa90)",
+ "editIds": [
+  "4871b69ffa90f9089bcb2095f9916d2a19bea03d813b330efe45d92224bb0d91"
+ ],
+ "lines": [
+  965,
+  965
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

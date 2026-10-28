@@ -1,0 +1,226 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__94/run-i1ceh9",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "3e6131eaaa3f9f96263e05dd0bed741a88bdfa1c",
+  "head": "6ccb2931c779282ffc531d2c75c48c8fbca5ba3b",
+  "files": [
+   {
+    "id": "6f391858ca23ac59757817cddc5cdfeebeb673a6395e535e2147d371c3399094",
+    "file": "lib/rules/space-infix-ops.js",
+    "oldPath": "lib/rules/space-infix-ops.js",
+    "newPath": "lib/rules/space-infix-ops.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "9831e8e2af60852aad354522e182f806b00dc2c0",
+    "newOid": "d919a1225a2bf5980047f5b24d2b3ae034659229",
+    "status": "M",
+    "edits": [
+     "60158cb6168b84d496413d6e834925e7ed37cd655be16c33f5ceb8795e4ddd7d",
+     "c88bf4f2d5c900911a6a28245d3f458a6f23742a062164859d38cc5a28fc7df8"
+    ],
+    "hunks": [
+     {
+      "id": "30b19b6152dcc7a584fcfc21796c20e9a914020b114cf83afb25605d8c45e76e",
+      "old": {
+       "start": 60,
+       "count": 1
+      },
+      "new": {
+       "start": 60,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "dfce4d7d58c8700ae62ed3367ec12809f4ffb2baa07048bdbb01292b3e2ac9c4",
+    "newHash": "07d3b31729e371e452998fbe61c59a872fde0c739fa2780da2ec35e1f1f459f9",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "60158cb6168b84d496413d6e834925e7ed37cd655be16c33f5ceb8795e4ddd7d",
+    "fileId": "6f391858ca23ac59757817cddc5cdfeebeb673a6395e535e2147d371c3399094",
+    "file": "lib/rules/space-infix-ops.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "30b19b6152dcc7a584fcfc21796c20e9a914020b114cf83afb25605d8c45e76e",
+    "side": "old",
+    "old": {
+     "start": 60,
+     "count": 1
+    },
+    "new": {
+     "start": 60,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1840,
+     "end": 1888
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c88bf4f2d5c900911a6a28245d3f458a6f23742a062164859d38cc5a28fc7df8",
+    "fileId": "6f391858ca23ac59757817cddc5cdfeebeb673a6395e535e2147d371c3399094",
+    "file": "lib/rules/space-infix-ops.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "30b19b6152dcc7a584fcfc21796c20e9a914020b114cf83afb25605d8c45e76e",
+    "side": "new",
+    "old": {
+     "start": 60,
+     "count": 0
+    },
+    "new": {
+     "start": 60,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1840,
+     "end": 1915
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "3e3f4640663ad6642345fa64c9e6d32994b16eebf6f7033f20b29b10a44f3792",
+  "reconciliation": {
+   "expected": [
+    "60158cb6168b84d496413d6e834925e7ed37cd655be16c33f5ceb8795e4ddd7d",
+    "c88bf4f2d5c900911a6a28245d3f458a6f23742a062164859d38cc5a28fc7df8"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "60158cb6168b84d496413d6e834925e7ed37cd655be16c33f5ceb8795e4ddd7d",
+    "c88bf4f2d5c900911a6a28245d3f458a6f23742a062164859d38cc5a28fc7df8"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "60158cb6168b84d496413d6e834925e7ed37cd655be16c33f5ceb8795e4ddd7d",
+      "c88bf4f2d5c900911a6a28245d3f458a6f23742a062164859d38cc5a28fc7df8"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "bc4f07a6fcb924369dca4a5328b901d5213b953cccf37e350538142fb1c744d4",
+   "attemptId": "a059ce1b-8ac7-464d-bbdb-9c2003819057",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__94/run-i1ceh9/attempts/a059ce1b-8ac7-464d-bbdb-9c2003819057/row.json",
+    "sha256": "540e345a182962cde1979b1a379c3c7af36fdeaf43c9bf71065152a2b5854454"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "370a16031fb1c6cfb1dc53bd283a13e54e5c51bccabb2eb9f8bc6d8ffc9ac7a9",
+   "attemptId": "c3890b9f-b5e4-4252-8126-5498478e96a9",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__94/run-i1ceh9/attempts/c3890b9f-b5e4-4252-8126-5498478e96a9/row.json",
+    "sha256": "fe4b0a6fc1d1faee4b830d54160aa4e9a149a3787bd77bf0e6425ea6b5549fb1"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/space-infix-ops.js",
+   "unit": "(edit 60158cb6168b)",
+   "editIds": [
+    "60158cb6168b84d496413d6e834925e7ed37cd655be16c33f5ceb8795e4ddd7d"
+   ],
+   "lines": [
+    60,
+    60
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/space-infix-ops.js",
+   "unit": "(edit c88bf4f2d5c9)",
+   "editIds": [
+    "c88bf4f2d5c900911a6a28245d3f458a6f23742a062164859d38cc5a28fc7df8"
+   ],
+   "lines": [
+    60,
+    60
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "bc4f07a6fcb924369dca4a5328b901d5213b953cccf37e350538142fb1c744d4",
+   "370a16031fb1c6cfb1dc53bd283a13e54e5c51bccabb2eb9f8bc6d8ffc9ac7a9"
+  ],
+  "terminal": [
+   "bc4f07a6fcb924369dca4a5328b901d5213b953cccf37e350538142fb1c744d4",
+   "370a16031fb1c6cfb1dc53bd283a13e54e5c51bccabb2eb9f8bc6d8ffc9ac7a9"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

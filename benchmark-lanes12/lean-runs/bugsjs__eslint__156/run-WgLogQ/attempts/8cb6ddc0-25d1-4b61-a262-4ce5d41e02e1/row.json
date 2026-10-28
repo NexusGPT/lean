@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-spaced-func.js",
+ "unit": "(edit f7fb92b27385)",
+ "editIds": [
+  "f7fb92b2738572284046d47cc8a1c76ad8698a3878514d1897427311ad1c15fc"
+ ],
+ "lines": [
+  41,
+  41
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

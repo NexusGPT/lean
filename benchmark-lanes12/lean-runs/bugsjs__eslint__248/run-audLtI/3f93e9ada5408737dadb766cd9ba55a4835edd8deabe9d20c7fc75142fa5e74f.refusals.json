@@ -1,0 +1,36 @@
+{
+ "identity": "3f93e9ada5408737dadb766cd9ba55a4835edd8deabe9d20c7fc75142fa5e74f",
+ "records": [
+  {
+   "check": "refused:var",
+   "unit": "modifyRulesFromComments",
+   "file": "lib/eslint.js",
+   "location": {
+    "start": 153,
+    "end": 153
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 153,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 155,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    },
+    {
+     "line": 179,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    }
+   ],
+   "reason": "parent: unit modifyRulesFromComments not exported"
+  }
+ ]
+}

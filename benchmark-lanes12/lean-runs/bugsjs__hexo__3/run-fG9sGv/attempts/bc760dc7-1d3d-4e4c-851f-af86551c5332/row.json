@@ -1,0 +1,20 @@
+{
+ "file": "lib/plugins/helper/is.js",
+ "unit": "(edit 6c97db5ebbc6)",
+ "editIds": [
+  "6c97db5ebbc6b45d95b99345c181c083456b062966ba774dac6ba70289162d82"
+ ],
+ "lines": [
+  26,
+  26
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

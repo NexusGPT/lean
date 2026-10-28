@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/sort-vars.js",
+ "unit": "(edit 6fe6c5839009)",
+ "editIds": [
+  "6fe6c58390097f881e787014e5fb90c162460f78734db3cea2ccf4459c803ed9"
+ ],
+ "lines": [
+  28,
+  28
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

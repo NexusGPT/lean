@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-useless-constructor.js",
+ "unit": "(edit e22adea30c02)",
+ "editIds": [
+  "e22adea30c02532d632e3c40b40e158e2cd28ed84d58db81e32b3824ff898a4b"
+ ],
+ "lines": [
+  63,
+  63
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

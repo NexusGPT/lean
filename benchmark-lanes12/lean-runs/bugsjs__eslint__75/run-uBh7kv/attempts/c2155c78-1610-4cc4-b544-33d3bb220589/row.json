@@ -1,0 +1,21 @@
+{
+ "file": "lib/linter.js",
+ "unit": "(edit 8341efa882a9)",
+ "editIds": [
+  "8341efa882a955a4a4838b1e034506176afe9028961d525ffe259edff7320d50"
+ ],
+ "lines": [
+  407,
+  407
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

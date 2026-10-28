@@ -1,0 +1,749 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "fce191708b698d7c72e7b24db4495d5a6cf565c7",
+  "head": "8b650afbcd5573b1bbb29c8eba164238b6dd6a96",
+  "files": [
+   {
+    "id": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "oldPath": "lib/rules/quote-props.js",
+    "newPath": "lib/rules/quote-props.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "7f3e293f69ab8cfbf7b1634d4e06db8f2d684769",
+    "newOid": "f3453adb063af24f02bd16241596c8f8df2d6aff",
+    "status": "M",
+    "edits": [
+     "911912c9d19ed64cb13ca8fb287f9476bb056bbb1fa1e91af067fa4a5b43955c",
+     "8cbd9fac20bf3419bc0ac675d5a1aa73e1b866e229fe856342359c853e60aab6",
+     "76b7b9d5eb432a8a11268629fd7f2d517daeb1e3cb3f29c658f3e8a6dbebdc37",
+     "eb9af5646cd821660facb639616005ae8258883cf436236d90093219613fa8c3",
+     "ae5d92f61d8520a002d98e8ff389ed7e4cba0baa4e25846a0ad4335b0b7c5f39",
+     "c6dd6a861e6922d610d7ca814e5f3252703faac45f42a062e63e850ba93c6a58",
+     "a2eb2c4f82e8f07c7603b5b60ac4637a3f13a6ba40498b8a740b501e63c096fa",
+     "45d64d6cf41a4117a334a0d0aad8142e9041cdbb8356b48584634a80211bcb1f",
+     "c3256269c37e26cb2cceb9e0dcc66f8b0919b319e5d0bdadcac984fae63a20ac"
+    ],
+    "hunks": [
+     {
+      "id": "00f5d79a5c010a50e41a68cf74c3c046ec2c4b3eb9f63edd759dd9d69755f4ef",
+      "old": {
+       "start": 43,
+       "count": 0
+      },
+      "new": {
+       "start": 44,
+       "count": 1
+      }
+     },
+     {
+      "id": "ba0ed0e39bfb8f581a80b857d3e5489a46eae70f101b8bdc7104408517da0980",
+      "old": {
+       "start": 49,
+       "count": 2
+      },
+      "new": {
+       "start": 50,
+       "count": 2
+      }
+     },
+     {
+      "id": "9bb3a34f2314a521f6f1b458e85038f873d505732dda216ec460bbd25453a4f2",
+      "old": {
+       "start": 86,
+       "count": 1
+      },
+      "new": {
+       "start": 87,
+       "count": 1
+      }
+     },
+     {
+      "id": "2a6f5e08a54f4d5f25eeecdfebd71703d3a4be95538c0afaf82fc121d68a9fb8",
+      "old": {
+       "start": 142,
+       "count": 1
+      },
+      "new": {
+       "start": 143,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "32eb1b666589ab943485cdc4f94a5f1dd84936b92c76dc80aa55de78d356b596",
+    "newHash": "7a866bbf4413d774d78568bc239ffd8dda8b914fcafb96111a2a45ad0913ae22",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "911912c9d19ed64cb13ca8fb287f9476bb056bbb1fa1e91af067fa4a5b43955c",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "00f5d79a5c010a50e41a68cf74c3c046ec2c4b3eb9f63edd759dd9d69755f4ef",
+    "side": "new",
+    "old": {
+     "start": 43,
+     "count": 0
+    },
+    "new": {
+     "start": 44,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1721,
+     "end": 1787
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "8cbd9fac20bf3419bc0ac675d5a1aa73e1b866e229fe856342359c853e60aab6",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "ba0ed0e39bfb8f581a80b857d3e5489a46eae70f101b8bdc7104408517da0980",
+    "side": "old",
+    "old": {
+     "start": 49,
+     "count": 1
+    },
+    "new": {
+     "start": 50,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1987,
+     "end": 2049
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "76b7b9d5eb432a8a11268629fd7f2d517daeb1e3cb3f29c658f3e8a6dbebdc37",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "ba0ed0e39bfb8f581a80b857d3e5489a46eae70f101b8bdc7104408517da0980",
+    "side": "old",
+    "old": {
+     "start": 50,
+     "count": 1
+    },
+    "new": {
+     "start": 50,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2049,
+     "end": 2087
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "eb9af5646cd821660facb639616005ae8258883cf436236d90093219613fa8c3",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "ba0ed0e39bfb8f581a80b857d3e5489a46eae70f101b8bdc7104408517da0980",
+    "side": "new",
+    "old": {
+     "start": 49,
+     "count": 0
+    },
+    "new": {
+     "start": 50,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2053,
+     "end": 2123
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ae5d92f61d8520a002d98e8ff389ed7e4cba0baa4e25846a0ad4335b0b7c5f39",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "ba0ed0e39bfb8f581a80b857d3e5489a46eae70f101b8bdc7104408517da0980",
+    "side": "new",
+    "old": {
+     "start": 49,
+     "count": 0
+    },
+    "new": {
+     "start": 51,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2123,
+     "end": 2221
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c6dd6a861e6922d610d7ca814e5f3252703faac45f42a062e63e850ba93c6a58",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "9bb3a34f2314a521f6f1b458e85038f873d505732dda216ec460bbd25453a4f2",
+    "side": "old",
+    "old": {
+     "start": 86,
+     "count": 1
+    },
+    "new": {
+     "start": 87,
+     "count": 0
+    },
+    "offsets": {
+     "start": 3094,
+     "end": 3170
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "a2eb2c4f82e8f07c7603b5b60ac4637a3f13a6ba40498b8a740b501e63c096fa",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "9bb3a34f2314a521f6f1b458e85038f873d505732dda216ec460bbd25453a4f2",
+    "side": "new",
+    "old": {
+     "start": 86,
+     "count": 0
+    },
+    "new": {
+     "start": 87,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3228,
+     "end": 3315
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "45d64d6cf41a4117a334a0d0aad8142e9041cdbb8356b48584634a80211bcb1f",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2a6f5e08a54f4d5f25eeecdfebd71703d3a4be95538c0afaf82fc121d68a9fb8",
+    "side": "old",
+    "old": {
+     "start": 142,
+     "count": 1
+    },
+    "new": {
+     "start": 143,
+     "count": 0
+    },
+    "offsets": {
+     "start": 5122,
+     "end": 5250
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c3256269c37e26cb2cceb9e0dcc66f8b0919b319e5d0bdadcac984fae63a20ac",
+    "fileId": "3dece82d6620ae25a84157d8c140a77123f7a71a554c431068f8fc7b3223d6a8",
+    "file": "lib/rules/quote-props.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2a6f5e08a54f4d5f25eeecdfebd71703d3a4be95538c0afaf82fc121d68a9fb8",
+    "side": "new",
+    "old": {
+     "start": 142,
+     "count": 0
+    },
+    "new": {
+     "start": 143,
+     "count": 1
+    },
+    "offsets": {
+     "start": 5267,
+     "end": 5406
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "45d200b40221e367453dd1e3e4b288810c70ef147daa622db29d4a34dbe15033",
+  "reconciliation": {
+   "expected": [
+    "911912c9d19ed64cb13ca8fb287f9476bb056bbb1fa1e91af067fa4a5b43955c",
+    "8cbd9fac20bf3419bc0ac675d5a1aa73e1b866e229fe856342359c853e60aab6",
+    "76b7b9d5eb432a8a11268629fd7f2d517daeb1e3cb3f29c658f3e8a6dbebdc37",
+    "eb9af5646cd821660facb639616005ae8258883cf436236d90093219613fa8c3",
+    "ae5d92f61d8520a002d98e8ff389ed7e4cba0baa4e25846a0ad4335b0b7c5f39",
+    "c6dd6a861e6922d610d7ca814e5f3252703faac45f42a062e63e850ba93c6a58",
+    "a2eb2c4f82e8f07c7603b5b60ac4637a3f13a6ba40498b8a740b501e63c096fa",
+    "45d64d6cf41a4117a334a0d0aad8142e9041cdbb8356b48584634a80211bcb1f",
+    "c3256269c37e26cb2cceb9e0dcc66f8b0919b319e5d0bdadcac984fae63a20ac"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "911912c9d19ed64cb13ca8fb287f9476bb056bbb1fa1e91af067fa4a5b43955c",
+    "8cbd9fac20bf3419bc0ac675d5a1aa73e1b866e229fe856342359c853e60aab6",
+    "76b7b9d5eb432a8a11268629fd7f2d517daeb1e3cb3f29c658f3e8a6dbebdc37",
+    "eb9af5646cd821660facb639616005ae8258883cf436236d90093219613fa8c3",
+    "ae5d92f61d8520a002d98e8ff389ed7e4cba0baa4e25846a0ad4335b0b7c5f39",
+    "c6dd6a861e6922d610d7ca814e5f3252703faac45f42a062e63e850ba93c6a58",
+    "a2eb2c4f82e8f07c7603b5b60ac4637a3f13a6ba40498b8a740b501e63c096fa",
+    "45d64d6cf41a4117a334a0d0aad8142e9041cdbb8356b48584634a80211bcb1f",
+    "c3256269c37e26cb2cceb9e0dcc66f8b0919b319e5d0bdadcac984fae63a20ac"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "911912c9d19ed64cb13ca8fb287f9476bb056bbb1fa1e91af067fa4a5b43955c",
+      "8cbd9fac20bf3419bc0ac675d5a1aa73e1b866e229fe856342359c853e60aab6",
+      "76b7b9d5eb432a8a11268629fd7f2d517daeb1e3cb3f29c658f3e8a6dbebdc37",
+      "eb9af5646cd821660facb639616005ae8258883cf436236d90093219613fa8c3",
+      "ae5d92f61d8520a002d98e8ff389ed7e4cba0baa4e25846a0ad4335b0b7c5f39",
+      "c6dd6a861e6922d610d7ca814e5f3252703faac45f42a062e63e850ba93c6a58",
+      "a2eb2c4f82e8f07c7603b5b60ac4637a3f13a6ba40498b8a740b501e63c096fa",
+      "45d64d6cf41a4117a334a0d0aad8142e9041cdbb8356b48584634a80211bcb1f",
+      "c3256269c37e26cb2cceb9e0dcc66f8b0919b319e5d0bdadcac984fae63a20ac"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "a20526cbba8212528a427f6944f0e71d3e2868e0edbda589a335a1412938f207",
+   "attemptId": "536e40d6-e27c-46fc-9e88-63c147b141bc",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/536e40d6-e27c-46fc-9e88-63c147b141bc/row.json",
+    "sha256": "53a7dd55a32238e055d12cb566129753ab419c1b4047ce2ff8043ecb31c09aba"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "b81bfc47a269bc2f367c381f51275aa7b0a156c214682ea8a95c40515ae38f3f",
+   "attemptId": "a3a8482b-d174-4d64-bb3d-7543910c16fb",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/a3a8482b-d174-4d64-bb3d-7543910c16fb/row.json",
+    "sha256": "3532469661d2c936732e1be79528a470d8fd97fe40751492c1b0b645619f2298"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "450755c346ef195661dac74083736a09a6df3468ea2edd68086bb269b077e117",
+   "attemptId": "32f53125-0dff-4e36-bd11-ece784d9dd1a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/32f53125-0dff-4e36-bd11-ece784d9dd1a/row.json",
+    "sha256": "66479578d54dbef49a5e7514b4134f579d767608518d0744ce146f3a273622f4"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "02cad9a85419d628890abc52718fa26030ca4ae412bbf61a29f4aa744873c274",
+   "attemptId": "68b646a6-3fb3-46e8-812a-3438691a5204",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/68b646a6-3fb3-46e8-812a-3438691a5204/row.json",
+    "sha256": "a59c13081d4fd033e60d118569fea8cf670052daae6587dce258ff8db2267380"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "51c34b384471eada717b3c56ad6891e77693bf67e6468e4c4e5af1c7138db0de",
+   "attemptId": "4cdbc301-db71-4f40-bc49-9a2a1daa63ba",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/4cdbc301-db71-4f40-bc49-9a2a1daa63ba/row.json",
+    "sha256": "611cfb3a7ed2b3c15a7c19add98f5a1498fcdd7ff19fe4fc004899ed900c5016"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "3e3b1bdbc406cbdeb603d717d0fc83deb7c602380e54c0b2d4b8113311a307b2",
+   "attemptId": "354e9cc0-96af-43c4-8949-01eab9e8de49",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/354e9cc0-96af-43c4-8949-01eab9e8de49/row.json",
+    "sha256": "edcf37cfee23f8efc5ef0948ad8dd8a67599c5efda1f9546990deee4827d1ad3"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "8bf0a9ab14730841646f60edba889b978493ec8bf69d98977f2dc584b4c84421",
+   "attemptId": "332e2863-fc2d-48d0-8d23-9ca39056acd1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/332e2863-fc2d-48d0-8d23-9ca39056acd1/row.json",
+    "sha256": "96aa327aaa9a2ffc083041874f633f3e30a68d907d30e079118e2e38e4a21892"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "751b2c069f8b83163a2c0db9ae11baebdf1def32d474ffb57deab04bda106f43",
+   "attemptId": "b9783f49-3ef5-4bed-a7e0-e5e71631da26",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/b9783f49-3ef5-4bed-a7e0-e5e71631da26/row.json",
+    "sha256": "984d6727d105b51c1d0f9795a0e4859ba73c3546caa486d6f9f4fc71fbeb9691"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "06ed63293fd1a02b3678b6b96dd50c0c86d84238b03a3bfac78f578d0e1647e5",
+   "attemptId": "32178055-3a1c-4eb0-8b11-6ae9458a9701",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__117/run-AsecH4/attempts/32178055-3a1c-4eb0-8b11-6ae9458a9701/row.json",
+    "sha256": "5b83875f5735402acf5e3fc78edfcc1627bc33f68fa6c861de773651d56f106b"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit 911912c9d19e)",
+   "editIds": [
+    "911912c9d19ed64cb13ca8fb287f9476bb056bbb1fa1e91af067fa4a5b43955c"
+   ],
+   "lines": [
+    44,
+    44
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit 8cbd9fac20bf)",
+   "editIds": [
+    "8cbd9fac20bf3419bc0ac675d5a1aa73e1b866e229fe856342359c853e60aab6"
+   ],
+   "lines": [
+    49,
+    49
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit 76b7b9d5eb43)",
+   "editIds": [
+    "76b7b9d5eb432a8a11268629fd7f2d517daeb1e3cb3f29c658f3e8a6dbebdc37"
+   ],
+   "lines": [
+    50,
+    50
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit eb9af5646cd8)",
+   "editIds": [
+    "eb9af5646cd821660facb639616005ae8258883cf436236d90093219613fa8c3"
+   ],
+   "lines": [
+    50,
+    50
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit ae5d92f61d85)",
+   "editIds": [
+    "ae5d92f61d8520a002d98e8ff389ed7e4cba0baa4e25846a0ad4335b0b7c5f39"
+   ],
+   "lines": [
+    51,
+    51
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit c6dd6a861e69)",
+   "editIds": [
+    "c6dd6a861e6922d610d7ca814e5f3252703faac45f42a062e63e850ba93c6a58"
+   ],
+   "lines": [
+    86,
+    86
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit a2eb2c4f82e8)",
+   "editIds": [
+    "a2eb2c4f82e8f07c7603b5b60ac4637a3f13a6ba40498b8a740b501e63c096fa"
+   ],
+   "lines": [
+    87,
+    87
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit 45d64d6cf41a)",
+   "editIds": [
+    "45d64d6cf41a4117a334a0d0aad8142e9041cdbb8356b48584634a80211bcb1f"
+   ],
+   "lines": [
+    142,
+    142
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/quote-props.js",
+   "unit": "(edit c3256269c37e)",
+   "editIds": [
+    "c3256269c37e26cb2cceb9e0dcc66f8b0919b319e5d0bdadcac984fae63a20ac"
+   ],
+   "lines": [
+    143,
+    143
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "a20526cbba8212528a427f6944f0e71d3e2868e0edbda589a335a1412938f207",
+   "b81bfc47a269bc2f367c381f51275aa7b0a156c214682ea8a95c40515ae38f3f",
+   "450755c346ef195661dac74083736a09a6df3468ea2edd68086bb269b077e117",
+   "02cad9a85419d628890abc52718fa26030ca4ae412bbf61a29f4aa744873c274",
+   "51c34b384471eada717b3c56ad6891e77693bf67e6468e4c4e5af1c7138db0de",
+   "3e3b1bdbc406cbdeb603d717d0fc83deb7c602380e54c0b2d4b8113311a307b2",
+   "8bf0a9ab14730841646f60edba889b978493ec8bf69d98977f2dc584b4c84421",
+   "751b2c069f8b83163a2c0db9ae11baebdf1def32d474ffb57deab04bda106f43",
+   "06ed63293fd1a02b3678b6b96dd50c0c86d84238b03a3bfac78f578d0e1647e5"
+  ],
+  "terminal": [
+   "a20526cbba8212528a427f6944f0e71d3e2868e0edbda589a335a1412938f207",
+   "b81bfc47a269bc2f367c381f51275aa7b0a156c214682ea8a95c40515ae38f3f",
+   "450755c346ef195661dac74083736a09a6df3468ea2edd68086bb269b077e117",
+   "02cad9a85419d628890abc52718fa26030ca4ae412bbf61a29f4aa744873c274",
+   "51c34b384471eada717b3c56ad6891e77693bf67e6468e4c4e5af1c7138db0de",
+   "3e3b1bdbc406cbdeb603d717d0fc83deb7c602380e54c0b2d4b8113311a307b2",
+   "8bf0a9ab14730841646f60edba889b978493ec8bf69d98977f2dc584b4c84421",
+   "751b2c069f8b83163a2c0db9ae11baebdf1def32d474ffb57deab04bda106f43",
+   "06ed63293fd1a02b3678b6b96dd50c0c86d84238b03a3bfac78f578d0e1647e5"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

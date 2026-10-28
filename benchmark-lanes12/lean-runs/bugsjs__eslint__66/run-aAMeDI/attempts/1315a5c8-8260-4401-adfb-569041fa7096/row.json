@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-sequences.js",
+ "unit": "(edit 7dc26bd42687)",
+ "editIds": [
+  "7dc26bd426873fbb4002882810191cb2ea275e7c53f182e021aa9daa18d04083"
+ ],
+ "lines": [
+  34,
+  34
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

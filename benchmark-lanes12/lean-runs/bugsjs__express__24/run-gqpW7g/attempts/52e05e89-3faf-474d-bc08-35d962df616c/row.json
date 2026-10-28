@@ -1,0 +1,33 @@
+{
+ "file": "lib/router/index.js",
+ "unit": "sendOptionsResponse",
+ "lines": [
+  573,
+  581
+ ],
+ "coverage": "refused:var",
+ "verdict": "ASK",
+ "laneB": "ASK",
+ "laneA": null,
+ "witness": null,
+ "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__24/run-gqpW7g/sources/lib/router/.lean_head_79335_index.js: ASK(CommonJS wrapper): require is not defined",
+ "advice": [
+  {
+   "line": 575,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  }
+ ],
+ "editIds": [
+  "fb9ea6f47a7ed7abfa3d85ca7aa97229a0f559bf23f39e2693a83e4efa95c971",
+  "2a45d2d59ece300bdc904bc6ebdd38611c6fc0c0d791e8043e88afbf5f01107a",
+  "a6bacc114342b1cf032472c0c5084361f2846c964d3d724c71f83ebfa1c18cfe",
+  "96368cb431d207a0a980b06799dad58ccd329bb4e7d8828a6115d28705630438",
+  "6f3d995944d5ef47a93a63a7c080977d921fc8f6e68081645d1555a72e8d19c3",
+  "22cb9ccc7f1799e799d0a79fa42e7aab23984be2ab7e863a1431bac8e983ed66",
+  "c6c6bd1cf02effdcaca7898a61292b8cfd05d1764cb1ecbbc23bd115b24aa4ff",
+  "704e8b27eeb442adb040560883cc07575970f2cd8a9fd48b850cec3f9e97aa67",
+  "e46f425a8db1ec79b8e9df1b3119222f2518e959992751ec62eb07552c763711"
+ ]
+}

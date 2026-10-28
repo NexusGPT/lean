@@ -1,0 +1,21 @@
+{
+ "file": "lib/models/post.js",
+ "unit": "(edit 24499dc781c4)",
+ "editIds": [
+  "24499dc781c47489308c3f719d72a13b8f2a5843fa4f8e0576dd58113d90fde5"
+ ],
+ "lines": [
+  83,
+  83
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (exported property assignment)",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

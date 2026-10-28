@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/dot-notation.js",
+ "unit": "(edit 234294053a78)",
+ "editIds": [
+  "234294053a78bd4c72ceb9eb4d4167fe2a4bb57bc74ca08a5c932f165e440465"
+ ],
+ "lines": [
+  11,
+  11
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

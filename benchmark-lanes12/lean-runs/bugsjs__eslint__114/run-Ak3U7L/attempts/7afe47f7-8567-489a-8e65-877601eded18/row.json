@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-extra-boolean-cast.js",
+ "unit": "(edit 6c674c8292b4)",
+ "editIds": [
+  "6c674c8292b4e95a23e7b49fc138f35962ed4587a33e2985b1b08f0903503369"
+ ],
+ "lines": [
+  10,
+  10
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

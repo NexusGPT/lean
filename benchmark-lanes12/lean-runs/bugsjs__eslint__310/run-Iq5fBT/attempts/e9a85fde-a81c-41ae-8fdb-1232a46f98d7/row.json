@@ -1,0 +1,20 @@
+{
+ "file": "lib/cli.js",
+ "unit": "(edit 4cf2af648ec7)",
+ "editIds": [
+  "4cf2af648ec71e315db610c3344aa30d138eb6a165cef94cc051c5c84c1ab287"
+ ],
+ "lines": [
+  31,
+  31
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

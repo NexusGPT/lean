@@ -1,0 +1,21 @@
+{
+ "file": "lib/eslint.js",
+ "unit": "(edit a8435cceb140)",
+ "editIds": [
+  "a8435cceb1404e19694f6717cc417152bdc2cc598f411b0ef2119b2cadd155b1"
+ ],
+ "lines": [
+  785,
+  785
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

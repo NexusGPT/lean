@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-fallthrough.js",
+ "unit": "(edit 5562e4f28841)",
+ "editIds": [
+  "5562e4f288418caa744ca35879bc845e7b24470db3464545db39db2f7127c746"
+ ],
+ "lines": [
+  39,
+  39
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

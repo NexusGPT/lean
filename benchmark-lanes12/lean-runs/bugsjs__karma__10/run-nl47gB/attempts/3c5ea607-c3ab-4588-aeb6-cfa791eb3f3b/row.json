@@ -1,0 +1,21 @@
+{
+ "file": "lib/watcher.js",
+ "unit": "(edit 2c9c920f251a)",
+ "editIds": [
+  "2c9c920f251a8fdef9009ab4055c4b199ca5fb800f5151573b4b62903a6fe7c1"
+ ],
+ "lines": [
+  78,
+  78
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/max-len.js",
+ "unit": "(edit 64295979d8a7)",
+ "editIds": [
+  "64295979d8a7bd06ddef3cd9d365d77e59892cd909b6a7c3969f211dbf6596f5"
+ ],
+ "lines": [
+  23,
+  23
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

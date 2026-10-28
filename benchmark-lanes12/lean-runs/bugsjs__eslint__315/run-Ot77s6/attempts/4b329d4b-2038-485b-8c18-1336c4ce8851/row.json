@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-await-in-loop.js",
+ "unit": "(edit 6e07aaf86a61)",
+ "editIds": [
+  "6e07aaf86a6131a3b4c835e73f13640f3a4b43f350616b965008d106cf3a452a"
+ ],
+ "lines": [
+  87,
+  87
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

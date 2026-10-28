@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-redeclare.js",
+ "unit": "(edit 5c87a2fe60d1)",
+ "editIds": [
+  "5c87a2fe60d1e0e9bbf17f5653fbe93a3df8dbbf5bf1f9e8fb36d59cb1b4c909"
+ ],
+ "lines": [
+  61,
+  61
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

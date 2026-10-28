@@ -1,0 +1,537 @@
+{
+ "key": "7d855d3c15936be087c41d12af1f7025a426cd16cc16970359dcf9d71dbace79",
+ "context": "14ba61d2315bf824673beff79eb771744bd9453665538d5ebda2a01551aade6d",
+ "row": {
+  "file": "lib/rules/prefer-const.js",
+  "unit": "getIdentifierIfShouldBeConst",
+  "lines": [
+   89,
+   136
+  ],
+  "verdict": "WITNESS",
+  "coverage": "checked",
+  "certificate": {
+   "tool": "lean-ts v3",
+   "identity": "1e8a7d34ebb46aadd6d3d0b779debbe93ed6f790426098c7eb91fddbaa4a1d75",
+   "unit": "getIdentifierIfShouldBeConst",
+   "parent": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__254/run-0Jl7lm/sources/lib/rules/.lean_base_14086_prefer-const.js",
+    "sha256": "ad1cfca52a2b9e91"
+   },
+   "candidate": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__254/run-0Jl7lm/sources/lib/rules/.lean_head_14086_prefer-const.js",
+    "sha256": "77bec72aa52005a5"
+   },
+   "lanes": {
+    "B": {
+     "verdict": "WITNESS",
+     "reason": null,
+     "bound": {
+      "n": 100,
+      "seed": 1,
+      "ms": 2000,
+      "reached": {
+       "body": 14,
+       "guard": 0
+      },
+      "states": [
+       {
+        "input": 0,
+        "args": [
+         {
+          "defs": [],
+          "eslintUsed": {
+           "$fake": "arg0.eslintUsed"
+          },
+          "references": "v7vz7",
+          "scope": {
+           "type": "global"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 1,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         true
+        ]
+       },
+       {
+        "input": 2,
+        "args": [
+         {
+          "defs": [
+           {
+            "name": {
+             "$fake": "arg0.defs[0].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[1].name"
+            }
+           },
+           {
+            "$fake": "arg0.defs[2]"
+           }
+          ],
+          "eslintUsed": null,
+          "references": "abc",
+          "scope": {
+           "$fake": "arg0.scope"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 3,
+        "args": [
+         {
+          "defs": [
+           {
+            "name": {
+             "$fake": "arg0.defs[0].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[1].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[2].name"
+            }
+           }
+          ],
+          "eslintUsed": null,
+          "references": "Property",
+          "scope": {
+           "$fake": "arg0.scope"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 4,
+        "args": [
+         {
+          "defs": [
+           {
+            "name": {
+             "$fake": "arg0.defs[0].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[1].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[2].name"
+            }
+           },
+           {
+            "$fake": "arg0.defs[3]"
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[4].name"
+            }
+           }
+          ],
+          "eslintUsed": {
+           "$undefined": true
+          },
+          "references": "x y",
+          "scope": {
+           "$fake": "arg0.scope"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 5,
+        "args": [
+         {
+          "defs": [],
+          "eslintUsed": {
+           "$undefined": true
+          },
+          "references": "0",
+          "scope": {
+           "type": "AssignmentExpression"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 6,
+        "args": [
+         {
+          "defs": [
+           {
+            "$fake": "arg0.defs[0]"
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[1].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[2].name"
+            }
+           }
+          ],
+          "eslintUsed": false,
+          "references": "",
+          "scope": {
+           "type": "global"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 7,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         true
+        ]
+       },
+       {
+        "input": 8,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         true
+        ]
+       },
+       {
+        "input": 9,
+        "args": [
+         {
+          "defs": {
+           "$fake": "arg0.defs"
+          },
+          "eslintUsed": 0,
+          "references": "vhi2g",
+          "scope": {
+           "type": "SwitchCase"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 10,
+        "args": [
+         {
+          "defs": [],
+          "eslintUsed": "",
+          "references": "v63cd",
+          "scope": {
+           "$fake": "arg0.scope"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 11,
+        "args": [
+         {
+          "defs": [
+           {
+            "name": {
+             "$fake": "arg0.defs[0].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[1].name"
+            }
+           }
+          ],
+          "eslintUsed": "",
+          "references": "Hello, World! 2024-01-31 10:30",
+          "scope": {
+           "$fake": "arg0.scope"
+          }
+         },
+         true
+        ]
+       },
+       {
+        "input": 12,
+        "args": [
+         {
+          "defs": [
+           {
+            "name": {
+             "$fake": "arg0.defs[0].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[1].name"
+            }
+           }
+          ],
+          "eslintUsed": {
+           "$fake": "arg0.eslintUsed"
+          },
+          "references": "vcf2a",
+          "scope": {
+           "type": "global"
+          }
+         },
+         false
+        ]
+       },
+       {
+        "input": 13,
+        "args": [
+         {
+          "defs": [
+           {
+            "name": {
+             "$fake": "arg0.defs[0].name"
+            }
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[1].name"
+            }
+           },
+           {
+            "$fake": "arg0.defs[2]"
+           },
+           {
+            "name": {
+             "$fake": "arg0.defs[3].name"
+            }
+           },
+           {
+            "$fake": "arg0.defs[4]"
+           }
+          ],
+          "eslintUsed": {
+           "$fake": "arg0.eslintUsed"
+          },
+          "references": "line one\nline two",
+          "scope": {
+           "$fake": "arg0.scope"
+          }
+         },
+         false
+        ]
+       }
+      ],
+      "heaps": {
+       "assignments": 0,
+       "pool": 2,
+       "shapes": {}
+      },
+      "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+      "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+      "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+      "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+      "library": {
+       "records": 0,
+       "ops": {},
+       "calls": {},
+       "sampled": [],
+       "outOfModel": 0,
+       "callbackEffects": 0,
+       "defectRecords": 0,
+       "defects": []
+      }
+     },
+     "witnesses": [
+      {
+       "input": 1,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        true
+       ],
+       "where": {
+        "field": "trace",
+        "index": 1,
+        "parent": null,
+        "candidate": {
+         "op": "get",
+         "path": "arg0.scope",
+         "args": []
+        },
+        "lines": {
+         "kind": "effect; parent record absent",
+         "parent": null,
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__254/run-0Jl7lm/sources/lib/rules/.lean_head_14086_prefer-const.js",
+          "start": 90,
+          "end": 92,
+          "text": "if (variable.eslintUsed && variable.scope.type === \"global\") {\n        return null;\n    }"
+         }
+        }
+       }
+      },
+      {
+       "input": 7,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        true
+       ],
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__254/run-0Jl7lm/sources/lib/rules/.lean_base_14086_prefer-const.js",
+          "start": 86,
+          "end": 86,
+          "text": "return null;"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__254/run-0Jl7lm/sources/lib/rules/.lean_head_14086_prefer-const.js",
+          "start": 90,
+          "end": 92,
+          "text": "if (variable.eslintUsed && variable.scope.type === \"global\") {\n        return null;\n    }"
+         }
+        }
+       }
+      },
+      {
+       "input": 13,
+       "args": [
+        {
+         "defs": [
+          {
+           "name": {
+            "$fake": "arg0.defs[0].name"
+           }
+          },
+          {
+           "name": {
+            "$fake": "arg0.defs[1].name"
+           }
+          },
+          {
+           "$fake": "arg0.defs[2]"
+          },
+          {
+           "name": {
+            "$fake": "arg0.defs[3].name"
+           }
+          },
+          {
+           "$fake": "arg0.defs[4]"
+          }
+         ],
+         "eslintUsed": {
+          "$fake": "arg0.eslintUsed"
+         },
+         "references": "line one\nline two",
+         "scope": {
+          "$fake": "arg0.scope"
+         }
+        },
+        false
+       ],
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__254/run-0Jl7lm/sources/lib/rules/.lean_base_14086_prefer-const.js",
+          "start": 86,
+          "end": 86,
+          "text": "return null;"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__254/run-0Jl7lm/sources/lib/rules/.lean_head_14086_prefer-const.js",
+          "start": 102,
+          "end": 118,
+          "text": "if (reference.isWrite()) {\n            const isReassigned = (\n                writer !== null &&\n                writer.identifier !== reference.identifier\n            );\n\n            if (isReassigned"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "tools": {
+    "node": "v24.18.0"
+   },
+   "unitTextEqual": false,
+   "observation": {
+    "layer": "values and the reachable object graph",
+    "renders": null,
+    "effects": "the trace of environment requests and pending work",
+    "schedule": "synchronous; pending work recorded, never fired"
+   },
+   "library": {
+    "records": 0,
+    "ops": {},
+    "outOfModel": 0,
+    "callbackEffects": 0,
+    "defects": 0
+   },
+   "verdict": "WITNESS"
+  },
+  "laneB": "WITNESS",
+  "laneA": null,
+  "witness": {
+   "input": 1,
+   "args": [
+    {
+     "$fake": "arg0"
+    },
+    true
+   ],
+   "where": {
+    "field": "trace",
+    "index": 1,
+    "parent": null,
+    "candidate": {
+     "op": "get",
+     "path": "arg0.scope",
+     "args": []
+    },
+    "lines": {
+     "kind": "effect; parent record absent",
+     "parent": null,
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__254/run-0Jl7lm/sources/lib/rules/.lean_head_14086_prefer-const.js",
+      "start": 90,
+      "end": 92,
+      "text": "if (variable.eslintUsed && variable.scope.type === \"global\") {\n        return null;\n    }"
+     }
+    }
+   }
+  },
+  "reason": null,
+  "advice": [],
+  "editIds": [
+   "4dd6fc64e92fdf3c8ffd5374fb80b54ed363692a1b04eee55ead63eaf01b646d",
+   "7f058728a01429721845707302a94d5c05cb75b9d08350561927b1da097e5e01"
+  ]
+ }
+}

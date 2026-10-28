@@ -1,0 +1,21 @@
+{
+ "file": "lib/middleware/karma.js",
+ "unit": "(edit 72aaeb3aa648)",
+ "editIds": [
+  "72aaeb3aa648e95dfc0d34ff0bd200e547a791afaa0482217d0390b4c3f4050a"
+ ],
+ "lines": [
+  71,
+  71
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

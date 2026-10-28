@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-shadow.js",
+ "unit": "(edit 1da2338bbc5b)",
+ "editIds": [
+  "1da2338bbc5b98f1799997cf6f72e32bad71ce759f1857901b7557717434544f"
+ ],
+ "lines": [
+  159,
+  159
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

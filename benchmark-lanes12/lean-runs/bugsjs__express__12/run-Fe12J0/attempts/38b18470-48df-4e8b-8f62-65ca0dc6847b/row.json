@@ -1,0 +1,21 @@
+{
+ "file": "lib/router/layer.js",
+ "unit": "(edit 97c477c874e9)",
+ "editIds": [
+  "97c477c874e906d3f81f1f1c5a3c61e792ecf5cca0406fd49c4881c9a1b518ee"
+ ],
+ "lines": [
+  139,
+  139
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

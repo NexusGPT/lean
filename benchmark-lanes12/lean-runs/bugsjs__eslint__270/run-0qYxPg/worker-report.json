@@ -1,0 +1,506 @@
+{
+ "identity": "5a5a7a870fcd61e8f8760d2d30d507416c3894f476ef0e7c10a4ce8937e12321",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/eslint.js",
+   "unit": "prepareConfig",
+   "lines": [
+    369,
+    425
+   ],
+   "coverage": "refused:ts-strict",
+   "verdict": "ASK",
+   "laneB": "ASK",
+   "laneA": null,
+   "witness": null,
+   "reason": "parent: unit prepareConfig not exported",
+   "advice": [
+    {
+     "line": 371,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'globals' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 371,
+     "rule": "unsupported-member",
+     "msg": "property .globals is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 371,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'globals' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 371,
+     "rule": "unsupported-member",
+     "msg": "property .global is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 371,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'global' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 372,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'global' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 374,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 378,
+     "rule": "unsupported-member",
+     "msg": "property .rules is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    }
+   ],
+   "editIds": [
+    "9cd45cdb3168e8b89d21a9e006ca39f5795ada68c4d9981fb670bed8065e8b52",
+    "39d04798c138528286201da7e4aa11a469b992b4c952f47c14bf9613ac2c3ec0"
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/eslint.js",
+     "unit": "prepareConfig",
+     "lines": [
+      369,
+      425
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "6a607bd0a2ca455b16cb3bbf42443c5a5146eb71",
+  "head": "d0aa6c89efdf8d9cf659eef0624c359c8ec9a5d8",
+  "files": [
+   {
+    "id": "3d5d304df6eb5572cc354d1c72e1e24ae1c1d2ef3437fa592432d11ac59efd8c",
+    "file": "lib/eslint.js",
+    "oldPath": "lib/eslint.js",
+    "newPath": "lib/eslint.js",
+    "oldMode": "100755",
+    "newMode": "100755",
+    "oldOid": "5feb7ab6dbb89e7f76e8a514c5433eea5155b898",
+    "newOid": "6f051c12c5df075d08f4b56951621aaaa27f46d4",
+    "status": "M",
+    "edits": [
+     "9cd45cdb3168e8b89d21a9e006ca39f5795ada68c4d9981fb670bed8065e8b52",
+     "39d04798c138528286201da7e4aa11a469b992b4c952f47c14bf9613ac2c3ec0"
+    ],
+    "hunks": [
+     {
+      "id": "c91dded53ed9c3374ddc0c8349ae1e45fc05d0fa04be43e0f64a330468a6dbf6",
+      "old": {
+       "start": 396,
+       "count": 1
+      },
+      "new": {
+       "start": 396,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "503ef80476183139021e03cabaa3becb465f5fed006ed07477c01cd584f04a83",
+    "newHash": "d789be9a1c4aa155195ae7342f9099bd47c99a6fa62ecaacf5aaff4b110aeb5b",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "parseBooleanConfig",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 44,
+       "end": 68,
+       "offset": 1747,
+       "stop": 2428,
+       "id": "0ae2d95d2073c7c36e41b24d8bb807a6afb1f7f1170ed2d6d9204c13fe3e18b9"
+      },
+      {
+       "name": "parseJsonConfig",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 77,
+       "end": 97,
+       "offset": 2723,
+       "stop": 3309,
+       "id": "39f0062c6e58513642941b8684863edeb986fc10c18e91df1a1ef750a2abb1d4"
+      },
+      {
+       "name": "parseListConfig",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 104,
+       "end": 116,
+       "offset": 3473,
+       "stop": 3792,
+       "id": "ade29985883a8957e82221d752e05c77ab42719ca5a901e3b36e09302a58a2fb"
+      },
+      {
+       "name": "addDeclaredGlobals",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 127,
+       "end": 193,
+       "offset": 4153,
+       "stop": 6680,
+       "id": "7dd9ee58c0ccc28b45f156473e8dc5a13c1f4ec7501d0a7be2170a731f081b29"
+      },
+      {
+       "name": "disableReporting",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 203,
+       "end": 220,
+       "offset": 6984,
+       "stop": 7416,
+       "id": "05613255741e91ede06fcb5d633f4a891c4d3037203ee3af844002e76227ed87"
+      },
+      {
+       "name": "enableReporting",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 230,
+       "end": 256,
+       "offset": 7718,
+       "stop": 8612,
+       "id": "d011e145d8d4b2893bc1a07897bcac3ca69365c3030e3b88c3ce09cd811afdca"
+      },
+      {
+       "name": "modifyConfigsFromComments",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 269,
+       "end": 340,
+       "offset": 9187,
+       "stop": 11937,
+       "id": "ea038159ef2758ebd3809ab5d74cedb423917e2df6fed51eaf321470640424a1"
+      },
+      {
+       "name": "isDisabledByReportingConfig",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 349,
+       "end": 362,
+       "offset": 12256,
+       "stop": 12831,
+       "id": "1e5f456f335b7b6d06643ecfbec8c30d4eaac7592093cdf65bd678d1be574e1e"
+      },
+      {
+       "name": "prepareConfig",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 369,
+       "end": 425,
+       "offset": 13003,
+       "stop": 14915,
+       "id": "c55770298da061f08bd0e3aab672744d7e8acbd64d4ddc4c73f055fb9e76bdda"
+      },
+      {
+       "name": "createStubRule",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 432,
+       "end": 452,
+       "offset": 15085,
+       "stop": 15594,
+       "id": "6a19c55bf0a6db0798fbeb08042ff8b48be165d14f8997a41869fc28a0dd6c81"
+      },
+      {
+       "name": "getRuleReplacementMessage",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 459,
+       "end": 465,
+       "offset": 15748,
+       "stop": 16002,
+       "id": "e3ad79aa25730f423dec50def475ab3d2202fa3e5567eab2d525a0e6e28fbd91"
+      },
+      {
+       "name": "findEslintEnv",
+       "side": "old",
+       "file": "lib/eslint.js",
+       "start": 474,
+       "end": 483,
+       "offset": 16295,
+       "stop": 16523,
+       "id": "ad8f8632b5b54efb0c16176063851f2913341ece93b74a4bd49512c672f4efd6"
+      }
+     ],
+     "new": [
+      {
+       "name": "parseBooleanConfig",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 44,
+       "end": 68,
+       "offset": 1747,
+       "stop": 2428,
+       "id": "0db177d69b39cdca64e8183f351779cfd5983eae26069e67e131329131907b43"
+      },
+      {
+       "name": "parseJsonConfig",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 77,
+       "end": 97,
+       "offset": 2723,
+       "stop": 3309,
+       "id": "5a69a91e4f753a5a65163310b5f9fc3da28a6ceec5749d08517833b80a3cc8da"
+      },
+      {
+       "name": "parseListConfig",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 104,
+       "end": 116,
+       "offset": 3473,
+       "stop": 3792,
+       "id": "06046ace27872447257af58edb4aa0e3b9a03b0de333651c6d63ac12dd1264ab"
+      },
+      {
+       "name": "addDeclaredGlobals",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 127,
+       "end": 193,
+       "offset": 4153,
+       "stop": 6680,
+       "id": "21a3f0b5d581fda1a620939a33cd6617c070bdeb5652495299a0027d014491a9"
+      },
+      {
+       "name": "disableReporting",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 203,
+       "end": 220,
+       "offset": 6984,
+       "stop": 7416,
+       "id": "8851b59c65221991f7f94dc118de1adb0405eb00f616d4064fb2e2879d47be79"
+      },
+      {
+       "name": "enableReporting",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 230,
+       "end": 256,
+       "offset": 7718,
+       "stop": 8612,
+       "id": "2c26e048ddbe65e972c3872497292c4fe7a0defade753bd080a6a56bee6a0b11"
+      },
+      {
+       "name": "modifyConfigsFromComments",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 269,
+       "end": 340,
+       "offset": 9187,
+       "stop": 11937,
+       "id": "e32d753ee19fcaaef1e9a0d8d92aa0fcf746168832d83c510eef054c783db592"
+      },
+      {
+       "name": "isDisabledByReportingConfig",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 349,
+       "end": 362,
+       "offset": 12256,
+       "stop": 12831,
+       "id": "abf9e2ea2a40b7f482d602d81b8183586ac6cf1c1d8aa1b0c5e7a92de17ba47a"
+      },
+      {
+       "name": "prepareConfig",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 369,
+       "end": 425,
+       "offset": 13003,
+       "stop": 14940,
+       "id": "71af4f90433f40ce424eccf4176624db54650387e94f8d139c2554b289f7b055"
+      },
+      {
+       "name": "createStubRule",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 432,
+       "end": 452,
+       "offset": 15110,
+       "stop": 15619,
+       "id": "4ccd4d493f318f11443d66b538d036196c6d7f2287923388bac50ff8d33d2f24"
+      },
+      {
+       "name": "getRuleReplacementMessage",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 459,
+       "end": 465,
+       "offset": 15773,
+       "stop": 16027,
+       "id": "c010193f36838caf7c57d5e058775e0f988165b3a77291b3f307366c59b03728"
+      },
+      {
+       "name": "findEslintEnv",
+       "side": "new",
+       "file": "lib/eslint.js",
+       "start": 474,
+       "end": 483,
+       "offset": 16320,
+       "stop": 16548,
+       "id": "dae918d10fc740100a963944174f7160ccc6554cbb2dfb9e5210391664ace7d6"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "9cd45cdb3168e8b89d21a9e006ca39f5795ada68c4d9981fb670bed8065e8b52",
+    "fileId": "3d5d304df6eb5572cc354d1c72e1e24ae1c1d2ef3437fa592432d11ac59efd8c",
+    "file": "lib/eslint.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "c91dded53ed9c3374ddc0c8349ae1e45fc05d0fa04be43e0f64a330468a6dbf6",
+    "side": "old",
+    "old": {
+     "start": 396,
+     "count": 1
+    },
+    "new": {
+     "start": 396,
+     "count": 0
+    },
+    "offsets": {
+     "start": 13874,
+     "end": 13946
+    },
+    "links": [
+     {
+      "id": "c55770298da061f08bd0e3aab672744d7e8acbd64d4ddc4c73f055fb9e76bdda",
+      "file": "lib/eslint.js",
+      "unit": "prepareConfig",
+      "side": "old",
+      "start": 369,
+      "end": 425
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "c55770298da061f08bd0e3aab672744d7e8acbd64d4ddc4c73f055fb9e76bdda",
+     "file": "lib/eslint.js",
+     "unit": "prepareConfig",
+     "side": "old",
+     "start": 369,
+     "end": 425
+    }
+   },
+   {
+    "id": "39d04798c138528286201da7e4aa11a469b992b4c952f47c14bf9613ac2c3ec0",
+    "fileId": "3d5d304df6eb5572cc354d1c72e1e24ae1c1d2ef3437fa592432d11ac59efd8c",
+    "file": "lib/eslint.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "c91dded53ed9c3374ddc0c8349ae1e45fc05d0fa04be43e0f64a330468a6dbf6",
+    "side": "new",
+    "old": {
+     "start": 396,
+     "count": 0
+    },
+    "new": {
+     "start": 396,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13874,
+     "end": 13971
+    },
+    "links": [
+     {
+      "id": "71af4f90433f40ce424eccf4176624db54650387e94f8d139c2554b289f7b055",
+      "file": "lib/eslint.js",
+      "unit": "prepareConfig",
+      "side": "new",
+      "start": 369,
+      "end": 425
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "71af4f90433f40ce424eccf4176624db54650387e94f8d139c2554b289f7b055",
+     "file": "lib/eslint.js",
+     "unit": "prepareConfig",
+     "side": "new",
+     "start": 369,
+     "end": 425
+    }
+   }
+  ],
+  "id": "115fad91cb8526f6f3a96722ad2345b583634cef3456f815aaaf75816f9f1a46",
+  "reconciliation": {
+   "expected": [
+    "9cd45cdb3168e8b89d21a9e006ca39f5795ada68c4d9981fb670bed8065e8b52",
+    "39d04798c138528286201da7e4aa11a469b992b4c952f47c14bf9613ac2c3ec0"
+   ],
+   "unit": [
+    "9cd45cdb3168e8b89d21a9e006ca39f5795ada68c4d9981fb670bed8065e8b52",
+    "39d04798c138528286201da7e4aa11a469b992b4c952f47c14bf9613ac2c3ec0"
+   ],
+   "artifact": [],
+   "unassigned": [],
+   "classes": {
+    "source": {
+     "unit": [
+      "9cd45cdb3168e8b89d21a9e006ca39f5795ada68c4d9981fb670bed8065e8b52",
+      "39d04798c138528286201da7e4aa11a469b992b4c952f47c14bf9613ac2c3ec0"
+     ],
+     "artifact": [],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "callersChecked": 0
+}

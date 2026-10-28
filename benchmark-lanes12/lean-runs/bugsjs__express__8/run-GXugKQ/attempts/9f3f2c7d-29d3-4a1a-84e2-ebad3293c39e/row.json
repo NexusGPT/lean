@@ -1,0 +1,20 @@
+{
+ "file": "lib/application.js",
+ "unit": "(edit 110125c5add3)",
+ "editIds": [
+  "110125c5add3d725c96a111682abe7166a395ca6d9b1461e5e866bf777eb900c"
+ ],
+ "lines": [
+  168,
+  168
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

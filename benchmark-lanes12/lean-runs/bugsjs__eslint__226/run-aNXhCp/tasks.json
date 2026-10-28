@@ -1,0 +1,35 @@
+{
+ "change": "72deb28efe2452c8daae76cde6ca893b3cd1f2f4b36633b6b95e009dd69b2e01",
+ "tasks": [
+  {
+   "id": "247a9fa8b4ac2b32a1c3076170336db9bd559b537186936e5e9207a22e70cbf1",
+   "file": "lib/rules/complexity.js",
+   "unit": "(edit e00b0bf3a91a)",
+   "lines": [
+    45,
+    45
+   ],
+   "lanes": [],
+   "editIds": [
+    "e00b0bf3a91a22c9ccfe92e72f943740fbf26114c189fdda9e794f1044ad3310"
+   ],
+   "attemptId": "a72e6e79-613f-4ae3-b1b8-4b04bc7b1d1a",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__226/run-aNXhCp/attempts/a72e6e79-613f-4ae3-b1b8-4b04bc7b1d1a"
+  },
+  {
+   "id": "61e18014ac618baa4a98f0e3ea76d570fb6802140df59a70f23908b1cde25600",
+   "file": "lib/rules/complexity.js",
+   "unit": "(edit 57dbe27aa393)",
+   "lines": [
+    45,
+    45
+   ],
+   "lanes": [],
+   "editIds": [
+    "57dbe27aa39342b9ae784c3ab43265fac6e132e82010b34961c9feb19c953a18"
+   ],
+   "attemptId": "3a31f70a-909b-4a5c-a732-64f298ec5d92",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__226/run-aNXhCp/attempts/3a31f70a-909b-4a5c-a732-64f298ec5d92"
+  }
+ ]
+}

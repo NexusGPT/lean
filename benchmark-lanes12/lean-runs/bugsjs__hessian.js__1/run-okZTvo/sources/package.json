@@ -1,0 +1,56 @@
+{
+  "name": "hessian.js",
+  "version": "2.1.6",
+  "description": "Hessian Serialization written by pure JavaScript, support all kind of types in Java.",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "lib/"
+  ],
+  "scripts": {
+    "test": "mocha -R spec -t 15000 -r should test/*.test.js",
+    "test-cov": "istanbul cover _mocha -- -t 15000 -r should test/*.test.js",
+    "lint": "jshint .",
+    "ci": "npm run lint && npm run test-cov",
+    "autod": "autod -w --prefix '~' -e benchmark",
+    "benchmark": "node benchmark/encode.js && node benchmark/decode.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/node-modules/hessian.js.git"
+  },
+  "keywords": [
+    "hessian",
+    "protocol",
+    "java",
+    "rpc",
+    "serialization"
+  ],
+  "author": "dead_horse <dead_horse@qq.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/node-modules/hessian.js/issues",
+    "email": "dead_horse@qq.com"
+  },
+  "homepage": "https://github.com/node-modules/hessian.js",
+  "dependencies": {
+    "byte": "~1.1.1",
+    "debug": "~2.2.0",
+    "is-type-of": "~0.3.1",
+    "utility": "~1.4.0",
+    "long": "~3.0.1"
+  },
+  "devDependencies": {
+    "autod": "*",
+    "beautify-benchmark": "*",
+    "benchmark": "*",
+    "istanbul": "*",
+    "js-to-java": "~2.3.5",
+    "jshint": "*",
+    "mocha": "*",
+    "should": "~5.2.0"
+  },
+  "engines": {
+    "node": ">= 0.10.0"
+  }
+}

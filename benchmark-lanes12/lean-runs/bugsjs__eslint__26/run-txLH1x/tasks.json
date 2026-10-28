@@ -1,0 +1,35 @@
+{
+ "change": "f23f69738c9e59bb728385323ed0ac3bb1a174d5aee10a1980aa95811cadae3f",
+ "tasks": [
+  {
+   "id": "84fc102b9b317029b508a9d2dd569573f69aa29cb6e3514f3069f6d52da9c3c8",
+   "file": "lib/rules/arrow-parens.js",
+   "unit": "(edit 9632df86adc4)",
+   "lines": [
+    54,
+    54
+   ],
+   "lanes": [],
+   "editIds": [
+    "9632df86adc4a774083035be51d177f31862c7d1a336099c3bab92dfee9bd495"
+   ],
+   "attemptId": "3ec70313-0375-44f5-bbf6-e839312e3176",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__26/run-txLH1x/attempts/3ec70313-0375-44f5-bbf6-e839312e3176"
+  },
+  {
+   "id": "dba07d9c479e809e52d49143197bb671536b30c0f7a7a32fb6df70a1039d2881",
+   "file": "lib/rules/arrow-parens.js",
+   "unit": "(edit c9daef74e169)",
+   "lines": [
+    54,
+    54
+   ],
+   "lanes": [],
+   "editIds": [
+    "c9daef74e169c942bd8d0ccb6ea28df10d2bbc90cd7f7ef7a9fbaeda88e29311"
+   ],
+   "attemptId": "3f74e5bc-5738-4300-b975-06bb9043ba7a",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__26/run-txLH1x/attempts/3f74e5bc-5738-4300-b975-06bb9043ba7a"
+  }
+ ]
+}

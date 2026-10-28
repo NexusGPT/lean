@@ -1,0 +1,20 @@
+{
+ "file": "lib/config/config-file.js",
+ "unit": "(edit 5212e3f1c237)",
+ "editIds": [
+  "5212e3f1c2378c8a9bac45821b6e085f403120997e750407caf4459bd6f80aaa"
+ ],
+ "lines": [
+  380,
+  380
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-param-reassign.js",
+ "unit": "(edit 9b4c5803a54b)",
+ "editIds": [
+  "9b4c5803a54b2134015d52c888ba617958a94ce92da6fa89510f0ef44cbdfca3"
+ ],
+ "lines": [
+  107,
+  107
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

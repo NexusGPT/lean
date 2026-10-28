@@ -1,0 +1,20 @@
+{
+ "file": "lib/models/post_asset.js",
+ "unit": "(edit 3c5f702788c3)",
+ "editIds": [
+  "3c5f702788c32a3dc93cd684dc405816322ce41cf1bd8a547a47eab58aefc032"
+ ],
+ "lines": [
+  20,
+  20
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

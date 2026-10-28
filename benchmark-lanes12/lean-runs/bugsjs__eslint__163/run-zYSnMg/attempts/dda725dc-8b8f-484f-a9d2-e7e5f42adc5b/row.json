@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-return-await.js",
+ "unit": "(edit e2536f3bed29)",
+ "editIds": [
+  "e2536f3bed290f0e656b5da1b208b9694d4832f5cf48feab500040a7e03b1bdb"
+ ],
+ "lines": [
+  7,
+  7
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

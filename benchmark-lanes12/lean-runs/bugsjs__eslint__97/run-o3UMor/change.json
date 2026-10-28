@@ -1,0 +1,136 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "e6f56dab6b50caa5e515fe8a8534f92249c6c469",
+ "head": "b5410ed5f26502a630a3626bf6d9576262647f64",
+ "files": [
+  {
+   "id": "0ba63a8bdcc0b571831950e13954f5b517094493f742f64a4babcbf1a44576c7",
+   "file": "lib/rules/no-multiple-empty-lines.js",
+   "oldPath": "lib/rules/no-multiple-empty-lines.js",
+   "newPath": "lib/rules/no-multiple-empty-lines.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "39f325d340ec0d5c0b330059833f1b9b9d95fce6",
+   "newOid": "d5485df108a1d80953b2e72163319a3ba8607905",
+   "status": "M",
+   "edits": [
+    "16ea8421978d5b18b3ccc959d9b32524eee03fbdf34037c0cde11f990a9e69ab",
+    "9bf5af2f85e5f0f157d9b728520962012ba4be24d71d9072f9c681c9398528fb"
+   ],
+   "hunks": [
+    {
+     "id": "b9d1b119fe6c443d52af91ba8424bc71080dc0339c6e86f1a84cba6adfb4fe50",
+     "old": {
+      "start": 124,
+      "count": 0
+     },
+     "new": {
+      "start": 125,
+      "count": 2
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "c266bbd9a87c867675c09cf589d76058065124402e667a241bb98a7a14b2045c",
+   "newHash": "dd49f3328acac7553c2ba341bf3193758780f1fd6b0769a5fb8efab7338e5ea0",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "16ea8421978d5b18b3ccc959d9b32524eee03fbdf34037c0cde11f990a9e69ab",
+   "fileId": "0ba63a8bdcc0b571831950e13954f5b517094493f742f64a4babcbf1a44576c7",
+   "file": "lib/rules/no-multiple-empty-lines.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "b9d1b119fe6c443d52af91ba8424bc71080dc0339c6e86f1a84cba6adfb4fe50",
+   "side": "new",
+   "old": {
+    "start": 124,
+    "count": 0
+   },
+   "new": {
+    "start": 125,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3939,
+    "end": 4000
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "object-literal member",
+    "side": "new"
+   }
+  },
+  {
+   "id": "9bf5af2f85e5f0f157d9b728520962012ba4be24d71d9072f9c681c9398528fb",
+   "fileId": "0ba63a8bdcc0b571831950e13954f5b517094493f742f64a4babcbf1a44576c7",
+   "file": "lib/rules/no-multiple-empty-lines.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "b9d1b119fe6c443d52af91ba8424bc71080dc0339c6e86f1a84cba6adfb4fe50",
+   "side": "new",
+   "old": {
+    "start": 124,
+    "count": 0
+   },
+   "new": {
+    "start": 126,
+    "count": 1
+   },
+   "offsets": {
+    "start": 4000,
+    "end": 4001
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "e0094deee61e081bbdf7f077eb150ab0b471a33f65ebd25f85e8cb46a95e2404",
+ "reconciliation": {
+  "expected": [
+   "16ea8421978d5b18b3ccc959d9b32524eee03fbdf34037c0cde11f990a9e69ab",
+   "9bf5af2f85e5f0f157d9b728520962012ba4be24d71d9072f9c681c9398528fb"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "16ea8421978d5b18b3ccc959d9b32524eee03fbdf34037c0cde11f990a9e69ab",
+   "9bf5af2f85e5f0f157d9b728520962012ba4be24d71d9072f9c681c9398528fb"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "16ea8421978d5b18b3ccc959d9b32524eee03fbdf34037c0cde11f990a9e69ab",
+     "9bf5af2f85e5f0f157d9b728520962012ba4be24d71d9072f9c681c9398528fb"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

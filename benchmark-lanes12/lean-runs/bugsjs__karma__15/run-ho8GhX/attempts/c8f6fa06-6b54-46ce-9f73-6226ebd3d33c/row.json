@@ -1,0 +1,20 @@
+{
+ "file": "lib/web-server.js",
+ "unit": "(edit c2b55bb5529f)",
+ "editIds": [
+  "c2b55bb5529ffd3e547fffa6878d83264b6c72f8f544e1b08cc932e437fcb7f9"
+ ],
+ "lines": [
+  38,
+  38
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/new-parens.js",
+ "unit": "(edit 35cc5a441ba2)",
+ "editIds": [
+  "35cc5a441ba27509c54198c1a6f4a37d04bdf341b14f5c38d9dd3a5d4b8d7ff8"
+ ],
+ "lines": [
+  45,
+  45
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

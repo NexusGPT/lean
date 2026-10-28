@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/newline-per-chained-call.js",
+ "unit": "(edit db8f02d2e862)",
+ "editIds": [
+  "db8f02d2e86270c6f1b708cb4fcedbc1b002cca5facae8936f138a6ffb4da552"
+ ],
+ "lines": [
+  39,
+  39
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

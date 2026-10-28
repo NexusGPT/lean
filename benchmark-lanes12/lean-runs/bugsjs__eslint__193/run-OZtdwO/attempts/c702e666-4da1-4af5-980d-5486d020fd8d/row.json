@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/prefer-destructuring.js",
+ "unit": "(edit 1f77b54ace9a)",
+ "editIds": [
+  "1f77b54ace9ac66769d30825e1fe4768e2a27da7df3d4f4d0124687f7b79603e"
+ ],
+ "lines": [
+  148,
+  148
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

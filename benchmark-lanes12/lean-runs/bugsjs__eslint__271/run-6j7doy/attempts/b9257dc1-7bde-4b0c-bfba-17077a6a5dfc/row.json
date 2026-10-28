@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/comma-style.js",
+ "unit": "(edit 0cf01562468e)",
+ "editIds": [
+  "0cf01562468ea6ce88b751c3365e8db5714c5e91ea6c781eda9854e616cd94cf"
+ ],
+ "lines": [
+  129,
+  129
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

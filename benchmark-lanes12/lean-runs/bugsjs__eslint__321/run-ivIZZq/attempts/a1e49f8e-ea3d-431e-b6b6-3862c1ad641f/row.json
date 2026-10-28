@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/nonblock-statement-body-position.js",
+ "unit": "(edit 98ad804c9384)",
+ "editIds": [
+  "98ad804c9384256a98fc55a17a685ffe75489a5c1e2fb42e80b02ac70e74c6f1"
+ ],
+ "lines": [
+  80,
+  80
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

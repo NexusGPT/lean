@@ -1,0 +1,20 @@
+{
+ "file": "lib/router/layer.js",
+ "unit": "(edit 1bf9dae2ecc0)",
+ "editIds": [
+  "1bf9dae2ecc0d1414f76c156447dfdc82a44528aa5c5b86e31fe3c04f0ea713a"
+ ],
+ "lines": [
+  136,
+  136
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

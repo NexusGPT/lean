@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/dot-notation.js",
+ "unit": "(edit 81dc937edbc9)",
+ "editIds": [
+  "81dc937edbc92af39c971f97c769f017e342400cd67c46c7208e8808bde175dd"
+ ],
+ "lines": [
+  123,
+  123
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

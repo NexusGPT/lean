@@ -1,0 +1,21 @@
+{
+ "file": "lib/config/config-ops.js",
+ "unit": "(edit 2779b772b8c0)",
+ "editIds": [
+  "2779b772b8c0a09538baa7a26be93378e68d826a0e3941dce50759df17270e11"
+ ],
+ "lines": [
+  173,
+  173
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

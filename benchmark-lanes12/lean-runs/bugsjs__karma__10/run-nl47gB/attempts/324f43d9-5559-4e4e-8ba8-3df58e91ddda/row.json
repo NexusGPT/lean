@@ -1,0 +1,20 @@
+{
+ "file": "lib/watcher.js",
+ "unit": "(edit c718f82a54e0)",
+ "editIds": [
+  "c718f82a54e09cadebbcf628aa348927caf32fb9975cc8f8f3671ad3fb26ac4f"
+ ],
+ "lines": [
+  47,
+  47
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

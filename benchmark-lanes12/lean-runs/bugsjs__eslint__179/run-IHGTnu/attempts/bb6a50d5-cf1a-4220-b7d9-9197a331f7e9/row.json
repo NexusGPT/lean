@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-debugger.js",
+ "unit": "(edit 27bf23bbb8e3)",
+ "editIds": [
+  "27bf23bbb8e308ec145e8811b82eb2ed29ad94c1536d3268f05f6dab3e55963f"
+ ],
+ "lines": [
+  8,
+  8
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

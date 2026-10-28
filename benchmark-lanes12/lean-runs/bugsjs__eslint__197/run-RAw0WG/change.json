@@ -1,0 +1,464 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "1d6a9c0fac023a6220c9b8287a52d2321e653632",
+ "head": "84d8f6739768afa1fd43f6c25aef1c690362cc85",
+ "files": [
+  {
+   "id": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "oldPath": "lib/formatters/junit.js",
+   "newPath": "lib/formatters/junit.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "c41a2a4dd8b96276024733f71a747cdda51dd86d",
+   "newOid": "069ed5ff8f072d065a78a39dacca80cd8fc7c78b",
+   "status": "M",
+   "edits": [
+    "397a9e0bf6a94979435a5e213c84b29d0d72add16105f5c5bf7e1583750ebe33",
+    "1f193ee633a76ef4e915b6d7cef4698bdc4f9f718ec45e450bd5c466ba67cf4e",
+    "c85c173cba53498273e3cd25bc13c32a84864549455280e1c768bfd62685cdfa",
+    "58eac598912cee516dbfe3569cae8fe96d8faee95463381c918767da62640c30",
+    "573f3b4d75133726081c49e700b6195ded84ef0e5414262bec42ad33911bc05e",
+    "8a3a87d15612db4f73b686c69d663932131e79244a17df7daf5ab6222d0a30a7",
+    "f37cb52616771d8d2689562b4ec252168541cfde3bd8f404b0a2f2733214d893",
+    "d1506b644e4194b5011b46db4a8f23393d39734d574b70092722d7c9a9d7625e",
+    "d92c91f2392de0b88d49fc2fb62f0f88965417e3cb504a3b57b695919b537f94",
+    "f2ce225c96192a9d61053512d4233372f9378ac46de41c3533c867debab6cef4"
+   ],
+   "hunks": [
+    {
+     "id": "6ddb5df0c40e03fbc8a685f544b59982bc43651018331cdb9d8907e198f2440a",
+     "old": {
+      "start": 42,
+      "count": 4
+     },
+     "new": {
+      "start": 42,
+      "count": 1
+     }
+    },
+    {
+     "id": "33fe95e3d88c05d9ffe01d64b5029ce7aedb7aaaafa482c0ca90282ccafcc0ad",
+     "old": {
+      "start": 60,
+      "count": 4
+     },
+     "new": {
+      "start": 57,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "d0809970bd06862ca053f2ad0a672ff14ae949fd32e739d714b7267b8229a1c5",
+   "newHash": "5276632807a691f04b466c5b8e30c62914133cc7fec837468b55c0ae09bbe9d9",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "getMessageType",
+      "side": "old",
+      "file": "lib/formatters/junit.js",
+      "start": 19,
+      "end": 25,
+      "offset": 468,
+      "stop": 608,
+      "id": "206ecc976a39a93b71644e765b6f5d1a9de31844575f2ea7c74613f0c03f534e"
+     }
+    ],
+    "new": [
+     {
+      "name": "getMessageType",
+      "side": "new",
+      "file": "lib/formatters/junit.js",
+      "start": 19,
+      "end": 25,
+      "offset": 468,
+      "stop": 608,
+      "id": "7fab1206b61fdca65996239480f25c4f6cff2c58b7ba7daa8154c7c012f66a9b"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "397a9e0bf6a94979435a5e213c84b29d0d72add16105f5c5bf7e1583750ebe33",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6ddb5df0c40e03fbc8a685f544b59982bc43651018331cdb9d8907e198f2440a",
+   "side": "old",
+   "old": {
+    "start": 42,
+    "count": 1
+   },
+   "new": {
+    "start": 42,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1024,
+    "end": 1055
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "1f193ee633a76ef4e915b6d7cef4698bdc4f9f718ec45e450bd5c466ba67cf4e",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6ddb5df0c40e03fbc8a685f544b59982bc43651018331cdb9d8907e198f2440a",
+   "side": "old",
+   "old": {
+    "start": 43,
+    "count": 1
+   },
+   "new": {
+    "start": 42,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1055,
+    "end": 1205
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "c85c173cba53498273e3cd25bc13c32a84864549455280e1c768bfd62685cdfa",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6ddb5df0c40e03fbc8a685f544b59982bc43651018331cdb9d8907e198f2440a",
+   "side": "old",
+   "old": {
+    "start": 44,
+    "count": 1
+   },
+   "new": {
+    "start": 42,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1205,
+    "end": 1215
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "58eac598912cee516dbfe3569cae8fe96d8faee95463381c918767da62640c30",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6ddb5df0c40e03fbc8a685f544b59982bc43651018331cdb9d8907e198f2440a",
+   "side": "old",
+   "old": {
+    "start": 45,
+    "count": 1
+   },
+   "new": {
+    "start": 42,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1215,
+    "end": 1216
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "573f3b4d75133726081c49e700b6195ded84ef0e5414262bec42ad33911bc05e",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6ddb5df0c40e03fbc8a685f544b59982bc43651018331cdb9d8907e198f2440a",
+   "side": "new",
+   "old": {
+    "start": 42,
+    "count": 0
+   },
+   "new": {
+    "start": 42,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1024,
+    "end": 1170
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8a3a87d15612db4f73b686c69d663932131e79244a17df7daf5ab6222d0a30a7",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "33fe95e3d88c05d9ffe01d64b5029ce7aedb7aaaafa482c0ca90282ccafcc0ad",
+   "side": "old",
+   "old": {
+    "start": 60,
+    "count": 1
+   },
+   "new": {
+    "start": 57,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1910,
+    "end": 1911
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "f37cb52616771d8d2689562b4ec252168541cfde3bd8f404b0a2f2733214d893",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "33fe95e3d88c05d9ffe01d64b5029ce7aedb7aaaafa482c0ca90282ccafcc0ad",
+   "side": "old",
+   "old": {
+    "start": 61,
+    "count": 1
+   },
+   "new": {
+    "start": 57,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1911,
+    "end": 1942
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "d1506b644e4194b5011b46db4a8f23393d39734d574b70092722d7c9a9d7625e",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "33fe95e3d88c05d9ffe01d64b5029ce7aedb7aaaafa482c0ca90282ccafcc0ad",
+   "side": "old",
+   "old": {
+    "start": 62,
+    "count": 1
+   },
+   "new": {
+    "start": 57,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1942,
+    "end": 1982
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "d92c91f2392de0b88d49fc2fb62f0f88965417e3cb504a3b57b695919b537f94",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "33fe95e3d88c05d9ffe01d64b5029ce7aedb7aaaafa482c0ca90282ccafcc0ad",
+   "side": "old",
+   "old": {
+    "start": 63,
+    "count": 1
+   },
+   "new": {
+    "start": 57,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1982,
+    "end": 1992
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "f2ce225c96192a9d61053512d4233372f9378ac46de41c3533c867debab6cef4",
+   "fileId": "5a39a5d56271935cb2cb4e1c24102b2532b8fa252076f6710f1b9d5341704257",
+   "file": "lib/formatters/junit.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "33fe95e3d88c05d9ffe01d64b5029ce7aedb7aaaafa482c0ca90282ccafcc0ad",
+   "side": "new",
+   "old": {
+    "start": 60,
+    "count": 0
+   },
+   "new": {
+    "start": 57,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1864,
+    "end": 1900
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "aeb814a597214a5f3d1d189b33f0f0acb969acb269b825f42f93dc2f72a0f41a",
+ "reconciliation": {
+  "expected": [
+   "397a9e0bf6a94979435a5e213c84b29d0d72add16105f5c5bf7e1583750ebe33",
+   "1f193ee633a76ef4e915b6d7cef4698bdc4f9f718ec45e450bd5c466ba67cf4e",
+   "c85c173cba53498273e3cd25bc13c32a84864549455280e1c768bfd62685cdfa",
+   "58eac598912cee516dbfe3569cae8fe96d8faee95463381c918767da62640c30",
+   "573f3b4d75133726081c49e700b6195ded84ef0e5414262bec42ad33911bc05e",
+   "8a3a87d15612db4f73b686c69d663932131e79244a17df7daf5ab6222d0a30a7",
+   "f37cb52616771d8d2689562b4ec252168541cfde3bd8f404b0a2f2733214d893",
+   "d1506b644e4194b5011b46db4a8f23393d39734d574b70092722d7c9a9d7625e",
+   "d92c91f2392de0b88d49fc2fb62f0f88965417e3cb504a3b57b695919b537f94",
+   "f2ce225c96192a9d61053512d4233372f9378ac46de41c3533c867debab6cef4"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "397a9e0bf6a94979435a5e213c84b29d0d72add16105f5c5bf7e1583750ebe33",
+   "1f193ee633a76ef4e915b6d7cef4698bdc4f9f718ec45e450bd5c466ba67cf4e",
+   "c85c173cba53498273e3cd25bc13c32a84864549455280e1c768bfd62685cdfa",
+   "58eac598912cee516dbfe3569cae8fe96d8faee95463381c918767da62640c30",
+   "573f3b4d75133726081c49e700b6195ded84ef0e5414262bec42ad33911bc05e",
+   "8a3a87d15612db4f73b686c69d663932131e79244a17df7daf5ab6222d0a30a7",
+   "f37cb52616771d8d2689562b4ec252168541cfde3bd8f404b0a2f2733214d893",
+   "d1506b644e4194b5011b46db4a8f23393d39734d574b70092722d7c9a9d7625e",
+   "d92c91f2392de0b88d49fc2fb62f0f88965417e3cb504a3b57b695919b537f94",
+   "f2ce225c96192a9d61053512d4233372f9378ac46de41c3533c867debab6cef4"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "397a9e0bf6a94979435a5e213c84b29d0d72add16105f5c5bf7e1583750ebe33",
+     "1f193ee633a76ef4e915b6d7cef4698bdc4f9f718ec45e450bd5c466ba67cf4e",
+     "c85c173cba53498273e3cd25bc13c32a84864549455280e1c768bfd62685cdfa",
+     "58eac598912cee516dbfe3569cae8fe96d8faee95463381c918767da62640c30",
+     "573f3b4d75133726081c49e700b6195ded84ef0e5414262bec42ad33911bc05e",
+     "8a3a87d15612db4f73b686c69d663932131e79244a17df7daf5ab6222d0a30a7",
+     "f37cb52616771d8d2689562b4ec252168541cfde3bd8f404b0a2f2733214d893",
+     "d1506b644e4194b5011b46db4a8f23393d39734d574b70092722d7c9a9d7625e",
+     "d92c91f2392de0b88d49fc2fb62f0f88965417e3cb504a3b57b695919b537f94",
+     "f2ce225c96192a9d61053512d4233372f9378ac46de41c3533c867debab6cef4"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

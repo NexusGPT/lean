@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/new-parens.js",
+ "unit": "(edit 78e171f5635c)",
+ "editIds": [
+  "78e171f5635c7c8678c3f598990c05e1367634d56d6d9ac2e61ea99999d54a8f"
+ ],
+ "lines": [
+  35,
+  35
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

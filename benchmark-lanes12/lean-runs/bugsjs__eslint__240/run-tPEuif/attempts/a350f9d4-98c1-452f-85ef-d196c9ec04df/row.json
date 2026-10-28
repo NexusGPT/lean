@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/arrow-parens.js",
+ "unit": "(edit c029593a58f2)",
+ "editIds": [
+  "c029593a58f2a40605a28f0bf54777837d051c6f6c55990255151ec12b447819"
+ ],
+ "lines": [
+  101,
+  101
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

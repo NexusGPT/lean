@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-magic-numbers.js",
+ "unit": "(edit 7c4366e44609)",
+ "editIds": [
+  "7c4366e446097a792919c4d864102c1c8545be34fd67e344c88b41143ef97064"
+ ],
+ "lines": [
+  134,
+  134
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

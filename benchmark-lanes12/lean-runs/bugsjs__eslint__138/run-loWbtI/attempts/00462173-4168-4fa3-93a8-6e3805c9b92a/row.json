@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/indent.js",
+ "unit": "(edit c73ac0ce45cd)",
+ "editIds": [
+  "c73ac0ce45cd3d25423c50a1b1b690104d280e55fb681289deb2700e4fbd1025"
+ ],
+ "lines": [
+  495,
+  495
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

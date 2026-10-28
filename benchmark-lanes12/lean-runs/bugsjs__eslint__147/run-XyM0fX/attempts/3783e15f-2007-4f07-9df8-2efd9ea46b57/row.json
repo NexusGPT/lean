@@ -1,0 +1,3269 @@
+{
+ "file": "lib/linter.js",
+ "unit": "Linter.verify",
+ "lines": [
+  691,
+  935
+ ],
+ "verdict": "WITNESS",
+ "coverage": "checked",
+ "laneB": "WITNESS",
+ "laneA": null,
+ "caller": true,
+ "certificate": {
+  "tool": "lean-ts v3",
+  "identity": "1a04210b48dbe833a57db13c396b77f6f5ac85b7206be4d423bd5aa4360574fc",
+  "unit": "Linter.verify",
+  "parent": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_base_54446_linter.js",
+   "sha256": "cccc3b31eefd1add"
+  },
+  "candidate": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_head_54446_linter.js",
+   "sha256": "d373892826bacfd4"
+  },
+  "lanes": {
+   "B": {
+    "verdict": "WITNESS",
+    "unit": "Linter.verify",
+    "witnesses": [
+     {
+      "input": 32,
+      "args": [
+       {
+        "$fake": "arg0"
+       },
+       {
+        "globals": {
+         "$fake": "arg1.globals"
+        },
+        "parser": "",
+        "parserOptions": {
+         "$undefined": true
+        },
+        "rules": {
+         "$fake": "arg1.rules"
+        },
+        "settings": {
+         "$fake": "arg1.settings"
+        }
+       },
+       {
+        "$fake": "arg2"
+       },
+       true
+      ],
+      "parent": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "Cannot read properties of undefined (reading 'forEach')"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "$ref": 0
+         },
+         {
+          "$fake": "arg2"
+         },
+         true
+        ],
+        "own": {
+         "sourceCode": {
+          "$fake": "arg0"
+         }
+        },
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "record",
+          "edges": {
+           "rules": {
+            "$fake": "arg1.rules"
+           },
+           "parser": "",
+           "parserOptions": {
+            "$undefined": true
+           },
+           "settings": {
+            "$fake": "arg1.settings"
+           },
+           "globals": {
+            "$fake": "arg1.globals"
+           }
+          }
+         }
+        ]
+       },
+       "receiver": {
+        "this.environments": {
+         "$fake": "this.environments"
+        },
+        "this.sourceCode": {
+         "$fake": "arg0"
+        }
+       },
+       "trace": [
+        {
+         "op": "set",
+         "path": "this.sourceCode",
+         "args": [
+          {
+           "$fake": "arg0"
+          }
+         ]
+        },
+        {
+         "op": "get",
+         "path": "arg0.text",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "this.environments",
+         "args": []
+        },
+        {
+         "op": "keys",
+         "path": "arg1.globals",
+         "args": []
+        },
+        {
+         "op": "keys",
+         "path": "arg1.settings",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "candidate": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "Cannot read properties of undefined (reading 'filter')"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "$ref": 0
+         },
+         {
+          "$fake": "arg2"
+         },
+         true
+        ],
+        "own": {
+         "sourceCode": {
+          "$fake": "arg0"
+         }
+        },
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "record",
+          "edges": {
+           "rules": {
+            "$fake": "arg1.rules"
+           },
+           "parser": "",
+           "parserOptions": {
+            "$undefined": true
+           },
+           "settings": {
+            "$fake": "arg1.settings"
+           },
+           "globals": {
+            "$fake": "arg1.globals"
+           }
+          }
+         }
+        ]
+       },
+       "receiver": {
+        "this.environments": {
+         "$fake": "this.environments"
+        },
+        "this.sourceCode": {
+         "$fake": "arg0"
+        }
+       },
+       "trace": [
+        {
+         "op": "set",
+         "path": "this.sourceCode",
+         "args": [
+          {
+           "$fake": "arg0"
+          }
+         ]
+        },
+        {
+         "op": "get",
+         "path": "arg0.text",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "this.environments",
+         "args": []
+        },
+        {
+         "op": "keys",
+         "path": "arg1.globals",
+         "args": []
+        },
+        {
+         "op": "keys",
+         "path": "arg1.settings",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "where": {
+       "field": "outcome",
+       "lines": {
+        "kind": "completion",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_base_54446_linter.js",
+         "start": 304,
+         "end": 362,
+         "text": "ast.comments.forEach(comment => {\n\n        let value = comment.value.trim();\n        const match = /^(eslint(-\\w+){0,3}|exported|globals?)(\\s|$)/.exec(value);\n\n        if (match) {\n            value ="
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_head_54446_linter.js",
+         "start": 304,
+         "end": 362,
+         "text": "ast.comments.filter(token => token.type !== \"Shebang\").forEach(comment => {\n\n        let value = comment.value.trim();\n        const match = /^(eslint(-\\w+){0,3}|exported|globals?)(\\s|$)/.exec(value);"
+        }
+       },
+       "cause": "callee"
+      },
+      "through": [
+       {
+        "callee": "modifyConfigsFromComments",
+        "changed": true,
+        "path": [
+         "Linter.verify",
+         "modifyConfigsFromComments"
+        ]
+       }
+      ]
+     },
+     {
+      "input": 68,
+      "args": [
+       {
+        "$fake": "arg0"
+       },
+       {
+        "globals": {
+         "$undefined": true
+        },
+        "parserOptions": {
+         "$undefined": true
+        },
+        "rules": {
+         "$fake": "arg1.rules"
+        },
+        "settings": {
+         "$undefined": true
+        }
+       },
+       "   ,  ",
+       true
+      ],
+      "parent": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "comment.value.trim is not a function"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "$ref": 0
+         },
+         "   ,  ",
+         true
+        ],
+        "own": {
+         "sourceCode": {
+          "$fake": "arg0"
+         }
+        },
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "record",
+          "edges": {
+           "rules": {
+            "$fake": "arg1.rules"
+           },
+           "parserOptions": {
+            "$undefined": true
+           },
+           "settings": {
+            "$undefined": true
+           },
+           "globals": {
+            "$undefined": true
+           }
+          }
+         }
+        ]
+       },
+       "receiver": {
+        "this.environments": {
+         "$fake": "this.environments"
+        },
+        "this.sourceCode": {
+         "$fake": "arg0"
+        }
+       },
+       "trace": [
+        {
+         "op": "set",
+         "path": "this.sourceCode",
+         "args": [
+          {
+           "$fake": "arg0"
+          }
+         ]
+        },
+        {
+         "op": "get",
+         "path": "arg0.text",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "this.environments",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments.0",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments.0.value",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "candidate": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "comment.value.trim is not a function"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "$ref": 0
+         },
+         "   ,  ",
+         true
+        ],
+        "own": {
+         "sourceCode": {
+          "$fake": "arg0"
+         }
+        },
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "record",
+          "edges": {
+           "rules": {
+            "$fake": "arg1.rules"
+           },
+           "parserOptions": {
+            "$undefined": true
+           },
+           "settings": {
+            "$undefined": true
+           },
+           "globals": {
+            "$undefined": true
+           }
+          }
+         }
+        ]
+       },
+       "receiver": {
+        "this.environments": {
+         "$fake": "this.environments"
+        },
+        "this.sourceCode": {
+         "$fake": "arg0"
+        }
+       },
+       "trace": [
+        {
+         "op": "set",
+         "path": "this.sourceCode",
+         "args": [
+          {
+           "$fake": "arg0"
+          }
+         ]
+        },
+        {
+         "op": "get",
+         "path": "arg0.text",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "this.environments",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments.0",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments.0.type",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments.1",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments.0.value",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "where": {
+       "field": "trace",
+       "index": 6,
+       "parent": {
+        "op": "get",
+        "path": "arg0.ast.comments.0.value",
+        "args": []
+       },
+       "candidate": {
+        "op": "get",
+        "path": "arg0.ast.comments.0.type",
+        "args": []
+       },
+       "lines": {
+        "kind": "effect",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_base_54446_linter.js",
+         "start": 306,
+         "end": 306,
+         "text": "let value = comment.value.trim();"
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_head_54446_linter.js",
+         "start": 304,
+         "end": 304,
+         "text": "token.type !== \"Shebang\""
+        }
+       },
+       "cause": "callee"
+      },
+      "through": [
+       {
+        "callee": "modifyConfigsFromComments",
+        "changed": true,
+        "path": [
+         "Linter.verify",
+         "modifyConfigsFromComments"
+        ]
+       }
+      ]
+     },
+     {
+      "input": 70,
+      "args": [
+       {
+        "$fake": "arg0"
+       },
+       {
+        "env": {
+         "$fake": "arg1.env"
+        },
+        "parser": "twelve-chars",
+        "rules": {
+         "$fake": "arg1.rules"
+        },
+        "settings": {
+         "$fake": "arg1.settings"
+        },
+        "string": "Hello, World! 2024-01-31 10:30"
+       },
+       {
+        "$undefined": true
+       },
+       true
+      ],
+      "parent": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "ast.comments.forEach is not a function"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "$ref": 0
+         },
+         {
+          "$undefined": true
+         },
+         true
+        ],
+        "own": {
+         "sourceCode": {
+          "$fake": "arg0"
+         }
+        },
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "record",
+          "edges": {
+           "rules": {
+            "$fake": "arg1.rules"
+           },
+           "parser": "twelve-chars",
+           "settings": {
+            "$fake": "arg1.settings"
+           },
+           "env": {
+            "$fake": "arg1.env"
+           },
+           "string": "Hello, World! 2024-01-31 10:30"
+          }
+         }
+        ]
+       },
+       "receiver": {
+        "this.environments": {
+         "$fake": "this.environments"
+        },
+        "this.sourceCode": {
+         "$fake": "arg0"
+        }
+       },
+       "trace": [
+        {
+         "op": "set",
+         "path": "this.sourceCode",
+         "args": [
+          {
+           "$fake": "arg0"
+          }
+         ]
+        },
+        {
+         "op": "get",
+         "path": "arg0.text",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "this.environments",
+         "args": []
+        },
+        {
+         "op": "keys",
+         "path": "arg1.env",
+         "args": []
+        },
+        {
+         "op": "keys",
+         "path": "arg1.settings",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "candidate": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "ast.comments.filter is not a function"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "$ref": 0
+         },
+         {
+          "$undefined": true
+         },
+         true
+        ],
+        "own": {
+         "sourceCode": {
+          "$fake": "arg0"
+         }
+        },
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "record",
+          "edges": {
+           "rules": {
+            "$fake": "arg1.rules"
+           },
+           "parser": "twelve-chars",
+           "settings": {
+            "$fake": "arg1.settings"
+           },
+           "env": {
+            "$fake": "arg1.env"
+           },
+           "string": "Hello, World! 2024-01-31 10:30"
+          }
+         }
+        ]
+       },
+       "receiver": {
+        "this.environments": {
+         "$fake": "this.environments"
+        },
+        "this.sourceCode": {
+         "$fake": "arg0"
+        }
+       },
+       "trace": [
+        {
+         "op": "set",
+         "path": "this.sourceCode",
+         "args": [
+          {
+           "$fake": "arg0"
+          }
+         ]
+        },
+        {
+         "op": "get",
+         "path": "arg0.text",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "this.environments",
+         "args": []
+        },
+        {
+         "op": "keys",
+         "path": "arg1.env",
+         "args": []
+        },
+        {
+         "op": "keys",
+         "path": "arg1.settings",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0.ast.comments",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "where": {
+       "field": "outcome",
+       "lines": {
+        "kind": "completion",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_base_54446_linter.js",
+         "start": 304,
+         "end": 362,
+         "text": "ast.comments.forEach(comment => {\n\n        let value = comment.value.trim();\n        const match = /^(eslint(-\\w+){0,3}|exported|globals?)(\\s|$)/.exec(value);\n\n        if (match) {\n            value ="
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_head_54446_linter.js",
+         "start": 304,
+         "end": 362,
+         "text": "ast.comments.filter(token => token.type !== \"Shebang\").forEach(comment => {\n\n        let value = comment.value.trim();\n        const match = /^(eslint(-\\w+){0,3}|exported|globals?)(\\s|$)/.exec(value);"
+        }
+       },
+       "cause": "callee"
+      },
+      "through": [
+       {
+        "callee": "modifyConfigsFromComments",
+        "changed": true,
+        "path": [
+         "Linter.verify",
+         "modifyConfigsFromComments"
+        ]
+       }
+      ]
+     }
+    ],
+    "bound": {
+     "n": 100,
+     "seed": 1,
+     "ms": 2000,
+     "reached": {
+      "body": 71,
+      "guard": 0
+     },
+     "states": [
+      {
+       "input": 0,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "heap0.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "heap0.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": ""
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 1,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "abc",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "  ,   "
+        },
+        {
+         "$fake": "arg2"
+        },
+        true
+       ]
+      },
+      {
+       "input": 2,
+       "args": [
+        "abc",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "/*   eslint-env Wj*/",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        true
+       ]
+      },
+      {
+       "input": 3,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "v8myk",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        {
+         "$undefined": true
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 4,
+       "args": [
+        "vf5mc",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "line 052:",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": ","
+        },
+        {
+         "$undefined": true
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 5,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "-1",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 6,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "-1",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        "ÄÖü",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 7,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": ""
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 8,
+       "args": [
+        ",",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+         "$fake": "arg2"
+        },
+        true
+       ]
+      },
+      {
+       "input": 9,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "v97wm"
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 10,
+       "args": [
+        "ve88p",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "twelve-chars"
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 11,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         }
+        },
+        "",
+        false
+       ]
+      },
+      {
+       "input": 12,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "string"
+        },
+        " ",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 13,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        true
+       ]
+      },
+      {
+       "input": 14,
+       "args": [
+        "null",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         }
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 15,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": ",,,"
+        },
+        "vjf31",
+        true
+       ]
+      },
+      {
+       "input": 16,
+       "args": [
+        "  padded  ",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "v9t13"
+        },
+        {
+         "$undefined": true
+        },
+        true
+       ]
+      },
+      {
+       "input": 17,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "va6yh"
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 18,
+       "args": [
+        "/path/to/file.txt",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 19,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "/*eslint-env Yl*/",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 20,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "vfzg3",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": ""
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 21,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "vi4ra",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "v3kpw"
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 22,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "abc",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "x"
+        },
+        " ",
+        false
+       ]
+      },
+      {
+       "input": 23,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": ",,",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "v490a"
+        },
+        " , ",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 24,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "vhrmu",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "x y"
+        },
+        {
+         "$undefined": true
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 25,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "-1"
+        },
+        "vhxil",
+        true
+       ]
+      },
+      {
+       "input": 26,
+       "args": [
+        "v3c9d",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "v9zdh"
+        },
+        "-1",
+        false
+       ]
+      },
+      {
+       "input": 27,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        "xxxxxx",
+        false
+       ]
+      },
+      {
+       "input": 28,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "   ,  "
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 29,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "twelve-chars"
+        },
+        "vbvw0",
+        false
+       ]
+      },
+      {
+       "input": 30,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 31,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "parser": "x",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "string": "vjith"
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 32,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        true
+       ]
+      },
+      {
+       "input": 33,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "line one\nline two",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "xxxx"
+        },
+        "null",
+        false
+       ]
+      },
+      {
+       "input": 34,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "parser": "undefined",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "string": ",,"
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 35,
+       "args": [
+        "undefined",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "a,b,c"
+        },
+        {
+         "$fake": "arg2"
+        },
+        true
+       ]
+      },
+      {
+       "input": 36,
+       "args": [
+        "xxxxx",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "  padded  ",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "string": "x"
+        },
+        {
+         "$undefined": true
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 37,
+       "args": [
+        "/*  eslint-env _UO*/",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 38,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        ",,,",
+        true
+       ]
+      },
+      {
+       "input": 39,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": " , "
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 40,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "script"
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 41,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         }
+        },
+        "ve6u1",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 42,
+       "args": [
+        "abc",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "exported",
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": " "
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 43,
+       "args": [
+        "vdj3p",
+        {
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 44,
+       "args": [
+        "",
+        {
+         "globals": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "x y"
+        },
+        "0",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 45,
+       "args": [
+        "0",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "",
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "-1"
+        },
+        {
+         "$undefined": true
+        },
+        true
+       ]
+      },
+      {
+       "input": 46,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "-1",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "  ,  "
+        },
+        "v1sgp",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 47,
+       "args": [
+        "ÄÖü",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "日本"
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 48,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "日本"
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 49,
+       "args": [
+        "vgwlo",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "v5ina"
+        },
+        "v3dj1",
+        false
+       ]
+      },
+      {
+       "input": 50,
+       "args": [
+        "xxxx",
+        {
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "line 67:"
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 51,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "global",
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "string": "/* eslint-env xS*/"
+        },
+        "Hello, World! 2024-01-31 10:30",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 52,
+       "args": [
+        "",
+        {
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": ","
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 53,
+       "args": [
+        "",
+        {
+         "env": {
+          "$undefined": true
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "line one\nline two",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "v35x8"
+        },
+        {
+         "$undefined": true
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 54,
+       "args": [
+        "S:",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "Fixable rules should export a `meta.fixable` property."
+        },
+        "eslint",
+        false
+       ]
+      },
+      {
+       "input": 55,
+       "args": [
+        "undefined",
+        {
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "string": "xxxxxx"
+        },
+        {
+         "$undefined": true
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 56,
+       "args": [
+        "v7bwt",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "  padded  ",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         },
+         "string": "vdftr"
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 57,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "vb1o7",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         }
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 58,
+       "args": [
+        "/path/to/file.txt",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "user@example.com"
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 59,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "user@example.com",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "string": ",,"
+        },
+        "",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 60,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 61,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "   : ",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         }
+        },
+        "abc",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 62,
+       "args": [
+        "abc",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "x"
+        },
+        {
+         "$undefined": true
+        },
+        true
+       ]
+      },
+      {
+       "input": 63,
+       "args": [
+        "v6oy8",
+        {
+         "parser": " ",
+         "rules": {
+          "$fake": "arg1.rules"
+         }
+        },
+        {
+         "$fake": "arg2"
+        },
+        false
+       ]
+      },
+      {
+       "input": 64,
+       "args": [
+        "x y",
+        {
+         "parser": "vf0uc",
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "string": "0"
+        },
+        {
+         "$fake": "arg2"
+        },
+        true
+       ]
+      },
+      {
+       "input": 65,
+       "args": [
+        "0",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$undefined": true
+         },
+         "parser": "-1",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "ÄÖü"
+        },
+        "v95ei",
+        true
+       ]
+      },
+      {
+       "input": 66,
+       "args": [
+        "-1",
+        {
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "ÄÖü"
+        },
+        "日本",
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 67,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "ÄÖü",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "日本"
+        },
+        {
+         "$undefined": true
+        },
+        false
+       ]
+      },
+      {
+       "input": 68,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "globals": {
+          "$undefined": true
+         },
+         "parserOptions": {
+          "$undefined": true
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$undefined": true
+         }
+        },
+        "   ,  ",
+        true
+       ]
+      },
+      {
+       "input": 69,
+       "args": [
+        "",
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "globals": {
+          "$fake": "arg1.globals"
+         },
+         "parser": "",
+         "parserOptions": {
+          "$fake": "arg1.parserOptions"
+         },
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "string": "vl1yx"
+        },
+        {
+         "$undefined": true
+        },
+        {
+         "$undefined": true
+        }
+       ]
+      },
+      {
+       "input": 70,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "env": {
+          "$fake": "arg1.env"
+         },
+         "parser": "twelve-chars",
+         "rules": {
+          "$fake": "arg1.rules"
+         },
+         "settings": {
+          "$fake": "arg1.settings"
+         },
+         "string": "Hello, World! 2024-01-31 10:30"
+        },
+        {
+         "$undefined": true
+        },
+        true
+       ]
+      }
+     ],
+     "heaps": {
+      "enumerated": 1,
+      "assignments": 2,
+      "space": 2,
+      "pool": 2,
+      "shapes": {
+       "[[\"env\",\"service\"],[\"globals\",\"service\"],[\"parser\",\"string\"],[\"parserOptions\",\"service\"],[\"rules\",\"service\"],[\"settings\",\"service\"],[\"string\",\"string\"]]": {
+        "slots": 0,
+        "prims": 7
+       }
+      }
+     },
+     "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+     "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+     "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+     "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+     "library": {
+      "records": 467,
+      "ops": {
+       "Array.prototype.toString": 1,
+       "Object.assign": 210,
+       "Array.prototype.push": 256
+      },
+      "calls": {
+       "Array.prototype.toString": 1,
+       "Object.assign": 210,
+       "Array.prototype.push": 360
+      },
+      "sampled": [
+       "Array.prototype.push"
+      ],
+      "outOfModel": 0,
+      "callbackEffects": 0,
+      "defectRecords": 2,
+      "defects": [
+       {
+        "op": "Object.assign",
+        "why": "Object.assign fields",
+        "expected": "{\"_UO\":true}",
+        "count": 2,
+        "record": {
+         "before": {
+          "kind": "record",
+          "fields": {}
+         },
+         "after": {
+          "kind": "record",
+          "fields": {
+           "__fakePath": "arg1.env",
+           "_UO": true
+          }
+         },
+         "args": [
+          {
+           "kind": "fake",
+           "id": 739
+          },
+          {
+           "kind": "record",
+           "fields": {
+            "_UO": true
+           }
+          }
+         ],
+         "resultKind": "receiver"
+        }
+       }
+      ]
+     },
+     "programs": {
+      "programs": 1,
+      "commands": 1,
+      "methods": [
+       "defineRule",
+       "defineRules",
+       "getDeclaredVariables",
+       "getRules",
+       "getScope",
+       "getSourceCode",
+       "markVariableAsUsed",
+       "reset",
+       "verify",
+       "verifyAndFix"
+      ],
+      "maxLen": 5,
+      "seed": 1,
+      "ask": "program 0: parent: constructor threw fs.readdirSync(...).forEach is not a function"
+     }
+    },
+    "spec": {
+     "params": [
+      {
+       "name": "textOrSourceCode",
+       "optional": false,
+       "spec": {
+        "kind": "union",
+        "options": [
+         {
+          "kind": "string"
+         },
+         {
+          "kind": "service",
+          "name": "SourceCode",
+          "members": {
+           "text": {
+            "kind": "field",
+            "spec": {
+             "kind": "string"
+            },
+            "optional": false
+           },
+           "ast": {
+            "kind": "field",
+            "spec": {
+             "kind": "opaque"
+            },
+            "optional": false
+           },
+           "getAllComments": {
+            "kind": "method",
+            "returns": {
+             "kind": "array",
+             "of": {
+              "kind": "opaque"
+             }
+            }
+           },
+           "getComments": {
+            "kind": "method",
+            "returns": {
+             "kind": "service",
+             "name": "Object",
+             "members": {}
+            }
+           },
+           "getJSDocComment": {
+            "kind": "method",
+            "returns": {
+             "kind": "opaque"
+            }
+           },
+           "getNodeByRangeIndex": {
+            "kind": "method",
+            "returns": {
+             "kind": "opaque"
+            }
+           }
+          }
+         }
+        ],
+        "boundary": {
+         "cmp": [
+          "",
+          {
+           "t": "draw"
+          }
+         ],
+         "falsy": [],
+         "rank": 0,
+         "radix": 1
+        }
+       }
+      },
+      {
+       "name": "config",
+       "optional": false,
+       "spec": {
+        "kind": "record",
+        "fields": {
+         "rules": {
+          "spec": {
+           "kind": "ref",
+           "key": "Object"
+          },
+          "optional": false
+         },
+         "parser": {
+          "spec": {
+           "kind": "union",
+           "options": [
+            {
+             "kind": "undefined"
+            },
+            {
+             "kind": "string"
+            }
+           ],
+           "boundary": {
+            "cmp": [
+             {
+              "t": "draw"
+             },
+             {
+              "t": "undefined"
+             },
+             ""
+            ],
+            "falsy": [
+             {
+              "t": "undefined"
+             },
+             ""
+            ],
+            "rank": 1,
+            "radix": 6
+           }
+          },
+          "optional": true,
+          "shaped": true
+         },
+         "parserOptions": {
+          "spec": {
+           "kind": "union",
+           "options": [
+            {
+             "kind": "undefined"
+            },
+            {
+             "kind": "ref",
+             "key": "Object"
+            }
+           ],
+           "boundary": {
+            "cmp": [
+             {
+              "t": "draw"
+             },
+             {
+              "t": "undefined"
+             }
+            ],
+            "falsy": [
+             {
+              "t": "undefined"
+             }
+            ],
+            "rank": 1,
+            "radix": 18
+           }
+          },
+          "optional": true,
+          "shaped": true
+         },
+         "settings": {
+          "spec": {
+           "kind": "union",
+           "options": [
+            {
+             "kind": "undefined"
+            },
+            {
+             "kind": "ref",
+             "key": "Object"
+            }
+           ],
+           "boundary": {
+            "cmp": [
+             {
+              "t": "draw"
+             },
+             {
+              "t": "undefined"
+             }
+            ],
+            "falsy": [
+             {
+              "t": "undefined"
+             }
+            ],
+            "rank": 1,
+            "radix": 36
+           }
+          },
+          "optional": true,
+          "shaped": true
+         },
+         "env": {
+          "spec": {
+           "kind": "union",
+           "options": [
+            {
+             "kind": "undefined"
+            },
+            {
+             "kind": "ref",
+             "key": "Object"
+            }
+           ],
+           "boundary": {
+            "cmp": [
+             {
+              "t": "draw"
+             },
+             {
+              "t": "undefined"
+             }
+            ],
+            "falsy": [
+             {
+              "t": "undefined"
+             }
+            ],
+            "rank": 1,
+            "radix": 72
+           }
+          },
+          "optional": true,
+          "shaped": true
+         },
+         "globals": {
+          "spec": {
+           "kind": "union",
+           "options": [
+            {
+             "kind": "undefined"
+            },
+            {
+             "kind": "ref",
+             "key": "Object"
+            }
+           ],
+           "boundary": {
+            "cmp": [
+             {
+              "t": "draw"
+             },
+             {
+              "t": "undefined"
+             }
+            ],
+            "falsy": [
+             {
+              "t": "undefined"
+             }
+            ],
+            "rank": 1,
+            "radix": 144
+           }
+          },
+          "optional": true,
+          "shaped": true
+         },
+         "string": {
+          "spec": {
+           "kind": "string"
+          },
+          "optional": true,
+          "extra": true
+         }
+        }
+       }
+      },
+      {
+       "name": "filenameOrOptions",
+       "optional": false,
+       "spec": {
+        "kind": "union",
+        "options": [
+         {
+          "kind": "undefined"
+         },
+         {
+          "kind": "string"
+         },
+         {
+          "kind": "ref",
+          "key": "Object"
+         }
+        ]
+       }
+      },
+      {
+       "name": "saveState",
+       "optional": false,
+       "spec": {
+        "kind": "union",
+        "options": [
+         {
+          "kind": "undefined"
+         },
+         {
+          "kind": "literal",
+          "values": [
+           false
+          ]
+         },
+         {
+          "kind": "literal",
+          "values": [
+           true
+          ]
+         }
+        ],
+        "boundary": {
+         "cmp": [
+          {
+           "t": "draw"
+          },
+          {
+           "t": "undefined"
+          },
+          false
+         ],
+         "falsy": [
+          {
+           "t": "undefined"
+          },
+          false
+         ],
+         "rank": 1,
+         "radix": 288
+        }
+       }
+      }
+     ],
+     "returns": {
+      "kind": "array",
+      "of": {
+       "kind": "ref",
+       "key": "Object"
+      }
+     },
+     "literals": [
+      0,
+      1,
+      -1,
+      5,
+      6,
+      4
+     ],
+     "strings": [
+      "string",
+      "object",
+      "<input>",
+      "Fixable rules should export a `meta.fixable` property.",
+      "script",
+      "",
+      "x",
+      "xxxxx",
+      "xxxxxx",
+      "xxxx"
+     ]
+    },
+    "unitTextEqual": true
+   }
+  },
+  "verdict": "WITNESS"
+ },
+ "witness": {
+  "input": 32,
+  "args": [
+   {
+    "$fake": "arg0"
+   },
+   {
+    "globals": {
+     "$fake": "arg1.globals"
+    },
+    "parser": "",
+    "parserOptions": {
+     "$undefined": true
+    },
+    "rules": {
+     "$fake": "arg1.rules"
+    },
+    "settings": {
+     "$fake": "arg1.settings"
+    }
+   },
+   {
+    "$fake": "arg2"
+   },
+   true
+  ],
+  "where": {
+   "field": "outcome",
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_base_54446_linter.js",
+     "start": 304,
+     "end": 362,
+     "text": "ast.comments.forEach(comment => {\n\n        let value = comment.value.trim();\n        const match = /^(eslint(-\\w+){0,3}|exported|globals?)(\\s|$)/.exec(value);\n\n        if (match) {\n            value ="
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__147/run-XyM0fX/sources/lib/.lean_head_54446_linter.js",
+     "start": 304,
+     "end": 362,
+     "text": "ast.comments.filter(token => token.type !== \"Shebang\").forEach(comment => {\n\n        let value = comment.value.trim();\n        const match = /^(eslint(-\\w+){0,3}|exported|globals?)(\\s|$)/.exec(value);"
+    }
+   },
+   "cause": "callee"
+  },
+  "through": [
+   {
+    "callee": "modifyConfigsFromComments",
+    "changed": true,
+    "path": [
+     "Linter.verify",
+     "modifyConfigsFromComments"
+    ]
+   }
+  ]
+ },
+ "reason": null,
+ "advice": []
+}

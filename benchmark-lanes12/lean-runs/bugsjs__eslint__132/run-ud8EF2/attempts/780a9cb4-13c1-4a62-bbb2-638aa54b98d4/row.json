@@ -1,0 +1,21 @@
+{
+ "file": "lib/ast-utils.js",
+ "unit": "(edit cab906fe35e7)",
+ "editIds": [
+  "cab906fe35e7c0e1ab2ff00bb6d9a3dd5cafc583595498a2cd481c9808732dee"
+ ],
+ "lines": [
+  563,
+  563
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

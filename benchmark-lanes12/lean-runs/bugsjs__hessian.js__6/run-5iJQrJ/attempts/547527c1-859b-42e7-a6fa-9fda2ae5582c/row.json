@@ -1,0 +1,21 @@
+{
+ "file": "lib/v2/decoder.js",
+ "unit": "(edit 9640f74a7a35)",
+ "editIds": [
+  "9640f74a7a35b1d928a5c41962e0722fae7b6d141ed6e69c9eab828a12bc1da0"
+ ],
+ "lines": [
+  588,
+  588
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

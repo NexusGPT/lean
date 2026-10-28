@@ -1,0 +1,21 @@
+{
+ "file": "lib/eslint.js",
+ "unit": "(edit 0120a7bd9e6c)",
+ "editIds": [
+  "0120a7bd9e6c59973a79414880d1673a03b2a2b813e0c01f777b126a9efe136a"
+ ],
+ "lines": [
+  783,
+  783
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

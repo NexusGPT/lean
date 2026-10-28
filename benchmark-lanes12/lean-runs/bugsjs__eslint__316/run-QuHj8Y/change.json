@@ -1,0 +1,211 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "e228d56435fca3e9c21884c1b9145f352f14338c",
+ "head": "d9592bf922ec2975e62d5e732ee8de0857ad7e0e",
+ "files": [
+  {
+   "id": "11b07b80a6eedc2ed3db1f3c6ad225d70f4678543dff73ca74ff83065f9c6dfe",
+   "file": "lib/rules/semi-spacing.js",
+   "oldPath": "lib/rules/semi-spacing.js",
+   "newPath": "lib/rules/semi-spacing.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "4fe95fbf20cebd853bd25789f9f056e852d8c683",
+   "newOid": "854abbe39a7a8b034af6bde16b3ed5eaff45b468",
+   "status": "M",
+   "edits": [
+    "4a3f4c0e37fc593ae37aa69cff502cd2abaab64d389fbabd1a945f432100db1b",
+    "dc108c25cd8fb1a2cfb6ae1c885e7c84f94659683aa0dbca664d10d19ec5f29c",
+    "43bef977fed3fdb33ac1e8fa799d38c8f8041973e755bb07a53ab9af28449ae2",
+    "7b1f35a026cbc20467ba502bd1c4993335aab69674e6aa5d91ac85654cead53c"
+   ],
+   "hunks": [
+    {
+     "id": "51fc3deae27daeb3f1f9f02d699b2f4d5e45d87252557a765df0f261204b02b4",
+     "old": {
+      "start": 208,
+      "count": 0
+     },
+     "new": {
+      "start": 209,
+      "count": 4
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "a0db315de38142d434172ed14458ac210a859f37ef85d249d19f858ab4dc8d17",
+   "newHash": "02f5761afda4f7575fc14dc77d40736026bcebb400802d85ab9bf9eca3cb9bd3",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "4a3f4c0e37fc593ae37aa69cff502cd2abaab64d389fbabd1a945f432100db1b",
+   "fileId": "11b07b80a6eedc2ed3db1f3c6ad225d70f4678543dff73ca74ff83065f9c6dfe",
+   "file": "lib/rules/semi-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "51fc3deae27daeb3f1f9f02d699b2f4d5e45d87252557a765df0f261204b02b4",
+   "side": "new",
+   "old": {
+    "start": 208,
+    "count": 0
+   },
+   "new": {
+    "start": 209,
+    "count": 1
+   },
+   "offsets": {
+    "start": 7624,
+    "end": 7666
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "dc108c25cd8fb1a2cfb6ae1c885e7c84f94659683aa0dbca664d10d19ec5f29c",
+   "fileId": "11b07b80a6eedc2ed3db1f3c6ad225d70f4678543dff73ca74ff83065f9c6dfe",
+   "file": "lib/rules/semi-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "51fc3deae27daeb3f1f9f02d699b2f4d5e45d87252557a765df0f261204b02b4",
+   "side": "new",
+   "old": {
+    "start": 208,
+    "count": 0
+   },
+   "new": {
+    "start": 210,
+    "count": 1
+   },
+   "offsets": {
+    "start": 7666,
+    "end": 7713
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "43bef977fed3fdb33ac1e8fa799d38c8f8041973e755bb07a53ab9af28449ae2",
+   "fileId": "11b07b80a6eedc2ed3db1f3c6ad225d70f4678543dff73ca74ff83065f9c6dfe",
+   "file": "lib/rules/semi-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "51fc3deae27daeb3f1f9f02d699b2f4d5e45d87252557a765df0f261204b02b4",
+   "side": "new",
+   "old": {
+    "start": 208,
+    "count": 0
+   },
+   "new": {
+    "start": 211,
+    "count": 1
+   },
+   "offsets": {
+    "start": 7713,
+    "end": 7758
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "7b1f35a026cbc20467ba502bd1c4993335aab69674e6aa5d91ac85654cead53c",
+   "fileId": "11b07b80a6eedc2ed3db1f3c6ad225d70f4678543dff73ca74ff83065f9c6dfe",
+   "file": "lib/rules/semi-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "51fc3deae27daeb3f1f9f02d699b2f4d5e45d87252557a765df0f261204b02b4",
+   "side": "new",
+   "old": {
+    "start": 208,
+    "count": 0
+   },
+   "new": {
+    "start": 212,
+    "count": 1
+   },
+   "offsets": {
+    "start": 7758,
+    "end": 7807
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "b56db499cde89c277313c8058bceb1685451a00553c666eb0ae774de2169caf0",
+ "reconciliation": {
+  "expected": [
+   "4a3f4c0e37fc593ae37aa69cff502cd2abaab64d389fbabd1a945f432100db1b",
+   "dc108c25cd8fb1a2cfb6ae1c885e7c84f94659683aa0dbca664d10d19ec5f29c",
+   "43bef977fed3fdb33ac1e8fa799d38c8f8041973e755bb07a53ab9af28449ae2",
+   "7b1f35a026cbc20467ba502bd1c4993335aab69674e6aa5d91ac85654cead53c"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "4a3f4c0e37fc593ae37aa69cff502cd2abaab64d389fbabd1a945f432100db1b",
+   "dc108c25cd8fb1a2cfb6ae1c885e7c84f94659683aa0dbca664d10d19ec5f29c",
+   "43bef977fed3fdb33ac1e8fa799d38c8f8041973e755bb07a53ab9af28449ae2",
+   "7b1f35a026cbc20467ba502bd1c4993335aab69674e6aa5d91ac85654cead53c"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "4a3f4c0e37fc593ae37aa69cff502cd2abaab64d389fbabd1a945f432100db1b",
+     "dc108c25cd8fb1a2cfb6ae1c885e7c84f94659683aa0dbca664d10d19ec5f29c",
+     "43bef977fed3fdb33ac1e8fa799d38c8f8041973e755bb07a53ab9af28449ae2",
+     "7b1f35a026cbc20467ba502bd1c4993335aab69674e6aa5d91ac85654cead53c"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

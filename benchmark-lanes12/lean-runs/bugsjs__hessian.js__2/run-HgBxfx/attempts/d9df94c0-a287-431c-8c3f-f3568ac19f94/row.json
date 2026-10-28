@@ -1,0 +1,20 @@
+{
+ "file": "lib/v2/decoder.js",
+ "unit": "(edit 27cbe40dbfee)",
+ "editIds": [
+  "27cbe40dbfee451c717584dbeac5b93db789cd6db4259e6c0b473876563b3007"
+ ],
+ "lines": [
+  732,
+  732
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,338 @@
+{
+ "identity": "d4ea0861d030c638f54f644bac20858b0f704859b412498bfe46a95656d3d2ce",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit 6171ed7cad31)",
+   "editIds": [
+    "6171ed7cad3133e60e15331868990f35d2a3b86abd2ff526c1baf9b05b85736c"
+   ],
+   "lines": [
+    200,
+    200
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit bf47220278ea)",
+   "editIds": [
+    "bf47220278ea3e292d61d617a97d622c719077c1a7e5429fe2fd75eb463a9b00"
+   ],
+   "lines": [
+    213,
+    213
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "59ea18389b0bf9469c17164e6b7af10baa4778c5",
+  "head": "f8929b2d109e88e3607e110aa715d10009352e00",
+  "files": [
+   {
+    "id": "92d0e71712c409a86d87a6e55dcc37b4f322b1bd4432283e10812c5169f52e3e",
+    "file": "lib/rules/yoda.js",
+    "oldPath": "lib/rules/yoda.js",
+    "newPath": "lib/rules/yoda.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "ab5e7d04c92bdbaba0f428d7bdd97064ab61de76",
+    "newOid": "b38123597a78ffd0f7b7d00885016e07efb1a08b",
+    "status": "M",
+    "edits": [
+     "6171ed7cad3133e60e15331868990f35d2a3b86abd2ff526c1baf9b05b85736c",
+     "bf47220278ea3e292d61d617a97d622c719077c1a7e5429fe2fd75eb463a9b00"
+    ],
+    "hunks": [
+     {
+      "id": "cd088b5ceef79421ae870d6fb6625d99fc164f3252e1ca0c0179db99693387a7",
+      "old": {
+       "start": 199,
+       "count": 0
+      },
+      "new": {
+       "start": 200,
+       "count": 1
+      }
+     },
+     {
+      "id": "f20382549b5192c410a2298b85cf8422f7c710c31967d36af5db1bdad80a71ba",
+      "old": {
+       "start": 211,
+       "count": 0
+      },
+      "new": {
+       "start": 213,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "332db95b0f190c27fd270188e1c4b4135a523768fbfb490206376e11a82e2fd0",
+    "newHash": "b13e3073edf461530a37afa922effc47930ba5d3bb1f78dd6217979aa86ef8b8",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isComparisonOperator",
+       "side": "old",
+       "file": "lib/rules/yoda.js",
+       "start": 18,
+       "end": 20,
+       "offset": 579,
+       "stop": 681,
+       "id": "e11a2bbcbf036ccefc795a0d49de19104bd61a74e282bc3d36e50ddcb6fd68cc"
+      },
+      {
+       "name": "isEqualityOperator",
+       "side": "old",
+       "file": "lib/rules/yoda.js",
+       "start": 27,
+       "end": 29,
+       "offset": 866,
+       "stop": 949,
+       "id": "43c4fa531ed1e19af3f8db4466aa4155311f1c1a42dec151ba7429f0e80bc989"
+      },
+      {
+       "name": "isRangeTestOperator",
+       "side": "old",
+       "file": "lib/rules/yoda.js",
+       "start": 37,
+       "end": 39,
+       "offset": 1179,
+       "stop": 1268,
+       "id": "a370770abf9b4504fe33089196e089e616b5dd59b5dc038e5674e0957e26c879"
+      },
+      {
+       "name": "looksLikeLiteral",
+       "side": "old",
+       "file": "lib/rules/yoda.js",
+       "start": 48,
+       "end": 54,
+       "offset": 1586,
+       "stop": 1818,
+       "id": "a4a2683cea0fcaeee820923f6bde79ec3364e9d01b91b01162f70732a901863e"
+      },
+      {
+       "name": "getNormalizedLiteral",
+       "side": "old",
+       "file": "lib/rules/yoda.js",
+       "start": 65,
+       "end": 79,
+       "offset": 2303,
+       "stop": 2604,
+       "id": "0c2f920cc1e920baac9d7728781e5709a5173ceded8d41931508153ffac3989b"
+      },
+      {
+       "name": "same",
+       "side": "old",
+       "file": "lib/rules/yoda.js",
+       "start": 91,
+       "end": 111,
+       "offset": 2945,
+       "stop": 3471,
+       "id": "58b3d269778b86cf67f5fa7c6bc47008c2b7916f14c9012a3cb6b35c8f3edde0"
+      }
+     ],
+     "new": [
+      {
+       "name": "isComparisonOperator",
+       "side": "new",
+       "file": "lib/rules/yoda.js",
+       "start": 18,
+       "end": 20,
+       "offset": 579,
+       "stop": 681,
+       "id": "0f12aff6ae4b924c3fb4258b5190970d82ed2d634362738f94a07b7e0caf9d79"
+      },
+      {
+       "name": "isEqualityOperator",
+       "side": "new",
+       "file": "lib/rules/yoda.js",
+       "start": 27,
+       "end": 29,
+       "offset": 866,
+       "stop": 949,
+       "id": "35c94204f6b5589a0306551162fb8404486b6ce227f9575143e7ea92984ab852"
+      },
+      {
+       "name": "isRangeTestOperator",
+       "side": "new",
+       "file": "lib/rules/yoda.js",
+       "start": 37,
+       "end": 39,
+       "offset": 1179,
+       "stop": 1268,
+       "id": "048915227fe23e747a5c00ad54c6b1a03ab1bde6580c0e96150c68cae020bc59"
+      },
+      {
+       "name": "looksLikeLiteral",
+       "side": "new",
+       "file": "lib/rules/yoda.js",
+       "start": 48,
+       "end": 54,
+       "offset": 1586,
+       "stop": 1818,
+       "id": "157515a50ed145ea4f14e6397c9de16d960e2549c02839646d18f848483822d2"
+      },
+      {
+       "name": "getNormalizedLiteral",
+       "side": "new",
+       "file": "lib/rules/yoda.js",
+       "start": 65,
+       "end": 79,
+       "offset": 2303,
+       "stop": 2604,
+       "id": "cf5a0db83a0587a251cddc81474c6a8f0e4b8b0d330dd2a3939a96daeda8a028"
+      },
+      {
+       "name": "same",
+       "side": "new",
+       "file": "lib/rules/yoda.js",
+       "start": 91,
+       "end": 111,
+       "offset": 2945,
+       "stop": 3471,
+       "id": "668207ab577d4cdf89f72a0e38301a766ad70eafdf4e3728aa506cd08eecec0a"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "6171ed7cad3133e60e15331868990f35d2a3b86abd2ff526c1baf9b05b85736c",
+    "fileId": "92d0e71712c409a86d87a6e55dcc37b4f322b1bd4432283e10812c5169f52e3e",
+    "file": "lib/rules/yoda.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "cd088b5ceef79421ae870d6fb6625d99fc164f3252e1ca0c0179db99693387a7",
+    "side": "new",
+    "old": {
+     "start": 199,
+     "count": 0
+    },
+    "new": {
+     "start": 200,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7025,
+     "end": 7107
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "bf47220278ea3e292d61d617a97d622c719077c1a7e5429fe2fd75eb463a9b00",
+    "fileId": "92d0e71712c409a86d87a6e55dcc37b4f322b1bd4432283e10812c5169f52e3e",
+    "file": "lib/rules/yoda.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f20382549b5192c410a2298b85cf8422f7c710c31967d36af5db1bdad80a71ba",
+    "side": "new",
+    "old": {
+     "start": 211,
+     "count": 0
+    },
+    "new": {
+     "start": 213,
+     "count": 1
+    },
+    "offsets": {
+     "start": 7639,
+     "end": 7723
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "d4ea0861d030c638f54f644bac20858b0f704859b412498bfe46a95656d3d2ce",
+  "reconciliation": {
+   "expected": [
+    "6171ed7cad3133e60e15331868990f35d2a3b86abd2ff526c1baf9b05b85736c",
+    "bf47220278ea3e292d61d617a97d622c719077c1a7e5429fe2fd75eb463a9b00"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "6171ed7cad3133e60e15331868990f35d2a3b86abd2ff526c1baf9b05b85736c",
+    "bf47220278ea3e292d61d617a97d622c719077c1a7e5429fe2fd75eb463a9b00"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "6171ed7cad3133e60e15331868990f35d2a3b86abd2ff526c1baf9b05b85736c",
+      "bf47220278ea3e292d61d617a97d622c719077c1a7e5429fe2fd75eb463a9b00"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "effab57cf65951db01b7a463432e319b72f6e5fabe5703c74dac9fc7019c24e6",
+   "88fa0394b021f0144a170cda53cffd22356d44d0952800aa0d7d514d2d8224a1"
+  ],
+  "terminal": [
+   "effab57cf65951db01b7a463432e319b72f6e5fabe5703c74dac9fc7019c24e6",
+   "88fa0394b021f0144a170cda53cffd22356d44d0952800aa0d7d514d2d8224a1"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__195/run-1lzAfs/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__195/run-1lzAfs"
+}

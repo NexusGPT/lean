@@ -1,0 +1,21 @@
+{
+ "file": "lib/cli-engine.js",
+ "unit": "(edit 19871f8b430d)",
+ "editIds": [
+  "19871f8b430dbc3948462122f0014c56fe60af14ab2311dabcd8c8f42254ef5e"
+ ],
+ "lines": [
+  72,
+  72
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

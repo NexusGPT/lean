@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/newline-before-return.js",
+ "unit": "(edit 1427a90855d5)",
+ "editIds": [
+  "1427a90855d5cf3e4a740d1f128ca953225a2ef9e5d8a4f28b9f8087040ea18e"
+ ],
+ "lines": [
+  143,
+  143
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

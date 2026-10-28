@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-redeclare.js",
+ "unit": "(edit 42299544b47e)",
+ "editIds": [
+  "42299544b47e6760d42a83fc3b0e91af3b3372abe3e1629990f1b23523b9704b"
+ ],
+ "lines": [
+  30,
+  30
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

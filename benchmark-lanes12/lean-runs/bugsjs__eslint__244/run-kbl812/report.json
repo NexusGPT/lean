@@ -1,0 +1,205 @@
+{
+ "identity": "93a6ede8c38a9ccab22edfe7b373397dbcbfc9937de4d75a730cb4734f17ec4d",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/no-implied-eval.js",
+   "unit": "(edit 278418a0892e)",
+   "editIds": [
+    "278418a0892e7e80df305a2dd79295f02dc19014843e541ec85c6f790d056383"
+   ],
+   "lines": [
+    24,
+    24
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-implied-eval.js",
+   "unit": "(edit b962ed530e3b)",
+   "editIds": [
+    "b962ed530e3baab925d4f68e207a3826bd55e47b4fe938b660453ce4344fadd2"
+   ],
+   "lines": [
+    24,
+    24
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "00dd96c6fd4065c8a947f25d37d60155e502da00",
+  "head": "79f38311001db7612a3aec9743fbe1d5351356ff",
+  "files": [
+   {
+    "id": "0c8574f8f0d40406ebde070860a5d19891360f3a2187e9495483249d27b74496",
+    "file": "lib/rules/no-implied-eval.js",
+    "oldPath": "lib/rules/no-implied-eval.js",
+    "newPath": "lib/rules/no-implied-eval.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "a49fd21d9b71de011e0541bf9ed287a10e673e88",
+    "newOid": "4daadd8fb8733d86bdf3f40cdc283996f81789de",
+    "status": "M",
+    "edits": [
+     "278418a0892e7e80df305a2dd79295f02dc19014843e541ec85c6f790d056383",
+     "b962ed530e3baab925d4f68e207a3826bd55e47b4fe938b660453ce4344fadd2"
+    ],
+    "hunks": [
+     {
+      "id": "fdf46a9da9728a5a1e65692bcc1a1ad90b3f03618baf5336287f9449ede5a80a",
+      "old": {
+       "start": 24,
+       "count": 1
+      },
+      "new": {
+       "start": 24,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "0712599c0b06cb1d43c03a010c81266d53d2cd4b979323b1d5efe6c4fd977b78",
+    "newHash": "2cc74d2639d7249ccbfcaa08f169564a701c3d2850c03ef5aa6f078d0c1e2d45",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "278418a0892e7e80df305a2dd79295f02dc19014843e541ec85c6f790d056383",
+    "fileId": "0c8574f8f0d40406ebde070860a5d19891360f3a2187e9495483249d27b74496",
+    "file": "lib/rules/no-implied-eval.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "fdf46a9da9728a5a1e65692bcc1a1ad90b3f03618baf5336287f9449ede5a80a",
+    "side": "old",
+    "old": {
+     "start": 24,
+     "count": 1
+    },
+    "new": {
+     "start": 24,
+     "count": 0
+    },
+    "offsets": {
+     "start": 563,
+     "end": 627
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b962ed530e3baab925d4f68e207a3826bd55e47b4fe938b660453ce4344fadd2",
+    "fileId": "0c8574f8f0d40406ebde070860a5d19891360f3a2187e9495483249d27b74496",
+    "file": "lib/rules/no-implied-eval.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "fdf46a9da9728a5a1e65692bcc1a1ad90b3f03618baf5336287f9449ede5a80a",
+    "side": "new",
+    "old": {
+     "start": 24,
+     "count": 0
+    },
+    "new": {
+     "start": 24,
+     "count": 1
+    },
+    "offsets": {
+     "start": 563,
+     "end": 630
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "93a6ede8c38a9ccab22edfe7b373397dbcbfc9937de4d75a730cb4734f17ec4d",
+  "reconciliation": {
+   "expected": [
+    "278418a0892e7e80df305a2dd79295f02dc19014843e541ec85c6f790d056383",
+    "b962ed530e3baab925d4f68e207a3826bd55e47b4fe938b660453ce4344fadd2"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "278418a0892e7e80df305a2dd79295f02dc19014843e541ec85c6f790d056383",
+    "b962ed530e3baab925d4f68e207a3826bd55e47b4fe938b660453ce4344fadd2"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "278418a0892e7e80df305a2dd79295f02dc19014843e541ec85c6f790d056383",
+      "b962ed530e3baab925d4f68e207a3826bd55e47b4fe938b660453ce4344fadd2"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "26e67c095f68d107d7759cf6586f108bfdc9d1501c8eccd432481c48358e4a3e",
+   "75b3f8944bd2fb7b663475bfa1946dc231320a6849884283b9e056f03aff69e7"
+  ],
+  "terminal": [
+   "26e67c095f68d107d7759cf6586f108bfdc9d1501c8eccd432481c48358e4a3e",
+   "75b3f8944bd2fb7b663475bfa1946dc231320a6849884283b9e056f03aff69e7"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__244/run-kbl812/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__244/run-kbl812"
+}

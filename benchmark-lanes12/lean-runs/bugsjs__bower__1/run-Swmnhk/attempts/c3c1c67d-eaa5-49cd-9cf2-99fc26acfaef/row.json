@@ -1,0 +1,21 @@
+{
+ "file": "lib/core/resolvers/Resolver.js",
+ "unit": "(edit 5660e80fd79c)",
+ "editIds": [
+  "5660e80fd79c548de667ade9b4174632f020108a043e5585519b23cbfc0f33c2"
+ ],
+ "lines": [
+  130,
+  130
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:parse-failure",
+ "reason": "parse-failure",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

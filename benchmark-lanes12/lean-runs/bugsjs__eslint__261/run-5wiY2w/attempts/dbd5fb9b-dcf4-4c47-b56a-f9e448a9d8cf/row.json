@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-useless-constructor.js",
+ "unit": "(edit 210e05a0f520)",
+ "editIds": [
+  "210e05a0f5200ce37c35d18626e9b8efb95d66446ad8a6cd8ff73f8c24911fde"
+ ],
+ "lines": [
+  36,
+  36
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/testers/rule-tester.js",
+ "unit": "(edit f55b8480f120)",
+ "editIds": [
+  "f55b8480f1204f4d430d947fd443394be1ce7de6d4631d1e4667fb94bbf2b02d"
+ ],
+ "lines": [
+  537,
+  537
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

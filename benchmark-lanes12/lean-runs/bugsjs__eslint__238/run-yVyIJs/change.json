@@ -1,0 +1,268 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "e59e5a0b6a06a87b1f6a4ae8fc0d2a920aa1aae9",
+ "head": "83ac85b5358b74b1a6cc739b14eb5a8a1119c4e0",
+ "files": [
+  {
+   "id": "e64270c2cd6e00043ebc3aae3ee4251fd14d71a979fb5c58167a31551110af0f",
+   "file": "conf/cli-options.js",
+   "oldPath": "conf/cli-options.js",
+   "newPath": "conf/cli-options.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "83c815987b83e567c55b711b17ca42120a153183",
+   "newOid": "b377f3da7f391e0e0e0f0986d537a9824a327a9d",
+   "status": "M",
+   "edits": [
+    "188f501c2158320186c811a59c748c7e3937a1c4ceca4d1df7f6c6ffae38960f",
+    "78332678f11f4a730838da43daed663870f69e436211e00ccc0cfc2247f096f4",
+    "f8929f70bab9f0da8813bfdbda70e817918a67fd4e6e3fe27f835501d5955da2",
+    "c6baecf58d429a760745381502c114c5af38879a56da2d7c7b3d8de3d933de45",
+    "5b654faae3fd1922002d0afd5ca567e3ce4263b39b072e423b06eabb10f03c4f"
+   ],
+   "hunks": [
+    {
+     "id": "b05d3ab81258c83c213a7d1191490cfeab723d988cebf2c7163b3eb057968f09",
+     "old": {
+      "start": 8,
+      "count": 2
+     },
+     "new": {
+      "start": 7,
+      "count": 0
+     }
+    },
+    {
+     "id": "3baeef47df19b3165f369f99056b0f38ded90d0ab21f8d6ce8227105fcb2bb80",
+     "old": {
+      "start": 21,
+      "count": 1
+     },
+     "new": {
+      "start": 19,
+      "count": 1
+     }
+    },
+    {
+     "id": "b98b70839d4e7c02bacffef338d9f7fa493e147914a305287baba054179c4c28",
+     "old": {
+      "start": 22,
+      "count": 0
+     },
+     "new": {
+      "start": 21,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "f1554cd46a1136b8aece7246add5b718856bce2db20b60c9d87e2d9fc2e1ce54",
+   "newHash": "ac7c76d6429111c32fe2271e9067b6b5dcc4b6cb8db04958f81e16b8dbd15c4a",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "188f501c2158320186c811a59c748c7e3937a1c4ceca4d1df7f6c6ffae38960f",
+   "fileId": "e64270c2cd6e00043ebc3aae3ee4251fd14d71a979fb5c58167a31551110af0f",
+   "file": "conf/cli-options.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "b05d3ab81258c83c213a7d1191490cfeab723d988cebf2c7163b3eb057968f09",
+   "side": "old",
+   "old": {
+    "start": 8,
+    "count": 1
+   },
+   "new": {
+    "start": 7,
+    "count": 0
+   },
+   "offsets": {
+    "start": 94,
+    "end": 154
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "78332678f11f4a730838da43daed663870f69e436211e00ccc0cfc2247f096f4",
+   "fileId": "e64270c2cd6e00043ebc3aae3ee4251fd14d71a979fb5c58167a31551110af0f",
+   "file": "conf/cli-options.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "b05d3ab81258c83c213a7d1191490cfeab723d988cebf2c7163b3eb057968f09",
+   "side": "old",
+   "old": {
+    "start": 9,
+    "count": 1
+   },
+   "new": {
+    "start": 7,
+    "count": 0
+   },
+   "offsets": {
+    "start": 154,
+    "end": 155
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "old"
+   }
+  },
+  {
+   "id": "f8929f70bab9f0da8813bfdbda70e817918a67fd4e6e3fe27f835501d5955da2",
+   "fileId": "e64270c2cd6e00043ebc3aae3ee4251fd14d71a979fb5c58167a31551110af0f",
+   "file": "conf/cli-options.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "3baeef47df19b3165f369f99056b0f38ded90d0ab21f8d6ce8227105fcb2bb80",
+   "side": "old",
+   "old": {
+    "start": 21,
+    "count": 1
+   },
+   "new": {
+    "start": 19,
+    "count": 0
+   },
+   "offsets": {
+    "start": 372,
+    "end": 400
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "object-literal member",
+    "side": "old"
+   }
+  },
+  {
+   "id": "c6baecf58d429a760745381502c114c5af38879a56da2d7c7b3d8de3d933de45",
+   "fileId": "e64270c2cd6e00043ebc3aae3ee4251fd14d71a979fb5c58167a31551110af0f",
+   "file": "conf/cli-options.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "3baeef47df19b3165f369f99056b0f38ded90d0ab21f8d6ce8227105fcb2bb80",
+   "side": "new",
+   "old": {
+    "start": 21,
+    "count": 0
+   },
+   "new": {
+    "start": 19,
+    "count": 1
+   },
+   "offsets": {
+    "start": 311,
+    "end": 348
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "object-literal member",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5b654faae3fd1922002d0afd5ca567e3ce4263b39b072e423b06eabb10f03c4f",
+   "fileId": "e64270c2cd6e00043ebc3aae3ee4251fd14d71a979fb5c58167a31551110af0f",
+   "file": "conf/cli-options.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "b98b70839d4e7c02bacffef338d9f7fa493e147914a305287baba054179c4c28",
+   "side": "new",
+   "old": {
+    "start": 22,
+    "count": 0
+   },
+   "new": {
+    "start": 21,
+    "count": 1
+   },
+   "offsets": {
+    "start": 366,
+    "end": 367
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "fc31cdf0ff68b616e84e87aa906aa7b2f1966d6a6b348bdd3cd800374ae31369",
+ "reconciliation": {
+  "expected": [
+   "188f501c2158320186c811a59c748c7e3937a1c4ceca4d1df7f6c6ffae38960f",
+   "78332678f11f4a730838da43daed663870f69e436211e00ccc0cfc2247f096f4",
+   "f8929f70bab9f0da8813bfdbda70e817918a67fd4e6e3fe27f835501d5955da2",
+   "c6baecf58d429a760745381502c114c5af38879a56da2d7c7b3d8de3d933de45",
+   "5b654faae3fd1922002d0afd5ca567e3ce4263b39b072e423b06eabb10f03c4f"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "188f501c2158320186c811a59c748c7e3937a1c4ceca4d1df7f6c6ffae38960f",
+   "78332678f11f4a730838da43daed663870f69e436211e00ccc0cfc2247f096f4",
+   "f8929f70bab9f0da8813bfdbda70e817918a67fd4e6e3fe27f835501d5955da2",
+   "c6baecf58d429a760745381502c114c5af38879a56da2d7c7b3d8de3d933de45",
+   "5b654faae3fd1922002d0afd5ca567e3ce4263b39b072e423b06eabb10f03c4f"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "188f501c2158320186c811a59c748c7e3937a1c4ceca4d1df7f6c6ffae38960f",
+     "78332678f11f4a730838da43daed663870f69e436211e00ccc0cfc2247f096f4",
+     "f8929f70bab9f0da8813bfdbda70e817918a67fd4e6e3fe27f835501d5955da2",
+     "c6baecf58d429a760745381502c114c5af38879a56da2d7c7b3d8de3d933de45",
+     "5b654faae3fd1922002d0afd5ca567e3ce4263b39b072e423b06eabb10f03c4f"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

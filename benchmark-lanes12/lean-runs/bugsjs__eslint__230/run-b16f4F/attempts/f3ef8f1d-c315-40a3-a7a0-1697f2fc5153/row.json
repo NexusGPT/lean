@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/sort-keys.js",
+ "unit": "(edit 8e0009366990)",
+ "editIds": [
+  "8e0009366990808b92cce4fe2c24c289b55735aaae63a2ccd089c61049a4a022"
+ ],
+ "lines": [
+  129,
+  129
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

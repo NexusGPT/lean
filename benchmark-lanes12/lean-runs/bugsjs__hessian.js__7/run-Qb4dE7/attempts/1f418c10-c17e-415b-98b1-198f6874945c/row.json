@@ -1,0 +1,20 @@
+{
+ "file": "lib/object.js",
+ "unit": "(edit 01f983707614)",
+ "editIds": [
+  "01f983707614d874056227f532d0c1f060d41ba0c911aff7fc2644bb064befaf"
+ ],
+ "lines": [
+  24,
+  24
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

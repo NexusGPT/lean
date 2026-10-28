@@ -1,0 +1,4493 @@
+{
+ "baseline": "lanes12-92eebd9",
+ "count": 303,
+ "byReason": {
+  "object-literal member": 205,
+  "module-level statement": 64,
+  "whitespace": 123,
+  "comment": 95,
+  "exported property assignment": 55,
+  "untyped JavaScript file": 4
+ },
+ "contexts": {
+  "object-literal member": 205,
+  "module-level statement": 64,
+  "whitespace": 124,
+  "comment": 95,
+  "exported property assignment": 55
+ },
+ "partitions": {
+  "object-literal member": 98,
+  "module-level statement + object-literal member + whitespace": 4,
+  "comment + object-literal member + whitespace": 37,
+  "exported property assignment + object-literal member + whitespace": 4,
+  "object-literal member + whitespace": 32,
+  "comment + exported property assignment + module-level statement + object-literal member + whitespace": 1,
+  "comment + module-level statement + object-literal member + whitespace": 6,
+  "exported property assignment": 22,
+  "comment + object-literal member + untyped JavaScript file + whitespace": 2,
+  "comment + object-literal member": 8,
+  "comment + exported property assignment + whitespace": 11,
+  "comment + exported property assignment + module-level statement + whitespace": 2,
+  "comment + exported property assignment": 3,
+  "comment + exported property assignment + module-level statement + object-literal member + untyped JavaScript file": 1,
+  "exported property assignment + object-literal member": 3,
+  "comment + module-level statement + object-literal member + untyped JavaScript file + whitespace": 1,
+  "comment + exported property assignment + object-literal member + whitespace": 4,
+  "module-level statement": 21,
+  "exported property assignment + whitespace": 3,
+  "artifact: config": 4,
+  "comment + module-level statement + object-literal member": 1,
+  "module-level statement + object-literal member": 3,
+  "comment + module-level statement + whitespace": 11,
+  "module-level statement + whitespace": 5,
+  "comment + module-level statement": 7,
+  "artifact: schema": 3,
+  "exported property assignment + module-level statement": 1,
+  "artifact: config + test": 1,
+  "artifact: added + build + non-source": 1,
+  "artifact: non-source": 1,
+  "artifact: added + build + doc + non-source": 1,
+  "artifact: build + doc + non-source": 1
+ },
+ "cases": [
+  {
+   "id": "bugsjs:eslint:100",
+   "ledger": "68fca802a0faebd108fd59bd82d2134e3016f2d10d7497a3b66667a950508eb4",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:101",
+   "ledger": "dcb73e608fb6806776aa38c6f9f629ca3e23d007236908ba19366b90048d27e3",
+   "edits": 60,
+   "reasons": [
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:103",
+   "ledger": "d835776541d5037181d10dfc7837c2cfec5c8368e03e67261ce1425512463e68",
+   "edits": 10,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:106",
+   "ledger": "02dbe10752f70270ef119c5bc125135473d1a345fedbc242f101c678008d931a",
+   "edits": 9,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:107",
+   "ledger": "5f1665d1236bc873eb2dc8998f1e560d04fa0812cf5758db9d66aea0d2a85756",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:108",
+   "ledger": "e66145c25c522a5c2257fbd32c413b5f4eb9a94bf49ebc29ff56de511a4c146e",
+   "edits": 8,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:109",
+   "ledger": "ff7cc0a0fb8e3919a19fcf78576579cd286b7366d8deec66fa0a7ad07b125ca9",
+   "edits": 20,
+   "reasons": [
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:11",
+   "ledger": "f1a842fb5b9c7ea3d39a07ecb63961e54138bc5bc118733969d14c8ecec0242f",
+   "edits": 4,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:110",
+   "ledger": "ff7f5c49baf6c879fdeb3d570ff48f91f53142247bb4b7d677b3c2e3c358658a",
+   "edits": 28,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:114",
+   "ledger": "7a486523a104750997be788e0abad267d77d28b48f8a42fd4b55f453b2109d6b",
+   "edits": 15,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:115",
+   "ledger": "be700e8f911d60e4bbcc093efcd1d3f0aff8f1d6e5742580cb6e8666f3a571d7",
+   "edits": 13,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:117",
+   "ledger": "45d200b40221e367453dd1e3e4b288810c70ef147daa622db29d4a34dbe15033",
+   "edits": 9,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:118",
+   "ledger": "26bf9669ae4a72b3bc14cc935f8ce52edc458a57db8210cf478650ff5c38f516",
+   "edits": 8,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:119",
+   "ledger": "5a73b1616ad80a8827cee977318553cb0e575345ddff5103d5f6381c3a6ebe86",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:12",
+   "ledger": "4909af94688bca6a51741649a5b85901a4cf71418fc924f93f8c5b5281e91ed4",
+   "edits": 1,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:120",
+   "ledger": "3c148971e3280482578266ea8711e8dd8022bdb68ca78aa32a7307e7116f99d4",
+   "edits": 15,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "untyped JavaScript file",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:123",
+   "ledger": "5b01b2495f0b936bb1c3f56b9ed89b1dc4c206c186f5f03e39b15fa90d4b3997",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:124",
+   "ledger": "426d8b6be79ddbe028bc415ddf1ee4880028563f15a30d7702129c9fafe852ea",
+   "edits": 10,
+   "reasons": [
+    "comment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:125",
+   "ledger": "67439ea7a9c161cfe2cdefe1c329701cdda6a5f1e8413758b2821b4f399ac475",
+   "edits": 12,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:126",
+   "ledger": "e9c299d18cb9191cac18ffe1a2310a8eaf94afda4d14d5a6b4462d74d77d07f9",
+   "edits": 6,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:127",
+   "ledger": "b10720e67dbf1fc93f797575c6c86db158c40ed625e71010afd017d8681bdd44",
+   "edits": 13,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:128",
+   "ledger": "bb6c4b0acdb48e34e9139b0eda8736d889cddd9b073a4190db40a2ea7256773c",
+   "edits": 19,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:129",
+   "ledger": "55992c56c9dddf738c946c305cc750e3cd36f460a6d171a8c5b1ac65343f6fd6",
+   "edits": 12,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:130",
+   "ledger": "46e0a9d5c02ce963943cec0543bbd1d2aeeae55aa4374ae6b6fb940d9ac3e202",
+   "edits": 6,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:132",
+   "ledger": "1e05daf80698f0da63071e6fedc886faecff80c5a96d32ec888ac53f3c2f87e8",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:133",
+   "ledger": "234936fb9eaef9e05818c08a2516aa33dbe7753797dca69cf635c09cc76cad41",
+   "edits": 22,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:134",
+   "ledger": "ecc619544420f5554beb684c9b672c1d549b1659800eb6992c75c62541862089",
+   "edits": 6,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:135",
+   "ledger": "38a1f7d69215611ac1fbfb985548d38f3d75a91972f7e1878847cf500bf7bae6",
+   "edits": 16,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:137",
+   "ledger": "08504b9235511c048b5d4cd1c04fef6f332e2d169072b4c4cbd2000d05046a6a",
+   "edits": 26,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:138",
+   "ledger": "1ac106cd10c1e357b685898aa9353365c5f62a6ab4e334b6c2988579db9ce536",
+   "edits": 8,
+   "reasons": [
+    "comment",
+    "exported property assignment"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:139",
+   "ledger": "e1650f34d9b1ae26eb37ec2d393555aa52c7d9515c3adc2843a8a00db55e8766",
+   "edits": 9,
+   "reasons": [
+    "comment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:14",
+   "ledger": "39b9c61f0166f84265f29d2b81f35ae7c43b26ecffa6b541fee40723bc0550f6",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:140",
+   "ledger": "5616a4dcce72d9a85902cbed0013a9e291f34cd69a82dbff4adee8b6467cbda8",
+   "edits": 3,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:142",
+   "ledger": "7475bc1a12d7b6dd10cc0564bc29708124c3a626bf17282943be0063cc6c7e58",
+   "edits": 8,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:143",
+   "ledger": "10b549d198c31d9473848155e0b5f63d020cddcb4e38ca71000e73cfa554b2e6",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:144",
+   "ledger": "82591e6e9b58fed59c5225c83aa2418b924bf70c2683e982444a7c5c122beafe",
+   "edits": 11,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:146",
+   "ledger": "62812dec92600ef888c92f1fab3d50a257d3ee24fa6593c029a0e0c69caec37f",
+   "edits": 5,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:148",
+   "ledger": "caa51e821153ca578706e16700ba1fb7d00a28d1e380bb523abc7628e0ed863a",
+   "edits": 8,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:15",
+   "ledger": "71c00a9ef07e228c67aece7b26dcb25a20b24e70d59525a736092184fa624d79",
+   "edits": 3,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:150",
+   "ledger": "ccabdd1209771725209136e66f7603f5afbc3d8b63b2614ffaa046d05cda19e3",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:152",
+   "ledger": "0fc6c82fcba28a70ef901866fcc3318c8bba6edd83fb5f4870c5e220c0e964d5",
+   "edits": 42,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:153",
+   "ledger": "44498d2966e080dd6196755bd929692bf27cb55a607603ec69a3308dc920fb70",
+   "edits": 15,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "module-level statement",
+    "object-literal member",
+    "untyped JavaScript file"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:156",
+   "ledger": "31150a4b5c0ebfedc80db0b9e35b4b34ba1de3cc4a75d42042fa0c394da5d4dc",
+   "edits": 16,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:158",
+   "ledger": "9b357a146d5e521079e6a507f4c30e3ffb59efbbe71dfeb734781a929344ef64",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:16",
+   "ledger": "a071779fd8c69fb516090121a3e6319f865b33ba1796ca3de39285cbaf368d3f",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:161",
+   "ledger": "49609ad137913f6f06e5628c1489a29d6bb50bae3db85c27fb3c94993c790b82",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:162",
+   "ledger": "addd06c360d538ca2ca5c3ed4b51706811bda2e00f9e0f7dff9c927378a7994c",
+   "edits": 23,
+   "reasons": [
+    "exported property assignment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "object-literal member"
+   ],
+   "artifacts": [
+    "config"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:163",
+   "ledger": "379e156e0fbeed9d7ea14a89db24719405c63c12e2783d492519082b64a08063",
+   "edits": 24,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "untyped JavaScript file",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:164",
+   "ledger": "b1a8bc2701e8807a3d06e9c9eb38595c17e9ece17541c92c2e7d01074cfac1ba",
+   "edits": 27,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:165",
+   "ledger": "d7e09d4cd353db5680440f5f0814d619d4140cc018958a401d606e29b47df67d",
+   "edits": 3,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:167",
+   "ledger": "07c8148a3c2092d5240e712d9936130e6cfad9a9dd33e786f4dbaf71290ada35",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:168",
+   "ledger": "6785436154cc8aa94aecf25f94a2321121573eee2b25098f9262e0d1d266d842",
+   "edits": 5,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:169",
+   "ledger": "75d44d52bdcae76d89f4453ce3563b8eae78b7985658d4094be4818b0fe36b6e",
+   "edits": 28,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:171",
+   "ledger": "22040280e44e796b42157060975deeb148da812f12a968a787780044dae2763f",
+   "edits": 4,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:172",
+   "ledger": "c912f4335d2635468c1e1471d73331c095d74c8921922d339d9e4fe4f539a9a0",
+   "edits": 22,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:174",
+   "ledger": "aab3d2b30b317d2c9160bd78aa8bd9b893a746f6b52603bd04959a548adb5ab4",
+   "edits": 26,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:176",
+   "ledger": "1126da24255d039ba1e8a15d1957c5fefc696323b4449e360e28ffcf41b7eeec",
+   "edits": 10,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:178",
+   "ledger": "870438d8c311ff108425f669396bcc8b6211c23e22336ad90ecef183b0466646",
+   "edits": 8,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:18",
+   "ledger": "63ed561076919facefb848c708873f339c1cf11b2634fd258aa50faaf2e1611d",
+   "edits": 12,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:180",
+   "ledger": "63093ba00db822e5ea5ac3e0923eabc7e2d89d2b2114cb3c960bd1cbc128085e",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:181",
+   "ledger": "7c0cef8d5a0d2a7153201216de1badcac58af3b3ae73c15db08cec9ecf182a23",
+   "edits": 18,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:182",
+   "ledger": "447ac3b99c449849ae0a72048054bd9fd1e349dd632096742c87798866fca9c8",
+   "edits": 10,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:183",
+   "ledger": "495e4b5aa23dc144f8281b5865ab9364baf16cd7ede14e2b996bf1ef17420906",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:184",
+   "ledger": "4948264556c537c0564254b9dde7dbef15264fff86cb5fa2558d19d2caf17213",
+   "edits": 2,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:185",
+   "ledger": "f15a9e54945a9656087ec91b773706d14302cdb88f5b3880d39ff2b5ac34f09c",
+   "edits": 21,
+   "reasons": [
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:186",
+   "ledger": "e01d7112edaaa8f431491f2c74f91d2c46b6dec370f62450088a7a89dbbe474b",
+   "edits": 1,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:187",
+   "ledger": "56d6bea41e7b9b9179dcbdd26948e42d69b89c527265638ba3afffa37f6dce12",
+   "edits": 5,
+   "reasons": [
+    "exported property assignment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:188",
+   "ledger": "7a0296168a6ce987d33afbeadef043e22a146ab83da3eb234158c4910da4a6af",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:189",
+   "ledger": "8af5f3e60b4cef24494ffee91e9535269e94d49fc2bdb3c6a5925c27c9957459",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:19",
+   "ledger": "f2976dec3a328f9c61f69071f22609b85826d1757662329417f1cd77af9557df",
+   "edits": 9,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:191",
+   "ledger": "1a87ab7b541ddf4161343d213ef6c450815b7d15ab3daf945f182df6e3302736",
+   "edits": 24,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:192",
+   "ledger": "ca9c6eab4ed7005237de86a04ece01b080bdc247ef3475982e074fe8ee10d084",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:193",
+   "ledger": "ac656221752e5a861f91ed4885a41c7134f6a837ecea2f69b6a702fe095d60a0",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:194",
+   "ledger": "5af1e8d41ab06ab3090b1860bbf8b7bd489705813dbc0e9238ecd74a1254178f",
+   "edits": 4,
+   "reasons": [
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:195",
+   "ledger": "d4ea0861d030c638f54f644bac20858b0f704859b412498bfe46a95656d3d2ce",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:196",
+   "ledger": "e4170262becb6b1ae50063d95abb50c112c958a4a314d502e49c029e00ba5770",
+   "edits": 19,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:197",
+   "ledger": "aeb814a597214a5f3d1d189b33f0f0acb969acb269b825f42f93dc2f72a0f41a",
+   "edits": 10,
+   "reasons": [
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:2",
+   "ledger": "91607e8501486e924c28a6af1fd8e50092a403b28268dd46069708dd0f8c7185",
+   "edits": 13,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:200",
+   "ledger": "8ff8d0f4e5a8aa4a4f78d4638addf4046c57229d133561c3d17daef335034735",
+   "edits": 24,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:202",
+   "ledger": "f6ad492cb7df119cbf8a794f811d418d291a4db229a715686a36d69abf56751c",
+   "edits": 8,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "config"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:204",
+   "ledger": "280aa3511fc1f6f3a048b9233fb5b4cd2f113d0a123c1983d597455bb9411d7c",
+   "edits": 10,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:205",
+   "ledger": "f7c677453009eca838d3040e358392ab808788cd898e62ee145b6caf7282fc55",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:206",
+   "ledger": "55fce43fafb8295b2fec3e7a3b53716b11d154041bd32f147ccd1325dca2bfdf",
+   "edits": 32,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:208",
+   "ledger": "2584876c8e13c9919d2cd2bf0bb0d848159ff8cedf868b24db7d2648d69adf0c",
+   "edits": 16,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:209",
+   "ledger": "b50fc637185023c17491b400edcc81b0e3f0dd01fa5c097ae589494b21382fb4",
+   "edits": 36,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:21",
+   "ledger": "441a1be4a36116ad41d0a25a1182c5fb0313960294c82f45f5c7bbd7b5e583c0",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:211",
+   "ledger": "44661e8dbb0289436cc43fae970bd5ca8ebfca05369f5a1096dc1a562498b570",
+   "edits": 6,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:212",
+   "ledger": "f31cd8bdce94e74ef3b99c661535435a737584c3cbc7c6e3cddc7068ccdd949a",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:213",
+   "ledger": "24663d50d210ebf8ea37b47dc3f400b355069d2530d92f6a808dcb2dfadad520",
+   "edits": 3,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:214",
+   "ledger": "d2d9d17c58e6f05bb3a7107178d4857ce40ccc3e3b7c5f65a238f71a4c2d0b9a",
+   "edits": 4,
+   "reasons": [
+    "comment",
+    "exported property assignment"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:215",
+   "ledger": "ff872c68601cf061e5fb854896131872b3364694fc97d52e666570b983c9ad7f",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:216",
+   "ledger": "8e3bf5db926b172bb960039df5a2e1734ca70dae2e0bd2ad9934bad4a69778dd",
+   "edits": 7,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:218",
+   "ledger": "ea7eb674b3097d6ef7a3924446116e248b32810b20ab7dd1354821a36c334c8a",
+   "edits": 2,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:219",
+   "ledger": "83f10453e06b481038419362eda1b032cbdc2776f0714d7b7223de68de03fff4",
+   "edits": 13,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:220",
+   "ledger": "9a43a260d78cac90fb554360a68db172ccb2da62578025f00a6a4f6e24c2789a",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:221",
+   "ledger": "53785d494f36c832bfbe048e685acecc91088706d8c9d24ec4793815d17f2f66",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:222",
+   "ledger": "fcc50147d55db5b0228787283b6843c6656a7d32ce36249cf6d15b6a061e0fdf",
+   "edits": 8,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:226",
+   "ledger": "72deb28efe2452c8daae76cde6ca893b3cd1f2f4b36633b6b95e009dd69b2e01",
+   "edits": 2,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:228",
+   "ledger": "7d0480c8581a125ad3ca6337f73f6a1764df6c6f642af59ca89bb1241f95a0e2",
+   "edits": 12,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:229",
+   "ledger": "18cedd0ff13f6de05ee4db349e15c883054e3bf89fede8ed35a57bce24c7b1ea",
+   "edits": 31,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:230",
+   "ledger": "e33d90a7a46fd31404c112a16eb8c825ededdc445385f5afb2cc9dc431c8c002",
+   "edits": 4,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:232",
+   "ledger": "102c24eb5bee4d62ff53c2983bb8c679c9c7d0e93ff26aa57bc915c282e962d7",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:233",
+   "ledger": "996dafa654b46b149ced43b46cad6e92abfb65f28a0be632b983265035bd92c8",
+   "edits": 7,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:234",
+   "ledger": "0e765344509113e015839b69f6ebac75fda2fcb2257fa15dacaa5de0f2128b6c",
+   "edits": 8,
+   "reasons": [
+    "comment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:235",
+   "ledger": "e5d048dddf849013e28ae7e2d7c79218e136e39397fcb839e36f8e4df80f85ce",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:236",
+   "ledger": "16d32c4f25a7b455a73cb654b5b5acb2ac2d392864ab01b0689799d785aba765",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:237",
+   "ledger": "1e99e01af15c4dfb73b04902ff866ff1d904a24567cbffdbedadc4a01eb2230e",
+   "edits": 3,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:239",
+   "ledger": "8ee45e78a3d61d708f59a93e87e1088da5f03ab493fcca4f23c2682d1d6cc58a",
+   "edits": 4,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:24",
+   "ledger": "fd30430425e45c545c2c69d64bc6b78304d10713e8ac51e68c2e07abbfdbfa0a",
+   "edits": 8,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:240",
+   "ledger": "bb5028016c4049f644e6655fc15edbef030e4015a63c108c447226470f3b89fc",
+   "edits": 11,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:241",
+   "ledger": "edcff8a761c20f794d950667cf03334d7b7df49e6535ac4fcb36291a8e0b7dc4",
+   "edits": 23,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:242",
+   "ledger": "1273a3b225b11fafb0f53f8341eac1114670c7f8b139ec2e7258d22210156e4d",
+   "edits": 3,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:244",
+   "ledger": "93a6ede8c38a9ccab22edfe7b373397dbcbfc9937de4d75a730cb4734f17ec4d",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:246",
+   "ledger": "730ba3db4af87eef725c681fabc7004e84e986d60ff5bb313cab251f03db8b20",
+   "edits": 41,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:247",
+   "ledger": "33942e3b19137b277a75aec577b1c544e2b225d842fffe5be288db12fd38ad7d",
+   "edits": 23,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:249",
+   "ledger": "f1b0f2da85a37f14cc86bfcee59c69318c27b6439c3726e3e92e9d18469bce17",
+   "edits": 43,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:25",
+   "ledger": "5fa1dfb9084322379e4ce2bef242083504a6b5ac0577169c482698a60374a0cc",
+   "edits": 18,
+   "reasons": [
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:251",
+   "ledger": "1e7f71e3ef35a30d839ea46217bc30ea791f309ec02a764182e6aea928a8e5ef",
+   "edits": 2,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:252",
+   "ledger": "a2eadd34648865524d2b74da1b5dd5431c43f2209c6fb9c68f6a67450a35d595",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:253",
+   "ledger": "b4343571f06dd1165665139473a158f7c8b59b6f05eb914db8269def5ddb109a",
+   "edits": 18,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:256",
+   "ledger": "14e84e7010056376bba3bdd4c9198d5aa3d4106064e26b1f791a27cf6ef45eef",
+   "edits": 19,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:258",
+   "ledger": "0c1cdafd2219c4512d64c46318ded7852f0a63eb3d5217d1fd5a0aaa16244d4e",
+   "edits": 1,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:26",
+   "ledger": "f23f69738c9e59bb728385323ed0ac3bb1a174d5aee10a1980aa95811cadae3f",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:260",
+   "ledger": "ac4b8cb595ab2ff5e72f4943a2f62bd60d90b0d452bcf30cad9d9fe94b02ecee",
+   "edits": 10,
+   "reasons": [
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:261",
+   "ledger": "ec479bc30b6c18e65986eb3b0d0c3ad17006f16cdbc6d652929391cb5fbcd657",
+   "edits": 41,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:262",
+   "ledger": "ece4d2a40a0f5aec59785e9471a80e8937b24ff59b83713932af76d445dfd0ab",
+   "edits": 21,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:263",
+   "ledger": "745bcd16f062844873bdd7b3c1521dcc4056302f7a4074ce7672bb3beebcc1b5",
+   "edits": 24,
+   "reasons": [
+    "comment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:264",
+   "ledger": "705dd8b63f1c7d3f73ff84ddafd6b31fdc067432d01925515f8233b8b21c40ea",
+   "edits": 11,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:265",
+   "ledger": "e4d81d67f68a5f71797216b20895ade620ee01f81c6dbac1d58799d76b149acc",
+   "edits": 9,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:267",
+   "ledger": "4337773bc7474368764e1b2795d28daee738bf9a141d1042e7b7492d8f6b1b0c",
+   "edits": 2,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "config"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:269",
+   "ledger": "4d8dbeb4755c809e759522b33f1ee8dcdaadae0f41b70c63c8eadafb4c625438",
+   "edits": 6,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:27",
+   "ledger": "f108fd6f35b19d0fbfecb08adc310d513d999278f8469e11802a7c21173c9d12",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:271",
+   "ledger": "ee03fe9721fd51739a854526bff8f4024c81b1a68b8ba2259121d1429632cfbc",
+   "edits": 8,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:272",
+   "ledger": "363334f1f93bc8d9bb1d83bffde331228493868947f25e7ab4ebcad668dd04eb",
+   "edits": 21,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "untyped JavaScript file",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:275",
+   "ledger": "a82bcaa76085d9e51d5656c9c404cbf0001e23851d0479a3401f92172b87bf1b",
+   "edits": 1,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:276",
+   "ledger": "1be9ddcab1f60dd2cc1fa4f8169b85622eb69e1d9022d96e37f3d7ba999452ab",
+   "edits": 5,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:277",
+   "ledger": "e7bddf5a913a6091662b6c3afa66df63558f55a7a0b97bad1df43c0a317a7f5e",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:279",
+   "ledger": "23d3a6c2db206b777e9ed4bb6252112797dc8a36349ac391472e835f73b540f4",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:28",
+   "ledger": "98337d66a9a1276066d83f9b67b3978d5105fb2a63568ab6201029f4833790c9",
+   "edits": 32,
+   "reasons": [
+    "comment",
+    "exported property assignment"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:280",
+   "ledger": "3954d995cebef142f34d42cc6d0f3f273f23c598218357532989615c8e08cb32",
+   "edits": 9,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:281",
+   "ledger": "3e11ad703d19038069b4cb94897d521e9348ca660e01e5054c8704cb02f85225",
+   "edits": 8,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "config"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:282",
+   "ledger": "0885ae541fea934deaac0cc00c74ea0901430ffd3cbf82c5870aab663a015119",
+   "edits": 11,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:283",
+   "ledger": "774fe56cc3937b8c60bc019e1908e6c39e68a2da42494904af33f4869ab8e0b2",
+   "edits": 15,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:284",
+   "ledger": "dff2e108d65c1df431d0d5d1a49a6ee71cee2bbe2ef791f3c2ac9fbb6a781a60",
+   "edits": 9,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:285",
+   "ledger": "ebb84cf507b2a53e5417d9af4a7cb8a954884a5a7c936ca59e37adcc2a30c519",
+   "edits": 3,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:286",
+   "ledger": "cfa951c3ca6679e8e2e009c476aa9bb2c70e69ebba510accf73a26cc3253fdb1",
+   "edits": 20,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:287",
+   "ledger": "fb910f20c832d664ac22fe5d7255f745fdc94813e8e430b45f93b6bdeba340f3",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:288",
+   "ledger": "d89c46eca6a9b31a22f780ca2b7c6df1cd35b2c020db6b5a2a4a88b6c45a9401",
+   "edits": 4,
+   "reasons": [
+    "comment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:289",
+   "ledger": "19911be277b706c0d0f4974d92aa0205d77e406c154ce996062fb724bd5548ce",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:290",
+   "ledger": "6e9d7f9a1f852c5bfd8e464789eed5062acbfb406cbd564ac83ab34e83167e80",
+   "edits": 3,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:293",
+   "ledger": "a0e5110d765d2bc8d715f9e446c6e5b28b111a61902c047ab6409267fc0726d1",
+   "edits": 7,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:295",
+   "ledger": "c978d72d4e5f05e7da3a34dd10dba408baab262cd3eb94ffc37ef3b164d41ae4",
+   "edits": 16,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:296",
+   "ledger": "33816f53a4867d935fcdcf1193e060856702af767bc84cef3e3dcbb9d8e1eb90",
+   "edits": 8,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:297",
+   "ledger": "a9cf3bf4f85188bb7870570f6c3a952c3bf6781c72fcfcb4e47b9108e680fa66",
+   "edits": 11,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:298",
+   "ledger": "d61f1746c2a5d468820e401d9db035c95b0dc1da9f583b471640e20eeabc8d5f",
+   "edits": 24,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:299",
+   "ledger": "b380beefd640c99cccacf7a32e1e4e601d8230a0bfc17d0830a20558ad4b4416",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:300",
+   "ledger": "4c6b97f41feaa78d830cf10fe9fd3a78bf9fe973b14e883323e88923686178e7",
+   "edits": 5,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:301",
+   "ledger": "66f3fcff34f76a666ad2ffade61c2bc93da4eef7c081c7a2442847dee99dae73",
+   "edits": 14,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:302",
+   "ledger": "b7b5517a27ca68ca1c94579813f58fa9f14acaf53fa2a801eb5c1f38caf3c4ab",
+   "edits": 7,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:303",
+   "ledger": "eca5b3ccae5a7e6dd1d1699e5959d780f8962c51b549007defa9edc57f00c826",
+   "edits": 31,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:304",
+   "ledger": "a1af68c06f6a9da393e3e43cb17a7eea953ddfc112ab752142f2863d0d9ce2c7",
+   "edits": 4,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:305",
+   "ledger": "00e933a467e017b8e463aa11320137794be20255ddeed8cec558d52d2bd98444",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:306",
+   "ledger": "eaa4d2eee8fb25448134294c1239660139c662fbb8aeb2c1ce86fc2f2f0387d3",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:307",
+   "ledger": "231bdbc7a8da7c4de8f3d9d79f1e057a9444ca11d06a2a6ad67b7a0f67e1fcd6",
+   "edits": 7,
+   "reasons": [
+    "comment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:308",
+   "ledger": "3160d0bbe6bc9e86856b64e26e3c120c10ed80864f338554f3e0d790d7e5f0d6",
+   "edits": 25,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:309",
+   "ledger": "3b0c7d75eec527af47aa4cc8e686df55af66995bcbf661c9350a8215f1b70aad",
+   "edits": 3,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:31",
+   "ledger": "d7f52a4c053c2220db4abf495d87c19a8883cfcb832f5262c5d8a90ecce0d22a",
+   "edits": 27,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:311",
+   "ledger": "18c1cda72b32d677f6c5178e65f94ff61af22a7936882a36302208571abd9357",
+   "edits": 5,
+   "reasons": [
+    "module-level statement",
+    "object-literal member"
+   ],
+   "contexts": [
+    "module-level statement",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:312",
+   "ledger": "bb8bfbdadf99208d830f7650eb561ce1a21d71a320f1435a5081d458ad0105f1",
+   "edits": 42,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:313",
+   "ledger": "3bc2dd29c932811aea30015df2dafbcc71a549a27cd55d1b97876e880a84838a",
+   "edits": 19,
+   "reasons": [
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:315",
+   "ledger": "6ff583439d9ee0a5978d7efefae05150bfb47e4294c6b2f798d6db9af78d051a",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:316",
+   "ledger": "b56db499cde89c277313c8058bceb1685451a00553c666eb0ae774de2169caf0",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:317",
+   "ledger": "06883d48999c2ec9a72a45c04533c685c801f11b8a6f9be0210f263355439f3d",
+   "edits": 8,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:319",
+   "ledger": "f7a9f41fc9818bdc634c82c741854bc802ed6cda04e73e4e7acf08be8d8e2fed",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:32",
+   "ledger": "e45b2076d65b914f983059e4d1a5bebbe401b68000b44a7e5aa37b306bb62a11",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:321",
+   "ledger": "4e72463f53dad294697009045d5dfbc26787bac694cc5c45e1778b920088a181",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:322",
+   "ledger": "49eb0b924438c15703b85e42297a121b09123d9785ccae7d6c8f69d89aa86ed9",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:323",
+   "ledger": "62fcb30015d327d26bcee45b63a0154fd78e52a53416a971693cb3cae1c45a7d",
+   "edits": 2,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:324",
+   "ledger": "b433ef61b529980003ba856438147e5dbe38a26d258c667099e82da067c77baa",
+   "edits": 31,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:326",
+   "ledger": "b62ac72cbe0a109c42c9d91544f5d007dc7076d05111a5e8f98be29b5ffbcb17",
+   "edits": 7,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:327",
+   "ledger": "9aa7aea7788ce6e75fdcdda433fdacc3f077628e7e5f9c9481b4c368efba486d",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:328",
+   "ledger": "6f9acc7ebbae864b44fb1123b923171999be6e7184b85df6cc2c0d5dbb343242",
+   "edits": 4,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:329",
+   "ledger": "f72f1ff0540ec7e1c7e7ef6400071870f4c6e16a589686bba41f26d7c916a112",
+   "edits": 6,
+   "reasons": [
+    "comment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:33",
+   "ledger": "c08256fe6edf0b58c9b32b1293118ecc90cdbfa0102fff7e551410e09e25bee0",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:330",
+   "ledger": "7df482596f219e05e7c712218f3bff3f6900a318417d63cfcfc115cdb0a3944d",
+   "edits": 16,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:333",
+   "ledger": "0cbf9b1ec31afcd61aa3c9c6539fc5b99150f99f73b29639b493f36182f9c8bf",
+   "edits": 11,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:34",
+   "ledger": "f861496d58dd1727c196df3e946012d82e9bafc0af8bc511106313eeea19de18",
+   "edits": 5,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:35",
+   "ledger": "1cafeda87ee3eb39452b94dbfd52e95762585b312896ceb082f3f18d9d6baf86",
+   "edits": 6,
+   "reasons": [
+    "module-level statement",
+    "object-literal member"
+   ],
+   "contexts": [
+    "module-level statement",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:36",
+   "ledger": "d0b42efa87f83be900535cc526d7172eb99a2bf48ed335556f277ac1c05ccf01",
+   "edits": 6,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:37",
+   "ledger": "10e83ebe4f4e27789e4764e1105ea3c3904028d84052f365fa51badb9daf585d",
+   "edits": 18,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:38",
+   "ledger": "faf865f0befa6918e86848daa0d806e2cd87a19bb218f76d8323eb5be427d708",
+   "edits": 33,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:4",
+   "ledger": "2557e51ec5fb18409fcc164a0553f8101fe0e01e7b0a588861a4c85d51b38ded",
+   "edits": 5,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:40",
+   "ledger": "251c3171cf7853f4bbe77799c0621b7365b99f109758351481bfc9c43fe8e7fc",
+   "edits": 20,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:41",
+   "ledger": "55180bb3d217a646967b5395cb03684a9c43c52faffe7c5121a7cbf66c44ce4f",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:42",
+   "ledger": "d8dfe59ffa90e74c191f7b584797f00e12e7be40c54d04267ec90130d4add22b",
+   "edits": 6,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:43",
+   "ledger": "4c8f002e11e7e10d05927abe39c78a6956d6a4bf5932cd9bdbed921493d7fb72",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:44",
+   "ledger": "4fbb2e0feb1576f5264b518db4da0b8cf736017307c6014d6941f25fcc7677aa",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:45",
+   "ledger": "143e97463559fda395ef91d2456fe110619977249a0a3e7c173456340edfd5f3",
+   "edits": 5,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:47",
+   "ledger": "99ee61df5ae6768d538475af0e3f13963338da150c618c1b08d51745848970c7",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:48",
+   "ledger": "f847ce27e080ba74c279cb9a2ad4acb2e48b952e9e7767ea68e0b68f64b8c54f",
+   "edits": 5,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:49",
+   "ledger": "7485fe28044e475ee5d6c4744ca2461c1e645e92f0375a327c34bc2048fdf641",
+   "edits": 10,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:5",
+   "ledger": "ee2ce8f99b8493656af7cb20a19bc1ae35cec2c6099be8cef8ee9cca698a8bec",
+   "edits": 13,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:50",
+   "ledger": "9aaabd7d2ec50b47d36fc88d4173af7c7e24cc28ab434452bd7fa4d43d8a2aa0",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:51",
+   "ledger": "e4a54edbbf96547861b8aed2c958cf5700bff15681de0c0a3131518103f64962",
+   "edits": 29,
+   "reasons": [
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:53",
+   "ledger": "559fe5820c8b5315f681f013e56ffa78cc701f05dba632a4d4a049cea0fd974b",
+   "edits": 5,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:54",
+   "ledger": "aa5732a32d4443ef538b80dd358a548f93e10bcdb23c9400e4471d3c51f3f691",
+   "edits": 6,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:56",
+   "ledger": "a0f830aef66b3e779e99aebf055b824aaae0483253aff4bc2abaf6d6579ba9d5",
+   "edits": 11,
+   "reasons": [
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:57",
+   "ledger": "e9e02b0b48ee55e44fda59cd2c592a9cb791b7f17adee0d4b6dc01008066144f",
+   "edits": 3,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:58",
+   "ledger": "c3121774e8925bbb694e0e8d84ae55163053efa5de8682fb398252f818025c56",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:59",
+   "ledger": "fa155bcec0a5cedd7223d41a4a3863000bd3b807983007950cd061be9acaad74",
+   "edits": 9,
+   "reasons": [
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:6",
+   "ledger": "8d47d60f7bbe004a3582f6f2a8f4e61e1ef287bc09087b50fb50c549d7d82f7d",
+   "edits": 16,
+   "reasons": [
+    "comment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:60",
+   "ledger": "3630e8ae93f336a5108cdce9516ff1b5aef4cab3bb96a2a3468fee255db706e2",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:61",
+   "ledger": "1e0b968334833f48ee3abacf32a20d499e119803a587d36c5421bc3f413c97e4",
+   "edits": 21,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:63",
+   "ledger": "991952e4a9b8a1ce139d17dfc344524b1150c427dfd233d43c763c52a91c25ec",
+   "edits": 27,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:64",
+   "ledger": "dc1843c2613dcb466ac894f84b15816dd591cfbfbf0a621faa1bcc045129938d",
+   "edits": 25,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:65",
+   "ledger": "f2df16107127048a721aa21b93e255f22a9a1fd75030ef716fab0493707987d1",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:66",
+   "ledger": "3d8ef92457a7b5a45718abe2c90b6841b2eaf0b41ee14212aad2a02bd3cd6ac7",
+   "edits": 3,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:67",
+   "ledger": "5eff19dbecdc6dad9370441a2c279a24ec5508ae50f9d3fb05057457bb643fb1",
+   "edits": 3,
+   "reasons": [
+    "exported property assignment",
+    "object-literal member"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:68",
+   "ledger": "aeedab2f99201341068ec836ee34c49acbfeef38d7ab0344ca3b2f02268760c4",
+   "edits": 17,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:69",
+   "ledger": "a7036f8a70c0f199854500c343e443b038e8515b98a2b744dd11084acabbbf00",
+   "edits": 3,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:7",
+   "ledger": "77810561eae67cd942324b2e556d418447acce60b773b872275a88f6828974c1",
+   "edits": 7,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:70",
+   "ledger": "f30320cf01fd66722ddd68ac9ca7370f787301e3bc5d5dd9ac414a7b3f675e7f",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:71",
+   "ledger": "90a32f6df340fb4de473007cf8179095af04d2e38267a46a27841b3850cc12b2",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:72",
+   "ledger": "441a393078f89680b69aeca8025ef3bfc4233c2b99ef93d68416cb67bbe8f414",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:73",
+   "ledger": "fc559daf6e4f125c2f3e9274b20ba529013c8d472b1b11cbc5030ff3efe43b6b",
+   "edits": 19,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:76",
+   "ledger": "0b4f89283900028d376a1d01dde2cd8f3defed581e8f50f9b6dd850828721851",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:77",
+   "ledger": "c1dc64df0cf7532f25ebfcf73dd0b9d46dab5bb100649d246635b223795a82c0",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:78",
+   "ledger": "d05c9e4aef3f6496814c7126fb4000f7ef68af78a777948784f15f8c2d26e3b9",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:79",
+   "ledger": "5d0897093c3097a32ca65197ad39b3f38c0f022c084895a7dab09247d1ffd58d",
+   "edits": 15,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:8",
+   "ledger": "2308c50935ba5e10ad819d79816081a14db233a457fdc9b8dfdaf5e5b83839a0",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:80",
+   "ledger": "9b165561546ebd3f36dc1dfc4319743c959d00d476f901fefed310f21d3e12a8",
+   "edits": 2,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:81",
+   "ledger": "72afa25286c6d953ca68263fd7db12746af10f7dfbdc197842b5ebf2a8d16fcc",
+   "edits": 36,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:82",
+   "ledger": "6a93f57a487562b146cc999fa0cd571158142710c436ac20403646cd3fcf1b84",
+   "edits": 7,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:83",
+   "ledger": "10902608600241bf04a79ee4b9e2e6b00a73d6226ac9df60a5abf48c52db9505",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:84",
+   "ledger": "5eb30d264e5d45e68a9d64b8a0d194f3e8168d655c7e70fb3031bb51c9b57629",
+   "edits": 31,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:86",
+   "ledger": "22927e47d065eaadbded8f7454589b47e390ba8b136ac827e2cc61dda80fc43d",
+   "edits": 9,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:88",
+   "ledger": "587c8754901b5a0d0f24f581aecff2ba24e02b6d5f026b4d2344f28e7267db4d",
+   "edits": 5,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:89",
+   "ledger": "6b4173b37f922270c43f11f0cd4d3dd658c7fd76474fc85fff456d89f0aee488",
+   "edits": 44,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:9",
+   "ledger": "4c20a25eccb261d7ce30607a1cb0ca99fffd26ca2b0fd96eb4018af7dfa7248f",
+   "edits": 23,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:90",
+   "ledger": "eb0347e6b126e8f3261819332a4a26c5def484da3195774f87c95b44a076f353",
+   "edits": 2,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:91",
+   "ledger": "68269734278abfe086d1b3df7efcd4de9f12ffe9929c37a0f7c9bd90bea327cd",
+   "edits": 21,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:92",
+   "ledger": "ab9db2a903731b5fabcd330715e6ed33d09f6e6fab0f209a131df55a27354f07",
+   "edits": 23,
+   "reasons": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:93",
+   "ledger": "c348726a3e964a59b246de8f8eb99e5191e06e8975df80eb11cc4ae323fde71a",
+   "edits": 15,
+   "reasons": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:94",
+   "ledger": "3e3f4640663ad6642345fa64c9e6d32994b16eebf6f7033f20b29b10a44f3792",
+   "edits": 2,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:eslint:99",
+   "ledger": "bea406d2be7db5e139f5f39a5c4e6a07ceac667da849ca7b2b7488bbcdada0c8",
+   "edits": 8,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:10",
+   "ledger": "c9f115d5d3b50e4ea9f141efca970da2cf4c211b5e37fcd9320f06bfa4a93ea0",
+   "edits": 11,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:11",
+   "ledger": "6171c615b1d5c237ec9a1a958428a193d898bf13cf1c07e91866ce55dbdb4d0a",
+   "edits": 15,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:12",
+   "ledger": "dd945446ac363e9b9211a490cb124a31495b17ca5db23edb530c06dd1a66d895",
+   "edits": 18,
+   "reasons": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [
+    "config"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:13",
+   "ledger": "0343f70d5de5b404a2c7d4c2c656a4a0efe91137c355c25dea8c55183e1febcf",
+   "edits": 29,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:14",
+   "ledger": "57346ab0ee1cc97994a9bc33db0131e7623a084b00a28a9d68a904f2948a697b",
+   "edits": 7,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:15",
+   "ledger": "5aa1200378fa642bc0932cd054d62597b53b13897c44a42f357bb617e81526ef",
+   "edits": 7,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:16",
+   "ledger": "1e31e62b8b2d4b2c0f777d93f3909aa15761b86d31d2d66d774597785395a029",
+   "edits": 4,
+   "reasons": [
+    "object-literal member"
+   ],
+   "contexts": [
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:18",
+   "ledger": "198e725ef3198fc57d2cc1516c98e7ca5e8dbc2b7d588563a5955426828e6590",
+   "edits": 3,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:19",
+   "ledger": "1d47c84753b3aef61a2ece9a5759e4af839eff6ca9e866eff4fd717f698f2f24",
+   "edits": 16,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:2",
+   "ledger": "f542a4c90f24ebd2d2e4cbb359c1b3e87793b272d00746cfb64fbaf2f004df19",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:20",
+   "ledger": "87d2eb9d9ab288b4434d7adea05dcabaa4c797ead7fb6c78cb52af01eb67ddfa",
+   "edits": 11,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:22",
+   "ledger": "d4e1f7330284ac22db428bf82a269424989c7ae9efe721fa5caf52167755e30c",
+   "edits": 8,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:23",
+   "ledger": "7f099d2215e03a8706a657beb773265859e451d285fd269b4312b1dc6fb90d8f",
+   "edits": 13,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:25",
+   "ledger": "1d9bc0f63a9148b3edc217e5aee3f1d96677ee0bf6ba30f0f92cc0e6c259ca15",
+   "edits": 8,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:26",
+   "ledger": "27507a7434b7b254ee58d0dad54e5b1564c20806b2cf1c5eb228fa34fbfdf895",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:27",
+   "ledger": "f62aab166a3f364ccf8792210ebf73ad674e43b9b96c88498611d80ff6a85d79",
+   "edits": 16,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "object-literal member",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:3",
+   "ledger": "160f27ce384a2231a3c8528a120c667ef61ae3a761a742218a8299d906691808",
+   "edits": 4,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:4",
+   "ledger": "a24b60fed0793aac6a205c995a87c12de02df360c5d1d10bdbbdd5c8d0d361c1",
+   "edits": 5,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:5",
+   "ledger": "593544eb609f145a1ea820557d035b51cfa1591c01f0989467dd57bb712e4f31",
+   "edits": 2,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:6",
+   "ledger": "0b4cf4a00beacb96e4f2d15ce534693844d99bd7320bf1f5e2e343144d1ec9e4",
+   "edits": 42,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:8",
+   "ledger": "5ac06804f4a381d93941739eefa05b9e04b8f55c276e5ae50103c67678d629bb",
+   "edits": 3,
+   "reasons": [
+    "comment",
+    "module-level statement"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:express:9",
+   "ledger": "a673a84cbd41154c7e51f586957197a87a18164a9b776263d3351e381eaa50a7",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:hessian.js:2",
+   "ledger": "c17132401bebeb9830f06ef91e85bfdd79dd7278b68d1b2aa26a19091e26b293",
+   "edits": 12,
+   "reasons": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:hessian.js:4",
+   "ledger": "6335ef63e02c3a00126c0c68d0018123f6ca1d0c61506b0809aeb3174d4b9fd0",
+   "edits": 4,
+   "reasons": [
+    "comment",
+    "module-level statement"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:hessian.js:5",
+   "ledger": "842871379e9ebe1859a4e86e515cfd0efc95383eb4999e5732f1e2b6e9004fca",
+   "edits": 9,
+   "reasons": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [
+    "config"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:hessian.js:6",
+   "ledger": "8585027814aba4d35f5d0cedee6dffdb4a961baacb6e6aa8660649ef65072338",
+   "edits": 12,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:hessian.js:9",
+   "ledger": "8f02d76d59ef20b976e61752cbb970b88e931875c7b3dd3e2a43637c1fd80927",
+   "edits": 2,
+   "reasons": [
+    "comment",
+    "module-level statement"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:karma:2",
+   "ledger": "0cea91cdd33a34bf91165579de1945dfd1bfb3f70162b1c9d853290e9b407787",
+   "edits": 11,
+   "reasons": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:10",
+   "ledger": "a1b8b6dce1a975418ab697feab6fc339d648dbc77a75edf66bc3d4e004184862",
+   "edits": 5,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:11",
+   "ledger": "3d11d6afd2b17af5b6bfd5eff8ae016d6bdf346a19bbbbb878808ff1835f6a3e",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:12",
+   "ledger": "9e88ffe185bdddcef742a6d1f2e685eaf847db3819a3136bce568db04c866e52",
+   "edits": 19,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:13",
+   "ledger": "a2416b178937d793c275f5f346ee0663f23d1f945553a0cbb3f924808d10a054",
+   "edits": 7,
+   "reasons": [
+    "module-level statement",
+    "object-literal member"
+   ],
+   "contexts": [
+    "module-level statement",
+    "object-literal member"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:15",
+   "ledger": "75b4a39160694c5c388cc9889a426313429bfddf81b80a8c7e279e0b0c577d1f",
+   "edits": 1,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "schema"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:16",
+   "ledger": "8092752623603fd1d52349df54b0936f881ff4ab37fc1d9ac87f5fe4561efa42",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:17",
+   "ledger": "fe3fc3afb18b7f5c4adf9e99ef4ad0b3b050dec639fb6cc25edc92a4fc2df5c6",
+   "edits": 4,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:19",
+   "ledger": "048191ca5bd2eab7c4f9f940c8018433966db8a84cf66ee84ad1e9cb29bb48a0",
+   "edits": 4,
+   "reasons": [
+    "comment",
+    "module-level statement"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:20",
+   "ledger": "22f066af33b48145fac96dd5d2432ee72f2810dbacaf79aa0d1ed14396e176d0",
+   "edits": 7,
+   "reasons": [
+    "comment",
+    "module-level statement"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:21",
+   "ledger": "f56a2dba0f53774ca447f43964542bb7cef65de62962b6d66e333307934e4839",
+   "edits": 9,
+   "reasons": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:22",
+   "ledger": "ae9f083811cacc99abca27c52de2ed050de3f7716ff786f94366104c7666114c",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:26",
+   "ledger": "29a9eae347b0dc9f0871be50e9d015ecd54e888e0abde20228588efca74659bb",
+   "edits": 2,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "schema"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:28",
+   "ledger": "d6281a3d3336cf5c92f2ba539342385eaf2953a0d0998397f151fce1b8a2858f",
+   "edits": 9,
+   "reasons": [
+    "comment",
+    "module-level statement"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:29",
+   "ledger": "35956aba03b57b0d07a6894cefd5c5275c5eb37bea67131089dcd4eebf55cfd3",
+   "edits": 12,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "schema"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:3",
+   "ledger": "e0ec052f4ad316cab01e0a29018ebcf42672f153916075f171908b6c9514a557",
+   "edits": 4,
+   "reasons": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:5",
+   "ledger": "9d46f22734e7497fe45223a7650d73f787fc25ab38dc7b7ecd1199c8a3dce752",
+   "edits": 5,
+   "reasons": [
+    "comment",
+    "module-level statement"
+   ],
+   "contexts": [
+    "comment",
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:7",
+   "ledger": "5c786ee167470787c27b83b5ebe2a76f18cfafc323a95c5931cc735ac38be1a7",
+   "edits": 16,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:mongoose:8",
+   "ledger": "ab006d6e3202b87840d47e4ec1ed9fd2fb7accaee8627b1b152a85b6a8ec88d8",
+   "edits": 2,
+   "reasons": [
+    "module-level statement"
+   ],
+   "contexts": [
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:pencilblue:1",
+   "ledger": "4708099e4e6fb8177ad8fdfce1733d400d0af57a3f68ec230d4055e7d7a497b2",
+   "edits": 1,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:pencilblue:2",
+   "ledger": "f05389a76cd3615b228e79419c7b69b9e1f4af44b901b18a5eef8b554aa4eff6",
+   "edits": 39,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:pencilblue:3",
+   "ledger": "641ba7d1b3e1893726f63f26a94025e3fef6e75056b29e0fc648178864f9c865",
+   "edits": 11,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "module-level statement",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:pencilblue:5",
+   "ledger": "9d319a9f1988e703174725d660ad4daa4587dff23e562a0d93243e1a9b074a2b",
+   "edits": 13,
+   "reasons": [
+    "exported property assignment"
+   ],
+   "contexts": [
+    "exported property assignment"
+   ],
+   "artifacts": [
+    "non-source"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:pencilblue:6",
+   "ledger": "d5dcba56d8537b2c9350d7bc035f11b229c5dee89e9dd5a4336bb066e55629d7",
+   "edits": 13,
+   "reasons": [
+    "exported property assignment",
+    "module-level statement"
+   ],
+   "contexts": [
+    "exported property assignment",
+    "module-level statement"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "bugsjs:pencilblue:7",
+   "ledger": "a8c9412f660dd4d96dbf9c40d6a06252999febc7e33febb9531c98f42bc3ee62",
+   "edits": 16,
+   "reasons": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "contexts": [
+    "comment",
+    "exported property assignment",
+    "whitespace"
+   ],
+   "artifacts": [],
+   "reconciled": true
+  },
+  {
+   "id": "nexus43:nexus-1922",
+   "ledger": "121117c9917c3635060562b09f263b8247d7899e67f363cf4a24ff5de66fa5c6",
+   "edits": 126,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "config"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "nexus43:nexus-2186",
+   "ledger": "95be9da40202eab21c46f80f2254f07bb4691dbd1d1801da323e1c509e782a8c",
+   "edits": 123,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "config",
+    "test"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "nexus43:nexus-desktop-119",
+   "ledger": "e15a2435e7f086a29d6394eb9bc5225b5109f82da4fa25685a089e6901c5acd4",
+   "edits": 1539,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "added",
+    "build",
+    "non-source"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "nexus43:nexus-desktop-145",
+   "ledger": "de33a7f791529d3e4d8acdeea15fedb94c42cc3eb3065bce978e354c52bf7196",
+   "edits": 187,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "non-source"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "nexus43:nexus-desktop-163",
+   "ledger": "d211f9ee1f2bb5d14e243eea242312100cf9bb6c6f6e1f91ec2cd2e2c1c2edd4",
+   "edits": 763,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "added",
+    "build",
+    "doc",
+    "non-source"
+   ],
+   "reconciled": true
+  },
+  {
+   "id": "nexus43:nexus-desktop-176",
+   "ledger": "4992db75f6598ce56f0a15a9b1997cba12f01e7d0c831adcb0122eeeae0f3b8a",
+   "edits": 845,
+   "reasons": [],
+   "contexts": [],
+   "artifacts": [
+    "build",
+    "doc",
+    "non-source"
+   ],
+   "reconciled": true
+  }
+ ]
+}

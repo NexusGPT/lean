@@ -1,0 +1,21 @@
+{
+ "file": "lib/utils.js",
+ "unit": "(edit 0f687d2b95a6)",
+ "editIds": [
+  "0f687d2b95a607d357868cddcb9901391afb1431ce6013f30ad1aec9f791465e"
+ ],
+ "lines": [
+  70,
+  70
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

@@ -1,0 +1,3561 @@
+{
+ "identity": "c1e997a0ad4fe916d05efe959ed8608f298a50c93b595abe35282121c8cc3e37",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit bf626cefa118)",
+   "editIds": [
+    "bf626cefa118620f04405de17d30c2dbd882d77b261005a0c9373b2bc65e9f0b"
+   ],
+   "lines": [
+    20,
+    20
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 9b689ee9a6c5)",
+   "editIds": [
+    "9b689ee9a6c57f2562a8daffe652cc4f433135db1ed3fd4ff8aceeff58c29b34"
+   ],
+   "lines": [
+    21,
+    21
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 0cbe9564d813)",
+   "editIds": [
+    "0cbe9564d813122ef77945207e81f5dd3c567bef9bec68ae359989f70679803f"
+   ],
+   "lines": [
+    22,
+    22
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 61be10808b7c)",
+   "editIds": [
+    "61be10808b7ccac470eb0dc145ce71ca8033db3372b4be5a571c1f1e2092dbe1"
+   ],
+   "lines": [
+    23,
+    23
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 8816f33e9ac2)",
+   "editIds": [
+    "8816f33e9ac28fb786092be73821533d8cdd03210f5bd3d0f1c992b09c92bd7c"
+   ],
+   "lines": [
+    24,
+    24
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 389b62937f0c)",
+   "editIds": [
+    "389b62937f0c028aa7dd80cae56b4d5000709578b67161b087bbb35f52099cf3"
+   ],
+   "lines": [
+    25,
+    25
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 50e85b3141e7)",
+   "editIds": [
+    "50e85b3141e72b656f1e5548c883eb31ac2d0860a2b3c68f96f2427c4ea1914e"
+   ],
+   "lines": [
+    26,
+    26
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 179f1b0ef947)",
+   "editIds": [
+    "179f1b0ef9472a01e9fcfd27af9ff6f020dd5c976b816175a47a8d27bdd9aa6d"
+   ],
+   "lines": [
+    20,
+    20
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit a514e4dbef9e)",
+   "editIds": [
+    "a514e4dbef9ef3917a003230ec92899498b99e50fb3f051a16687db43753907a"
+   ],
+   "lines": [
+    45,
+    45
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (comment)",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 2112d96a9a46)",
+   "editIds": [
+    "2112d96a9a4623b17424c415d7d591883b9305ac5a45a2bff9aa76e960be9f38"
+   ],
+   "lines": [
+    46,
+    46
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (comment)",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit c718f82a54e0)",
+   "editIds": [
+    "c718f82a54e09cadebbcf628aa348927caf32fb9975cc8f8f3671ad3fb26ac4f"
+   ],
+   "lines": [
+    47,
+    47
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (comment)",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit bb90306bf827)",
+   "editIds": [
+    "bb90306bf8273d8c0fc2cfbc4aca355f360118a68e7d068848b611befebe4f45"
+   ],
+   "lines": [
+    48,
+    48
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 33b1a5e0fc87)",
+   "editIds": [
+    "33b1a5e0fc87fc8c351e02542097ab58ec849964d38ac4b586d783efaa7b656f"
+   ],
+   "lines": [
+    49,
+    49
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit d63795c77a0c)",
+   "editIds": [
+    "d63795c77a0ce6df3996bf0d43084c64f70013bce388e8dbfce0470843ed9b67"
+   ],
+   "lines": [
+    50,
+    50
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit abe7e0b9fb86)",
+   "editIds": [
+    "abe7e0b9fb8686081fce846d212534b122761be92e6371b73de249bfd79d749f"
+   ],
+   "lines": [
+    51,
+    51
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit fbab81276baa)",
+   "editIds": [
+    "fbab81276baad29cb08bb6223c12aea3cac62420dbf185018f394bba64112425"
+   ],
+   "lines": [
+    52,
+    52
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 064b80bb5dc0)",
+   "editIds": [
+    "064b80bb5dc0b71cd74992ba23898c24c028f30d6a68a4d01a5d47155945fe66"
+   ],
+   "lines": [
+    53,
+    53
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 373f2fecf0a0)",
+   "editIds": [
+    "373f2fecf0a0d7c8df3eda063fe9d5cb9c69c6be9965c22255d4079b70f3a8fd"
+   ],
+   "lines": [
+    54,
+    54
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit ad74a553fb8c)",
+   "editIds": [
+    "ad74a553fb8cc27a0dcdc7bdb115f412f823a1ecb458df3c5245d95b4f7a9105"
+   ],
+   "lines": [
+    39,
+    39
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (comment)",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 5dee3467f41c)",
+   "editIds": [
+    "5dee3467f41c579a9c6369d6a71135f55e9b46b3ce406c2361ab3892c6c42946"
+   ],
+   "lines": [
+    40,
+    40
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 5ddd8ad5b1fd)",
+   "editIds": [
+    "5ddd8ad5b1fdfea3cb731cd07bd635d7016fdd01b7b5eed02b89e0085a8b3bf1"
+   ],
+   "lines": [
+    41,
+    41
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 084d9d339541)",
+   "editIds": [
+    "084d9d3395415c09be89078f9cb8e8aa88c37f18923efb6432bb50ff87f5bb0f"
+   ],
+   "lines": [
+    42,
+    42
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 413dbedfa366)",
+   "editIds": [
+    "413dbedfa366086509d41a69fa05cb7b14db20237794596d21a742da96c2740a"
+   ],
+   "lines": [
+    43,
+    43
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 227e288c963b)",
+   "editIds": [
+    "227e288c963ba6f4c55aa4de488bb03df084df400acb6ea0d160add2a3833783"
+   ],
+   "lines": [
+    44,
+    44
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 9a8b403d52b7)",
+   "editIds": [
+    "9a8b403d52b71466fa6540cd124a1277e3ff146e182a7e5075980e80363c104d"
+   ],
+   "lines": [
+    45,
+    45
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 384c0d9dd94d)",
+   "editIds": [
+    "384c0d9dd94dd9f97ab476e1e43bf279290f3777deaa09820f1e4f625e1db770"
+   ],
+   "lines": [
+    46,
+    46
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (comment)",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit ff0ad7f89fb7)",
+   "editIds": [
+    "ff0ad7f89fb797f69d301ee9a01b1d5b05c784f532d1f8c20c2e3ed39b544f11"
+   ],
+   "lines": [
+    47,
+    47
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 40db720af44a)",
+   "editIds": [
+    "40db720af44a3a9a55d3b516f9cc05b7fa54e970c586b29ff8f5395aa61b3378"
+   ],
+   "lines": [
+    48,
+    48
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit df89bc6e27c4)",
+   "editIds": [
+    "df89bc6e27c460d7b869bf2addd79b54055a7b8dcb9201454cc61fc06f90a7d5"
+   ],
+   "lines": [
+    49,
+    49
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 0cb1ddbd6f7c)",
+   "editIds": [
+    "0cb1ddbd6f7c010d196749ed55e76044fb63cadd2a2edc6243ab4310c870aecc"
+   ],
+   "lines": [
+    50,
+    50
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 2d471fef5051)",
+   "editIds": [
+    "2d471fef50510a1864f43596928d203d03884ab9339d8bc00f2072ec231cb09d"
+   ],
+   "lines": [
+    51,
+    51
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 214e04954c00)",
+   "editIds": [
+    "214e04954c00715fa6b20b1fdc8bcc41675dcbd71c565518ee91939c34d06d2e"
+   ],
+   "lines": [
+    52,
+    52
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 97adff7f73c5)",
+   "editIds": [
+    "97adff7f73c5e4577c16eb9eb213fb004e36e4688e268d19ffa2cce3272757cf"
+   ],
+   "lines": [
+    53,
+    53
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (comment)",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit aa3cbafd2589)",
+   "editIds": [
+    "aa3cbafd25893a44ea98304a08b6938830c8f47fde59d1fe77a7d77c92b928c8"
+   ],
+   "lines": [
+    54,
+    54
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 68442d793556)",
+   "editIds": [
+    "68442d793556e8a1d5938dc6d0a5c146706666b09dbb5974ef1b0991871f7ca3"
+   ],
+   "lines": [
+    55,
+    55
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit acd3c5d86c45)",
+   "editIds": [
+    "acd3c5d86c457bb6efa7bd29d820f16e91cba8ef54be4cb88e767a96678dd64f"
+   ],
+   "lines": [
+    56,
+    56
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 78e63836ae55)",
+   "editIds": [
+    "78e63836ae55d8a04ea64f6ab7ae4874f830901d64fef566f7225c16795cc057"
+   ],
+   "lines": [
+    57,
+    57
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 47e972b83836)",
+   "editIds": [
+    "47e972b838366f51aed754f86712b16d678d0d5f999b01506cf2ea9135fae322"
+   ],
+   "lines": [
+    58,
+    58
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit f05da5fca8ac)",
+   "editIds": [
+    "f05da5fca8acb75bfa5052141fdd250c7824dfee7eed189538ea849f31e683be"
+   ],
+   "lines": [
+    59,
+    59
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 3a68fb1681a4)",
+   "editIds": [
+    "3a68fb1681a413b37d98255d3baf849a386981ba3cb3b7abb51103539a3cb72e"
+   ],
+   "lines": [
+    60,
+    60
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 36454ccea21a)",
+   "editIds": [
+    "36454ccea21a01e6d51556caae035249d0aab75621d2ca595f542db1578a5713"
+   ],
+   "lines": [
+    64,
+    64
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 3b437911cee8)",
+   "editIds": [
+    "3b437911cee858d9f01201b54be346669cf8c11492521723e1629fc92108002b"
+   ],
+   "lines": [
+    65,
+    65
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit b16fe7915412)",
+   "editIds": [
+    "b16fe7915412a30bef88f0642ec14ff5d968d77f62e6a5a98a9b7efef80634b1"
+   ],
+   "lines": [
+    66,
+    66
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 2ea5dc13a842)",
+   "editIds": [
+    "2ea5dc13a8422b0ee039f54c18ecae518cb2ca8d7bbc0e62af83d38ee881771e"
+   ],
+   "lines": [
+    67,
+    67
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit ab6d1da3d8b4)",
+   "editIds": [
+    "ab6d1da3d8b460678e2e8bd3c1bf7f5927338aff8c018f6972924f35ae495966"
+   ],
+   "lines": [
+    68,
+    68
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 926436197f72)",
+   "editIds": [
+    "926436197f722549fad1f6b300dd624f81ba39776908495e880b466e1d2ec766"
+   ],
+   "lines": [
+    69,
+    69
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 75888a08fd61)",
+   "editIds": [
+    "75888a08fd612a3795c95a14cf58e9e87f492db657fdb2ed5670eed15bfbcf0b"
+   ],
+   "lines": [
+    70,
+    70
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit b3b6ec221dec)",
+   "editIds": [
+    "b3b6ec221decf4d9386953a4c97a20b6f2f73e2b4d414fe4dda8c017bc97b7e3"
+   ],
+   "lines": [
+    71,
+    71
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 4eb3b20f4d21)",
+   "editIds": [
+    "4eb3b20f4d215cbb7c52b1650d113a33cc275c8f262662419d131cceebb5712d"
+   ],
+   "lines": [
+    72,
+    72
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit a74e6b4aff45)",
+   "editIds": [
+    "a74e6b4aff45de40cf42ef86ecce16abb04c6ad67c02fa68fb044a03f2efe0b2"
+   ],
+   "lines": [
+    73,
+    73
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit b11ddbd9e31c)",
+   "editIds": [
+    "b11ddbd9e31c14632813f5f716ab07a02d3f641dc74e99f77aa81833f4666064"
+   ],
+   "lines": [
+    75,
+    75
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (exported property assignment)",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit fbd3442ef55a)",
+   "editIds": [
+    "fbd3442ef55a278016da8e47baa73a39df03aff368da9dee5514669c7c88cd44"
+   ],
+   "lines": [
+    61,
+    61
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 2c9c920f251a)",
+   "editIds": [
+    "2c9c920f251a8fdef9009ab4055c4b199ca5fb800f5151573b4b62903a6fe7c1"
+   ],
+   "lines": [
+    78,
+    78
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit ee4fa3eb4a6e)",
+   "editIds": [
+    "ee4fa3eb4a6ef62c057c0285b8936d9b5da53ccf3a43b46dd5a005c40405a6df"
+   ],
+   "lines": [
+    65,
+    65
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (exported property assignment)",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/watcher.js",
+   "unit": "(edit 06eb076a1b8c)",
+   "editIds": [
+    "06eb076a1b8ce611ac75d5a9035edcb19e0a209ed583f6cdb049d19fcf5b5404"
+   ],
+   "lines": [
+    82,
+    82
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (exported property assignment)",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "package.json",
+   "unit": "(edit 1d2024d38240)",
+   "editIds": [
+    "1d2024d38240e4bdf9c3a07415417615de2b1219a65ce0e18a9602259fc29a0c"
+   ],
+   "lines": [
+    93,
+    93
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "non-source",
+    "parent": null
+   },
+   "advice": []
+  },
+  {
+   "file": "package.json",
+   "unit": "(edit f750314628e8)",
+   "editIds": [
+    "f750314628e86fa996841e46b7f11c95d02d3bdd38fd40062853f8f89446dde8"
+   ],
+   "lines": [
+    93,
+    93
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "non-source",
+    "parent": null
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "ee8303cc3ffa45a8d233e781bd14d0dd8b108300",
+  "head": "55a5960a2286f3455bf3a05db1eba0e22d44c686",
+  "files": [
+   {
+    "id": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "oldPath": "lib/watcher.js",
+    "newPath": "lib/watcher.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "a6055bb70c7b2840cab24969c18fec85c2512615",
+    "newOid": "232ffa81db46379640ae1500dcf42daf1a00b66f",
+    "status": "M",
+    "edits": [
+     "bf626cefa118620f04405de17d30c2dbd882d77b261005a0c9373b2bc65e9f0b",
+     "9b689ee9a6c57f2562a8daffe652cc4f433135db1ed3fd4ff8aceeff58c29b34",
+     "0cbe9564d813122ef77945207e81f5dd3c567bef9bec68ae359989f70679803f",
+     "61be10808b7ccac470eb0dc145ce71ca8033db3372b4be5a571c1f1e2092dbe1",
+     "8816f33e9ac28fb786092be73821533d8cdd03210f5bd3d0f1c992b09c92bd7c",
+     "389b62937f0c028aa7dd80cae56b4d5000709578b67161b087bbb35f52099cf3",
+     "50e85b3141e72b656f1e5548c883eb31ac2d0860a2b3c68f96f2427c4ea1914e",
+     "179f1b0ef9472a01e9fcfd27af9ff6f020dd5c976b816175a47a8d27bdd9aa6d",
+     "a514e4dbef9ef3917a003230ec92899498b99e50fb3f051a16687db43753907a",
+     "2112d96a9a4623b17424c415d7d591883b9305ac5a45a2bff9aa76e960be9f38",
+     "c718f82a54e09cadebbcf628aa348927caf32fb9975cc8f8f3671ad3fb26ac4f",
+     "bb90306bf8273d8c0fc2cfbc4aca355f360118a68e7d068848b611befebe4f45",
+     "33b1a5e0fc87fc8c351e02542097ab58ec849964d38ac4b586d783efaa7b656f",
+     "d63795c77a0ce6df3996bf0d43084c64f70013bce388e8dbfce0470843ed9b67",
+     "abe7e0b9fb8686081fce846d212534b122761be92e6371b73de249bfd79d749f",
+     "fbab81276baad29cb08bb6223c12aea3cac62420dbf185018f394bba64112425",
+     "064b80bb5dc0b71cd74992ba23898c24c028f30d6a68a4d01a5d47155945fe66",
+     "373f2fecf0a0d7c8df3eda063fe9d5cb9c69c6be9965c22255d4079b70f3a8fd",
+     "ad74a553fb8cc27a0dcdc7bdb115f412f823a1ecb458df3c5245d95b4f7a9105",
+     "5dee3467f41c579a9c6369d6a71135f55e9b46b3ce406c2361ab3892c6c42946",
+     "5ddd8ad5b1fdfea3cb731cd07bd635d7016fdd01b7b5eed02b89e0085a8b3bf1",
+     "084d9d3395415c09be89078f9cb8e8aa88c37f18923efb6432bb50ff87f5bb0f",
+     "413dbedfa366086509d41a69fa05cb7b14db20237794596d21a742da96c2740a",
+     "227e288c963ba6f4c55aa4de488bb03df084df400acb6ea0d160add2a3833783",
+     "9a8b403d52b71466fa6540cd124a1277e3ff146e182a7e5075980e80363c104d",
+     "384c0d9dd94dd9f97ab476e1e43bf279290f3777deaa09820f1e4f625e1db770",
+     "ff0ad7f89fb797f69d301ee9a01b1d5b05c784f532d1f8c20c2e3ed39b544f11",
+     "40db720af44a3a9a55d3b516f9cc05b7fa54e970c586b29ff8f5395aa61b3378",
+     "df89bc6e27c460d7b869bf2addd79b54055a7b8dcb9201454cc61fc06f90a7d5",
+     "0cb1ddbd6f7c010d196749ed55e76044fb63cadd2a2edc6243ab4310c870aecc",
+     "2d471fef50510a1864f43596928d203d03884ab9339d8bc00f2072ec231cb09d",
+     "214e04954c00715fa6b20b1fdc8bcc41675dcbd71c565518ee91939c34d06d2e",
+     "97adff7f73c5e4577c16eb9eb213fb004e36e4688e268d19ffa2cce3272757cf",
+     "aa3cbafd25893a44ea98304a08b6938830c8f47fde59d1fe77a7d77c92b928c8",
+     "68442d793556e8a1d5938dc6d0a5c146706666b09dbb5974ef1b0991871f7ca3",
+     "acd3c5d86c457bb6efa7bd29d820f16e91cba8ef54be4cb88e767a96678dd64f",
+     "78e63836ae55d8a04ea64f6ab7ae4874f830901d64fef566f7225c16795cc057",
+     "47e972b838366f51aed754f86712b16d678d0d5f999b01506cf2ea9135fae322",
+     "f05da5fca8acb75bfa5052141fdd250c7824dfee7eed189538ea849f31e683be",
+     "3a68fb1681a413b37d98255d3baf849a386981ba3cb3b7abb51103539a3cb72e",
+     "36454ccea21a01e6d51556caae035249d0aab75621d2ca595f542db1578a5713",
+     "3b437911cee858d9f01201b54be346669cf8c11492521723e1629fc92108002b",
+     "b16fe7915412a30bef88f0642ec14ff5d968d77f62e6a5a98a9b7efef80634b1",
+     "2ea5dc13a8422b0ee039f54c18ecae518cb2ca8d7bbc0e62af83d38ee881771e",
+     "ab6d1da3d8b460678e2e8bd3c1bf7f5927338aff8c018f6972924f35ae495966",
+     "926436197f722549fad1f6b300dd624f81ba39776908495e880b466e1d2ec766",
+     "75888a08fd612a3795c95a14cf58e9e87f492db657fdb2ed5670eed15bfbcf0b",
+     "b3b6ec221decf4d9386953a4c97a20b6f2f73e2b4d414fe4dda8c017bc97b7e3",
+     "4eb3b20f4d215cbb7c52b1650d113a33cc275c8f262662419d131cceebb5712d",
+     "a74e6b4aff45de40cf42ef86ecce16abb04c6ad67c02fa68fb044a03f2efe0b2",
+     "b11ddbd9e31c14632813f5f716ab07a02d3f641dc74e99f77aa81833f4666064",
+     "fbd3442ef55a278016da8e47baa73a39df03aff368da9dee5514669c7c88cd44",
+     "2c9c920f251a8fdef9009ab4055c4b199ca5fb800f5151573b4b62903a6fe7c1",
+     "ee4fa3eb4a6ef62c057c0285b8936d9b5da53ccf3a43b46dd5a005c40405a6df",
+     "06eb076a1b8ce611ac75d5a9035edcb19e0a209ed583f6cdb049d19fcf5b5404"
+    ],
+    "hunks": [
+     {
+      "id": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+      "old": {
+       "start": 20,
+       "count": 7
+      },
+      "new": {
+       "start": 20,
+       "count": 1
+      }
+     },
+     {
+      "id": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+      "old": {
+       "start": 45,
+       "count": 10
+      },
+      "new": {
+       "start": 39,
+       "count": 22
+      }
+     },
+     {
+      "id": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+      "old": {
+       "start": 57,
+       "count": 0
+      },
+      "new": {
+       "start": 64,
+       "count": 10
+      }
+     },
+     {
+      "id": "4ec5eb034f58528bf3f10912bddcc6e2f35d40ca9d9769b116563118665d964f",
+      "old": {
+       "start": 58,
+       "count": 0
+      },
+      "new": {
+       "start": 75,
+       "count": 1
+      }
+     },
+     {
+      "id": "a6173e87be1c6324dcd5be067b3b67aa1d962d47387e902463ceec8064177a27",
+      "old": {
+       "start": 61,
+       "count": 1
+      },
+      "new": {
+       "start": 78,
+       "count": 1
+      }
+     },
+     {
+      "id": "7e945ab255ce5c195356a57c8c0bec4468e96e9825891b056e8fc6cbb4429cee",
+      "old": {
+       "start": 65,
+       "count": 1
+      },
+      "new": {
+       "start": 82,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "2702a09677912502043d5d2f4a6a2c9b05b073cf297d290c3c6bdb780c648565",
+    "newHash": "e41ed9513020ae43792cf7c7852f4a1268cfc5e5743502254be8f63e835a317c",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   },
+   {
+    "id": "5c4329fd9cbf742be40156c8cb01aad2de0011772f1b93cd07b8f5f9a954233c",
+    "file": "package.json",
+    "oldPath": "package.json",
+    "newPath": "package.json",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "48f127a951ae13ff032de11d6225987906e1a4c9",
+    "newOid": "0c2c5a10bccccb2011ac988cd1832789f8b70a26",
+    "status": "M",
+    "edits": [
+     "1d2024d38240e4bdf9c3a07415417615de2b1219a65ce0e18a9602259fc29a0c",
+     "f750314628e86fa996841e46b7f11c95d02d3bdd38fd40062853f8f89446dde8"
+    ],
+    "hunks": [
+     {
+      "id": "00e46d7960af755955610a5db18c634f983b42d1cc640a9e4838febfcf61ca6b",
+      "old": {
+       "start": 93,
+       "count": 1
+      },
+      "new": {
+       "start": 93,
+       "count": 1
+      }
+     }
+    ],
+    "class": "config",
+    "oldHash": "2e46fd5f13240664284845724c7f171c2d7ef57f8e4a07fcce20e73381752aa4",
+    "newHash": "b1a051410a811fcbeba320b10321dfc3adda18807fc4cc4ae51223f88b803f12",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "bf626cefa118620f04405de17d30c2dbd882d77b261005a0c9373b2bc65e9f0b",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+    "side": "old",
+    "old": {
+     "start": 20,
+     "count": 1
+    },
+    "new": {
+     "start": 20,
+     "count": 0
+    },
+    "offsets": {
+     "start": 540,
+     "end": 585
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "9b689ee9a6c57f2562a8daffe652cc4f433135db1ed3fd4ff8aceeff58c29b34",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+    "side": "old",
+    "old": {
+     "start": 21,
+     "count": 1
+    },
+    "new": {
+     "start": 20,
+     "count": 0
+    },
+    "offsets": {
+     "start": 585,
+     "end": 626
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "0cbe9564d813122ef77945207e81f5dd3c567bef9bec68ae359989f70679803f",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+    "side": "old",
+    "old": {
+     "start": 22,
+     "count": 1
+    },
+    "new": {
+     "start": 20,
+     "count": 0
+    },
+    "offsets": {
+     "start": 626,
+     "end": 627
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "old"
+    }
+   },
+   {
+    "id": "61be10808b7ccac470eb0dc145ce71ca8033db3372b4be5a571c1f1e2092dbe1",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+    "side": "old",
+    "old": {
+     "start": 23,
+     "count": 1
+    },
+    "new": {
+     "start": 20,
+     "count": 0
+    },
+    "offsets": {
+     "start": 627,
+     "end": 661
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "8816f33e9ac28fb786092be73821533d8cdd03210f5bd3d0f1c992b09c92bd7c",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+    "side": "old",
+    "old": {
+     "start": 24,
+     "count": 1
+    },
+    "new": {
+     "start": 20,
+     "count": 0
+    },
+    "offsets": {
+     "start": 661,
+     "end": 675
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "389b62937f0c028aa7dd80cae56b4d5000709578b67161b087bbb35f52099cf3",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+    "side": "old",
+    "old": {
+     "start": 25,
+     "count": 1
+    },
+    "new": {
+     "start": 20,
+     "count": 0
+    },
+    "offsets": {
+     "start": 675,
+     "end": 681
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "50e85b3141e72b656f1e5548c883eb31ac2d0860a2b3c68f96f2427c4ea1914e",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+    "side": "old",
+    "old": {
+     "start": 26,
+     "count": 1
+    },
+    "new": {
+     "start": 20,
+     "count": 0
+    },
+    "offsets": {
+     "start": 681,
+     "end": 682
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "old"
+    }
+   },
+   {
+    "id": "179f1b0ef9472a01e9fcfd27af9ff6f020dd5c976b816175a47a8d27bdd9aa6d",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "444d021b99f85bfd06375a8c145e88cb6026687833a94228c8541858e212fecd",
+    "side": "new",
+    "old": {
+     "start": 20,
+     "count": 0
+    },
+    "new": {
+     "start": 20,
+     "count": 1
+    },
+    "offsets": {
+     "start": 540,
+     "end": 579
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "a514e4dbef9ef3917a003230ec92899498b99e50fb3f051a16687db43753907a",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 45,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1114,
+     "end": 1168
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "comment",
+     "side": "old"
+    }
+   },
+   {
+    "id": "2112d96a9a4623b17424c415d7d591883b9305ac5a45a2bff9aa76e960be9f38",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 46,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1168,
+     "end": 1219
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "comment",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c718f82a54e09cadebbcf628aa348927caf32fb9975cc8f8f3671ad3fb26ac4f",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 47,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1219,
+     "end": 1268
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "comment",
+     "side": "old"
+    }
+   },
+   {
+    "id": "bb90306bf8273d8c0fc2cfbc4aca355f360118a68e7d068848b611befebe4f45",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 48,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1268,
+     "end": 1308
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "33b1a5e0fc87fc8c351e02542097ab58ec849964d38ac4b586d783efaa7b656f",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 49,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1308,
+     "end": 1334
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "d63795c77a0ce6df3996bf0d43084c64f70013bce388e8dbfce0470843ed9b67",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 50,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1334,
+     "end": 1377
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "abe7e0b9fb8686081fce846d212534b122761be92e6371b73de249bfd79d749f",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 51,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1377,
+     "end": 1419
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "fbab81276baad29cb08bb6223c12aea3cac62420dbf185018f394bba64112425",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 52,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1419,
+     "end": 1464
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "old"
+    }
+   },
+   {
+    "id": "064b80bb5dc0b71cd74992ba23898c24c028f30d6a68a4d01a5d47155945fe66",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 53,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1464,
+     "end": 1471
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "373f2fecf0a0d7c8df3eda063fe9d5cb9c69c6be9965c22255d4079b70f3a8fd",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "old",
+    "old": {
+     "start": 54,
+     "count": 1
+    },
+    "new": {
+     "start": 39,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1471,
+     "end": 1511
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "ad74a553fb8cc27a0dcdc7bdb115f412f823a1ecb458df3c5245d95b4f7a9105",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 39,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1011,
+     "end": 1072
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "comment",
+     "side": "new"
+    }
+   },
+   {
+    "id": "5dee3467f41c579a9c6369d6a71135f55e9b46b3ce406c2361ab3892c6c42946",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 40,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1072,
+     "end": 1122
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "5ddd8ad5b1fdfea3cb731cd07bd635d7016fdd01b7b5eed02b89e0085a8b3bf1",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 41,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1122,
+     "end": 1154
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "084d9d3395415c09be89078f9cb8e8aa88c37f18923efb6432bb50ff87f5bb0f",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 42,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1154,
+     "end": 1193
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "413dbedfa366086509d41a69fa05cb7b14db20237794596d21a742da96c2740a",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 43,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1193,
+     "end": 1213
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "227e288c963ba6f4c55aa4de488bb03df084df400acb6ea0d160add2a3833783",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 44,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1213,
+     "end": 1219
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9a8b403d52b71466fa6540cd124a1277e3ff146e182a7e5075980e80363c104d",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 45,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1219,
+     "end": 1220
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "384c0d9dd94dd9f97ab476e1e43bf279290f3777deaa09820f1e4f625e1db770",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 46,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1220,
+     "end": 1282
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "comment",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ff0ad7f89fb797f69d301ee9a01b1d5b05c784f532d1f8c20c2e3ed39b544f11",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 47,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1282,
+     "end": 1325
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "40db720af44a3a9a55d3b516f9cc05b7fa54e970c586b29ff8f5395aa61b3378",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 48,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1325,
+     "end": 1370
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "new"
+    }
+   },
+   {
+    "id": "df89bc6e27c460d7b869bf2addd79b54055a7b8dcb9201454cc61fc06f90a7d5",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 49,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1370,
+     "end": 1380
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "0cb1ddbd6f7c010d196749ed55e76044fb63cadd2a2edc6243ab4310c870aecc",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 50,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1380,
+     "end": 1399
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "2d471fef50510a1864f43596928d203d03884ab9339d8bc00f2072ec231cb09d",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 51,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1399,
+     "end": 1405
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "214e04954c00715fa6b20b1fdc8bcc41675dcbd71c565518ee91939c34d06d2e",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 52,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1405,
+     "end": 1406
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "97adff7f73c5e4577c16eb9eb213fb004e36e4688e268d19ffa2cce3272757cf",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 53,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1406,
+     "end": 1468
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "comment",
+     "side": "new"
+    }
+   },
+   {
+    "id": "aa3cbafd25893a44ea98304a08b6938830c8f47fde59d1fe77a7d77c92b928c8",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 54,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1468,
+     "end": 1510
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "68442d793556e8a1d5938dc6d0a5c146706666b09dbb5974ef1b0991871f7ca3",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 55,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1510,
+     "end": 1555
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "new"
+    }
+   },
+   {
+    "id": "acd3c5d86c457bb6efa7bd29d820f16e91cba8ef54be4cb88e767a96678dd64f",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 56,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1555,
+     "end": 1565
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "78e63836ae55d8a04ea64f6ab7ae4874f830901d64fef566f7225c16795cc057",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 57,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1565,
+     "end": 1584
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "47e972b838366f51aed754f86712b16d678d0d5f999b01506cf2ea9135fae322",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 58,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1584,
+     "end": 1590
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f05da5fca8acb75bfa5052141fdd250c7824dfee7eed189538ea849f31e683be",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 59,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1590,
+     "end": 1591
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3a68fb1681a413b37d98255d3baf849a386981ba3cb3b7abb51103539a3cb72e",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38904956c8aa68517fa3c5c3c9a5602d4aade09a9cb45a91ab4aeb7dedb71b74",
+    "side": "new",
+    "old": {
+     "start": 45,
+     "count": 0
+    },
+    "new": {
+     "start": 60,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1591,
+     "end": 1609
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "36454ccea21a01e6d51556caae035249d0aab75621d2ca595f542db1578a5713",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 64,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1618,
+     "end": 1660
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3b437911cee858d9f01201b54be346669cf8c11492521723e1629fc92108002b",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 65,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1660,
+     "end": 1686
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b16fe7915412a30bef88f0642ec14ff5d968d77f62e6a5a98a9b7efef80634b1",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 66,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1686,
+     "end": 1689
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "2ea5dc13a8422b0ee039f54c18ecae518cb2ca8d7bbc0e62af83d38ee881771e",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 67,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1689,
+     "end": 1690
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ab6d1da3d8b460678e2e8bd3c1bf7f5927338aff8c018f6972924f35ae495966",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 68,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1690,
+     "end": 1742
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "926436197f722549fad1f6b300dd624f81ba39776908495e880b466e1d2ec766",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 69,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1742,
+     "end": 1820
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "75888a08fd612a3795c95a14cf58e9e87f492db657fdb2ed5670eed15bfbcf0b",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 70,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1820,
+     "end": 1854
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b3b6ec221decf4d9386953a4c97a20b6f2f73e2b4d414fe4dda8c017bc97b7e3",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 71,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1854,
+     "end": 1860
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4eb3b20f4d215cbb7c52b1650d113a33cc275c8f262662419d131cceebb5712d",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 72,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1860,
+     "end": 1863
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "a74e6b4aff45de40cf42ef86ecce16abb04c6ad67c02fa68fb044a03f2efe0b2",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bdfef3934b767f8249dc7a02381915aa5138e716c696fb495a8120c216723ec7",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 73,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1863,
+     "end": 1864
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b11ddbd9e31c14632813f5f716ab07a02d3f641dc74e99f77aa81833f4666064",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4ec5eb034f58528bf3f10912bddcc6e2f35d40ca9d9769b116563118665d964f",
+    "side": "new",
+    "old": {
+     "start": 58,
+     "count": 0
+    },
+    "new": {
+     "start": 75,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1921,
+     "end": 1975
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "exported property assignment",
+     "side": "new"
+    }
+   },
+   {
+    "id": "fbd3442ef55a278016da8e47baa73a39df03aff368da9dee5514669c7c88cd44",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "a6173e87be1c6324dcd5be067b3b67aa1d962d47387e902463ceec8064177a27",
+    "side": "old",
+    "old": {
+     "start": 61,
+     "count": 1
+    },
+    "new": {
+     "start": 78,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1629,
+     "end": 1665
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "old"
+    }
+   },
+   {
+    "id": "2c9c920f251a8fdef9009ab4055c4b199ca5fb800f5151573b4b62903a6fe7c1",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "a6173e87be1c6324dcd5be067b3b67aa1d962d47387e902463ceec8064177a27",
+    "side": "new",
+    "old": {
+     "start": 61,
+     "count": 0
+    },
+    "new": {
+     "start": 78,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2027,
+     "end": 2080
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ee4fa3eb4a6ef62c057c0285b8936d9b5da53ccf3a43b46dd5a005c40405a6df",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "7e945ab255ce5c195356a57c8c0bec4468e96e9825891b056e8fc6cbb4429cee",
+    "side": "old",
+    "old": {
+     "start": 65,
+     "count": 1
+    },
+    "new": {
+     "start": 82,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1728,
+     "end": 1772
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "exported property assignment",
+     "side": "old"
+    }
+   },
+   {
+    "id": "06eb076a1b8ce611ac75d5a9035edcb19e0a209ed583f6cdb049d19fcf5b5404",
+    "fileId": "442b9071f6fb17b4372940eecae6b99d6e7a8451fbc88dd97ea38f09dd83d7ab",
+    "file": "lib/watcher.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "7e945ab255ce5c195356a57c8c0bec4468e96e9825891b056e8fc6cbb4429cee",
+    "side": "new",
+    "old": {
+     "start": 65,
+     "count": 0
+    },
+    "new": {
+     "start": 82,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2143,
+     "end": 2194
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "exported property assignment",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1d2024d38240e4bdf9c3a07415417615de2b1219a65ce0e18a9602259fc29a0c",
+    "fileId": "5c4329fd9cbf742be40156c8cb01aad2de0011772f1b93cd07b8f5f9a954233c",
+    "file": "package.json",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "00e46d7960af755955610a5db18c634f983b42d1cc640a9e4838febfcf61ca6b",
+    "side": "old",
+    "old": {
+     "start": 93,
+     "count": 1
+    },
+    "new": {
+     "start": 93,
+     "count": 0
+    },
+    "links": [],
+    "context": {
+     "reason": "non-source",
+     "parent": null
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "f750314628e86fa996841e46b7f11c95d02d3bdd38fd40062853f8f89446dde8",
+    "fileId": "5c4329fd9cbf742be40156c8cb01aad2de0011772f1b93cd07b8f5f9a954233c",
+    "file": "package.json",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "00e46d7960af755955610a5db18c634f983b42d1cc640a9e4838febfcf61ca6b",
+    "side": "new",
+    "old": {
+     "start": 93,
+     "count": 0
+    },
+    "new": {
+     "start": 93,
+     "count": 1
+    },
+    "links": [],
+    "context": {
+     "reason": "non-source",
+     "parent": null
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   }
+  ],
+  "id": "c1e997a0ad4fe916d05efe959ed8608f298a50c93b595abe35282121c8cc3e37",
+  "reconciliation": {
+   "expected": [
+    "bf626cefa118620f04405de17d30c2dbd882d77b261005a0c9373b2bc65e9f0b",
+    "9b689ee9a6c57f2562a8daffe652cc4f433135db1ed3fd4ff8aceeff58c29b34",
+    "0cbe9564d813122ef77945207e81f5dd3c567bef9bec68ae359989f70679803f",
+    "61be10808b7ccac470eb0dc145ce71ca8033db3372b4be5a571c1f1e2092dbe1",
+    "8816f33e9ac28fb786092be73821533d8cdd03210f5bd3d0f1c992b09c92bd7c",
+    "389b62937f0c028aa7dd80cae56b4d5000709578b67161b087bbb35f52099cf3",
+    "50e85b3141e72b656f1e5548c883eb31ac2d0860a2b3c68f96f2427c4ea1914e",
+    "179f1b0ef9472a01e9fcfd27af9ff6f020dd5c976b816175a47a8d27bdd9aa6d",
+    "a514e4dbef9ef3917a003230ec92899498b99e50fb3f051a16687db43753907a",
+    "2112d96a9a4623b17424c415d7d591883b9305ac5a45a2bff9aa76e960be9f38",
+    "c718f82a54e09cadebbcf628aa348927caf32fb9975cc8f8f3671ad3fb26ac4f",
+    "bb90306bf8273d8c0fc2cfbc4aca355f360118a68e7d068848b611befebe4f45",
+    "33b1a5e0fc87fc8c351e02542097ab58ec849964d38ac4b586d783efaa7b656f",
+    "d63795c77a0ce6df3996bf0d43084c64f70013bce388e8dbfce0470843ed9b67",
+    "abe7e0b9fb8686081fce846d212534b122761be92e6371b73de249bfd79d749f",
+    "fbab81276baad29cb08bb6223c12aea3cac62420dbf185018f394bba64112425",
+    "064b80bb5dc0b71cd74992ba23898c24c028f30d6a68a4d01a5d47155945fe66",
+    "373f2fecf0a0d7c8df3eda063fe9d5cb9c69c6be9965c22255d4079b70f3a8fd",
+    "ad74a553fb8cc27a0dcdc7bdb115f412f823a1ecb458df3c5245d95b4f7a9105",
+    "5dee3467f41c579a9c6369d6a71135f55e9b46b3ce406c2361ab3892c6c42946",
+    "5ddd8ad5b1fdfea3cb731cd07bd635d7016fdd01b7b5eed02b89e0085a8b3bf1",
+    "084d9d3395415c09be89078f9cb8e8aa88c37f18923efb6432bb50ff87f5bb0f",
+    "413dbedfa366086509d41a69fa05cb7b14db20237794596d21a742da96c2740a",
+    "227e288c963ba6f4c55aa4de488bb03df084df400acb6ea0d160add2a3833783",
+    "9a8b403d52b71466fa6540cd124a1277e3ff146e182a7e5075980e80363c104d",
+    "384c0d9dd94dd9f97ab476e1e43bf279290f3777deaa09820f1e4f625e1db770",
+    "ff0ad7f89fb797f69d301ee9a01b1d5b05c784f532d1f8c20c2e3ed39b544f11",
+    "40db720af44a3a9a55d3b516f9cc05b7fa54e970c586b29ff8f5395aa61b3378",
+    "df89bc6e27c460d7b869bf2addd79b54055a7b8dcb9201454cc61fc06f90a7d5",
+    "0cb1ddbd6f7c010d196749ed55e76044fb63cadd2a2edc6243ab4310c870aecc",
+    "2d471fef50510a1864f43596928d203d03884ab9339d8bc00f2072ec231cb09d",
+    "214e04954c00715fa6b20b1fdc8bcc41675dcbd71c565518ee91939c34d06d2e",
+    "97adff7f73c5e4577c16eb9eb213fb004e36e4688e268d19ffa2cce3272757cf",
+    "aa3cbafd25893a44ea98304a08b6938830c8f47fde59d1fe77a7d77c92b928c8",
+    "68442d793556e8a1d5938dc6d0a5c146706666b09dbb5974ef1b0991871f7ca3",
+    "acd3c5d86c457bb6efa7bd29d820f16e91cba8ef54be4cb88e767a96678dd64f",
+    "78e63836ae55d8a04ea64f6ab7ae4874f830901d64fef566f7225c16795cc057",
+    "47e972b838366f51aed754f86712b16d678d0d5f999b01506cf2ea9135fae322",
+    "f05da5fca8acb75bfa5052141fdd250c7824dfee7eed189538ea849f31e683be",
+    "3a68fb1681a413b37d98255d3baf849a386981ba3cb3b7abb51103539a3cb72e",
+    "36454ccea21a01e6d51556caae035249d0aab75621d2ca595f542db1578a5713",
+    "3b437911cee858d9f01201b54be346669cf8c11492521723e1629fc92108002b",
+    "b16fe7915412a30bef88f0642ec14ff5d968d77f62e6a5a98a9b7efef80634b1",
+    "2ea5dc13a8422b0ee039f54c18ecae518cb2ca8d7bbc0e62af83d38ee881771e",
+    "ab6d1da3d8b460678e2e8bd3c1bf7f5927338aff8c018f6972924f35ae495966",
+    "926436197f722549fad1f6b300dd624f81ba39776908495e880b466e1d2ec766",
+    "75888a08fd612a3795c95a14cf58e9e87f492db657fdb2ed5670eed15bfbcf0b",
+    "b3b6ec221decf4d9386953a4c97a20b6f2f73e2b4d414fe4dda8c017bc97b7e3",
+    "4eb3b20f4d215cbb7c52b1650d113a33cc275c8f262662419d131cceebb5712d",
+    "a74e6b4aff45de40cf42ef86ecce16abb04c6ad67c02fa68fb044a03f2efe0b2",
+    "b11ddbd9e31c14632813f5f716ab07a02d3f641dc74e99f77aa81833f4666064",
+    "fbd3442ef55a278016da8e47baa73a39df03aff368da9dee5514669c7c88cd44",
+    "2c9c920f251a8fdef9009ab4055c4b199ca5fb800f5151573b4b62903a6fe7c1",
+    "ee4fa3eb4a6ef62c057c0285b8936d9b5da53ccf3a43b46dd5a005c40405a6df",
+    "06eb076a1b8ce611ac75d5a9035edcb19e0a209ed583f6cdb049d19fcf5b5404",
+    "1d2024d38240e4bdf9c3a07415417615de2b1219a65ce0e18a9602259fc29a0c",
+    "f750314628e86fa996841e46b7f11c95d02d3bdd38fd40062853f8f89446dde8"
+   ],
+   "unit": [],
+   "artifact": [
+    "1d2024d38240e4bdf9c3a07415417615de2b1219a65ce0e18a9602259fc29a0c",
+    "f750314628e86fa996841e46b7f11c95d02d3bdd38fd40062853f8f89446dde8"
+   ],
+   "unassigned": [
+    "bf626cefa118620f04405de17d30c2dbd882d77b261005a0c9373b2bc65e9f0b",
+    "9b689ee9a6c57f2562a8daffe652cc4f433135db1ed3fd4ff8aceeff58c29b34",
+    "0cbe9564d813122ef77945207e81f5dd3c567bef9bec68ae359989f70679803f",
+    "61be10808b7ccac470eb0dc145ce71ca8033db3372b4be5a571c1f1e2092dbe1",
+    "8816f33e9ac28fb786092be73821533d8cdd03210f5bd3d0f1c992b09c92bd7c",
+    "389b62937f0c028aa7dd80cae56b4d5000709578b67161b087bbb35f52099cf3",
+    "50e85b3141e72b656f1e5548c883eb31ac2d0860a2b3c68f96f2427c4ea1914e",
+    "179f1b0ef9472a01e9fcfd27af9ff6f020dd5c976b816175a47a8d27bdd9aa6d",
+    "a514e4dbef9ef3917a003230ec92899498b99e50fb3f051a16687db43753907a",
+    "2112d96a9a4623b17424c415d7d591883b9305ac5a45a2bff9aa76e960be9f38",
+    "c718f82a54e09cadebbcf628aa348927caf32fb9975cc8f8f3671ad3fb26ac4f",
+    "bb90306bf8273d8c0fc2cfbc4aca355f360118a68e7d068848b611befebe4f45",
+    "33b1a5e0fc87fc8c351e02542097ab58ec849964d38ac4b586d783efaa7b656f",
+    "d63795c77a0ce6df3996bf0d43084c64f70013bce388e8dbfce0470843ed9b67",
+    "abe7e0b9fb8686081fce846d212534b122761be92e6371b73de249bfd79d749f",
+    "fbab81276baad29cb08bb6223c12aea3cac62420dbf185018f394bba64112425",
+    "064b80bb5dc0b71cd74992ba23898c24c028f30d6a68a4d01a5d47155945fe66",
+    "373f2fecf0a0d7c8df3eda063fe9d5cb9c69c6be9965c22255d4079b70f3a8fd",
+    "ad74a553fb8cc27a0dcdc7bdb115f412f823a1ecb458df3c5245d95b4f7a9105",
+    "5dee3467f41c579a9c6369d6a71135f55e9b46b3ce406c2361ab3892c6c42946",
+    "5ddd8ad5b1fdfea3cb731cd07bd635d7016fdd01b7b5eed02b89e0085a8b3bf1",
+    "084d9d3395415c09be89078f9cb8e8aa88c37f18923efb6432bb50ff87f5bb0f",
+    "413dbedfa366086509d41a69fa05cb7b14db20237794596d21a742da96c2740a",
+    "227e288c963ba6f4c55aa4de488bb03df084df400acb6ea0d160add2a3833783",
+    "9a8b403d52b71466fa6540cd124a1277e3ff146e182a7e5075980e80363c104d",
+    "384c0d9dd94dd9f97ab476e1e43bf279290f3777deaa09820f1e4f625e1db770",
+    "ff0ad7f89fb797f69d301ee9a01b1d5b05c784f532d1f8c20c2e3ed39b544f11",
+    "40db720af44a3a9a55d3b516f9cc05b7fa54e970c586b29ff8f5395aa61b3378",
+    "df89bc6e27c460d7b869bf2addd79b54055a7b8dcb9201454cc61fc06f90a7d5",
+    "0cb1ddbd6f7c010d196749ed55e76044fb63cadd2a2edc6243ab4310c870aecc",
+    "2d471fef50510a1864f43596928d203d03884ab9339d8bc00f2072ec231cb09d",
+    "214e04954c00715fa6b20b1fdc8bcc41675dcbd71c565518ee91939c34d06d2e",
+    "97adff7f73c5e4577c16eb9eb213fb004e36e4688e268d19ffa2cce3272757cf",
+    "aa3cbafd25893a44ea98304a08b6938830c8f47fde59d1fe77a7d77c92b928c8",
+    "68442d793556e8a1d5938dc6d0a5c146706666b09dbb5974ef1b0991871f7ca3",
+    "acd3c5d86c457bb6efa7bd29d820f16e91cba8ef54be4cb88e767a96678dd64f",
+    "78e63836ae55d8a04ea64f6ab7ae4874f830901d64fef566f7225c16795cc057",
+    "47e972b838366f51aed754f86712b16d678d0d5f999b01506cf2ea9135fae322",
+    "f05da5fca8acb75bfa5052141fdd250c7824dfee7eed189538ea849f31e683be",
+    "3a68fb1681a413b37d98255d3baf849a386981ba3cb3b7abb51103539a3cb72e",
+    "36454ccea21a01e6d51556caae035249d0aab75621d2ca595f542db1578a5713",
+    "3b437911cee858d9f01201b54be346669cf8c11492521723e1629fc92108002b",
+    "b16fe7915412a30bef88f0642ec14ff5d968d77f62e6a5a98a9b7efef80634b1",
+    "2ea5dc13a8422b0ee039f54c18ecae518cb2ca8d7bbc0e62af83d38ee881771e",
+    "ab6d1da3d8b460678e2e8bd3c1bf7f5927338aff8c018f6972924f35ae495966",
+    "926436197f722549fad1f6b300dd624f81ba39776908495e880b466e1d2ec766",
+    "75888a08fd612a3795c95a14cf58e9e87f492db657fdb2ed5670eed15bfbcf0b",
+    "b3b6ec221decf4d9386953a4c97a20b6f2f73e2b4d414fe4dda8c017bc97b7e3",
+    "4eb3b20f4d215cbb7c52b1650d113a33cc275c8f262662419d131cceebb5712d",
+    "a74e6b4aff45de40cf42ef86ecce16abb04c6ad67c02fa68fb044a03f2efe0b2",
+    "b11ddbd9e31c14632813f5f716ab07a02d3f641dc74e99f77aa81833f4666064",
+    "fbd3442ef55a278016da8e47baa73a39df03aff368da9dee5514669c7c88cd44",
+    "2c9c920f251a8fdef9009ab4055c4b199ca5fb800f5151573b4b62903a6fe7c1",
+    "ee4fa3eb4a6ef62c057c0285b8936d9b5da53ccf3a43b46dd5a005c40405a6df",
+    "06eb076a1b8ce611ac75d5a9035edcb19e0a209ed583f6cdb049d19fcf5b5404"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "bf626cefa118620f04405de17d30c2dbd882d77b261005a0c9373b2bc65e9f0b",
+      "9b689ee9a6c57f2562a8daffe652cc4f433135db1ed3fd4ff8aceeff58c29b34",
+      "0cbe9564d813122ef77945207e81f5dd3c567bef9bec68ae359989f70679803f",
+      "61be10808b7ccac470eb0dc145ce71ca8033db3372b4be5a571c1f1e2092dbe1",
+      "8816f33e9ac28fb786092be73821533d8cdd03210f5bd3d0f1c992b09c92bd7c",
+      "389b62937f0c028aa7dd80cae56b4d5000709578b67161b087bbb35f52099cf3",
+      "50e85b3141e72b656f1e5548c883eb31ac2d0860a2b3c68f96f2427c4ea1914e",
+      "179f1b0ef9472a01e9fcfd27af9ff6f020dd5c976b816175a47a8d27bdd9aa6d",
+      "a514e4dbef9ef3917a003230ec92899498b99e50fb3f051a16687db43753907a",
+      "2112d96a9a4623b17424c415d7d591883b9305ac5a45a2bff9aa76e960be9f38",
+      "c718f82a54e09cadebbcf628aa348927caf32fb9975cc8f8f3671ad3fb26ac4f",
+      "bb90306bf8273d8c0fc2cfbc4aca355f360118a68e7d068848b611befebe4f45",
+      "33b1a5e0fc87fc8c351e02542097ab58ec849964d38ac4b586d783efaa7b656f",
+      "d63795c77a0ce6df3996bf0d43084c64f70013bce388e8dbfce0470843ed9b67",
+      "abe7e0b9fb8686081fce846d212534b122761be92e6371b73de249bfd79d749f",
+      "fbab81276baad29cb08bb6223c12aea3cac62420dbf185018f394bba64112425",
+      "064b80bb5dc0b71cd74992ba23898c24c028f30d6a68a4d01a5d47155945fe66",
+      "373f2fecf0a0d7c8df3eda063fe9d5cb9c69c6be9965c22255d4079b70f3a8fd",
+      "ad74a553fb8cc27a0dcdc7bdb115f412f823a1ecb458df3c5245d95b4f7a9105",
+      "5dee3467f41c579a9c6369d6a71135f55e9b46b3ce406c2361ab3892c6c42946",
+      "5ddd8ad5b1fdfea3cb731cd07bd635d7016fdd01b7b5eed02b89e0085a8b3bf1",
+      "084d9d3395415c09be89078f9cb8e8aa88c37f18923efb6432bb50ff87f5bb0f",
+      "413dbedfa366086509d41a69fa05cb7b14db20237794596d21a742da96c2740a",
+      "227e288c963ba6f4c55aa4de488bb03df084df400acb6ea0d160add2a3833783",
+      "9a8b403d52b71466fa6540cd124a1277e3ff146e182a7e5075980e80363c104d",
+      "384c0d9dd94dd9f97ab476e1e43bf279290f3777deaa09820f1e4f625e1db770",
+      "ff0ad7f89fb797f69d301ee9a01b1d5b05c784f532d1f8c20c2e3ed39b544f11",
+      "40db720af44a3a9a55d3b516f9cc05b7fa54e970c586b29ff8f5395aa61b3378",
+      "df89bc6e27c460d7b869bf2addd79b54055a7b8dcb9201454cc61fc06f90a7d5",
+      "0cb1ddbd6f7c010d196749ed55e76044fb63cadd2a2edc6243ab4310c870aecc",
+      "2d471fef50510a1864f43596928d203d03884ab9339d8bc00f2072ec231cb09d",
+      "214e04954c00715fa6b20b1fdc8bcc41675dcbd71c565518ee91939c34d06d2e",
+      "97adff7f73c5e4577c16eb9eb213fb004e36e4688e268d19ffa2cce3272757cf",
+      "aa3cbafd25893a44ea98304a08b6938830c8f47fde59d1fe77a7d77c92b928c8",
+      "68442d793556e8a1d5938dc6d0a5c146706666b09dbb5974ef1b0991871f7ca3",
+      "acd3c5d86c457bb6efa7bd29d820f16e91cba8ef54be4cb88e767a96678dd64f",
+      "78e63836ae55d8a04ea64f6ab7ae4874f830901d64fef566f7225c16795cc057",
+      "47e972b838366f51aed754f86712b16d678d0d5f999b01506cf2ea9135fae322",
+      "f05da5fca8acb75bfa5052141fdd250c7824dfee7eed189538ea849f31e683be",
+      "3a68fb1681a413b37d98255d3baf849a386981ba3cb3b7abb51103539a3cb72e",
+      "36454ccea21a01e6d51556caae035249d0aab75621d2ca595f542db1578a5713",
+      "3b437911cee858d9f01201b54be346669cf8c11492521723e1629fc92108002b",
+      "b16fe7915412a30bef88f0642ec14ff5d968d77f62e6a5a98a9b7efef80634b1",
+      "2ea5dc13a8422b0ee039f54c18ecae518cb2ca8d7bbc0e62af83d38ee881771e",
+      "ab6d1da3d8b460678e2e8bd3c1bf7f5927338aff8c018f6972924f35ae495966",
+      "926436197f722549fad1f6b300dd624f81ba39776908495e880b466e1d2ec766",
+      "75888a08fd612a3795c95a14cf58e9e87f492db657fdb2ed5670eed15bfbcf0b",
+      "b3b6ec221decf4d9386953a4c97a20b6f2f73e2b4d414fe4dda8c017bc97b7e3",
+      "4eb3b20f4d215cbb7c52b1650d113a33cc275c8f262662419d131cceebb5712d",
+      "a74e6b4aff45de40cf42ef86ecce16abb04c6ad67c02fa68fb044a03f2efe0b2",
+      "b11ddbd9e31c14632813f5f716ab07a02d3f641dc74e99f77aa81833f4666064",
+      "fbd3442ef55a278016da8e47baa73a39df03aff368da9dee5514669c7c88cd44",
+      "2c9c920f251a8fdef9009ab4055c4b199ca5fb800f5151573b4b62903a6fe7c1",
+      "ee4fa3eb4a6ef62c057c0285b8936d9b5da53ccf3a43b46dd5a005c40405a6df",
+      "06eb076a1b8ce611ac75d5a9035edcb19e0a209ed583f6cdb049d19fcf5b5404"
+     ]
+    },
+    "config": {
+     "unit": [],
+     "artifact": [
+      "1d2024d38240e4bdf9c3a07415417615de2b1219a65ce0e18a9602259fc29a0c",
+      "f750314628e86fa996841e46b7f11c95d02d3bdd38fd40062853f8f89446dde8"
+     ],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "9675619bbd25cbd48f13c69c0d4c721d6c935d2fc3533ac550a8429754416560",
+   "a63f8841798558e1f599b83bef0c450811a64e8f9ef12fc4c829737c00ec5d49",
+   "67c264b288f97304b9845466fd620bb37ca2d010249f581b37c3d3df55ca420c",
+   "633f26568c4583b063fa7bed0d79af67a095236de753c00e7738406e6432fbf4",
+   "b8134b39a2af8d752055907174664abbe98de7d5c0f81c004ccaf1e18e0efb76",
+   "5c56c36fc337f9fdfeb333defb8e2a33d84313ff1e885d5a6dd1eec7f5b04274",
+   "b1c03efa98f32efa6045fae513493f632027f5a59e6c763494ff0f43068e2af3",
+   "f653c2b9feb29dd0058160bc3fcaea43cffed24f53ad620b50045cfb2dcca304",
+   "d94442e78c4d6e549e9459273c402ac6d51fce02378acf46103abb9747c5d3eb",
+   "036780e1973933ac1c3efbd39be17938c96fd84364eaf3095683487521c83943",
+   "6ccfa97a1cacb1fd4e0227c1f95d48ecdb0c65bca5c94efadf0b83fb25996aa5",
+   "321d7be116078d92fa6169a13cfb0cebf8512824549de145dfc5c416c897f1ba",
+   "72d1816453315c991f1e9bb921ef3187385edd34741f7aea87a0f74c8485e021",
+   "b2faac1365b449afe889dcca7fd52342640bcc033a39c6702d5a0879826e054a",
+   "2b956ae421343dc3612f2ee9ff4f613bdc1efc6b6af54121b2105156ad2340ef",
+   "87964ce146422d9343f9866bf070dc3b523a009e1b0637e7f8cbff8f5dd9d79d",
+   "692696c86a51608065297898e3eb532b0778c9da431e2fa2fd748df124b21f8c",
+   "f0577ec41270b9e11a86e39c57f56c7c64c797b78e058004e4f4b512b5187341",
+   "4b4f3cca12c7a2725a707d565ea4f48c545971231a660592ba3c72bd9441f2ee",
+   "4e9d5a37b85291a25f43ccb991a9b47d2cbc19f3dbda17dba7daeedb7b649e61",
+   "8221ba01ef36d4314fec431b7864cd977805cf470db3ffc0075396773687d120",
+   "a1d1a2883a29b01fb53657b0c4427a6b70b47c606685126aa52e8b00fa41b73f",
+   "0aee4e828120ad8857b606abc9185d424e3081cd669e8a829dcf8367e3e6b244",
+   "e81ad245e181c723a5a1e135ff487b62d26d491d17ce02a918a334a0cf28ebc1",
+   "8b28c89eb0d7f146a4df015af4a4880d87eaa84d8395f8a022036dc537239faa",
+   "af2e20ac405aae52dce8c7d011ae45300d7a73ed567a2bddc349a43a00f80338",
+   "f6c507fccbb3d595ded1c7947fc75236d6664d2fcb37e0a78cc972d4136ad7c8",
+   "50134119603e879e5631a81ef7d968a2e17e2968e7215e5c42b613dfaf0c2f06",
+   "24e56f2ce7a2faa6c107aff2e9175328bec9d97a232341074ec14a921aa471b6",
+   "ccdd14676e96fba63f2c3794f67e41bedeae56bed3e4d59f219b0e92c6ff4496",
+   "16fca827c21163ea83b13612c62ad4b619eb9d6674f329e8819bc306f4be402a",
+   "4741fc790dadfcc360be89460577e4c31a9d1a92b96521a199fd6512c002b9d3",
+   "74f3a3eb1fdbe36ed8d0144b7cf03d99f9d09d447de8ad9a3fac53d274be1378",
+   "bf697c31f4f7b08e03c3e126ec9169880c32ce991e9842b01cffab1a8c94be60",
+   "bb6a96b1e91b9793457d9689d83261ce145a1f65d3169741c5fccb38c6784a2b",
+   "856603b97cfef0572818d6f9f1a2f4a7bbf1ee7296a2d2e11f6b93e15c15836b",
+   "5f76a87986e95e5f76789b4544aa04c1b3e02b5f8ae38bf9b1797f512748b0d8",
+   "3fa756fb255e1194c768f553361b05b6aa5ac40ad8db2a5ffc10c8e99598d0a9",
+   "7ded6d4b261c41d8b7817289a6638d31b708beef306884ccf6b1cdfe3ef3c7e2",
+   "c8066560536be14040bf5f80b6c38cad16ed3afa4b7c256fb9f677b574ec03ae",
+   "97fa847943ee60f8a51ea48f513d46347c4bd513640760cee46381de1b448b75",
+   "155237c4887ceef87f488026161d38ec20dc726ae2f33a92cc8ce5f42ec2b29d",
+   "53392dce1c947fab398940548f30ff0c12c7de38f2de64cc7ca99347742dd7b7",
+   "cc93d70b7386f9baaab1d95fdd1161046dd8f38ed2a5a376c88a263c8785ac47",
+   "88d03481aa4df40340f23c59c00ab1552ca8f4a3c251f083af5209040c122345",
+   "fed73923407bfa6d80f6ebda5111a07653e276982506ae174b7ae67496c06dc9",
+   "edc2fd56a1c73c7c2296250017dfa1411328a0b152397b3ef252290ea9ab8cf5",
+   "afa40815b1b0c87d28a04fc15519d5d27b0e9d5beb60e8f09228fd4b2b6a7158",
+   "262691c2c66b1e5c15bde3f1ee474ca278607626c228efdfb58596d3b788d6a9",
+   "e503b2df3f22df1635e3cdc17d03d9bee5b71119cb67ba73778d0f82944ff1cc",
+   "609d6a535cf46f48542503309a3538834c6d6f8fd02dfa03c7b6ea44d8bec398",
+   "422732f2e8ea038f83e3eb0234a46e9f43eae8f3efe3c8110f64caf61a4a4f77",
+   "5e2f46237b9964838b0cd5210d47ff013587481643cfbea520d6f18136c133a8",
+   "6d0cbaf8f72f36652dc23ced73aaa59534776a837437adad4cb6e80c84f18be2",
+   "51141dda26110a94049069e51bd07e3e3fce332b504a9790f2e8f42a19c8a550",
+   "e49e13efd8a361df1cfd45eb49fecf3cccf680fdfa3ea1183020e5cca5286fb4",
+   "aca21450767f7d3732760bfd6910d72f0d0f4b0ceb1ce20f4eaa73a8b5b2ba4e"
+  ],
+  "terminal": [
+   "9675619bbd25cbd48f13c69c0d4c721d6c935d2fc3533ac550a8429754416560",
+   "a63f8841798558e1f599b83bef0c450811a64e8f9ef12fc4c829737c00ec5d49",
+   "67c264b288f97304b9845466fd620bb37ca2d010249f581b37c3d3df55ca420c",
+   "633f26568c4583b063fa7bed0d79af67a095236de753c00e7738406e6432fbf4",
+   "b8134b39a2af8d752055907174664abbe98de7d5c0f81c004ccaf1e18e0efb76",
+   "5c56c36fc337f9fdfeb333defb8e2a33d84313ff1e885d5a6dd1eec7f5b04274",
+   "b1c03efa98f32efa6045fae513493f632027f5a59e6c763494ff0f43068e2af3",
+   "f653c2b9feb29dd0058160bc3fcaea43cffed24f53ad620b50045cfb2dcca304",
+   "d94442e78c4d6e549e9459273c402ac6d51fce02378acf46103abb9747c5d3eb",
+   "036780e1973933ac1c3efbd39be17938c96fd84364eaf3095683487521c83943",
+   "6ccfa97a1cacb1fd4e0227c1f95d48ecdb0c65bca5c94efadf0b83fb25996aa5",
+   "321d7be116078d92fa6169a13cfb0cebf8512824549de145dfc5c416c897f1ba",
+   "72d1816453315c991f1e9bb921ef3187385edd34741f7aea87a0f74c8485e021",
+   "b2faac1365b449afe889dcca7fd52342640bcc033a39c6702d5a0879826e054a",
+   "2b956ae421343dc3612f2ee9ff4f613bdc1efc6b6af54121b2105156ad2340ef",
+   "87964ce146422d9343f9866bf070dc3b523a009e1b0637e7f8cbff8f5dd9d79d",
+   "692696c86a51608065297898e3eb532b0778c9da431e2fa2fd748df124b21f8c",
+   "f0577ec41270b9e11a86e39c57f56c7c64c797b78e058004e4f4b512b5187341",
+   "4b4f3cca12c7a2725a707d565ea4f48c545971231a660592ba3c72bd9441f2ee",
+   "4e9d5a37b85291a25f43ccb991a9b47d2cbc19f3dbda17dba7daeedb7b649e61",
+   "8221ba01ef36d4314fec431b7864cd977805cf470db3ffc0075396773687d120",
+   "a1d1a2883a29b01fb53657b0c4427a6b70b47c606685126aa52e8b00fa41b73f",
+   "0aee4e828120ad8857b606abc9185d424e3081cd669e8a829dcf8367e3e6b244",
+   "e81ad245e181c723a5a1e135ff487b62d26d491d17ce02a918a334a0cf28ebc1",
+   "8b28c89eb0d7f146a4df015af4a4880d87eaa84d8395f8a022036dc537239faa",
+   "af2e20ac405aae52dce8c7d011ae45300d7a73ed567a2bddc349a43a00f80338",
+   "f6c507fccbb3d595ded1c7947fc75236d6664d2fcb37e0a78cc972d4136ad7c8",
+   "50134119603e879e5631a81ef7d968a2e17e2968e7215e5c42b613dfaf0c2f06",
+   "24e56f2ce7a2faa6c107aff2e9175328bec9d97a232341074ec14a921aa471b6",
+   "ccdd14676e96fba63f2c3794f67e41bedeae56bed3e4d59f219b0e92c6ff4496",
+   "16fca827c21163ea83b13612c62ad4b619eb9d6674f329e8819bc306f4be402a",
+   "4741fc790dadfcc360be89460577e4c31a9d1a92b96521a199fd6512c002b9d3",
+   "74f3a3eb1fdbe36ed8d0144b7cf03d99f9d09d447de8ad9a3fac53d274be1378",
+   "bf697c31f4f7b08e03c3e126ec9169880c32ce991e9842b01cffab1a8c94be60",
+   "bb6a96b1e91b9793457d9689d83261ce145a1f65d3169741c5fccb38c6784a2b",
+   "856603b97cfef0572818d6f9f1a2f4a7bbf1ee7296a2d2e11f6b93e15c15836b",
+   "5f76a87986e95e5f76789b4544aa04c1b3e02b5f8ae38bf9b1797f512748b0d8",
+   "3fa756fb255e1194c768f553361b05b6aa5ac40ad8db2a5ffc10c8e99598d0a9",
+   "7ded6d4b261c41d8b7817289a6638d31b708beef306884ccf6b1cdfe3ef3c7e2",
+   "c8066560536be14040bf5f80b6c38cad16ed3afa4b7c256fb9f677b574ec03ae",
+   "97fa847943ee60f8a51ea48f513d46347c4bd513640760cee46381de1b448b75",
+   "155237c4887ceef87f488026161d38ec20dc726ae2f33a92cc8ce5f42ec2b29d",
+   "53392dce1c947fab398940548f30ff0c12c7de38f2de64cc7ca99347742dd7b7",
+   "cc93d70b7386f9baaab1d95fdd1161046dd8f38ed2a5a376c88a263c8785ac47",
+   "88d03481aa4df40340f23c59c00ab1552ca8f4a3c251f083af5209040c122345",
+   "fed73923407bfa6d80f6ebda5111a07653e276982506ae174b7ae67496c06dc9",
+   "edc2fd56a1c73c7c2296250017dfa1411328a0b152397b3ef252290ea9ab8cf5",
+   "afa40815b1b0c87d28a04fc15519d5d27b0e9d5beb60e8f09228fd4b2b6a7158",
+   "262691c2c66b1e5c15bde3f1ee474ca278607626c228efdfb58596d3b788d6a9",
+   "e503b2df3f22df1635e3cdc17d03d9bee5b71119cb67ba73778d0f82944ff1cc",
+   "609d6a535cf46f48542503309a3538834c6d6f8fd02dfa03c7b6ea44d8bec398",
+   "422732f2e8ea038f83e3eb0234a46e9f43eae8f3efe3c8110f64caf61a4a4f77",
+   "5e2f46237b9964838b0cd5210d47ff013587481643cfbea520d6f18136c133a8",
+   "6d0cbaf8f72f36652dc23ced73aaa59534776a837437adad4cb6e80c84f18be2",
+   "51141dda26110a94049069e51bd07e3e3fce332b504a9790f2e8f42a19c8a550",
+   "e49e13efd8a361df1cfd45eb49fecf3cccf680fdfa3ea1183020e5cca5286fb4",
+   "aca21450767f7d3732760bfd6910d72f0d0f4b0ceb1ce20f4eaa73a8b5b2ba4e"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__10/run-nl47gB/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__10/run-nl47gB"
+}

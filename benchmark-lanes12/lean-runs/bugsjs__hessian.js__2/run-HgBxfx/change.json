@@ -1,0 +1,605 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "ed7f966a31c448a62a1414f26196b342631925bb",
+ "head": "1f8a0728229397f32380a8ee38ed9fab7ed4daed",
+ "files": [
+  {
+   "id": "4346ca3627f8e2737209b3b2618e952d7a5906098cb0303ec5361eca0ec002e3",
+   "file": "lib/v1/decoder.js",
+   "oldPath": "lib/v1/decoder.js",
+   "newPath": "lib/v1/decoder.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "63949a0433fe832f601a408fbeeaa7a89efacafc",
+   "newOid": "54599c646be7a46742045ccf5173479782e0eeae",
+   "status": "M",
+   "edits": [
+    "3ac401f259d872a79204be0ff91e53861650a08741cce94be4cf122bfe844953",
+    "f80cfb48a26b11d6b905981da13129158976d92f9946b2c825c2bd5ae9933f00",
+    "52752ecc6a674e9de1cf0aa737330f1696a36ec31622b80ef59dd8b62f34e254",
+    "e5f1d520834de0dbf26524375a17c30a28c43902250edda7b82cf7aab1377bac"
+   ],
+   "hunks": [
+    {
+     "id": "f359ca908dca92888a5bc992b7d2d05904d919e982058db862261bcf35551734",
+     "old": {
+      "start": 421,
+      "count": 1
+     },
+     "new": {
+      "start": 420,
+      "count": 0
+     }
+    },
+    {
+     "id": "bd4ec3a968706257b990c0a9a8145631c21086c4d491cccbead8ada20830ab14",
+     "old": {
+      "start": 430,
+      "count": 2
+     },
+     "new": {
+      "start": 429,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "ce8d8b1614dd4f3461b8811df50bbb6195d8b4a94f0d79cbe9ab2d11746702e4",
+   "newHash": "45f3f2d576895ab9eb33958f455cb83424278fb65a3f03920340d8e29bda24a6",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "Decoder",
+      "side": "old",
+      "file": "lib/v1/decoder.js",
+      "start": 23,
+      "end": 28,
+      "offset": 540,
+      "stop": 690,
+      "id": "8531061407a82fdc1d4828dc10091a55d29197dfbe77851ed66ee4fc21c5c8e2"
+     }
+    ],
+    "new": [
+     {
+      "name": "Decoder",
+      "side": "new",
+      "file": "lib/v1/decoder.js",
+      "start": 23,
+      "end": 28,
+      "offset": 540,
+      "stop": 690,
+      "id": "f974467523d273b1f80f7c46cdb065c69d9c7c316f7f318f1ce4acd8cdbdd84f"
+     }
+    ]
+   }
+  },
+  {
+   "id": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "oldPath": "lib/v2/decoder.js",
+   "newPath": "lib/v2/decoder.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "4e4481f309125dad032eed78e6d64399f368bfb9",
+   "newOid": "98e4da7c4044adab307a21e7cbf5208aa76bf0a8",
+   "status": "M",
+   "edits": [
+    "d8ed63f46f028606218ef84c7710e6cab5c28708b4e1ffd7fea44421cc72b8d8",
+    "8a28b1a5b9f9c210b84412b234c619c31da3c6cb573df37f3eb6f72e5d7c8b86",
+    "0ca45e12a01103923566c2381a88c386fd3d8f008335111b8ec916588855b846",
+    "ead36a82c8dd37782273262b1166b11e67a45164a7bb0d5d12034277e8026569",
+    "27d135328549ea113a26a18ad30cfa39e5ab58ca08009ff27350acf529936b70",
+    "430981bba0b0adefbb8f08ad35f4e14c08956f78035703d4bfc4df4341d24597",
+    "27cbe40dbfee451c717584dbeac5b93db789cd6db4259e6c0b473876563b3007",
+    "5708acf111b65f83a663f37a96eacb18dfd81f40b208546d593641f66308bf9c"
+   ],
+   "hunks": [
+    {
+     "id": "eecd887f9328f35d909957a6034308765cde3f585169761f2f3ad18abd349e3f",
+     "old": {
+      "start": 728,
+      "count": 1
+     },
+     "new": {
+      "start": 727,
+      "count": 0
+     }
+    },
+    {
+     "id": "0082f6ea3a1c454c72b8e139fdcd5c785c99bfda072345be78fc0fbd7e7c9c58",
+     "old": {
+      "start": 733,
+      "count": 5
+     },
+     "new": {
+      "start": 732,
+      "count": 2
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "0b3e9f69dd9c4e06641f2ec83716805452b33b09446761369f5ddb0620858cad",
+   "newHash": "dc9878abd2cab5b06b86693b01dc4f60af2956807042d3648e8b8ad2032a105a",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "Decoder",
+      "side": "old",
+      "file": "lib/v2/decoder.js",
+      "start": 26,
+      "end": 33,
+      "offset": 501,
+      "stop": 690,
+      "id": "428672bb0882f25f51444ab4f43ac9556ac6163a0fdc8fd66d26b60610294d32"
+     }
+    ],
+    "new": [
+     {
+      "name": "Decoder",
+      "side": "new",
+      "file": "lib/v2/decoder.js",
+      "start": 26,
+      "end": 33,
+      "offset": 501,
+      "stop": 690,
+      "id": "e0573e0ef90ac12ba3440ffab72ac5f9dd729f21b3820288af3f1a13a5f48f62"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "3ac401f259d872a79204be0ff91e53861650a08741cce94be4cf122bfe844953",
+   "fileId": "4346ca3627f8e2737209b3b2618e952d7a5906098cb0303ec5361eca0ec002e3",
+   "file": "lib/v1/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "f359ca908dca92888a5bc992b7d2d05904d919e982058db862261bcf35551734",
+   "side": "old",
+   "old": {
+    "start": 421,
+    "count": 1
+   },
+   "new": {
+    "start": 420,
+    "count": 0
+   },
+   "offsets": {
+    "start": 9051,
+    "end": 9060
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "f80cfb48a26b11d6b905981da13129158976d92f9946b2c825c2bd5ae9933f00",
+   "fileId": "4346ca3627f8e2737209b3b2618e952d7a5906098cb0303ec5361eca0ec002e3",
+   "file": "lib/v1/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "bd4ec3a968706257b990c0a9a8145631c21086c4d491cccbead8ada20830ab14",
+   "side": "old",
+   "old": {
+    "start": 430,
+    "count": 1
+   },
+   "new": {
+    "start": 429,
+    "count": 0
+   },
+   "offsets": {
+    "start": 9370,
+    "end": 9390
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "52752ecc6a674e9de1cf0aa737330f1696a36ec31622b80ef59dd8b62f34e254",
+   "fileId": "4346ca3627f8e2737209b3b2618e952d7a5906098cb0303ec5361eca0ec002e3",
+   "file": "lib/v1/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "bd4ec3a968706257b990c0a9a8145631c21086c4d491cccbead8ada20830ab14",
+   "side": "old",
+   "old": {
+    "start": 431,
+    "count": 1
+   },
+   "new": {
+    "start": 429,
+    "count": 0
+   },
+   "offsets": {
+    "start": 9390,
+    "end": 9464
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "e5f1d520834de0dbf26524375a17c30a28c43902250edda7b82cf7aab1377bac",
+   "fileId": "4346ca3627f8e2737209b3b2618e952d7a5906098cb0303ec5361eca0ec002e3",
+   "file": "lib/v1/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "bd4ec3a968706257b990c0a9a8145631c21086c4d491cccbead8ada20830ab14",
+   "side": "new",
+   "old": {
+    "start": 430,
+    "count": 0
+   },
+   "new": {
+    "start": 429,
+    "count": 1
+   },
+   "offsets": {
+    "start": 9361,
+    "end": 9397
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "d8ed63f46f028606218ef84c7710e6cab5c28708b4e1ffd7fea44421cc72b8d8",
+   "fileId": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "eecd887f9328f35d909957a6034308765cde3f585169761f2f3ad18abd349e3f",
+   "side": "old",
+   "old": {
+    "start": 728,
+    "count": 1
+   },
+   "new": {
+    "start": 727,
+    "count": 0
+   },
+   "offsets": {
+    "start": 18597,
+    "end": 18606
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "8a28b1a5b9f9c210b84412b234c619c31da3c6cb573df37f3eb6f72e5d7c8b86",
+   "fileId": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0082f6ea3a1c454c72b8e139fdcd5c785c99bfda072345be78fc0fbd7e7c9c58",
+   "side": "old",
+   "old": {
+    "start": 733,
+    "count": 1
+   },
+   "new": {
+    "start": 732,
+    "count": 0
+   },
+   "offsets": {
+    "start": 18723,
+    "end": 18741
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "0ca45e12a01103923566c2381a88c386fd3d8f008335111b8ec916588855b846",
+   "fileId": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0082f6ea3a1c454c72b8e139fdcd5c785c99bfda072345be78fc0fbd7e7c9c58",
+   "side": "old",
+   "old": {
+    "start": 734,
+    "count": 1
+   },
+   "new": {
+    "start": 732,
+    "count": 0
+   },
+   "offsets": {
+    "start": 18741,
+    "end": 18742
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "ead36a82c8dd37782273262b1166b11e67a45164a7bb0d5d12034277e8026569",
+   "fileId": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0082f6ea3a1c454c72b8e139fdcd5c785c99bfda072345be78fc0fbd7e7c9c58",
+   "side": "old",
+   "old": {
+    "start": 735,
+    "count": 1
+   },
+   "new": {
+    "start": 732,
+    "count": 0
+   },
+   "offsets": {
+    "start": 18742,
+    "end": 18786
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "27d135328549ea113a26a18ad30cfa39e5ab58ca08009ff27350acf529936b70",
+   "fileId": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0082f6ea3a1c454c72b8e139fdcd5c785c99bfda072345be78fc0fbd7e7c9c58",
+   "side": "old",
+   "old": {
+    "start": 736,
+    "count": 1
+   },
+   "new": {
+    "start": 732,
+    "count": 0
+   },
+   "offsets": {
+    "start": 18786,
+    "end": 18804
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "430981bba0b0adefbb8f08ad35f4e14c08956f78035703d4bfc4df4341d24597",
+   "fileId": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0082f6ea3a1c454c72b8e139fdcd5c785c99bfda072345be78fc0fbd7e7c9c58",
+   "side": "old",
+   "old": {
+    "start": 737,
+    "count": 1
+   },
+   "new": {
+    "start": 732,
+    "count": 0
+   },
+   "offsets": {
+    "start": 18804,
+    "end": 18810
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "27cbe40dbfee451c717584dbeac5b93db789cd6db4259e6c0b473876563b3007",
+   "fileId": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0082f6ea3a1c454c72b8e139fdcd5c785c99bfda072345be78fc0fbd7e7c9c58",
+   "side": "new",
+   "old": {
+    "start": 733,
+    "count": 0
+   },
+   "new": {
+    "start": 732,
+    "count": 1
+   },
+   "offsets": {
+    "start": 18714,
+    "end": 18719
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5708acf111b65f83a663f37a96eacb18dfd81f40b208546d593641f66308bf9c",
+   "fileId": "58550a4976aa0d036ed107daa9220431e6a5ad4c212946fe5b713ceefadbdce6",
+   "file": "lib/v2/decoder.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0082f6ea3a1c454c72b8e139fdcd5c785c99bfda072345be78fc0fbd7e7c9c58",
+   "side": "new",
+   "old": {
+    "start": 733,
+    "count": 0
+   },
+   "new": {
+    "start": 733,
+    "count": 1
+   },
+   "offsets": {
+    "start": 18719,
+    "end": 18735
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "c17132401bebeb9830f06ef91e85bfdd79dd7278b68d1b2aa26a19091e26b293",
+ "reconciliation": {
+  "expected": [
+   "3ac401f259d872a79204be0ff91e53861650a08741cce94be4cf122bfe844953",
+   "f80cfb48a26b11d6b905981da13129158976d92f9946b2c825c2bd5ae9933f00",
+   "52752ecc6a674e9de1cf0aa737330f1696a36ec31622b80ef59dd8b62f34e254",
+   "e5f1d520834de0dbf26524375a17c30a28c43902250edda7b82cf7aab1377bac",
+   "d8ed63f46f028606218ef84c7710e6cab5c28708b4e1ffd7fea44421cc72b8d8",
+   "8a28b1a5b9f9c210b84412b234c619c31da3c6cb573df37f3eb6f72e5d7c8b86",
+   "0ca45e12a01103923566c2381a88c386fd3d8f008335111b8ec916588855b846",
+   "ead36a82c8dd37782273262b1166b11e67a45164a7bb0d5d12034277e8026569",
+   "27d135328549ea113a26a18ad30cfa39e5ab58ca08009ff27350acf529936b70",
+   "430981bba0b0adefbb8f08ad35f4e14c08956f78035703d4bfc4df4341d24597",
+   "27cbe40dbfee451c717584dbeac5b93db789cd6db4259e6c0b473876563b3007",
+   "5708acf111b65f83a663f37a96eacb18dfd81f40b208546d593641f66308bf9c"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "3ac401f259d872a79204be0ff91e53861650a08741cce94be4cf122bfe844953",
+   "f80cfb48a26b11d6b905981da13129158976d92f9946b2c825c2bd5ae9933f00",
+   "52752ecc6a674e9de1cf0aa737330f1696a36ec31622b80ef59dd8b62f34e254",
+   "e5f1d520834de0dbf26524375a17c30a28c43902250edda7b82cf7aab1377bac",
+   "d8ed63f46f028606218ef84c7710e6cab5c28708b4e1ffd7fea44421cc72b8d8",
+   "8a28b1a5b9f9c210b84412b234c619c31da3c6cb573df37f3eb6f72e5d7c8b86",
+   "0ca45e12a01103923566c2381a88c386fd3d8f008335111b8ec916588855b846",
+   "ead36a82c8dd37782273262b1166b11e67a45164a7bb0d5d12034277e8026569",
+   "27d135328549ea113a26a18ad30cfa39e5ab58ca08009ff27350acf529936b70",
+   "430981bba0b0adefbb8f08ad35f4e14c08956f78035703d4bfc4df4341d24597",
+   "27cbe40dbfee451c717584dbeac5b93db789cd6db4259e6c0b473876563b3007",
+   "5708acf111b65f83a663f37a96eacb18dfd81f40b208546d593641f66308bf9c"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "3ac401f259d872a79204be0ff91e53861650a08741cce94be4cf122bfe844953",
+     "f80cfb48a26b11d6b905981da13129158976d92f9946b2c825c2bd5ae9933f00",
+     "52752ecc6a674e9de1cf0aa737330f1696a36ec31622b80ef59dd8b62f34e254",
+     "e5f1d520834de0dbf26524375a17c30a28c43902250edda7b82cf7aab1377bac",
+     "d8ed63f46f028606218ef84c7710e6cab5c28708b4e1ffd7fea44421cc72b8d8",
+     "8a28b1a5b9f9c210b84412b234c619c31da3c6cb573df37f3eb6f72e5d7c8b86",
+     "0ca45e12a01103923566c2381a88c386fd3d8f008335111b8ec916588855b846",
+     "ead36a82c8dd37782273262b1166b11e67a45164a7bb0d5d12034277e8026569",
+     "27d135328549ea113a26a18ad30cfa39e5ab58ca08009ff27350acf529936b70",
+     "430981bba0b0adefbb8f08ad35f4e14c08956f78035703d4bfc4df4341d24597",
+     "27cbe40dbfee451c717584dbeac5b93db789cd6db4259e6c0b473876563b3007",
+     "5708acf111b65f83a663f37a96eacb18dfd81f40b208546d593641f66308bf9c"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

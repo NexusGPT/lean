@@ -1,0 +1,290 @@
+{
+ "change": "bb6c4b0acdb48e34e9139b0eda8736d889cddd9b073a4190db40a2ea7256773c",
+ "tasks": [
+  {
+   "id": "7dbcda87d47075ee4ef83af8bf08dd29df613d072dbeb33d302f560e75afee82",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 1cf0cb52ace1)",
+   "lines": [
+    782,
+    782
+   ],
+   "lanes": [],
+   "editIds": [
+    "1cf0cb52ace1382e1273ec119cf8d0bb759267b2f1234730246220b741e576c8"
+   ],
+   "attemptId": "a520eca3-a557-4b6b-a9d9-3cab2f4609c2",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/a520eca3-a557-4b6b-a9d9-3cab2f4609c2"
+  },
+  {
+   "id": "af300ec84a5692d09090d6ade48d77ef206a9ea8d47016da48cc6f4f3ca71038",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit dc33b479d11e)",
+   "lines": [
+    783,
+    783
+   ],
+   "lanes": [],
+   "editIds": [
+    "dc33b479d11e104c7f90e29e029df379f33d498ea2b1746404b16cac041802bd"
+   ],
+   "attemptId": "c6ff43c6-637e-465e-9872-605b51a57e65",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/c6ff43c6-637e-465e-9872-605b51a57e65"
+  },
+  {
+   "id": "7ad008f1c0d0b34ec4f068e1832b113f26d96b9ac198817771582cf115ca5346",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit a800363befee)",
+   "lines": [
+    784,
+    784
+   ],
+   "lanes": [],
+   "editIds": [
+    "a800363befee125bef75a2cbacbeff80ee863ac9593b6b45d3affbd93be9c14b"
+   ],
+   "attemptId": "d14fb527-195b-4625-be18-0fd43a69a064",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/d14fb527-195b-4625-be18-0fd43a69a064"
+  },
+  {
+   "id": "2467675dc610775e2177d6165259f1ff7d63ca2d5f7ba6f4e5c61c02fe8ad280",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit aa50c2811c5b)",
+   "lines": [
+    785,
+    785
+   ],
+   "lanes": [],
+   "editIds": [
+    "aa50c2811c5bd16dce7dfd4f5d8150464c0a186a65bf486ec8e20f07419ba2dd"
+   ],
+   "attemptId": "17647324-d855-4278-92b1-d2ce7cf6df93",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/17647324-d855-4278-92b1-d2ce7cf6df93"
+  },
+  {
+   "id": "45bdd7c8b275825442512ecc40e4034d21df82dec46b920f66041c3c2560e0f8",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 94fe6dd7ec67)",
+   "lines": [
+    786,
+    786
+   ],
+   "lanes": [],
+   "editIds": [
+    "94fe6dd7ec67171bae027939f271c5f12fbbddedb200a4efdf1d1931d37da5da"
+   ],
+   "attemptId": "ef472069-36bc-4d9e-8e50-183336d86778",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/ef472069-36bc-4d9e-8e50-183336d86778"
+  },
+  {
+   "id": "72f903c9ddada6d11e745f9cf114b3a29217bd18e2bb42b5f6a6e50d8ab1fb8e",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 5e7af634acd6)",
+   "lines": [
+    787,
+    787
+   ],
+   "lanes": [],
+   "editIds": [
+    "5e7af634acd64d22d235c61b6d641f06662f6795ca7e9b5548bc87eef7816fe7"
+   ],
+   "attemptId": "5b7a0653-38c7-4ad4-b6ea-ed836f5be88c",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/5b7a0653-38c7-4ad4-b6ea-ed836f5be88c"
+  },
+  {
+   "id": "0f3b33c995e762d57ca58f571b886617b28b1ae69e7a71b6f27b7fd096929648",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 5e9a17314f38)",
+   "lines": [
+    788,
+    788
+   ],
+   "lanes": [],
+   "editIds": [
+    "5e9a17314f38f8c4711cd19af0d31912fa002f75033837e03c045aca090b2c97"
+   ],
+   "attemptId": "1ad74cbe-b288-4cfa-8b92-d02c255fd756",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/1ad74cbe-b288-4cfa-8b92-d02c255fd756"
+  },
+  {
+   "id": "790d851dd7631c0e7088c76da8f3172984be9b82186f0b5c11a51c49027990ca",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit d0a1af48be31)",
+   "lines": [
+    789,
+    789
+   ],
+   "lanes": [],
+   "editIds": [
+    "d0a1af48be31eadef48c783c69f8d8704febefbf9e1c82154d5c630b42b023e0"
+   ],
+   "attemptId": "16d98405-59af-440f-b2cd-a2cc3228e9b7",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/16d98405-59af-440f-b2cd-a2cc3228e9b7"
+  },
+  {
+   "id": "0373705a4f03cef9cab864cc3dee70e6e4ac0aa18091181c242c47d86ca2e450",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 9cb87a235785)",
+   "lines": [
+    790,
+    790
+   ],
+   "lanes": [],
+   "editIds": [
+    "9cb87a2357852fb08094c9dcf2a0b321e6f3fdb2a30115455c9ca7ddae56c6f2"
+   ],
+   "attemptId": "68e1b1a2-a1fc-4dca-a6f3-e69805c5140d",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/68e1b1a2-a1fc-4dca-a6f3-e69805c5140d"
+  },
+  {
+   "id": "c5e38e2fe9a8c46b5c7e036d68c1fc6135f2c89aa418984ec7b6f19578aa21c3",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 37afc8a39138)",
+   "lines": [
+    791,
+    791
+   ],
+   "lanes": [],
+   "editIds": [
+    "37afc8a39138603a976b3ba0e2a3316f5b56c2f690fce9ea5a18c82cc1795069"
+   ],
+   "attemptId": "a7e9c528-ca56-4f08-87aa-4e2cc8fe33f8",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/a7e9c528-ca56-4f08-87aa-4e2cc8fe33f8"
+  },
+  {
+   "id": "9f91b0c73f74dbf6e0dd040176ae1e1a9c9b5b05c238108283e43842e07b9c0f",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit e4aa359a841d)",
+   "lines": [
+    792,
+    792
+   ],
+   "lanes": [],
+   "editIds": [
+    "e4aa359a841df1c4e8d6e512d1f33576fca4b51ec852b3e1704a4e2c127fd757"
+   ],
+   "attemptId": "a318fd8a-7d73-492a-a186-d25c3e0f2735",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/a318fd8a-7d73-492a-a186-d25c3e0f2735"
+  },
+  {
+   "id": "6cb57e8b9ea2f6446df8313acbd29b7a76010cfe01f0a7f0975beeba20f56367",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit eec98015d0c1)",
+   "lines": [
+    793,
+    793
+   ],
+   "lanes": [],
+   "editIds": [
+    "eec98015d0c19eb624e31330d0af9f36c12be72d15deef5f999e24cc3b8f7556"
+   ],
+   "attemptId": "36159145-f793-42c5-874b-1047dd7614ce",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/36159145-f793-42c5-874b-1047dd7614ce"
+  },
+  {
+   "id": "ca291c094b99f0f5a80022fc5a3f03b6c62022243cc1c5b1fe4979014d2a8e76",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit e4543b6918ad)",
+   "lines": [
+    794,
+    794
+   ],
+   "lanes": [],
+   "editIds": [
+    "e4543b6918ad61988f71eb7ca4b5448ef548d76dc5b7ed1b684ab849cb43cc27"
+   ],
+   "attemptId": "75a16f8f-e827-4b22-8dca-4a2b3056e391",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/75a16f8f-e827-4b22-8dca-4a2b3056e391"
+  },
+  {
+   "id": "2254987846839869d55c65a0d73cc9ca3c3f72a3dc3e53b41455371b1a678e92",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit d5dc14d37cb6)",
+   "lines": [
+    852,
+    852
+   ],
+   "lanes": [],
+   "editIds": [
+    "d5dc14d37cb6bc9e862f0731ee3a8b58b29bff290392b95038c09c7259f24f41"
+   ],
+   "attemptId": "450485ff-d640-474f-bf00-172ed56e2171",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/450485ff-d640-474f-bf00-172ed56e2171"
+  },
+  {
+   "id": "d99c1abacfabe9f989aa22c565a6efe8c19b140f2e06d707fd43da9af0191b5c",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 2bca8cddf106)",
+   "lines": [
+    840,
+    840
+   ],
+   "lanes": [],
+   "editIds": [
+    "2bca8cddf106c34400a7123f541e730a892edcc2aac3c8146a7a89c33182453d"
+   ],
+   "attemptId": "38ae6013-ea10-4ce5-9794-04cd0f7cc57c",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/38ae6013-ea10-4ce5-9794-04cd0f7cc57c"
+  },
+  {
+   "id": "292a98a3c48f68bba8858bcbe9e0bccd89416af7c73b7f1b1374a016e86afcf1",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 61e8523fe2ac)",
+   "lines": [
+    854,
+    854
+   ],
+   "lanes": [],
+   "editIds": [
+    "61e8523fe2ac2258a3d64b8fdf21adb715bf740cdaa103a91450acc45bb52a99"
+   ],
+   "attemptId": "2dc40c40-5a62-4a1f-afb4-3c2095729e44",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/2dc40c40-5a62-4a1f-afb4-3c2095729e44"
+  },
+  {
+   "id": "38f958a19c3581b7c62f3ed55345f61ddc1de6bfc120f9433273716fc7248745",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit ecb1695b014d)",
+   "lines": [
+    855,
+    855
+   ],
+   "lanes": [],
+   "editIds": [
+    "ecb1695b014daf06d933270c8341be1c3932b28a4ab4ccfef603ed84ecc37503"
+   ],
+   "attemptId": "f7e7c673-6fd0-4408-a26c-3e2e9fa24923",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/f7e7c673-6fd0-4408-a26c-3e2e9fa24923"
+  },
+  {
+   "id": "5ed191a071296915ce3eefc7c4cba3c47f7517df7b9abb3f1430460742be807d",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 011155a5cb8c)",
+   "lines": [
+    856,
+    856
+   ],
+   "lanes": [],
+   "editIds": [
+    "011155a5cb8cea73a940fd5cd23bca0119257083c58a8386d8e10b44167488c9"
+   ],
+   "attemptId": "e2aba6c3-9050-4663-b402-88a19292cbcc",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/e2aba6c3-9050-4663-b402-88a19292cbcc"
+  },
+  {
+   "id": "20cada52c4bb2fad251fa0ce3ae2e779755a6bc8f9567f171fd312e419d23032",
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 2aabe5493673)",
+   "lines": [
+    857,
+    857
+   ],
+   "lanes": [],
+   "editIds": [
+    "2aabe54936737a3d267502e38122a4b867b2c7475cd7a0b6b678a9509f702c7f"
+   ],
+   "attemptId": "a849faee-1561-4cea-abd6-355a5690c047",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__128/run-PTk3M7/attempts/a849faee-1561-4cea-abd6-355a5690c047"
+  }
+ ]
+}

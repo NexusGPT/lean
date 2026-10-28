@@ -1,0 +1,21 @@
+{
+ "file": "lib/file-list.js",
+ "unit": "(edit 09f0201a0514)",
+ "editIds": [
+  "09f0201a051403e83ceeeabea00ce802c5ee31f24efd04c6e1f5b3e631b1cd39"
+ ],
+ "lines": [
+  82,
+  82
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

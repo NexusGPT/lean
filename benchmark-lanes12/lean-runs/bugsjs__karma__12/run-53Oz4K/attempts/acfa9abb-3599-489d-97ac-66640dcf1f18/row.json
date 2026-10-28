@@ -1,0 +1,20 @@
+{
+ "file": "lib/preprocessor.js",
+ "unit": "(edit cccd76d815a4)",
+ "editIds": [
+  "cccd76d815a447516020510c35f53dcb808dc271751989d407a2ddcd8df80631"
+ ],
+ "lines": [
+  56,
+  56
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

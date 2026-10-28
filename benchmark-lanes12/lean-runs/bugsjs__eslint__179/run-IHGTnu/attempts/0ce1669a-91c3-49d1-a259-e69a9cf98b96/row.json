@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-debugger.js",
+ "unit": "(edit 71d4e8f5411f)",
+ "editIds": [
+  "71d4e8f5411f5ba371923a1d3fb357cb8126091997d03818f3ccbcafee12376b"
+ ],
+ "lines": [
+  31,
+  31
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

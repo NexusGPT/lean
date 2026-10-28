@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/padded-blocks.js",
+ "unit": "(edit d2e02c49ad43)",
+ "editIds": [
+  "d2e02c49ad43cd812af8e3a6489aa2ccdc504068d743fe429ff35094de86551e"
+ ],
+ "lines": [
+  192,
+  192
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

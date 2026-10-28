@@ -1,0 +1,21 @@
+{
+ "file": "lib/formatters/stylish.js",
+ "unit": "(edit 4f94d1c057fe)",
+ "editIds": [
+  "4f94d1c057fe7bfba169f87149e089fa017816e7706ba777a8798406f770eaa3"
+ ],
+ "lines": [
+  68,
+  68
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

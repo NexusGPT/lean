@@ -1,0 +1,307 @@
+{
+ "key": "90e1975761a170260ca9f748d0a028930609d16d6203dcebd4769a22b4ee9cd0",
+ "context": "14ba61d2315bf824673beff79eb771744bd9453665538d5ebda2a01551aade6d",
+ "row": {
+  "file": "lib/ast-utils.js",
+  "unit": "isES5Constructor",
+  "lines": [
+   57,
+   62
+  ],
+  "verdict": "WITNESS",
+  "coverage": "checked",
+  "certificate": {
+   "tool": "lean-ts v3",
+   "identity": "810c4f8c42a55a164fbf25ebf6aaa9e57045cbf6dfeb491d8e41a045bb641276",
+   "unit": "isES5Constructor",
+   "parent": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_base_86182_ast-utils.js",
+    "sha256": "02f2f1d22dc6ccad"
+   },
+   "candidate": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_head_86182_ast-utils.js",
+    "sha256": "165f2a3e26d74298"
+   },
+   "lanes": {
+    "B": {
+     "verdict": "WITNESS",
+     "reason": null,
+     "bound": {
+      "n": 100,
+      "seed": 1,
+      "ms": 2000,
+      "reached": {
+       "body": 12,
+       "guard": 0
+      },
+      "states": [
+       {
+        "input": 0,
+        "args": [
+         {
+          "id": {
+           "name": []
+          }
+         }
+        ]
+       },
+       {
+        "input": 1,
+        "args": [
+         {
+          "$fake": "arg0"
+         }
+        ]
+       },
+       {
+        "input": 2,
+        "args": [
+         {
+          "id": {
+           "$undefined": true
+          }
+         }
+        ]
+       },
+       {
+        "input": 3,
+        "args": [
+         {
+          "id": false
+         }
+        ]
+       },
+       {
+        "input": 4,
+        "args": [
+         {
+          "id": 0
+         }
+        ]
+       },
+       {
+        "input": 5,
+        "args": [
+         {
+          "id": ""
+         }
+        ]
+       },
+       {
+        "input": 6,
+        "args": [
+         {
+          "id": {
+           "$fake": "arg0.id"
+          }
+         }
+        ]
+       },
+       {
+        "input": 7,
+        "args": [
+         {
+          "$fake": "arg0"
+         }
+        ]
+       },
+       {
+        "input": 8,
+        "args": [
+         {
+          "$fake": "arg0"
+         }
+        ]
+       },
+       {
+        "input": 9,
+        "args": [
+         {
+          "$fake": "arg0"
+         }
+        ]
+       },
+       {
+        "input": 10,
+        "args": [
+         {
+          "$fake": "arg0"
+         }
+        ]
+       },
+       {
+        "input": 11,
+        "args": [
+         {
+          "id": {
+           "$fake": "arg0.id"
+          }
+         }
+        ]
+       }
+      ],
+      "heaps": {
+       "assignments": 0,
+       "pool": 2,
+       "shapes": {}
+      },
+      "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+      "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+      "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+      "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+      "library": {
+       "records": 0,
+       "ops": {},
+       "calls": {},
+       "sampled": [],
+       "outOfModel": 0,
+       "callbackEffects": 0,
+       "defectRecords": 0,
+       "defects": []
+      }
+     },
+     "witnesses": [
+      {
+       "input": 0,
+       "args": [
+        {
+         "id": {
+          "name": []
+         }
+        }
+       ],
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_base_86182_ast-utils.js",
+          "start": 58,
+          "end": 61,
+          "text": "return (\n        node.id &&\n        node.id.name[0] === node.id.name[0].toLocaleUpperCase()\n    );"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_head_86182_ast-utils.js",
+          "start": 58,
+          "end": 61,
+          "text": "return (\n        node.id &&\n        node.id.name[0] !== node.id.name[0].toLocaleLowerCase()\n    );"
+         }
+        }
+       }
+      },
+      {
+       "input": 6,
+       "args": [
+        {
+         "id": {
+          "$fake": "arg0.id"
+         }
+        }
+       ],
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_base_86182_ast-utils.js",
+          "start": 58,
+          "end": 61,
+          "text": "return (\n        node.id &&\n        node.id.name[0] === node.id.name[0].toLocaleUpperCase()\n    );"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_head_86182_ast-utils.js",
+          "start": 58,
+          "end": 61,
+          "text": "return (\n        node.id &&\n        node.id.name[0] !== node.id.name[0].toLocaleLowerCase()\n    );"
+         }
+        }
+       }
+      },
+      {
+       "input": 11,
+       "args": [
+        {
+         "id": {
+          "$fake": "arg0.id"
+         }
+        }
+       ],
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_base_86182_ast-utils.js",
+          "start": 58,
+          "end": 61,
+          "text": "return (\n        node.id &&\n        node.id.name[0] === node.id.name[0].toLocaleUpperCase()\n    );"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_head_86182_ast-utils.js",
+          "start": 58,
+          "end": 61,
+          "text": "return (\n        node.id &&\n        node.id.name[0] !== node.id.name[0].toLocaleLowerCase()\n    );"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "tools": {
+    "node": "v24.18.0"
+   },
+   "unitTextEqual": false,
+   "observation": {
+    "layer": "values and the reachable object graph",
+    "renders": null,
+    "effects": "the trace of environment requests and pending work",
+    "schedule": "synchronous; pending work recorded, never fired"
+   },
+   "library": {
+    "records": 0,
+    "ops": {},
+    "outOfModel": 0,
+    "callbackEffects": 0,
+    "defects": 0
+   },
+   "verdict": "WITNESS"
+  },
+  "laneB": "WITNESS",
+  "laneA": null,
+  "witness": {
+   "input": 0,
+   "args": [
+    {
+     "id": {
+      "name": []
+     }
+    }
+   ],
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_base_86182_ast-utils.js",
+      "start": 58,
+      "end": 61,
+      "text": "return (\n        node.id &&\n        node.id.name[0] === node.id.name[0].toLocaleUpperCase()\n    );"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__291/run-0RRGsk/sources/lib/.lean_head_86182_ast-utils.js",
+      "start": 58,
+      "end": 61,
+      "text": "return (\n        node.id &&\n        node.id.name[0] !== node.id.name[0].toLocaleLowerCase()\n    );"
+     }
+    }
+   }
+  },
+  "reason": null,
+  "advice": [],
+  "editIds": [
+   "d3a0b6a4941de23893baef19e11741d2c683d3a614e7341d2462882c2827b968",
+   "316f9d6f6b29ac576603c1f461750f1aea1e06475b570cf4dec4e80da600e89d"
+  ]
+ }
+}

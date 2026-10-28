@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/indent.js",
+ "unit": "(edit 690e4f79c604)",
+ "editIds": [
+  "690e4f79c60471bc4922932b753864d2609f127a14da5d51bda82874465abb14"
+ ],
+ "lines": [
+  271,
+  271
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

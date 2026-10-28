@@ -4,6 +4,46 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { prReport } from '../pr.mjs';
+// Reproduce the frozen former-empty cohort and terminal accounting without changing any benchmark file.
+if (process.argv.includes('--measure')) {
+  const arg = flag => process.argv[process.argv.indexOf(flag) + 1];
+  const bm = path.resolve(arg('--measure')), results = path.resolve(arg('--results')), output = path.resolve(arg('--out'));
+  const readJSON = f => JSON.parse(fs.readFileSync(f, 'utf8'));
+  const caseFiles = dir => fs.readdirSync(dir).filter(f => f.endsWith('.json')).map(f => readJSON(path.join(dir, f)));
+  const previous = caseFiles(path.join(bm, 'runs/lanes12-92eebd9/cases'));
+  const current = caseFiles(path.join(results, 'cases'));
+  const empty = new Set(previous.filter(c => c.report && !c.report.rows.length).map(c => c.id));
+  const defects = readJSON(path.join(bm, 'manifests/lane1-public-defects.v1.json')).records;
+  const records = defects.filter(r => empty.has(r.id));
+  const { buildChangeManifest, routeChanges } = await import('./ledger.mjs');
+  const cases = [], incidence = {}, primary = {};
+  const priority = ['object-literal member', 'exported property assignment', 'module-level statement', 'untyped JavaScript file', 'comment', 'whitespace'];
+  for (const rec of records) {
+    const ledger = routeChanges(buildChangeManifest({ repo: rec.repository.local_clone, base: rec.before.commit, head: rec.after.commit }));
+    const reasons = [...new Set(ledger.edits.filter(e => e.primary.kind === 'unassigned').map(e => e.primary.reason))].sort();
+    const artifacts = [...new Set(ledger.edits.filter(e => e.primary.kind === 'artifact').map(e => e.primary.reason))].sort();
+    for (const reason of reasons) incidence[reason] = (incidence[reason] ?? 0) + 1;
+    const bucket = priority.find(r => reasons.includes(r)) ?? (reasons.length ? reasons.join(' + ') : 'artifact-only');
+    primary[bucket] = (primary[bucket] ?? 0) + 1;
+    const actual = current.find(r => r.id === rec.id);
+    cases.push({ id: rec.id, ledger: ledger.id, edits: ledger.edits.length, reasons, artifacts, primary: bucket,
+      reconciled: ledger.reconciliation.complete, reported: !!actual?.report?.rows?.length });
+  }
+  const summaries = rs => ({ cases: rs.length, errors: rs.filter(r => r.error).map(r => ({ id: r.id, error: r.error })),
+    emptyReports: rs.filter(r => r.report && !r.report.rows?.length).map(r => r.id),
+    rows: rs.reduce((n, r) => n + (r.report?.rows?.length ?? 0), 0) });
+  const reports = current.flatMap(r => r.report ? [r.report] : []);
+  const expected = reports.reduce((n, r) => n + (r.reconciliation?.expected?.length ?? 0), 0);
+  const terminal = reports.reduce((n, r) => n + (r.reconciliation?.terminal?.length ?? 0), 0);
+  const result = { before: summaries(previous), after: summaries(current), cohort: cases.length, priority, primary, incidence,
+    reconciliation: { reports: reports.length, complete: reports.filter(r => r.reconciliation?.complete).length,
+      expected, terminal, missing: reports.flatMap(r => r.reconciliation?.missing ?? []), unexpected: reports.flatMap(r => r.reconciliation?.unexpected ?? []) },
+    cases };
+  fs.writeFileSync(output, JSON.stringify(result, null, 1));
+  console.log(JSON.stringify({ ...result, cases: undefined }, null, 1));
+  process.exit(0);
+}
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const tmp = fs.mkdtempSync(path.join(root, '.ledger-test-'));
 const git = (...args) => {
@@ -50,5 +90,11 @@ try {
   assert(mixed.edits.some(e => e.primary.kind === 'unit' && e.primary.unit === 'f'));
   assert(mixed.edits.some(e => e.primary.reason === 'exported property assignment'), 'a same-line unit must not swallow a module-level edit');
   assert.equal(reconcileEdits(mixed).complete, true);
+  write('configuration.ts', 'export function configure(x: number) { return x + 1; }\n');
+  git('add', '-A'); git('commit', '-qm', 'classified source base'); const classifiedBase = git('rev-parse', 'HEAD');
+  write('configuration.ts', 'export function configure(x: number) { return x + 2; }\n');
+  const classified = routeChanges(buildChangeManifest({ repo: tmp, base: classifiedBase, head: 'WORKTREE' }));
+  assert.equal(classified.files.find(f => f.file === 'configuration.ts').class, 'config');
+  assert(classified.edits.some(e => e.primary.kind === 'unit' && e.primary.unit === 'configure'), 'an artifact class must not suppress an eligible listed unit');
   console.log('ledger.test: all assertions pass');
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

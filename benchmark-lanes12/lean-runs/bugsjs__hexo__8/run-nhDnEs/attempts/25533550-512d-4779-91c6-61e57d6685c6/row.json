@@ -1,0 +1,20 @@
+{
+ "file": "lib/plugins/helper/open_graph.js",
+ "unit": "(edit a6c1a7cef7f6)",
+ "editIds": [
+  "a6c1a7cef7f606ff9c3311290070be8eed03fd59e9202410ef5277c5c8d8c04a"
+ ],
+ "lines": [
+  88,
+  88
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

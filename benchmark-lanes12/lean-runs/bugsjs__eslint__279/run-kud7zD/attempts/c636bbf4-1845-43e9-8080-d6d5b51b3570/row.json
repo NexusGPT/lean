@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/quotes.js",
+ "unit": "(edit 36d9473933e6)",
+ "editIds": [
+  "36d9473933e6e1d549de854f37e60473933dc8e916a6034da64d87cf3de916dd"
+ ],
+ "lines": [
+  264,
+  264
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

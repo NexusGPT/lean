@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/func-style.js",
+ "unit": "(edit e37f1cd96c4b)",
+ "editIds": [
+  "e37f1cd96c4b7692f8cb3f612bb6fbbdfaaf32e61b33d6a504264e04a36d2241"
+ ],
+ "lines": [
+  57,
+  57
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

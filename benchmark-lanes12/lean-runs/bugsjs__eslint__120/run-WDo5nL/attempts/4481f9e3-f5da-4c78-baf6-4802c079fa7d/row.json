@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/valid-typeof.js",
+ "unit": "(edit d5d231eef6dd)",
+ "editIds": [
+  "d5d231eef6dd34d14c322645f7d2175ea5ce99df6a13de475c1de2277fa6e92d"
+ ],
+ "lines": [
+  47,
+  47
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

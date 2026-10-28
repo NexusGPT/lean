@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unsafe-finally.js",
+ "unit": "(edit 5bdc574bd8de)",
+ "editIds": [
+  "5bdc574bd8de51f219c0aeda73a44f92215ad514e576051de0f6345f0df194b0"
+ ],
+ "lines": [
+  13,
+  13
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

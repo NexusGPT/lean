@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/yoda.js",
+ "unit": "(edit 6171ed7cad31)",
+ "editIds": [
+  "6171ed7cad3133e60e15331868990f35d2a3b86abd2ff526c1baf9b05b85736c"
+ ],
+ "lines": [
+  200,
+  200
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

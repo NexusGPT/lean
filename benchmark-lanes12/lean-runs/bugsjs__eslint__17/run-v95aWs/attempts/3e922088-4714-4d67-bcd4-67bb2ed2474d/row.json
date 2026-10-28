@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/indent.js",
+ "unit": "(edit f3e39d22609f)",
+ "editIds": [
+  "f3e39d22609fd6d71d142e73b9be8947c09a32e0bb036f3bb8370a5a667e55d6"
+ ],
+ "lines": [
+  839,
+  839
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

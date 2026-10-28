@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-redeclare.js",
+ "unit": "(edit 9f354422cf55)",
+ "editIds": [
+  "9f354422cf55f643dc2a8d370c4c5e5c150a620601127143e6c39fce0d128edd"
+ ],
+ "lines": [
+  71,
+  71
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/object-shorthand.js",
+ "unit": "(edit 692efa3351a0)",
+ "editIds": [
+  "692efa3351a01627e0cb8274d9eed8b3b28f701e15d6ea5e922956e22f253202"
+ ],
+ "lines": [
+  139,
+  139
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

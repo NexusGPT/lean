@@ -1,0 +1,24 @@
+{
+ "identity": "2ceb58a09805ab19be50fb7ad600266be407e99b6c3ac8c1e68e85afa62e4ec6",
+ "records": [
+  {
+   "check": "refused:var",
+   "unit": "sendOptionsResponse",
+   "file": "lib/router/index.js",
+   "location": {
+    "start": 575,
+    "end": 575
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 575,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    }
+   ],
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__24/run-gqpW7g/sources/lib/router/.lean_head_79335_index.js: ASK(CommonJS wrapper): require is not defined"
+  }
+ ]
+}

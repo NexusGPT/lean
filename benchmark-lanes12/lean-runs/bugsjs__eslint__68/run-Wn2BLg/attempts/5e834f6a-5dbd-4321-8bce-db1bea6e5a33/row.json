@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/spaced-comment.js",
+ "unit": "(edit d85d01618e12)",
+ "editIds": [
+  "d85d01618e12d714acb995270b72faf1695b820b3ccd8b9c8c68cb5dab68e1d3"
+ ],
+ "lines": [
+  57,
+  57
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/preprocessor.js",
+ "unit": "(edit 0409b7b7b4a8)",
+ "editIds": [
+  "0409b7b7b4a82ec97b0057994028f3fd78738c6252966841b0c10a6294a53ffb"
+ ],
+ "lines": [
+  57,
+  57
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

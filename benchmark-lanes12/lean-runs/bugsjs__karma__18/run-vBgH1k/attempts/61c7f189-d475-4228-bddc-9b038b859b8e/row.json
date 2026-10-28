@@ -1,0 +1,21 @@
+{
+ "file": "lib/file-list.js",
+ "unit": "(edit 4239edaa6107)",
+ "editIds": [
+  "4239edaa61072f6568ae4196307f61aeeffb29acc30dbfaefa3656c014659ef8"
+ ],
+ "lines": [
+  180,
+  180
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

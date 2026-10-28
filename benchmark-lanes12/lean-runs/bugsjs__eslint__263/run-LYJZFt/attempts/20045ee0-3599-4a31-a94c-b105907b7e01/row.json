@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-lone-blocks.js",
+ "unit": "(edit e65acf4d9d63)",
+ "editIds": [
+  "e65acf4d9d633ba14cb6c6cfbd70e0fe657b0f6d54389c0f013cae9941a6615c"
+ ],
+ "lines": [
+  46,
+  46
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

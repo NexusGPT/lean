@@ -1,0 +1,21 @@
+{
+ "file": "lib/v1/encoder.js",
+ "unit": "(edit 985c3a220a0a)",
+ "editIds": [
+  "985c3a220a0abb6ecf547d27ad6607de748dd0172c56215d5483cdb9a98792b4"
+ ],
+ "lines": [
+  399,
+  399
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

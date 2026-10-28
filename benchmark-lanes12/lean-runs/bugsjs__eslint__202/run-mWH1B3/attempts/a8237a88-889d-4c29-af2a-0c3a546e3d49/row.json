@@ -1,0 +1,20 @@
+{
+ "file": "lib/config/autoconfig.js",
+ "unit": "(edit cbc3451e765a)",
+ "editIds": [
+  "cbc3451e765aa4e1a18eb02fa051e57f837b38b09c1bab8cf2ee1525959ce994"
+ ],
+ "lines": [
+  314,
+  314
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/utils.js",
+ "unit": "(edit 65b608ea880e)",
+ "editIds": [
+  "65b608ea880ee7e29bdb98cbda54f2c203cff8debc5baff0cafc477e1f51afc9"
+ ],
+ "lines": [
+  19,
+  19
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (exported property assignment)",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "VariableDeclaration",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

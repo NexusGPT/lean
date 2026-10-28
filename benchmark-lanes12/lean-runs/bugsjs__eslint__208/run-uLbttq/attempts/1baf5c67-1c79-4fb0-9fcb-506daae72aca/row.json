@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-unexpected-multiline.js",
+ "unit": "(edit 3036d7da831b)",
+ "editIds": [
+  "3036d7da831b7d55c86e79cf7ad8fc1d36a001e241939fe74319578a0668fe93"
+ ],
+ "lines": [
+  82,
+  82
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

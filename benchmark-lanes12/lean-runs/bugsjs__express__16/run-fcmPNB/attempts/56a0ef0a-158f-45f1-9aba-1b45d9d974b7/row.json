@@ -1,0 +1,21 @@
+{
+ "file": "lib/response.js",
+ "unit": "(edit f76fc063acd5)",
+ "editIds": [
+  "f76fc063acd52a535d818627643ab549f78ab30f63d1ef80b96ac2f9bc4faa9e"
+ ],
+ "lines": [
+  821,
+  821
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

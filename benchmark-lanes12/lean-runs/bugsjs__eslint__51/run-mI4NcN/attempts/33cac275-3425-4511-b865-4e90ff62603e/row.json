@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unsafe-finally.js",
+ "unit": "(edit ba5306a2db24)",
+ "editIds": [
+  "ba5306a2db240214ae96f9b003e78cd88d296c857385ec5f4b914e7e795ad95c"
+ ],
+ "lines": [
+  66,
+  66
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

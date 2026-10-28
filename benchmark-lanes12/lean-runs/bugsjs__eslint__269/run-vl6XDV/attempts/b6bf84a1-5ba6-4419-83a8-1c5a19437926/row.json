@@ -1,0 +1,21 @@
+{
+ "file": "lib/util/source-code-fixer.js",
+ "unit": "(edit 5870a789e92b)",
+ "editIds": [
+  "5870a789e92bb21e0ff3ceb3ab0b583dcbd976f88ca01828b01a6086cbce83ee"
+ ],
+ "lines": [
+  91,
+  91
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/sort-vars.js",
+ "unit": "(edit 7754c59eed8f)",
+ "editIds": [
+  "7754c59eed8f63ed3f63f4d6c299383f96b93dde7b9877193404bd8f9a6fa1bf"
+ ],
+ "lines": [
+  33,
+  33
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

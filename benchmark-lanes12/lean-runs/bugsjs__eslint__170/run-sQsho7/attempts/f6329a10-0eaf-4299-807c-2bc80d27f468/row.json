@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/new-parens.js",
+ "unit": "(edit 24acb50748c9)",
+ "editIds": [
+  "24acb50748c9ceae3d328a551d31e59cdf1222bd9829371ffed1c938058712ff"
+ ],
+ "lines": [
+  75,
+  75
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "ShorthandPropertyAssignment"
+ },
+ "advice": []
+}

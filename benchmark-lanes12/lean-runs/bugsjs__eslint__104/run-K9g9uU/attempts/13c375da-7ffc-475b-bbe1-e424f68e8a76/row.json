@@ -1,0 +1,21 @@
+{
+ "file": "bin/eslint.js",
+ "unit": "(edit 402cf9f658bf)",
+ "editIds": [
+  "402cf9f658bff0281e12227800658a2960849bfa96c6370880adb9b7af546d7b"
+ ],
+ "lines": [
+  51,
+  51
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

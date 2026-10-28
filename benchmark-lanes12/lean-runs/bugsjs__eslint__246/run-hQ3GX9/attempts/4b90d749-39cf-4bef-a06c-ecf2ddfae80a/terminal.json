@@ -1,0 +1,10 @@
+{
+ "id": "e81343e94fc48b187b3d23986be3f5dd8c7d8a4dc35314931fa0fcb670eb75cc",
+ "attemptId": "4b90d749-39cf-4bef-a06c-ecf2ddfae80a",
+ "state": "done",
+ "artifact": {
+  "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__246/run-hQ3GX9/attempts/4b90d749-39cf-4bef-a06c-ecf2ddfae80a/row.json",
+  "sha256": "b0847fd81d4958e04d97b7e8bb68adb1ba8e762ff274bca65fd84ee63f5fe7ac"
+ },
+ "lanes": {}
+}

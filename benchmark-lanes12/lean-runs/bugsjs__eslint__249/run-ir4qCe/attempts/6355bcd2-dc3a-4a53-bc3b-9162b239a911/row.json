@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/getter-return.js",
+ "unit": "(edit d81d68d931dc)",
+ "editIds": [
+  "d81d68d931dc69606ed86c3a295437a6bbe859be961477326167e8d06ce6dfb5"
+ ],
+ "lines": [
+  105,
+  105
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

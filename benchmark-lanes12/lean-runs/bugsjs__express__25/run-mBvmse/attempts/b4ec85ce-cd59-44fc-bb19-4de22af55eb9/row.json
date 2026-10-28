@@ -1,0 +1,20 @@
+{
+ "file": "lib/response.js",
+ "unit": "(edit ef3946782dc1)",
+ "editIds": [
+  "ef3946782dc13c4356fa8bf7bd63db4fafbb96a39a96f85fed3683f8aff220f7"
+ ],
+ "lines": [
+  240,
+  240
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

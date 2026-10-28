@@ -1,0 +1,16 @@
+{
+ "identity": "7a5b9b2076d63dd7b358d33c101c33871cf4e7fefca15fe7aee8ceaafd1ced5c",
+ "records": [
+  {
+   "check": "failed:loader",
+   "unit": "isFunctionName",
+   "file": "lib/rules/func-names.js",
+   "location": {
+    "start": 13,
+    "end": 15
+   },
+   "kind": "coverage",
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__257/run-pcEiW3/sources/lib/rules/.lean_head_26357_func-names.js: ASK(CommonJS wrapper): module is not defined"
+  }
+ ]
+}

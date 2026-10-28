@@ -1,0 +1,35 @@
+{
+ "change": "10902608600241bf04a79ee4b9e2e6b00a73d6226ac9df60a5abf48c52db9505",
+ "tasks": [
+  {
+   "id": "07844bdc9aa6d4f0c284ad3e781f621c79beb5809ea9ac7d010cd2aa62e9c430",
+   "file": "lib/rules/operator-assignment.js",
+   "unit": "(edit 56867ebffdb8)",
+   "lines": [
+    138,
+    138
+   ],
+   "lanes": [],
+   "editIds": [
+    "56867ebffdb81c77d7015f4d24e9606da79895cb18671806732335925f53692c"
+   ],
+   "attemptId": "bebfc01b-eff1-4336-beb6-a3655b92355c",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__83/run-gccs3o/attempts/bebfc01b-eff1-4336-beb6-a3655b92355c"
+  },
+  {
+   "id": "b423d512eb845005717727bbd568640c8a7b5a73ee453cc833ea542e74ad30e4",
+   "file": "lib/rules/operator-assignment.js",
+   "unit": "(edit ceb4c177abf8)",
+   "lines": [
+    138,
+    138
+   ],
+   "lanes": [],
+   "editIds": [
+    "ceb4c177abf89dc83ce2556e9247ab4c8bcbbc4c82372cf5cdbaef902aa19e70"
+   ],
+   "attemptId": "ea86ea31-e213-4e24-827f-20184803615f",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__83/run-gccs3o/attempts/ea86ea31-e213-4e24-827f-20184803615f"
+  }
+ ]
+}

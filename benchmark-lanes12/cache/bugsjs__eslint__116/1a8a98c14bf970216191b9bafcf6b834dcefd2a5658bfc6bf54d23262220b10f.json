@@ -1,0 +1,1019 @@
+{
+ "key": "1a8a98c14bf970216191b9bafcf6b834dcefd2a5658bfc6bf54d23262220b10f",
+ "context": "14ba61d2315bf824673beff79eb771744bd9453665538d5ebda2a01551aade6d",
+ "row": {
+  "file": "lib/rules/no-loop-func.js",
+  "unit": "isSafe",
+  "lines": [
+   96,
+   148
+  ],
+  "verdict": "WITNESS",
+  "coverage": "checked",
+  "laneB": "WITNESS",
+  "laneA": null,
+  "caller": true,
+  "certificate": {
+   "tool": "lean-ts v3",
+   "identity": "623caad018178f060545f78849e9b164a24a8d5a2bf7a744c02399a45024def8",
+   "unit": "isSafe",
+   "parent": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_base_22959_no-loop-func.js",
+    "sha256": "ae70fdc41e63a82e"
+   },
+   "candidate": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_head_22959_no-loop-func.js",
+    "sha256": "7d69542805fca68c"
+   },
+   "lanes": {
+    "B": {
+     "verdict": "WITNESS",
+     "unit": "isSafe",
+     "witnesses": [
+      {
+       "input": 0,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "range": []
+        },
+        {
+         "$fake": "arg2"
+        }
+       ],
+       "parent": {
+        "outcome": {
+         "threw": {
+          "$error": "TypeError",
+          "message": "Cannot read properties of null (reading 'range')"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          {
+           "$ref": 0
+          },
+          {
+           "$fake": "arg2"
+          }
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 2,
+         "heap": [
+          {
+           "kind": "record",
+           "edges": {
+            "range": {
+             "$ref": 1
+            }
+           }
+          },
+          {
+           "kind": "array",
+           "edges": []
+          }
+         ]
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg2.resolved",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "returned": false
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          {
+           "$ref": 0
+          },
+          {
+           "$fake": "arg2"
+          }
+         ],
+         "own": {},
+         "outcome": false,
+         "anchors": 2,
+         "heap": [
+          {
+           "kind": "record",
+           "edges": {
+            "range": {
+             "$ref": 1
+            }
+           }
+          },
+          {
+           "kind": "array",
+           "edges": []
+          }
+         ]
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg2.resolved",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_base_22959_no-loop-func.js",
+          "start": 120,
+          "end": 123,
+          "text": "var border = getTopLoopNode(\n        loopNode,\n        (kind === \"let\") ? declaration : null\n    ).range[0];"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_head_22959_no-loop-func.js",
+          "start": 147,
+          "end": 147,
+          "text": "return Boolean(variable) && variable.references.every(isSafeReference);"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "getTopLoopNode",
+         "changed": true,
+         "path": [
+          "isSafe",
+          "getTopLoopNode"
+         ]
+        }
+       ]
+      },
+      {
+       "input": 2,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        {
+         "$undefined": true
+        },
+        {
+         "resolved": {
+          "defs": {
+           "$fake": "arg2.resolved.defs"
+          },
+          "references": [
+           {
+            "$fake": "arg2.resolved.references[0]"
+           },
+           {
+            "$fake": "arg2.resolved.references[1]"
+           },
+           {
+            "$fake": "arg2.resolved.references[2]"
+           },
+           {
+            "$fake": "arg2.resolved.references[3]"
+           },
+           {
+            "$fake": "arg2.resolved.references[4]"
+           }
+          ],
+          "scope": {
+           "variableScope": {
+            "$fake": "arg2.resolved.scope.variableScope"
+           }
+          }
+         }
+        }
+       ],
+       "parent": {
+        "outcome": {
+         "threw": {
+          "$error": "TypeError",
+          "message": "Cannot read properties of null (reading 'range')"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          {
+           "$undefined": true
+          },
+          {
+           "$ref": 0
+          }
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 4,
+         "heap": [
+          {
+           "kind": "record",
+           "edges": {
+            "resolved": {
+             "$ref": 1
+            }
+           }
+          },
+          {
+           "kind": "record",
+           "edges": {
+            "defs": {
+             "$fake": "arg2.resolved.defs"
+            },
+            "scope": {
+             "$ref": 2
+            },
+            "references": {
+             "$ref": 3
+            }
+           }
+          },
+          {
+           "kind": "record",
+           "edges": {
+            "variableScope": {
+             "$fake": "arg2.resolved.scope.variableScope"
+            }
+           }
+          },
+          {
+           "kind": "array",
+           "edges": [
+            {
+             "$fake": "arg2.resolved.references[0]"
+            },
+            {
+             "$fake": "arg2.resolved.references[1]"
+            },
+            {
+             "$fake": "arg2.resolved.references[2]"
+            },
+            {
+             "$fake": "arg2.resolved.references[3]"
+            },
+            {
+             "$fake": "arg2.resolved.references[4]"
+            }
+           ]
+          }
+         ]
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg2.resolved.defs.0",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "threw": {
+          "$error": "TypeError",
+          "message": "Cannot read properties of undefined (reading 'range')"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          {
+           "$undefined": true
+          },
+          {
+           "$ref": 0
+          }
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 4,
+         "heap": [
+          {
+           "kind": "record",
+           "edges": {
+            "resolved": {
+             "$ref": 1
+            }
+           }
+          },
+          {
+           "kind": "record",
+           "edges": {
+            "defs": {
+             "$fake": "arg2.resolved.defs"
+            },
+            "scope": {
+             "$ref": 2
+            },
+            "references": {
+             "$ref": 3
+            }
+           }
+          },
+          {
+           "kind": "record",
+           "edges": {
+            "variableScope": {
+             "$fake": "arg2.resolved.scope.variableScope"
+            }
+           }
+          },
+          {
+           "kind": "array",
+           "edges": [
+            {
+             "$fake": "arg2.resolved.references[0]"
+            },
+            {
+             "$fake": "arg2.resolved.references[1]"
+            },
+            {
+             "$fake": "arg2.resolved.references[2]"
+            },
+            {
+             "$fake": "arg2.resolved.references[3]"
+            },
+            {
+             "$fake": "arg2.resolved.references[4]"
+            }
+           ]
+          }
+         ]
+        },
+        "receiver": {},
+        "trace": [
+         {
+          "op": "get",
+          "path": "arg2.resolved.defs.0",
+          "args": []
+         }
+        ],
+        "pending": []
+       },
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_base_22959_no-loop-func.js",
+          "start": 120,
+          "end": 123,
+          "text": "var border = getTopLoopNode(\n        loopNode,\n        (kind === \"let\") ? declaration : null\n    ).range[0];"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_head_22959_no-loop-func.js",
+          "start": 120,
+          "end": 123,
+          "text": "var border = getTopLoopNode(\n        loopNode,\n        (kind === \"let\") ? declaration : null\n    ).range[0];"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "getTopLoopNode",
+         "changed": true,
+         "path": [
+          "isSafe",
+          "getTopLoopNode"
+         ]
+        }
+       ]
+      },
+      {
+       "input": 3,
+       "args": [
+        {
+         "$fake": "arg0"
+        },
+        false,
+        {
+         "resolved": {
+          "defs": [
+           false,
+           "",
+           {
+            "$fake": "arg2.resolved.defs[2]"
+           }
+          ],
+          "references": {
+           "$fake": "arg2.resolved.references"
+          },
+          "scope": {
+           "variableScope": {
+            "$fake": "arg2.resolved.scope.variableScope"
+           }
+          }
+         }
+        }
+       ],
+       "parent": {
+        "outcome": {
+         "threw": {
+          "$error": "TypeError",
+          "message": "Cannot read properties of null (reading 'range')"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          false,
+          {
+           "$ref": 0
+          }
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 4,
+         "heap": [
+          {
+           "kind": "record",
+           "edges": {
+            "resolved": {
+             "$ref": 1
+            }
+           }
+          },
+          {
+           "kind": "record",
+           "edges": {
+            "defs": {
+             "$ref": 2
+            },
+            "scope": {
+             "$ref": 3
+            },
+            "references": {
+             "$fake": "arg2.resolved.references"
+            }
+           }
+          },
+          {
+           "kind": "array",
+           "edges": [
+            false,
+            "",
+            {
+             "$fake": "arg2.resolved.defs[2]"
+            }
+           ]
+          },
+          {
+           "kind": "record",
+           "edges": {
+            "variableScope": {
+             "$fake": "arg2.resolved.scope.variableScope"
+            }
+           }
+          }
+         ]
+        },
+        "receiver": {},
+        "trace": [],
+        "pending": []
+       },
+       "candidate": {
+        "outcome": {
+         "threw": {
+          "$error": "TypeError",
+          "message": "Cannot read properties of undefined (reading '0')"
+         }
+        },
+        "heap": {
+         "roots": [
+          {
+           "$fake": "arg0"
+          },
+          false,
+          {
+           "$ref": 0
+          }
+         ],
+         "own": {},
+         "outcome": null,
+         "anchors": 4,
+         "heap": [
+          {
+           "kind": "record",
+           "edges": {
+            "resolved": {
+             "$ref": 1
+            }
+           }
+          },
+          {
+           "kind": "record",
+           "edges": {
+            "defs": {
+             "$ref": 2
+            },
+            "scope": {
+             "$ref": 3
+            },
+            "references": {
+             "$fake": "arg2.resolved.references"
+            }
+           }
+          },
+          {
+           "kind": "array",
+           "edges": [
+            false,
+            "",
+            {
+             "$fake": "arg2.resolved.defs[2]"
+            }
+           ]
+          },
+          {
+           "kind": "record",
+           "edges": {
+            "variableScope": {
+             "$fake": "arg2.resolved.scope.variableScope"
+            }
+           }
+          }
+         ]
+        },
+        "receiver": {},
+        "trace": [],
+        "pending": []
+       },
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_base_22959_no-loop-func.js",
+          "start": 120,
+          "end": 123,
+          "text": "var border = getTopLoopNode(\n        loopNode,\n        (kind === \"let\") ? declaration : null\n    ).range[0];"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_head_22959_no-loop-func.js",
+          "start": 120,
+          "end": 123,
+          "text": "var border = getTopLoopNode(\n        loopNode,\n        (kind === \"let\") ? declaration : null\n    ).range[0];"
+         }
+        },
+        "cause": "callee"
+       },
+       "through": [
+        {
+         "callee": "getTopLoopNode",
+         "changed": true,
+         "path": [
+          "isSafe",
+          "getTopLoopNode"
+         ]
+        }
+       ]
+      }
+     ],
+     "bound": {
+      "n": 100,
+      "seed": 1,
+      "ms": 2000,
+      "reached": {
+       "body": 4,
+       "guard": 0
+      },
+      "states": [
+       {
+        "input": 0,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "range": []
+         },
+         {
+          "$fake": "arg2"
+         }
+        ]
+       },
+       {
+        "input": 1,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         null,
+         {
+          "$fake": "arg2"
+         }
+        ]
+       },
+       {
+        "input": 2,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "$undefined": true
+         },
+         {
+          "resolved": {
+           "defs": {
+            "$fake": "arg2.resolved.defs"
+           },
+           "references": [
+            {
+             "$fake": "arg2.resolved.references[0]"
+            },
+            {
+             "$fake": "arg2.resolved.references[1]"
+            },
+            {
+             "$fake": "arg2.resolved.references[2]"
+            },
+            {
+             "$fake": "arg2.resolved.references[3]"
+            },
+            {
+             "$fake": "arg2.resolved.references[4]"
+            }
+           ],
+           "scope": {
+            "variableScope": {
+             "$fake": "arg2.resolved.scope.variableScope"
+            }
+           }
+          }
+         }
+        ]
+       },
+       {
+        "input": 3,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         false,
+         {
+          "resolved": {
+           "defs": [
+            false,
+            "",
+            {
+             "$fake": "arg2.resolved.defs[2]"
+            }
+           ],
+           "references": {
+            "$fake": "arg2.resolved.references"
+           },
+           "scope": {
+            "variableScope": {
+             "$fake": "arg2.resolved.scope.variableScope"
+            }
+           }
+          }
+         }
+        ]
+       }
+      ],
+      "heaps": {
+       "assignments": 0,
+       "pool": 2,
+       "shapes": {}
+      },
+      "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+      "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+      "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+      "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+      "library": {
+       "records": 0,
+       "ops": {},
+       "calls": {},
+       "sampled": [],
+       "outOfModel": 0,
+       "callbackEffects": 0,
+       "defectRecords": 0,
+       "defects": []
+      }
+     },
+     "spec": {
+      "params": [
+       {
+        "name": "funcNode",
+        "optional": false,
+        "spec": {
+         "kind": "opaque"
+        }
+       },
+       {
+        "name": "loopNode",
+        "optional": false,
+        "spec": {
+         "kind": "union",
+         "options": [
+          {
+           "kind": "record",
+           "refined": true,
+           "fields": {
+            "range": {
+             "spec": {
+              "kind": "union",
+              "options": [
+               {
+                "kind": "array",
+                "of": {
+                 "kind": "union",
+                 "options": [
+                  {
+                   "kind": "number"
+                  },
+                  {
+                   "kind": "opaque"
+                  }
+                 ],
+                 "prefer": 0
+                }
+               },
+               {
+                "kind": "opaque"
+               }
+              ],
+              "prefer": 0
+             },
+             "optional": true
+            }
+           }
+          },
+          {
+           "kind": "opaque"
+          }
+         ],
+         "prefer": 0,
+         "boundary": {
+          "cmp": [
+           {
+            "t": "draw"
+           },
+           null,
+           {
+            "t": "undefined"
+           },
+           false,
+           0,
+           ""
+          ],
+          "falsy": [
+           null,
+           {
+            "t": "undefined"
+           },
+           false,
+           0,
+           ""
+          ],
+          "rank": 1,
+          "radix": 1
+         }
+        }
+       },
+       {
+        "name": "reference",
+        "optional": false,
+        "spec": {
+         "kind": "union",
+         "options": [
+          {
+           "kind": "record",
+           "refined": true,
+           "fields": {
+            "resolved": {
+             "spec": {
+              "kind": "union",
+              "options": [
+               {
+                "kind": "record",
+                "refined": true,
+                "fields": {
+                 "defs": {
+                  "spec": {
+                   "kind": "union",
+                   "options": [
+                    {
+                     "kind": "array",
+                     "of": {
+                      "kind": "opaque",
+                      "boundary": {
+                       "cmp": [
+                        {
+                         "t": "draw"
+                        },
+                        null,
+                        {
+                         "t": "undefined"
+                        },
+                        false,
+                        0,
+                        ""
+                       ],
+                       "falsy": [
+                        null,
+                        {
+                         "t": "undefined"
+                        },
+                        false,
+                        0,
+                        ""
+                       ],
+                       "rank": 1,
+                       "radix": 36
+                      }
+                     }
+                    },
+                    {
+                     "kind": "opaque"
+                    }
+                   ],
+                   "prefer": 0
+                  },
+                  "optional": true,
+                  "shaped": true
+                 },
+                 "scope": {
+                  "spec": {
+                   "kind": "union",
+                   "options": [
+                    {
+                     "kind": "record",
+                     "refined": true,
+                     "fields": {
+                      "variableScope": {
+                       "spec": {
+                        "kind": "opaque"
+                       },
+                       "optional": true
+                      }
+                     }
+                    },
+                    {
+                     "kind": "opaque"
+                    }
+                   ],
+                   "prefer": 0
+                  },
+                  "optional": true,
+                  "shaped": true
+                 },
+                 "references": {
+                  "spec": {
+                   "kind": "union",
+                   "options": [
+                    {
+                     "kind": "array",
+                     "of": {
+                      "kind": "opaque"
+                     }
+                    },
+                    {
+                     "kind": "opaque"
+                    }
+                   ],
+                   "prefer": 0
+                  },
+                  "optional": true
+                 }
+                }
+               },
+               {
+                "kind": "opaque"
+               }
+              ],
+              "prefer": 0,
+              "boundary": {
+               "cmp": [
+                {
+                 "t": "draw"
+                },
+                null,
+                {
+                 "t": "undefined"
+                },
+                false,
+                0,
+                ""
+               ],
+               "falsy": [
+                null,
+                {
+                 "t": "undefined"
+                },
+                false,
+                0,
+                ""
+               ],
+               "rank": 1,
+               "radix": 6
+              }
+             },
+             "optional": true,
+             "shaped": true
+            }
+           }
+          },
+          {
+           "kind": "opaque"
+          }
+         ],
+         "prefer": 0
+        }
+       }
+      ],
+      "returns": {
+       "kind": "boolean"
+      },
+      "literals": [
+       0,
+       1,
+       -1
+      ],
+      "strings": [
+       "VariableDeclaration",
+       "",
+       "const",
+       "let"
+      ]
+     },
+     "unitTextEqual": true
+    }
+   },
+   "verdict": "WITNESS"
+  },
+  "witness": {
+   "input": 0,
+   "args": [
+    {
+     "$fake": "arg0"
+    },
+    {
+     "range": []
+    },
+    {
+     "$fake": "arg2"
+    }
+   ],
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_base_22959_no-loop-func.js",
+      "start": 120,
+      "end": 123,
+      "text": "var border = getTopLoopNode(\n        loopNode,\n        (kind === \"let\") ? declaration : null\n    ).range[0];"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__116/run-c8ke6v/sources/lib/rules/.lean_head_22959_no-loop-func.js",
+      "start": 147,
+      "end": 147,
+      "text": "return Boolean(variable) && variable.references.every(isSafeReference);"
+     }
+    },
+    "cause": "callee"
+   },
+   "through": [
+    {
+     "callee": "getTopLoopNode",
+     "changed": true,
+     "path": [
+      "isSafe",
+      "getTopLoopNode"
+     ]
+    }
+   ]
+  },
+  "reason": null,
+  "advice": []
+ }
+}

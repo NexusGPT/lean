@@ -1,0 +1,20 @@
+{
+ "file": "lib/config.js",
+ "unit": "(edit db3c908d6403)",
+ "editIds": [
+  "db3c908d6403e18a7b9aac9c808aec4cca4dcde70be4b89d5afe3efe8429a719"
+ ],
+ "lines": [
+  70,
+  70
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

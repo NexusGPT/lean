@@ -1,0 +1,386 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "d996501c087a3cecc5ce3e470106ebdb90657ca9",
+  "head": "63bb627b99267577e85c117008e8d896103b69c6",
+  "files": [
+   {
+    "id": "3b4d00371c4274ca80047beb777040a9b304dba2004592f73300ef579bbc2c92",
+    "file": "lib/v1/encoder.js",
+    "oldPath": "lib/v1/encoder.js",
+    "newPath": "lib/v1/encoder.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "9141c86a904c86445997d2ed04a865704e9187da",
+    "newOid": "007bd3cc942a68a680b5df234de0df00bc075823",
+    "status": "M",
+    "edits": [
+     "4a964fdc2d5e36f7589197d9e23ad250c077317882d2636433567b8e6c9aed0a",
+     "c1f740295a1a8f93aaa96296441240bd8cdebfc4b6ea28a9e462c356a44228db",
+     "282f664a9f0f1fca89da516f389c8ab95c8c6eef46f917470289d9a35f1864d8",
+     "4a1370700cbd0151f71ed34293a6af39b7767d5c9d90932149f27c44b30d8b08"
+    ],
+    "hunks": [
+     {
+      "id": "c826af120ec9c0f7a94a2d449b8dbea94b072c09f402da267ba2b9dac6485e55",
+      "old": {
+       "start": 302,
+       "count": 1
+      },
+      "new": {
+       "start": 302,
+       "count": 3
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "e88e806da81116df5681235f3fe039b0ba4190135ce14cad0b88aee57af5d39e",
+    "newHash": "e0299cdc07b6d461644873b9fe25693253a8a986993f221fb002853e4ae60fc8",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "Encoder",
+       "side": "old",
+       "file": "lib/v1/encoder.js",
+       "start": 19,
+       "end": 26,
+       "offset": 418,
+       "stop": 581,
+       "id": "04f9f5d82cc91cb0d9bea5681977449f3a719989836a1e39ae213fdcb9c65f5a"
+      }
+     ],
+     "new": [
+      {
+       "name": "Encoder",
+       "side": "new",
+       "file": "lib/v1/encoder.js",
+       "start": 19,
+       "end": 26,
+       "offset": 418,
+       "stop": 581,
+       "id": "331e47e0d3cc5808ef846d1a5963291b91ce519498e28b18e66f0159c456febd"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "4a964fdc2d5e36f7589197d9e23ad250c077317882d2636433567b8e6c9aed0a",
+    "fileId": "3b4d00371c4274ca80047beb777040a9b304dba2004592f73300ef579bbc2c92",
+    "file": "lib/v1/encoder.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "c826af120ec9c0f7a94a2d449b8dbea94b072c09f402da267ba2b9dac6485e55",
+    "side": "old",
+    "old": {
+     "start": 302,
+     "count": 1
+    },
+    "new": {
+     "start": 302,
+     "count": 0
+    },
+    "offsets": {
+     "start": 6467,
+     "end": 6500
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c1f740295a1a8f93aaa96296441240bd8cdebfc4b6ea28a9e462c356a44228db",
+    "fileId": "3b4d00371c4274ca80047beb777040a9b304dba2004592f73300ef579bbc2c92",
+    "file": "lib/v1/encoder.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "c826af120ec9c0f7a94a2d449b8dbea94b072c09f402da267ba2b9dac6485e55",
+    "side": "new",
+    "old": {
+     "start": 302,
+     "count": 0
+    },
+    "new": {
+     "start": 302,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6467,
+     "end": 6501
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "282f664a9f0f1fca89da516f389c8ab95c8c6eef46f917470289d9a35f1864d8",
+    "fileId": "3b4d00371c4274ca80047beb777040a9b304dba2004592f73300ef579bbc2c92",
+    "file": "lib/v1/encoder.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "c826af120ec9c0f7a94a2d449b8dbea94b072c09f402da267ba2b9dac6485e55",
+    "side": "new",
+    "old": {
+     "start": 302,
+     "count": 0
+    },
+    "new": {
+     "start": 303,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6501,
+     "end": 6548
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4a1370700cbd0151f71ed34293a6af39b7767d5c9d90932149f27c44b30d8b08",
+    "fileId": "3b4d00371c4274ca80047beb777040a9b304dba2004592f73300ef579bbc2c92",
+    "file": "lib/v1/encoder.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "c826af120ec9c0f7a94a2d449b8dbea94b072c09f402da267ba2b9dac6485e55",
+    "side": "new",
+    "old": {
+     "start": 302,
+     "count": 0
+    },
+    "new": {
+     "start": 304,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6548,
+     "end": 6608
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "6335ef63e02c3a00126c0c68d0018123f6ca1d0c61506b0809aeb3174d4b9fd0",
+  "reconciliation": {
+   "expected": [
+    "4a964fdc2d5e36f7589197d9e23ad250c077317882d2636433567b8e6c9aed0a",
+    "c1f740295a1a8f93aaa96296441240bd8cdebfc4b6ea28a9e462c356a44228db",
+    "282f664a9f0f1fca89da516f389c8ab95c8c6eef46f917470289d9a35f1864d8",
+    "4a1370700cbd0151f71ed34293a6af39b7767d5c9d90932149f27c44b30d8b08"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "4a964fdc2d5e36f7589197d9e23ad250c077317882d2636433567b8e6c9aed0a",
+    "c1f740295a1a8f93aaa96296441240bd8cdebfc4b6ea28a9e462c356a44228db",
+    "282f664a9f0f1fca89da516f389c8ab95c8c6eef46f917470289d9a35f1864d8",
+    "4a1370700cbd0151f71ed34293a6af39b7767d5c9d90932149f27c44b30d8b08"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "4a964fdc2d5e36f7589197d9e23ad250c077317882d2636433567b8e6c9aed0a",
+      "c1f740295a1a8f93aaa96296441240bd8cdebfc4b6ea28a9e462c356a44228db",
+      "282f664a9f0f1fca89da516f389c8ab95c8c6eef46f917470289d9a35f1864d8",
+      "4a1370700cbd0151f71ed34293a6af39b7767d5c9d90932149f27c44b30d8b08"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "e0956323cb57148e18596346ccfcff8c7f46615d2016b691874ab2b3a65ce5ec",
+   "attemptId": "8a02596a-740f-4f47-8616-a473ccc6dac1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik/attempts/8a02596a-740f-4f47-8616-a473ccc6dac1/row.json",
+    "sha256": "3e0cc01599e7f9501a882de6ca861e9b6884697a4df549864785ed5f8e58d946"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "e1c98c7954e18686907ef823f271d970f90cbf1e4c64c8a3b73906f9a1a8d8ad",
+   "attemptId": "b0407902-304f-43f0-8ad5-e7c13aacf0d5",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik/attempts/b0407902-304f-43f0-8ad5-e7c13aacf0d5/row.json",
+    "sha256": "82d06e3ae49c9650b6561a7e395d505c1dc76f988d0abc08c5afdb0b61860fcc"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "35e0ea143ae4ba714bbc00cd261b7126043ff6edbc9275c4e450def5ebeacd48",
+   "attemptId": "eb90247d-fc46-439e-9c39-dcb7284b824a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik/attempts/eb90247d-fc46-439e-9c39-dcb7284b824a/row.json",
+    "sha256": "ff05ecb14b9e8663a2dd53c464678c4340a147e211a5e1dea461cc5b95c51c9b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "e9e51ac6964b50bea3087d6460e6e48828f2594c579705a117aacc5c93153090",
+   "attemptId": "b2eed943-7147-4313-befb-b5ea7ba9df15",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hessian.js__4/run-agLoik/attempts/b2eed943-7147-4313-befb-b5ea7ba9df15/row.json",
+    "sha256": "42e71ff067638fe6e71142a6b3e3e71af6d31f5126aab84ada8d4dabe270d0f6"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/v1/encoder.js",
+   "unit": "(edit 4a964fdc2d5e)",
+   "editIds": [
+    "4a964fdc2d5e36f7589197d9e23ad250c077317882d2636433567b8e6c9aed0a"
+   ],
+   "lines": [
+    302,
+    302
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/v1/encoder.js",
+   "unit": "(edit c1f740295a1a)",
+   "editIds": [
+    "c1f740295a1a8f93aaa96296441240bd8cdebfc4b6ea28a9e462c356a44228db"
+   ],
+   "lines": [
+    302,
+    302
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/v1/encoder.js",
+   "unit": "(edit 282f664a9f0f)",
+   "editIds": [
+    "282f664a9f0f1fca89da516f389c8ab95c8c6eef46f917470289d9a35f1864d8"
+   ],
+   "lines": [
+    303,
+    303
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/v1/encoder.js",
+   "unit": "(edit 4a1370700cbd)",
+   "editIds": [
+    "4a1370700cbd0151f71ed34293a6af39b7767d5c9d90932149f27c44b30d8b08"
+   ],
+   "lines": [
+    304,
+    304
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "e0956323cb57148e18596346ccfcff8c7f46615d2016b691874ab2b3a65ce5ec",
+   "e1c98c7954e18686907ef823f271d970f90cbf1e4c64c8a3b73906f9a1a8d8ad",
+   "35e0ea143ae4ba714bbc00cd261b7126043ff6edbc9275c4e450def5ebeacd48",
+   "e9e51ac6964b50bea3087d6460e6e48828f2594c579705a117aacc5c93153090"
+  ],
+  "terminal": [
+   "e0956323cb57148e18596346ccfcff8c7f46615d2016b691874ab2b3a65ce5ec",
+   "e1c98c7954e18686907ef823f271d970f90cbf1e4c64c8a3b73906f9a1a8d8ad",
+   "35e0ea143ae4ba714bbc00cd261b7126043ff6edbc9275c4e450def5ebeacd48",
+   "e9e51ac6964b50bea3087d6460e6e48828f2594c579705a117aacc5c93153090"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

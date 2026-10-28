@@ -1,0 +1,48 @@
+{
+ "file": "lib/rules/no-useless-escape.js",
+ "unit": "parseRegExp",
+ "lines": [
+  92,
+  115
+ ],
+ "coverage": "refused:callback-form",
+ "verdict": "ASK",
+ "laneB": "ASK",
+ "laneA": null,
+ "witness": null,
+ "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__245/run-tfIVpR/sources/lib/rules/.lean_head_2159_no-useless-escape.js: ASK(CommonJS wrapper): module is not defined",
+ "advice": [
+  {
+   "line": 95,
+   "rule": "callback-form",
+   "msg": "an effectful array callback takes the element (and an index), or the accumulator and the element; an extra parameter is outside the subset",
+   "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+  }
+ ],
+ "editIds": [
+  "15a4e2307fbfc72351dce09f5216d35238e74801eed61d700fe8a0b81618c85a",
+  "48d1d6c27f930190bdb06f805359e3330fa068e0abc3c75149047ce3a47759f2",
+  "2bb3471e1943cf8029a42bd3dfb55589a6d36c0b511799243988438e07d0ec75",
+  "4ce2fe3a2a63c4d3f91529498b47149a616ac9e84d8503dea47443f7f51fc609",
+  "b480e1ef1d778aa795e74cdc9185fe2f793fd749a6af75a980979c7a1a8d914c",
+  "2259b0d84aea82963decb181665cd39330f321d13d4f589a455569ff596dfb85",
+  "2b236acf75aae477e06b6239a9883219eb9f13d7acdf9750c946c6ccfdeef33d",
+  "f7654a39d385819d044e272c7335d3ea1d94b7e00a763593a4217aa7430b8437",
+  "5a1435ad0a19f47ae20acde53f15684c9a6654c51d0b2d2a6f8f54f43f8ba8fe",
+  "3041ea1c3942a54528ce5f05b402dcb4b158b489649a375ab388333d9183b8c5",
+  "77657f7c7bb44761fc712958dec5e5b4e43ff8822d364419167b6582005426db",
+  "8f033efb1c653980c4e83f2d8dd89acc9b3904629db987c9958fd0bbc81a1b36",
+  "f0b28ca10ed62144d965afc8c98f9309840870481e94ea2764dd823869da0d43",
+  "176b3f42ab36986a6f225792a7bd26b201185d62c403b6345f46852c5031e951",
+  "aebd1193916d2b29392525158b58f378ee78b734bcff48eec1d88f5347414352",
+  "e04a6262bb91bc8b3e4b1dcaa557247c12e28646c30a833288a44592b7a927af",
+  "ef983298f2653e1bbbdd3fe127bfe157c1fdb28ac45189529b4f835719470195",
+  "2de4993f6b7f9a6fd3a97654d5649feda24e6859660c09c9fb48d6e445ca1a78",
+  "e2af72c49f4115aef510d40c01e7e1b41f2910569abd834e5d1849d6655e542f",
+  "bc1e38f44c3d492104a4fe05fbdbd6c1e97f08a2a2f01ca46456936750de0fcc",
+  "e2c38d1e23b75ecca4c7b6d84b87b86d872ceb1554932761580499e8d358e79a",
+  "f695fd79d80f71fad40309b91f15b1f5714cfd51fc1109f88c2925ce63b9aa16",
+  "c4ca2547b502bfe8c037715ac91113ea43d85167bc682b1893a50416668e23fd",
+  "d2dda4b377df4f78d98abef3523b02c76dfe5e29348cf6468ee10ab2ff7470ef"
+ ]
+}

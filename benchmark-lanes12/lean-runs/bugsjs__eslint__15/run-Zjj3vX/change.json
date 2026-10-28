@@ -1,0 +1,174 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "2bd57b6bbd11b23fdec65dc11c691f74c6a8db75",
+ "head": "cf722ce4a832339fed5077e7f58a6c5be85da050",
+ "files": [
+  {
+   "id": "bd8c5c6421a95cdb4cb4133d9529f593e3ea6e7483561afe87e595f62ef124ef",
+   "file": "lib/rules/indent.js",
+   "oldPath": "lib/rules/indent.js",
+   "newPath": "lib/rules/indent.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "bc0577a06f686fadbf77b3daef91a7c4036719ba",
+   "newOid": "1238ee4d68e1f182c7600dee112d3bcb85b36f6d",
+   "status": "M",
+   "edits": [
+    "3cb0b23c7b44d07f9cb27afdda4251aec32ac75b070d7bb1b5f71c0ee2ad14b5",
+    "b3fb9306891725b691a69ab058f2ddb79d0d8eaaac2d2a7f46e77e570cbc222e",
+    "46d522acbff31d64ad271c4a6f7b1015faa59d364a50361df9fd2c5abc2dfaa5"
+   ],
+   "hunks": [
+    {
+     "id": "0215a8d848dc8666a08e933c79bfd5ebc5c2bd9de5f3bd2f934bfe17727797c5",
+     "old": {
+      "start": 453,
+      "count": 1
+     },
+     "new": {
+      "start": 453,
+      "count": 2
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "935142e1309941e83582744f67962106d6a068592c51cd07a1bc4aeabf4ea49e",
+   "newHash": "9ca5f68313ce9160db6c520fe893936f868d5d9806835059dc02395d82ee8389",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "3cb0b23c7b44d07f9cb27afdda4251aec32ac75b070d7bb1b5f71c0ee2ad14b5",
+   "fileId": "bd8c5c6421a95cdb4cb4133d9529f593e3ea6e7483561afe87e595f62ef124ef",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0215a8d848dc8666a08e933c79bfd5ebc5c2bd9de5f3bd2f934bfe17727797c5",
+   "side": "old",
+   "old": {
+    "start": 453,
+    "count": 1
+   },
+   "new": {
+    "start": 453,
+    "count": 0
+   },
+   "offsets": {
+    "start": 16696,
+    "end": 16762
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "b3fb9306891725b691a69ab058f2ddb79d0d8eaaac2d2a7f46e77e570cbc222e",
+   "fileId": "bd8c5c6421a95cdb4cb4133d9529f593e3ea6e7483561afe87e595f62ef124ef",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0215a8d848dc8666a08e933c79bfd5ebc5c2bd9de5f3bd2f934bfe17727797c5",
+   "side": "new",
+   "old": {
+    "start": 453,
+    "count": 0
+   },
+   "new": {
+    "start": 453,
+    "count": 1
+   },
+   "offsets": {
+    "start": 16696,
+    "end": 16765
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "46d522acbff31d64ad271c4a6f7b1015faa59d364a50361df9fd2c5abc2dfaa5",
+   "fileId": "bd8c5c6421a95cdb4cb4133d9529f593e3ea6e7483561afe87e595f62ef124ef",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0215a8d848dc8666a08e933c79bfd5ebc5c2bd9de5f3bd2f934bfe17727797c5",
+   "side": "new",
+   "old": {
+    "start": 453,
+    "count": 0
+   },
+   "new": {
+    "start": 454,
+    "count": 1
+   },
+   "offsets": {
+    "start": 16765,
+    "end": 16821
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "71c00a9ef07e228c67aece7b26dcb25a20b24e70d59525a736092184fa624d79",
+ "reconciliation": {
+  "expected": [
+   "3cb0b23c7b44d07f9cb27afdda4251aec32ac75b070d7bb1b5f71c0ee2ad14b5",
+   "b3fb9306891725b691a69ab058f2ddb79d0d8eaaac2d2a7f46e77e570cbc222e",
+   "46d522acbff31d64ad271c4a6f7b1015faa59d364a50361df9fd2c5abc2dfaa5"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "3cb0b23c7b44d07f9cb27afdda4251aec32ac75b070d7bb1b5f71c0ee2ad14b5",
+   "b3fb9306891725b691a69ab058f2ddb79d0d8eaaac2d2a7f46e77e570cbc222e",
+   "46d522acbff31d64ad271c4a6f7b1015faa59d364a50361df9fd2c5abc2dfaa5"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "3cb0b23c7b44d07f9cb27afdda4251aec32ac75b070d7bb1b5f71c0ee2ad14b5",
+     "b3fb9306891725b691a69ab058f2ddb79d0d8eaaac2d2a7f46e77e570cbc222e",
+     "46d522acbff31d64ad271c4a6f7b1015faa59d364a50361df9fd2c5abc2dfaa5"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

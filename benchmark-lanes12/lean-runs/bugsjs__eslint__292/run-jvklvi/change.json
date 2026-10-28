@@ -1,0 +1,210 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "002e199c7b579a760dc87e61be7430aa9ad0f601",
+ "head": "dab3ccbf6538d11baf71c5a5e7ead5db0e5fb177",
+ "files": [
+  {
+   "id": "d74ad011442296a88c2a223d83fc0b7bffe3174c01aaad4d309a8fec62db9b33",
+   "file": "lib/rules/no-undef-init.js",
+   "oldPath": "lib/rules/no-undef-init.js",
+   "newPath": "lib/rules/no-undef-init.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "9df40e9cebb1864cd0b1ae6b348f66813e31580a",
+   "newOid": "7e58f55a6900d5cb0a98a1567fecb8ecc0467506",
+   "status": "M",
+   "edits": [
+    "cbe22123cc8a496d14a9ea8d54171eddc46317eced4433f34d47c2be178a5327",
+    "d912bd8d9ff329b4b14c3e7aeea152a1168c84723b8eddd9e85665a7ee3a9dc6",
+    "7382a571f4f8cd00062b9aa80d7381a16c799925995de250568b88bd393edfad",
+    "7d3e26bfd740e7924b4aed5187bd8dbf20739c11e19d1193cc361e197f02a33a"
+   ],
+   "hunks": [
+    {
+     "id": "bb8e2256f4a53a28532ecd3ad6379a79a9398de0355c4c57e5633511fa5bddfc",
+     "old": {
+      "start": 45,
+      "count": 0
+     },
+     "new": {
+      "start": 46,
+      "count": 4
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "50f4e7dbd36564d31f96a41b05bab514e4c8c97de981ee2cf77d1d36d6aa9593",
+   "newHash": "ff24a807ae7a4dc739513ba34614159a496705544fb183a70aac3dcc34e5882f",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "cbe22123cc8a496d14a9ea8d54171eddc46317eced4433f34d47c2be178a5327",
+   "fileId": "d74ad011442296a88c2a223d83fc0b7bffe3174c01aaad4d309a8fec62db9b33",
+   "file": "lib/rules/no-undef-init.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "bb8e2256f4a53a28532ecd3ad6379a79a9398de0355c4c57e5633511fa5bddfc",
+   "side": "new",
+   "old": {
+    "start": 45,
+    "count": 0
+   },
+   "new": {
+    "start": 46,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1370,
+    "end": 1432
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "object-literal member",
+    "side": "new"
+   }
+  },
+  {
+   "id": "d912bd8d9ff329b4b14c3e7aeea152a1168c84723b8eddd9e85665a7ee3a9dc6",
+   "fileId": "d74ad011442296a88c2a223d83fc0b7bffe3174c01aaad4d309a8fec62db9b33",
+   "file": "lib/rules/no-undef-init.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "bb8e2256f4a53a28532ecd3ad6379a79a9398de0355c4c57e5633511fa5bddfc",
+   "side": "new",
+   "old": {
+    "start": 45,
+    "count": 0
+   },
+   "new": {
+    "start": 47,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1432,
+    "end": 1477
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "object-literal member",
+    "side": "new"
+   }
+  },
+  {
+   "id": "7382a571f4f8cd00062b9aa80d7381a16c799925995de250568b88bd393edfad",
+   "fileId": "d74ad011442296a88c2a223d83fc0b7bffe3174c01aaad4d309a8fec62db9b33",
+   "file": "lib/rules/no-undef-init.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "bb8e2256f4a53a28532ecd3ad6379a79a9398de0355c4c57e5633511fa5bddfc",
+   "side": "new",
+   "old": {
+    "start": 45,
+    "count": 0
+   },
+   "new": {
+    "start": 48,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1477,
+    "end": 1507
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "object-literal member",
+    "side": "new"
+   }
+  },
+  {
+   "id": "7d3e26bfd740e7924b4aed5187bd8dbf20739c11e19d1193cc361e197f02a33a",
+   "fileId": "d74ad011442296a88c2a223d83fc0b7bffe3174c01aaad4d309a8fec62db9b33",
+   "file": "lib/rules/no-undef-init.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "bb8e2256f4a53a28532ecd3ad6379a79a9398de0355c4c57e5633511fa5bddfc",
+   "side": "new",
+   "old": {
+    "start": 45,
+    "count": 0
+   },
+   "new": {
+    "start": 49,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1507,
+    "end": 1508
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "8e186c837274316be6ee92eb1e46aaa7410f07e0219ce2b93bb10cbad33b61ec",
+ "reconciliation": {
+  "expected": [
+   "cbe22123cc8a496d14a9ea8d54171eddc46317eced4433f34d47c2be178a5327",
+   "d912bd8d9ff329b4b14c3e7aeea152a1168c84723b8eddd9e85665a7ee3a9dc6",
+   "7382a571f4f8cd00062b9aa80d7381a16c799925995de250568b88bd393edfad",
+   "7d3e26bfd740e7924b4aed5187bd8dbf20739c11e19d1193cc361e197f02a33a"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "cbe22123cc8a496d14a9ea8d54171eddc46317eced4433f34d47c2be178a5327",
+   "d912bd8d9ff329b4b14c3e7aeea152a1168c84723b8eddd9e85665a7ee3a9dc6",
+   "7382a571f4f8cd00062b9aa80d7381a16c799925995de250568b88bd393edfad",
+   "7d3e26bfd740e7924b4aed5187bd8dbf20739c11e19d1193cc361e197f02a33a"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "cbe22123cc8a496d14a9ea8d54171eddc46317eced4433f34d47c2be178a5327",
+     "d912bd8d9ff329b4b14c3e7aeea152a1168c84723b8eddd9e85665a7ee3a9dc6",
+     "7382a571f4f8cd00062b9aa80d7381a16c799925995de250568b88bd393edfad",
+     "7d3e26bfd740e7924b4aed5187bd8dbf20739c11e19d1193cc361e197f02a33a"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

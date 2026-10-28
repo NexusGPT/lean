@@ -1,0 +1,21 @@
+{
+ "file": "lib/models/post.js",
+ "unit": "(edit 8e24f29b62f6)",
+ "editIds": [
+  "8e24f29b62f6521e1c1b6316454c2ca4e06bb1903fe0f4ba120e9d3c04185c96"
+ ],
+ "lines": [
+  18,
+  18
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

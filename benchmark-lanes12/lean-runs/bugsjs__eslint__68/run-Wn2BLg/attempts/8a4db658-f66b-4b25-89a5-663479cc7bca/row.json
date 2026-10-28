@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/spaced-comment.js",
+ "unit": "(edit be38a3dd2645)",
+ "editIds": [
+  "be38a3dd2645664339f6a9c33157390819f276024ab0bb436a5f4aea492f3738"
+ ],
+ "lines": [
+  53,
+  53
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

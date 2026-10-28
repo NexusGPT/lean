@@ -1,0 +1,443 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "e54598abcf97573bddb40238c535cd8f0e3ffdd5",
+ "head": "cd11ed404debd48862b4ff84ccd9190467081a96",
+ "files": [
+  {
+   "id": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "oldPath": "lib/rules/vars-on-top.js",
+   "newPath": "lib/rules/vars-on-top.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "26c690b9ae3311d2fc826d3e9387480cf25ac724",
+   "newOid": "ae009f85ad4c27cfda3e90843108fa37b7215817",
+   "status": "M",
+   "edits": [
+    "d2b297318176b37e80b6e814222d6e59fed15a2b2c0d42c0daa7a14d8e2ad55e",
+    "e6f31895496a3f940246a31bc8cb6859df458b3a4ae3a62b9f7d4f2ec50ae51c",
+    "786183f8c63f9f1ecfc675d5becfbeab6df9c8e7ee699432807027af7f6afab8",
+    "5c8a45db8986a8156543e0724524450a6f395360c17a983dca299c0aa202e675",
+    "2c359d34f5d36333a53ee31287da5c09c49a01e296bb7130af8ca899803cc302",
+    "7869bbd037e32b03ac829f140bb779b9685e4b4aa6fc36bbc8df77f8573bdde4",
+    "180feb583fbc2e85800a0579a68e9c219670cdf49cab38d401d58ed24b0a15bd",
+    "f90105121dcaff67a1912b5bde976af9df28d9cb1f89901f94a83c84b66b6596",
+    "55a933763e3cb72e12f2c8230583954be961ea7697f0f2ae630edb83536ee460",
+    "3dc65a8019ca8b5d84c651164ccdf97cff2202bbd8d9aafb9e28ea87d8c1716b"
+   ],
+   "hunks": [
+    {
+     "id": "93d01c1f426f54cc0a0dc207100844f4f4fa121779e16ce19f2688865dff5c46",
+     "old": {
+      "start": 58,
+      "count": 1
+     },
+     "new": {
+      "start": 58,
+      "count": 3
+     }
+    },
+    {
+     "id": "35e5621bd3fc28fbbbe6ca1af83a51f8b8eef185e64f1e3017ac256af9e2444d",
+     "old": {
+      "start": 106,
+      "count": 0
+     },
+     "new": {
+      "start": 109,
+      "count": 6
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "89dd679febbd4832a97f31a0ebeae4f26f6d54e2a118d6c9a046ec1aca49ac6f",
+   "newHash": "26fdae3f341551a49ef4bd2bf154640f11adf367732609dd89d35f2147f8e930",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "d2b297318176b37e80b6e814222d6e59fed15a2b2c0d42c0daa7a14d8e2ad55e",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93d01c1f426f54cc0a0dc207100844f4f4fa121779e16ce19f2688865dff5c46",
+   "side": "old",
+   "old": {
+    "start": 58,
+    "count": 1
+   },
+   "new": {
+    "start": 58,
+    "count": 0
+   },
+   "offsets": {
+    "start": 2113,
+    "end": 2177
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "e6f31895496a3f940246a31bc8cb6859df458b3a4ae3a62b9f7d4f2ec50ae51c",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93d01c1f426f54cc0a0dc207100844f4f4fa121779e16ce19f2688865dff5c46",
+   "side": "new",
+   "old": {
+    "start": 58,
+    "count": 0
+   },
+   "new": {
+    "start": 58,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2113,
+    "end": 2177
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "786183f8c63f9f1ecfc675d5becfbeab6df9c8e7ee699432807027af7f6afab8",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93d01c1f426f54cc0a0dc207100844f4f4fa121779e16ce19f2688865dff5c46",
+   "side": "new",
+   "old": {
+    "start": 58,
+    "count": 0
+   },
+   "new": {
+    "start": 59,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2177,
+    "end": 2249
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5c8a45db8986a8156543e0724524450a6f395360c17a983dca299c0aa202e675",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93d01c1f426f54cc0a0dc207100844f4f4fa121779e16ce19f2688865dff5c46",
+   "side": "new",
+   "old": {
+    "start": 58,
+    "count": 0
+   },
+   "new": {
+    "start": 60,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2249,
+    "end": 2330
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "2c359d34f5d36333a53ee31287da5c09c49a01e296bb7130af8ca899803cc302",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "35e5621bd3fc28fbbbe6ca1af83a51f8b8eef185e64f1e3017ac256af9e2444d",
+   "side": "new",
+   "old": {
+    "start": 106,
+    "count": 0
+   },
+   "new": {
+    "start": 109,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3893,
+    "end": 3957
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "7869bbd037e32b03ac829f140bb779b9685e4b4aa6fc36bbc8df77f8573bdde4",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "35e5621bd3fc28fbbbe6ca1af83a51f8b8eef185e64f1e3017ac256af9e2444d",
+   "side": "new",
+   "old": {
+    "start": 106,
+    "count": 0
+   },
+   "new": {
+    "start": 110,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3957,
+    "end": 3992
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "180feb583fbc2e85800a0579a68e9c219670cdf49cab38d401d58ed24b0a15bd",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "35e5621bd3fc28fbbbe6ca1af83a51f8b8eef185e64f1e3017ac256af9e2444d",
+   "side": "new",
+   "old": {
+    "start": 106,
+    "count": 0
+   },
+   "new": {
+    "start": 111,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3992,
+    "end": 4034
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "f90105121dcaff67a1912b5bde976af9df28d9cb1f89901f94a83c84b66b6596",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "35e5621bd3fc28fbbbe6ca1af83a51f8b8eef185e64f1e3017ac256af9e2444d",
+   "side": "new",
+   "old": {
+    "start": 106,
+    "count": 0
+   },
+   "new": {
+    "start": 112,
+    "count": 1
+   },
+   "offsets": {
+    "start": 4034,
+    "end": 4085
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "55a933763e3cb72e12f2c8230583954be961ea7697f0f2ae630edb83536ee460",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "35e5621bd3fc28fbbbe6ca1af83a51f8b8eef185e64f1e3017ac256af9e2444d",
+   "side": "new",
+   "old": {
+    "start": 106,
+    "count": 0
+   },
+   "new": {
+    "start": 113,
+    "count": 1
+   },
+   "offsets": {
+    "start": 4085,
+    "end": 4103
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "3dc65a8019ca8b5d84c651164ccdf97cff2202bbd8d9aafb9e28ea87d8c1716b",
+   "fileId": "69799b13842523a13f36edd9ad613cf60d0331c6143d5fd7332d0b6fdd1c696e",
+   "file": "lib/rules/vars-on-top.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "35e5621bd3fc28fbbbe6ca1af83a51f8b8eef185e64f1e3017ac256af9e2444d",
+   "side": "new",
+   "old": {
+    "start": 106,
+    "count": 0
+   },
+   "new": {
+    "start": 114,
+    "count": 1
+   },
+   "offsets": {
+    "start": 4103,
+    "end": 4104
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "ac4b8cb595ab2ff5e72f4943a2f62bd60d90b0d452bcf30cad9d9fe94b02ecee",
+ "reconciliation": {
+  "expected": [
+   "d2b297318176b37e80b6e814222d6e59fed15a2b2c0d42c0daa7a14d8e2ad55e",
+   "e6f31895496a3f940246a31bc8cb6859df458b3a4ae3a62b9f7d4f2ec50ae51c",
+   "786183f8c63f9f1ecfc675d5becfbeab6df9c8e7ee699432807027af7f6afab8",
+   "5c8a45db8986a8156543e0724524450a6f395360c17a983dca299c0aa202e675",
+   "2c359d34f5d36333a53ee31287da5c09c49a01e296bb7130af8ca899803cc302",
+   "7869bbd037e32b03ac829f140bb779b9685e4b4aa6fc36bbc8df77f8573bdde4",
+   "180feb583fbc2e85800a0579a68e9c219670cdf49cab38d401d58ed24b0a15bd",
+   "f90105121dcaff67a1912b5bde976af9df28d9cb1f89901f94a83c84b66b6596",
+   "55a933763e3cb72e12f2c8230583954be961ea7697f0f2ae630edb83536ee460",
+   "3dc65a8019ca8b5d84c651164ccdf97cff2202bbd8d9aafb9e28ea87d8c1716b"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "d2b297318176b37e80b6e814222d6e59fed15a2b2c0d42c0daa7a14d8e2ad55e",
+   "e6f31895496a3f940246a31bc8cb6859df458b3a4ae3a62b9f7d4f2ec50ae51c",
+   "786183f8c63f9f1ecfc675d5becfbeab6df9c8e7ee699432807027af7f6afab8",
+   "5c8a45db8986a8156543e0724524450a6f395360c17a983dca299c0aa202e675",
+   "2c359d34f5d36333a53ee31287da5c09c49a01e296bb7130af8ca899803cc302",
+   "7869bbd037e32b03ac829f140bb779b9685e4b4aa6fc36bbc8df77f8573bdde4",
+   "180feb583fbc2e85800a0579a68e9c219670cdf49cab38d401d58ed24b0a15bd",
+   "f90105121dcaff67a1912b5bde976af9df28d9cb1f89901f94a83c84b66b6596",
+   "55a933763e3cb72e12f2c8230583954be961ea7697f0f2ae630edb83536ee460",
+   "3dc65a8019ca8b5d84c651164ccdf97cff2202bbd8d9aafb9e28ea87d8c1716b"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "d2b297318176b37e80b6e814222d6e59fed15a2b2c0d42c0daa7a14d8e2ad55e",
+     "e6f31895496a3f940246a31bc8cb6859df458b3a4ae3a62b9f7d4f2ec50ae51c",
+     "786183f8c63f9f1ecfc675d5becfbeab6df9c8e7ee699432807027af7f6afab8",
+     "5c8a45db8986a8156543e0724524450a6f395360c17a983dca299c0aa202e675",
+     "2c359d34f5d36333a53ee31287da5c09c49a01e296bb7130af8ca899803cc302",
+     "7869bbd037e32b03ac829f140bb779b9685e4b4aa6fc36bbc8df77f8573bdde4",
+     "180feb583fbc2e85800a0579a68e9c219670cdf49cab38d401d58ed24b0a15bd",
+     "f90105121dcaff67a1912b5bde976af9df28d9cb1f89901f94a83c84b66b6596",
+     "55a933763e3cb72e12f2c8230583954be961ea7697f0f2ae630edb83536ee460",
+     "3dc65a8019ca8b5d84c651164ccdf97cff2202bbd8d9aafb9e28ea87d8c1716b"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

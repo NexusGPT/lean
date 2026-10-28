@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/camelcase.js",
+ "unit": "(edit 0c2fb7454f52)",
+ "editIds": [
+  "0c2fb7454f52a13e908639bbde258f2a11428ed58cdabd6f8efc2db0829b76eb"
+ ],
+ "lines": [
+  128,
+  128
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

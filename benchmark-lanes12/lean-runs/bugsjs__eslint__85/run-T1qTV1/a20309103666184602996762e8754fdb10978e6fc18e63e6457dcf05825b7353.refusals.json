@@ -1,0 +1,65 @@
+{
+ "identity": "a20309103666184602996762e8754fdb10978e6fc18e63e6457dcf05825b7353",
+ "records": [
+  {
+   "check": "refused:unsupported-member",
+   "unit": "getLineIndices",
+   "file": "lib/ast-utils.js",
+   "location": {
+    "start": 308,
+    "end": 308
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 308,
+     "rule": "unsupported-member",
+     "msg": "`.index` of a match is read for a match of a non-global regular expression literal bound to a const (`const m = /re/.exec(s)`, `s.match(/re/)`), or take the first position with `s.search(/re/)`; a match from a global pattern, an exec loop or matchAll depends on lastIndex",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    }
+   ],
+   "reason": "`.index` of a match is read for a match of a non-global regular expression literal bound to a const (`const m = /re/.exec(s)`, `s.match(/re/)`), or take the first position with `s.search(/re/)`; a match from a global pattern, an exec loop or matchAll depends on lastIndex"
+  },
+  {
+   "check": "lane-B",
+   "unit": "getLineIndices",
+   "file": "lib/ast-utils.js",
+   "location": {
+    "start": 314,
+    "end": 314
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "text": {
+      "$fake": "arg0.text"
+     }
+    }
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/ast-utils.js",
+     "start": 299,
+     "end": 299,
+     "text": "return lineIndexCache.get(sourceCode);"
+    },
+    "candidate": {
+     "file": "lib/ast-utils.js",
+     "start": 314,
+     "end": 314,
+     "text": "return lineIndexCache.get(sourceCode);"
+    }
+   },
+   "advice": [
+    {
+     "line": 308,
+     "rule": "unsupported-member",
+     "msg": "`.index` of a match is read for a match of a non-global regular expression literal bound to a const (`const m = /re/.exec(s)`, `s.match(/re/)`), or take the first position with `s.search(/re/)`; a match from a global pattern, an exec loop or matchAll depends on lastIndex",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    }
+   ],
+   "reason": "the two versions differ on outcome"
+  }
+ ]
+}

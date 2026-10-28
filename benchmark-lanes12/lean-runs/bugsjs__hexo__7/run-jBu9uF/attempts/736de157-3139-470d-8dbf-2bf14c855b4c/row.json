@@ -1,0 +1,21 @@
+{
+ "file": "lib/plugins/helper/toc.js",
+ "unit": "(edit 2b90276ece22)",
+ "editIds": [
+  "2b90276ece22a5d11871db8effc093e5c3a007fbea8b1ff51918b8b5826f8b7e"
+ ],
+ "lines": [
+  28,
+  28
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

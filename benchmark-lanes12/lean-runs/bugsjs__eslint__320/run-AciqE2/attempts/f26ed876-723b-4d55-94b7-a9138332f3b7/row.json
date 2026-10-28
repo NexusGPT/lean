@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-extend-native.js",
+ "unit": "(edit a9a5d748bbb7)",
+ "editIds": [
+  "a9a5d748bbb7e057f7dc7ae1a7a85386f45fc59ce1da28f1cd5e7cb63f340e69"
+ ],
+ "lines": [
+  57,
+  57
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

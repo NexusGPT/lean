@@ -1,0 +1,20 @@
+{
+ "file": "lib/config/plugins.js",
+ "unit": "(edit cd1db32401bd)",
+ "editIds": [
+  "cd1db32401bd67d20fa6ee4cc1cd3db134a0d67166b1d3f82cce67ec43d0b49a"
+ ],
+ "lines": [
+  80,
+  80
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,1018 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "735cd0968cc76ab2e40c29d89c00e7d56e293c6f",
+ "head": "cd905e48db1f2409ea8e598f2a9a42f775766d98",
+ "files": [
+  {
+   "id": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "oldPath": "lib/rules/no-extra-parens.js",
+   "newPath": "lib/rules/no-extra-parens.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "0a6a0d0f1dd0b5df93a55ea8098ae2794e44bf2a",
+   "newOid": "d0d79c6a3295d837dda597f2f4d6669038e8854d",
+   "status": "M",
+   "edits": [
+    "8f06ef4247b4fd8e5600f4ea99bb1bb02f26bf1a40fced4a3396da0e7d9b802e",
+    "c220abb674e9503b8c29b413d8efe5411c69369f83f132c5d04d8889a31d8a54",
+    "dbb0c4f2cd8cabad6c7e974a70f56c5821bb0876f05afdfd840751e198d88f3e",
+    "9bfd7c62ee63c316b960b731df9b1e4eeadd649334e556f847a10aa1d9e3ac7b",
+    "24586527941e8ae13a650899742f7a159a43668f8ae439080283d2b8129c5510",
+    "efce9d44d39596f61b5c8c5945e65835ade5c29bb663b02375d0827fb500dd27",
+    "bc10a21cd53b8a461f8b919187c44923a7526c94a8ee78e138250638c58ba7df",
+    "dd9a54f8839b7ce9c99ff13cff7bf05bba9b54557f02ff454f3bfd1106ce6ef3",
+    "ec9c336c701edafe80a5f94f29a16b9981bc7e7034c893c2de8f2285a4b798f8",
+    "771fd93fd25e0dc28b5d5ef0c874cbfeb9125645853bd1cfd1f276fff0141186",
+    "2a5f39c268a0ce9b94518274fc4e66f17150c7e8228512dd0a5f8f7b20df143a",
+    "eab0aba63752ef24fc4c7f5b939c1a4d31ffd0b0e657fa37d49c859c280b8786",
+    "cca02c199abf28f61bef859c2548da15e6e080966af2203f6a4afe68938e7837",
+    "b3f0fd06dc9d89736f34c4ad9f79ea4bbe5c65773e90ce7ba6091ef156211e07",
+    "87e16a37df382dbf18f407fa4a0412f5248e36ebcbe0a9a0db855984473e29b7",
+    "b84834aadd5079deca2b98ac8397705c6b01688b51eca7058eea3e2de6da11a4",
+    "57cfa3d3f2ffb04c0390250db5190c9bc4bbf311fe9644dedcd0819499712289",
+    "a0f39684fe750e17277e58c234f5f612e900bf1ea21f8417d74bf7ca7027876b",
+    "953eb9756602e3b5128a862aa9d2fb8ff83d50c7762a2bfcd2fbbed97582f99d",
+    "e448a2290dd0e17e12ca6a80b4c0ee9a0487093b30edcd92fc8d2aa0b7994eae",
+    "69687b73ba18cdcac80ea48c3cc5a4bc821c2d02282b66b02e838648b108c766",
+    "849e053a8e4dbf0f11de3c6b25e858be2d136183f18bb760bdea76444f4ee34e",
+    "d969f4bc748ae65e6c2a597e3c9591715df15b536eba5b72c829ebcf4c57f2b2",
+    "accd580ffb183056c60e882ebcc02c199e3e76e7d1012fb61fb6d899fe5512c6",
+    "9cd86f0887fa48d0040b17b35d93a281c40ebeb468a3ebd928fe5d7ebe0fb339"
+   ],
+   "hunks": [
+    {
+     "id": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+     "old": {
+      "start": 257,
+      "count": 0
+     },
+     "new": {
+      "start": 258,
+      "count": 17
+     }
+    },
+    {
+     "id": "ce83584c9d419df58b7e787b89e0048ef11d066a8829383f7859d2ea3061db93",
+     "old": {
+      "start": 282,
+      "count": 1
+     },
+     "new": {
+      "start": 299,
+      "count": 1
+     }
+    },
+    {
+     "id": "36c7bcf3d371808a223f4181bcd89da869b430ff919a387d560f0b6815e0aa6d",
+     "old": {
+      "start": 490,
+      "count": 0
+     },
+     "new": {
+      "start": 508,
+      "count": 3
+     }
+    },
+    {
+     "id": "1bf14efc10669460a30b30741e9b17ff4cea07123ef390c45b7f3ffa84d21adc",
+     "old": {
+      "start": 496,
+      "count": 0
+     },
+     "new": {
+      "start": 517,
+      "count": 3
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "ff8926156ee7d2104666ed30ab1d58fe7d1e56aa1af47215882afda1038cf92d",
+   "newHash": "6154e60f3efdb0696bff05c6c91c7c3d288ef4a4da85cb46a014865af0961e93",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "8f06ef4247b4fd8e5600f4ea99bb1bb02f26bf1a40fced4a3396da0e7d9b802e",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 258,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10370,
+    "end": 10382
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "c220abb674e9503b8c29b413d8efe5411c69369f83f132c5d04d8889a31d8a54",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 259,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10382,
+    "end": 10482
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "dbb0c4f2cd8cabad6c7e974a70f56c5821bb0876f05afdfd840751e198d88f3e",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 260,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10482,
+    "end": 10567
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "9bfd7c62ee63c316b960b731df9b1e4eeadd649334e556f847a10aa1d9e3ac7b",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 261,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10567,
+    "end": 10649
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "24586527941e8ae13a650899742f7a159a43668f8ae439080283d2b8129c5510",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 262,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10649,
+    "end": 10669
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "efce9d44d39596f61b5c8c5945e65835ade5c29bb663b02375d0827fb500dd27",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 263,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10669,
+    "end": 10681
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "bc10a21cd53b8a461f8b919187c44923a7526c94a8ee78e138250638c58ba7df",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 264,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10681,
+    "end": 10728
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "dd9a54f8839b7ce9c99ff13cff7bf05bba9b54557f02ff454f3bfd1106ce6ef3",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 265,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10728,
+    "end": 10809
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "ec9c336c701edafe80a5f94f29a16b9981bc7e7034c893c2de8f2285a4b798f8",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 266,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10809,
+    "end": 10863
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "771fd93fd25e0dc28b5d5ef0c874cbfeb9125645853bd1cfd1f276fff0141186",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 267,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10863,
+    "end": 10922
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "2a5f39c268a0ce9b94518274fc4e66f17150c7e8228512dd0a5f8f7b20df143a",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 268,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10922,
+    "end": 10995
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "eab0aba63752ef24fc4c7f5b939c1a4d31ffd0b0e657fa37d49c859c280b8786",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 269,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10995,
+    "end": 10996
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "cca02c199abf28f61bef859c2548da15e6e080966af2203f6a4afe68938e7837",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 270,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10996,
+    "end": 11058
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b3f0fd06dc9d89736f34c4ad9f79ea4bbe5c65773e90ce7ba6091ef156211e07",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 271,
+    "count": 1
+   },
+   "offsets": {
+    "start": 11058,
+    "end": 11149
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "87e16a37df382dbf18f407fa4a0412f5248e36ebcbe0a9a0db855984473e29b7",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 272,
+    "count": 1
+   },
+   "offsets": {
+    "start": 11149,
+    "end": 11241
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b84834aadd5079deca2b98ac8397705c6b01688b51eca7058eea3e2de6da11a4",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 273,
+    "count": 1
+   },
+   "offsets": {
+    "start": 11241,
+    "end": 11251
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "57cfa3d3f2ffb04c0390250db5190c9bc4bbf311fe9644dedcd0819499712289",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ed05fb5f99340a14befe66b14e6670f8a7eb740b21d67921a9ef85521b4cf1f7",
+   "side": "new",
+   "old": {
+    "start": 257,
+    "count": 0
+   },
+   "new": {
+    "start": 274,
+    "count": 1
+   },
+   "offsets": {
+    "start": 11251,
+    "end": 11252
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "a0f39684fe750e17277e58c234f5f612e900bf1ea21f8417d74bf7ca7027876b",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ce83584c9d419df58b7e787b89e0048ef11d066a8829383f7859d2ea3061db93",
+   "side": "old",
+   "old": {
+    "start": 282,
+    "count": 1
+   },
+   "new": {
+    "start": 299,
+    "count": 0
+   },
+   "offsets": {
+    "start": 11297,
+    "end": 11384
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "953eb9756602e3b5128a862aa9d2fb8ff83d50c7762a2bfcd2fbbed97582f99d",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ce83584c9d419df58b7e787b89e0048ef11d066a8829383f7859d2ea3061db93",
+   "side": "new",
+   "old": {
+    "start": 282,
+    "count": 0
+   },
+   "new": {
+    "start": 299,
+    "count": 1
+   },
+   "offsets": {
+    "start": 12179,
+    "end": 12309
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "e448a2290dd0e17e12ca6a80b4c0ee9a0487093b30edcd92fc8d2aa0b7994eae",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "36c7bcf3d371808a223f4181bcd89da869b430ff919a387d560f0b6815e0aa6d",
+   "side": "new",
+   "old": {
+    "start": 490,
+    "count": 0
+   },
+   "new": {
+    "start": 508,
+    "count": 1
+   },
+   "offsets": {
+    "start": 20586,
+    "end": 20636
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "69687b73ba18cdcac80ea48c3cc5a4bc821c2d02282b66b02e838648b108c766",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "36c7bcf3d371808a223f4181bcd89da869b430ff919a387d560f0b6815e0aa6d",
+   "side": "new",
+   "old": {
+    "start": 490,
+    "count": 0
+   },
+   "new": {
+    "start": 509,
+    "count": 1
+   },
+   "offsets": {
+    "start": 20636,
+    "end": 20675
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "849e053a8e4dbf0f11de3c6b25e858be2d136183f18bb760bdea76444f4ee34e",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "36c7bcf3d371808a223f4181bcd89da869b430ff919a387d560f0b6815e0aa6d",
+   "side": "new",
+   "old": {
+    "start": 490,
+    "count": 0
+   },
+   "new": {
+    "start": 510,
+    "count": 1
+   },
+   "offsets": {
+    "start": 20675,
+    "end": 20693
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "d969f4bc748ae65e6c2a597e3c9591715df15b536eba5b72c829ebcf4c57f2b2",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "1bf14efc10669460a30b30741e9b17ff4cea07123ef390c45b7f3ffa84d21adc",
+   "side": "new",
+   "old": {
+    "start": 496,
+    "count": 0
+   },
+   "new": {
+    "start": 517,
+    "count": 1
+   },
+   "offsets": {
+    "start": 20853,
+    "end": 20903
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "accd580ffb183056c60e882ebcc02c199e3e76e7d1012fb61fb6d899fe5512c6",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "1bf14efc10669460a30b30741e9b17ff4cea07123ef390c45b7f3ffa84d21adc",
+   "side": "new",
+   "old": {
+    "start": 496,
+    "count": 0
+   },
+   "new": {
+    "start": 518,
+    "count": 1
+   },
+   "offsets": {
+    "start": 20903,
+    "end": 20942
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "9cd86f0887fa48d0040b17b35d93a281c40ebeb468a3ebd928fe5d7ebe0fb339",
+   "fileId": "fea7f4c5e13ad4e8f361c722421c77474d3ec36fd529a1a4e275adc276792151",
+   "file": "lib/rules/no-extra-parens.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "1bf14efc10669460a30b30741e9b17ff4cea07123ef390c45b7f3ffa84d21adc",
+   "side": "new",
+   "old": {
+    "start": 496,
+    "count": 0
+   },
+   "new": {
+    "start": 519,
+    "count": 1
+   },
+   "offsets": {
+    "start": 20942,
+    "end": 20960
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "dc1843c2613dcb466ac894f84b15816dd591cfbfbf0a621faa1bcc045129938d",
+ "reconciliation": {
+  "expected": [
+   "8f06ef4247b4fd8e5600f4ea99bb1bb02f26bf1a40fced4a3396da0e7d9b802e",
+   "c220abb674e9503b8c29b413d8efe5411c69369f83f132c5d04d8889a31d8a54",
+   "dbb0c4f2cd8cabad6c7e974a70f56c5821bb0876f05afdfd840751e198d88f3e",
+   "9bfd7c62ee63c316b960b731df9b1e4eeadd649334e556f847a10aa1d9e3ac7b",
+   "24586527941e8ae13a650899742f7a159a43668f8ae439080283d2b8129c5510",
+   "efce9d44d39596f61b5c8c5945e65835ade5c29bb663b02375d0827fb500dd27",
+   "bc10a21cd53b8a461f8b919187c44923a7526c94a8ee78e138250638c58ba7df",
+   "dd9a54f8839b7ce9c99ff13cff7bf05bba9b54557f02ff454f3bfd1106ce6ef3",
+   "ec9c336c701edafe80a5f94f29a16b9981bc7e7034c893c2de8f2285a4b798f8",
+   "771fd93fd25e0dc28b5d5ef0c874cbfeb9125645853bd1cfd1f276fff0141186",
+   "2a5f39c268a0ce9b94518274fc4e66f17150c7e8228512dd0a5f8f7b20df143a",
+   "eab0aba63752ef24fc4c7f5b939c1a4d31ffd0b0e657fa37d49c859c280b8786",
+   "cca02c199abf28f61bef859c2548da15e6e080966af2203f6a4afe68938e7837",
+   "b3f0fd06dc9d89736f34c4ad9f79ea4bbe5c65773e90ce7ba6091ef156211e07",
+   "87e16a37df382dbf18f407fa4a0412f5248e36ebcbe0a9a0db855984473e29b7",
+   "b84834aadd5079deca2b98ac8397705c6b01688b51eca7058eea3e2de6da11a4",
+   "57cfa3d3f2ffb04c0390250db5190c9bc4bbf311fe9644dedcd0819499712289",
+   "a0f39684fe750e17277e58c234f5f612e900bf1ea21f8417d74bf7ca7027876b",
+   "953eb9756602e3b5128a862aa9d2fb8ff83d50c7762a2bfcd2fbbed97582f99d",
+   "e448a2290dd0e17e12ca6a80b4c0ee9a0487093b30edcd92fc8d2aa0b7994eae",
+   "69687b73ba18cdcac80ea48c3cc5a4bc821c2d02282b66b02e838648b108c766",
+   "849e053a8e4dbf0f11de3c6b25e858be2d136183f18bb760bdea76444f4ee34e",
+   "d969f4bc748ae65e6c2a597e3c9591715df15b536eba5b72c829ebcf4c57f2b2",
+   "accd580ffb183056c60e882ebcc02c199e3e76e7d1012fb61fb6d899fe5512c6",
+   "9cd86f0887fa48d0040b17b35d93a281c40ebeb468a3ebd928fe5d7ebe0fb339"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "8f06ef4247b4fd8e5600f4ea99bb1bb02f26bf1a40fced4a3396da0e7d9b802e",
+   "c220abb674e9503b8c29b413d8efe5411c69369f83f132c5d04d8889a31d8a54",
+   "dbb0c4f2cd8cabad6c7e974a70f56c5821bb0876f05afdfd840751e198d88f3e",
+   "9bfd7c62ee63c316b960b731df9b1e4eeadd649334e556f847a10aa1d9e3ac7b",
+   "24586527941e8ae13a650899742f7a159a43668f8ae439080283d2b8129c5510",
+   "efce9d44d39596f61b5c8c5945e65835ade5c29bb663b02375d0827fb500dd27",
+   "bc10a21cd53b8a461f8b919187c44923a7526c94a8ee78e138250638c58ba7df",
+   "dd9a54f8839b7ce9c99ff13cff7bf05bba9b54557f02ff454f3bfd1106ce6ef3",
+   "ec9c336c701edafe80a5f94f29a16b9981bc7e7034c893c2de8f2285a4b798f8",
+   "771fd93fd25e0dc28b5d5ef0c874cbfeb9125645853bd1cfd1f276fff0141186",
+   "2a5f39c268a0ce9b94518274fc4e66f17150c7e8228512dd0a5f8f7b20df143a",
+   "eab0aba63752ef24fc4c7f5b939c1a4d31ffd0b0e657fa37d49c859c280b8786",
+   "cca02c199abf28f61bef859c2548da15e6e080966af2203f6a4afe68938e7837",
+   "b3f0fd06dc9d89736f34c4ad9f79ea4bbe5c65773e90ce7ba6091ef156211e07",
+   "87e16a37df382dbf18f407fa4a0412f5248e36ebcbe0a9a0db855984473e29b7",
+   "b84834aadd5079deca2b98ac8397705c6b01688b51eca7058eea3e2de6da11a4",
+   "57cfa3d3f2ffb04c0390250db5190c9bc4bbf311fe9644dedcd0819499712289",
+   "a0f39684fe750e17277e58c234f5f612e900bf1ea21f8417d74bf7ca7027876b",
+   "953eb9756602e3b5128a862aa9d2fb8ff83d50c7762a2bfcd2fbbed97582f99d",
+   "e448a2290dd0e17e12ca6a80b4c0ee9a0487093b30edcd92fc8d2aa0b7994eae",
+   "69687b73ba18cdcac80ea48c3cc5a4bc821c2d02282b66b02e838648b108c766",
+   "849e053a8e4dbf0f11de3c6b25e858be2d136183f18bb760bdea76444f4ee34e",
+   "d969f4bc748ae65e6c2a597e3c9591715df15b536eba5b72c829ebcf4c57f2b2",
+   "accd580ffb183056c60e882ebcc02c199e3e76e7d1012fb61fb6d899fe5512c6",
+   "9cd86f0887fa48d0040b17b35d93a281c40ebeb468a3ebd928fe5d7ebe0fb339"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "8f06ef4247b4fd8e5600f4ea99bb1bb02f26bf1a40fced4a3396da0e7d9b802e",
+     "c220abb674e9503b8c29b413d8efe5411c69369f83f132c5d04d8889a31d8a54",
+     "dbb0c4f2cd8cabad6c7e974a70f56c5821bb0876f05afdfd840751e198d88f3e",
+     "9bfd7c62ee63c316b960b731df9b1e4eeadd649334e556f847a10aa1d9e3ac7b",
+     "24586527941e8ae13a650899742f7a159a43668f8ae439080283d2b8129c5510",
+     "efce9d44d39596f61b5c8c5945e65835ade5c29bb663b02375d0827fb500dd27",
+     "bc10a21cd53b8a461f8b919187c44923a7526c94a8ee78e138250638c58ba7df",
+     "dd9a54f8839b7ce9c99ff13cff7bf05bba9b54557f02ff454f3bfd1106ce6ef3",
+     "ec9c336c701edafe80a5f94f29a16b9981bc7e7034c893c2de8f2285a4b798f8",
+     "771fd93fd25e0dc28b5d5ef0c874cbfeb9125645853bd1cfd1f276fff0141186",
+     "2a5f39c268a0ce9b94518274fc4e66f17150c7e8228512dd0a5f8f7b20df143a",
+     "eab0aba63752ef24fc4c7f5b939c1a4d31ffd0b0e657fa37d49c859c280b8786",
+     "cca02c199abf28f61bef859c2548da15e6e080966af2203f6a4afe68938e7837",
+     "b3f0fd06dc9d89736f34c4ad9f79ea4bbe5c65773e90ce7ba6091ef156211e07",
+     "87e16a37df382dbf18f407fa4a0412f5248e36ebcbe0a9a0db855984473e29b7",
+     "b84834aadd5079deca2b98ac8397705c6b01688b51eca7058eea3e2de6da11a4",
+     "57cfa3d3f2ffb04c0390250db5190c9bc4bbf311fe9644dedcd0819499712289",
+     "a0f39684fe750e17277e58c234f5f612e900bf1ea21f8417d74bf7ca7027876b",
+     "953eb9756602e3b5128a862aa9d2fb8ff83d50c7762a2bfcd2fbbed97582f99d",
+     "e448a2290dd0e17e12ca6a80b4c0ee9a0487093b30edcd92fc8d2aa0b7994eae",
+     "69687b73ba18cdcac80ea48c3cc5a4bc821c2d02282b66b02e838648b108c766",
+     "849e053a8e4dbf0f11de3c6b25e858be2d136183f18bb760bdea76444f4ee34e",
+     "d969f4bc748ae65e6c2a597e3c9591715df15b536eba5b72c829ebcf4c57f2b2",
+     "accd580ffb183056c60e882ebcc02c199e3e76e7d1012fb61fb6d899fe5512c6",
+     "9cd86f0887fa48d0040b17b35d93a281c40ebeb468a3ebd928fe5d7ebe0fb339"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

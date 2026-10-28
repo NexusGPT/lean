@@ -1,0 +1,1808 @@
+{
+ "identity": "f02ec2dec8235112dae47cf33a825d387a7f203aa5aa839855a6c3eb18cf34a0",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit f5ba6e105b68)",
+   "editIds": [
+    "f5ba6e105b683d9534d8c0ab5ae31a77cc8b6d7acda312ff705290e3b9c1e415"
+   ],
+   "lines": [
+    18,
+    18
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit b0f5eadf6385)",
+   "editIds": [
+    "b0f5eadf63854e0f793f62d0d19b1c3fde1920426d17e5dcfd23361a7056f7bf"
+   ],
+   "lines": [
+    19,
+    19
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 6e6debdf369c)",
+   "editIds": [
+    "6e6debdf369cb8edfd6e86467bc44e981fd4166c39b7fd832a9c058267132485"
+   ],
+   "lines": [
+    62,
+    62
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 8a7cffd89da8)",
+   "editIds": [
+    "8a7cffd89da8efa596f64e443609eae092729885a9b8aecc3cdaccee3a7423cc"
+   ],
+   "lines": [
+    63,
+    63
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 9376adc4499f)",
+   "editIds": [
+    "9376adc4499f791527596f20682682cac4ecd0207ea03ba42688aba2e7d42b1a"
+   ],
+   "lines": [
+    64,
+    64
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit c5c0f6fabd72)",
+   "editIds": [
+    "c5c0f6fabd727730596421f7524615d8ecc3c867dda76b9a236a2f8ad97abf37"
+   ],
+   "lines": [
+    64,
+    64
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 20af5265d4c2)",
+   "editIds": [
+    "20af5265d4c22e31d373d0e62d64b171073ca5c830cae9a1cd351b1e14e325d0"
+   ],
+   "lines": [
+    65,
+    65
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 927dcfe794cc)",
+   "editIds": [
+    "927dcfe794ccc9829160fa302546a0577c6033ed566f30f6645030419a12b417"
+   ],
+   "lines": [
+    66,
+    66
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 9f61a81d1d47)",
+   "editIds": [
+    "9f61a81d1d472e7dcabd8028918d94f818285540991d09efa49ada021a5e1027"
+   ],
+   "lines": [
+    67,
+    67
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 6576f7768b11)",
+   "editIds": [
+    "6576f7768b11a19feae8a32dd7f63b225ba2c670181f4615d82bb2757f2b0642"
+   ],
+   "lines": [
+    68,
+    68
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit f84714586125)",
+   "editIds": [
+    "f8471458612588eb720eef6ea353b3ccdac36aaedc8748266642bb3fd7aabf90"
+   ],
+   "lines": [
+    69,
+    69
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit b265fa7d0ac6)",
+   "editIds": [
+    "b265fa7d0ac67a38531fee76eb49eebd444040723334ac5e329f7f2a22a1fe7f"
+   ],
+   "lines": [
+    70,
+    70
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 72aaeb3aa648)",
+   "editIds": [
+    "72aaeb3aa648e95dfc0d34ff0bd200e547a791afaa0482217d0390b4c3f4050a"
+   ],
+   "lines": [
+    71,
+    71
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 4258dd223254)",
+   "editIds": [
+    "4258dd2232549acae1322f3222163e150c895629351a2cb5158d6d68ad392bb2"
+   ],
+   "lines": [
+    73,
+    73
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (comment)",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit e8c7e1b16b84)",
+   "editIds": [
+    "e8c7e1b16b8499b56dd4882cb6a2ee5a434ca139102077a14a8442f75a6a517d"
+   ],
+   "lines": [
+    74,
+    74
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 6bd5dd6f04ce)",
+   "editIds": [
+    "6bd5dd6f04ce0a55a685b4b137d307980be0b075182114e1a6eea950963d43af"
+   ],
+   "lines": [
+    75,
+    75
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 190bbb7e98c7)",
+   "editIds": [
+    "190bbb7e98c79147e31c3fcad7bd24b43c67aa3500887a4500f67b839aac213c"
+   ],
+   "lines": [
+    76,
+    76
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 0aa4eb16fac8)",
+   "editIds": [
+    "0aa4eb16fac8925be8000200f4aa495bc9d31a84f5e53815cc9b412438e993c6"
+   ],
+   "lines": [
+    77,
+    77
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 7751c6e108ac)",
+   "editIds": [
+    "7751c6e108ac3555cc6da7b8c4fea83d245a5698192f36d76ff3662bc627eb2b"
+   ],
+   "lines": [
+    125,
+    125
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 4c17e5801006)",
+   "editIds": [
+    "4c17e5801006ab70ab7f639e22c95a25762dcf432608df1dc64399a061bb9196"
+   ],
+   "lines": [
+    127,
+    127
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit c800450ba718)",
+   "editIds": [
+    "c800450ba71863f7f5efe3987550b765b1ba4e60450e70e2faad44cab49f7e8b"
+   ],
+   "lines": [
+    131,
+    131
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 9172f2cdd2c2)",
+   "editIds": [
+    "9172f2cdd2c20875f79c085859b76195c360b7392096f8b2a2b022a21246032f"
+   ],
+   "lines": [
+    135,
+    135
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit c62e9f7d3525)",
+   "editIds": [
+    "c62e9f7d352598630619ee9fd090e38e111885cac3c2a8138b89e7dd8b1e0d1c"
+   ],
+   "lines": [
+    200,
+    200
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit 6931faf78459)",
+   "editIds": [
+    "6931faf78459bc7425500e925c2c30df152a4712c37f28c3d7389a4ab21a37ae"
+   ],
+   "lines": [
+    201,
+    201
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit f189f39dbae7)",
+   "editIds": [
+    "f189f39dbae7c2d761152521a4eaa2198f4d29f3cc9b761cc306714ddeab6c4b"
+   ],
+   "lines": [
+    202,
+    202
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/karma.js",
+   "unit": "(edit f50e344551bb)",
+   "editIds": [
+    "f50e344551bb6171799be55778766901f37d3e511fc9cb260b3ca8492da7755a"
+   ],
+   "lines": [
+    203,
+    203
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/web-server.js",
+   "unit": "(edit 5da579475e68)",
+   "editIds": [
+    "5da579475e68609fa6c3a5312a289bab2ca64611853fadf5aaa8aaeca1537682"
+   ],
+   "lines": [
+    58,
+    58
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "b765c33cc18056d54c397cffda04a1884225b382",
+  "head": "e8f9c496783341f7ae515a9fe758dd3484567c6c",
+  "files": [
+   {
+    "id": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "oldPath": "lib/middleware/karma.js",
+    "newPath": "lib/middleware/karma.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "2e603b382012e51b01a1914fa037ce4a00249134",
+    "newOid": "0c965a521f681ff76829ec696a604305a4ce43a3",
+    "status": "M",
+    "edits": [
+     "f5ba6e105b683d9534d8c0ab5ae31a77cc8b6d7acda312ff705290e3b9c1e415",
+     "b0f5eadf63854e0f793f62d0d19b1c3fde1920426d17e5dcfd23361a7056f7bf",
+     "6e6debdf369cb8edfd6e86467bc44e981fd4166c39b7fd832a9c058267132485",
+     "8a7cffd89da8efa596f64e443609eae092729885a9b8aecc3cdaccee3a7423cc",
+     "9376adc4499f791527596f20682682cac4ecd0207ea03ba42688aba2e7d42b1a",
+     "c5c0f6fabd727730596421f7524615d8ecc3c867dda76b9a236a2f8ad97abf37",
+     "20af5265d4c22e31d373d0e62d64b171073ca5c830cae9a1cd351b1e14e325d0",
+     "927dcfe794ccc9829160fa302546a0577c6033ed566f30f6645030419a12b417",
+     "9f61a81d1d472e7dcabd8028918d94f818285540991d09efa49ada021a5e1027",
+     "6576f7768b11a19feae8a32dd7f63b225ba2c670181f4615d82bb2757f2b0642",
+     "f8471458612588eb720eef6ea353b3ccdac36aaedc8748266642bb3fd7aabf90",
+     "b265fa7d0ac67a38531fee76eb49eebd444040723334ac5e329f7f2a22a1fe7f",
+     "72aaeb3aa648e95dfc0d34ff0bd200e547a791afaa0482217d0390b4c3f4050a",
+     "4258dd2232549acae1322f3222163e150c895629351a2cb5158d6d68ad392bb2",
+     "e8c7e1b16b8499b56dd4882cb6a2ee5a434ca139102077a14a8442f75a6a517d",
+     "6bd5dd6f04ce0a55a685b4b137d307980be0b075182114e1a6eea950963d43af",
+     "190bbb7e98c79147e31c3fcad7bd24b43c67aa3500887a4500f67b839aac213c",
+     "0aa4eb16fac8925be8000200f4aa495bc9d31a84f5e53815cc9b412438e993c6",
+     "7751c6e108ac3555cc6da7b8c4fea83d245a5698192f36d76ff3662bc627eb2b",
+     "4c17e5801006ab70ab7f639e22c95a25762dcf432608df1dc64399a061bb9196",
+     "c800450ba71863f7f5efe3987550b765b1ba4e60450e70e2faad44cab49f7e8b",
+     "9172f2cdd2c20875f79c085859b76195c360b7392096f8b2a2b022a21246032f",
+     "c62e9f7d352598630619ee9fd090e38e111885cac3c2a8138b89e7dd8b1e0d1c",
+     "6931faf78459bc7425500e925c2c30df152a4712c37f28c3d7389a4ab21a37ae",
+     "f189f39dbae7c2d761152521a4eaa2198f4d29f3cc9b761cc306714ddeab6c4b",
+     "f50e344551bb6171799be55778766901f37d3e511fc9cb260b3ca8492da7755a"
+    ],
+    "hunks": [
+     {
+      "id": "b14ff8849f1643c755442dd04f26666e2839fd4fd9fdf70a4191c25ba2adb8a9",
+      "old": {
+       "start": 17,
+       "count": 0
+      },
+      "new": {
+       "start": 18,
+       "count": 2
+      }
+     },
+     {
+      "id": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+      "old": {
+       "start": 62,
+       "count": 3
+      },
+      "new": {
+       "start": 64,
+       "count": 8
+      }
+     },
+     {
+      "id": "f8cc2372db74962fd2df83d37392a90d0cf5e9325bd65390fee5243974c71fd2",
+      "old": {
+       "start": 65,
+       "count": 0
+      },
+      "new": {
+       "start": 73,
+       "count": 5
+      }
+     },
+     {
+      "id": "44348a4214d581013044bfcf6820b02c52dd13aba7818241545534b0e2d46980",
+      "old": {
+       "start": 112,
+       "count": 0
+      },
+      "new": {
+       "start": 125,
+       "count": 1
+      }
+     },
+     {
+      "id": "3c732c2e52e4832b6be10bdcd25f7154333dd65f556dfb28a56eaf901a0f43c8",
+      "old": {
+       "start": 113,
+       "count": 0
+      },
+      "new": {
+       "start": 127,
+       "count": 1
+      }
+     },
+     {
+      "id": "e611a3f1ab2d9c4b9f294ae102e5794945362a21828dbdb31a8a000b514750cc",
+      "old": {
+       "start": 116,
+       "count": 0
+      },
+      "new": {
+       "start": 131,
+       "count": 1
+      }
+     },
+     {
+      "id": "26eae4a79600de6bc8fe24c86c164c5aa1440d810682dd0395f03adb6fcf2511",
+      "old": {
+       "start": 119,
+       "count": 0
+      },
+      "new": {
+       "start": 135,
+       "count": 1
+      }
+     },
+     {
+      "id": "1bd5940dd145ca695a733f61ac35b2bb3cf50d8d11e47462923536619d5348f8",
+      "old": {
+       "start": 200,
+       "count": 4
+      },
+      "new": {
+       "start": 215,
+       "count": 0
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "a049d95e0d2179188619cca49ed72a02c626eb355cfdad89f06f2436cb5fb48e",
+    "newHash": "93222edd1c74e5aeec1a57968b71f81cfa601b6d8e7617cab093e2de681f3c2b",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   },
+   {
+    "id": "da1fa7d44f90aafc8781a6ca61340bd9e5aaa419ee6589984bca32326e7e9892",
+    "file": "lib/web-server.js",
+    "oldPath": "lib/web-server.js",
+    "newPath": "lib/web-server.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "dc200fda629057c176b77657bedecf6cd90f7059",
+    "newOid": "1405032c06a087e083a08ed126ee6b65ce4c5fd9",
+    "status": "M",
+    "edits": [
+     "5da579475e68609fa6c3a5312a289bab2ca64611853fadf5aaa8aaeca1537682"
+    ],
+    "hunks": [
+     {
+      "id": "a0fa0ce23d1a3d6dfb2d4fffa49ac0168d0fdcfd280496d0454312ecd68f0d0c",
+      "old": {
+       "start": 57,
+       "count": 0
+      },
+      "new": {
+       "start": 58,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "840ae71c28b9cf6c13cdc4c4001888e18b8aaaee498417c5146e27b3cce62d1f",
+    "newHash": "bae5b0932f1f066bc2c2e8522239df56ddc59647e991348295a0d2835e005ceb",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "f5ba6e105b683d9534d8c0ab5ae31a77cc8b6d7acda312ff705290e3b9c1e415",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b14ff8849f1643c755442dd04f26666e2839fd4fd9fdf70a4191c25ba2adb8a9",
+    "side": "new",
+    "old": {
+     "start": 17,
+     "count": 0
+    },
+    "new": {
+     "start": 18,
+     "count": 1
+    },
+    "offsets": {
+     "start": 458,
+     "end": 516
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b0f5eadf63854e0f793f62d0d19b1c3fde1920426d17e5dcfd23361a7056f7bf",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b14ff8849f1643c755442dd04f26666e2839fd4fd9fdf70a4191c25ba2adb8a9",
+    "side": "new",
+    "old": {
+     "start": 17,
+     "count": 0
+    },
+    "new": {
+     "start": 19,
+     "count": 1
+    },
+    "offsets": {
+     "start": 516,
+     "end": 517
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6e6debdf369cb8edfd6e86467bc44e981fd4166c39b7fd832a9c058267132485",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "old",
+    "old": {
+     "start": 62,
+     "count": 1
+    },
+    "new": {
+     "start": 64,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1647,
+     "end": 1727
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "8a7cffd89da8efa596f64e443609eae092729885a9b8aecc3cdaccee3a7423cc",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "old",
+    "old": {
+     "start": 63,
+     "count": 1
+    },
+    "new": {
+     "start": 64,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1727,
+     "end": 1819
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "9376adc4499f791527596f20682682cac4ecd0207ea03ba42688aba2e7d42b1a",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "old",
+    "old": {
+     "start": 64,
+     "count": 1
+    },
+    "new": {
+     "start": 64,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1819,
+     "end": 1919
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c5c0f6fabd727730596421f7524615d8ecc3c867dda76b9a236a2f8ad97abf37",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "new",
+    "old": {
+     "start": 62,
+     "count": 0
+    },
+    "new": {
+     "start": 64,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1706,
+     "end": 1745
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "20af5265d4c22e31d373d0e62d64b171073ca5c830cae9a1cd351b1e14e325d0",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "new",
+    "old": {
+     "start": 62,
+     "count": 0
+    },
+    "new": {
+     "start": 65,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1745,
+     "end": 1761
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "927dcfe794ccc9829160fa302546a0577c6033ed566f30f6645030419a12b417",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "new",
+    "old": {
+     "start": 62,
+     "count": 0
+    },
+    "new": {
+     "start": 66,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1761,
+     "end": 1780
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9f61a81d1d472e7dcabd8028918d94f818285540991d09efa49ada021a5e1027",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "new",
+    "old": {
+     "start": 62,
+     "count": 0
+    },
+    "new": {
+     "start": 67,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1780,
+     "end": 1793
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6576f7768b11a19feae8a32dd7f63b225ba2c670181f4615d82bb2757f2b0642",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "new",
+    "old": {
+     "start": 62,
+     "count": 0
+    },
+    "new": {
+     "start": 68,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1793,
+     "end": 1805
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f8471458612588eb720eef6ea353b3ccdac36aaedc8748266642bb3fd7aabf90",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "new",
+    "old": {
+     "start": 62,
+     "count": 0
+    },
+    "new": {
+     "start": 69,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1805,
+     "end": 1839
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b265fa7d0ac67a38531fee76eb49eebd444040723334ac5e329f7f2a22a1fe7f",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "new",
+    "old": {
+     "start": 62,
+     "count": 0
+    },
+    "new": {
+     "start": 70,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1839,
+     "end": 1870
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "72aaeb3aa648e95dfc0d34ff0bd200e547a791afaa0482217d0390b4c3f4050a",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "453b4a83eb92a80dbf132414bc0a9469855aa38bd63cd7790fe01d770af7f99d",
+    "side": "new",
+    "old": {
+     "start": 62,
+     "count": 0
+    },
+    "new": {
+     "start": 71,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1870,
+     "end": 1874
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4258dd2232549acae1322f3222163e150c895629351a2cb5158d6d68ad392bb2",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f8cc2372db74962fd2df83d37392a90d0cf5e9325bd65390fee5243974c71fd2",
+    "side": "new",
+    "old": {
+     "start": 65,
+     "count": 0
+    },
+    "new": {
+     "start": 73,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1920,
+     "end": 1985
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "comment",
+     "side": "new"
+    }
+   },
+   {
+    "id": "e8c7e1b16b8499b56dd4882cb6a2ee5a434ca139102077a14a8442f75a6a517d",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f8cc2372db74962fd2df83d37392a90d0cf5e9325bd65390fee5243974c71fd2",
+    "side": "new",
+    "old": {
+     "start": 65,
+     "count": 0
+    },
+    "new": {
+     "start": 74,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1985,
+     "end": 2032
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6bd5dd6f04ce0a55a685b4b137d307980be0b075182114e1a6eea950963d43af",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f8cc2372db74962fd2df83d37392a90d0cf5e9325bd65390fee5243974c71fd2",
+    "side": "new",
+    "old": {
+     "start": 65,
+     "count": 0
+    },
+    "new": {
+     "start": 75,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2032,
+     "end": 2101
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "190bbb7e98c79147e31c3fcad7bd24b43c67aa3500887a4500f67b839aac213c",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f8cc2372db74962fd2df83d37392a90d0cf5e9325bd65390fee5243974c71fd2",
+    "side": "new",
+    "old": {
+     "start": 65,
+     "count": 0
+    },
+    "new": {
+     "start": 76,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2101,
+     "end": 2166
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "0aa4eb16fac8925be8000200f4aa495bc9d31a84f5e53815cc9b412438e993c6",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f8cc2372db74962fd2df83d37392a90d0cf5e9325bd65390fee5243974c71fd2",
+    "side": "new",
+    "old": {
+     "start": 65,
+     "count": 0
+    },
+    "new": {
+     "start": 77,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2166,
+     "end": 2167
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "7751c6e108ac3555cc6da7b8c4fea83d245a5698192f36d76ff3662bc627eb2b",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "44348a4214d581013044bfcf6820b02c52dd13aba7818241545534b0e2d46980",
+    "side": "new",
+    "old": {
+     "start": 112,
+     "count": 0
+    },
+    "new": {
+     "start": 125,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3797,
+     "end": 3867
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4c17e5801006ab70ab7f639e22c95a25762dcf432608df1dc64399a061bb9196",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "3c732c2e52e4832b6be10bdcd25f7154333dd65f556dfb28a56eaf901a0f43c8",
+    "side": "new",
+    "old": {
+     "start": 113,
+     "count": 0
+    },
+    "new": {
+     "start": 127,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3927,
+     "end": 3998
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c800450ba71863f7f5efe3987550b765b1ba4e60450e70e2faad44cab49f7e8b",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e611a3f1ab2d9c4b9f294ae102e5794945362a21828dbdb31a8a000b514750cc",
+    "side": "new",
+    "old": {
+     "start": 116,
+     "count": 0
+    },
+    "new": {
+     "start": 131,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4141,
+     "end": 4208
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9172f2cdd2c20875f79c085859b76195c360b7392096f8b2a2b022a21246032f",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "26eae4a79600de6bc8fe24c86c164c5aa1440d810682dd0395f03adb6fcf2511",
+    "side": "new",
+    "old": {
+     "start": 119,
+     "count": 0
+    },
+    "new": {
+     "start": 135,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4303,
+     "end": 4364
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c62e9f7d352598630619ee9fd090e38e111885cac3c2a8138b89e7dd8b1e0d1c",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1bd5940dd145ca695a733f61ac35b2bb3cf50d8d11e47462923536619d5348f8",
+    "side": "old",
+    "old": {
+     "start": 200,
+     "count": 1
+    },
+    "new": {
+     "start": 215,
+     "count": 0
+    },
+    "offsets": {
+     "start": 6821,
+     "end": 6902
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "6931faf78459bc7425500e925c2c30df152a4712c37f28c3d7389a4ab21a37ae",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1bd5940dd145ca695a733f61ac35b2bb3cf50d8d11e47462923536619d5348f8",
+    "side": "old",
+    "old": {
+     "start": 201,
+     "count": 1
+    },
+    "new": {
+     "start": 215,
+     "count": 0
+    },
+    "offsets": {
+     "start": 6902,
+     "end": 6986
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "f189f39dbae7c2d761152521a4eaa2198f4d29f3cc9b761cc306714ddeab6c4b",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1bd5940dd145ca695a733f61ac35b2bb3cf50d8d11e47462923536619d5348f8",
+    "side": "old",
+    "old": {
+     "start": 202,
+     "count": 1
+    },
+    "new": {
+     "start": 215,
+     "count": 0
+    },
+    "offsets": {
+     "start": 6986,
+     "end": 7014
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "f50e344551bb6171799be55778766901f37d3e511fc9cb260b3ca8492da7755a",
+    "fileId": "7b3a284f6131860eb0a623eb2e0cb7540563c9eefc59175a6868a2ee1a7fe32c",
+    "file": "lib/middleware/karma.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1bd5940dd145ca695a733f61ac35b2bb3cf50d8d11e47462923536619d5348f8",
+    "side": "old",
+    "old": {
+     "start": 203,
+     "count": 1
+    },
+    "new": {
+     "start": 215,
+     "count": 0
+    },
+    "offsets": {
+     "start": 7014,
+     "end": 7015
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "old"
+    }
+   },
+   {
+    "id": "5da579475e68609fa6c3a5312a289bab2ca64611853fadf5aaa8aaeca1537682",
+    "fileId": "da1fa7d44f90aafc8781a6ca61340bd9e5aaa419ee6589984bca32326e7e9892",
+    "file": "lib/web-server.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "a0fa0ce23d1a3d6dfb2d4fffa49ac0168d0fdcfd280496d0454312ecd68f0d0c",
+    "side": "new",
+    "old": {
+     "start": 57,
+     "count": 0
+    },
+    "new": {
+     "start": 58,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2075,
+     "end": 2115
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "f02ec2dec8235112dae47cf33a825d387a7f203aa5aa839855a6c3eb18cf34a0",
+  "reconciliation": {
+   "expected": [
+    "f5ba6e105b683d9534d8c0ab5ae31a77cc8b6d7acda312ff705290e3b9c1e415",
+    "b0f5eadf63854e0f793f62d0d19b1c3fde1920426d17e5dcfd23361a7056f7bf",
+    "6e6debdf369cb8edfd6e86467bc44e981fd4166c39b7fd832a9c058267132485",
+    "8a7cffd89da8efa596f64e443609eae092729885a9b8aecc3cdaccee3a7423cc",
+    "9376adc4499f791527596f20682682cac4ecd0207ea03ba42688aba2e7d42b1a",
+    "c5c0f6fabd727730596421f7524615d8ecc3c867dda76b9a236a2f8ad97abf37",
+    "20af5265d4c22e31d373d0e62d64b171073ca5c830cae9a1cd351b1e14e325d0",
+    "927dcfe794ccc9829160fa302546a0577c6033ed566f30f6645030419a12b417",
+    "9f61a81d1d472e7dcabd8028918d94f818285540991d09efa49ada021a5e1027",
+    "6576f7768b11a19feae8a32dd7f63b225ba2c670181f4615d82bb2757f2b0642",
+    "f8471458612588eb720eef6ea353b3ccdac36aaedc8748266642bb3fd7aabf90",
+    "b265fa7d0ac67a38531fee76eb49eebd444040723334ac5e329f7f2a22a1fe7f",
+    "72aaeb3aa648e95dfc0d34ff0bd200e547a791afaa0482217d0390b4c3f4050a",
+    "4258dd2232549acae1322f3222163e150c895629351a2cb5158d6d68ad392bb2",
+    "e8c7e1b16b8499b56dd4882cb6a2ee5a434ca139102077a14a8442f75a6a517d",
+    "6bd5dd6f04ce0a55a685b4b137d307980be0b075182114e1a6eea950963d43af",
+    "190bbb7e98c79147e31c3fcad7bd24b43c67aa3500887a4500f67b839aac213c",
+    "0aa4eb16fac8925be8000200f4aa495bc9d31a84f5e53815cc9b412438e993c6",
+    "7751c6e108ac3555cc6da7b8c4fea83d245a5698192f36d76ff3662bc627eb2b",
+    "4c17e5801006ab70ab7f639e22c95a25762dcf432608df1dc64399a061bb9196",
+    "c800450ba71863f7f5efe3987550b765b1ba4e60450e70e2faad44cab49f7e8b",
+    "9172f2cdd2c20875f79c085859b76195c360b7392096f8b2a2b022a21246032f",
+    "c62e9f7d352598630619ee9fd090e38e111885cac3c2a8138b89e7dd8b1e0d1c",
+    "6931faf78459bc7425500e925c2c30df152a4712c37f28c3d7389a4ab21a37ae",
+    "f189f39dbae7c2d761152521a4eaa2198f4d29f3cc9b761cc306714ddeab6c4b",
+    "f50e344551bb6171799be55778766901f37d3e511fc9cb260b3ca8492da7755a",
+    "5da579475e68609fa6c3a5312a289bab2ca64611853fadf5aaa8aaeca1537682"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "f5ba6e105b683d9534d8c0ab5ae31a77cc8b6d7acda312ff705290e3b9c1e415",
+    "b0f5eadf63854e0f793f62d0d19b1c3fde1920426d17e5dcfd23361a7056f7bf",
+    "6e6debdf369cb8edfd6e86467bc44e981fd4166c39b7fd832a9c058267132485",
+    "8a7cffd89da8efa596f64e443609eae092729885a9b8aecc3cdaccee3a7423cc",
+    "9376adc4499f791527596f20682682cac4ecd0207ea03ba42688aba2e7d42b1a",
+    "c5c0f6fabd727730596421f7524615d8ecc3c867dda76b9a236a2f8ad97abf37",
+    "20af5265d4c22e31d373d0e62d64b171073ca5c830cae9a1cd351b1e14e325d0",
+    "927dcfe794ccc9829160fa302546a0577c6033ed566f30f6645030419a12b417",
+    "9f61a81d1d472e7dcabd8028918d94f818285540991d09efa49ada021a5e1027",
+    "6576f7768b11a19feae8a32dd7f63b225ba2c670181f4615d82bb2757f2b0642",
+    "f8471458612588eb720eef6ea353b3ccdac36aaedc8748266642bb3fd7aabf90",
+    "b265fa7d0ac67a38531fee76eb49eebd444040723334ac5e329f7f2a22a1fe7f",
+    "72aaeb3aa648e95dfc0d34ff0bd200e547a791afaa0482217d0390b4c3f4050a",
+    "4258dd2232549acae1322f3222163e150c895629351a2cb5158d6d68ad392bb2",
+    "e8c7e1b16b8499b56dd4882cb6a2ee5a434ca139102077a14a8442f75a6a517d",
+    "6bd5dd6f04ce0a55a685b4b137d307980be0b075182114e1a6eea950963d43af",
+    "190bbb7e98c79147e31c3fcad7bd24b43c67aa3500887a4500f67b839aac213c",
+    "0aa4eb16fac8925be8000200f4aa495bc9d31a84f5e53815cc9b412438e993c6",
+    "7751c6e108ac3555cc6da7b8c4fea83d245a5698192f36d76ff3662bc627eb2b",
+    "4c17e5801006ab70ab7f639e22c95a25762dcf432608df1dc64399a061bb9196",
+    "c800450ba71863f7f5efe3987550b765b1ba4e60450e70e2faad44cab49f7e8b",
+    "9172f2cdd2c20875f79c085859b76195c360b7392096f8b2a2b022a21246032f",
+    "c62e9f7d352598630619ee9fd090e38e111885cac3c2a8138b89e7dd8b1e0d1c",
+    "6931faf78459bc7425500e925c2c30df152a4712c37f28c3d7389a4ab21a37ae",
+    "f189f39dbae7c2d761152521a4eaa2198f4d29f3cc9b761cc306714ddeab6c4b",
+    "f50e344551bb6171799be55778766901f37d3e511fc9cb260b3ca8492da7755a",
+    "5da579475e68609fa6c3a5312a289bab2ca64611853fadf5aaa8aaeca1537682"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "f5ba6e105b683d9534d8c0ab5ae31a77cc8b6d7acda312ff705290e3b9c1e415",
+      "b0f5eadf63854e0f793f62d0d19b1c3fde1920426d17e5dcfd23361a7056f7bf",
+      "6e6debdf369cb8edfd6e86467bc44e981fd4166c39b7fd832a9c058267132485",
+      "8a7cffd89da8efa596f64e443609eae092729885a9b8aecc3cdaccee3a7423cc",
+      "9376adc4499f791527596f20682682cac4ecd0207ea03ba42688aba2e7d42b1a",
+      "c5c0f6fabd727730596421f7524615d8ecc3c867dda76b9a236a2f8ad97abf37",
+      "20af5265d4c22e31d373d0e62d64b171073ca5c830cae9a1cd351b1e14e325d0",
+      "927dcfe794ccc9829160fa302546a0577c6033ed566f30f6645030419a12b417",
+      "9f61a81d1d472e7dcabd8028918d94f818285540991d09efa49ada021a5e1027",
+      "6576f7768b11a19feae8a32dd7f63b225ba2c670181f4615d82bb2757f2b0642",
+      "f8471458612588eb720eef6ea353b3ccdac36aaedc8748266642bb3fd7aabf90",
+      "b265fa7d0ac67a38531fee76eb49eebd444040723334ac5e329f7f2a22a1fe7f",
+      "72aaeb3aa648e95dfc0d34ff0bd200e547a791afaa0482217d0390b4c3f4050a",
+      "4258dd2232549acae1322f3222163e150c895629351a2cb5158d6d68ad392bb2",
+      "e8c7e1b16b8499b56dd4882cb6a2ee5a434ca139102077a14a8442f75a6a517d",
+      "6bd5dd6f04ce0a55a685b4b137d307980be0b075182114e1a6eea950963d43af",
+      "190bbb7e98c79147e31c3fcad7bd24b43c67aa3500887a4500f67b839aac213c",
+      "0aa4eb16fac8925be8000200f4aa495bc9d31a84f5e53815cc9b412438e993c6",
+      "7751c6e108ac3555cc6da7b8c4fea83d245a5698192f36d76ff3662bc627eb2b",
+      "4c17e5801006ab70ab7f639e22c95a25762dcf432608df1dc64399a061bb9196",
+      "c800450ba71863f7f5efe3987550b765b1ba4e60450e70e2faad44cab49f7e8b",
+      "9172f2cdd2c20875f79c085859b76195c360b7392096f8b2a2b022a21246032f",
+      "c62e9f7d352598630619ee9fd090e38e111885cac3c2a8138b89e7dd8b1e0d1c",
+      "6931faf78459bc7425500e925c2c30df152a4712c37f28c3d7389a4ab21a37ae",
+      "f189f39dbae7c2d761152521a4eaa2198f4d29f3cc9b761cc306714ddeab6c4b",
+      "f50e344551bb6171799be55778766901f37d3e511fc9cb260b3ca8492da7755a",
+      "5da579475e68609fa6c3a5312a289bab2ca64611853fadf5aaa8aaeca1537682"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "862c27fa095130ff78ef63500df35b7983c89f72dda6eb592caeb48acb8642d5",
+   "0c12e8e16ea5d7b09c3033256efbff6a2e9680f8635f5a97ac5294c416f2a07e",
+   "dd4facfdfab49d91da700f0c2b53a699db91eea1258aee5770e96514e9854a7e",
+   "a7419b5abc7b6f8b7a4754a099f6aaa5c43902488fe704ca383ec78e467c34f7",
+   "dc9f21a002f491a907bc2c6589658d568dd9d14a799e50c4209f1ce5b2ff92c7",
+   "b1b532d330de24d806fff6d19e18a7ac2694a9637a49df8233215be7551ebf1a",
+   "e21f50312cd61769c10baec07a19faedcaf47ffa6ed28cd648c23fbb22079ef6",
+   "0d947ceed88569f27bdd47a68278d7beb95c6eafd0681e7daf2870b01c74a18d",
+   "7aea34a5da80c1125e16468072b176735ee359f630edd441de874c98c39e787f",
+   "318bfbf4c86f8d1e9f8f2db91693565faa405a369d547e9af1ea639924b14308",
+   "59a38565cae96e68b36a782fde28fd4b172881f90e48f875b0c4dd19a0a4a2f0",
+   "7058ed8ee78a51820d3abf4c8b87b80a0e4198ef0e361e9715a99435eea6a5ae",
+   "0730209bce25e7e9c050667ed6efcbd52485070ce1983792f0066daaf2a04e2f",
+   "a9d60ffdf6f72574e5424fb8646e8f0b96505a8ed1f35b03ba846a6359416063",
+   "0a968c760c330286146810f08753b1b8cc544a3c314279e2e5faba273c4dcf0c",
+   "16221896765042f024a200965607e05b24287339be50df5473e706137665e3c8",
+   "01b868666103efcf437956dcbb904396de8482d9c5d72aba75c3dc801c7d2aba",
+   "9fbb3f18a4f8e152e3d0b9b6b400cb4463bc8f8d9a8d9cef8121a16eb7febb15",
+   "5adf4db9bbdd17ed991554d68405e58a1e7c858715108f17b680a280e35cab23",
+   "513560faef4d566e5d292be09f3ba271010012f7dfdffd38cb52fd585c1b250e",
+   "5a0e13af50dd6cb91db194e8dea54a34583a040b44f55a48893958de48d1f231",
+   "794d04af4b18e022de20744f9fcc9231ec26071f4682c3b7084a8cf02583f86c",
+   "de5fd5c08b287c8f8149b8ff121ed4f123e8f41cf7badb47bca4992c0d543e5e",
+   "446b1a6391c5510831e79d0600654b9620e6ed81e99f76143a77b1ca8f678473",
+   "bc81590f9b9ce46ae0011166f82efa8bba15b166f1c6356f6c52c8e52a754e59",
+   "071fdc034d6acd1377d3e0ebbd72b107a0dbea558f273cc7b80b447636de7d0c",
+   "248538d8e5f80595ba60cc55aa5500baf1d61ad5a7bf27d4ea785ba56ca375f3"
+  ],
+  "terminal": [
+   "862c27fa095130ff78ef63500df35b7983c89f72dda6eb592caeb48acb8642d5",
+   "0c12e8e16ea5d7b09c3033256efbff6a2e9680f8635f5a97ac5294c416f2a07e",
+   "dd4facfdfab49d91da700f0c2b53a699db91eea1258aee5770e96514e9854a7e",
+   "a7419b5abc7b6f8b7a4754a099f6aaa5c43902488fe704ca383ec78e467c34f7",
+   "dc9f21a002f491a907bc2c6589658d568dd9d14a799e50c4209f1ce5b2ff92c7",
+   "b1b532d330de24d806fff6d19e18a7ac2694a9637a49df8233215be7551ebf1a",
+   "e21f50312cd61769c10baec07a19faedcaf47ffa6ed28cd648c23fbb22079ef6",
+   "0d947ceed88569f27bdd47a68278d7beb95c6eafd0681e7daf2870b01c74a18d",
+   "7aea34a5da80c1125e16468072b176735ee359f630edd441de874c98c39e787f",
+   "318bfbf4c86f8d1e9f8f2db91693565faa405a369d547e9af1ea639924b14308",
+   "59a38565cae96e68b36a782fde28fd4b172881f90e48f875b0c4dd19a0a4a2f0",
+   "7058ed8ee78a51820d3abf4c8b87b80a0e4198ef0e361e9715a99435eea6a5ae",
+   "0730209bce25e7e9c050667ed6efcbd52485070ce1983792f0066daaf2a04e2f",
+   "a9d60ffdf6f72574e5424fb8646e8f0b96505a8ed1f35b03ba846a6359416063",
+   "0a968c760c330286146810f08753b1b8cc544a3c314279e2e5faba273c4dcf0c",
+   "16221896765042f024a200965607e05b24287339be50df5473e706137665e3c8",
+   "01b868666103efcf437956dcbb904396de8482d9c5d72aba75c3dc801c7d2aba",
+   "9fbb3f18a4f8e152e3d0b9b6b400cb4463bc8f8d9a8d9cef8121a16eb7febb15",
+   "5adf4db9bbdd17ed991554d68405e58a1e7c858715108f17b680a280e35cab23",
+   "513560faef4d566e5d292be09f3ba271010012f7dfdffd38cb52fd585c1b250e",
+   "5a0e13af50dd6cb91db194e8dea54a34583a040b44f55a48893958de48d1f231",
+   "794d04af4b18e022de20744f9fcc9231ec26071f4682c3b7084a8cf02583f86c",
+   "de5fd5c08b287c8f8149b8ff121ed4f123e8f41cf7badb47bca4992c0d543e5e",
+   "446b1a6391c5510831e79d0600654b9620e6ed81e99f76143a77b1ca8f678473",
+   "bc81590f9b9ce46ae0011166f82efa8bba15b166f1c6356f6c52c8e52a754e59",
+   "071fdc034d6acd1377d3e0ebbd72b107a0dbea558f273cc7b80b447636de7d0c",
+   "248538d8e5f80595ba60cc55aa5500baf1d61ad5a7bf27d4ea785ba56ca375f3"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__17/run-XcC6dg/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__17/run-XcC6dg"
+}

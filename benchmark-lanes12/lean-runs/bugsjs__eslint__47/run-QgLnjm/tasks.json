@@ -1,0 +1,35 @@
+{
+ "change": "99ee61df5ae6768d538475af0e3f13963338da150c618c1b08d51745848970c7",
+ "tasks": [
+  {
+   "id": "3583d167ec1018824e2307a7c0b13a4c5ca83b1706973c437f11f13ccd6d8635",
+   "file": "lib/rules/no-multiple-empty-lines.js",
+   "unit": "(edit 0730ae79370b)",
+   "lines": [
+    168,
+    168
+   ],
+   "lanes": [],
+   "editIds": [
+    "0730ae79370bc67247fac0444d79199e67cab6aa8563943c9eb13b388752e8c5"
+   ],
+   "attemptId": "99f00cd8-3da2-4a40-a1c6-12da9c50242b",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__47/run-QgLnjm/attempts/99f00cd8-3da2-4a40-a1c6-12da9c50242b"
+  },
+  {
+   "id": "8d08b0726888507a00e6dadfb4aa5aebed5489a5425c66479d6844e96f172110",
+   "file": "lib/rules/no-multiple-empty-lines.js",
+   "unit": "(edit 2b75a723ce59)",
+   "lines": [
+    168,
+    168
+   ],
+   "lanes": [],
+   "editIds": [
+    "2b75a723ce59e412dfffbc51aa191ce0dcf4582ddfddaff26297b683b9af2f34"
+   ],
+   "attemptId": "bb360f1e-48e0-4dfa-af91-983662a29e03",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__47/run-QgLnjm/attempts/bb360f1e-48e0-4dfa-af91-983662a29e03"
+  }
+ ]
+}

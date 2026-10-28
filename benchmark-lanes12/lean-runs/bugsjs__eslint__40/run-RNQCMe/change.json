@@ -1,0 +1,812 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "a6ce8f9b3bb82d49a8af2034358bf9200ae9e895",
+ "head": "9932e0c17862a5b1be802a147fd0baf2822b2ef8",
+ "files": [
+  {
+   "id": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "oldPath": "lib/rules/space-unary-ops.js",
+   "newPath": "lib/rules/space-unary-ops.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "11c59c8274f35822fa8c06de7636282e9ded29d1",
+   "newOid": "5b156fac2292d4a7c1629bc42b00b9e5aa701013",
+   "status": "M",
+   "edits": [
+    "6f6c7901cfaf1bb149eeaa9812aabe459d8f1e3ead4bce8a93c17f6655f0bee6",
+    "8056170a4f9843f65ae226994ed060a308485e68e66cc55b8cd83e2a821a445d",
+    "9c0ab8082d7b419e95f1aa0e26e999868de433a6e2e9fe38bda3625c9b4092ee",
+    "c7183144a6c75ec9d7fc579067dc0f7af2a662df9165969688b81fc7792fa6f0",
+    "b01b31509518f433d3ae8579d99ae53acc2388981f600e612cf93b688d5cd09c",
+    "8e159e4980923119f69a65323f265aa6082222929afe85b2a32eb09c723123b5",
+    "845ac365a82aafb0da5f37108791b30403c6ef449140099117887a3f4605792c",
+    "47c88f7efa7b2e2c21b68dd47c45e5917400ef63983eec30c5324812326ef7a2",
+    "9cbacf11c753df47c508e84ded776fc1f8833426807f0efdda8ab360ae5cef3c",
+    "e7aba97f8a059a79d254bbd7fcf7a9f608177032c904bd7da088c64ac9ebb6d2",
+    "fb283e27c6a1e6a094396f13657864d350744c9a9a6df05410208b135088e914",
+    "485b314cef059ecb97cc33607c5375b6f2b482f944dc72acac40055bd57225bf",
+    "5f1ed35934a96c6f887ae6e40d2c3837e02c44b897e70ddaa5f0d2174082175b",
+    "4e7bcf165f9f1c4a05bb90c7aa4f542026a9fa53f1a7dd3be964513329349b05",
+    "30f7d56a2b11c894756cc860393086261698ee431ce842da12db9fb7a08cebee",
+    "0063d1f013e599328527996923c06e20cab53fc90e26bcbdf88cdaea57629260",
+    "4f6766ce3364289065ee3ea9aa0f60f208f8d2a455f5e23b65b623ee5fa18645",
+    "46aba8a8acab9989fe8bd589cc6290c3a317b2026faaf1abd0167ac0495a9eb3",
+    "426efa99ad691b13df3a16a8fa3c5f33af154dc3c3363b548ed683c84b1e0ca5",
+    "f1f203e0661f0e35cd2df6816fffc4eab31021e7ebcd0aacd4b6e59d154e6e15"
+   ],
+   "hunks": [
+    {
+     "id": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+     "old": {
+      "start": 70,
+      "count": 0
+     },
+     "new": {
+      "start": 71,
+      "count": 15
+     }
+    },
+    {
+     "id": "2201e1bf68762fb3abef5302be27b79a3eae765e6283468f9c797c21763532db",
+     "old": {
+      "start": 247,
+      "count": 1
+     },
+     "new": {
+      "start": 262,
+      "count": 4
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "41a0a2ba823e67887f5ec48971243ff6d43afbc3433ba298ffe1d6d08dd2aa99",
+   "newHash": "5ed21bdb5c2bec3b8d0477ee8d72291872890c8f8bfd003996a77e7721ec0824",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "6f6c7901cfaf1bb149eeaa9812aabe459d8f1e3ead4bce8a93c17f6655f0bee6",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 71,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2444,
+    "end": 2456
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8056170a4f9843f65ae226994ed060a308485e68e66cc55b8cd83e2a821a445d",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 72,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2456,
+    "end": 2534
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "9c0ab8082d7b419e95f1aa0e26e999868de433a6e2e9fe38bda3625c9b4092ee",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 73,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2534,
+    "end": 2614
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "c7183144a6c75ec9d7fc579067dc0f7af2a662df9165969688b81fc7792fa6f0",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 74,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2614,
+    "end": 2660
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b01b31509518f433d3ae8579d99ae53acc2388981f600e612cf93b688d5cd09c",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 75,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2660,
+    "end": 2747
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8e159e4980923119f69a65323f265aa6082222929afe85b2a32eb09c723123b5",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 76,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2747,
+    "end": 2816
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "845ac365a82aafb0da5f37108791b30403c6ef449140099117887a3f4605792c",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 77,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2816,
+    "end": 2907
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "47c88f7efa7b2e2c21b68dd47c45e5917400ef63983eec30c5324812326ef7a2",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 78,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2907,
+    "end": 2919
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "9cbacf11c753df47c508e84ded776fc1f8833426807f0efdda8ab360ae5cef3c",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 79,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2919,
+    "end": 2986
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "e7aba97f8a059a79d254bbd7fcf7a9f608177032c904bd7da088c64ac9ebb6d2",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 80,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2986,
+    "end": 3008
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "fb283e27c6a1e6a094396f13657864d350744c9a9a6df05410208b135088e914",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 81,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3008,
+    "end": 3086
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "485b314cef059ecb97cc33607c5375b6f2b482f944dc72acac40055bd57225bf",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 82,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3086,
+    "end": 3161
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5f1ed35934a96c6f887ae6e40d2c3837e02c44b897e70ddaa5f0d2174082175b",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 83,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3161,
+    "end": 3176
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "4e7bcf165f9f1c4a05bb90c7aa4f542026a9fa53f1a7dd3be964513329349b05",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 84,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3176,
+    "end": 3186
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "30f7d56a2b11c894756cc860393086261698ee431ce842da12db9fb7a08cebee",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d63e9e67f6fdb0c44b3d6dd7a36b4f67ae758fa34109c32594a08b1aed017a9",
+   "side": "new",
+   "old": {
+    "start": 70,
+    "count": 0
+   },
+   "new": {
+    "start": 85,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3186,
+    "end": 3187
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "0063d1f013e599328527996923c06e20cab53fc90e26bcbdf88cdaea57629260",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2201e1bf68762fb3abef5302be27b79a3eae765e6283468f9c797c21763532db",
+   "side": "old",
+   "old": {
+    "start": 247,
+    "count": 1
+   },
+   "new": {
+    "start": 262,
+    "count": 0
+   },
+   "offsets": {
+    "start": 9600,
+    "end": 9699
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "4f6766ce3364289065ee3ea9aa0f60f208f8d2a455f5e23b65b623ee5fa18645",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2201e1bf68762fb3abef5302be27b79a3eae765e6283468f9c797c21763532db",
+   "side": "new",
+   "old": {
+    "start": 247,
+    "count": 0
+   },
+   "new": {
+    "start": 262,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10343,
+    "end": 10426
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "46aba8a8acab9989fe8bd589cc6290c3a317b2026faaf1abd0167ac0495a9eb3",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2201e1bf68762fb3abef5302be27b79a3eae765e6283468f9c797c21763532db",
+   "side": "new",
+   "old": {
+    "start": 247,
+    "count": 0
+   },
+   "new": {
+    "start": 263,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10426,
+    "end": 10529
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "426efa99ad691b13df3a16a8fa3c5f33af154dc3c3363b548ed683c84b1e0ca5",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2201e1bf68762fb3abef5302be27b79a3eae765e6283468f9c797c21763532db",
+   "side": "new",
+   "old": {
+    "start": 247,
+    "count": 0
+   },
+   "new": {
+    "start": 264,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10529,
+    "end": 10559
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "f1f203e0661f0e35cd2df6816fffc4eab31021e7ebcd0aacd4b6e59d154e6e15",
+   "fileId": "a538835d6f906d4a7b64c77735179cb355ec5b57e60bc1c566f9bf9742cfdbdb",
+   "file": "lib/rules/space-unary-ops.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2201e1bf68762fb3abef5302be27b79a3eae765e6283468f9c797c21763532db",
+   "side": "new",
+   "old": {
+    "start": 247,
+    "count": 0
+   },
+   "new": {
+    "start": 265,
+    "count": 1
+   },
+   "offsets": {
+    "start": 10559,
+    "end": 10600
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "251c3171cf7853f4bbe77799c0621b7365b99f109758351481bfc9c43fe8e7fc",
+ "reconciliation": {
+  "expected": [
+   "6f6c7901cfaf1bb149eeaa9812aabe459d8f1e3ead4bce8a93c17f6655f0bee6",
+   "8056170a4f9843f65ae226994ed060a308485e68e66cc55b8cd83e2a821a445d",
+   "9c0ab8082d7b419e95f1aa0e26e999868de433a6e2e9fe38bda3625c9b4092ee",
+   "c7183144a6c75ec9d7fc579067dc0f7af2a662df9165969688b81fc7792fa6f0",
+   "b01b31509518f433d3ae8579d99ae53acc2388981f600e612cf93b688d5cd09c",
+   "8e159e4980923119f69a65323f265aa6082222929afe85b2a32eb09c723123b5",
+   "845ac365a82aafb0da5f37108791b30403c6ef449140099117887a3f4605792c",
+   "47c88f7efa7b2e2c21b68dd47c45e5917400ef63983eec30c5324812326ef7a2",
+   "9cbacf11c753df47c508e84ded776fc1f8833426807f0efdda8ab360ae5cef3c",
+   "e7aba97f8a059a79d254bbd7fcf7a9f608177032c904bd7da088c64ac9ebb6d2",
+   "fb283e27c6a1e6a094396f13657864d350744c9a9a6df05410208b135088e914",
+   "485b314cef059ecb97cc33607c5375b6f2b482f944dc72acac40055bd57225bf",
+   "5f1ed35934a96c6f887ae6e40d2c3837e02c44b897e70ddaa5f0d2174082175b",
+   "4e7bcf165f9f1c4a05bb90c7aa4f542026a9fa53f1a7dd3be964513329349b05",
+   "30f7d56a2b11c894756cc860393086261698ee431ce842da12db9fb7a08cebee",
+   "0063d1f013e599328527996923c06e20cab53fc90e26bcbdf88cdaea57629260",
+   "4f6766ce3364289065ee3ea9aa0f60f208f8d2a455f5e23b65b623ee5fa18645",
+   "46aba8a8acab9989fe8bd589cc6290c3a317b2026faaf1abd0167ac0495a9eb3",
+   "426efa99ad691b13df3a16a8fa3c5f33af154dc3c3363b548ed683c84b1e0ca5",
+   "f1f203e0661f0e35cd2df6816fffc4eab31021e7ebcd0aacd4b6e59d154e6e15"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "6f6c7901cfaf1bb149eeaa9812aabe459d8f1e3ead4bce8a93c17f6655f0bee6",
+   "8056170a4f9843f65ae226994ed060a308485e68e66cc55b8cd83e2a821a445d",
+   "9c0ab8082d7b419e95f1aa0e26e999868de433a6e2e9fe38bda3625c9b4092ee",
+   "c7183144a6c75ec9d7fc579067dc0f7af2a662df9165969688b81fc7792fa6f0",
+   "b01b31509518f433d3ae8579d99ae53acc2388981f600e612cf93b688d5cd09c",
+   "8e159e4980923119f69a65323f265aa6082222929afe85b2a32eb09c723123b5",
+   "845ac365a82aafb0da5f37108791b30403c6ef449140099117887a3f4605792c",
+   "47c88f7efa7b2e2c21b68dd47c45e5917400ef63983eec30c5324812326ef7a2",
+   "9cbacf11c753df47c508e84ded776fc1f8833426807f0efdda8ab360ae5cef3c",
+   "e7aba97f8a059a79d254bbd7fcf7a9f608177032c904bd7da088c64ac9ebb6d2",
+   "fb283e27c6a1e6a094396f13657864d350744c9a9a6df05410208b135088e914",
+   "485b314cef059ecb97cc33607c5375b6f2b482f944dc72acac40055bd57225bf",
+   "5f1ed35934a96c6f887ae6e40d2c3837e02c44b897e70ddaa5f0d2174082175b",
+   "4e7bcf165f9f1c4a05bb90c7aa4f542026a9fa53f1a7dd3be964513329349b05",
+   "30f7d56a2b11c894756cc860393086261698ee431ce842da12db9fb7a08cebee",
+   "0063d1f013e599328527996923c06e20cab53fc90e26bcbdf88cdaea57629260",
+   "4f6766ce3364289065ee3ea9aa0f60f208f8d2a455f5e23b65b623ee5fa18645",
+   "46aba8a8acab9989fe8bd589cc6290c3a317b2026faaf1abd0167ac0495a9eb3",
+   "426efa99ad691b13df3a16a8fa3c5f33af154dc3c3363b548ed683c84b1e0ca5",
+   "f1f203e0661f0e35cd2df6816fffc4eab31021e7ebcd0aacd4b6e59d154e6e15"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "6f6c7901cfaf1bb149eeaa9812aabe459d8f1e3ead4bce8a93c17f6655f0bee6",
+     "8056170a4f9843f65ae226994ed060a308485e68e66cc55b8cd83e2a821a445d",
+     "9c0ab8082d7b419e95f1aa0e26e999868de433a6e2e9fe38bda3625c9b4092ee",
+     "c7183144a6c75ec9d7fc579067dc0f7af2a662df9165969688b81fc7792fa6f0",
+     "b01b31509518f433d3ae8579d99ae53acc2388981f600e612cf93b688d5cd09c",
+     "8e159e4980923119f69a65323f265aa6082222929afe85b2a32eb09c723123b5",
+     "845ac365a82aafb0da5f37108791b30403c6ef449140099117887a3f4605792c",
+     "47c88f7efa7b2e2c21b68dd47c45e5917400ef63983eec30c5324812326ef7a2",
+     "9cbacf11c753df47c508e84ded776fc1f8833426807f0efdda8ab360ae5cef3c",
+     "e7aba97f8a059a79d254bbd7fcf7a9f608177032c904bd7da088c64ac9ebb6d2",
+     "fb283e27c6a1e6a094396f13657864d350744c9a9a6df05410208b135088e914",
+     "485b314cef059ecb97cc33607c5375b6f2b482f944dc72acac40055bd57225bf",
+     "5f1ed35934a96c6f887ae6e40d2c3837e02c44b897e70ddaa5f0d2174082175b",
+     "4e7bcf165f9f1c4a05bb90c7aa4f542026a9fa53f1a7dd3be964513329349b05",
+     "30f7d56a2b11c894756cc860393086261698ee431ce842da12db9fb7a08cebee",
+     "0063d1f013e599328527996923c06e20cab53fc90e26bcbdf88cdaea57629260",
+     "4f6766ce3364289065ee3ea9aa0f60f208f8d2a455f5e23b65b623ee5fa18645",
+     "46aba8a8acab9989fe8bd589cc6290c3a317b2026faaf1abd0167ac0495a9eb3",
+     "426efa99ad691b13df3a16a8fa3c5f33af154dc3c3363b548ed683c84b1e0ca5",
+     "f1f203e0661f0e35cd2df6816fffc4eab31021e7ebcd0aacd4b6e59d154e6e15"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

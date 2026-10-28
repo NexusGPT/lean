@@ -1,0 +1,755 @@
+{
+ "identity": "a0beea8ec82da9af20be509e047870057ceacfc9906282b79e8c908dc58806cf",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/operator-assignment.js",
+   "unit": "isNonCommutativeOperatorWithShorthand",
+   "lines": [
+    29,
+    31
+   ],
+   "verdict": "WITNESS",
+   "coverage": "checked",
+   "certificate": {
+    "tool": "lean-ts v3",
+    "identity": "a0beea8ec82da9af20be509e047870057ceacfc9906282b79e8c908dc58806cf",
+    "unit": "isNonCommutativeOperatorWithShorthand",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_base_53113_operator-assignment.js",
+     "sha256": "9cad023995e58264"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_head_53113_operator-assignment.js",
+     "sha256": "e270ce38aebe4c70"
+    },
+    "lanes": {
+     "B": {
+      "verdict": "WITNESS",
+      "reason": null,
+      "bound": {
+       "n": 100,
+       "seed": 1,
+       "ms": 2000,
+       "reached": {
+        "body": 45,
+        "guard": 0
+       },
+       "states": [
+        {
+         "input": 0,
+         "args": [
+          "vf7yi"
+         ]
+        },
+        {
+         "input": 1,
+         "args": [
+          "a"
+         ]
+        },
+        {
+         "input": 2,
+         "args": [
+          "+"
+         ]
+        },
+        {
+         "input": 3,
+         "args": [
+          "vftsi"
+         ]
+        },
+        {
+         "input": 4,
+         "args": [
+          "veukt"
+         ]
+        },
+        {
+         "input": 5,
+         "args": [
+          "0"
+         ]
+        },
+        {
+         "input": 6,
+         "args": [
+          "vdiyf"
+         ]
+        },
+        {
+         "input": 7,
+         "args": [
+          "ÄÖü"
+         ]
+        },
+        {
+         "input": 8,
+         "args": [
+          "日本"
+         ]
+        },
+        {
+         "input": 9,
+         "args": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         ]
+        },
+        {
+         "input": 10,
+         "args": [
+          "vc3h"
+         ]
+        },
+        {
+         "input": 11,
+         "args": [
+          "vimid"
+         ]
+        },
+        {
+         "input": 12,
+         "args": [
+          "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+         ]
+        },
+        {
+         "input": 13,
+         "args": [
+          "line one\nline two"
+         ]
+        },
+        {
+         "input": 14,
+         "args": [
+          "/"
+         ]
+        },
+        {
+         "input": 15,
+         "args": [
+          "vlera"
+         ]
+        },
+        {
+         "input": 16,
+         "args": [
+          "-"
+         ]
+        },
+        {
+         "input": 17,
+         "args": [
+          "%"
+         ]
+        },
+        {
+         "input": 18,
+         "args": [
+          "+"
+         ]
+        },
+        {
+         "input": 19,
+         "args": [
+          "**"
+         ]
+        },
+        {
+         "input": 20,
+         "args": [
+          ""
+         ]
+        },
+        {
+         "input": 21,
+         "args": [
+          "a"
+         ]
+        },
+        {
+         "input": 22,
+         "args": [
+          "-"
+         ]
+        },
+        {
+         "input": 23,
+         "args": [
+          "vfu7b"
+         ]
+        },
+        {
+         "input": 24,
+         "args": [
+          "/"
+         ]
+        },
+        {
+         "input": 25,
+         "args": [
+          "0"
+         ]
+        },
+        {
+         "input": 26,
+         "args": [
+          ">>>"
+         ]
+        },
+        {
+         "input": 27,
+         "args": [
+          "vk30w"
+         ]
+        },
+        {
+         "input": 28,
+         "args": [
+          "vjjv6"
+         ]
+        },
+        {
+         "input": 29,
+         "args": [
+          "+"
+         ]
+        },
+        {
+         "input": 30,
+         "args": [
+          "twelve-chars"
+         ]
+        },
+        {
+         "input": 31,
+         "args": [
+          "v2pj4"
+         ]
+        },
+        {
+         "input": 32,
+         "args": [
+          "+"
+         ]
+        },
+        {
+         "input": 33,
+         "args": [
+          "**"
+         ]
+        },
+        {
+         "input": 34,
+         "args": [
+          "null"
+         ]
+        },
+        {
+         "input": 35,
+         "args": [
+          "undefined"
+         ]
+        },
+        {
+         "input": 36,
+         "args": [
+          "  padded  "
+         ]
+        },
+        {
+         "input": 37,
+         "args": [
+          "vd4bp"
+         ]
+        },
+        {
+         "input": 38,
+         "args": [
+          "/path/to/file.txt"
+         ]
+        },
+        {
+         "input": 39,
+         "args": [
+          "user@example.com"
+         ]
+        },
+        {
+         "input": 40,
+         "args": [
+          ""
+         ]
+        },
+        {
+         "input": 41,
+         "args": [
+          "v982u"
+         ]
+        },
+        {
+         "input": 42,
+         "args": [
+          "%"
+         ]
+        },
+        {
+         "input": 43,
+         "args": [
+          " "
+         ]
+        },
+        {
+         "input": 44,
+         "args": [
+          "**"
+         ]
+        }
+       ],
+       "heaps": {
+        "assignments": 0,
+        "pool": 2,
+        "shapes": {}
+       },
+       "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+       "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+       "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+       "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+       "library": {
+        "records": 0,
+        "ops": {},
+        "calls": {},
+        "sampled": [],
+        "outOfModel": 0,
+        "callbackEffects": 0,
+        "defectRecords": 0,
+        "defects": []
+       }
+      },
+      "witnesses": [
+       {
+        "input": 19,
+        "args": [
+         "**"
+        ],
+        "where": {
+         "field": "outcome",
+         "lines": {
+          "kind": "completion",
+          "parent": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_base_53113_operator-assignment.js",
+           "start": 30,
+           "end": 30,
+           "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+          },
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_head_53113_operator-assignment.js",
+           "start": 30,
+           "end": 30,
+           "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\", \"**\"].indexOf(operator) >= 0;"
+          }
+         }
+        }
+       },
+       {
+        "input": 33,
+        "args": [
+         "**"
+        ],
+        "where": {
+         "field": "outcome",
+         "lines": {
+          "kind": "completion",
+          "parent": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_base_53113_operator-assignment.js",
+           "start": 30,
+           "end": 30,
+           "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+          },
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_head_53113_operator-assignment.js",
+           "start": 30,
+           "end": 30,
+           "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\", \"**\"].indexOf(operator) >= 0;"
+          }
+         }
+        }
+       },
+       {
+        "input": 44,
+        "args": [
+         "**"
+        ],
+        "where": {
+         "field": "outcome",
+         "lines": {
+          "kind": "completion",
+          "parent": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_base_53113_operator-assignment.js",
+           "start": 30,
+           "end": 30,
+           "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+          },
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_head_53113_operator-assignment.js",
+           "start": 30,
+           "end": 30,
+           "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\", \"**\"].indexOf(operator) >= 0;"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "tools": {
+     "node": "v24.18.0"
+    },
+    "unitTextEqual": false,
+    "observation": {
+     "layer": "values and the reachable object graph",
+     "renders": null,
+     "effects": "the trace of environment requests and pending work",
+     "schedule": "synchronous; pending work recorded, never fired"
+    },
+    "library": {
+     "records": 0,
+     "ops": {},
+     "outOfModel": 0,
+     "callbackEffects": 0,
+     "defects": 0
+    },
+    "verdict": "WITNESS"
+   },
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 19,
+    "args": [
+     "**"
+    ],
+    "where": {
+     "field": "outcome",
+     "lines": {
+      "kind": "completion",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_base_53113_operator-assignment.js",
+       "start": 30,
+       "end": 30,
+       "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/sources/lib/rules/.lean_head_53113_operator-assignment.js",
+       "start": 30,
+       "end": 30,
+       "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\", \"**\"].indexOf(operator) >= 0;"
+      }
+     }
+    }
+   },
+   "reason": null,
+   "advice": [],
+   "editIds": [
+    "b18c9e6b868809d763c4541b5c2ab77bbccc30ff50808793116da371643b605d",
+    "c870b513b9cee5ba74b9da2840cc11104587b07276442b24eca7f48e7e006c1f"
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/rules/operator-assignment.js",
+     "unit": "isNonCommutativeOperatorWithShorthand",
+     "lines": [
+      29,
+      31
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "c5066cee21e6a091ba40da11199efba0d7bb3e5d",
+  "head": "629c42f453fa885154dec033f14caaa2434dec2d",
+  "files": [
+   {
+    "id": "e012da9be0c0c6e072b93b2c054847eb871aedfd5fbac9816719b0c34ee8bcdb",
+    "file": "lib/rules/operator-assignment.js",
+    "oldPath": "lib/rules/operator-assignment.js",
+    "newPath": "lib/rules/operator-assignment.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "e003478c7bc427244fb93dcaba5e166a4bcc2539",
+    "newOid": "c5b82f5b0f4892a43b48a9e956555f4acc7b8417",
+    "status": "M",
+    "edits": [
+     "b18c9e6b868809d763c4541b5c2ab77bbccc30ff50808793116da371643b605d",
+     "c870b513b9cee5ba74b9da2840cc11104587b07276442b24eca7f48e7e006c1f"
+    ],
+    "hunks": [
+     {
+      "id": "f1cc4f10958873f3f96a21b15645116c110a6efb06f79bd59518b08edd3dc517",
+      "old": {
+       "start": 30,
+       "count": 1
+      },
+      "new": {
+       "start": 30,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "9cad023995e58264bfe1f9ca07b17a9f30e848498a1195ec2df44cd7adc28aea",
+    "newHash": "e270ce38aebe4c70140ed6db369c1c31ea181609652bab862d60def1994fb8e7",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isCommutativeOperatorWithShorthand",
+       "side": "old",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 18,
+       "end": 20,
+       "offset": 556,
+       "stop": 669,
+       "id": "b685965f1fb0af6acd528a0afa796b4a4c7d4ae998584a86c43c15c5de9c984a"
+      },
+      {
+       "name": "isNonCommutativeOperatorWithShorthand",
+       "side": "old",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 29,
+       "end": 31,
+       "offset": 934,
+       "stop": 1069,
+       "id": "4cc15b0e2a836e05a837628612762b8be8fbf1d6e60574b11bb134ebc5460112"
+      },
+      {
+       "name": "same",
+       "side": "old",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 47,
+       "end": 71,
+       "offset": 1592,
+       "stop": 2097,
+       "id": "93a65cec71bf0f7cae2c099e843a9ba888029852db0b1d59bb8397487ac82f27"
+      },
+      {
+       "name": "canBeFixed",
+       "side": "old",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 79,
+       "end": 82,
+       "offset": 2408,
+       "stop": 2613,
+       "id": "2f9c08a087fd77cbddd32e6a85d6b9609dfe77685b366fcd097ede6e3fd07fa4"
+      }
+     ],
+     "new": [
+      {
+       "name": "isCommutativeOperatorWithShorthand",
+       "side": "new",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 18,
+       "end": 20,
+       "offset": 556,
+       "stop": 669,
+       "id": "a236b956df364e0f017cc77ebff0af860fae2d78279966ca3e2e8835cb9a6a0b"
+      },
+      {
+       "name": "isNonCommutativeOperatorWithShorthand",
+       "side": "new",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 29,
+       "end": 31,
+       "offset": 934,
+       "stop": 1075,
+       "id": "50c069ce98535b479f5b60423d497e6fffc3552651bf501af56806b58b1aadf6"
+      },
+      {
+       "name": "same",
+       "side": "new",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 47,
+       "end": 71,
+       "offset": 1598,
+       "stop": 2103,
+       "id": "5f619d78a98eb530597f0a6bd3738856f0f191f2d3e8a6f6cc6a58b046a3f908"
+      },
+      {
+       "name": "canBeFixed",
+       "side": "new",
+       "file": "lib/rules/operator-assignment.js",
+       "start": 79,
+       "end": 82,
+       "offset": 2414,
+       "stop": 2619,
+       "id": "31e959d9c54ddf9e03c19783b6f3e41e718fd088a47b028158e5cc90124b0a00"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "b18c9e6b868809d763c4541b5c2ab77bbccc30ff50808793116da371643b605d",
+    "fileId": "e012da9be0c0c6e072b93b2c054847eb871aedfd5fbac9816719b0c34ee8bcdb",
+    "file": "lib/rules/operator-assignment.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f1cc4f10958873f3f96a21b15645116c110a6efb06f79bd59518b08edd3dc517",
+    "side": "old",
+    "old": {
+     "start": 30,
+     "count": 1
+    },
+    "new": {
+     "start": 30,
+     "count": 0
+    },
+    "offsets": {
+     "start": 993,
+     "end": 1068
+    },
+    "links": [
+     {
+      "id": "4cc15b0e2a836e05a837628612762b8be8fbf1d6e60574b11bb134ebc5460112",
+      "file": "lib/rules/operator-assignment.js",
+      "unit": "isNonCommutativeOperatorWithShorthand",
+      "side": "old",
+      "start": 29,
+      "end": 31
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "4cc15b0e2a836e05a837628612762b8be8fbf1d6e60574b11bb134ebc5460112",
+     "file": "lib/rules/operator-assignment.js",
+     "unit": "isNonCommutativeOperatorWithShorthand",
+     "side": "old",
+     "start": 29,
+     "end": 31
+    }
+   },
+   {
+    "id": "c870b513b9cee5ba74b9da2840cc11104587b07276442b24eca7f48e7e006c1f",
+    "fileId": "e012da9be0c0c6e072b93b2c054847eb871aedfd5fbac9816719b0c34ee8bcdb",
+    "file": "lib/rules/operator-assignment.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f1cc4f10958873f3f96a21b15645116c110a6efb06f79bd59518b08edd3dc517",
+    "side": "new",
+    "old": {
+     "start": 30,
+     "count": 0
+    },
+    "new": {
+     "start": 30,
+     "count": 1
+    },
+    "offsets": {
+     "start": 993,
+     "end": 1074
+    },
+    "links": [
+     {
+      "id": "50c069ce98535b479f5b60423d497e6fffc3552651bf501af56806b58b1aadf6",
+      "file": "lib/rules/operator-assignment.js",
+      "unit": "isNonCommutativeOperatorWithShorthand",
+      "side": "new",
+      "start": 29,
+      "end": 31
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "50c069ce98535b479f5b60423d497e6fffc3552651bf501af56806b58b1aadf6",
+     "file": "lib/rules/operator-assignment.js",
+     "unit": "isNonCommutativeOperatorWithShorthand",
+     "side": "new",
+     "start": 29,
+     "end": 31
+    }
+   }
+  ],
+  "id": "806fe04491d468358eb40c5d8b11e7bc511de6ed8fd50312513a35ac4e529e44",
+  "reconciliation": {
+   "expected": [
+    "b18c9e6b868809d763c4541b5c2ab77bbccc30ff50808793116da371643b605d",
+    "c870b513b9cee5ba74b9da2840cc11104587b07276442b24eca7f48e7e006c1f"
+   ],
+   "unit": [
+    "b18c9e6b868809d763c4541b5c2ab77bbccc30ff50808793116da371643b605d",
+    "c870b513b9cee5ba74b9da2840cc11104587b07276442b24eca7f48e7e006c1f"
+   ],
+   "artifact": [],
+   "unassigned": [],
+   "classes": {
+    "source": {
+     "unit": [
+      "b18c9e6b868809d763c4541b5c2ab77bbccc30ff50808793116da371643b605d",
+      "c870b513b9cee5ba74b9da2840cc11104587b07276442b24eca7f48e7e006c1f"
+     ],
+     "artifact": [],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "826c7a07e77241f4514895367906d3da274b4c89718a321420b980ffdefe9803"
+  ],
+  "terminal": [
+   "826c7a07e77241f4514895367906d3da274b4c89718a321420b980ffdefe9803"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [
+    "826c7a07e77241f4514895367906d3da274b4c89718a321420b980ffdefe9803/B",
+    "826c7a07e77241f4514895367906d3da274b4c89718a321420b980ffdefe9803/A"
+   ],
+   "terminal": [
+    "826c7a07e77241f4514895367906d3da274b4c89718a321420b980ffdefe9803/B",
+    "826c7a07e77241f4514895367906d3da274b4c89718a321420b980ffdefe9803/A"
+   ],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__332/run-ij5y5o",
+ "callersChecked": 0
+}

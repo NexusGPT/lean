@@ -1,0 +1,21 @@
+{
+ "file": "lib/config/config-initializer.js",
+ "unit": "(edit 5f44b761efa7)",
+ "editIds": [
+  "5f44b761efa768bf4bb940dc78fd111aafb53a75b705ccf32ebdfb0de9aafbb6"
+ ],
+ "lines": [
+  353,
+  353
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

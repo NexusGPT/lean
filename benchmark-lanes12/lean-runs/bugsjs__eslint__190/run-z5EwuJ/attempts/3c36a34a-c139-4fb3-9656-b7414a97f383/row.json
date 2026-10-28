@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/init-declarations.js",
+ "unit": "(edit 1d23473a3efb)",
+ "editIds": [
+  "1d23473a3efbc65b26157e4fb9ad566de5e0a52b2cbac0cbd04773ebdcf51045"
+ ],
+ "lines": [
+  52,
+  52
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

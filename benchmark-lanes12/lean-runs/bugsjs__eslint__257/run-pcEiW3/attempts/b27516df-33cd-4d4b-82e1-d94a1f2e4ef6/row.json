@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/func-names.js",
+ "unit": "(edit dab4d7bce43e)",
+ "editIds": [
+  "dab4d7bce43e444417be789134d6d6f0acd0115768a797fdfc2275ebdb85da85"
+ ],
+ "lines": [
+  62,
+  62
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/use-isnan.js",
+ "unit": "(edit eca0c720673d)",
+ "editIds": [
+  "eca0c720673d55e089b893e4a296d64682f14dcaba8b1f4dbe089f60ec160d4c"
+ ],
+ "lines": [
+  16,
+  16
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

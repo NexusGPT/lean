@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-invalid-this.js",
+ "unit": "(edit 6176561aa24f)",
+ "editIds": [
+  "6176561aa24ff3e8c8f46e29afb2231fac3ff96998be414bc0922a2ef6b50a49"
+ ],
+ "lines": [
+  327,
+  327
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

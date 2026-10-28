@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-useless-rename.js",
+ "unit": "(edit 340a70cc1d1c)",
+ "editIds": [
+  "340a70cc1d1c2dd37d3890df30bad64a44a77a72e1f5dc1b11e17b4e4b265195"
+ ],
+ "lines": [
+  87,
+  87
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

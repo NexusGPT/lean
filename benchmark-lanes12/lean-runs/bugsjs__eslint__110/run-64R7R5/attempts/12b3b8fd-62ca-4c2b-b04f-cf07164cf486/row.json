@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-warning-comments.js",
+ "unit": "(edit fa52bf8edcd7)",
+ "editIds": [
+  "fa52bf8edcd78e64c293bc20c0ba922ed0e0447bfc647c946d656ea9389833fb"
+ ],
+ "lines": [
+  77,
+  77
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

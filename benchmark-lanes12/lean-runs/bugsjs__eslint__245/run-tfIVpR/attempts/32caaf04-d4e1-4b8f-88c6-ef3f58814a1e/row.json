@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-useless-escape.js",
+ "unit": "(edit 4ecd27cee295)",
+ "editIds": [
+  "4ecd27cee2951a4154e522d145d45dbb07ae4b5e001ea89d256750ce099523cb"
+ ],
+ "lines": [
+  242,
+  242
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/watcher.js",
+ "unit": "(edit 373f2fecf0a0)",
+ "editIds": [
+  "373f2fecf0a0d7c8df3eda063fe9d5cb9c69c6be9965c22255d4079b70f3a8fd"
+ ],
+ "lines": [
+  54,
+  54
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

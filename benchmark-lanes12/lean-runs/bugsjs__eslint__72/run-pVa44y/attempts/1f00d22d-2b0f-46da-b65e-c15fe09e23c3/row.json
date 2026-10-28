@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/comma-dangle.js",
+ "unit": "(edit 85d1bd16d7d0)",
+ "editIds": [
+  "85d1bd16d7d00f01cc5f499e8f6ea4c87a0fa192bcd643980e0527b8ddbb4e87"
+ ],
+ "lines": [
+  158,
+  158
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

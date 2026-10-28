@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/key-spacing.js",
+ "unit": "(edit f7615933a53a)",
+ "editIds": [
+  "f7615933a53af79fc0808eef4671dffce4380c1fb076ce197ed00be89dabb738"
+ ],
+ "lines": [
+  206,
+  206
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

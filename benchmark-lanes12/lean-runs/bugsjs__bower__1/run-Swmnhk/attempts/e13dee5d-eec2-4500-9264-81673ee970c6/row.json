@@ -1,0 +1,21 @@
+{
+ "file": "lib/core/PackageRepository.js",
+ "unit": "(edit 8699183811c5)",
+ "editIds": [
+  "8699183811c54b64547c271d6d9b4f7a741a051aea969dc041eebe3439904a8c"
+ ],
+ "lines": [
+  178,
+  178
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

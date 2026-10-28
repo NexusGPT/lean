@@ -1,0 +1,21 @@
+{
+ "file": "lib/plugins/helper/is.js",
+ "unit": "(edit 97d6b6050c19)",
+ "editIds": [
+  "97d6b6050c198558bc6d9b456f3fa7029a9ae73c27a28659f1ce6a0d1245f772"
+ ],
+ "lines": [
+  5,
+  5
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

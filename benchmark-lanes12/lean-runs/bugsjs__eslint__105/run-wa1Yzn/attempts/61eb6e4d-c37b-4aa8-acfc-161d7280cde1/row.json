@@ -1,0 +1,21 @@
+{
+ "file": "lib/config/config-file.js",
+ "unit": "(edit 0663c76fba8a)",
+ "editIds": [
+  "0663c76fba8abb2342561d4eb0b1b33c302f0690e38dd4ce4fbcc23a1cff0b03"
+ ],
+ "lines": [
+  368,
+  368
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

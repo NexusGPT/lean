@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/init-declarations.js",
+ "unit": "(edit abc05a251081)",
+ "editIds": [
+  "abc05a2510815c130a7abe0587b2f3ef2ab0d25e52470f7e52b89778043cc9d9"
+ ],
+ "lines": [
+  33,
+  33
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

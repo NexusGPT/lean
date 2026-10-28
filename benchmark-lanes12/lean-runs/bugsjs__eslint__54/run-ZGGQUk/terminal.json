@@ -1,0 +1,562 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__54/run-ZGGQUk",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "4673f6e2f348e98a1288a2da5ec42e313826ebdb",
+  "head": "3d35b303d80fe001f60c85254d309fe4ed8b6495",
+  "files": [
+   {
+    "id": "91a33c9fbb00bd59c9acc3180aba45d0974b24740ad84ce215b70763dec3aff3",
+    "file": "lib/config/plugins.js",
+    "oldPath": "lib/config/plugins.js",
+    "newPath": "lib/config/plugins.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "e28a77929c0b5fc79469c669c0a3ef2797e32ffa",
+    "newOid": "aebb3669f89a976ed2b864de9d85c077d11bcd43",
+    "status": "M",
+    "edits": [
+     "01dd575ba9b9f49e0fa849dd47fc0bfe8f33155314e00efd14f113046b6e2932",
+     "3e414b625b63763ab9e7a014f7b35810911cea7e7dd9cd34d38ef29f43e208d6",
+     "cd1db32401bd67d20fa6ee4cc1cd3db134a0d67166b1d3f82cce67ec43d0b49a",
+     "4a4435ea612e47f90a3df51b8a04eb804e77155b9c058a302194e63038e4a643",
+     "1f79ae21bceb94d2da7591f914909ac89c4af947383fd0d9f76b4ab8914ac227",
+     "c22c7930085df30455125203cdad735587aa9ad662c697105fe231f7dbd12d8c"
+    ],
+    "hunks": [
+     {
+      "id": "b96c91ee2cf89e7fb7e2dd7e8e278106147c2c9abef5114443921bfc956cbd60",
+      "old": {
+       "start": 78,
+       "count": 6
+      },
+      "new": {
+       "start": 77,
+       "count": 0
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "a329aa4176e7c00ecd883fe83fb2bd3dfcfc51dcad6c33fdc2f3a94ccf95eebe",
+    "newHash": "ffffbb1b20914ceed400c57834c7644fba788fae5b03fd395b8c5d2bf9fc1823",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "removePrefix",
+       "side": "old",
+       "file": "lib/config/plugins.js",
+       "start": 30,
+       "end": 32,
+       "offset": 893,
+       "stop": 1050,
+       "id": "9c5c9a6cc05137f2ca645dba167533858f62f90d5e2f61958122dddc76cd4e9f"
+      },
+      {
+       "name": "getNamespace",
+       "side": "old",
+       "file": "lib/config/plugins.js",
+       "start": 39,
+       "end": 41,
+       "offset": 1252,
+       "stop": 1379,
+       "id": "00e84463a3e0b51fe0255d930e5787fa7171214406781f68502bda23bd0573fd"
+      },
+      {
+       "name": "removeNamespace",
+       "side": "old",
+       "file": "lib/config/plugins.js",
+       "start": 48,
+       "end": 50,
+       "offset": 1581,
+       "stop": 1673,
+       "id": "093f96ad95b106cbcc4bb7fc3887ad4a29bd83d66d23ad8d0e7e890acd921682"
+      }
+     ],
+     "new": [
+      {
+       "name": "removePrefix",
+       "side": "new",
+       "file": "lib/config/plugins.js",
+       "start": 30,
+       "end": 32,
+       "offset": 893,
+       "stop": 1050,
+       "id": "77d227eab19cddac1c70f54fb84b05dc8444fae24107bca3e08898abc92fda93"
+      },
+      {
+       "name": "getNamespace",
+       "side": "new",
+       "file": "lib/config/plugins.js",
+       "start": 39,
+       "end": 41,
+       "offset": 1252,
+       "stop": 1379,
+       "id": "c88fc40f5d9d9062a9cc96e57f85f96fabb6e8bfbae15e0c12410fe037d9d1f3"
+      },
+      {
+       "name": "removeNamespace",
+       "side": "new",
+       "file": "lib/config/plugins.js",
+       "start": 48,
+       "end": 50,
+       "offset": 1581,
+       "stop": 1673,
+       "id": "436a73a5f5b565d294e0a02ac019ecd89b1c4aacae30c8ba84b6871c4aba164a"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "01dd575ba9b9f49e0fa849dd47fc0bfe8f33155314e00efd14f113046b6e2932",
+    "fileId": "91a33c9fbb00bd59c9acc3180aba45d0974b24740ad84ce215b70763dec3aff3",
+    "file": "lib/config/plugins.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b96c91ee2cf89e7fb7e2dd7e8e278106147c2c9abef5114443921bfc956cbd60",
+    "side": "old",
+    "old": {
+     "start": 78,
+     "count": 1
+    },
+    "new": {
+     "start": 77,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2652,
+     "end": 2653
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "3e414b625b63763ab9e7a014f7b35810911cea7e7dd9cd34d38ef29f43e208d6",
+    "fileId": "91a33c9fbb00bd59c9acc3180aba45d0974b24740ad84ce215b70763dec3aff3",
+    "file": "lib/config/plugins.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b96c91ee2cf89e7fb7e2dd7e8e278106147c2c9abef5114443921bfc956cbd60",
+    "side": "old",
+    "old": {
+     "start": 79,
+     "count": 1
+    },
+    "new": {
+     "start": 77,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2653,
+     "end": 2735
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "cd1db32401bd67d20fa6ee4cc1cd3db134a0d67166b1d3f82cce67ec43d0b49a",
+    "fileId": "91a33c9fbb00bd59c9acc3180aba45d0974b24740ad84ce215b70763dec3aff3",
+    "file": "lib/config/plugins.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b96c91ee2cf89e7fb7e2dd7e8e278106147c2c9abef5114443921bfc956cbd60",
+    "side": "old",
+    "old": {
+     "start": 80,
+     "count": 1
+    },
+    "new": {
+     "start": 77,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2735,
+     "end": 2785
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "4a4435ea612e47f90a3df51b8a04eb804e77155b9c058a302194e63038e4a643",
+    "fileId": "91a33c9fbb00bd59c9acc3180aba45d0974b24740ad84ce215b70763dec3aff3",
+    "file": "lib/config/plugins.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b96c91ee2cf89e7fb7e2dd7e8e278106147c2c9abef5114443921bfc956cbd60",
+    "side": "old",
+    "old": {
+     "start": 81,
+     "count": 1
+    },
+    "new": {
+     "start": 77,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2785,
+     "end": 2836
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "1f79ae21bceb94d2da7591f914909ac89c4af947383fd0d9f76b4ab8914ac227",
+    "fileId": "91a33c9fbb00bd59c9acc3180aba45d0974b24740ad84ce215b70763dec3aff3",
+    "file": "lib/config/plugins.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b96c91ee2cf89e7fb7e2dd7e8e278106147c2c9abef5114443921bfc956cbd60",
+    "side": "old",
+    "old": {
+     "start": 82,
+     "count": 1
+    },
+    "new": {
+     "start": 77,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2836,
+     "end": 2904
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c22c7930085df30455125203cdad735587aa9ad662c697105fe231f7dbd12d8c",
+    "fileId": "91a33c9fbb00bd59c9acc3180aba45d0974b24740ad84ce215b70763dec3aff3",
+    "file": "lib/config/plugins.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b96c91ee2cf89e7fb7e2dd7e8e278106147c2c9abef5114443921bfc956cbd60",
+    "side": "old",
+    "old": {
+     "start": 83,
+     "count": 1
+    },
+    "new": {
+     "start": 77,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2904,
+     "end": 2965
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   }
+  ],
+  "id": "aa5732a32d4443ef538b80dd358a548f93e10bcdb23c9400e4471d3c51f3f691",
+  "reconciliation": {
+   "expected": [
+    "01dd575ba9b9f49e0fa849dd47fc0bfe8f33155314e00efd14f113046b6e2932",
+    "3e414b625b63763ab9e7a014f7b35810911cea7e7dd9cd34d38ef29f43e208d6",
+    "cd1db32401bd67d20fa6ee4cc1cd3db134a0d67166b1d3f82cce67ec43d0b49a",
+    "4a4435ea612e47f90a3df51b8a04eb804e77155b9c058a302194e63038e4a643",
+    "1f79ae21bceb94d2da7591f914909ac89c4af947383fd0d9f76b4ab8914ac227",
+    "c22c7930085df30455125203cdad735587aa9ad662c697105fe231f7dbd12d8c"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "01dd575ba9b9f49e0fa849dd47fc0bfe8f33155314e00efd14f113046b6e2932",
+    "3e414b625b63763ab9e7a014f7b35810911cea7e7dd9cd34d38ef29f43e208d6",
+    "cd1db32401bd67d20fa6ee4cc1cd3db134a0d67166b1d3f82cce67ec43d0b49a",
+    "4a4435ea612e47f90a3df51b8a04eb804e77155b9c058a302194e63038e4a643",
+    "1f79ae21bceb94d2da7591f914909ac89c4af947383fd0d9f76b4ab8914ac227",
+    "c22c7930085df30455125203cdad735587aa9ad662c697105fe231f7dbd12d8c"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "01dd575ba9b9f49e0fa849dd47fc0bfe8f33155314e00efd14f113046b6e2932",
+      "3e414b625b63763ab9e7a014f7b35810911cea7e7dd9cd34d38ef29f43e208d6",
+      "cd1db32401bd67d20fa6ee4cc1cd3db134a0d67166b1d3f82cce67ec43d0b49a",
+      "4a4435ea612e47f90a3df51b8a04eb804e77155b9c058a302194e63038e4a643",
+      "1f79ae21bceb94d2da7591f914909ac89c4af947383fd0d9f76b4ab8914ac227",
+      "c22c7930085df30455125203cdad735587aa9ad662c697105fe231f7dbd12d8c"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "22748c022f660e3dabaad0b83610bbf4b4b899bddf3e6f6ca15bd79b17fb904c",
+   "attemptId": "6db87f05-a2db-44ad-affa-935150eb9ec5",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__54/run-ZGGQUk/attempts/6db87f05-a2db-44ad-affa-935150eb9ec5/row.json",
+    "sha256": "4bff0cd484c739d34f12cec94d528a195718bad7e6e8363bd7e6e2e399c0fc5b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a1a3bd3cfa9cb533709beb4fd8878a5533391828aec9eb3a64a5fddf785e52dc",
+   "attemptId": "b8b012b3-27ed-4e5f-b630-2febf4bc18b8",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__54/run-ZGGQUk/attempts/b8b012b3-27ed-4e5f-b630-2febf4bc18b8/row.json",
+    "sha256": "5b5f46425f53dadbb6ddb980001021f6357226b2c7e7411fb8cd8dfef5751fd1"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "0abfe9901a785125c5c37a5d20e7e2180ada048b0975569c7f815707bf31d3a2",
+   "attemptId": "63b627b6-3958-430b-97d2-1f0c6e38dd9d",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__54/run-ZGGQUk/attempts/63b627b6-3958-430b-97d2-1f0c6e38dd9d/row.json",
+    "sha256": "09d709eac7863b49fb293df0c5038f5e8c15b24368f50f14612a7cebccbff332"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "3216e27033c8c001193fecf799f6958a26ebaf226844b39d89e7c5627d908026",
+   "attemptId": "aeaab4a5-3186-4935-a16b-e9e91ca95066",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__54/run-ZGGQUk/attempts/aeaab4a5-3186-4935-a16b-e9e91ca95066/row.json",
+    "sha256": "60b6a7260b6f57e5c84cbf460c50aaa9e834870f2654d0bd349c9023dee5e0ff"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "5280de92e42d1fccce5f098dbe26e42cb9138b3be2fb6f89af12e6dcf1dbe00c",
+   "attemptId": "b1520e73-20a7-403b-a90e-81b14ff6604f",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__54/run-ZGGQUk/attempts/b1520e73-20a7-403b-a90e-81b14ff6604f/row.json",
+    "sha256": "f65ced896e7ab7b627084f4bae1dd870a393ba47525b70651e13e0c59b47ecb4"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "5478d9db9ab0e626988092d7b95df14996901ddc3b61f4e4fbe0ebbc2f23e459",
+   "attemptId": "1105f55e-1360-4808-96fe-d49ff6355b31",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__54/run-ZGGQUk/attempts/1105f55e-1360-4808-96fe-d49ff6355b31/row.json",
+    "sha256": "af804f882e045f0459cddc2c5285e4f41e2cb9480694965e3d94fbf08357ebe3"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/config/plugins.js",
+   "unit": "(edit 01dd575ba9b9)",
+   "editIds": [
+    "01dd575ba9b9f49e0fa849dd47fc0bfe8f33155314e00efd14f113046b6e2932"
+   ],
+   "lines": [
+    78,
+    78
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/plugins.js",
+   "unit": "(edit 3e414b625b63)",
+   "editIds": [
+    "3e414b625b63763ab9e7a014f7b35810911cea7e7dd9cd34d38ef29f43e208d6"
+   ],
+   "lines": [
+    79,
+    79
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/plugins.js",
+   "unit": "(edit cd1db32401bd)",
+   "editIds": [
+    "cd1db32401bd67d20fa6ee4cc1cd3db134a0d67166b1d3f82cce67ec43d0b49a"
+   ],
+   "lines": [
+    80,
+    80
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/plugins.js",
+   "unit": "(edit 4a4435ea612e)",
+   "editIds": [
+    "4a4435ea612e47f90a3df51b8a04eb804e77155b9c058a302194e63038e4a643"
+   ],
+   "lines": [
+    81,
+    81
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/plugins.js",
+   "unit": "(edit 1f79ae21bceb)",
+   "editIds": [
+    "1f79ae21bceb94d2da7591f914909ac89c4af947383fd0d9f76b4ab8914ac227"
+   ],
+   "lines": [
+    82,
+    82
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/plugins.js",
+   "unit": "(edit c22c7930085d)",
+   "editIds": [
+    "c22c7930085df30455125203cdad735587aa9ad662c697105fe231f7dbd12d8c"
+   ],
+   "lines": [
+    83,
+    83
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "22748c022f660e3dabaad0b83610bbf4b4b899bddf3e6f6ca15bd79b17fb904c",
+   "a1a3bd3cfa9cb533709beb4fd8878a5533391828aec9eb3a64a5fddf785e52dc",
+   "0abfe9901a785125c5c37a5d20e7e2180ada048b0975569c7f815707bf31d3a2",
+   "3216e27033c8c001193fecf799f6958a26ebaf226844b39d89e7c5627d908026",
+   "5280de92e42d1fccce5f098dbe26e42cb9138b3be2fb6f89af12e6dcf1dbe00c",
+   "5478d9db9ab0e626988092d7b95df14996901ddc3b61f4e4fbe0ebbc2f23e459"
+  ],
+  "terminal": [
+   "22748c022f660e3dabaad0b83610bbf4b4b899bddf3e6f6ca15bd79b17fb904c",
+   "a1a3bd3cfa9cb533709beb4fd8878a5533391828aec9eb3a64a5fddf785e52dc",
+   "0abfe9901a785125c5c37a5d20e7e2180ada048b0975569c7f815707bf31d3a2",
+   "3216e27033c8c001193fecf799f6958a26ebaf226844b39d89e7c5627d908026",
+   "5280de92e42d1fccce5f098dbe26e42cb9138b3be2fb6f89af12e6dcf1dbe00c",
+   "5478d9db9ab0e626988092d7b95df14996901ddc3b61f4e4fbe0ebbc2f23e459"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

@@ -1,0 +1,11 @@
+{
+ "task": "8e20465dff74c0addd9d7aaa464b2ca2ff794a4ffa84851d2296749e2c4ef17f",
+ "attemptId": "44211426-8dd5-4df8-bdfd-640badaf86f6",
+ "state": "started",
+ "workerPid": 97420,
+ "started": "2026-10-28T21:42:49.336Z",
+ "lanes": [
+  "B",
+  "A"
+ ]
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/request.js",
+ "unit": "(edit 7c93311293cf)",
+ "editIds": [
+  "7c93311293cf99d7680d1f37a5ffb1fae41b5a883428e208d9230f567c411442"
+ ],
+ "lines": [
+  479,
+  479
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

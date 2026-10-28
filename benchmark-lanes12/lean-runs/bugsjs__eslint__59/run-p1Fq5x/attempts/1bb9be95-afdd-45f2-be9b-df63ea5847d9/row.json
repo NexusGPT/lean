@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/consistent-this.js",
+ "unit": "(edit 56d6982b74eb)",
+ "editIds": [
+  "56d6982b74eb06dc6a690b6fc4ea2160ff88de017630a4d1c37d30e243e5b0d2"
+ ],
+ "lines": [
+  96,
+  96
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

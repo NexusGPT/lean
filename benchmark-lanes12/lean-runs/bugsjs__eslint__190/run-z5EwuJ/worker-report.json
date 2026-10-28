@@ -1,0 +1,1124 @@
+{
+ "identity": "600d076c32013be7c774b8d57fd9b098fc53cffbe9768b175cac370bc4a2d952",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/init-declarations.js",
+   "unit": "isInitialized",
+   "lines": [
+    18,
+    26
+   ],
+   "coverage": "refused:var",
+   "verdict": "ASK",
+   "laneB": "ASK",
+   "laneA": null,
+   "witness": null,
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__190/run-z5EwuJ/sources/lib/rules/.lean_head_33700_init-declarations.js: ASK(CommonJS wrapper): module is not defined",
+   "advice": [
+    {
+     "line": 19,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 20,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    }
+   ],
+   "editIds": [
+    "6d66be3e296d30cad90e53b4f109eda4252fcf0e10b0a4d8d989b9b717f8d567",
+    "e38af45c50e2ba57121658d4f3d7c31fa845e725e4a9268e0403f772609c4d83",
+    "0e0841e348289eec35f7ad5ba1a34e673d9b8e0abe2b242f19ed4a62ee66c105",
+    "20ff4caafebcffc2c051624f45b46486cca1e2fb15687a9d6cd022425b281700",
+    "8dd0ad896bc03b60567722a327730775e1698006d2a2c590a924571a43f3890a",
+    "e33e43b201d463ea78afb5ea858e4d141f10bf5b332436c43a69cf6370f8fd5f",
+    "6a86f56839f4caf031c372995dbc85155900a568fe26bf9b75e6d40c696e8a2e",
+    "341064249262a73bd53b594b6ccc770e1cc53050d1c49d533f3c1afb41383278",
+    "1b43a995ef70f46f74e0ffe3bcdcc3da13a73fbaf25c576f60aad4946fa98ebd"
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "lines": [
+      18,
+      26
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "2f36f92e1c8d7000252f905c0a90764ff06e7249",
+  "head": "e100017fef43bc4fa134dc259bd9e5c01f986415",
+  "files": [
+   {
+    "id": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "oldPath": "lib/rules/init-declarations.js",
+    "newPath": "lib/rules/init-declarations.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "6ab78a0d08eb9eaa85287ace460dc6a8bfabb246",
+    "newOid": "47ee0cda07897a85e002406fae7d791b544e7d15",
+    "status": "M",
+    "edits": [
+     "6d24f888c1471f23808ce04bfc6fe68f0ef24888b0cf0aa8dacc9513725354b1",
+     "69d8d9a72e4da3f15713fc295b858fc319c994e988983ba801eebe8df27df097",
+     "644cce4941fcc5731f3342c8e477b0d8cb11a317a4006b8339895bce427ddf4f",
+     "6862f7da4238fce27e291371c637f4e542debb08c8271802c4ef905d0fb57268",
+     "786dfe91e3472a1f4a2534186e554e5a9779053a2c105a7ac1349480564ca274",
+     "ebcf9a83a4d8c6d14ea89d0c32c8f70dcb7b48557de7b1130056322283b8f527",
+     "a00ff76cba13826753920150629fc11d09ef43bbd975064cc511d316d9029700",
+     "1f121a38097729a0977710661f0bca2eb7746fb52fa25b378794b14607b5222b",
+     "1cf844f958d9376ec2858168fa3f9f11954f55c1bc92365442aaceeef725d31f",
+     "6d66be3e296d30cad90e53b4f109eda4252fcf0e10b0a4d8d989b9b717f8d567",
+     "e38af45c50e2ba57121658d4f3d7c31fa845e725e4a9268e0403f772609c4d83",
+     "0e0841e348289eec35f7ad5ba1a34e673d9b8e0abe2b242f19ed4a62ee66c105",
+     "20ff4caafebcffc2c051624f45b46486cca1e2fb15687a9d6cd022425b281700",
+     "8dd0ad896bc03b60567722a327730775e1698006d2a2c590a924571a43f3890a",
+     "e33e43b201d463ea78afb5ea858e4d141f10bf5b332436c43a69cf6370f8fd5f",
+     "6a86f56839f4caf031c372995dbc85155900a568fe26bf9b75e6d40c696e8a2e",
+     "341064249262a73bd53b594b6ccc770e1cc53050d1c49d533f3c1afb41383278",
+     "1b43a995ef70f46f74e0ffe3bcdcc3da13a73fbaf25c576f60aad4946fa98ebd",
+     "32eedad1fcc92714a5aa01b5ddd3de8aa71ab8ddc007fdcbf2d4869581eb95b4",
+     "c205b5a8b679ec857876e56e35479a26ccd8d68d0a7afb75ee8e6ff90bee8962",
+     "c07456e6615e87f1ed02066ef0ecc64f1543da677a8babb6ef560aa7ad7dde4a",
+     "abc05a2510815c130a7abe0587b2f3ef2ab0d25e52470f7e52b89778043cc9d9",
+     "1d23473a3efbc65b26157e4fb9ad566de5e0a52b2cbac0cbd04773ebdcf51045"
+    ],
+    "hunks": [
+     {
+      "id": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+      "old": {
+       "start": 8,
+       "count": 0
+      },
+      "new": {
+       "start": 9,
+       "count": 19
+      }
+     },
+     {
+      "id": "8aa346f3732a6442678354042f81a964d2dedf776e4efaee03cf05a0a042da88",
+      "old": {
+       "start": 25,
+       "count": 1
+      },
+      "new": {
+       "start": 44,
+       "count": 1
+      }
+     },
+     {
+      "id": "4534c39416c4b2db3363f79ffbb4c25d417f07e5541a78faf0362bda2e36515c",
+      "old": {
+       "start": 33,
+       "count": 1
+      },
+      "new": {
+       "start": 52,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "3efe48d6658856640cd3ac5656964b1bb86509cd40711d4c95155d8a8032d5b3",
+    "newHash": "6ffa3fc3a6b510be91764e593706ff14eee3da1d161df87717eec406c70a961d",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": [
+      {
+       "name": "isInitialized",
+       "side": "new",
+       "file": "lib/rules/init-declarations.js",
+       "start": 18,
+       "end": 26,
+       "offset": 545,
+       "stop": 806,
+       "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "6d24f888c1471f23808ce04bfc6fe68f0ef24888b0cf0aa8dacc9513725354b1",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 9,
+     "count": 1
+    },
+    "offsets": {
+     "start": 174,
+     "end": 255
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "69d8d9a72e4da3f15713fc295b858fc319c994e988983ba801eebe8df27df097",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 10,
+     "count": 1
+    },
+    "offsets": {
+     "start": 255,
+     "end": 266
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "644cce4941fcc5731f3342c8e477b0d8cb11a317a4006b8339895bce427ddf4f",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 11,
+     "count": 1
+    },
+    "offsets": {
+     "start": 266,
+     "end": 347
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6862f7da4238fce27e291371c637f4e542debb08c8271802c4ef905d0fb57268",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 12,
+     "count": 1
+    },
+    "offsets": {
+     "start": 347,
+     "end": 348
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "786dfe91e3472a1f4a2534186e554e5a9779053a2c105a7ac1349480564ca274",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 13,
+     "count": 1
+    },
+    "offsets": {
+     "start": 348,
+     "end": 352
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ebcf9a83a4d8c6d14ea89d0c32c8f70dcb7b48557de7b1130056322283b8f527",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 14,
+     "count": 1
+    },
+    "offsets": {
+     "start": 352,
+     "end": 422
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "a00ff76cba13826753920150629fc11d09ef43bbd975064cc511d316d9029700",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 15,
+     "count": 1
+    },
+    "offsets": {
+     "start": 422,
+     "end": 477
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1f121a38097729a0977710661f0bca2eb7746fb52fa25b378794b14607b5222b",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 16,
+     "count": 1
+    },
+    "offsets": {
+     "start": 477,
+     "end": 541
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1cf844f958d9376ec2858168fa3f9f11954f55c1bc92365442aaceeef725d31f",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 17,
+     "count": 1
+    },
+    "offsets": {
+     "start": 541,
+     "end": 545
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6d66be3e296d30cad90e53b4f109eda4252fcf0e10b0a4d8d989b9b717f8d567",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 18,
+     "count": 1
+    },
+    "offsets": {
+     "start": 545,
+     "end": 576
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "e38af45c50e2ba57121658d4f3d7c31fa845e725e4a9268e0403f772609c4d83",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 19,
+     "count": 1
+    },
+    "offsets": {
+     "start": 576,
+     "end": 611
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "0e0841e348289eec35f7ad5ba1a34e673d9b8e0abe2b242f19ed4a62ee66c105",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 20,
+     "count": 1
+    },
+    "offsets": {
+     "start": 611,
+     "end": 647
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "20ff4caafebcffc2c051624f45b46486cca1e2fb15687a9d6cd022425b281700",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 21,
+     "count": 1
+    },
+    "offsets": {
+     "start": 647,
+     "end": 648
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "8dd0ad896bc03b60567722a327730775e1698006d2a2c590a924571a43f3890a",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 22,
+     "count": 1
+    },
+    "offsets": {
+     "start": 648,
+     "end": 726
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "e33e43b201d463ea78afb5ea858e4d141f10bf5b332436c43a69cf6370f8fd5f",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 23,
+     "count": 1
+    },
+    "offsets": {
+     "start": 726,
+     "end": 769
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "6a86f56839f4caf031c372995dbc85155900a568fe26bf9b75e6d40c696e8a2e",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 24,
+     "count": 1
+    },
+    "offsets": {
+     "start": 769,
+     "end": 775
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "341064249262a73bd53b594b6ccc770e1cc53050d1c49d533f3c1afb41383278",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 25,
+     "count": 1
+    },
+    "offsets": {
+     "start": 775,
+     "end": 805
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "1b43a995ef70f46f74e0ffe3bcdcc3da13a73fbaf25c576f60aad4946fa98ebd",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 26,
+     "count": 1
+    },
+    "offsets": {
+     "start": 805,
+     "end": 807
+    },
+    "links": [
+     {
+      "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+      "file": "lib/rules/init-declarations.js",
+      "unit": "isInitialized",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "49078243d948200f4f3ddbd6c462ef0d1f3bfd79a7cc47dd9b546a84e4e5a1ff",
+     "file": "lib/rules/init-declarations.js",
+     "unit": "isInitialized",
+     "side": "new",
+     "start": 18,
+     "end": 26
+    }
+   },
+   {
+    "id": "32eedad1fcc92714a5aa01b5ddd3de8aa71ab8ddc007fdcbf2d4869581eb95b4",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "656710e8d63ce26a3e59bb0d4efe246e1cda1a53d798bcca59fbcac79dc8c6d2",
+    "side": "new",
+    "old": {
+     "start": 8,
+     "count": 0
+    },
+    "new": {
+     "start": 27,
+     "count": 1
+    },
+    "offsets": {
+     "start": 807,
+     "end": 808
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c205b5a8b679ec857876e56e35479a26ccd8d68d0a7afb75ee8e6ff90bee8962",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8aa346f3732a6442678354042f81a964d2dedf776e4efaee03cf05a0a042da88",
+    "side": "old",
+    "old": {
+     "start": 25,
+     "count": 1
+    },
+    "new": {
+     "start": 44,
+     "count": 0
+    },
+    "offsets": {
+     "start": 702,
+     "end": 750
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c07456e6615e87f1ed02066ef0ecc64f1543da677a8babb6ef560aa7ad7dde4a",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8aa346f3732a6442678354042f81a964d2dedf776e4efaee03cf05a0a042da88",
+    "side": "new",
+    "old": {
+     "start": 25,
+     "count": 0
+    },
+    "new": {
+     "start": 44,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1336,
+     "end": 1389
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "abc05a2510815c130a7abe0587b2f3ef2ab0d25e52470f7e52b89778043cc9d9",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4534c39416c4b2db3363f79ffbb4c25d417f07e5541a78faf0362bda2e36515c",
+    "side": "old",
+    "old": {
+     "start": 33,
+     "count": 1
+    },
+    "new": {
+     "start": 52,
+     "count": 0
+    },
+    "offsets": {
+     "start": 988,
+     "end": 1049
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "old"
+    }
+   },
+   {
+    "id": "1d23473a3efbc65b26157e4fb9ad566de5e0a52b2cbac0cbd04773ebdcf51045",
+    "fileId": "ad1b74ab19afc0642ed5e69a9cf4e05246b45dd463ac580a02846e36e0cf569d",
+    "file": "lib/rules/init-declarations.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4534c39416c4b2db3363f79ffbb4c25d417f07e5541a78faf0362bda2e36515c",
+    "side": "new",
+    "old": {
+     "start": 33,
+     "count": 0
+    },
+    "new": {
+     "start": 52,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1627,
+     "end": 1689
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "c79662d35b8df6ec6833f5256ed526b297596012cf166a068433ca22906abe7f",
+  "reconciliation": {
+   "expected": [
+    "6d24f888c1471f23808ce04bfc6fe68f0ef24888b0cf0aa8dacc9513725354b1",
+    "69d8d9a72e4da3f15713fc295b858fc319c994e988983ba801eebe8df27df097",
+    "644cce4941fcc5731f3342c8e477b0d8cb11a317a4006b8339895bce427ddf4f",
+    "6862f7da4238fce27e291371c637f4e542debb08c8271802c4ef905d0fb57268",
+    "786dfe91e3472a1f4a2534186e554e5a9779053a2c105a7ac1349480564ca274",
+    "ebcf9a83a4d8c6d14ea89d0c32c8f70dcb7b48557de7b1130056322283b8f527",
+    "a00ff76cba13826753920150629fc11d09ef43bbd975064cc511d316d9029700",
+    "1f121a38097729a0977710661f0bca2eb7746fb52fa25b378794b14607b5222b",
+    "1cf844f958d9376ec2858168fa3f9f11954f55c1bc92365442aaceeef725d31f",
+    "6d66be3e296d30cad90e53b4f109eda4252fcf0e10b0a4d8d989b9b717f8d567",
+    "e38af45c50e2ba57121658d4f3d7c31fa845e725e4a9268e0403f772609c4d83",
+    "0e0841e348289eec35f7ad5ba1a34e673d9b8e0abe2b242f19ed4a62ee66c105",
+    "20ff4caafebcffc2c051624f45b46486cca1e2fb15687a9d6cd022425b281700",
+    "8dd0ad896bc03b60567722a327730775e1698006d2a2c590a924571a43f3890a",
+    "e33e43b201d463ea78afb5ea858e4d141f10bf5b332436c43a69cf6370f8fd5f",
+    "6a86f56839f4caf031c372995dbc85155900a568fe26bf9b75e6d40c696e8a2e",
+    "341064249262a73bd53b594b6ccc770e1cc53050d1c49d533f3c1afb41383278",
+    "1b43a995ef70f46f74e0ffe3bcdcc3da13a73fbaf25c576f60aad4946fa98ebd",
+    "32eedad1fcc92714a5aa01b5ddd3de8aa71ab8ddc007fdcbf2d4869581eb95b4",
+    "c205b5a8b679ec857876e56e35479a26ccd8d68d0a7afb75ee8e6ff90bee8962",
+    "c07456e6615e87f1ed02066ef0ecc64f1543da677a8babb6ef560aa7ad7dde4a",
+    "abc05a2510815c130a7abe0587b2f3ef2ab0d25e52470f7e52b89778043cc9d9",
+    "1d23473a3efbc65b26157e4fb9ad566de5e0a52b2cbac0cbd04773ebdcf51045"
+   ],
+   "unit": [
+    "6d66be3e296d30cad90e53b4f109eda4252fcf0e10b0a4d8d989b9b717f8d567",
+    "e38af45c50e2ba57121658d4f3d7c31fa845e725e4a9268e0403f772609c4d83",
+    "0e0841e348289eec35f7ad5ba1a34e673d9b8e0abe2b242f19ed4a62ee66c105",
+    "20ff4caafebcffc2c051624f45b46486cca1e2fb15687a9d6cd022425b281700",
+    "8dd0ad896bc03b60567722a327730775e1698006d2a2c590a924571a43f3890a",
+    "e33e43b201d463ea78afb5ea858e4d141f10bf5b332436c43a69cf6370f8fd5f",
+    "6a86f56839f4caf031c372995dbc85155900a568fe26bf9b75e6d40c696e8a2e",
+    "341064249262a73bd53b594b6ccc770e1cc53050d1c49d533f3c1afb41383278",
+    "1b43a995ef70f46f74e0ffe3bcdcc3da13a73fbaf25c576f60aad4946fa98ebd"
+   ],
+   "artifact": [],
+   "unassigned": [
+    "6d24f888c1471f23808ce04bfc6fe68f0ef24888b0cf0aa8dacc9513725354b1",
+    "69d8d9a72e4da3f15713fc295b858fc319c994e988983ba801eebe8df27df097",
+    "644cce4941fcc5731f3342c8e477b0d8cb11a317a4006b8339895bce427ddf4f",
+    "6862f7da4238fce27e291371c637f4e542debb08c8271802c4ef905d0fb57268",
+    "786dfe91e3472a1f4a2534186e554e5a9779053a2c105a7ac1349480564ca274",
+    "ebcf9a83a4d8c6d14ea89d0c32c8f70dcb7b48557de7b1130056322283b8f527",
+    "a00ff76cba13826753920150629fc11d09ef43bbd975064cc511d316d9029700",
+    "1f121a38097729a0977710661f0bca2eb7746fb52fa25b378794b14607b5222b",
+    "1cf844f958d9376ec2858168fa3f9f11954f55c1bc92365442aaceeef725d31f",
+    "32eedad1fcc92714a5aa01b5ddd3de8aa71ab8ddc007fdcbf2d4869581eb95b4",
+    "c205b5a8b679ec857876e56e35479a26ccd8d68d0a7afb75ee8e6ff90bee8962",
+    "c07456e6615e87f1ed02066ef0ecc64f1543da677a8babb6ef560aa7ad7dde4a",
+    "abc05a2510815c130a7abe0587b2f3ef2ab0d25e52470f7e52b89778043cc9d9",
+    "1d23473a3efbc65b26157e4fb9ad566de5e0a52b2cbac0cbd04773ebdcf51045"
+   ],
+   "classes": {
+    "source": {
+     "unit": [
+      "6d66be3e296d30cad90e53b4f109eda4252fcf0e10b0a4d8d989b9b717f8d567",
+      "e38af45c50e2ba57121658d4f3d7c31fa845e725e4a9268e0403f772609c4d83",
+      "0e0841e348289eec35f7ad5ba1a34e673d9b8e0abe2b242f19ed4a62ee66c105",
+      "20ff4caafebcffc2c051624f45b46486cca1e2fb15687a9d6cd022425b281700",
+      "8dd0ad896bc03b60567722a327730775e1698006d2a2c590a924571a43f3890a",
+      "e33e43b201d463ea78afb5ea858e4d141f10bf5b332436c43a69cf6370f8fd5f",
+      "6a86f56839f4caf031c372995dbc85155900a568fe26bf9b75e6d40c696e8a2e",
+      "341064249262a73bd53b594b6ccc770e1cc53050d1c49d533f3c1afb41383278",
+      "1b43a995ef70f46f74e0ffe3bcdcc3da13a73fbaf25c576f60aad4946fa98ebd"
+     ],
+     "artifact": [],
+     "unassigned": [
+      "6d24f888c1471f23808ce04bfc6fe68f0ef24888b0cf0aa8dacc9513725354b1",
+      "69d8d9a72e4da3f15713fc295b858fc319c994e988983ba801eebe8df27df097",
+      "644cce4941fcc5731f3342c8e477b0d8cb11a317a4006b8339895bce427ddf4f",
+      "6862f7da4238fce27e291371c637f4e542debb08c8271802c4ef905d0fb57268",
+      "786dfe91e3472a1f4a2534186e554e5a9779053a2c105a7ac1349480564ca274",
+      "ebcf9a83a4d8c6d14ea89d0c32c8f70dcb7b48557de7b1130056322283b8f527",
+      "a00ff76cba13826753920150629fc11d09ef43bbd975064cc511d316d9029700",
+      "1f121a38097729a0977710661f0bca2eb7746fb52fa25b378794b14607b5222b",
+      "1cf844f958d9376ec2858168fa3f9f11954f55c1bc92365442aaceeef725d31f",
+      "32eedad1fcc92714a5aa01b5ddd3de8aa71ab8ddc007fdcbf2d4869581eb95b4",
+      "c205b5a8b679ec857876e56e35479a26ccd8d68d0a7afb75ee8e6ff90bee8962",
+      "c07456e6615e87f1ed02066ef0ecc64f1543da677a8babb6ef560aa7ad7dde4a",
+      "abc05a2510815c130a7abe0587b2f3ef2ab0d25e52470f7e52b89778043cc9d9",
+      "1d23473a3efbc65b26157e4fb9ad566de5e0a52b2cbac0cbd04773ebdcf51045"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "callersChecked": 0
+}

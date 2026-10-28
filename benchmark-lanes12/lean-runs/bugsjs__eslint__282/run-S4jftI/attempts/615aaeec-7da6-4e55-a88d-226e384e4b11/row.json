@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/space-unary-ops.js",
+ "unit": "(edit 7043e135ccea)",
+ "editIds": [
+  "7043e135ccea09554550311216e02218fb78fd92ba947fe1f399707a55c74aec"
+ ],
+ "lines": [
+  77,
+  77
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

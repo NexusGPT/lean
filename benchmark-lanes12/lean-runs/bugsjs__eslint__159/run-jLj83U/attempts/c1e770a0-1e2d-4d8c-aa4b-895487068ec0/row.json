@@ -1,0 +1,21 @@
+{
+ "file": "lib/code-path-analysis/debug-helpers.js",
+ "unit": "(edit af8b0738a8a9)",
+ "editIds": [
+  "af8b0738a8a943d771c6fae6fb323964d2d70969b7fba94a2e597fdb4fa216ad"
+ ],
+ "lines": [
+  117,
+  117
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

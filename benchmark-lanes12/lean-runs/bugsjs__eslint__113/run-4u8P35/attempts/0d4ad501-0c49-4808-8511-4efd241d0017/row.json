@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unused-vars.js",
+ "unit": "(edit b290d58d006c)",
+ "editIds": [
+  "b290d58d006c5a7e44b6476ac19d371c2cf62b2085a40c1675c8e5fca48cbd8a"
+ ],
+ "lines": [
+  6,
+  6
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

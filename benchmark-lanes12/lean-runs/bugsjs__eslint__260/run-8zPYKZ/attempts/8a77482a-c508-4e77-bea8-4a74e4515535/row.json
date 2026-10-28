@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/vars-on-top.js",
+ "unit": "(edit f90105121dca)",
+ "editIds": [
+  "f90105121dcaff67a1912b5bde976af9df28d9cb1f89901f94a83c84b66b6596"
+ ],
+ "lines": [
+  112,
+  112
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

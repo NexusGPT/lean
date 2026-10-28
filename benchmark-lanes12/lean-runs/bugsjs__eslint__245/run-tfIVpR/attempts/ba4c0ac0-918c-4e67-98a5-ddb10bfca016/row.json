@@ -1,0 +1,14 @@
+{
+ "file": "lib/util/glob-util.js",
+ "unit": "resolveFileGlobPatterns",
+ "lines": [
+  87,
+  92
+ ],
+ "caller": true,
+ "verdict": "PASS-bounded",
+ "coverage": "checked",
+ "reason": "no caller witness",
+ "omitFromReport": true,
+ "laneB": "PASS-bounded"
+}

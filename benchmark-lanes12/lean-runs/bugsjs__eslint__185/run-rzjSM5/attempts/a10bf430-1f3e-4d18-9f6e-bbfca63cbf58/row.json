@@ -1,0 +1,21 @@
+{
+ "file": "lib/linter.js",
+ "unit": "(edit 0ef56ae054dd)",
+ "editIds": [
+  "0ef56ae054dd2cfce0cb9b21f1c9fe7e97b9a2718aee9ebd68ff0ec02f2abadf"
+ ],
+ "lines": [
+  755,
+  755
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

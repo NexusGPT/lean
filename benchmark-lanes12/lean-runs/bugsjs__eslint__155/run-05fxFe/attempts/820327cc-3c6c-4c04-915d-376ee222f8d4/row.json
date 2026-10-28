@@ -1,0 +1,813 @@
+{
+ "file": "lib/rules/prefer-const.js",
+ "unit": "groupByDestructuring",
+ "lines": [
+  186,
+  220
+ ],
+ "verdict": "WITNESS",
+ "coverage": "checked",
+ "laneB": "WITNESS",
+ "laneA": null,
+ "caller": true,
+ "certificate": {
+  "tool": "lean-ts v3",
+  "identity": "82d995031c12e3c9bce67f726417158722ca5ee99957f66baa9760bdaa76565b",
+  "unit": "groupByDestructuring",
+  "parent": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_base_88849_prefer-const.js",
+   "sha256": "773d98296f21c030"
+  },
+  "candidate": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_head_88849_prefer-const.js",
+   "sha256": "e2f62db360cce529"
+  },
+  "lanes": {
+   "B": {
+    "verdict": "WITNESS",
+    "unit": "groupByDestructuring",
+    "witnesses": [
+     {
+      "input": 1,
+      "args": [
+       [
+        {
+         "$fake": "arg0[0]"
+        }
+       ],
+       false
+      ],
+      "parent": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "reference.isWrite is not a function"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$ref": 0
+         },
+         false
+        ],
+        "own": {},
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "array",
+          "edges": [
+           {
+            "$fake": "arg0[0]"
+           }
+          ]
+         }
+        ]
+       },
+       "receiver": {},
+       "trace": [
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].eslintUsed",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].scope",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references.0",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references.0.isWrite",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "candidate": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "reference.isWrite is not a function"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$ref": 0
+         },
+         false
+        ],
+        "own": {},
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "array",
+          "edges": [
+           {
+            "$fake": "arg0[0]"
+           }
+          ]
+         }
+        ]
+       },
+       "receiver": {},
+       "trace": [
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].eslintUsed",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].scope",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].defs",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references.0",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references.0.isWrite",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "where": {
+       "field": "trace",
+       "index": 3,
+       "parent": {
+        "op": "get",
+        "path": "arg0[0].references",
+        "args": []
+       },
+       "candidate": {
+        "op": "get",
+        "path": "arg0[0].defs",
+        "args": []
+       },
+       "lines": {
+        "kind": "effect",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_base_88849_prefer-const.js",
+         "start": 97,
+         "end": 97,
+         "text": "const references = variable.references;"
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_head_88849_prefer-const.js",
+         "start": 101,
+         "end": 103,
+         "text": "if (variable.defs.length > 1) {\n        return null;\n    }"
+        }
+       },
+       "cause": "callee"
+      },
+      "through": [
+       {
+        "callee": "getIdentifierIfShouldBeConst",
+        "changed": true,
+        "path": [
+         "groupByDestructuring",
+         "getIdentifierIfShouldBeConst"
+        ]
+       }
+      ]
+     },
+     {
+      "input": 2,
+      "args": [
+       [
+        {
+         "$fake": "arg0[0]"
+        },
+        {
+         "$fake": "arg0[1]"
+        },
+        {
+         "$fake": "arg0[2]"
+        },
+        {
+         "$fake": "arg0[3]"
+        },
+        {
+         "$fake": "arg0[4]"
+        }
+       ],
+       false
+      ],
+      "parent": {
+       "outcome": {
+        "threw": {
+         "$error": "Error",
+         "message": "fault: arg0[0].references.0.isWrite"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$ref": 0
+         },
+         false
+        ],
+        "own": {},
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "array",
+          "edges": [
+           {
+            "$fake": "arg0[0]"
+           },
+           {
+            "$fake": "arg0[1]"
+           },
+           {
+            "$fake": "arg0[2]"
+           },
+           {
+            "$fake": "arg0[3]"
+           },
+           {
+            "$fake": "arg0[4]"
+           }
+          ]
+         }
+        ]
+       },
+       "receiver": {},
+       "trace": [
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].eslintUsed",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references.0",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references.0.isWrite",
+         "args": []
+        },
+        {
+         "op": "call",
+         "path": "arg0[0].references.0.isWrite",
+         "args": []
+        },
+        {
+         "op": "fault",
+         "path": "arg0[0].references.0.isWrite",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "candidate": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "Cannot read properties of undefined (reading 'length')"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$ref": 0
+         },
+         false
+        ],
+        "own": {},
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "array",
+          "edges": [
+           {
+            "$fake": "arg0[0]"
+           },
+           {
+            "$fake": "arg0[1]"
+           },
+           {
+            "$fake": "arg0[2]"
+           },
+           {
+            "$fake": "arg0[3]"
+           },
+           {
+            "$fake": "arg0[4]"
+           }
+          ]
+         }
+        ]
+       },
+       "receiver": {},
+       "trace": [
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].eslintUsed",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].defs",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "where": {
+       "field": "outcome",
+       "lines": {
+        "kind": "completion",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_base_88849_prefer-const.js",
+         "start": 102,
+         "end": 118,
+         "text": "if (reference.isWrite()) {\n            const isReassigned = (\n                writer !== null &&\n                writer.identifier !== reference.identifier\n            );\n\n            if (isReassigned"
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_head_88849_prefer-const.js",
+         "start": 101,
+         "end": 103,
+         "text": "if (variable.defs.length > 1) {\n        return null;\n    }"
+        }
+       },
+       "cause": "callee"
+      },
+      "through": [
+       {
+        "callee": "getIdentifierIfShouldBeConst",
+        "changed": true,
+        "path": [
+         "groupByDestructuring",
+         "getIdentifierIfShouldBeConst"
+        ]
+       }
+      ]
+     },
+     {
+      "input": 3,
+      "args": [
+       [
+        {
+         "$fake": "arg0[0]"
+        },
+        {
+         "$fake": "arg0[1]"
+        },
+        {
+         "$fake": "arg0[2]"
+        },
+        {
+         "$fake": "arg0[3]"
+        }
+       ],
+       true
+      ],
+      "parent": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "Cannot read properties of undefined (reading 'type')"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$ref": 0
+         },
+         true
+        ],
+        "own": {},
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "array",
+          "edges": [
+           {
+            "$fake": "arg0[0]"
+           },
+           {
+            "$fake": "arg0[1]"
+           },
+           {
+            "$fake": "arg0[2]"
+           },
+           {
+            "$fake": "arg0[3]"
+           }
+          ]
+         }
+        ]
+       },
+       "receiver": {},
+       "trace": [
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].eslintUsed",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[1].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[1].eslintUsed",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[1].scope",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "candidate": {
+       "outcome": {
+        "threw": {
+         "$error": "TypeError",
+         "message": "Cannot read properties of undefined (reading 'type')"
+        }
+       },
+       "heap": {
+        "roots": [
+         {
+          "$ref": 0
+         },
+         true
+        ],
+        "own": {},
+        "outcome": null,
+        "anchors": 1,
+        "heap": [
+         {
+          "kind": "array",
+          "edges": [
+           {
+            "$fake": "arg0[0]"
+           },
+           {
+            "$fake": "arg0[1]"
+           },
+           {
+            "$fake": "arg0[2]"
+           },
+           {
+            "$fake": "arg0[3]"
+           }
+          ]
+         }
+        ]
+       },
+       "receiver": {},
+       "trace": [
+        {
+         "op": "get",
+         "path": "arg0[0].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].eslintUsed",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[0].defs",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[1].references",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[1].eslintUsed",
+         "args": []
+        },
+        {
+         "op": "get",
+         "path": "arg0[1].scope",
+         "args": []
+        }
+       ],
+       "pending": []
+      },
+      "where": {
+       "field": "trace",
+       "index": 2,
+       "parent": {
+        "op": "get",
+        "path": "arg0[0].references",
+        "args": []
+       },
+       "candidate": {
+        "op": "get",
+        "path": "arg0[0].defs",
+        "args": []
+       },
+       "lines": {
+        "kind": "effect",
+        "parent": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_base_88849_prefer-const.js",
+         "start": 97,
+         "end": 97,
+         "text": "const references = variable.references;"
+        },
+        "candidate": {
+         "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_head_88849_prefer-const.js",
+         "start": 101,
+         "end": 103,
+         "text": "if (variable.defs.length > 1) {\n        return null;\n    }"
+        }
+       },
+       "cause": "callee"
+      },
+      "through": [
+       {
+        "callee": "getIdentifierIfShouldBeConst",
+        "changed": true,
+        "path": [
+         "groupByDestructuring",
+         "getIdentifierIfShouldBeConst"
+        ]
+       }
+      ]
+     }
+    ],
+    "bound": {
+     "n": 100,
+     "seed": 1,
+     "ms": 2000,
+     "reached": {
+      "body": 4,
+      "guard": 0
+     },
+     "states": [
+      {
+       "input": 0,
+       "args": [
+        [],
+        true
+       ]
+      },
+      {
+       "input": 1,
+       "args": [
+        [
+         {
+          "$fake": "arg0[0]"
+         }
+        ],
+        false
+       ]
+      },
+      {
+       "input": 2,
+       "args": [
+        [
+         {
+          "$fake": "arg0[0]"
+         },
+         {
+          "$fake": "arg0[1]"
+         },
+         {
+          "$fake": "arg0[2]"
+         },
+         {
+          "$fake": "arg0[3]"
+         },
+         {
+          "$fake": "arg0[4]"
+         }
+        ],
+        false
+       ]
+      },
+      {
+       "input": 3,
+       "args": [
+        [
+         {
+          "$fake": "arg0[0]"
+         },
+         {
+          "$fake": "arg0[1]"
+         },
+         {
+          "$fake": "arg0[2]"
+         },
+         {
+          "$fake": "arg0[3]"
+         }
+        ],
+        true
+       ]
+      }
+     ],
+     "heaps": {
+      "assignments": 0,
+      "pool": 2,
+      "shapes": {}
+     },
+     "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+     "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+     "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+     "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+     "library": {
+      "records": 0,
+      "ops": {},
+      "calls": {},
+      "sampled": [],
+      "outOfModel": 0,
+      "callbackEffects": 0,
+      "defectRecords": 0,
+      "defects": []
+     }
+    },
+    "spec": {
+     "params": [
+      {
+       "name": "variables",
+       "optional": false,
+       "spec": {
+        "kind": "array",
+        "of": {
+         "kind": "opaque"
+        }
+       }
+      },
+      {
+       "name": "ignoreReadBeforeAssign",
+       "optional": false,
+       "spec": {
+        "kind": "boolean",
+        "boundary": {
+         "cmp": [
+          {
+           "t": "draw"
+          },
+          false
+         ],
+         "falsy": [
+          false
+         ],
+         "rank": 1,
+         "radix": 1
+        }
+       }
+      }
+     ],
+     "returns": {
+      "kind": "map",
+      "key": {
+       "kind": "opaque"
+      },
+      "value": {
+       "kind": "array",
+       "of": {
+        "kind": "opaque"
+       }
+      }
+     },
+     "literals": [
+      0,
+      1,
+      -1
+     ],
+     "strings": [
+      "",
+      "x"
+     ]
+    },
+    "unitTextEqual": true
+   }
+  },
+  "verdict": "WITNESS"
+ },
+ "witness": {
+  "input": 1,
+  "args": [
+   [
+    {
+     "$fake": "arg0[0]"
+    }
+   ],
+   false
+  ],
+  "where": {
+   "field": "trace",
+   "index": 3,
+   "parent": {
+    "op": "get",
+    "path": "arg0[0].references",
+    "args": []
+   },
+   "candidate": {
+    "op": "get",
+    "path": "arg0[0].defs",
+    "args": []
+   },
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_base_88849_prefer-const.js",
+     "start": 97,
+     "end": 97,
+     "text": "const references = variable.references;"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__155/run-05fxFe/sources/lib/rules/.lean_head_88849_prefer-const.js",
+     "start": 101,
+     "end": 103,
+     "text": "if (variable.defs.length > 1) {\n        return null;\n    }"
+    }
+   },
+   "cause": "callee"
+  },
+  "through": [
+   {
+    "callee": "getIdentifierIfShouldBeConst",
+    "changed": true,
+    "path": [
+     "groupByDestructuring",
+     "getIdentifierIfShouldBeConst"
+    ]
+   }
+  ]
+ },
+ "reason": null,
+ "advice": []
+}

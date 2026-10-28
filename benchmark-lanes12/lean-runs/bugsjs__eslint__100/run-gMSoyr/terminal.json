@@ -1,0 +1,226 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__100/run-gMSoyr",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "17ac0ae69df126a86fae2fa622200a9c1d0c6da9",
+  "head": "cb2c18ca3069ddb3711106c7b3afaddead1a29ac",
+  "files": [
+   {
+    "id": "b3cf121e2a29b380fce5f97ffa122ceaef7ee5fd994dd6cab8cad341fdf47bbb",
+    "file": "lib/rules/object-curly-spacing.js",
+    "oldPath": "lib/rules/object-curly-spacing.js",
+    "newPath": "lib/rules/object-curly-spacing.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "11224bbdd13a0ab56db68a58e80379eb7245c01b",
+    "newOid": "e5dfb8d036cb046a1208d85b068e1e032497ff48",
+    "status": "M",
+    "edits": [
+     "951f8060a853f70a3c2242790196eec206a6d27bd67292d5daeaa549336aad5d",
+     "c308da2a22b780e97fac4d80f81773ab21a32724931d6fc0fc929e81c310ee67"
+    ],
+    "hunks": [
+     {
+      "id": "518727c2fdcf7c4e708a198fba42fafb30709575532749ee981ae3e91a8b803e",
+      "old": {
+       "start": 174,
+       "count": 1
+      },
+      "new": {
+       "start": 174,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "3658144a6d7d62afb3bc2a51b6881c8835a6e20ac904298b365124a46dde3384",
+    "newHash": "1b4f14786fd67deff470dcaef1d25f9fc5f4ce12b5d4147065f3c374866cba24",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "951f8060a853f70a3c2242790196eec206a6d27bd67292d5daeaa549336aad5d",
+    "fileId": "b3cf121e2a29b380fce5f97ffa122ceaef7ee5fd994dd6cab8cad341fdf47bbb",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "518727c2fdcf7c4e708a198fba42fafb30709575532749ee981ae3e91a8b803e",
+    "side": "old",
+    "old": {
+     "start": 174,
+     "count": 1
+    },
+    "new": {
+     "start": 174,
+     "count": 0
+    },
+    "offsets": {
+     "start": 6660,
+     "end": 6756
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c308da2a22b780e97fac4d80f81773ab21a32724931d6fc0fc929e81c310ee67",
+    "fileId": "b3cf121e2a29b380fce5f97ffa122ceaef7ee5fd994dd6cab8cad341fdf47bbb",
+    "file": "lib/rules/object-curly-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "518727c2fdcf7c4e708a198fba42fafb30709575532749ee981ae3e91a8b803e",
+    "side": "new",
+    "old": {
+     "start": 174,
+     "count": 0
+    },
+    "new": {
+     "start": 174,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6660,
+     "end": 6797
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "68fca802a0faebd108fd59bd82d2134e3016f2d10d7497a3b66667a950508eb4",
+  "reconciliation": {
+   "expected": [
+    "951f8060a853f70a3c2242790196eec206a6d27bd67292d5daeaa549336aad5d",
+    "c308da2a22b780e97fac4d80f81773ab21a32724931d6fc0fc929e81c310ee67"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "951f8060a853f70a3c2242790196eec206a6d27bd67292d5daeaa549336aad5d",
+    "c308da2a22b780e97fac4d80f81773ab21a32724931d6fc0fc929e81c310ee67"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "951f8060a853f70a3c2242790196eec206a6d27bd67292d5daeaa549336aad5d",
+      "c308da2a22b780e97fac4d80f81773ab21a32724931d6fc0fc929e81c310ee67"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "36d1c118b886573f8213e9cffcbd9a762eb17ba7a2a3f87189da142aec07a84d",
+   "attemptId": "1f905088-2831-42a6-9577-a425761a4cea",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__100/run-gMSoyr/attempts/1f905088-2831-42a6-9577-a425761a4cea/row.json",
+    "sha256": "8466f262d3015c74abc02fb466c0ddfa2666ec0836007f9794372935888ab3b3"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "eb27a163c3b0fb563f2a34d7fa2f6dd5ea84894527444f3106ead557c2274321",
+   "attemptId": "530f8044-4bb7-4ee8-99e0-7928ee86f534",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__100/run-gMSoyr/attempts/530f8044-4bb7-4ee8-99e0-7928ee86f534/row.json",
+    "sha256": "2f43ffe25a964761c21cad7c685a3b212cb7f624ae8e556f3119156e2217b448"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit 951f8060a853)",
+   "editIds": [
+    "951f8060a853f70a3c2242790196eec206a6d27bd67292d5daeaa549336aad5d"
+   ],
+   "lines": [
+    174,
+    174
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/object-curly-spacing.js",
+   "unit": "(edit c308da2a22b7)",
+   "editIds": [
+    "c308da2a22b780e97fac4d80f81773ab21a32724931d6fc0fc929e81c310ee67"
+   ],
+   "lines": [
+    174,
+    174
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "36d1c118b886573f8213e9cffcbd9a762eb17ba7a2a3f87189da142aec07a84d",
+   "eb27a163c3b0fb563f2a34d7fa2f6dd5ea84894527444f3106ead557c2274321"
+  ],
+  "terminal": [
+   "36d1c118b886573f8213e9cffcbd9a762eb17ba7a2a3f87189da142aec07a84d",
+   "eb27a163c3b0fb563f2a34d7fa2f6dd5ea84894527444f3106ead557c2274321"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

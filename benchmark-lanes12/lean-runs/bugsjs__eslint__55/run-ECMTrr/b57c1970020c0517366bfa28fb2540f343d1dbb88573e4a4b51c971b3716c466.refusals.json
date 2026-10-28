@@ -1,0 +1,16 @@
+{
+ "identity": "b57c1970020c0517366bfa28fb2540f343d1dbb88573e4a4b51c971b3716c466",
+ "records": [
+  {
+   "check": "failed:loader",
+   "unit": "isClassConstructor",
+   "file": "lib/rules/consistent-return.js",
+   "location": {
+    "start": 41,
+    "end": 46
+   },
+   "kind": "coverage",
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__55/run-ECMTrr/sources/lib/rules/.lean_head_79853_consistent-return.js: ASK(CommonJS wrapper): require is not defined"
+  }
+ ]
+}

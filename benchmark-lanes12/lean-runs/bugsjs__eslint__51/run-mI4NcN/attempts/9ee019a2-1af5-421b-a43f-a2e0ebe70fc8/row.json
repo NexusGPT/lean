@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-unsafe-finally.js",
+ "unit": "(edit 7db745b0b164)",
+ "editIds": [
+  "7db745b0b1643aad0fbaf721cd8aa3c0001b4ed55727986d4672dcad81a5b17d"
+ ],
+ "lines": [
+  59,
+  59
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

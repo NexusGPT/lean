@@ -1,0 +1,20 @@
+{
+ "file": "lib/util/source-code-fixer.js",
+ "unit": "(edit 99391753378d)",
+ "editIds": [
+  "99391753378d1fada705db5a885d0600368769b2abcfe0f54b1461943d984281"
+ ],
+ "lines": [
+  112,
+  112
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

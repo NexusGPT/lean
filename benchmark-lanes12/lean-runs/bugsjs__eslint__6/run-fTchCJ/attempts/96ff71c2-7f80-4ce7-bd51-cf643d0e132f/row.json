@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/arrow-spacing.js",
+ "unit": "(edit 3ab594cbcb09)",
+ "editIds": [
+  "3ab594cbcb092439286ef9ea95cdb2f4700f6e715c4d4683fd7b534f6f7646d1"
+ ],
+ "lines": [
+  61,
+  61
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

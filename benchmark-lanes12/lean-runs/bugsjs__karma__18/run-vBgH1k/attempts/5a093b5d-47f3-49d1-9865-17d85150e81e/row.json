@@ -1,0 +1,20 @@
+{
+ "file": "lib/file-list.js",
+ "unit": "(edit dfa3ca3dd645)",
+ "editIds": [
+  "dfa3ca3dd645c9802737b6d667126e24bd8ff4174b10ebcafd7e0306f7f09600"
+ ],
+ "lines": [
+  183,
+  183
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

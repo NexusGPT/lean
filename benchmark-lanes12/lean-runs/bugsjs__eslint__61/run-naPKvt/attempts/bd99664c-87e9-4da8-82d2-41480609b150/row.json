@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/operator-assignment.js",
+ "unit": "(edit 5a5af65d0129)",
+ "editIds": [
+  "5a5af65d012963bc4c9f6dad7739ec02ad9c22dbf6b38f9c0830c46a84d9429d"
+ ],
+ "lines": [
+  11,
+  11
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

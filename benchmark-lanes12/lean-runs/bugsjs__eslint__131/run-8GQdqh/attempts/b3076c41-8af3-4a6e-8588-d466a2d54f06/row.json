@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-empty.js",
+ "unit": "(edit 070cc0cfee71)",
+ "editIds": [
+  "070cc0cfee712d9c4a1f3896e5c2d1512fab8c6fa396544c0914431df4ab42fd"
+ ],
+ "lines": [
+  19,
+  19
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

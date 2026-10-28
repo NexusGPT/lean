@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-useless-escape.js",
+ "unit": "(edit 54b59c848072)",
+ "editIds": [
+  "54b59c848072cfc79af5541cb0e082e77f641c97026652190faf93861f49ae91"
+ ],
+ "lines": [
+  238,
+  238
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

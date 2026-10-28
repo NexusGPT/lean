@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/unicode-bom.js",
+ "unit": "(edit 244ab31c7301)",
+ "editIds": [
+  "244ab31c7301d631dc78a57ce62e2df36db847f25fceeb7b6d1e083dc07df6ac"
+ ],
+ "lines": [
+  48,
+  48
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

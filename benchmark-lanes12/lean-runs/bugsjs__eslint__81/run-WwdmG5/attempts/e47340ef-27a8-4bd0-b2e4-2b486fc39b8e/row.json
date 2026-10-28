@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/quotes.js",
+ "unit": "(edit c76250a47ce3)",
+ "editIds": [
+  "c76250a47ce32b329eec30703da28bb0826b766edcc1f3fee7420dcf20c83263"
+ ],
+ "lines": [
+  112,
+  112
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/vars-on-top.js",
+ "unit": "(edit 5c8a45db8986)",
+ "editIds": [
+  "5c8a45db8986a8156543e0724524450a6f395360c17a983dca299c0aa202e675"
+ ],
+ "lines": [
+  60,
+  60
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/line-comment-position.js",
+ "unit": "(edit 0052a4bc978f)",
+ "editIds": [
+  "0052a4bc978f0f4da1835987d781dba80e2d31df4bece1d35a54f23ba26d7f1e"
+ ],
+ "lines": [
+  53,
+  53
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

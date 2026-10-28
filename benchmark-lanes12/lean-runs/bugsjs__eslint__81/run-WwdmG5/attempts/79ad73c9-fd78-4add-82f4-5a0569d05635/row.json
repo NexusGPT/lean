@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/quotes.js",
+ "unit": "(edit 6521f5fa58bd)",
+ "editIds": [
+  "6521f5fa58bd38b694ed0e1b3c70eaa69af12a7a622c4930979f179b45b889e4"
+ ],
+ "lines": [
+  114,
+  114
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

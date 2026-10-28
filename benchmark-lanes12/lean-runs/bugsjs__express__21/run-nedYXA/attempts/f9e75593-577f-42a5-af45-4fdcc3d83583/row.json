@@ -1,0 +1,36 @@
+{
+ "file": "lib/router/index.js",
+ "unit": "wrap",
+ "lines": [
+  465,
+  470
+ ],
+ "coverage": "refused:callback-form",
+ "verdict": "ASK",
+ "laneB": "ASK",
+ "laneA": null,
+ "witness": null,
+ "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__21/run-nedYXA/sources/lib/router/.lean_head_76183_index.js: ASK(CommonJS wrapper): require is not defined",
+ "advice": [
+  {
+   "line": 466,
+   "rule": "callback-form",
+   "msg": "the callback must be an arrow function",
+   "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+  },
+  {
+   "line": 468,
+   "rule": "implicit-this",
+   "msg": "TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+   "do": "[conditional: the declared type covers every receiver the function is called with] Declare the receiver as the first parameter, `function f(this: T, ...)`: a type annotation, the emitted JavaScript is the same, and a declared receiver is read as the function's first operand."
+  }
+ ],
+ "editIds": [
+  "1125e4693350645e95dd843f980cdfba0896aa44782a1de80110174b75acd24c",
+  "67d37255f50cbb3e1b0920e76788b97be35712a633af14d2b4ff229f3cadfba6",
+  "54567d169cad2d344a2fd271f69464fb98c567cb3bd4cf2b955db8220a87c850",
+  "e5d8bfac142ebf0ee4f8fa35bb33e825d12ad123555d47dcb2a72592e6928848",
+  "7197c3eef1cd175c7159972af492b13bf9cf4b8e40cde018990d307ef7e585ff",
+  "ff9e1d72d007fd047173ef68361548dcaa96f39141abfe179fbb095a1f64df09"
+ ]
+}

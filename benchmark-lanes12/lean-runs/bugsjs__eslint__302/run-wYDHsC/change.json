@@ -1,0 +1,333 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "af1fde1867384e71c641592552f3967761836a45",
+ "head": "22e2ed2aa69970cbeb8b57cacac9551cf8ee54c8",
+ "files": [
+  {
+   "id": "1a63e84afcf8cebf879a923f8daf40ff1f551cde797a29455d7a06e31b583ce9",
+   "file": "lib/rules/curly.js",
+   "oldPath": "lib/rules/curly.js",
+   "newPath": "lib/rules/curly.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "4fb07c53dc39c0a4c1aef45dc13bd3bed7b22c2e",
+   "newOid": "ba4dac34ba7d21447efb5ce0d84c10aab1b51117",
+   "status": "M",
+   "edits": [
+    "ac66d10c4edad4e9dab72aef529149ce93e077c836b150efdce1a0153da0e369",
+    "57937a2d60637181d54c1b47dec6c1a4bea7024f7d09f1e9ad92260613afbc4a",
+    "9b6ce3f0d3b66067330b9113b00e69286fb1217d0aedd6be9850f936eb371a1c",
+    "42e0dc6e5fad6fbf8697454660a1dbd7c8d71c11e66286c686b3cdfe6c7a91a6",
+    "59717bc593dd685a312a0c689f365021765445f57300a1034c89e48c7f7dac74",
+    "59ff8a909aa7baf5a2abd6ac725535e67e313a3452d419baa9f3e010cf32db86",
+    "d9f996266a2cbb161e5eb7539951e7ed4682f86a38ba9f5a26c1a13aff430ef9"
+   ],
+   "hunks": [
+    {
+     "id": "6bb3e92727559287958f8e3c7d7af14063378fe866017269aa65568e1387796f",
+     "old": {
+      "start": 77,
+      "count": 2
+     },
+     "new": {
+      "start": 77,
+      "count": 3
+     }
+    },
+    {
+     "id": "dc98bed6734e956abb09a14e4418a03d43b5ab89208edcb859c510b87a0eddf2",
+     "old": {
+      "start": 80,
+      "count": 1
+     },
+     "new": {
+      "start": 81,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "d9b4736655fb74e3048ed9da9cde95de36e9f6dd6747467e3224571de45170be",
+   "newHash": "4c4325a3fcd6eac7ea6198afe73d58587223fc9ac4e4e701254d2420380184dc",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "ac66d10c4edad4e9dab72aef529149ce93e077c836b150efdce1a0153da0e369",
+   "fileId": "1a63e84afcf8cebf879a923f8daf40ff1f551cde797a29455d7a06e31b583ce9",
+   "file": "lib/rules/curly.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6bb3e92727559287958f8e3c7d7af14063378fe866017269aa65568e1387796f",
+   "side": "old",
+   "old": {
+    "start": 77,
+    "count": 1
+   },
+   "new": {
+    "start": 77,
+    "count": 0
+   },
+   "offsets": {
+    "start": 2447,
+    "end": 2507
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "57937a2d60637181d54c1b47dec6c1a4bea7024f7d09f1e9ad92260613afbc4a",
+   "fileId": "1a63e84afcf8cebf879a923f8daf40ff1f551cde797a29455d7a06e31b583ce9",
+   "file": "lib/rules/curly.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6bb3e92727559287958f8e3c7d7af14063378fe866017269aa65568e1387796f",
+   "side": "old",
+   "old": {
+    "start": 78,
+    "count": 1
+   },
+   "new": {
+    "start": 77,
+    "count": 0
+   },
+   "offsets": {
+    "start": 2507,
+    "end": 2561
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "9b6ce3f0d3b66067330b9113b00e69286fb1217d0aedd6be9850f936eb371a1c",
+   "fileId": "1a63e84afcf8cebf879a923f8daf40ff1f551cde797a29455d7a06e31b583ce9",
+   "file": "lib/rules/curly.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6bb3e92727559287958f8e3c7d7af14063378fe866017269aa65568e1387796f",
+   "side": "new",
+   "old": {
+    "start": 77,
+    "count": 0
+   },
+   "new": {
+    "start": 77,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2447,
+    "end": 2507
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "42e0dc6e5fad6fbf8697454660a1dbd7c8d71c11e66286c686b3cdfe6c7a91a6",
+   "fileId": "1a63e84afcf8cebf879a923f8daf40ff1f551cde797a29455d7a06e31b583ce9",
+   "file": "lib/rules/curly.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6bb3e92727559287958f8e3c7d7af14063378fe866017269aa65568e1387796f",
+   "side": "new",
+   "old": {
+    "start": 77,
+    "count": 0
+   },
+   "new": {
+    "start": 78,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2507,
+    "end": 2563
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "59717bc593dd685a312a0c689f365021765445f57300a1034c89e48c7f7dac74",
+   "fileId": "1a63e84afcf8cebf879a923f8daf40ff1f551cde797a29455d7a06e31b583ce9",
+   "file": "lib/rules/curly.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6bb3e92727559287958f8e3c7d7af14063378fe866017269aa65568e1387796f",
+   "side": "new",
+   "old": {
+    "start": 77,
+    "count": 0
+   },
+   "new": {
+    "start": 79,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2563,
+    "end": 2697
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "59ff8a909aa7baf5a2abd6ac725535e67e313a3452d419baa9f3e010cf32db86",
+   "fileId": "1a63e84afcf8cebf879a923f8daf40ff1f551cde797a29455d7a06e31b583ce9",
+   "file": "lib/rules/curly.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dc98bed6734e956abb09a14e4418a03d43b5ab89208edcb859c510b87a0eddf2",
+   "side": "old",
+   "old": {
+    "start": 80,
+    "count": 1
+   },
+   "new": {
+    "start": 81,
+    "count": 0
+   },
+   "offsets": {
+    "start": 2562,
+    "end": 2626
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "d9f996266a2cbb161e5eb7539951e7ed4682f86a38ba9f5a26c1a13aff430ef9",
+   "fileId": "1a63e84afcf8cebf879a923f8daf40ff1f551cde797a29455d7a06e31b583ce9",
+   "file": "lib/rules/curly.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dc98bed6734e956abb09a14e4418a03d43b5ab89208edcb859c510b87a0eddf2",
+   "side": "new",
+   "old": {
+    "start": 80,
+    "count": 0
+   },
+   "new": {
+    "start": 81,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2698,
+    "end": 2780
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "b7b5517a27ca68ca1c94579813f58fa9f14acaf53fa2a801eb5c1f38caf3c4ab",
+ "reconciliation": {
+  "expected": [
+   "ac66d10c4edad4e9dab72aef529149ce93e077c836b150efdce1a0153da0e369",
+   "57937a2d60637181d54c1b47dec6c1a4bea7024f7d09f1e9ad92260613afbc4a",
+   "9b6ce3f0d3b66067330b9113b00e69286fb1217d0aedd6be9850f936eb371a1c",
+   "42e0dc6e5fad6fbf8697454660a1dbd7c8d71c11e66286c686b3cdfe6c7a91a6",
+   "59717bc593dd685a312a0c689f365021765445f57300a1034c89e48c7f7dac74",
+   "59ff8a909aa7baf5a2abd6ac725535e67e313a3452d419baa9f3e010cf32db86",
+   "d9f996266a2cbb161e5eb7539951e7ed4682f86a38ba9f5a26c1a13aff430ef9"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "ac66d10c4edad4e9dab72aef529149ce93e077c836b150efdce1a0153da0e369",
+   "57937a2d60637181d54c1b47dec6c1a4bea7024f7d09f1e9ad92260613afbc4a",
+   "9b6ce3f0d3b66067330b9113b00e69286fb1217d0aedd6be9850f936eb371a1c",
+   "42e0dc6e5fad6fbf8697454660a1dbd7c8d71c11e66286c686b3cdfe6c7a91a6",
+   "59717bc593dd685a312a0c689f365021765445f57300a1034c89e48c7f7dac74",
+   "59ff8a909aa7baf5a2abd6ac725535e67e313a3452d419baa9f3e010cf32db86",
+   "d9f996266a2cbb161e5eb7539951e7ed4682f86a38ba9f5a26c1a13aff430ef9"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "ac66d10c4edad4e9dab72aef529149ce93e077c836b150efdce1a0153da0e369",
+     "57937a2d60637181d54c1b47dec6c1a4bea7024f7d09f1e9ad92260613afbc4a",
+     "9b6ce3f0d3b66067330b9113b00e69286fb1217d0aedd6be9850f936eb371a1c",
+     "42e0dc6e5fad6fbf8697454660a1dbd7c8d71c11e66286c686b3cdfe6c7a91a6",
+     "59717bc593dd685a312a0c689f365021765445f57300a1034c89e48c7f7dac74",
+     "59ff8a909aa7baf5a2abd6ac725535e67e313a3452d419baa9f3e010cf32db86",
+     "d9f996266a2cbb161e5eb7539951e7ed4682f86a38ba9f5a26c1a13aff430ef9"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

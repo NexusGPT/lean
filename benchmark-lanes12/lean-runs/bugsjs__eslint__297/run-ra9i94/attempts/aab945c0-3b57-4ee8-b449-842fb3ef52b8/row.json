@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/object-curly-newline.js",
+ "unit": "(edit 66befb7d1356)",
+ "editIds": [
+  "66befb7d1356bce860ece2f422c10e1b16cb7ca7489eaa5a61aa54bf01cc3c3f"
+ ],
+ "lines": [
+  142,
+  142
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

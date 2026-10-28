@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-lone-blocks.js",
+ "unit": "(edit 6c23365bdbef)",
+ "editIds": [
+  "6c23365bdbefd32706e2671ac7495c48f0ad02a50ba850ea2b915dda56d82d76"
+ ],
+ "lines": [
+  49,
+  49
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

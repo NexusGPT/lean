@@ -1,0 +1,713 @@
+{
+ "identity": "343d8af25d4583ff662111d6bf2607591b40a4cdf5a7ac71aa1c1e76af89c07f",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/ignored-paths.js",
+   "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+   "lines": [
+    200,
+    235
+   ],
+   "coverage": "refused:ts-strict",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 6,
+    "args": [],
+    "parent": {
+     "outcome": {
+      "threw": {
+       "$error": "TypeError",
+       "message": "ig.add is not a function"
+      }
+     },
+     "heap": {
+      "roots": [],
+      "own": {},
+      "outcome": null,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {
+      "this.options": {
+       "$fake": "this.options"
+      },
+      "this.ig": {
+       "custom": {
+        "$fake": "this.ig.custom"
+       },
+       "default": {
+        "$fake": "this.ig.default"
+       }
+      }
+     },
+     "trace": [
+      {
+       "op": "call",
+       "path": "module:ignore",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:ignore()#1.add",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:ignore()#1.add",
+       "args": [
+        [
+         "/node_modules/*",
+         "/bower_components/*"
+        ]
+       ]
+      },
+      {
+       "op": "get",
+       "path": "this.options",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "this.options.ignore",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:ignore()#1.add()#1.add",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "this.ig",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "threw": {
+       "$error": "TypeError",
+       "message": "ig.add is not a function"
+      }
+     },
+     "heap": {
+      "roots": [],
+      "own": {},
+      "outcome": null,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {
+      "this.options": {
+       "$fake": "this.options"
+      }
+     },
+     "trace": [
+      {
+       "op": "call",
+       "path": "module:ignore",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:ignore()#1.add",
+       "args": []
+      },
+      {
+       "op": "call",
+       "path": "module:ignore()#1.add",
+       "args": [
+        [
+         "/node_modules/*",
+         "/bower_components/*"
+        ]
+       ]
+      },
+      {
+       "op": "get",
+       "path": "this.options",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "this.options.dotfiles",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "module:ignore()#1.add()#1.add",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "where": {
+     "field": "receiver",
+     "lines": {
+      "kind": "completion fallback",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__199/run-M5RmSD/sources/lib/.lean_base_38298_ignored-paths.js",
+       "start": 205,
+       "end": 205,
+       "text": "ig.add(this.ig.custom);"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__199/run-M5RmSD/sources/lib/.lean_head_38298_ignored-paths.js",
+       "start": 207,
+       "end": 207,
+       "text": "ig.add([\".*/*\", \"!../\"]);"
+      }
+     }
+    }
+   },
+   "reason": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+   "advice": [
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 92,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'addPattern' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 99,
+     "rule": "ts-strict",
+     "msg": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 102,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'ignoreFiles' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 103,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'add' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 106,
+     "rule": "ts-strict",
+     "msg": "TS2769: No overload matches this call.   Overload 1 of 2, '(...items: ConcatArray<never>[]): never[]', gave the following error.     Argument of type 'string[]' is not assignable to parameter of type 'ConcatArray<never>'.       The types returned by 'slice(...)' are incompatible between these types.         Type 'string[]' is not assignable to type 'never[]'.           Type 'string' is not assignable to type 'never'.   Overload 2 of 2, '(...items: ConcatArray<never>[]): never[]', gave the following error.     Argument of type 'string[]' is not assignable to parameter of type 'ConcatArray<never>'.       The types returned by 'slice(...)' are incompatible between these types.         Type 'string[]' is not assignable to type 'never[]'.           Type 'string' is not assignable to type 'never'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 106,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'patterns' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 107,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'cwd' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "editIds": [
+    "adee80b3c5281bfd22ccd453e314033424432621e8b9378715cadc91ea398444",
+    "6333e3fb9e5a4c3282464535d25362c16667fc2708652679cdab99621f70e2df",
+    "d79c80cdb285e5aff16bcbfa9e19ff2ce240e66d1618b1ddff9709152aa297d2",
+    "ce37aa490286ece48823ee26941162054f0ed348db203c778685e5e50474c117",
+    "a0f1bf49c7088da85f19e65f21285e1778d14d68b62b3669ea97b693041543ec",
+    "e99de72b3a1f4f8fd1805c84d3eea4ab266a0cff7d1ead2d10c5d53c49a1431a"
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/ignored-paths.js",
+     "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+     "lines": [
+      200,
+      235
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "6f05546cb271553b9c58151738e47bf566b75bc9",
+  "head": "9cf1e0b113db558d64fbb51b405010ae8210218e",
+  "files": [
+   {
+    "id": "c719886b5fcb3928b96b550973c80a52dd95a931347052c478d8c75befada6f9",
+    "file": "lib/ignored-paths.js",
+    "oldPath": "lib/ignored-paths.js",
+    "newPath": "lib/ignored-paths.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "bace73db6a394b0559e02135defc8f7abd3c2636",
+    "newOid": "cfca7fa4ff1c3b17aba303209dfbef050df0dcfb",
+    "status": "M",
+    "edits": [
+     "adee80b3c5281bfd22ccd453e314033424432621e8b9378715cadc91ea398444",
+     "6333e3fb9e5a4c3282464535d25362c16667fc2708652679cdab99621f70e2df",
+     "d79c80cdb285e5aff16bcbfa9e19ff2ce240e66d1618b1ddff9709152aa297d2",
+     "ce37aa490286ece48823ee26941162054f0ed348db203c778685e5e50474c117",
+     "a0f1bf49c7088da85f19e65f21285e1778d14d68b62b3669ea97b693041543ec",
+     "e99de72b3a1f4f8fd1805c84d3eea4ab266a0cff7d1ead2d10c5d53c49a1431a"
+    ],
+    "hunks": [
+     {
+      "id": "da4eb2ca17ac2a5d50c2e8e2cdea44e747f37f3599bce23ad6647e99a8ae3d9e",
+      "old": {
+       "start": 203,
+       "count": 0
+      },
+      "new": {
+       "start": 204,
+       "count": 6
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "305d02ac15f6dfc6e39a28e363e556e9c8c10f508281a01ef2a53e0389307ef1",
+    "newHash": "d494cbbc0e64821d27595ecf58308aaeab57b7aed83665730a8629269d0c5f69",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "findIgnoreFile",
+       "side": "old",
+       "file": "lib/ignored-paths.js",
+       "start": 52,
+       "end": 58,
+       "offset": 1445,
+       "stop": 1654,
+       "id": "c130d722aad90da177d43fe7ad0c1d6d7e5d7fda34541db839129eac4ba62891"
+      },
+      {
+       "name": "mergeDefaultOptions",
+       "side": "old",
+       "file": "lib/ignored-paths.js",
+       "start": 65,
+       "end": 68,
+       "offset": 1805,
+       "stop": 1933,
+       "id": "afed4a22a88240ec7b9665e6929814f6113aa733a7d90692ee554c494d6791e0"
+      },
+      {
+       "name": "IgnoredPaths.constructor",
+       "side": "old",
+       "file": "lib/ignored-paths.js",
+       "start": 82,
+       "end": 170,
+       "offset": 2288,
+       "stop": 5329,
+       "id": "07baa50b5c9499d99a99837587e3af3f1694640c787702c331373ca47c7d0cac"
+      },
+      {
+       "name": "IgnoredPaths.contains",
+       "side": "old",
+       "file": "lib/ignored-paths.js",
+       "start": 178,
+       "end": 194,
+       "offset": 5661,
+       "stop": 6255,
+       "id": "c7e8bf38244cfb9462e01d969ef8732eddda401c11e490106cc0a013c14f80c1"
+      },
+      {
+       "name": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+       "side": "old",
+       "file": "lib/ignored-paths.js",
+       "start": 200,
+       "end": 229,
+       "offset": 6423,
+       "stop": 7203,
+       "id": "86fb00610182deb457feed9733150fa76c728509bbe466d12bfc1d470663ec4e"
+      }
+     ],
+     "new": [
+      {
+       "name": "findIgnoreFile",
+       "side": "new",
+       "file": "lib/ignored-paths.js",
+       "start": 52,
+       "end": 58,
+       "offset": 1445,
+       "stop": 1654,
+       "id": "0cc1732da10689f629e2cc1788874f1129332eedf971473bb5778ee2c0d84ec5"
+      },
+      {
+       "name": "mergeDefaultOptions",
+       "side": "new",
+       "file": "lib/ignored-paths.js",
+       "start": 65,
+       "end": 68,
+       "offset": 1805,
+       "stop": 1933,
+       "id": "6b8ca4faf6e486d734927d37da7682e0e9bd69004494481a918073101e954435"
+      },
+      {
+       "name": "IgnoredPaths.constructor",
+       "side": "new",
+       "file": "lib/ignored-paths.js",
+       "start": 82,
+       "end": 170,
+       "offset": 2288,
+       "stop": 5329,
+       "id": "737220a121697833708734156c21533811bedd4a74fcced0fae631fb87148b2a"
+      },
+      {
+       "name": "IgnoredPaths.contains",
+       "side": "new",
+       "file": "lib/ignored-paths.js",
+       "start": 178,
+       "end": 194,
+       "offset": 5661,
+       "stop": 6255,
+       "id": "288a1b30e485a69f39747b429824eb5a3cb77114943cedfb0f7779cd8c60876f"
+      },
+      {
+       "name": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+       "side": "new",
+       "file": "lib/ignored-paths.js",
+       "start": 200,
+       "end": 235,
+       "offset": 6423,
+       "stop": 7412,
+       "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "adee80b3c5281bfd22ccd453e314033424432621e8b9378715cadc91ea398444",
+    "fileId": "c719886b5fcb3928b96b550973c80a52dd95a931347052c478d8c75befada6f9",
+    "file": "lib/ignored-paths.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da4eb2ca17ac2a5d50c2e8e2cdea44e747f37f3599bce23ad6647e99a8ae3d9e",
+    "side": "new",
+    "old": {
+     "start": 203,
+     "count": 0
+    },
+    "new": {
+     "start": 204,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6512,
+     "end": 6558
+    },
+    "links": [
+     {
+      "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+      "file": "lib/ignored-paths.js",
+      "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+      "side": "new",
+      "start": 200,
+      "end": 235
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ClassDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+     "file": "lib/ignored-paths.js",
+     "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+     "side": "new",
+     "start": 200,
+     "end": 235
+    }
+   },
+   {
+    "id": "6333e3fb9e5a4c3282464535d25362c16667fc2708652679cdab99621f70e2df",
+    "fileId": "c719886b5fcb3928b96b550973c80a52dd95a931347052c478d8c75befada6f9",
+    "file": "lib/ignored-paths.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da4eb2ca17ac2a5d50c2e8e2cdea44e747f37f3599bce23ad6647e99a8ae3d9e",
+    "side": "new",
+    "old": {
+     "start": 203,
+     "count": 0
+    },
+    "new": {
+     "start": 205,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6558,
+     "end": 6559
+    },
+    "links": [
+     {
+      "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+      "file": "lib/ignored-paths.js",
+      "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+      "side": "new",
+      "start": 200,
+      "end": 235
+     }
+    ],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+     "file": "lib/ignored-paths.js",
+     "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+     "side": "new",
+     "start": 200,
+     "end": 235
+    }
+   },
+   {
+    "id": "d79c80cdb285e5aff16bcbfa9e19ff2ce240e66d1618b1ddff9709152aa297d2",
+    "fileId": "c719886b5fcb3928b96b550973c80a52dd95a931347052c478d8c75befada6f9",
+    "file": "lib/ignored-paths.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da4eb2ca17ac2a5d50c2e8e2cdea44e747f37f3599bce23ad6647e99a8ae3d9e",
+    "side": "new",
+    "old": {
+     "start": 203,
+     "count": 0
+    },
+    "new": {
+     "start": 206,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6559,
+     "end": 6672
+    },
+    "links": [
+     {
+      "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+      "file": "lib/ignored-paths.js",
+      "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+      "side": "new",
+      "start": 200,
+      "end": 235
+     }
+    ],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+     "file": "lib/ignored-paths.js",
+     "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+     "side": "new",
+     "start": 200,
+     "end": 235
+    }
+   },
+   {
+    "id": "ce37aa490286ece48823ee26941162054f0ed348db203c778685e5e50474c117",
+    "fileId": "c719886b5fcb3928b96b550973c80a52dd95a931347052c478d8c75befada6f9",
+    "file": "lib/ignored-paths.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da4eb2ca17ac2a5d50c2e8e2cdea44e747f37f3599bce23ad6647e99a8ae3d9e",
+    "side": "new",
+    "old": {
+     "start": 203,
+     "count": 0
+    },
+    "new": {
+     "start": 207,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6672,
+     "end": 6710
+    },
+    "links": [
+     {
+      "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+      "file": "lib/ignored-paths.js",
+      "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+      "side": "new",
+      "start": 200,
+      "end": 235
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ClassDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+     "file": "lib/ignored-paths.js",
+     "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+     "side": "new",
+     "start": 200,
+     "end": 235
+    }
+   },
+   {
+    "id": "a0f1bf49c7088da85f19e65f21285e1778d14d68b62b3669ea97b693041543ec",
+    "fileId": "c719886b5fcb3928b96b550973c80a52dd95a931347052c478d8c75befada6f9",
+    "file": "lib/ignored-paths.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da4eb2ca17ac2a5d50c2e8e2cdea44e747f37f3599bce23ad6647e99a8ae3d9e",
+    "side": "new",
+    "old": {
+     "start": 203,
+     "count": 0
+    },
+    "new": {
+     "start": 208,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6710,
+     "end": 6720
+    },
+    "links": [
+     {
+      "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+      "file": "lib/ignored-paths.js",
+      "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+      "side": "new",
+      "start": 200,
+      "end": 235
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ClassDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+     "file": "lib/ignored-paths.js",
+     "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+     "side": "new",
+     "start": 200,
+     "end": 235
+    }
+   },
+   {
+    "id": "e99de72b3a1f4f8fd1805c84d3eea4ab266a0cff7d1ead2d10c5d53c49a1431a",
+    "fileId": "c719886b5fcb3928b96b550973c80a52dd95a931347052c478d8c75befada6f9",
+    "file": "lib/ignored-paths.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da4eb2ca17ac2a5d50c2e8e2cdea44e747f37f3599bce23ad6647e99a8ae3d9e",
+    "side": "new",
+    "old": {
+     "start": 203,
+     "count": 0
+    },
+    "new": {
+     "start": 209,
+     "count": 1
+    },
+    "offsets": {
+     "start": 6720,
+     "end": 6721
+    },
+    "links": [
+     {
+      "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+      "file": "lib/ignored-paths.js",
+      "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+      "side": "new",
+      "start": 200,
+      "end": 235
+     }
+    ],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "e8e46bef146c82374bec8204a9e4d6a7243e5c4473754de87ae61eec2917f794",
+     "file": "lib/ignored-paths.js",
+     "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+     "side": "new",
+     "start": 200,
+     "end": 235
+    }
+   }
+  ],
+  "id": "09c0b899919d203e6b80a7ec0fb3774ded5cadf03ec12011380c1d304b8cb48b",
+  "reconciliation": {
+   "expected": [
+    "adee80b3c5281bfd22ccd453e314033424432621e8b9378715cadc91ea398444",
+    "6333e3fb9e5a4c3282464535d25362c16667fc2708652679cdab99621f70e2df",
+    "d79c80cdb285e5aff16bcbfa9e19ff2ce240e66d1618b1ddff9709152aa297d2",
+    "ce37aa490286ece48823ee26941162054f0ed348db203c778685e5e50474c117",
+    "a0f1bf49c7088da85f19e65f21285e1778d14d68b62b3669ea97b693041543ec",
+    "e99de72b3a1f4f8fd1805c84d3eea4ab266a0cff7d1ead2d10c5d53c49a1431a"
+   ],
+   "unit": [
+    "adee80b3c5281bfd22ccd453e314033424432621e8b9378715cadc91ea398444",
+    "6333e3fb9e5a4c3282464535d25362c16667fc2708652679cdab99621f70e2df",
+    "d79c80cdb285e5aff16bcbfa9e19ff2ce240e66d1618b1ddff9709152aa297d2",
+    "ce37aa490286ece48823ee26941162054f0ed348db203c778685e5e50474c117",
+    "a0f1bf49c7088da85f19e65f21285e1778d14d68b62b3669ea97b693041543ec",
+    "e99de72b3a1f4f8fd1805c84d3eea4ab266a0cff7d1ead2d10c5d53c49a1431a"
+   ],
+   "artifact": [],
+   "unassigned": [],
+   "classes": {
+    "source": {
+     "unit": [
+      "adee80b3c5281bfd22ccd453e314033424432621e8b9378715cadc91ea398444",
+      "6333e3fb9e5a4c3282464535d25362c16667fc2708652679cdab99621f70e2df",
+      "d79c80cdb285e5aff16bcbfa9e19ff2ce240e66d1618b1ddff9709152aa297d2",
+      "ce37aa490286ece48823ee26941162054f0ed348db203c778685e5e50474c117",
+      "a0f1bf49c7088da85f19e65f21285e1778d14d68b62b3669ea97b693041543ec",
+      "e99de72b3a1f4f8fd1805c84d3eea4ab266a0cff7d1ead2d10c5d53c49a1431a"
+     ],
+     "artifact": [],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "callersChecked": 0
+}

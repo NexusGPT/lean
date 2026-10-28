@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-multiple-empty-lines.js",
+ "unit": "(edit e572a19ac6ea)",
+ "editIds": [
+  "e572a19ac6ea0929bae111612448ab9a81951ac5ab5fc9a5895d61aae9a48437"
+ ],
+ "lines": [
+  125,
+  125
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,419 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "52e8d9c60bfb82a0774256084f69b12582cdf0e7",
+ "head": "88fd2d90617696e48dfcfb3a7c1974a7625acea3",
+ "files": [
+  {
+   "id": "a16977b953bf022ba097577ebfb6ffa65db0cbac07cdd10ef808556285881a65",
+   "file": "lib/eslint.js",
+   "oldPath": "lib/eslint.js",
+   "newPath": "lib/eslint.js",
+   "oldMode": "100755",
+   "newMode": "100755",
+   "oldOid": "efe1678dbc1fa90e76973d31cfabf745d424d586",
+   "newOid": "14362b2c208475c9c3bbc2e27880bf322d01ba2c",
+   "status": "M",
+   "edits": [
+    "6d975d2363c79d5e64954047d02449419e60ac816d579bccab1a26ffdcaa61a0",
+    "97c65a94a559d9e0da9d2bf35cbeff1a216d1bc5758b9778062a76e720ab39fb"
+   ],
+   "hunks": [
+    {
+     "id": "e3b2495c2604a1e50bc7fa2295a87241d8e1862f1aa7950ab466d316af09b95f",
+     "old": {
+      "start": 980,
+      "count": 1
+     },
+     "new": {
+      "start": 980,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "68241fe32bd90476d8585b646a86ea3c8dd2f2f216849ac94cc811d4fb857e14",
+   "newHash": "05243bd429aae3aee16a9c35e037b66159ebfdbd74677759566bd7133bda12ac",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "parseBooleanConfig",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 42,
+      "end": 67,
+      "offset": 1622,
+      "stop": 2235,
+      "id": "b988ecbb910c1c83cc86099c2b500a6cea70beb31b8b10e14dcedfc655fc38cd"
+     },
+     {
+      "name": "parseJsonConfig",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 76,
+      "end": 116,
+      "offset": 2530,
+      "stop": 3840,
+      "id": "8aa6f5f48006ab2480d24e90f7cf0e73ab16babe2da4a72e40c60cf82b54b437"
+     },
+     {
+      "name": "parseListConfig",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 123,
+      "end": 137,
+      "offset": 4004,
+      "stop": 4327,
+      "id": "26dbb1f94a02b354f79010e308e4e1cf3678b9e5fd927b4222c41bde658f2e7d"
+     },
+     {
+      "name": "addDeclaredGlobals",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 148,
+      "end": 228,
+      "offset": 4688,
+      "stop": 7340,
+      "id": "d84590c0dfcab39d403f6d0665f3ab5d93dc0fde1c1ad63478b96f5a3d9e1098"
+     },
+     {
+      "name": "disableReporting",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 238,
+      "end": 255,
+      "offset": 7644,
+      "stop": 8056,
+      "id": "559a837ee6a574edb7daa27ac414d1fcdaeb950f3f3acbdff3befc879df79a48"
+     },
+     {
+      "name": "enableReporting",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 265,
+      "end": 293,
+      "offset": 8358,
+      "stop": 9253,
+      "id": "f55f3156261876abcf9eea9d14401753b4e8f3f7465ad69c94350c8235be98c6"
+     },
+     {
+      "name": "modifyConfigsFromComments",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 306,
+      "end": 384,
+      "offset": 9828,
+      "stop": 12937,
+      "id": "b4e02fe78b224d61cd304a2b2018d1482174dc7f0b5b7a42f6aeef494d3319cc"
+     },
+     {
+      "name": "isDisabledByReportingConfig",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 393,
+      "end": 407,
+      "offset": 13256,
+      "stop": 13834,
+      "id": "72f768786f66415476373148dca24978b96250f013c0c3c1fb6287b79d3fb161"
+     },
+     {
+      "name": "normalizeEcmaVersion",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 415,
+      "end": 429,
+      "offset": 14097,
+      "stop": 14524,
+      "id": "501bb1e4c1ae690b606ea3995f95f50f2249c06bedde25999180c64f5a6cabdf"
+     },
+     {
+      "name": "prepareConfig",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 436,
+      "end": 492,
+      "offset": 14696,
+      "stop": 16567,
+      "id": "7ec3a45171e7e99872aed50d7cbe81f1e5e6b7815ea428267fc6826d7455ed9f"
+     },
+     {
+      "name": "createStubRule",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 499,
+      "end": 519,
+      "offset": 16737,
+      "stop": 17236,
+      "id": "708fa372cec4661ba94599ac08e84c70c836d24138ef29186292aa91bf6ab5a0"
+     },
+     {
+      "name": "getRuleReplacementMessage",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 526,
+      "end": 534,
+      "offset": 17390,
+      "stop": 17648,
+      "id": "88a60d3306dc375a33af307329c7f9e0a0135e6c711702eb34f032507e1c511d"
+     },
+     {
+      "name": "findEslintEnv",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 543,
+      "end": 553,
+      "offset": 17943,
+      "stop": 18179,
+      "id": "1113d2cae3867f43f2e5143b576c21168d82c2699c390f88f8640680aaaea4e5"
+     },
+     {
+      "name": "stripUnicodeBOM",
+      "side": "old",
+      "file": "lib/eslint.js",
+      "start": 561,
+      "end": 572,
+      "offset": 18316,
+      "stop": 18652,
+      "id": "fdfd16554fd194aa6e7649c06fb744dbceddc44a6be4ddd749a21a4f9524c6eb"
+     }
+    ],
+    "new": [
+     {
+      "name": "parseBooleanConfig",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 42,
+      "end": 67,
+      "offset": 1622,
+      "stop": 2235,
+      "id": "79a339899b54dae8f30059f96b02e85ef8ef32a5301af9656973d2c381a480f9"
+     },
+     {
+      "name": "parseJsonConfig",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 76,
+      "end": 116,
+      "offset": 2530,
+      "stop": 3840,
+      "id": "f37c67c2c0e53a9287d967a3cd71b63313d85f9646b47417393d96b1f9a41918"
+     },
+     {
+      "name": "parseListConfig",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 123,
+      "end": 137,
+      "offset": 4004,
+      "stop": 4327,
+      "id": "1051e7cab8698f2db4b86b5693020b89399eb63345f665556397bf97cb89232a"
+     },
+     {
+      "name": "addDeclaredGlobals",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 148,
+      "end": 228,
+      "offset": 4688,
+      "stop": 7340,
+      "id": "7ea5fdfb181d2b3f8683a77d2c886c03a4badc9d012dab07ac2a7666bfe72d45"
+     },
+     {
+      "name": "disableReporting",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 238,
+      "end": 255,
+      "offset": 7644,
+      "stop": 8056,
+      "id": "56f554907238d8f4e0f8d70f7dd0d6977ac48f357e0de143bea8872cd2ea999f"
+     },
+     {
+      "name": "enableReporting",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 265,
+      "end": 293,
+      "offset": 8358,
+      "stop": 9253,
+      "id": "8100a9df69acadf1b2962c877bc2d1b7b65cfedd465e5a6d3735e1bcfa03ddbf"
+     },
+     {
+      "name": "modifyConfigsFromComments",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 306,
+      "end": 384,
+      "offset": 9828,
+      "stop": 12937,
+      "id": "7654dd6956f3a51705fd0b3241c5caf891f6d402b9139014631da5f33fa16a03"
+     },
+     {
+      "name": "isDisabledByReportingConfig",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 393,
+      "end": 407,
+      "offset": 13256,
+      "stop": 13834,
+      "id": "03d1c262448b3d4cd7267901a556977f12f54b71bc2750295ae3cb3236c5d388"
+     },
+     {
+      "name": "normalizeEcmaVersion",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 415,
+      "end": 429,
+      "offset": 14097,
+      "stop": 14524,
+      "id": "e2273cddcb5be509da619dceeb736e3d5c852e65809458007df2dc532cb953e9"
+     },
+     {
+      "name": "prepareConfig",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 436,
+      "end": 492,
+      "offset": 14696,
+      "stop": 16567,
+      "id": "2b52fc78b2d36c7e9e43da9aa2551b9e79ab18ef7af2268c6c5a00d702211ed2"
+     },
+     {
+      "name": "createStubRule",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 499,
+      "end": 519,
+      "offset": 16737,
+      "stop": 17236,
+      "id": "af724e1c9826af1262e993707de1ad615b42a7f6265163701c39ef41e360be71"
+     },
+     {
+      "name": "getRuleReplacementMessage",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 526,
+      "end": 534,
+      "offset": 17390,
+      "stop": 17648,
+      "id": "465a12109feba675c9d05d67bf2b42a4b91b023ebc27bc331055947a89730dc4"
+     },
+     {
+      "name": "findEslintEnv",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 543,
+      "end": 553,
+      "offset": 17943,
+      "stop": 18179,
+      "id": "e5cbdbd0938ca29ebe258e86007adb9077f1c1cafea93eaf76a292d149b1b18f"
+     },
+     {
+      "name": "stripUnicodeBOM",
+      "side": "new",
+      "file": "lib/eslint.js",
+      "start": 561,
+      "end": 572,
+      "offset": 18316,
+      "stop": 18652,
+      "id": "eba87b1f24518990ed49d2999c9290b5e67322e0f26eab146507d854c71c0f19"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "6d975d2363c79d5e64954047d02449419e60ac816d579bccab1a26ffdcaa61a0",
+   "fileId": "a16977b953bf022ba097577ebfb6ffa65db0cbac07cdd10ef808556285881a65",
+   "file": "lib/eslint.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "e3b2495c2604a1e50bc7fa2295a87241d8e1862f1aa7950ab466d316af09b95f",
+   "side": "old",
+   "old": {
+    "start": 980,
+    "count": 1
+   },
+   "new": {
+    "start": 980,
+    "count": 0
+   },
+   "offsets": {
+    "start": 33334,
+    "end": 33424
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "97c65a94a559d9e0da9d2bf35cbeff1a216d1bc5758b9778062a76e720ab39fb",
+   "fileId": "a16977b953bf022ba097577ebfb6ffa65db0cbac07cdd10ef808556285881a65",
+   "file": "lib/eslint.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "e3b2495c2604a1e50bc7fa2295a87241d8e1862f1aa7950ab466d316af09b95f",
+   "side": "new",
+   "old": {
+    "start": 980,
+    "count": 0
+   },
+   "new": {
+    "start": 980,
+    "count": 1
+   },
+   "offsets": {
+    "start": 33334,
+    "end": 33428
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "9b165561546ebd3f36dc1dfc4319743c959d00d476f901fefed310f21d3e12a8",
+ "reconciliation": {
+  "expected": [
+   "6d975d2363c79d5e64954047d02449419e60ac816d579bccab1a26ffdcaa61a0",
+   "97c65a94a559d9e0da9d2bf35cbeff1a216d1bc5758b9778062a76e720ab39fb"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "6d975d2363c79d5e64954047d02449419e60ac816d579bccab1a26ffdcaa61a0",
+   "97c65a94a559d9e0da9d2bf35cbeff1a216d1bc5758b9778062a76e720ab39fb"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "6d975d2363c79d5e64954047d02449419e60ac816d579bccab1a26ffdcaa61a0",
+     "97c65a94a559d9e0da9d2bf35cbeff1a216d1bc5758b9778062a76e720ab39fb"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

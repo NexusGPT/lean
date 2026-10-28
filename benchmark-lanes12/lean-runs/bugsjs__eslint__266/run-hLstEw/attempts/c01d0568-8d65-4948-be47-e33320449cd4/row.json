@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/id-length.js",
+ "unit": "(edit 25a7702a1658)",
+ "editIds": [
+  "25a7702a16587f766cb5cf1595b456c11f8188fee67be6a2056b24da750dd828"
+ ],
+ "lines": [
+  65,
+  65
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/prefer-arrow-callback.js",
+ "unit": "(edit 0441fe68acdb)",
+ "editIds": [
+  "0441fe68acdbedb26bb8893986acecb8c1aa8ef5107b5335989dfdf31de96183"
+ ],
+ "lines": [
+  284,
+  284
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/util/npm-util.js",
+ "unit": "(edit 4328551878a9)",
+ "editIds": [
+  "4328551878a9fc45dcea4d68374ff1fc0d4f149710a326d5ab41f21e0480a1ef"
+ ],
+ "lines": [
+  129,
+  129
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

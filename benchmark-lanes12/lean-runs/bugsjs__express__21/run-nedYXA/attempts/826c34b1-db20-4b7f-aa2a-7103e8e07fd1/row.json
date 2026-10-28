@@ -1,0 +1,84 @@
+{
+ "file": "lib/router/index.js",
+ "unit": "restore",
+ "lines": [
+  445,
+  462
+ ],
+ "coverage": "refused:var",
+ "verdict": "ASK",
+ "laneB": "ASK",
+ "laneA": null,
+ "witness": null,
+ "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__21/run-nedYXA/sources/lib/router/.lean_head_76183_index.js: ASK(CommonJS wrapper): require is not defined",
+ "advice": [
+  {
+   "line": 446,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  },
+  {
+   "line": 446,
+   "rule": "arguments",
+   "msg": "`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter",
+   "do": "[migration] `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter (`...args`) and read `args.length` and `args[k]`."
+  },
+  {
+   "line": 447,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  },
+  {
+   "line": 447,
+   "rule": "arguments",
+   "msg": "`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter",
+   "do": "[migration] `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter (`...args`) and read `args.length` and `args[k]`."
+  },
+  {
+   "line": 449,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  },
+  {
+   "line": 450,
+   "rule": "arguments",
+   "msg": "`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter",
+   "do": "[migration] `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter (`...args`) and read `args.length` and `args[k]`."
+  },
+  {
+   "line": 454,
+   "rule": "callback-form",
+   "msg": "the callback must be an arrow function",
+   "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+  },
+  {
+   "line": 460,
+   "rule": "implicit-this",
+   "msg": "TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+   "do": "[conditional: the declared type covers every receiver the function is called with] Declare the receiver as the first parameter, `function f(this: T, ...)`: a type annotation, the emitted JavaScript is the same, and a declared receiver is read as the function's first operand."
+  }
+ ],
+ "editIds": [
+  "c6a148346173e8429fea9f3781848abf98c804c38335e8956ddcd140bd5ff4eb",
+  "1f043c96d1ff9a9a891adc96d05c9d18c882aa8d2ec604664c96bd2a1cd58522",
+  "150f26b2ec89780c60bf70504cd8d5c3859aa6e40c24981cf04174b6588c9a2c",
+  "c900be5c264352ae3adeb94c88f36d588c6cf28701f7f994dc2e4d01240cf5a3",
+  "7cb6a438605f333c6a024202263edbe662dd4f1a07daa0c58944b60e3f8d1a71",
+  "027c46c054f75ac137b8d6236069ae635f43ca31a620d37ea578a473f6e7f26b",
+  "241b288ff46c8394830f7be1e885acae116f8436f3f13895a748b7669d29d497",
+  "da5b30810ef9c01f9056865162070970b5345d868c2cc23fbf8a1ab22ac3dced",
+  "836b9f0660aa8ae1e4b0e9fad3691279d3f1575c7f7348fc50c6fb16c5e0ac81",
+  "395c67b94585c3ad6e3fd1cc3e9cc6bef0d5b21e0f5420ddd4172dbed005cb7b",
+  "15b5dfcd115cdfc725c9586b58b424d8f8574278aceb65dd86191b31e35e4ac4",
+  "93fbfe09ac89291abbc175736be3324ae4ecdb0194c415e8777ec864529a523a",
+  "1f5e44d4f5f6e4fbea65fc03f98a42c13b696c362f5e0c59816884cf935a48cc",
+  "34fd6224c0f73aa723e4df8ed05dfacebb30538c825c7af63a1b04d790a79773",
+  "d6d1ddf866cb8320e5ac99431dbac416b370989e2e342d285690b1b99f4a5002",
+  "c984a34547d883492f4bab97b1a9c147521790319a63f0e387bd6276663ba05e",
+  "b2fb52ba986976832bab27b3ef974092eb01c3a6a13d04ec3a90f6b7092858a4",
+  "58cf8140da6a449e50cbf3101d1d5bdababb106b41ffe122a30ee7d003f165bc"
+ ]
+}

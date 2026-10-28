@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-dupe-keys.js",
+ "unit": "(edit d852965b72cf)",
+ "editIds": [
+  "d852965b72cf893124d6e8a5ca5264f69f74c4cffb9013efb38e0fc39c410196"
+ ],
+ "lines": [
+  112,
+  112
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

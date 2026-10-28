@@ -1,0 +1,2359 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "63dc56e703d9144f25b545be43a04b2a631297d5",
+  "head": "efa4aa39b437f708d4238903bf928dcbca3373ff",
+  "files": [
+   {
+    "id": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "oldPath": "lib/box/file.js",
+    "newPath": "lib/box/file.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "d61ef48247ba920fec22a0b661f35d960f9c9863",
+    "newOid": "c37d36ca0e6e8d7ae856055cd58678a36cbddd0c",
+    "status": "M",
+    "edits": [
+     "ebd70fddee00eb19a68c102ee207fca78f82042efd9fa8f488d3eaa36293ef36",
+     "b930b8bea3c213c7cc3cce0871cd6e5b880a53ff14558eb2166389d711b3e72a",
+     "f468ac7bdb0b441172563a41387eaeba6ae5ec4bd763cf629940e6cf3d31ae05",
+     "0712f3c4ae63bcb02ac70d4f1e98d123fd959dc58973e7c222f79f17165b264b",
+     "def128d8f4549ee6e4e7b5a466bd78e3ab02bee712f8567b55e336f88472dc3e",
+     "ab1f8adc8733824ad33ae94c348a3609a364bfe677d5bc7437d2eb29b13f7591",
+     "51c4cd8c36ffb745d882a1ad0497a3f5721e039fee6102ce4fe1861f7938469d",
+     "220c66d0627d2a392dd993261016ce9343967c687e6d2c4176afc1f5f5b3c809",
+     "340d8f4b74ebc327ef8ab54f35817a7ccc53a89bb2021836abd4b6ff38ae7b56",
+     "c662073628abf0732cc809cdd66726b6cf102241bced9edcf931f756d8a4df6b",
+     "e3843c27fdfb913105d189bc6f15926afd89e95182cf542469697b48ec2a85f8",
+     "3961a2dd31a4019b24820039d9e3e1aa985608a0e762dc63205f2b989ae1c97f",
+     "67c617ced8c5baa38ca57f70fbe0e4409dff20bafff51f61518ce7666c4f3bdd",
+     "b65941c5405de02fe3ed3f14737f96d1a4afd73dc49595609b2f1dcd3d6b56d0",
+     "77cf80f2e481b35dbd4907a026ad58a384b6f5fcefd6b5c45d26a6fa21135f12",
+     "6ceb3d1221505ede169bf649dedd7f7a444590736acf71a441a2b0799b2412c6",
+     "ee236f476e9109f940f0dfa01f0f15d5886c5da4a67f20af6217a0776684e196",
+     "8a977d293a8337e9501ab27f4be3227b3dbecacea56c0eca92c31caf23cedeec",
+     "273759c9c8abb2d8b0976dcf42f8961be5137d630f0b8958bef9d96094ed0b0b",
+     "4a9d5fcc986609513a07147b6ef749cfe5a41343586bfa902d6e8c7f1fde9b1d",
+     "dcf63501e11f201d4f1bc1327919f56f2871935dd3c51e43cbb79cbff5b37223",
+     "74bd9cf039343395d98d514b9495423d600e9e95685628d0ee149dde46a43d5f",
+     "c1e46b4fa0ae345bcfe80cb3d7d5a5557e81c4d987a62e3d10f1d3a4b6d406a6",
+     "b54968622961966b0729829f28d384476f5cd0524664df60430699055fca1c9d",
+     "44e7df55f0f8ff8c0d9be52d4bca48f8a8557070bc49fffd9ff8af289f067ff6",
+     "f465dbd5eda834ff3708ac7462ff5ee9ef484aa129bed261bd1ed28744bf0912",
+     "1888959c6dcb56ff2845236f9d4a4ce157be6d672d891067d3ca59721db59465",
+     "1a88ae5c117b2bded428cb93ae964c502b3e61f046efada2725b6f23d3b010e9"
+    ],
+    "hunks": [
+     {
+      "id": "4c9455f51030bdd45f62ed50af0e048678075d43af693bd80799636242e836a4",
+      "old": {
+       "start": 5,
+       "count": 0
+      },
+      "new": {
+       "start": 6,
+       "count": 3
+      }
+     },
+     {
+      "id": "8eed7f655416eec4de9ea426afeb55fe82fad7c317e0a444b56fccf19d6360ab",
+      "old": {
+       "start": 19,
+       "count": 0
+      },
+      "new": {
+       "start": 23,
+       "count": 1
+      }
+     },
+     {
+      "id": "bd452e5e21b5fdfbf8a0490389ccf7e3b51de01c3d6514a987a8bed8a72a477c",
+      "old": {
+       "start": 23,
+       "count": 0
+      },
+      "new": {
+       "start": 28,
+       "count": 4
+      }
+     },
+     {
+      "id": "fd78842aaff199facea5118e25c2d709aa2cadf395ae64058530cca3b45320cb",
+      "old": {
+       "start": 40,
+       "count": 0
+      },
+      "new": {
+       "start": 49,
+       "count": 1
+      }
+     },
+     {
+      "id": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+      "old": {
+       "start": 42,
+       "count": 5
+      },
+      "new": {
+       "start": 51,
+       "count": 4
+      }
+     },
+     {
+      "id": "165303f029ea7d99018d077238b8c54e9c4152d0e1cb1c2926a8441ab5efe721",
+      "old": {
+       "start": 59,
+       "count": 0
+      },
+      "new": {
+       "start": 68,
+       "count": 1
+      }
+     },
+     {
+      "id": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+      "old": {
+       "start": 61,
+       "count": 5
+      },
+      "new": {
+       "start": 70,
+       "count": 4
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "a704821807263c1702319b2aa56a2be5d4a91d4830d2ac97074a1bf3c493e7da",
+    "newHash": "b2e4bee946ed449be353f2d33eafcf9e42669db53f535fcaa910e75015d72169",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "File",
+       "side": "old",
+       "file": "lib/box/file.js",
+       "start": 6,
+       "end": 13,
+       "offset": 80,
+       "stop": 268,
+       "id": "5a317fefbb1647681c2e636e3115c47bf27fa7b7883e3c08b00306ba680d01d8"
+      },
+      {
+       "name": "wrapReadOptions",
+       "side": "old",
+       "file": "lib/box/file.js",
+       "start": 15,
+       "end": 22,
+       "offset": 270,
+       "stop": 550,
+       "id": "a626ca44e9bd109ac6eb522d34b1cb23501666eeca4213dae674f25f0f1e45d8"
+      }
+     ],
+     "new": [
+      {
+       "name": "File",
+       "side": "new",
+       "file": "lib/box/file.js",
+       "start": 9,
+       "end": 16,
+       "offset": 141,
+       "stop": 329,
+       "id": "6999d34d7a247ca6d7fa49a2f404145b1bf6d47f3ad658c5a0b4bd6657a6fd24"
+      },
+      {
+       "name": "wrapReadOptions",
+       "side": "new",
+       "file": "lib/box/file.js",
+       "start": 18,
+       "end": 26,
+       "offset": 331,
+       "stop": 675,
+       "id": "818f3926f02adee100d6728abb8eac26f291e93cba9e88b3fcf93db1b9e7236e"
+      },
+      {
+       "name": "escapeContent",
+       "side": "new",
+       "file": "lib/box/file.js",
+       "start": 28,
+       "end": 30,
+       "offset": 677,
+       "stop": 743,
+       "id": "cf4682868187d715d22ae6461b3df88ad19113639da438cafaa9c2d508987aec"
+      }
+     ]
+    }
+   },
+   {
+    "id": "e437bb4295f48498764b395e4e19ce6f2d9221908809d4d743bbe73f1530c568",
+    "file": "package.json",
+    "oldPath": "package.json",
+    "newPath": "package.json",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "c6f2df6643185080371accb4f620b4499046f765",
+    "newOid": "09889b9aab57282fb2d34162595e6c6b7c1efaf6",
+    "status": "M",
+    "edits": [
+     "f07883ffe17b096f58238bbf4d3390db8fc149ccf7ea836e8e0e52d24d97c95a",
+     "c0e3ed9769d5be55d834000e455bd0a7ccc570eb364d1c168d3fd572c5fc97af"
+    ],
+    "hunks": [
+     {
+      "id": "5b4c5a19e171b14b295455ac82ddf6327af5f4b7b2138cab4be6a34c649c6cf3",
+      "old": {
+       "start": 38,
+       "count": 1
+      },
+      "new": {
+       "start": 38,
+       "count": 1
+      }
+     }
+    ],
+    "class": "config",
+    "oldHash": "829ae35744b8c5bfa9175fc993bdc34b1d44fe6237efa58a722579a23e710c4f",
+    "newHash": "3489ab59f04d53ed4c89a12daee7114a247cc69c73f1cd7bc85aeb1d01b21d49",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "ebd70fddee00eb19a68c102ee207fca78f82042efd9fa8f488d3eaa36293ef36",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4c9455f51030bdd45f62ed50af0e048678075d43af693bd80799636242e836a4",
+    "side": "new",
+    "old": {
+     "start": 5,
+     "count": 0
+    },
+    "new": {
+     "start": 6,
+     "count": 1
+    },
+    "offsets": {
+     "start": 80,
+     "end": 110
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b930b8bea3c213c7cc3cce0871cd6e5b880a53ff14558eb2166389d711b3e72a",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4c9455f51030bdd45f62ed50af0e048678075d43af693bd80799636242e836a4",
+    "side": "new",
+    "old": {
+     "start": 5,
+     "count": 0
+    },
+    "new": {
+     "start": 7,
+     "count": 1
+    },
+    "offsets": {
+     "start": 110,
+     "end": 140
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f468ac7bdb0b441172563a41387eaeba6ae5ec4bd763cf629940e6cf3d31ae05",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4c9455f51030bdd45f62ed50af0e048678075d43af693bd80799636242e836a4",
+    "side": "new",
+    "old": {
+     "start": 5,
+     "count": 0
+    },
+    "new": {
+     "start": 8,
+     "count": 1
+    },
+    "offsets": {
+     "start": 140,
+     "end": 141
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "0712f3c4ae63bcb02ac70d4f1e98d123fd959dc58973e7c222f79f17165b264b",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8eed7f655416eec4de9ea426afeb55fe82fad7c317e0a444b56fccf19d6360ab",
+    "side": "new",
+    "old": {
+     "start": 19,
+     "count": 0
+    },
+    "new": {
+     "start": 23,
+     "count": 1
+    },
+    "offsets": {
+     "start": 591,
+     "end": 655
+    },
+    "links": [
+     {
+      "id": "818f3926f02adee100d6728abb8eac26f291e93cba9e88b3fcf93db1b9e7236e",
+      "file": "lib/box/file.js",
+      "unit": "wrapReadOptions",
+      "side": "new",
+      "start": 18,
+      "end": 26
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "def128d8f4549ee6e4e7b5a466bd78e3ab02bee712f8567b55e336f88472dc3e",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bd452e5e21b5fdfbf8a0490389ccf7e3b51de01c3d6514a987a8bed8a72a477c",
+    "side": "new",
+    "old": {
+     "start": 23,
+     "count": 0
+    },
+    "new": {
+     "start": 28,
+     "count": 1
+    },
+    "offsets": {
+     "start": 677,
+     "end": 706
+    },
+    "links": [
+     {
+      "id": "cf4682868187d715d22ae6461b3df88ad19113639da438cafaa9c2d508987aec",
+      "file": "lib/box/file.js",
+      "unit": "escapeContent",
+      "side": "new",
+      "start": 28,
+      "end": 30
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ab1f8adc8733824ad33ae94c348a3609a364bfe677d5bc7437d2eb29b13f7591",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bd452e5e21b5fdfbf8a0490389ccf7e3b51de01c3d6514a987a8bed8a72a477c",
+    "side": "new",
+    "old": {
+     "start": 23,
+     "count": 0
+    },
+    "new": {
+     "start": 29,
+     "count": 1
+    },
+    "offsets": {
+     "start": 706,
+     "end": 742
+    },
+    "links": [
+     {
+      "id": "cf4682868187d715d22ae6461b3df88ad19113639da438cafaa9c2d508987aec",
+      "file": "lib/box/file.js",
+      "unit": "escapeContent",
+      "side": "new",
+      "start": 28,
+      "end": 30
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "51c4cd8c36ffb745d882a1ad0497a3f5721e039fee6102ce4fe1861f7938469d",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bd452e5e21b5fdfbf8a0490389ccf7e3b51de01c3d6514a987a8bed8a72a477c",
+    "side": "new",
+    "old": {
+     "start": 23,
+     "count": 0
+    },
+    "new": {
+     "start": 30,
+     "count": 1
+    },
+    "offsets": {
+     "start": 742,
+     "end": 744
+    },
+    "links": [
+     {
+      "id": "cf4682868187d715d22ae6461b3df88ad19113639da438cafaa9c2d508987aec",
+      "file": "lib/box/file.js",
+      "unit": "escapeContent",
+      "side": "new",
+      "start": 28,
+      "end": 30
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "220c66d0627d2a392dd993261016ce9343967c687e6d2c4176afc1f5f5b3c809",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bd452e5e21b5fdfbf8a0490389ccf7e3b51de01c3d6514a987a8bed8a72a477c",
+    "side": "new",
+    "old": {
+     "start": 23,
+     "count": 0
+    },
+    "new": {
+     "start": 31,
+     "count": 1
+    },
+    "offsets": {
+     "start": 744,
+     "end": 745
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "340d8f4b74ebc327ef8ab54f35817a7ccc53a89bb2021836abd4b6ff38ae7b56",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "fd78842aaff199facea5118e25c2d709aa2cadf395ae64058530cca3b45320cb",
+    "side": "new",
+    "old": {
+     "start": 40,
+     "count": 0
+    },
+    "new": {
+     "start": 49,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1182,
+     "end": 1226
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c662073628abf0732cc809cdd66726b6cf102241bced9edcf931f756d8a4df6b",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "old",
+    "old": {
+     "start": 42,
+     "count": 1
+    },
+    "new": {
+     "start": 51,
+     "count": 0
+    },
+    "offsets": {
+     "start": 990,
+     "end": 1009
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "e3843c27fdfb913105d189bc6f15926afd89e95182cf542469697b48ec2a85f8",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "old",
+    "old": {
+     "start": 43,
+     "count": 1
+    },
+    "new": {
+     "start": 51,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1009,
+     "end": 1052
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "3961a2dd31a4019b24820039d9e3e1aa985608a0e762dc63205f2b989ae1c97f",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "old",
+    "old": {
+     "start": 44,
+     "count": 1
+    },
+    "new": {
+     "start": 51,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1052,
+     "end": 1065
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "67c617ced8c5baa38ca57f70fbe0e4409dff20bafff51f61518ce7666c4f3bdd",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "old",
+    "old": {
+     "start": 45,
+     "count": 1
+    },
+    "new": {
+     "start": 51,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1065,
+     "end": 1089
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b65941c5405de02fe3ed3f14737f96d1a4afd73dc49595609b2f1dcd3d6b56d0",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "old",
+    "old": {
+     "start": 46,
+     "count": 1
+    },
+    "new": {
+     "start": 51,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1089,
+     "end": 1095
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "77cf80f2e481b35dbd4907a026ad58a384b6f5fcefd6b5c45d26a6fa21135f12",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "new",
+    "old": {
+     "start": 42,
+     "count": 0
+    },
+    "new": {
+     "start": 51,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1227,
+     "end": 1272
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6ceb3d1221505ede169bf649dedd7f7a444590736acf71a441a2b0799b2412c6",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "new",
+    "old": {
+     "start": 42,
+     "count": 0
+    },
+    "new": {
+     "start": 52,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1272,
+     "end": 1335
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ee236f476e9109f940f0dfa01f0f15d5886c5da4a67f20af6217a0776684e196",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "new",
+    "old": {
+     "start": 42,
+     "count": 0
+    },
+    "new": {
+     "start": 53,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1335,
+     "end": 1336
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "8a977d293a8337e9501ab27f4be3227b3dbecacea56c0eca92c31caf23cedeec",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "98ade49dbd9ce9c5c3a0a36c33377a8db175c876732f0592ee8409ba35038cb7",
+    "side": "new",
+    "old": {
+     "start": 42,
+     "count": 0
+    },
+    "new": {
+     "start": 54,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1336,
+     "end": 1357
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "273759c9c8abb2d8b0976dcf42f8961be5137d630f0b8958bef9d96094ed0b0b",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "165303f029ea7d99018d077238b8c54e9c4152d0e1cb1c2926a8441ab5efe721",
+    "side": "new",
+    "old": {
+     "start": 59,
+     "count": 0
+    },
+    "new": {
+     "start": 68,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1625,
+     "end": 1658
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4a9d5fcc986609513a07147b6ef749cfe5a41343586bfa902d6e8c7f1fde9b1d",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "old",
+    "old": {
+     "start": 61,
+     "count": 1
+    },
+    "new": {
+     "start": 70,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1364,
+     "end": 1381
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "dcf63501e11f201d4f1bc1327919f56f2871935dd3c51e43cbb79cbff5b37223",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "old",
+    "old": {
+     "start": 62,
+     "count": 1
+    },
+    "new": {
+     "start": 70,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1381,
+     "end": 1420
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "74bd9cf039343395d98d514b9495423d600e9e95685628d0ee149dde46a43d5f",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "old",
+    "old": {
+     "start": 63,
+     "count": 1
+    },
+    "new": {
+     "start": 70,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1420,
+     "end": 1431
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "c1e46b4fa0ae345bcfe80cb3d7d5a5557e81c4d987a62e3d10f1d3a4b6d406a6",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "old",
+    "old": {
+     "start": 64,
+     "count": 1
+    },
+    "new": {
+     "start": 70,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1431,
+     "end": 1451
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b54968622961966b0729829f28d384476f5cd0524664df60430699055fca1c9d",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "old",
+    "old": {
+     "start": 65,
+     "count": 1
+    },
+    "new": {
+     "start": 70,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1451,
+     "end": 1455
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "44e7df55f0f8ff8c0d9be52d4bca48f8a8557070bc49fffd9ff8af289f067ff6",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "new",
+    "old": {
+     "start": 61,
+     "count": 0
+    },
+    "new": {
+     "start": 70,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1659,
+     "end": 1702
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f465dbd5eda834ff3708ac7462ff5ee9ef484aa129bed261bd1ed28744bf0912",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "new",
+    "old": {
+     "start": 61,
+     "count": 0
+    },
+    "new": {
+     "start": 71,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1702,
+     "end": 1754
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1888959c6dcb56ff2845236f9d4a4ce157be6d672d891067d3ca59721db59465",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "new",
+    "old": {
+     "start": 61,
+     "count": 0
+    },
+    "new": {
+     "start": 72,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1754,
+     "end": 1755
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1a88ae5c117b2bded428cb93ae964c502b3e61f046efada2725b6f23d3b010e9",
+    "fileId": "8dc1b5858a214f27ff4caad2a4b229fffe573ac5acd4aa23bf33888e922edb28",
+    "file": "lib/box/file.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "5c857ef691ad593e7de64e69472e6380560a05dc2cc709575c94973e835d9a16",
+    "side": "new",
+    "old": {
+     "start": 61,
+     "count": 0
+    },
+    "new": {
+     "start": 73,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1755,
+     "end": 1772
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f07883ffe17b096f58238bbf4d3390db8fc149ccf7ea836e8e0e52d24d97c95a",
+    "fileId": "e437bb4295f48498764b395e4e19ce6f2d9221908809d4d743bbe73f1530c568",
+    "file": "package.json",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "5b4c5a19e171b14b295455ac82ddf6327af5f4b7b2138cab4be6a34c649c6cf3",
+    "side": "old",
+    "old": {
+     "start": 38,
+     "count": 1
+    },
+    "new": {
+     "start": 38,
+     "count": 0
+    },
+    "links": [],
+    "context": {
+     "reason": "non-source",
+     "parent": null
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "c0e3ed9769d5be55d834000e455bd0a7ccc570eb364d1c168d3fd572c5fc97af",
+    "fileId": "e437bb4295f48498764b395e4e19ce6f2d9221908809d4d743bbe73f1530c568",
+    "file": "package.json",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "5b4c5a19e171b14b295455ac82ddf6327af5f4b7b2138cab4be6a34c649c6cf3",
+    "side": "new",
+    "old": {
+     "start": 38,
+     "count": 0
+    },
+    "new": {
+     "start": 38,
+     "count": 1
+    },
+    "links": [],
+    "context": {
+     "reason": "non-source",
+     "parent": null
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   }
+  ],
+  "id": "64f5a3b2b0b8829b73edc4cdc1d3376dc0e6b004786a71134ce8a0069eb7cff5",
+  "reconciliation": {
+   "expected": [
+    "ebd70fddee00eb19a68c102ee207fca78f82042efd9fa8f488d3eaa36293ef36",
+    "b930b8bea3c213c7cc3cce0871cd6e5b880a53ff14558eb2166389d711b3e72a",
+    "f468ac7bdb0b441172563a41387eaeba6ae5ec4bd763cf629940e6cf3d31ae05",
+    "0712f3c4ae63bcb02ac70d4f1e98d123fd959dc58973e7c222f79f17165b264b",
+    "def128d8f4549ee6e4e7b5a466bd78e3ab02bee712f8567b55e336f88472dc3e",
+    "ab1f8adc8733824ad33ae94c348a3609a364bfe677d5bc7437d2eb29b13f7591",
+    "51c4cd8c36ffb745d882a1ad0497a3f5721e039fee6102ce4fe1861f7938469d",
+    "220c66d0627d2a392dd993261016ce9343967c687e6d2c4176afc1f5f5b3c809",
+    "340d8f4b74ebc327ef8ab54f35817a7ccc53a89bb2021836abd4b6ff38ae7b56",
+    "c662073628abf0732cc809cdd66726b6cf102241bced9edcf931f756d8a4df6b",
+    "e3843c27fdfb913105d189bc6f15926afd89e95182cf542469697b48ec2a85f8",
+    "3961a2dd31a4019b24820039d9e3e1aa985608a0e762dc63205f2b989ae1c97f",
+    "67c617ced8c5baa38ca57f70fbe0e4409dff20bafff51f61518ce7666c4f3bdd",
+    "b65941c5405de02fe3ed3f14737f96d1a4afd73dc49595609b2f1dcd3d6b56d0",
+    "77cf80f2e481b35dbd4907a026ad58a384b6f5fcefd6b5c45d26a6fa21135f12",
+    "6ceb3d1221505ede169bf649dedd7f7a444590736acf71a441a2b0799b2412c6",
+    "ee236f476e9109f940f0dfa01f0f15d5886c5da4a67f20af6217a0776684e196",
+    "8a977d293a8337e9501ab27f4be3227b3dbecacea56c0eca92c31caf23cedeec",
+    "273759c9c8abb2d8b0976dcf42f8961be5137d630f0b8958bef9d96094ed0b0b",
+    "4a9d5fcc986609513a07147b6ef749cfe5a41343586bfa902d6e8c7f1fde9b1d",
+    "dcf63501e11f201d4f1bc1327919f56f2871935dd3c51e43cbb79cbff5b37223",
+    "74bd9cf039343395d98d514b9495423d600e9e95685628d0ee149dde46a43d5f",
+    "c1e46b4fa0ae345bcfe80cb3d7d5a5557e81c4d987a62e3d10f1d3a4b6d406a6",
+    "b54968622961966b0729829f28d384476f5cd0524664df60430699055fca1c9d",
+    "44e7df55f0f8ff8c0d9be52d4bca48f8a8557070bc49fffd9ff8af289f067ff6",
+    "f465dbd5eda834ff3708ac7462ff5ee9ef484aa129bed261bd1ed28744bf0912",
+    "1888959c6dcb56ff2845236f9d4a4ce157be6d672d891067d3ca59721db59465",
+    "1a88ae5c117b2bded428cb93ae964c502b3e61f046efada2725b6f23d3b010e9",
+    "f07883ffe17b096f58238bbf4d3390db8fc149ccf7ea836e8e0e52d24d97c95a",
+    "c0e3ed9769d5be55d834000e455bd0a7ccc570eb364d1c168d3fd572c5fc97af"
+   ],
+   "unit": [],
+   "artifact": [
+    "f07883ffe17b096f58238bbf4d3390db8fc149ccf7ea836e8e0e52d24d97c95a",
+    "c0e3ed9769d5be55d834000e455bd0a7ccc570eb364d1c168d3fd572c5fc97af"
+   ],
+   "unassigned": [
+    "ebd70fddee00eb19a68c102ee207fca78f82042efd9fa8f488d3eaa36293ef36",
+    "b930b8bea3c213c7cc3cce0871cd6e5b880a53ff14558eb2166389d711b3e72a",
+    "f468ac7bdb0b441172563a41387eaeba6ae5ec4bd763cf629940e6cf3d31ae05",
+    "0712f3c4ae63bcb02ac70d4f1e98d123fd959dc58973e7c222f79f17165b264b",
+    "def128d8f4549ee6e4e7b5a466bd78e3ab02bee712f8567b55e336f88472dc3e",
+    "ab1f8adc8733824ad33ae94c348a3609a364bfe677d5bc7437d2eb29b13f7591",
+    "51c4cd8c36ffb745d882a1ad0497a3f5721e039fee6102ce4fe1861f7938469d",
+    "220c66d0627d2a392dd993261016ce9343967c687e6d2c4176afc1f5f5b3c809",
+    "340d8f4b74ebc327ef8ab54f35817a7ccc53a89bb2021836abd4b6ff38ae7b56",
+    "c662073628abf0732cc809cdd66726b6cf102241bced9edcf931f756d8a4df6b",
+    "e3843c27fdfb913105d189bc6f15926afd89e95182cf542469697b48ec2a85f8",
+    "3961a2dd31a4019b24820039d9e3e1aa985608a0e762dc63205f2b989ae1c97f",
+    "67c617ced8c5baa38ca57f70fbe0e4409dff20bafff51f61518ce7666c4f3bdd",
+    "b65941c5405de02fe3ed3f14737f96d1a4afd73dc49595609b2f1dcd3d6b56d0",
+    "77cf80f2e481b35dbd4907a026ad58a384b6f5fcefd6b5c45d26a6fa21135f12",
+    "6ceb3d1221505ede169bf649dedd7f7a444590736acf71a441a2b0799b2412c6",
+    "ee236f476e9109f940f0dfa01f0f15d5886c5da4a67f20af6217a0776684e196",
+    "8a977d293a8337e9501ab27f4be3227b3dbecacea56c0eca92c31caf23cedeec",
+    "273759c9c8abb2d8b0976dcf42f8961be5137d630f0b8958bef9d96094ed0b0b",
+    "4a9d5fcc986609513a07147b6ef749cfe5a41343586bfa902d6e8c7f1fde9b1d",
+    "dcf63501e11f201d4f1bc1327919f56f2871935dd3c51e43cbb79cbff5b37223",
+    "74bd9cf039343395d98d514b9495423d600e9e95685628d0ee149dde46a43d5f",
+    "c1e46b4fa0ae345bcfe80cb3d7d5a5557e81c4d987a62e3d10f1d3a4b6d406a6",
+    "b54968622961966b0729829f28d384476f5cd0524664df60430699055fca1c9d",
+    "44e7df55f0f8ff8c0d9be52d4bca48f8a8557070bc49fffd9ff8af289f067ff6",
+    "f465dbd5eda834ff3708ac7462ff5ee9ef484aa129bed261bd1ed28744bf0912",
+    "1888959c6dcb56ff2845236f9d4a4ce157be6d672d891067d3ca59721db59465",
+    "1a88ae5c117b2bded428cb93ae964c502b3e61f046efada2725b6f23d3b010e9"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "ebd70fddee00eb19a68c102ee207fca78f82042efd9fa8f488d3eaa36293ef36",
+      "b930b8bea3c213c7cc3cce0871cd6e5b880a53ff14558eb2166389d711b3e72a",
+      "f468ac7bdb0b441172563a41387eaeba6ae5ec4bd763cf629940e6cf3d31ae05",
+      "0712f3c4ae63bcb02ac70d4f1e98d123fd959dc58973e7c222f79f17165b264b",
+      "def128d8f4549ee6e4e7b5a466bd78e3ab02bee712f8567b55e336f88472dc3e",
+      "ab1f8adc8733824ad33ae94c348a3609a364bfe677d5bc7437d2eb29b13f7591",
+      "51c4cd8c36ffb745d882a1ad0497a3f5721e039fee6102ce4fe1861f7938469d",
+      "220c66d0627d2a392dd993261016ce9343967c687e6d2c4176afc1f5f5b3c809",
+      "340d8f4b74ebc327ef8ab54f35817a7ccc53a89bb2021836abd4b6ff38ae7b56",
+      "c662073628abf0732cc809cdd66726b6cf102241bced9edcf931f756d8a4df6b",
+      "e3843c27fdfb913105d189bc6f15926afd89e95182cf542469697b48ec2a85f8",
+      "3961a2dd31a4019b24820039d9e3e1aa985608a0e762dc63205f2b989ae1c97f",
+      "67c617ced8c5baa38ca57f70fbe0e4409dff20bafff51f61518ce7666c4f3bdd",
+      "b65941c5405de02fe3ed3f14737f96d1a4afd73dc49595609b2f1dcd3d6b56d0",
+      "77cf80f2e481b35dbd4907a026ad58a384b6f5fcefd6b5c45d26a6fa21135f12",
+      "6ceb3d1221505ede169bf649dedd7f7a444590736acf71a441a2b0799b2412c6",
+      "ee236f476e9109f940f0dfa01f0f15d5886c5da4a67f20af6217a0776684e196",
+      "8a977d293a8337e9501ab27f4be3227b3dbecacea56c0eca92c31caf23cedeec",
+      "273759c9c8abb2d8b0976dcf42f8961be5137d630f0b8958bef9d96094ed0b0b",
+      "4a9d5fcc986609513a07147b6ef749cfe5a41343586bfa902d6e8c7f1fde9b1d",
+      "dcf63501e11f201d4f1bc1327919f56f2871935dd3c51e43cbb79cbff5b37223",
+      "74bd9cf039343395d98d514b9495423d600e9e95685628d0ee149dde46a43d5f",
+      "c1e46b4fa0ae345bcfe80cb3d7d5a5557e81c4d987a62e3d10f1d3a4b6d406a6",
+      "b54968622961966b0729829f28d384476f5cd0524664df60430699055fca1c9d",
+      "44e7df55f0f8ff8c0d9be52d4bca48f8a8557070bc49fffd9ff8af289f067ff6",
+      "f465dbd5eda834ff3708ac7462ff5ee9ef484aa129bed261bd1ed28744bf0912",
+      "1888959c6dcb56ff2845236f9d4a4ce157be6d672d891067d3ca59721db59465",
+      "1a88ae5c117b2bded428cb93ae964c502b3e61f046efada2725b6f23d3b010e9"
+     ]
+    },
+    "config": {
+     "unit": [],
+     "artifact": [
+      "f07883ffe17b096f58238bbf4d3390db8fc149ccf7ea836e8e0e52d24d97c95a",
+      "c0e3ed9769d5be55d834000e455bd0a7ccc570eb364d1c168d3fd572c5fc97af"
+     ],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "7bb07c52efc6829404754a00b93ac33bc53dc91eca83ea0c01d7188edee73bad",
+   "attemptId": "430a6d56-2a85-4e02-abfa-a984e281b813",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/430a6d56-2a85-4e02-abfa-a984e281b813/row.json",
+    "sha256": "2115c38475737bb91d4519180c4f6038246d4c04b3754744d22e0abcabad7fc2"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "90a301aca284ea6f72be8362bd43a6d1b1ee5134016d311cb1f7fe389eec4e4c",
+   "attemptId": "c165ae4d-07f9-46ab-8ace-34df3320e826",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/c165ae4d-07f9-46ab-8ace-34df3320e826/row.json",
+    "sha256": "e6aba9cd24409a35002303691ff4efc5689529ae73c40b2e8198c049b64b5c9e"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "240f03ba8c1ff8316ac83b4a8075ea3d0987e0c810e38a0a0140e682580d2811",
+   "attemptId": "60a8b6d8-2631-4f6d-8225-1da1c920c1e1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/60a8b6d8-2631-4f6d-8225-1da1c920c1e1/row.json",
+    "sha256": "30925ed429b45ffb59aa34a691bbe07310959fb52e3c92fc5e637d756d9c1434"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "301ae9c312190ce00500925608f0a6d7efb914ace3f767813c8bc6ec6aced8dc",
+   "attemptId": "1f51ba5c-c16a-45fd-a667-abb222be2b9e",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/1f51ba5c-c16a-45fd-a667-abb222be2b9e/row.json",
+    "sha256": "de75ef35ebb4def13ccba329f331aed328fffbe1cb49652f054787550f65391f"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "d5204ce5e88b0efc79668c5fa0bb92e071505444f6ab02e3fd5fe41d6eaa6231",
+   "attemptId": "cdaf0407-1f10-4a1a-ac76-e39a6aa182ee",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/cdaf0407-1f10-4a1a-ac76-e39a6aa182ee/row.json",
+    "sha256": "c88a4ef74dd20006ff1db55c01dad073a43673f6019a55712cb3e7e3154bfc86"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "db2c1292a31c4d0c5ce60bee60be09e583a8422df1c9038f3ed2e71f29b3de74",
+   "attemptId": "b589b5e4-078a-448a-92cc-0a8d8ee025ac",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/b589b5e4-078a-448a-92cc-0a8d8ee025ac/row.json",
+    "sha256": "06a6a5d5ed338c9ffbe486644e41e8e72e51afb6cb9cb7def1846184500d3dd1"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "79c7c8d731990ebb5c5446d0367450ea45474e0e3b31173c30c2a214d2ac61de",
+   "attemptId": "c1dc179e-9d38-46c3-a7eb-2c1137b2ee39",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/c1dc179e-9d38-46c3-a7eb-2c1137b2ee39/row.json",
+    "sha256": "afe5224bfcac8c27b5ff79a785723834360895453d58fb617fab8976fc90415d"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "394c591c89b417cc6e70dac9df4bd49f040a82296ba157110a3d2a31dda14f59",
+   "attemptId": "e6c94a1d-9539-4ebd-89bf-8c0eea7eedf6",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/e6c94a1d-9539-4ebd-89bf-8c0eea7eedf6/row.json",
+    "sha256": "c3a9d91b2997ed04cec259853922e9f465dc1290df61340e210fefd98f86b142"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "84af1e2be02f0e6b6b6e400ea8c66b74576b87923b6c86d3c9e655834ed69cca",
+   "attemptId": "a35fb14b-5db0-4d5b-9048-54bc823cecb5",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/a35fb14b-5db0-4d5b-9048-54bc823cecb5/row.json",
+    "sha256": "b07cac90efe91879b5e5a83dabc39cdc995305992a953e8e168af3ae31ca04af"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a29ea1b604906f291d6fa5bf56ea9557f09db6861512a22ee271365f0ff6e04c",
+   "attemptId": "7052da17-966b-45f6-962b-b0c7be004d6d",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/7052da17-966b-45f6-962b-b0c7be004d6d/row.json",
+    "sha256": "4ea1c0afcd1b30b4893a149ee84ec19c1cc886a5e9350f4474dab778ccbfbbf9"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a09b39fdaeaf6404d2c811f45ae278df2004b701a1750f9ca8c69c7cb1325a50",
+   "attemptId": "1d6fea86-27ce-46b4-abbb-caad7163e8a7",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/1d6fea86-27ce-46b4-abbb-caad7163e8a7/row.json",
+    "sha256": "7a9b847f2720d0b17f2250decfecce268b95a41631bb9647645a77dd96264310"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "d0be28aea484b1bac9fb30c207dd5d2fab076a16ef84aa8ee564210730529bcd",
+   "attemptId": "0e706c03-7e96-439d-9ecd-f8424fac6cc6",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/0e706c03-7e96-439d-9ecd-f8424fac6cc6/row.json",
+    "sha256": "82fcca6a2f655e078959bea995212519504338fcd26cf5d5497fc73cbb2a7798"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "4d23828cd03779627e0ce9039d5f8d4c3470e17035aa1bc2a18e5005a3bcf874",
+   "attemptId": "a38e89df-c1ab-4d0b-9203-795534048c9f",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/a38e89df-c1ab-4d0b-9203-795534048c9f/row.json",
+    "sha256": "164a0a86340ba353f9b56bfc8ba24309c142da6cbc34e090462d6325547375c3"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "d8b837b185c403990a726ec1b2cbaf2ef7dcec49f78759470d476a3f70e3eb04",
+   "attemptId": "ae5c85df-7c76-4c2a-ae08-9b37a2ca86ae",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/ae5c85df-7c76-4c2a-ae08-9b37a2ca86ae/row.json",
+    "sha256": "20f52510fe0624bf94b63178faff6927a73cf2e9676fff98119d887f1cb0f5ac"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "54ff6b38ef3e4ea4f6467eafe3ff395bdbc68a0e73f760804e312069c0b3d59b",
+   "attemptId": "58e48020-1dd8-45f5-ac01-643a99044d05",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/58e48020-1dd8-45f5-ac01-643a99044d05/row.json",
+    "sha256": "7847f4bb47f463a9e49e4efbce2fb97483365d9756b6eb4d719afb76024e17ea"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "b1abf24131259ed97cc6bc5bb7eb9fb30d0eb2dd15f427b454801c1802f16fe5",
+   "attemptId": "a4f1a597-ab4d-4bfd-b45f-57535cfbd1fe",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/a4f1a597-ab4d-4bfd-b45f-57535cfbd1fe/row.json",
+    "sha256": "34543f5ff516bef2856a268ad5471ab1961a85300d0fb9ea43feac5ae624c443"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "5480985d84025f675ccd25e4bbb7511eedaa6867b75e2dfafed081c5432e4982",
+   "attemptId": "10f80a03-9ea2-4ed6-a735-2cd509d93a91",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/10f80a03-9ea2-4ed6-a735-2cd509d93a91/row.json",
+    "sha256": "c6b67c8abb60e379b5cba6caae5701e5edbfcf6788e3ae6be9cf0e8b9c39f0e8"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "77532d7c1ba9f923638430e22e4e095e28d1ed066688bf45d4741a192b17c90e",
+   "attemptId": "e3b52140-1acb-493e-b545-49b225fda9ab",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/e3b52140-1acb-493e-b545-49b225fda9ab/row.json",
+    "sha256": "b4cfe60170aed4f6710c91486017e63c57b3e732d6bdadc08cd4456957b31ef4"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "39f31b281a1d31d5d201a84259a6bc3ed94fc1e18b60890144bab9bfbf410129",
+   "attemptId": "45e004a1-7397-4c3d-8fc2-105ac1d4815f",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/45e004a1-7397-4c3d-8fc2-105ac1d4815f/row.json",
+    "sha256": "2c2f1c471b07b519813c4ccdc384cb5e28a0e35e9797b785e2a30d79ff9c5c51"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "e157856300fccfbc10e3bfad118a51cc70aa5a3d296ce1426ffd719e4ad712ee",
+   "attemptId": "f439f05f-91a1-4279-9ba5-daf40605e74c",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/f439f05f-91a1-4279-9ba5-daf40605e74c/row.json",
+    "sha256": "4f003d2a068f01e9ecb26c58b7e3f7b8062d57cfc2b56ba55d4f86408a44348f"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "e2e7b01d291f8876487b3771234a63fb632b18046d50f37fa5e7c4cb4d9172f0",
+   "attemptId": "22620ee6-d75d-4828-b041-33b9db77c4da",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/22620ee6-d75d-4828-b041-33b9db77c4da/row.json",
+    "sha256": "08b7d8bf30970d03b8d0ae5dd62ac7fe32b9974242c0ccb90d0b68f35cf00769"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1beddca733462781e150823cf2d21d3b62467a995acef3997dd7bde7f9018d93",
+   "attemptId": "f832e03e-a099-490c-89c3-e0529374a071",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/f832e03e-a099-490c-89c3-e0529374a071/row.json",
+    "sha256": "62468e4d36670b40686d797d86b21b9753e11599ae7a60ae7dd208a509b56cf0"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "5fc39d00c9a24f03d48f92677d6b80ff661cdaf55d7aaa06bdad29df5a96ade3",
+   "attemptId": "9aa96604-42dc-44f1-b1bc-890e241f05de",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/9aa96604-42dc-44f1-b1bc-890e241f05de/row.json",
+    "sha256": "57d1b1570f9255a7afcc889253f03f945dda33832bb7e3bb287939f4fd2cb874"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "04b63bcad8473252ab7e163e0df4a7f5f86f085313aa80dd73a7d9afbe2d154d",
+   "attemptId": "6bc866bd-09f1-434c-b02d-b285593f35df",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/6bc866bd-09f1-434c-b02d-b285593f35df/row.json",
+    "sha256": "b76652e2857fd69870a10425e33c09f75e03cf46ec417f57d7602a30af1d9cf9"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1dfbd61ad040b720f31459d5d85860749af83a34ba20d6186131c7d5288be477",
+   "attemptId": "beae19e4-0dbb-42c4-aa2e-22ac7491be73",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/beae19e4-0dbb-42c4-aa2e-22ac7491be73/row.json",
+    "sha256": "44c8536e61aafa184bb5842bd3246ffe04ead98dd05b69a7da723eff99a55403"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "fefa935db63c4ab79071289e5f11b8d2a4e6b98af11c821d2d85d631072d8a37",
+   "attemptId": "ce1f486c-a617-4fa2-8d8d-54d4254f05e4",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/ce1f486c-a617-4fa2-8d8d-54d4254f05e4/row.json",
+    "sha256": "f95b381d643d105a917436c1ecda3425ac01e72ef492c19f66e363fd29907599"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "3d35a8b724e5769b6cbc19ecdfb37d447a9d116898624f6faf237f4bce4e6aec",
+   "attemptId": "24942dd5-265c-40c9-ad7e-7ea2c10cac1e",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/24942dd5-265c-40c9-ad7e-7ea2c10cac1e/row.json",
+    "sha256": "9ed72d2251941c3721cbf08e5a40db8c5978ee60983cfe2f15bb4d8d59112e7c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "f341878183ab026bf089d56e71e17e0084651c4f36ead82982ed7fbea0b1a2da",
+   "attemptId": "41676c43-9e2f-4a4a-b75d-1114562c1f66",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/41676c43-9e2f-4a4a-b75d-1114562c1f66/row.json",
+    "sha256": "fd989e3e93560e059b6bbd327723eed221b4a489269980d89b68a84a59a2fe40"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "27fb5121d83ea26ff73a229d6ced277b61705daf3d020ca6b63c93096f00f62a",
+   "attemptId": "fc1be0ed-0324-486a-a2b9-79092af699e7",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/fc1be0ed-0324-486a-a2b9-79092af699e7/row.json",
+    "sha256": "70a05477f4ba90ffcd7c7e8d19ad3e92125f702a83830789f2a2cb6c8fcde17b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "962460d3a01c07170ca1bc55545fefa61c8684c3a19d917dc92bce8c75367fd9",
+   "attemptId": "eed4857e-8998-49b1-9cb8-57f53bbc4497",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__hexo__2/run-iQECmT/attempts/eed4857e-8998-49b1-9cb8-57f53bbc4497/row.json",
+    "sha256": "4cb29fc7e0e61101003ab750f72677402cfc48de8f4b492bf83d1eb2b98ebfeb"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit ebd70fddee00)",
+   "editIds": [
+    "ebd70fddee00eb19a68c102ee207fca78f82042efd9fa8f488d3eaa36293ef36"
+   ],
+   "lines": [
+    6,
+    6
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit b930b8bea3c2)",
+   "editIds": [
+    "b930b8bea3c213c7cc3cce0871cd6e5b880a53ff14558eb2166389d711b3e72a"
+   ],
+   "lines": [
+    7,
+    7
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit f468ac7bdb0b)",
+   "editIds": [
+    "f468ac7bdb0b441172563a41387eaeba6ae5ec4bd763cf629940e6cf3d31ae05"
+   ],
+   "lines": [
+    8,
+    8
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 0712f3c4ae63)",
+   "editIds": [
+    "0712f3c4ae63bcb02ac70d4f1e98d123fd959dc58973e7c222f79f17165b264b"
+   ],
+   "lines": [
+    23,
+    23
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit def128d8f454)",
+   "editIds": [
+    "def128d8f4549ee6e4e7b5a466bd78e3ab02bee712f8567b55e336f88472dc3e"
+   ],
+   "lines": [
+    28,
+    28
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit ab1f8adc8733)",
+   "editIds": [
+    "ab1f8adc8733824ad33ae94c348a3609a364bfe677d5bc7437d2eb29b13f7591"
+   ],
+   "lines": [
+    29,
+    29
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 51c4cd8c36ff)",
+   "editIds": [
+    "51c4cd8c36ffb745d882a1ad0497a3f5721e039fee6102ce4fe1861f7938469d"
+   ],
+   "lines": [
+    30,
+    30
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 220c66d0627d)",
+   "editIds": [
+    "220c66d0627d2a392dd993261016ce9343967c687e6d2c4176afc1f5f5b3c809"
+   ],
+   "lines": [
+    31,
+    31
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 340d8f4b74eb)",
+   "editIds": [
+    "340d8f4b74ebc327ef8ab54f35817a7ccc53a89bb2021836abd4b6ff38ae7b56"
+   ],
+   "lines": [
+    49,
+    49
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit c662073628ab)",
+   "editIds": [
+    "c662073628abf0732cc809cdd66726b6cf102241bced9edcf931f756d8a4df6b"
+   ],
+   "lines": [
+    42,
+    42
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit e3843c27fdfb)",
+   "editIds": [
+    "e3843c27fdfb913105d189bc6f15926afd89e95182cf542469697b48ec2a85f8"
+   ],
+   "lines": [
+    43,
+    43
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 3961a2dd31a4)",
+   "editIds": [
+    "3961a2dd31a4019b24820039d9e3e1aa985608a0e762dc63205f2b989ae1c97f"
+   ],
+   "lines": [
+    44,
+    44
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 67c617ced8c5)",
+   "editIds": [
+    "67c617ced8c5baa38ca57f70fbe0e4409dff20bafff51f61518ce7666c4f3bdd"
+   ],
+   "lines": [
+    45,
+    45
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit b65941c5405d)",
+   "editIds": [
+    "b65941c5405de02fe3ed3f14737f96d1a4afd73dc49595609b2f1dcd3d6b56d0"
+   ],
+   "lines": [
+    46,
+    46
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 77cf80f2e481)",
+   "editIds": [
+    "77cf80f2e481b35dbd4907a026ad58a384b6f5fcefd6b5c45d26a6fa21135f12"
+   ],
+   "lines": [
+    51,
+    51
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 6ceb3d122150)",
+   "editIds": [
+    "6ceb3d1221505ede169bf649dedd7f7a444590736acf71a441a2b0799b2412c6"
+   ],
+   "lines": [
+    52,
+    52
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit ee236f476e91)",
+   "editIds": [
+    "ee236f476e9109f940f0dfa01f0f15d5886c5da4a67f20af6217a0776684e196"
+   ],
+   "lines": [
+    53,
+    53
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 8a977d293a83)",
+   "editIds": [
+    "8a977d293a8337e9501ab27f4be3227b3dbecacea56c0eca92c31caf23cedeec"
+   ],
+   "lines": [
+    54,
+    54
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 273759c9c8ab)",
+   "editIds": [
+    "273759c9c8abb2d8b0976dcf42f8961be5137d630f0b8958bef9d96094ed0b0b"
+   ],
+   "lines": [
+    68,
+    68
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 4a9d5fcc9866)",
+   "editIds": [
+    "4a9d5fcc986609513a07147b6ef749cfe5a41343586bfa902d6e8c7f1fde9b1d"
+   ],
+   "lines": [
+    61,
+    61
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit dcf63501e11f)",
+   "editIds": [
+    "dcf63501e11f201d4f1bc1327919f56f2871935dd3c51e43cbb79cbff5b37223"
+   ],
+   "lines": [
+    62,
+    62
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 74bd9cf03934)",
+   "editIds": [
+    "74bd9cf039343395d98d514b9495423d600e9e95685628d0ee149dde46a43d5f"
+   ],
+   "lines": [
+    63,
+    63
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit c1e46b4fa0ae)",
+   "editIds": [
+    "c1e46b4fa0ae345bcfe80cb3d7d5a5557e81c4d987a62e3d10f1d3a4b6d406a6"
+   ],
+   "lines": [
+    64,
+    64
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit b54968622961)",
+   "editIds": [
+    "b54968622961966b0729829f28d384476f5cd0524664df60430699055fca1c9d"
+   ],
+   "lines": [
+    65,
+    65
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 44e7df55f0f8)",
+   "editIds": [
+    "44e7df55f0f8ff8c0d9be52d4bca48f8a8557070bc49fffd9ff8af289f067ff6"
+   ],
+   "lines": [
+    70,
+    70
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit f465dbd5eda8)",
+   "editIds": [
+    "f465dbd5eda834ff3708ac7462ff5ee9ef484aa129bed261bd1ed28744bf0912"
+   ],
+   "lines": [
+    71,
+    71
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 1888959c6dcb)",
+   "editIds": [
+    "1888959c6dcb56ff2845236f9d4a4ce157be6d672d891067d3ca59721db59465"
+   ],
+   "lines": [
+    72,
+    72
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/box/file.js",
+   "unit": "(edit 1a88ae5c117b)",
+   "editIds": [
+    "1a88ae5c117b2bded428cb93ae964c502b3e61f046efada2725b6f23d3b010e9"
+   ],
+   "lines": [
+    73,
+    73
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "package.json",
+   "unit": "(edit f07883ffe17b)",
+   "editIds": [
+    "f07883ffe17b096f58238bbf4d3390db8fc149ccf7ea836e8e0e52d24d97c95a"
+   ],
+   "lines": [
+    38,
+    38
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "non-source",
+    "parent": null
+   },
+   "advice": []
+  },
+  {
+   "file": "package.json",
+   "unit": "(edit c0e3ed9769d5)",
+   "editIds": [
+    "c0e3ed9769d5be55d834000e455bd0a7ccc570eb364d1c168d3fd572c5fc97af"
+   ],
+   "lines": [
+    38,
+    38
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "non-source",
+    "parent": null
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "7bb07c52efc6829404754a00b93ac33bc53dc91eca83ea0c01d7188edee73bad",
+   "90a301aca284ea6f72be8362bd43a6d1b1ee5134016d311cb1f7fe389eec4e4c",
+   "240f03ba8c1ff8316ac83b4a8075ea3d0987e0c810e38a0a0140e682580d2811",
+   "301ae9c312190ce00500925608f0a6d7efb914ace3f767813c8bc6ec6aced8dc",
+   "d5204ce5e88b0efc79668c5fa0bb92e071505444f6ab02e3fd5fe41d6eaa6231",
+   "db2c1292a31c4d0c5ce60bee60be09e583a8422df1c9038f3ed2e71f29b3de74",
+   "79c7c8d731990ebb5c5446d0367450ea45474e0e3b31173c30c2a214d2ac61de",
+   "394c591c89b417cc6e70dac9df4bd49f040a82296ba157110a3d2a31dda14f59",
+   "84af1e2be02f0e6b6b6e400ea8c66b74576b87923b6c86d3c9e655834ed69cca",
+   "a29ea1b604906f291d6fa5bf56ea9557f09db6861512a22ee271365f0ff6e04c",
+   "a09b39fdaeaf6404d2c811f45ae278df2004b701a1750f9ca8c69c7cb1325a50",
+   "d0be28aea484b1bac9fb30c207dd5d2fab076a16ef84aa8ee564210730529bcd",
+   "4d23828cd03779627e0ce9039d5f8d4c3470e17035aa1bc2a18e5005a3bcf874",
+   "d8b837b185c403990a726ec1b2cbaf2ef7dcec49f78759470d476a3f70e3eb04",
+   "54ff6b38ef3e4ea4f6467eafe3ff395bdbc68a0e73f760804e312069c0b3d59b",
+   "b1abf24131259ed97cc6bc5bb7eb9fb30d0eb2dd15f427b454801c1802f16fe5",
+   "5480985d84025f675ccd25e4bbb7511eedaa6867b75e2dfafed081c5432e4982",
+   "77532d7c1ba9f923638430e22e4e095e28d1ed066688bf45d4741a192b17c90e",
+   "39f31b281a1d31d5d201a84259a6bc3ed94fc1e18b60890144bab9bfbf410129",
+   "e157856300fccfbc10e3bfad118a51cc70aa5a3d296ce1426ffd719e4ad712ee",
+   "e2e7b01d291f8876487b3771234a63fb632b18046d50f37fa5e7c4cb4d9172f0",
+   "1beddca733462781e150823cf2d21d3b62467a995acef3997dd7bde7f9018d93",
+   "5fc39d00c9a24f03d48f92677d6b80ff661cdaf55d7aaa06bdad29df5a96ade3",
+   "04b63bcad8473252ab7e163e0df4a7f5f86f085313aa80dd73a7d9afbe2d154d",
+   "1dfbd61ad040b720f31459d5d85860749af83a34ba20d6186131c7d5288be477",
+   "fefa935db63c4ab79071289e5f11b8d2a4e6b98af11c821d2d85d631072d8a37",
+   "3d35a8b724e5769b6cbc19ecdfb37d447a9d116898624f6faf237f4bce4e6aec",
+   "f341878183ab026bf089d56e71e17e0084651c4f36ead82982ed7fbea0b1a2da",
+   "27fb5121d83ea26ff73a229d6ced277b61705daf3d020ca6b63c93096f00f62a",
+   "962460d3a01c07170ca1bc55545fefa61c8684c3a19d917dc92bce8c75367fd9"
+  ],
+  "terminal": [
+   "7bb07c52efc6829404754a00b93ac33bc53dc91eca83ea0c01d7188edee73bad",
+   "90a301aca284ea6f72be8362bd43a6d1b1ee5134016d311cb1f7fe389eec4e4c",
+   "240f03ba8c1ff8316ac83b4a8075ea3d0987e0c810e38a0a0140e682580d2811",
+   "301ae9c312190ce00500925608f0a6d7efb914ace3f767813c8bc6ec6aced8dc",
+   "d5204ce5e88b0efc79668c5fa0bb92e071505444f6ab02e3fd5fe41d6eaa6231",
+   "db2c1292a31c4d0c5ce60bee60be09e583a8422df1c9038f3ed2e71f29b3de74",
+   "79c7c8d731990ebb5c5446d0367450ea45474e0e3b31173c30c2a214d2ac61de",
+   "394c591c89b417cc6e70dac9df4bd49f040a82296ba157110a3d2a31dda14f59",
+   "84af1e2be02f0e6b6b6e400ea8c66b74576b87923b6c86d3c9e655834ed69cca",
+   "a29ea1b604906f291d6fa5bf56ea9557f09db6861512a22ee271365f0ff6e04c",
+   "a09b39fdaeaf6404d2c811f45ae278df2004b701a1750f9ca8c69c7cb1325a50",
+   "d0be28aea484b1bac9fb30c207dd5d2fab076a16ef84aa8ee564210730529bcd",
+   "4d23828cd03779627e0ce9039d5f8d4c3470e17035aa1bc2a18e5005a3bcf874",
+   "d8b837b185c403990a726ec1b2cbaf2ef7dcec49f78759470d476a3f70e3eb04",
+   "54ff6b38ef3e4ea4f6467eafe3ff395bdbc68a0e73f760804e312069c0b3d59b",
+   "b1abf24131259ed97cc6bc5bb7eb9fb30d0eb2dd15f427b454801c1802f16fe5",
+   "5480985d84025f675ccd25e4bbb7511eedaa6867b75e2dfafed081c5432e4982",
+   "77532d7c1ba9f923638430e22e4e095e28d1ed066688bf45d4741a192b17c90e",
+   "39f31b281a1d31d5d201a84259a6bc3ed94fc1e18b60890144bab9bfbf410129",
+   "e157856300fccfbc10e3bfad118a51cc70aa5a3d296ce1426ffd719e4ad712ee",
+   "e2e7b01d291f8876487b3771234a63fb632b18046d50f37fa5e7c4cb4d9172f0",
+   "1beddca733462781e150823cf2d21d3b62467a995acef3997dd7bde7f9018d93",
+   "5fc39d00c9a24f03d48f92677d6b80ff661cdaf55d7aaa06bdad29df5a96ade3",
+   "04b63bcad8473252ab7e163e0df4a7f5f86f085313aa80dd73a7d9afbe2d154d",
+   "1dfbd61ad040b720f31459d5d85860749af83a34ba20d6186131c7d5288be477",
+   "fefa935db63c4ab79071289e5f11b8d2a4e6b98af11c821d2d85d631072d8a37",
+   "3d35a8b724e5769b6cbc19ecdfb37d447a9d116898624f6faf237f4bce4e6aec",
+   "f341878183ab026bf089d56e71e17e0084651c4f36ead82982ed7fbea0b1a2da",
+   "27fb5121d83ea26ff73a229d6ced277b61705daf3d020ca6b63c93096f00f62a",
+   "962460d3a01c07170ca1bc55545fefa61c8684c3a19d917dc92bce8c75367fd9"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

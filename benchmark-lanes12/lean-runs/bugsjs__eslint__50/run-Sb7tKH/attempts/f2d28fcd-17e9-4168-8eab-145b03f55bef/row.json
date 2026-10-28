@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/operator-assignment.js",
+ "unit": "(edit 94e96f00a022)",
+ "editIds": [
+  "94e96f00a0228b63dfa5b1df500aeeb413bfc5c6e4f5f3f193a3f98e7b278d05"
+ ],
+ "lines": [
+  138,
+  138
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

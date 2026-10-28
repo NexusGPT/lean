@@ -1,0 +1,39 @@
+/**
+ * @fileoverview Tests for no-unneeded-ternary rule.
+ * @author Gyandeep Singh
+ */
+
+"use strict";
+
+//------------------------------------------------------------------------------
+// Requirements
+//------------------------------------------------------------------------------
+
+var rule = require("../../../lib/rules/no-unneeded-ternary"),
+    RuleTester = require("../../../lib/testers/rule-tester");
+
+//------------------------------------------------------------------------------
+// Tests
+//------------------------------------------------------------------------------
+
+var ruleTester = new RuleTester();
+ruleTester.run("no-unneeded-ternary", rule, {
+    valid: [
+        "config.newIsCap = config.newIsCap !== false",
+        "var a = x === 2 ? 'Yes' : 'No';",
+        "var a = x === 2 ? true : 'No';",
+        "var a = x === 2 ? 'Yes' : false;",
+        "var a = x === 2 ? 'true' : 'false';"
+    ],
+    invalid: [
+        {
+            code: "var a = x === 2 ? true : false;",
+            errors: [{
+                message: "Unnecessary use of boolean literals in conditional expression",
+                type: "ConditionalExpression",
+                line: 1,
+                column: 19
+            }]
+        }
+    ]
+});

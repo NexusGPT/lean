@@ -1,0 +1,2409 @@
+{
+ "identity": "10b32b707f71823926eec2e3002892de2eba5f2941e7db59205539e012f231a3",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/no-invalid-this.js",
+   "unit": "hasJSDocThisTag",
+   "lines": [
+    37,
+    50
+   ],
+   "coverage": "refused:var",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 0,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ],
+    "parent": {
+     "outcome": {
+      "returned": false
+     },
+     "heap": {
+      "roots": [
+       {
+        "$fake": "arg0"
+       }
+      ],
+      "own": {},
+      "outcome": false,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg0.leadingComments",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.trailingComments",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.type",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "returned": false
+     },
+     "heap": {
+      "roots": [
+       {
+        "$fake": "arg0"
+       }
+      ],
+      "own": {},
+      "outcome": false,
+      "anchors": 0,
+      "heap": []
+     },
+     "receiver": {},
+     "trace": [
+      {
+       "op": "get",
+       "path": "arg0.parent",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.loc",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.loc.start",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.type",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.leadingComments",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.trailingComments",
+       "args": []
+      },
+      {
+       "op": "get",
+       "path": "arg0.type",
+       "args": []
+      }
+     ],
+     "pending": []
+    },
+    "where": {
+     "field": "trace",
+     "index": 0,
+     "parent": {
+      "op": "get",
+      "path": "arg0.leadingComments",
+      "args": []
+     },
+     "candidate": {
+      "op": "get",
+      "path": "arg0.parent",
+      "args": []
+     },
+     "lines": {
+      "kind": "effect",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/ast-utils.js",
+       "start": 75,
+       "end": 76,
+       "text": "var leadingComments = node.leadingComments || [],\n            trailingComments = node.trailingComments || [];"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/ast-utils.js",
+       "start": 104,
+       "end": 105,
+       "text": "var parent = node.parent,\n            line = node.loc.start.line;"
+      }
+     }
+    }
+   },
+   "reason": "`var` is outside the subset; use let or const",
+   "advice": [
+    {
+     "line": 38,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 47,
+     "rule": "unsupported-member",
+     "msg": "property .leading is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 47,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'leading' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 47,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    }
+   ],
+   "editIds": [
+    "ee78aa0074856a257ba57e274e235c0efbce038c1bbc40618340417f6a314d89",
+    "d4970ef8d96c4b8f2b8625fdcb26951e1c6b4e252f52e78ef7e05f4235a439c1",
+    "c6d19534f9d25a4dd96a7fdcb41940059cd91764222d86245f010fa471303424",
+    "b7d0f53960e4e704dbac8d819f3323adf6f90670d7cbd3a2a84a92740810f729",
+    "0a069b84e78d469b4286a6741449bef57961b8f3629c5142222840747643de55",
+    "2231666de9ed87c8d04f242bf92176624e3f844ec2cddb6b867c78e6d388447b",
+    "9d7fe0c7a103db212a3d9432eb458bd3df72eb68e01566250ebfb26baa404615",
+    "a1466314543559d1d9284e8e05ac3ae9e05a96f429adfe25189312fbe1dc36e5",
+    "6070bbaa0de318f4cd516efe97c94a639c58050b290bf97c53843bd37d6bc291"
+   ]
+  },
+  {
+   "file": "lib/rules/no-invalid-this.js",
+   "unit": "hasValidThis",
+   "lines": [
+    149,
+    252
+   ],
+   "verdict": "WITNESS",
+   "coverage": "checked",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "caller": true,
+   "certificate": {
+    "tool": "lean-ts v3",
+    "identity": "10b32b707f71823926eec2e3002892de2eba5f2941e7db59205539e012f231a3",
+    "unit": "hasValidThis",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/rules/.lean_base_23416_no-invalid-this.js",
+     "sha256": "d92137909401cadd"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/rules/.lean_head_23416_no-invalid-this.js",
+     "sha256": "5c128342f44e68c0"
+    },
+    "lanes": {
+     "B": {
+      "verdict": "WITNESS",
+      "unit": "hasValidThis",
+      "witnesses": [
+       {
+        "input": 5,
+        "args": [
+         {
+          "id": null,
+          "parent": {
+           "arguments": "xxx",
+           "callee": null,
+           "left": {
+            "$fake": "arg0.parent.left"
+           },
+           "object": {
+            "$fake": "arg0.parent.object"
+           },
+           "parent": {
+            "arguments": "",
+            "callee": {
+             "$fake": "arg0.parent.parent.callee"
+            },
+            "type": "CallExpression"
+           },
+           "property": {
+            "$fake": "arg0.parent.property"
+           },
+           "right": {
+            "$fake": "arg0.parent.right"
+           },
+           "static": null,
+           "type": "LogicalExpression"
+          }
+         }
+        ],
+        "parent": {
+         "outcome": {
+          "returned": false
+         },
+         "heap": {
+          "roots": [
+           {
+            "$ref": 0
+           }
+          ],
+          "own": {},
+          "outcome": false,
+          "anchors": 3,
+          "heap": [
+           {
+            "kind": "record",
+            "edges": {
+             "id": null,
+             "parent": {
+              "$ref": 1
+             }
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "LogicalExpression",
+             "parent": {
+              "$ref": 2
+             },
+             "right": {
+              "$fake": "arg0.parent.right"
+             },
+             "left": {
+              "$fake": "arg0.parent.left"
+             },
+             "static": null,
+             "object": {
+              "$fake": "arg0.parent.object"
+             },
+             "property": {
+              "$fake": "arg0.parent.property"
+             },
+             "callee": null,
+             "arguments": "xxx"
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "CallExpression",
+             "callee": {
+              "$fake": "arg0.parent.parent.callee"
+             },
+             "arguments": ""
+            }
+           }
+          ]
+         },
+         "receiver": {},
+         "trace": [
+          {
+           "op": "get",
+           "path": "arg0.parent.parent.callee.type",
+           "args": []
+          },
+          {
+           "op": "get",
+           "path": "arg0.parent.parent.callee.type",
+           "args": []
+          },
+          {
+           "op": "get",
+           "path": "arg0.parent.parent.callee.type",
+           "args": []
+          },
+          {
+           "op": "get",
+           "path": "arg0.parent.parent.callee.type",
+           "args": []
+          }
+         ],
+         "pending": []
+        },
+        "candidate": {
+         "outcome": {
+          "threw": {
+           "$error": "TypeError",
+           "message": "Cannot read properties of undefined (reading 'start')"
+          }
+         },
+         "heap": {
+          "roots": [
+           {
+            "$ref": 0
+           }
+          ],
+          "own": {},
+          "outcome": null,
+          "anchors": 3,
+          "heap": [
+           {
+            "kind": "record",
+            "edges": {
+             "id": null,
+             "parent": {
+              "$ref": 1
+             }
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "LogicalExpression",
+             "parent": {
+              "$ref": 2
+             },
+             "right": {
+              "$fake": "arg0.parent.right"
+             },
+             "left": {
+              "$fake": "arg0.parent.left"
+             },
+             "static": null,
+             "object": {
+              "$fake": "arg0.parent.object"
+             },
+             "property": {
+              "$fake": "arg0.parent.property"
+             },
+             "callee": null,
+             "arguments": "xxx"
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "CallExpression",
+             "callee": {
+              "$fake": "arg0.parent.parent.callee"
+             },
+             "arguments": ""
+            }
+           }
+          ]
+         },
+         "receiver": {},
+         "trace": [],
+         "pending": []
+        },
+        "where": {
+         "field": "outcome",
+         "lines": {
+          "kind": "completion",
+          "parent": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/rules/.lean_base_23416_no-invalid-this.js",
+           "start": 233,
+           "end": 233,
+           "text": "return false;"
+          },
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/ast-utils.js",
+           "start": 104,
+           "end": 105,
+           "text": "var parent = node.parent,\n            line = node.loc.start.line;"
+          }
+         },
+         "cause": "callee"
+        },
+        "through": [
+         {
+          "callee": "hasJSDocThisTag",
+          "changed": true,
+          "path": [
+           "hasValidThis",
+           "hasJSDocThisTag"
+          ]
+         }
+        ]
+       },
+       {
+        "input": 9,
+        "args": [
+         {
+          "id": null,
+          "parent": null
+         }
+        ],
+        "parent": {
+         "outcome": {
+          "threw": {
+           "$error": "TypeError",
+           "message": "Cannot read properties of null (reading 'type')"
+          }
+         },
+         "heap": {
+          "roots": [
+           {
+            "$ref": 0
+           }
+          ],
+          "own": {},
+          "outcome": null,
+          "anchors": 1,
+          "heap": [
+           {
+            "kind": "record",
+            "edges": {
+             "id": null,
+             "parent": null
+            }
+           }
+          ]
+         },
+         "receiver": {},
+         "trace": [],
+         "pending": []
+        },
+        "candidate": {
+         "outcome": {
+          "threw": {
+           "$error": "TypeError",
+           "message": "Cannot read properties of undefined (reading 'start')"
+          }
+         },
+         "heap": {
+          "roots": [
+           {
+            "$ref": 0
+           }
+          ],
+          "own": {},
+          "outcome": null,
+          "anchors": 1,
+          "heap": [
+           {
+            "kind": "record",
+            "edges": {
+             "id": null,
+             "parent": null
+            }
+           }
+          ]
+         },
+         "receiver": {},
+         "trace": [],
+         "pending": []
+        },
+        "where": {
+         "field": "outcome",
+         "lines": {
+          "kind": "completion",
+          "parent": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/rules/.lean_base_23416_no-invalid-this.js",
+           "start": 147,
+           "end": 238,
+           "text": "switch (parent.type) {\n            // Looks up the destination.\n            // e.g.\n            //   obj.foo = nativeFoo || function foo() { ... };\n            case \"LogicalExpression\":\n            ca"
+          },
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/ast-utils.js",
+           "start": 104,
+           "end": 105,
+           "text": "var parent = node.parent,\n            line = node.loc.start.line;"
+          }
+         },
+         "cause": "callee"
+        },
+        "through": [
+         {
+          "callee": "hasJSDocThisTag",
+          "changed": true,
+          "path": [
+           "hasValidThis",
+           "hasJSDocThisTag"
+          ]
+         }
+        ]
+       },
+       {
+        "input": 13,
+        "args": [
+         {
+          "id": null,
+          "parent": {
+           "arguments": "xxx",
+           "callee": null,
+           "left": {
+            "type": "MemberExpression"
+           },
+           "object": {
+            "$fake": "arg0.parent.object"
+           },
+           "parent": {
+            "$fake": "arg0.parent.parent"
+           },
+           "property": {
+            "name": {
+             "$fake": "arg0.parent.property.name"
+            },
+            "type": "Identifier"
+           },
+           "right": {
+            "$fake": "arg0.parent.right"
+           },
+           "static": {
+            "$fake": "arg0.parent.static"
+           },
+           "type": "ConditionalExpression"
+          }
+         }
+        ],
+        "parent": {
+         "outcome": {
+          "returned": false
+         },
+         "heap": {
+          "roots": [
+           {
+            "$ref": 0
+           }
+          ],
+          "own": {},
+          "outcome": false,
+          "anchors": 4,
+          "heap": [
+           {
+            "kind": "record",
+            "edges": {
+             "id": null,
+             "parent": {
+              "$ref": 1
+             }
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "ConditionalExpression",
+             "parent": {
+              "$fake": "arg0.parent.parent"
+             },
+             "right": {
+              "$fake": "arg0.parent.right"
+             },
+             "left": {
+              "$ref": 2
+             },
+             "static": {
+              "$fake": "arg0.parent.static"
+             },
+             "object": {
+              "$fake": "arg0.parent.object"
+             },
+             "property": {
+              "$ref": 3
+             },
+             "callee": null,
+             "arguments": "xxx"
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "MemberExpression"
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "Identifier",
+             "name": {
+              "$fake": "arg0.parent.property.name"
+             }
+            }
+           }
+          ]
+         },
+         "receiver": {},
+         "trace": [
+          {
+           "op": "get",
+           "path": "arg0.parent.parent.type",
+           "args": []
+          }
+         ],
+         "pending": []
+        },
+        "candidate": {
+         "outcome": {
+          "threw": {
+           "$error": "TypeError",
+           "message": "Cannot read properties of undefined (reading 'start')"
+          }
+         },
+         "heap": {
+          "roots": [
+           {
+            "$ref": 0
+           }
+          ],
+          "own": {},
+          "outcome": null,
+          "anchors": 4,
+          "heap": [
+           {
+            "kind": "record",
+            "edges": {
+             "id": null,
+             "parent": {
+              "$ref": 1
+             }
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "ConditionalExpression",
+             "parent": {
+              "$fake": "arg0.parent.parent"
+             },
+             "right": {
+              "$fake": "arg0.parent.right"
+             },
+             "left": {
+              "$ref": 2
+             },
+             "static": {
+              "$fake": "arg0.parent.static"
+             },
+             "object": {
+              "$fake": "arg0.parent.object"
+             },
+             "property": {
+              "$ref": 3
+             },
+             "callee": null,
+             "arguments": "xxx"
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "MemberExpression"
+            }
+           },
+           {
+            "kind": "record",
+            "edges": {
+             "type": "Identifier",
+             "name": {
+              "$fake": "arg0.parent.property.name"
+             }
+            }
+           }
+          ]
+         },
+         "receiver": {},
+         "trace": [],
+         "pending": []
+        },
+        "where": {
+         "field": "outcome",
+         "lines": {
+          "kind": "completion",
+          "parent": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/rules/.lean_base_23416_no-invalid-this.js",
+           "start": 237,
+           "end": 237,
+           "text": "return false;"
+          },
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/ast-utils.js",
+           "start": 104,
+           "end": 105,
+           "text": "var parent = node.parent,\n            line = node.loc.start.line;"
+          }
+         },
+         "cause": "callee"
+        },
+        "through": [
+         {
+          "callee": "hasJSDocThisTag",
+          "changed": true,
+          "path": [
+           "hasValidThis",
+           "hasJSDocThisTag"
+          ]
+         }
+        ]
+       }
+      ],
+      "bound": {
+       "n": 100,
+       "seed": 1,
+       "ms": 2000,
+       "reached": {
+        "body": 14,
+        "guard": 0
+       },
+       "states": [
+        {
+         "input": 0,
+         "args": [
+          null
+         ]
+        },
+        {
+         "input": 1,
+         "args": [
+          {
+           "$fake": "arg0"
+          }
+         ]
+        },
+        {
+         "input": 2,
+         "args": [
+          null
+         ]
+        },
+        {
+         "input": 3,
+         "args": [
+          {
+           "id": {
+            "$fake": "arg0.id"
+           },
+           "parent": null
+          }
+         ]
+        },
+        {
+         "input": 4,
+         "args": [
+          null
+         ]
+        },
+        {
+         "input": 5,
+         "args": [
+          {
+           "id": null,
+           "parent": {
+            "arguments": "xxx",
+            "callee": null,
+            "left": {
+             "$fake": "arg0.parent.left"
+            },
+            "object": {
+             "$fake": "arg0.parent.object"
+            },
+            "parent": {
+             "arguments": "",
+             "callee": {
+              "$fake": "arg0.parent.parent.callee"
+             },
+             "type": "CallExpression"
+            },
+            "property": {
+             "$fake": "arg0.parent.property"
+            },
+            "right": {
+             "$fake": "arg0.parent.right"
+            },
+            "static": null,
+            "type": "LogicalExpression"
+           }
+          }
+         ]
+        },
+        {
+         "input": 6,
+         "args": [
+          null
+         ]
+        },
+        {
+         "input": 7,
+         "args": [
+          {
+           "$fake": "arg0"
+          }
+         ]
+        },
+        {
+         "input": 8,
+         "args": [
+          null
+         ]
+        },
+        {
+         "input": 9,
+         "args": [
+          {
+           "id": null,
+           "parent": null
+          }
+         ]
+        },
+        {
+         "input": 10,
+         "args": [
+          null
+         ]
+        },
+        {
+         "input": 11,
+         "args": [
+          {
+           "id": {
+            "$fake": "arg0.id"
+           },
+           "parent": null
+          }
+         ]
+        },
+        {
+         "input": 12,
+         "args": [
+          null
+         ]
+        },
+        {
+         "input": 13,
+         "args": [
+          {
+           "id": null,
+           "parent": {
+            "arguments": "xxx",
+            "callee": null,
+            "left": {
+             "type": "MemberExpression"
+            },
+            "object": {
+             "$fake": "arg0.parent.object"
+            },
+            "parent": {
+             "$fake": "arg0.parent.parent"
+            },
+            "property": {
+             "name": {
+              "$fake": "arg0.parent.property.name"
+             },
+             "type": "Identifier"
+            },
+            "right": {
+             "$fake": "arg0.parent.right"
+            },
+            "static": {
+             "$fake": "arg0.parent.static"
+            },
+            "type": "ConditionalExpression"
+           }
+          }
+         ]
+        }
+       ],
+       "heaps": {
+        "assignments": 0,
+        "pool": 2,
+        "shapes": {}
+       },
+       "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+       "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+       "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+       "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+       "library": {
+        "records": 0,
+        "ops": {},
+        "calls": {},
+        "sampled": [],
+        "outOfModel": 0,
+        "callbackEffects": 0,
+        "defectRecords": 0,
+        "defects": []
+       }
+      },
+      "spec": {
+       "params": [
+        {
+         "name": "node",
+         "optional": false,
+         "spec": {
+          "kind": "union",
+          "options": [
+           {
+            "kind": "record",
+            "refined": true,
+            "fields": {
+             "id": {
+              "spec": {
+               "kind": "union",
+               "options": [
+                {
+                 "kind": "record",
+                 "refined": true,
+                 "fields": {
+                  "name": {
+                   "spec": {
+                    "kind": "union",
+                    "options": [
+                     {
+                      "kind": "array",
+                      "of": {
+                       "kind": "union",
+                       "options": [
+                        {
+                         "kind": "record",
+                         "refined": true,
+                         "fields": {
+                          "toLocaleUpperCase": {
+                           "spec": {
+                            "kind": "opaque"
+                           },
+                           "optional": true
+                          }
+                         }
+                        },
+                        {
+                         "kind": "opaque"
+                        }
+                       ],
+                       "prefer": 0
+                      }
+                     },
+                     {
+                      "kind": "opaque"
+                     }
+                    ],
+                    "prefer": 0
+                   },
+                   "optional": true,
+                   "shaped": true
+                  }
+                 }
+                },
+                {
+                 "kind": "opaque"
+                }
+               ],
+               "prefer": 0,
+               "boundary": {
+                "cmp": [
+                 null,
+                 {
+                  "t": "draw"
+                 }
+                ],
+                "falsy": [],
+                "rank": 0,
+                "radix": 2
+               }
+              },
+              "optional": true,
+              "shaped": true
+             },
+             "parent": {
+              "spec": {
+               "kind": "union",
+               "options": [
+                {
+                 "kind": "record",
+                 "refined": true,
+                 "fields": {
+                  "type": {
+                   "spec": {
+                    "kind": "union",
+                    "options": [
+                     {
+                      "kind": "string"
+                     },
+                     {
+                      "kind": "opaque"
+                     }
+                    ],
+                    "prefer": 0,
+                    "boundary": {
+                     "cmp": [
+                      "LogicalExpression",
+                      "ConditionalExpression",
+                      "ReturnStatement",
+                      "Property",
+                      "AssignmentExpression",
+                      "MethodDefinition",
+                      "MemberExpression",
+                      "CallExpression",
+                      {
+                       "t": "draw"
+                      }
+                     ],
+                     "falsy": [],
+                     "rank": 0,
+                     "radix": 8
+                    }
+                   },
+                   "optional": true,
+                   "shaped": true
+                  },
+                  "parent": {
+                   "spec": {
+                    "kind": "union",
+                    "options": [
+                     {
+                      "kind": "record",
+                      "refined": true,
+                      "fields": {
+                       "type": {
+                        "spec": {
+                         "kind": "union",
+                         "options": [
+                          {
+                           "kind": "string"
+                          },
+                          {
+                           "kind": "opaque"
+                          }
+                         ],
+                         "prefer": 0,
+                         "boundary": {
+                          "cmp": [
+                           "CallExpression",
+                           {
+                            "t": "draw"
+                           }
+                          ],
+                          "falsy": [],
+                          "rank": 0,
+                          "radix": 72
+                         }
+                        },
+                        "optional": true,
+                        "shaped": true
+                       },
+                       "callee": {
+                        "spec": {
+                         "kind": "opaque"
+                        },
+                        "optional": true
+                       },
+                       "arguments": {
+                        "spec": {
+                         "kind": "union",
+                         "options": [
+                          {
+                           "kind": "array",
+                           "of": {
+                            "kind": "opaque"
+                           },
+                           "lengths": {
+                            "cmp": [
+                             0,
+                             1
+                            ],
+                            "falsy": [],
+                            "radix": 432
+                           }
+                          },
+                          {
+                           "kind": "opaque"
+                          }
+                         ],
+                         "prefer": 0,
+                         "boundary": {
+                          "cmp": [
+                           "",
+                           "x",
+                           {
+                            "t": "draw"
+                           }
+                          ],
+                          "falsy": [],
+                          "rank": 0,
+                          "radix": 144
+                         }
+                        },
+                        "optional": true,
+                        "shaped": true
+                       }
+                      }
+                     },
+                     {
+                      "kind": "opaque"
+                     }
+                    ],
+                    "prefer": 0
+                   },
+                   "optional": true,
+                   "shaped": true
+                  },
+                  "right": {
+                   "spec": {
+                    "kind": "opaque"
+                   },
+                   "optional": true
+                  },
+                  "left": {
+                   "spec": {
+                    "kind": "union",
+                    "options": [
+                     {
+                      "kind": "record",
+                      "refined": true,
+                      "fields": {
+                       "type": {
+                        "spec": {
+                         "kind": "union",
+                         "options": [
+                          {
+                           "kind": "string"
+                          },
+                          {
+                           "kind": "opaque"
+                          }
+                         ],
+                         "prefer": 0,
+                         "boundary": {
+                          "cmp": [
+                           "MemberExpression",
+                           {
+                            "t": "draw"
+                           }
+                          ],
+                          "falsy": [],
+                          "rank": 0,
+                          "radix": 864
+                         }
+                        },
+                        "optional": true,
+                        "shaped": true
+                       }
+                      }
+                     },
+                     {
+                      "kind": "opaque"
+                     }
+                    ],
+                    "prefer": 0
+                   },
+                   "optional": true,
+                   "shaped": true
+                  },
+                  "static": {
+                   "spec": {
+                    "kind": "opaque",
+                    "boundary": {
+                     "cmp": [
+                      {
+                       "t": "draw"
+                      },
+                      null,
+                      {
+                       "t": "undefined"
+                      },
+                      false,
+                      0,
+                      ""
+                     ],
+                     "falsy": [
+                      null,
+                      {
+                       "t": "undefined"
+                      },
+                      false,
+                      0,
+                      ""
+                     ],
+                     "rank": 1,
+                     "radix": 59719680
+                    }
+                   },
+                   "optional": true,
+                   "shaped": true
+                  },
+                  "object": {
+                   "spec": {
+                    "kind": "opaque"
+                   },
+                   "optional": true
+                  },
+                  "property": {
+                   "spec": {
+                    "kind": "union",
+                    "options": [
+                     {
+                      "kind": "record",
+                      "refined": true,
+                      "fields": {
+                       "type": {
+                        "spec": {
+                         "kind": "union",
+                         "options": [
+                          {
+                           "kind": "string"
+                          },
+                          {
+                           "kind": "opaque"
+                          }
+                         ],
+                         "prefer": 0,
+                         "boundary": {
+                          "cmp": [
+                           "Identifier",
+                           {
+                            "t": "draw"
+                           }
+                          ],
+                          "falsy": [],
+                          "rank": 0,
+                          "radix": 1728
+                         }
+                        },
+                        "optional": true,
+                        "shaped": true
+                       },
+                       "name": {
+                        "spec": {
+                         "kind": "opaque"
+                        },
+                        "optional": true
+                       }
+                      }
+                     },
+                     {
+                      "kind": "opaque"
+                     }
+                    ],
+                    "prefer": 0
+                   },
+                   "optional": true,
+                   "shaped": true
+                  },
+                  "callee": {
+                   "spec": {
+                    "kind": "union",
+                    "options": [
+                     {
+                      "kind": "record",
+                      "refined": true,
+                      "fields": {
+                       "type": {
+                        "spec": {
+                         "kind": "union",
+                         "options": [
+                          {
+                           "kind": "string"
+                          },
+                          {
+                           "kind": "opaque"
+                          }
+                         ],
+                         "prefer": 0,
+                         "boundary": {
+                          "cmp": [
+                           "MemberExpression",
+                           "Identifier",
+                           {
+                            "t": "draw"
+                           }
+                          ],
+                          "falsy": [],
+                          "rank": 0,
+                          "radix": 6912
+                         }
+                        },
+                        "optional": true,
+                        "shaped": true
+                       },
+                       "object": {
+                        "spec": {
+                         "kind": "union",
+                         "options": [
+                          {
+                           "kind": "record",
+                           "refined": true,
+                           "fields": {
+                            "type": {
+                             "spec": {
+                              "kind": "union",
+                              "options": [
+                               {
+                                "kind": "string"
+                               },
+                               {
+                                "kind": "opaque"
+                               }
+                              ],
+                              "prefer": 0,
+                              "boundary": {
+                               "cmp": [
+                                "Identifier",
+                                {
+                                 "t": "draw"
+                                }
+                               ],
+                               "falsy": [],
+                               "rank": 0,
+                               "radix": 20736
+                              }
+                             },
+                             "optional": true,
+                             "shaped": true
+                            },
+                            "name": {
+                             "spec": {
+                              "kind": "union",
+                              "options": [
+                               {
+                                "kind": "string"
+                               },
+                               {
+                                "kind": "opaque"
+                               }
+                              ],
+                              "prefer": 0,
+                              "boundary": {
+                               "cmp": [
+                                "Reflect",
+                                {
+                                 "t": "draw"
+                                }
+                               ],
+                               "falsy": [],
+                               "rank": 0,
+                               "radix": 41472
+                              }
+                             },
+                             "optional": true,
+                             "shaped": true
+                            }
+                           }
+                          },
+                          {
+                           "kind": "opaque"
+                          }
+                         ],
+                         "prefer": 0
+                        },
+                        "optional": true,
+                        "shaped": true
+                       },
+                       "property": {
+                        "spec": {
+                         "kind": "union",
+                         "options": [
+                          {
+                           "kind": "record",
+                           "refined": true,
+                           "fields": {
+                            "type": {
+                             "spec": {
+                              "kind": "union",
+                              "options": [
+                               {
+                                "kind": "string"
+                               },
+                               {
+                                "kind": "opaque"
+                               }
+                              ],
+                              "prefer": 0,
+                              "boundary": {
+                               "cmp": [
+                                "Identifier",
+                                {
+                                 "t": "draw"
+                                }
+                               ],
+                               "falsy": [],
+                               "rank": 0,
+                               "radix": 82944
+                              }
+                             },
+                             "optional": true,
+                             "shaped": true
+                            },
+                            "name": {
+                             "spec": {
+                              "kind": "union",
+                              "options": [
+                               {
+                                "kind": "string"
+                               },
+                               {
+                                "kind": "opaque"
+                               }
+                              ],
+                              "prefer": 0,
+                              "boundary": {
+                               "cmp": [
+                                "apply",
+                                "from",
+                                {
+                                 "t": "draw"
+                                }
+                               ],
+                               "falsy": [],
+                               "rank": 0,
+                               "radix": 165888
+                              }
+                             },
+                             "optional": true,
+                             "shaped": true
+                            }
+                           }
+                          },
+                          {
+                           "kind": "opaque"
+                          }
+                         ],
+                         "prefer": 0
+                        },
+                        "optional": true,
+                        "shaped": true
+                       },
+                       "computed": {
+                        "spec": {
+                         "kind": "union",
+                         "options": [
+                          {
+                           "kind": "boolean"
+                          },
+                          {
+                           "kind": "opaque"
+                          }
+                         ],
+                         "prefer": 0,
+                         "boundary": {
+                          "cmp": [
+                           false,
+                           true,
+                           null,
+                           {
+                            "t": "undefined"
+                           },
+                           0,
+                           ""
+                          ],
+                          "falsy": [
+                           null,
+                           {
+                            "t": "undefined"
+                           },
+                           false,
+                           0,
+                           ""
+                          ],
+                          "rank": 0,
+                          "radix": 497664
+                         }
+                        },
+                        "optional": true,
+                        "shaped": true
+                       },
+                       "name": {
+                        "spec": {
+                         "kind": "opaque"
+                        },
+                        "optional": true
+                       }
+                      }
+                     },
+                     {
+                      "kind": "opaque"
+                     }
+                    ],
+                    "prefer": 0,
+                    "boundary": {
+                     "cmp": [
+                      null,
+                      {
+                       "t": "draw"
+                      }
+                     ],
+                     "falsy": [],
+                     "rank": 0,
+                     "radix": 3456
+                    }
+                   },
+                   "optional": true,
+                   "shaped": true
+                  },
+                  "arguments": {
+                   "spec": {
+                    "kind": "union",
+                    "options": [
+                     {
+                      "kind": "array",
+                      "of": {
+                       "kind": "opaque"
+                      },
+                      "lengths": {
+                       "cmp": [
+                        3,
+                        4,
+                        2,
+                        1
+                       ],
+                       "falsy": [],
+                       "radix": 14929920
+                      }
+                     },
+                     {
+                      "kind": "opaque"
+                     }
+                    ],
+                    "prefer": 0,
+                    "boundary": {
+                     "cmp": [
+                      "xxx",
+                      "xxxx",
+                      "xx",
+                      "x",
+                      {
+                       "t": "draw"
+                      }
+                     ],
+                     "falsy": [],
+                     "rank": 0,
+                     "radix": 2985984
+                    }
+                   },
+                   "optional": true,
+                   "shaped": true
+                  }
+                 }
+                },
+                {
+                 "kind": "opaque"
+                }
+               ],
+               "prefer": 0,
+               "boundary": {
+                "cmp": [
+                 null,
+                 {
+                  "t": "draw"
+                 }
+                ],
+                "falsy": [],
+                "rank": 0,
+                "radix": 4
+               }
+              },
+              "optional": true,
+              "shaped": true
+             }
+            }
+           },
+           {
+            "kind": "opaque"
+           }
+          ],
+          "prefer": 0,
+          "boundary": {
+           "cmp": [
+            null,
+            {
+             "t": "draw"
+            }
+           ],
+           "falsy": [],
+           "rank": 0,
+           "radix": 1
+          }
+         }
+        }
+       ],
+       "returns": {
+        "kind": "boolean"
+       },
+       "literals": [
+        0,
+        1,
+        -1,
+        3,
+        4,
+        2
+       ],
+       "strings": [
+        "LogicalExpression",
+        "ConditionalExpression",
+        "ReturnStatement",
+        "Property",
+        "AssignmentExpression",
+        "MemberExpression",
+        "MethodDefinition",
+        "Identifier",
+        "CallExpression",
+        "unreachable",
+        "",
+        "x",
+        "xxx",
+        "xxxx",
+        "xx"
+       ]
+      },
+      "unitTextEqual": true
+     }
+    },
+    "verdict": "WITNESS"
+   },
+   "witness": {
+    "input": 5,
+    "args": [
+     {
+      "id": null,
+      "parent": {
+       "arguments": "xxx",
+       "callee": null,
+       "left": {
+        "$fake": "arg0.parent.left"
+       },
+       "object": {
+        "$fake": "arg0.parent.object"
+       },
+       "parent": {
+        "arguments": "",
+        "callee": {
+         "$fake": "arg0.parent.parent.callee"
+        },
+        "type": "CallExpression"
+       },
+       "property": {
+        "$fake": "arg0.parent.property"
+       },
+       "right": {
+        "$fake": "arg0.parent.right"
+       },
+       "static": null,
+       "type": "LogicalExpression"
+      }
+     }
+    ],
+    "where": {
+     "field": "outcome",
+     "lines": {
+      "kind": "completion",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/rules/.lean_base_23416_no-invalid-this.js",
+       "start": 233,
+       "end": 233,
+       "text": "return false;"
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/ast-utils.js",
+       "start": 104,
+       "end": 105,
+       "text": "var parent = node.parent,\n            line = node.loc.start.line;"
+      }
+     },
+     "cause": "callee"
+    },
+    "through": [
+     {
+      "callee": "hasJSDocThisTag",
+      "changed": true,
+      "path": [
+       "hasValidThis",
+       "hasJSDocThisTag"
+      ]
+     }
+    ]
+   },
+   "reason": null,
+   "advice": []
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "lines": [
+      37,
+      50
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": [
+    {
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasValidThis",
+     "lines": [
+      149,
+      252
+     ]
+    }
+   ]
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 2,
+  "total": 2
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "475d967864210587f3e778662280bdf801062a20",
+  "head": "abec8af4ac3f91b9e4511e843b11f4bcf9e30486",
+  "files": [
+   {
+    "id": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "oldPath": "lib/rules/no-invalid-this.js",
+    "newPath": "lib/rules/no-invalid-this.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "427fd0fae434834df02b663ef36c890c8d3c8c37",
+    "newOid": "bc840233c5e1b8d8b0da468f68908ceb998bc103",
+    "status": "M",
+    "edits": [
+     "ee78aa0074856a257ba57e274e235c0efbce038c1bbc40618340417f6a314d89",
+     "d4970ef8d96c4b8f2b8625fdcb26951e1c6b4e252f52e78ef7e05f4235a439c1",
+     "c6d19534f9d25a4dd96a7fdcb41940059cd91764222d86245f010fa471303424",
+     "b7d0f53960e4e704dbac8d819f3323adf6f90670d7cbd3a2a84a92740810f729",
+     "0a069b84e78d469b4286a6741449bef57961b8f3629c5142222840747643de55",
+     "2231666de9ed87c8d04f242bf92176624e3f844ec2cddb6b867c78e6d388447b",
+     "9d7fe0c7a103db212a3d9432eb458bd3df72eb68e01566250ebfb26baa404615",
+     "a1466314543559d1d9284e8e05ac3ae9e05a96f429adfe25189312fbe1dc36e5",
+     "6070bbaa0de318f4cd516efe97c94a639c58050b290bf97c53843bd37d6bc291"
+    ],
+    "hunks": [
+     {
+      "id": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+      "old": {
+       "start": 37,
+       "count": 0
+      },
+      "new": {
+       "start": 38,
+       "count": 9
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "d92137909401cadda0f90dc8b1015eac435d28ecce8b81e6659e35007f2c6ceb",
+    "newHash": "5c128342f44e68c0d67fa93dabdee36baaab757fabc07ba230d47c7cae54620a",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isES5Constructor",
+       "side": "old",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 25,
+       "end": 30,
+       "offset": 897,
+       "stop": 1043,
+       "id": "d7aff1cc074e2d175a862cffe71d277afeae548d5a6c2601f9d6c65c88f5cb5a"
+      },
+      {
+       "name": "hasJSDocThisTag",
+       "side": "old",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 37,
+       "end": 41,
+       "offset": 1245,
+       "stop": 1409,
+       "id": "db918754a3ff3ebafa1846d79f13c30ca285d8af1b49b45cd1eac7cf155ae8b0"
+      },
+      {
+       "name": "getUpperFunction",
+       "side": "old",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 48,
+       "end": 56,
+       "offset": 1566,
+       "stop": 1764,
+       "id": "07b2daabb90bbca89809dcf424aaefde8d6f2e08ec1330cb0aa8fdc121e60d1e"
+      },
+      {
+       "name": "isCallee",
+       "side": "old",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 63,
+       "end": 65,
+       "offset": 1918,
+       "stop": 2026,
+       "id": "783847683db8a2aeea00e4dfeb8264f1f1c2628e822905599f709ac9fe3b57ae"
+      },
+      {
+       "name": "isReflectApply",
+       "side": "old",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 72,
+       "end": 81,
+       "offset": 2200,
+       "stop": 2505,
+       "id": "fa353ee346292847215b3e43d0e3cec903ddd60c47f960c5e336c031fcc417f1"
+      },
+      {
+       "name": "isArrayFrom",
+       "side": "old",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 88,
+       "end": 97,
+       "offset": 2673,
+       "stop": 2991,
+       "id": "a207752a2ccd6c1633eb7da74fec2f50d97ae8745c9ce7a3ec93c9e5ec8a51f6"
+      },
+      {
+       "name": "isMethodWhichHasThisArg",
+       "side": "old",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 104,
+       "end": 118,
+       "offset": 3189,
+       "stop": 3538,
+       "id": "a3ddb8d7961505fc977a5dbdf489acfe0fa7aac1f68740bfc3298b4cd2dd8be6"
+      },
+      {
+       "name": "hasValidThis",
+       "side": "old",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 140,
+       "end": 243,
+       "offset": 4253,
+       "stop": 7992,
+       "id": "2da79eab967b1370a3263ecee4367bd8e39e21e67a31bf26573366638277239e"
+      }
+     ],
+     "new": [
+      {
+       "name": "isES5Constructor",
+       "side": "new",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 25,
+       "end": 30,
+       "offset": 897,
+       "stop": 1043,
+       "id": "68676f61517c6c9cfb3a8d7bad805eea8f7a03930516f9028eb40304efae82f6"
+      },
+      {
+       "name": "hasJSDocThisTag",
+       "side": "new",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 37,
+       "end": 50,
+       "offset": 1245,
+       "stop": 1771,
+       "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71"
+      },
+      {
+       "name": "getUpperFunction",
+       "side": "new",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 57,
+       "end": 65,
+       "offset": 1928,
+       "stop": 2126,
+       "id": "386ad58a73361c4340b353fd957de65232209a97108861f23b233488b09ae490"
+      },
+      {
+       "name": "isCallee",
+       "side": "new",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 72,
+       "end": 74,
+       "offset": 2280,
+       "stop": 2388,
+       "id": "2eaf8d3c00882d817a12f3adb812a7ba5652bf6b82cf96315d5cfe6a05663563"
+      },
+      {
+       "name": "isReflectApply",
+       "side": "new",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 81,
+       "end": 90,
+       "offset": 2562,
+       "stop": 2867,
+       "id": "40d225f84f30e76e053614db38a99afad1bf40b8e7949a6187f871120d4518b3"
+      },
+      {
+       "name": "isArrayFrom",
+       "side": "new",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 97,
+       "end": 106,
+       "offset": 3035,
+       "stop": 3353,
+       "id": "94ded50c7f8d06685ab5a6532f7dbdd648ff9b744914bd6cd4ca15a2c6b6a42a"
+      },
+      {
+       "name": "isMethodWhichHasThisArg",
+       "side": "new",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 113,
+       "end": 127,
+       "offset": 3551,
+       "stop": 3900,
+       "id": "01b1f5f98750fdcef781d4f919e7526e303fe0fdf472396529251dcdcaa2e340"
+      },
+      {
+       "name": "hasValidThis",
+       "side": "new",
+       "file": "lib/rules/no-invalid-this.js",
+       "start": 149,
+       "end": 252,
+       "offset": 4615,
+       "stop": 8354,
+       "id": "2ead60c8e97560982c80914f15af1cc8755e07b0736d371d399a499ddead015e"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "ee78aa0074856a257ba57e274e235c0efbce038c1bbc40618340417f6a314d89",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 38,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1278,
+     "end": 1333
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   },
+   {
+    "id": "d4970ef8d96c4b8f2b8625fdcb26951e1c6b4e252f52e78ef7e05f4235a439c1",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 39,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1333,
+     "end": 1408
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   },
+   {
+    "id": "c6d19534f9d25a4dd96a7fdcb41940059cd91764222d86245f010fa471303424",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 40,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1408,
+     "end": 1429
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   },
+   {
+    "id": "b7d0f53960e4e704dbac8d819f3323adf6f90670d7cbd3a2a84a92740810f729",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 41,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1429,
+     "end": 1435
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   },
+   {
+    "id": "0a069b84e78d469b4286a6741449bef57961b8f3629c5142222840747643de55",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 42,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1435,
+     "end": 1436
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   },
+   {
+    "id": "2231666de9ed87c8d04f242bf92176624e3f844ec2cddb6b867c78e6d388447b",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 43,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1436,
+     "end": 1497
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   },
+   {
+    "id": "9d7fe0c7a103db212a3d9432eb458bd3df72eb68e01566250ebfb26baa404615",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 44,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1497,
+     "end": 1552
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   },
+   {
+    "id": "a1466314543559d1d9284e8e05ac3ae9e05a96f429adfe25189312fbe1dc36e5",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 45,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1552,
+     "end": 1564
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   },
+   {
+    "id": "6070bbaa0de318f4cd516efe97c94a639c58050b290bf97c53843bd37d6bc291",
+    "fileId": "9e77acdfa27ab650ab55fdc52d60498059a3b2532f24a7de091beab2ef67830b",
+    "file": "lib/rules/no-invalid-this.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b4f127fbeced8778777ba0c9ec696ed7c905f09cf0e91f5b85946db7243d3888",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 46,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1564,
+     "end": 1640
+    },
+    "links": [
+     {
+      "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+      "file": "lib/rules/no-invalid-this.js",
+      "unit": "hasJSDocThisTag",
+      "side": "new",
+      "start": 37,
+      "end": 50
+     }
+    ],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "a0fcbe26ff69f4cc6a60c32934fee73d89a5b4d160a7b26fd8b01548a3177c71",
+     "file": "lib/rules/no-invalid-this.js",
+     "unit": "hasJSDocThisTag",
+     "side": "new",
+     "start": 37,
+     "end": 50
+    }
+   }
+  ],
+  "id": "6b159d2dc3dfbc555556a2bb6f1552f2fab382c262cf754980d83240ff5fd7db",
+  "reconciliation": {
+   "expected": [
+    "ee78aa0074856a257ba57e274e235c0efbce038c1bbc40618340417f6a314d89",
+    "d4970ef8d96c4b8f2b8625fdcb26951e1c6b4e252f52e78ef7e05f4235a439c1",
+    "c6d19534f9d25a4dd96a7fdcb41940059cd91764222d86245f010fa471303424",
+    "b7d0f53960e4e704dbac8d819f3323adf6f90670d7cbd3a2a84a92740810f729",
+    "0a069b84e78d469b4286a6741449bef57961b8f3629c5142222840747643de55",
+    "2231666de9ed87c8d04f242bf92176624e3f844ec2cddb6b867c78e6d388447b",
+    "9d7fe0c7a103db212a3d9432eb458bd3df72eb68e01566250ebfb26baa404615",
+    "a1466314543559d1d9284e8e05ac3ae9e05a96f429adfe25189312fbe1dc36e5",
+    "6070bbaa0de318f4cd516efe97c94a639c58050b290bf97c53843bd37d6bc291"
+   ],
+   "unit": [
+    "ee78aa0074856a257ba57e274e235c0efbce038c1bbc40618340417f6a314d89",
+    "d4970ef8d96c4b8f2b8625fdcb26951e1c6b4e252f52e78ef7e05f4235a439c1",
+    "c6d19534f9d25a4dd96a7fdcb41940059cd91764222d86245f010fa471303424",
+    "b7d0f53960e4e704dbac8d819f3323adf6f90670d7cbd3a2a84a92740810f729",
+    "0a069b84e78d469b4286a6741449bef57961b8f3629c5142222840747643de55",
+    "2231666de9ed87c8d04f242bf92176624e3f844ec2cddb6b867c78e6d388447b",
+    "9d7fe0c7a103db212a3d9432eb458bd3df72eb68e01566250ebfb26baa404615",
+    "a1466314543559d1d9284e8e05ac3ae9e05a96f429adfe25189312fbe1dc36e5",
+    "6070bbaa0de318f4cd516efe97c94a639c58050b290bf97c53843bd37d6bc291"
+   ],
+   "artifact": [],
+   "unassigned": [],
+   "classes": {
+    "source": {
+     "unit": [
+      "ee78aa0074856a257ba57e274e235c0efbce038c1bbc40618340417f6a314d89",
+      "d4970ef8d96c4b8f2b8625fdcb26951e1c6b4e252f52e78ef7e05f4235a439c1",
+      "c6d19534f9d25a4dd96a7fdcb41940059cd91764222d86245f010fa471303424",
+      "b7d0f53960e4e704dbac8d819f3323adf6f90670d7cbd3a2a84a92740810f729",
+      "0a069b84e78d469b4286a6741449bef57961b8f3629c5142222840747643de55",
+      "2231666de9ed87c8d04f242bf92176624e3f844ec2cddb6b867c78e6d388447b",
+      "9d7fe0c7a103db212a3d9432eb458bd3df72eb68e01566250ebfb26baa404615",
+      "a1466314543559d1d9284e8e05ac3ae9e05a96f429adfe25189312fbe1dc36e5",
+      "6070bbaa0de318f4cd516efe97c94a639c58050b290bf97c53843bd37d6bc291"
+     ],
+     "artifact": [],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "callersChecked": 1
+}

@@ -1,0 +1,426 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__239/run-xczTKw",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "cc4cedc62679b845df6d36b03ac5f0acdf08f4ce",
+  "head": "cdaec1a29f420cb3f270f74d56a6006ba9dc3e6a",
+  "files": [
+   {
+    "id": "4faa6a156d14f8829130ac8c806aaf913f75fa1b238ea66e3d7118b6d45a015b",
+    "file": "lib/rules/capitalized-comments.js",
+    "oldPath": "lib/rules/capitalized-comments.js",
+    "newPath": "lib/rules/capitalized-comments.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "9948e53dffbf45ccff1d96ac35e801d93d93d8ab",
+    "newOid": "98d860c2bc4f4e2bc7ea5de537e19626161077d8",
+    "status": "M",
+    "edits": [
+     "6edc89048eb6dd3d894d90df0215db3f76bac236421d9b62fc0cf960360899e6",
+     "1478bb939e9076618637ee54ab772071434b6453b9d20674783787382422bd43",
+     "4f25a3024059dd8b08fcefa9b5886f2ed3254969ed09aaa66a7c321a92770695",
+     "b5f12f9271a5c90249e2428e37f423dcb7381dd7e74adddf5b585b7b3d2ec531"
+    ],
+    "hunks": [
+     {
+      "id": "2e37a6c301f36bae242af7a27385a76731466705dc077ccec51f6a65a9cff4e2",
+      "old": {
+       "start": 234,
+       "count": 0
+      },
+      "new": {
+       "start": 235,
+       "count": 4
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "90e51d6a4b4bbf7fb5f1bcfc468ebd2c73f8513ae909f370c3a01a396d15ee01",
+    "newHash": "176dcfc7efb236ddcc0fbf11f7101d8bab9345d5ef383dbab859a30e67ea7293",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "getNormalizedOptions",
+       "side": "old",
+       "file": "lib/rules/capitalized-comments.js",
+       "start": 63,
+       "end": 69,
+       "offset": 2208,
+       "stop": 2407,
+       "id": "2e285c6a8eb6f97fc74cb8357bf24ff8f83d6a30fa83bfbd18f630679e9beb08"
+      },
+      {
+       "name": "getAllNormalizedOptions",
+       "side": "old",
+       "file": "lib/rules/capitalized-comments.js",
+       "start": 78,
+       "end": 83,
+       "offset": 2648,
+       "stop": 2829,
+       "id": "40af86bb5c06f8c9ed952d519cb97890b3b90abd585569a89636d60bec96d68f"
+      },
+      {
+       "name": "createRegExpForIgnorePatterns",
+       "side": "old",
+       "file": "lib/rules/capitalized-comments.js",
+       "start": 94,
+       "end": 104,
+       "offset": 3095,
+       "stop": 3463,
+       "id": "afc5695028e3307c528df63a8ba19af58fc4f3327038460abca744f24a948ccf"
+      }
+     ],
+     "new": [
+      {
+       "name": "getNormalizedOptions",
+       "side": "new",
+       "file": "lib/rules/capitalized-comments.js",
+       "start": 63,
+       "end": 69,
+       "offset": 2208,
+       "stop": 2407,
+       "id": "ec27a4af4e8624477082bd7c094422092e56cf241cae607601d00a35c87aa93a"
+      },
+      {
+       "name": "getAllNormalizedOptions",
+       "side": "new",
+       "file": "lib/rules/capitalized-comments.js",
+       "start": 78,
+       "end": 83,
+       "offset": 2648,
+       "stop": 2829,
+       "id": "482f601276385b9a4c084cf0e7c9116244f8ff9b9b216336a8c63f4a6c4a4cc6"
+      },
+      {
+       "name": "createRegExpForIgnorePatterns",
+       "side": "new",
+       "file": "lib/rules/capitalized-comments.js",
+       "start": 94,
+       "end": 104,
+       "offset": 3095,
+       "stop": 3463,
+       "id": "a08e4b5c60790e68614c5a4ef9c182c478cdf19f6f1520635b06a631f8bd4f51"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "6edc89048eb6dd3d894d90df0215db3f76bac236421d9b62fc0cf960360899e6",
+    "fileId": "4faa6a156d14f8829130ac8c806aaf913f75fa1b238ea66e3d7118b6d45a015b",
+    "file": "lib/rules/capitalized-comments.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2e37a6c301f36bae242af7a27385a76731466705dc077ccec51f6a65a9cff4e2",
+    "side": "new",
+    "old": {
+     "start": 234,
+     "count": 0
+    },
+    "new": {
+     "start": 235,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8261,
+     "end": 8314
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1478bb939e9076618637ee54ab772071434b6453b9d20674783787382422bd43",
+    "fileId": "4faa6a156d14f8829130ac8c806aaf913f75fa1b238ea66e3d7118b6d45a015b",
+    "file": "lib/rules/capitalized-comments.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2e37a6c301f36bae242af7a27385a76731466705dc077ccec51f6a65a9cff4e2",
+    "side": "new",
+    "old": {
+     "start": 234,
+     "count": 0
+    },
+    "new": {
+     "start": 236,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8314,
+     "end": 8343
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4f25a3024059dd8b08fcefa9b5886f2ed3254969ed09aaa66a7c321a92770695",
+    "fileId": "4faa6a156d14f8829130ac8c806aaf913f75fa1b238ea66e3d7118b6d45a015b",
+    "file": "lib/rules/capitalized-comments.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2e37a6c301f36bae242af7a27385a76731466705dc077ccec51f6a65a9cff4e2",
+    "side": "new",
+    "old": {
+     "start": 234,
+     "count": 0
+    },
+    "new": {
+     "start": 237,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8343,
+     "end": 8357
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "b5f12f9271a5c90249e2428e37f423dcb7381dd7e74adddf5b585b7b3d2ec531",
+    "fileId": "4faa6a156d14f8829130ac8c806aaf913f75fa1b238ea66e3d7118b6d45a015b",
+    "file": "lib/rules/capitalized-comments.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2e37a6c301f36bae242af7a27385a76731466705dc077ccec51f6a65a9cff4e2",
+    "side": "new",
+    "old": {
+     "start": 234,
+     "count": 0
+    },
+    "new": {
+     "start": 238,
+     "count": 1
+    },
+    "offsets": {
+     "start": 8357,
+     "end": 8358
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "8ee45e78a3d61d708f59a93e87e1088da5f03ab493fcca4f23c2682d1d6cc58a",
+  "reconciliation": {
+   "expected": [
+    "6edc89048eb6dd3d894d90df0215db3f76bac236421d9b62fc0cf960360899e6",
+    "1478bb939e9076618637ee54ab772071434b6453b9d20674783787382422bd43",
+    "4f25a3024059dd8b08fcefa9b5886f2ed3254969ed09aaa66a7c321a92770695",
+    "b5f12f9271a5c90249e2428e37f423dcb7381dd7e74adddf5b585b7b3d2ec531"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "6edc89048eb6dd3d894d90df0215db3f76bac236421d9b62fc0cf960360899e6",
+    "1478bb939e9076618637ee54ab772071434b6453b9d20674783787382422bd43",
+    "4f25a3024059dd8b08fcefa9b5886f2ed3254969ed09aaa66a7c321a92770695",
+    "b5f12f9271a5c90249e2428e37f423dcb7381dd7e74adddf5b585b7b3d2ec531"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "6edc89048eb6dd3d894d90df0215db3f76bac236421d9b62fc0cf960360899e6",
+      "1478bb939e9076618637ee54ab772071434b6453b9d20674783787382422bd43",
+      "4f25a3024059dd8b08fcefa9b5886f2ed3254969ed09aaa66a7c321a92770695",
+      "b5f12f9271a5c90249e2428e37f423dcb7381dd7e74adddf5b585b7b3d2ec531"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "76505e74dc571b3615c629f2ae69b9ed1288cdafd7fbd3dc4211a8b4ef66ca8c",
+   "attemptId": "0d305e19-28f0-4e0e-95c7-0294fc10efa3",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__239/run-xczTKw/attempts/0d305e19-28f0-4e0e-95c7-0294fc10efa3/row.json",
+    "sha256": "c0a10c9ea23bdc1c9488865e63618c3b19a1396c6c4986475bd1cdffc88ebbb6"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "8ec6361b9a956e8048ce460402846dccf3e3265397241f302832e0a9406fa652",
+   "attemptId": "57251765-4528-420e-93fa-2c9cba3b9565",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__239/run-xczTKw/attempts/57251765-4528-420e-93fa-2c9cba3b9565/row.json",
+    "sha256": "92cb2197b212a4dd0b159ae7e8de6a231e5d16bb0ab7bd47984b74e42ab65a5d"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "50a35068736e99b809ee2d73837a7dac7bcb052da5879ad6ac2cc0f667611d4a",
+   "attemptId": "fe06424e-5fe5-4df3-ac1f-55296c8effff",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__239/run-xczTKw/attempts/fe06424e-5fe5-4df3-ac1f-55296c8effff/row.json",
+    "sha256": "a653d1b480acff40266eb8de7ccb4ee9a9fcbfa410159753e66a734a3b746bb3"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "c285a77ca469cd0450d122493548e86b00ac387efd87f0482e7a0fdda71905e2",
+   "attemptId": "9ee118cc-3370-4a25-846a-4c0355506d5d",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__239/run-xczTKw/attempts/9ee118cc-3370-4a25-846a-4c0355506d5d/row.json",
+    "sha256": "4d2b0d9501adf344198d76c8a7e0641d6860c509edad3618d469cd076c67596a"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/capitalized-comments.js",
+   "unit": "(edit 6edc89048eb6)",
+   "editIds": [
+    "6edc89048eb6dd3d894d90df0215db3f76bac236421d9b62fc0cf960360899e6"
+   ],
+   "lines": [
+    235,
+    235
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/capitalized-comments.js",
+   "unit": "(edit 1478bb939e90)",
+   "editIds": [
+    "1478bb939e9076618637ee54ab772071434b6453b9d20674783787382422bd43"
+   ],
+   "lines": [
+    236,
+    236
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/capitalized-comments.js",
+   "unit": "(edit 4f25a3024059)",
+   "editIds": [
+    "4f25a3024059dd8b08fcefa9b5886f2ed3254969ed09aaa66a7c321a92770695"
+   ],
+   "lines": [
+    237,
+    237
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/capitalized-comments.js",
+   "unit": "(edit b5f12f9271a5)",
+   "editIds": [
+    "b5f12f9271a5c90249e2428e37f423dcb7381dd7e74adddf5b585b7b3d2ec531"
+   ],
+   "lines": [
+    238,
+    238
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "76505e74dc571b3615c629f2ae69b9ed1288cdafd7fbd3dc4211a8b4ef66ca8c",
+   "8ec6361b9a956e8048ce460402846dccf3e3265397241f302832e0a9406fa652",
+   "50a35068736e99b809ee2d73837a7dac7bcb052da5879ad6ac2cc0f667611d4a",
+   "c285a77ca469cd0450d122493548e86b00ac387efd87f0482e7a0fdda71905e2"
+  ],
+  "terminal": [
+   "76505e74dc571b3615c629f2ae69b9ed1288cdafd7fbd3dc4211a8b4ef66ca8c",
+   "8ec6361b9a956e8048ce460402846dccf3e3265397241f302832e0a9406fa652",
+   "50a35068736e99b809ee2d73837a7dac7bcb052da5879ad6ac2cc0f667611d4a",
+   "c285a77ca469cd0450d122493548e86b00ac387efd87f0482e7a0fdda71905e2"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

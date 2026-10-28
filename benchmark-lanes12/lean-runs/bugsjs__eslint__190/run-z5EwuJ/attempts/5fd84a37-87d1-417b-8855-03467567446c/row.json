@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/init-declarations.js",
+ "unit": "(edit 644cce4941fc)",
+ "editIds": [
+  "644cce4941fcc5731f3342c8e477b0d8cb11a317a4006b8339895bce427ddf4f"
+ ],
+ "lines": [
+  11,
+  11
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

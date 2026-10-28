@@ -1,0 +1,68 @@
+{
+ "file": "lib/linter.js",
+ "unit": "Linter.verifyAndFix",
+ "lines": [
+  1207,
+  1263
+ ],
+ "coverage": "refused:ts-strict",
+ "verdict": "ASK",
+ "laneB": "ASK",
+ "laneA": null,
+ "witness": null,
+ "reason": "parent: unit Linter.verifyAndFix not exported",
+ "advice": [
+  {
+   "line": 725,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'setMaxListeners' does not exist on type 'Linter'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 733,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'removeAllListeners' does not exist on type 'Linter'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 763,
+   "rule": "ts-strict",
+   "msg": "TS8032: Qualified name 'filenameOrOptions.allowInlineConfig' is not allowed without a leading '@param {object} filenameOrOptions'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 775,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'filename' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 776,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'allowInlineConfig' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 777,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'saveState' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 787,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'text' does not exist on type 'string | SourceCode'.   Property 'text' does not exist on type 'string'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 800,
+   "rule": "ts-strict",
+   "msg": "TS2696: The 'Object' type is assignable to very few other types. Did you mean to use the 'any' type instead?   Property 'rules' is missing in type 'Object' but required in type 'ESLintConfig'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  }
+ ],
+ "editIds": [
+  "025737e2f3e215f488f4cf4f7175e26416d33d298bdc78709b2ec01db49a2698",
+  "76cab08413b087c103594d3eb053f725d762f9bdb286a5d22b7ace9865d3b575"
+ ]
+}

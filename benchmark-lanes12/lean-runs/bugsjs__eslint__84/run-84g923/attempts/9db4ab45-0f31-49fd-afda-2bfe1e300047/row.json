@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/space-before-keywords.js",
+ "unit": "(edit 4106847bbb0b)",
+ "editIds": [
+  "4106847bbb0b5470665ca8361b19c20d45ee6991470b0d33ee244741c74a1fb9"
+ ],
+ "lines": [
+  185,
+  185
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

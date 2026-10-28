@@ -1,0 +1,865 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "8ef475f7d1a06562e659347dcc53c2e474cbddc7",
+  "head": "51813349964b3cb3bd397c070fd14539b3e39583",
+  "files": [
+   {
+    "id": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "oldPath": "lib/middleware/proxy.js",
+    "newPath": "lib/middleware/proxy.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "d84c7e4af9bdbdedb072c56b7fd46522b0213bb0",
+    "newOid": "1a4f31e93cad3d64284925b0a5a6c6447335f72d",
+    "status": "M",
+    "edits": [
+     "464e497e637e68900d86e9fc5765cfa09403018e9142422c6caefb695e5e09a2",
+     "d6ded3989b7ed2a1957e3e3366fd31e250dbb115561547dc96976aab62a3ac03",
+     "96c6087a98ab5cea88e2cafb50ee40af879269e6709744a47be59d0ffe715bec",
+     "97461c2721e294c6320a5ff29076eebc8fcfb2195e91a763d8259388d000aa62",
+     "f016891301263a10dd9b18017e3239d4256f461cc081d3f59d9ce5fea756ff54",
+     "80dcc64e35838db0a32cae5f4b1de6415c256b1f3b53bf54d3d48c175d009482",
+     "3f8a134ecdd1cfee674fcf627168b1ec42752d885e1d506b541212e64a010260",
+     "0975bb9834bf8118c74eacf70179b6b6dd713f37d2c3a64b8edd27f8e7621616",
+     "c4b3596e7771cd898d484be4bd538ff116c04bcc4176193a2bae4c9f461dd62c",
+     "701fe0e1d041727154437cdd41c2eefc6d9ed891c900ed7c59a1591ce4e58985",
+     "3d6592260a7399207a72c3b6c32bff389eb63ecbe2d80daf3a55d6c53d4aa227"
+    ],
+    "hunks": [
+     {
+      "id": "b2a12ec6667d52fa139ce164ad32458a34ca519f2a65a1c40f665dace9dd4e96",
+      "old": {
+       "start": 43,
+       "count": 2
+      },
+      "new": {
+       "start": 42,
+       "count": 0
+      }
+     },
+     {
+      "id": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+      "old": {
+       "start": 46,
+       "count": 1
+      },
+      "new": {
+       "start": 44,
+       "count": 8
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "59e96da71e58a9d25cf57262539c129161885317c34313e2de6dc196c2164504",
+    "newHash": "aa84a12e5a968811831f123d16b00fe525c85ba8e17cd07e6d920f8b8c49e2bf",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "464e497e637e68900d86e9fc5765cfa09403018e9142422c6caefb695e5e09a2",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b2a12ec6667d52fa139ce164ad32458a34ca519f2a65a1c40f665dace9dd4e96",
+    "side": "old",
+    "old": {
+     "start": 43,
+     "count": 1
+    },
+    "new": {
+     "start": 42,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1272,
+     "end": 1323
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "d6ded3989b7ed2a1957e3e3366fd31e250dbb115561547dc96976aab62a3ac03",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b2a12ec6667d52fa139ce164ad32458a34ca519f2a65a1c40f665dace9dd4e96",
+    "side": "old",
+    "old": {
+     "start": 44,
+     "count": 1
+    },
+    "new": {
+     "start": 42,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1323,
+     "end": 1381
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "96c6087a98ab5cea88e2cafb50ee40af879269e6709744a47be59d0ffe715bec",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "old",
+    "old": {
+     "start": 46,
+     "count": 1
+    },
+    "new": {
+     "start": 44,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1432,
+     "end": 1433
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "97461c2721e294c6320a5ff29076eebc8fcfb2195e91a763d8259388d000aa62",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "new",
+    "old": {
+     "start": 46,
+     "count": 0
+    },
+    "new": {
+     "start": 44,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1323,
+     "end": 1336
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f016891301263a10dd9b18017e3239d4256f461cc081d3f59d9ce5fea756ff54",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "new",
+    "old": {
+     "start": 46,
+     "count": 0
+    },
+    "new": {
+     "start": 45,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1336,
+     "end": 1365
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "80dcc64e35838db0a32cae5f4b1de6415c256b1f3b53bf54d3d48c175d009482",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "new",
+    "old": {
+     "start": 46,
+     "count": 0
+    },
+    "new": {
+     "start": 46,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1365,
+     "end": 1396
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3f8a134ecdd1cfee674fcf627168b1ec42752d885e1d506b541212e64a010260",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "new",
+    "old": {
+     "start": 46,
+     "count": 0
+    },
+    "new": {
+     "start": 47,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1396,
+     "end": 1436
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "0975bb9834bf8118c74eacf70179b6b6dd713f37d2c3a64b8edd27f8e7621616",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "new",
+    "old": {
+     "start": 46,
+     "count": 0
+    },
+    "new": {
+     "start": 48,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1436,
+     "end": 1499
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c4b3596e7771cd898d484be4bd538ff116c04bcc4176193a2bae4c9f461dd62c",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "new",
+    "old": {
+     "start": 46,
+     "count": 0
+    },
+    "new": {
+     "start": 49,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1499,
+     "end": 1512
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "701fe0e1d041727154437cdd41c2eefc6d9ed891c900ed7c59a1591ce4e58985",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "new",
+    "old": {
+     "start": 46,
+     "count": 0
+    },
+    "new": {
+     "start": 50,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1512,
+     "end": 1537
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3d6592260a7399207a72c3b6c32bff389eb63ecbe2d80daf3a55d6c53d4aa227",
+    "fileId": "d2430cbfe64055b34871075c658e06c24e577585bc521f68724ada7809334492",
+    "file": "lib/middleware/proxy.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "da7ddb5613f0868c8466e5a888f224f9e5e81a78fd98625ac476d12e2eafc53a",
+    "side": "new",
+    "old": {
+     "start": 46,
+     "count": 0
+    },
+    "new": {
+     "start": 51,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1537,
+     "end": 1543
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "0cea91cdd33a34bf91165579de1945dfd1bfb3f70162b1c9d853290e9b407787",
+  "reconciliation": {
+   "expected": [
+    "464e497e637e68900d86e9fc5765cfa09403018e9142422c6caefb695e5e09a2",
+    "d6ded3989b7ed2a1957e3e3366fd31e250dbb115561547dc96976aab62a3ac03",
+    "96c6087a98ab5cea88e2cafb50ee40af879269e6709744a47be59d0ffe715bec",
+    "97461c2721e294c6320a5ff29076eebc8fcfb2195e91a763d8259388d000aa62",
+    "f016891301263a10dd9b18017e3239d4256f461cc081d3f59d9ce5fea756ff54",
+    "80dcc64e35838db0a32cae5f4b1de6415c256b1f3b53bf54d3d48c175d009482",
+    "3f8a134ecdd1cfee674fcf627168b1ec42752d885e1d506b541212e64a010260",
+    "0975bb9834bf8118c74eacf70179b6b6dd713f37d2c3a64b8edd27f8e7621616",
+    "c4b3596e7771cd898d484be4bd538ff116c04bcc4176193a2bae4c9f461dd62c",
+    "701fe0e1d041727154437cdd41c2eefc6d9ed891c900ed7c59a1591ce4e58985",
+    "3d6592260a7399207a72c3b6c32bff389eb63ecbe2d80daf3a55d6c53d4aa227"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "464e497e637e68900d86e9fc5765cfa09403018e9142422c6caefb695e5e09a2",
+    "d6ded3989b7ed2a1957e3e3366fd31e250dbb115561547dc96976aab62a3ac03",
+    "96c6087a98ab5cea88e2cafb50ee40af879269e6709744a47be59d0ffe715bec",
+    "97461c2721e294c6320a5ff29076eebc8fcfb2195e91a763d8259388d000aa62",
+    "f016891301263a10dd9b18017e3239d4256f461cc081d3f59d9ce5fea756ff54",
+    "80dcc64e35838db0a32cae5f4b1de6415c256b1f3b53bf54d3d48c175d009482",
+    "3f8a134ecdd1cfee674fcf627168b1ec42752d885e1d506b541212e64a010260",
+    "0975bb9834bf8118c74eacf70179b6b6dd713f37d2c3a64b8edd27f8e7621616",
+    "c4b3596e7771cd898d484be4bd538ff116c04bcc4176193a2bae4c9f461dd62c",
+    "701fe0e1d041727154437cdd41c2eefc6d9ed891c900ed7c59a1591ce4e58985",
+    "3d6592260a7399207a72c3b6c32bff389eb63ecbe2d80daf3a55d6c53d4aa227"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "464e497e637e68900d86e9fc5765cfa09403018e9142422c6caefb695e5e09a2",
+      "d6ded3989b7ed2a1957e3e3366fd31e250dbb115561547dc96976aab62a3ac03",
+      "96c6087a98ab5cea88e2cafb50ee40af879269e6709744a47be59d0ffe715bec",
+      "97461c2721e294c6320a5ff29076eebc8fcfb2195e91a763d8259388d000aa62",
+      "f016891301263a10dd9b18017e3239d4256f461cc081d3f59d9ce5fea756ff54",
+      "80dcc64e35838db0a32cae5f4b1de6415c256b1f3b53bf54d3d48c175d009482",
+      "3f8a134ecdd1cfee674fcf627168b1ec42752d885e1d506b541212e64a010260",
+      "0975bb9834bf8118c74eacf70179b6b6dd713f37d2c3a64b8edd27f8e7621616",
+      "c4b3596e7771cd898d484be4bd538ff116c04bcc4176193a2bae4c9f461dd62c",
+      "701fe0e1d041727154437cdd41c2eefc6d9ed891c900ed7c59a1591ce4e58985",
+      "3d6592260a7399207a72c3b6c32bff389eb63ecbe2d80daf3a55d6c53d4aa227"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "b974ed45369df06f2319fd9a907602725b96ed6cbc19508dcf2b2c1e79863def",
+   "attemptId": "9620a35a-deb6-4adf-8268-b27a2eb8600a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/9620a35a-deb6-4adf-8268-b27a2eb8600a/row.json",
+    "sha256": "2ffa18e97fcd5d0e148fa98a316dfcc9cbb42b8ce611324117089d12d2058cc0"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "d95cedc3f6de8e131d7c0104435c3f2437a7de37fb7a125854e4ddbdf9b9df5f",
+   "attemptId": "bbdd227a-51fe-4022-a6b2-928eb8e6549e",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/bbdd227a-51fe-4022-a6b2-928eb8e6549e/row.json",
+    "sha256": "6277419f3292dc760547162d82b6fccebd09a42b7ff05a30b512d4f0165f396a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "4fb379c5019a69f3518b86b5ed84428b7dab76afeb837ee531abb28f8b1e3bc0",
+   "attemptId": "b97ec1b2-4acf-4598-ad67-de49b0581a7e",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/b97ec1b2-4acf-4598-ad67-de49b0581a7e/row.json",
+    "sha256": "18e541ace8818c48389bb62c20c52784c4eb4bea56ac43e9b79502c50c0bb215"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "7d6eaad5f27093fd8041590e034b4fa906af65b299913f32a6e088cd1c55519b",
+   "attemptId": "59dddbdd-9c76-4899-979a-89dd02035705",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/59dddbdd-9c76-4899-979a-89dd02035705/row.json",
+    "sha256": "a32f15d4ccef7f54f1846c96479810bd46ecc6d895b36a509e0f214968ae69ee"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "9a40c79777c73dcd0fe94a080b1a72927c3e48ed608f5d8331dbad6af21b8f82",
+   "attemptId": "9dec56ef-faab-47ab-8035-7b75383d200f",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/9dec56ef-faab-47ab-8035-7b75383d200f/row.json",
+    "sha256": "b000a643428868c0670183e8929d41cfefb3c768d8b6a61be97aabb2b914ce4a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "57dca4d4ae1b90bedc3189922707871d975792c7e58f70b191f110542c196951",
+   "attemptId": "8c78bce9-7897-48eb-a551-8ca43ba16eda",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/8c78bce9-7897-48eb-a551-8ca43ba16eda/row.json",
+    "sha256": "98437e64f18f821465e3848ce23eb3aa2e0043316d58e7362dcf31df3204ec55"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "0ad056e032ba20618a7c76a6d8b5f10a8bf4185b822603af1a597a359b319795",
+   "attemptId": "72e86ae8-b755-4772-be6d-40273863f3f8",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/72e86ae8-b755-4772-be6d-40273863f3f8/row.json",
+    "sha256": "c73d644e4257b2836474c94ec3deb67ddbab7f3fd5a75e7cb9987f4549ec7734"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "bd0e4c4c979a99c210d183cd7f9753e3f6d0b6ca28843903d2875a296748b456",
+   "attemptId": "65044c31-0790-4902-8ab5-6dbb659ddf1a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/65044c31-0790-4902-8ab5-6dbb659ddf1a/row.json",
+    "sha256": "92c1bdca8fd69a9bc023ba5830a444590bfe1161a3a0259ace028f3b4a43a225"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "8b722a1f6a9fb6c1603421a4428329a434df50da21bbb485cfd71e3c26bc669d",
+   "attemptId": "eff28df7-9706-4c8c-852c-9a0c4efaa38a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/eff28df7-9706-4c8c-852c-9a0c4efaa38a/row.json",
+    "sha256": "01beb335f0bddbaed4d54873949c28dddc084acd4e7a4a3e22a96b181c982657"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "417589fc70a1b72ccf29b53603e0c1c2602ef4c25198ab6f3e01e0112d47a164",
+   "attemptId": "7ee5d4b0-8972-47f8-9fa2-b3e8812129a1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/7ee5d4b0-8972-47f8-9fa2-b3e8812129a1/row.json",
+    "sha256": "83e00f80309b466f60ea7a8bf38c2a6bf9137a1f4c142a12ed1a6aea6cf89252"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "6cbff0040969caa5d53277a8a5eb364a5727aad8ae73efc3c0e0d7bac4480700",
+   "attemptId": "19fe4807-8985-438a-a539-d4caa05b26f2",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__karma__2/run-hxbStH/attempts/19fe4807-8985-438a-a539-d4caa05b26f2/row.json",
+    "sha256": "024005b4adc0fac44459c2bfd525ec4babc5b22f83a9bcd5c71a7f0d9ef46e1c"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit 464e497e637e)",
+   "editIds": [
+    "464e497e637e68900d86e9fc5765cfa09403018e9142422c6caefb695e5e09a2"
+   ],
+   "lines": [
+    43,
+    43
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit d6ded3989b7e)",
+   "editIds": [
+    "d6ded3989b7ed2a1957e3e3366fd31e250dbb115561547dc96976aab62a3ac03"
+   ],
+   "lines": [
+    44,
+    44
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit 96c6087a98ab)",
+   "editIds": [
+    "96c6087a98ab5cea88e2cafb50ee40af879269e6709744a47be59d0ffe715bec"
+   ],
+   "lines": [
+    46,
+    46
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit 97461c2721e2)",
+   "editIds": [
+    "97461c2721e294c6320a5ff29076eebc8fcfb2195e91a763d8259388d000aa62"
+   ],
+   "lines": [
+    44,
+    44
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit f01689130126)",
+   "editIds": [
+    "f016891301263a10dd9b18017e3239d4256f461cc081d3f59d9ce5fea756ff54"
+   ],
+   "lines": [
+    45,
+    45
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit 80dcc64e3583)",
+   "editIds": [
+    "80dcc64e35838db0a32cae5f4b1de6415c256b1f3b53bf54d3d48c175d009482"
+   ],
+   "lines": [
+    46,
+    46
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit 3f8a134ecdd1)",
+   "editIds": [
+    "3f8a134ecdd1cfee674fcf627168b1ec42752d885e1d506b541212e64a010260"
+   ],
+   "lines": [
+    47,
+    47
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit 0975bb9834bf)",
+   "editIds": [
+    "0975bb9834bf8118c74eacf70179b6b6dd713f37d2c3a64b8edd27f8e7621616"
+   ],
+   "lines": [
+    48,
+    48
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit c4b3596e7771)",
+   "editIds": [
+    "c4b3596e7771cd898d484be4bd538ff116c04bcc4176193a2bae4c9f461dd62c"
+   ],
+   "lines": [
+    49,
+    49
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit 701fe0e1d041)",
+   "editIds": [
+    "701fe0e1d041727154437cdd41c2eefc6d9ed891c900ed7c59a1591ce4e58985"
+   ],
+   "lines": [
+    50,
+    50
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/middleware/proxy.js",
+   "unit": "(edit 3d6592260a73)",
+   "editIds": [
+    "3d6592260a7399207a72c3b6c32bff389eb63ecbe2d80daf3a55d6c53d4aa227"
+   ],
+   "lines": [
+    51,
+    51
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "b974ed45369df06f2319fd9a907602725b96ed6cbc19508dcf2b2c1e79863def",
+   "d95cedc3f6de8e131d7c0104435c3f2437a7de37fb7a125854e4ddbdf9b9df5f",
+   "4fb379c5019a69f3518b86b5ed84428b7dab76afeb837ee531abb28f8b1e3bc0",
+   "7d6eaad5f27093fd8041590e034b4fa906af65b299913f32a6e088cd1c55519b",
+   "9a40c79777c73dcd0fe94a080b1a72927c3e48ed608f5d8331dbad6af21b8f82",
+   "57dca4d4ae1b90bedc3189922707871d975792c7e58f70b191f110542c196951",
+   "0ad056e032ba20618a7c76a6d8b5f10a8bf4185b822603af1a597a359b319795",
+   "bd0e4c4c979a99c210d183cd7f9753e3f6d0b6ca28843903d2875a296748b456",
+   "8b722a1f6a9fb6c1603421a4428329a434df50da21bbb485cfd71e3c26bc669d",
+   "417589fc70a1b72ccf29b53603e0c1c2602ef4c25198ab6f3e01e0112d47a164",
+   "6cbff0040969caa5d53277a8a5eb364a5727aad8ae73efc3c0e0d7bac4480700"
+  ],
+  "terminal": [
+   "b974ed45369df06f2319fd9a907602725b96ed6cbc19508dcf2b2c1e79863def",
+   "d95cedc3f6de8e131d7c0104435c3f2437a7de37fb7a125854e4ddbdf9b9df5f",
+   "4fb379c5019a69f3518b86b5ed84428b7dab76afeb837ee531abb28f8b1e3bc0",
+   "7d6eaad5f27093fd8041590e034b4fa906af65b299913f32a6e088cd1c55519b",
+   "9a40c79777c73dcd0fe94a080b1a72927c3e48ed608f5d8331dbad6af21b8f82",
+   "57dca4d4ae1b90bedc3189922707871d975792c7e58f70b191f110542c196951",
+   "0ad056e032ba20618a7c76a6d8b5f10a8bf4185b822603af1a597a359b319795",
+   "bd0e4c4c979a99c210d183cd7f9753e3f6d0b6ca28843903d2875a296748b456",
+   "8b722a1f6a9fb6c1603421a4428329a434df50da21bbb485cfd71e3c26bc669d",
+   "417589fc70a1b72ccf29b53603e0c1c2602ef4c25198ab6f3e01e0112d47a164",
+   "6cbff0040969caa5d53277a8a5eb364a5727aad8ae73efc3c0e0d7bac4480700"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

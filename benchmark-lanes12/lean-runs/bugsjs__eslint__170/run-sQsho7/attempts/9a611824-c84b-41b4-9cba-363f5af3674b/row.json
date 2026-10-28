@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/new-parens.js",
+ "unit": "(edit cace44b683b4)",
+ "editIds": [
+  "cace44b683b46eff97a40030254358bee7f43a21c2ef16361f16a3e0c9097c27"
+ ],
+ "lines": [
+  39,
+  39
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

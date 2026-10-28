@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-debugger.js",
+ "unit": "(edit 71a3e5a730cb)",
+ "editIds": [
+  "71a3e5a730cbc3e666a3329e0352879a17baffa62361b20f951dbfe1e8fc73b6"
+ ],
+ "lines": [
+  9,
+  9
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unused-expressions.js",
+ "unit": "(edit 29c057b3bc85)",
+ "editIds": [
+  "29c057b3bc857c72cb9e5cfa8f4ba25cff152780a1c4c90c212cde356f6f0900"
+ ],
+ "lines": [
+  104,
+  104
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

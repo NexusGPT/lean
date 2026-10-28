@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/valid-typeof.js",
+ "unit": "(edit 3319f43c504a)",
+ "editIds": [
+  "3319f43c504a8e23a2d50701278fbccb67a81100afab1ad738a01e02bd6eccb9"
+ ],
+ "lines": [
+  62,
+  62
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

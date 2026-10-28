@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-unused-vars.js",
+ "unit": "(edit e667f63520de)",
+ "editIds": [
+  "e667f63520de66e37528e46c9e9bbaf27d15077454ec05664e0c31976350ff6e"
+ ],
+ "lines": [
+  23,
+  23
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

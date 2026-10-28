@@ -1,0 +1,35 @@
+{
+ "change": "441a1be4a36116ad41d0a25a1182c5fb0313960294c82f45f5c7bbd7b5e583c0",
+ "tasks": [
+  {
+   "id": "24fcfc0fd080f8c7635a78d2b8e3109f0b9b8fd28b7256d3e40189de76c3f0ba",
+   "file": "lib/rules/semi.js",
+   "unit": "(edit e2d4cb486eaf)",
+   "lines": [
+    56,
+    56
+   ],
+   "lanes": [],
+   "editIds": [
+    "e2d4cb486eaf750909feaa6640f6d123c2bfc59c62dda9c0399dc4c138b2c5b8"
+   ],
+   "attemptId": "c6b58f2d-d3cd-432b-a503-8495bc88ee0a",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__21/run-MzJvam/attempts/c6b58f2d-d3cd-432b-a503-8495bc88ee0a"
+  },
+  {
+   "id": "35758b24739a9cd940850e3a236cf04fa7c44f3191da475d5c90c936b2db3b71",
+   "file": "lib/rules/semi.js",
+   "unit": "(edit 87f7d7034d55)",
+   "lines": [
+    56,
+    56
+   ],
+   "lanes": [],
+   "editIds": [
+    "87f7d7034d55fe272f7f2255d1dcecb69a3d3eda8f76fbbe4b6101480748cead"
+   ],
+   "attemptId": "71ba46bc-b5b9-4ede-8dfc-dc94f2af7d04",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__21/run-MzJvam/attempts/71ba46bc-b5b9-4ede-8dfc-dc94f2af7d04"
+  }
+ ]
+}

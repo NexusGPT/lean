@@ -1,0 +1,143 @@
+{
+ "identity": "343d8af25d4583ff662111d6bf2607591b40a4cdf5a7ac71aa1c1e76af89c07f",
+ "records": [
+  {
+   "check": "refused:ts-strict",
+   "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+   "file": "lib/ignored-paths.js",
+   "location": {
+    "start": 89,
+    "end": 89
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 92,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'addPattern' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 99,
+     "rule": "ts-strict",
+     "msg": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 102,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'ignoreFiles' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 103,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'add' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 106,
+     "rule": "ts-strict",
+     "msg": "TS2769: No overload matches this call.   Overload 1 of 2, '(...items: ConcatArray<never>[]): never[]', gave the following error.     Argument of type 'string[]' is not assignable to parameter of type 'ConcatArray<never>'.       The types returned by 'slice(...)' are incompatible between these types.         Type 'string[]' is not assignable to type 'never[]'.           Type 'string' is not assignable to type 'never'.   Overload 2 of 2, '(...items: ConcatArray<never>[]): never[]', gave the following error.     Argument of type 'string[]' is not assignable to parameter of type 'ConcatArray<never>'.       The types returned by 'slice(...)' are incompatible between these types.         Type 'string[]' is not assignable to type 'never[]'.           Type 'string' is not assignable to type 'never'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 106,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'patterns' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 107,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'cwd' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "TS2552: Cannot find name 'array'. Did you mean 'Array'?"
+  },
+  {
+   "check": "lane-B",
+   "unit": "IgnoredPaths.getIgnoredFoldersGlobChecker",
+   "file": "lib/ignored-paths.js",
+   "location": {
+    "start": 207,
+    "end": 207
+   },
+   "kind": "witness",
+   "input": [],
+   "lines": {
+    "kind": "completion fallback",
+    "parent": {
+     "file": "lib/ignored-paths.js",
+     "start": 205,
+     "end": 205,
+     "text": "ig.add(this.ig.custom);"
+    },
+    "candidate": {
+     "file": "lib/ignored-paths.js",
+     "start": 207,
+     "end": 207,
+     "text": "ig.add([\".*/*\", \"!../\"]);"
+    }
+   },
+   "advice": [
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 92,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'addPattern' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 99,
+     "rule": "ts-strict",
+     "msg": "TS2552: Cannot find name 'array'. Did you mean 'Array'?",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 102,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'ignoreFiles' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 103,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'add' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 106,
+     "rule": "ts-strict",
+     "msg": "TS2769: No overload matches this call.   Overload 1 of 2, '(...items: ConcatArray<never>[]): never[]', gave the following error.     Argument of type 'string[]' is not assignable to parameter of type 'ConcatArray<never>'.       The types returned by 'slice(...)' are incompatible between these types.         Type 'string[]' is not assignable to type 'never[]'.           Type 'string' is not assignable to type 'never'.   Overload 2 of 2, '(...items: ConcatArray<never>[]): never[]', gave the following error.     Argument of type 'string[]' is not assignable to parameter of type 'ConcatArray<never>'.       The types returned by 'slice(...)' are incompatible between these types.         Type 'string[]' is not assignable to type 'never[]'.           Type 'string' is not assignable to type 'never'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 106,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'patterns' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 107,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'cwd' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "the two versions differ on receiver"
+  }
+ ]
+}

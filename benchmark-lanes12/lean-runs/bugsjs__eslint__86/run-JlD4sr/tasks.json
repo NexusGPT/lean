@@ -1,0 +1,140 @@
+{
+ "change": "22927e47d065eaadbded8f7454589b47e390ba8b136ac827e2cc61dda80fc43d",
+ "tasks": [
+  {
+   "id": "ea0eb30138c090f629598203a1f5da4d8829600eb26f43646c4e1888da3ed55e",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 97eb840c9fd8)",
+   "lines": [
+    123,
+    123
+   ],
+   "lanes": [],
+   "editIds": [
+    "97eb840c9fd8d85f1d7dbab6894e02671f3fcdcf7b4d41d7f3ce256cead097f7"
+   ],
+   "attemptId": "fb133fcd-af75-41a7-83b2-8423d60f1863",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/fb133fcd-af75-41a7-83b2-8423d60f1863"
+  },
+  {
+   "id": "605e280d5ee7bc9dd77fc2e295d1df89780dad4b8b2130094e525aa110b3d340",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 0f4bfd5f3afe)",
+   "lines": [
+    123,
+    123
+   ],
+   "lanes": [],
+   "editIds": [
+    "0f4bfd5f3afee059a7cfc622d9a81448e41191b37fa3e27c24f6a104294268c9"
+   ],
+   "attemptId": "e757aba7-96bd-4e81-86d7-4c599527c0e3",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/e757aba7-96bd-4e81-86d7-4c599527c0e3"
+  },
+  {
+   "id": "8d1788c5be448198d807bf63e286989683ef5ff99a4258392a69dd13f533e097",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 6208e642ae21)",
+   "lines": [
+    124,
+    124
+   ],
+   "lanes": [],
+   "editIds": [
+    "6208e642ae2167e2159fa7ab626bb87d160b6e9ecb96e118cce7229a1b24a28f"
+   ],
+   "attemptId": "ed7cf6f4-ed8b-48a6-b5f3-40b48757bdbc",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/ed7cf6f4-ed8b-48a6-b5f3-40b48757bdbc"
+  },
+  {
+   "id": "333de83434fd62fdd69fb64a7b08805b9018c630a9b161fc42b14e66f658db28",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit f444ebe9dcd1)",
+   "lines": [
+    125,
+    125
+   ],
+   "lanes": [],
+   "editIds": [
+    "f444ebe9dcd104f66e368fb8b660a3619f4627d4193d41e624e565cc6b2d3d4c"
+   ],
+   "attemptId": "9bcc16bc-dd1c-42eb-9dbe-5c7338a495ee",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/9bcc16bc-dd1c-42eb-9dbe-5c7338a495ee"
+  },
+  {
+   "id": "61318d028ae69ebb4b62c44ae3c8cda00a182a286942f1ab6d7e6b9f81db6139",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 10654d940ea9)",
+   "lines": [
+    126,
+    126
+   ],
+   "lanes": [],
+   "editIds": [
+    "10654d940ea9ba0ceabd68d30049d27eb76ed9debaceb93449e3241b8e2b9d30"
+   ],
+   "attemptId": "52c8ecd2-0052-4886-83d4-b34929ad4278",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/52c8ecd2-0052-4886-83d4-b34929ad4278"
+  },
+  {
+   "id": "e1c4b0ab72c6a997caae2b8ee461aa7dca6c2bb7917c6deaed3a25133a03fee2",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 3f2868041e61)",
+   "lines": [
+    127,
+    127
+   ],
+   "lanes": [],
+   "editIds": [
+    "3f2868041e61a6d28a743545698bbc88a8e673e6fb22d015be7d62384eb0eb12"
+   ],
+   "attemptId": "e1819d41-ad90-4374-bf00-1ba4e7256ec2",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/e1819d41-ad90-4374-bf00-1ba4e7256ec2"
+  },
+  {
+   "id": "ae054ad84a52850419ddea1ca03f6d0684aeaed3dbaf23ba1f96c59bc8f3ee54",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 97627d6ec1a9)",
+   "lines": [
+    128,
+    128
+   ],
+   "lanes": [],
+   "editIds": [
+    "97627d6ec1a9ccad0ac6ad1cdba3ecb9212f36d74b7dc38a78dad75204e8d317"
+   ],
+   "attemptId": "c6f82a44-dc2f-4b82-9aab-c3246215dc42",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/c6f82a44-dc2f-4b82-9aab-c3246215dc42"
+  },
+  {
+   "id": "aa45760abd200772c7782910c79d1b1e63d45567513356fb0502a2e17fd08427",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit fb5be5b06773)",
+   "lines": [
+    129,
+    129
+   ],
+   "lanes": [],
+   "editIds": [
+    "fb5be5b0677375b5c1744f215edaf55f97c0d1648542faf6a417bf23f499fc8d"
+   ],
+   "attemptId": "904bc5a7-690e-4e1b-9baf-f748921e3cc3",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/904bc5a7-690e-4e1b-9baf-f748921e3cc3"
+  },
+  {
+   "id": "8d38b853084ce9d1d27138995c503ebfda5afdd3c65744bdcdf475bf437e685f",
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 123f1204d978)",
+   "lines": [
+    130,
+    130
+   ],
+   "lanes": [],
+   "editIds": [
+    "123f1204d978b3ce1b2b9d393f95294e9cc8f6647bb0b35ca160d1c642b3e8ef"
+   ],
+   "attemptId": "5100d03b-cddb-45dd-a7e2-c91dfcf8e9ba",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__86/run-JlD4sr/attempts/5100d03b-cddb-45dd-a7e2-c91dfcf8e9ba"
+  }
+ ]
+}

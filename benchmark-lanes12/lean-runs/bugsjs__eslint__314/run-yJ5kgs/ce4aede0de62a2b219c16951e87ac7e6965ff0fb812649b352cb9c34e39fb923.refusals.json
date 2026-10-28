@@ -1,0 +1,90 @@
+{
+ "identity": "ce4aede0de62a2b219c16951e87ac7e6965ff0fb812649b352cb9c34e39fb923",
+ "records": [
+  {
+   "check": "refused:ts-strict",
+   "unit": "isEnclosedInParens",
+   "file": "lib/rules/no-return-assign.js",
+   "location": {
+    "start": 19,
+    "end": 19
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 19,
+     "rule": "ts-strict",
+     "msg": "TS2502: 'sourceCode' is referenced directly or indirectly in its own type annotation.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 20,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 21,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    }
+   ],
+   "reason": "TS2502: 'sourceCode' is referenced directly or indirectly in its own type annotation."
+  },
+  {
+   "check": "lane-B",
+   "unit": "isEnclosedInParens",
+   "file": "lib/rules/no-return-assign.js",
+   "location": {
+    "start": 23,
+    "end": 23
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "$fake": "arg0"
+    },
+    {
+     "$fake": "arg1"
+    }
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/rules/no-return-assign.js",
+     "start": 23,
+     "end": 23,
+     "text": "return prevToken.value === \"(\" && nextToken.value === \")\";"
+    },
+    "candidate": {
+     "file": "lib/rules/no-return-assign.js",
+     "start": 23,
+     "end": 23,
+     "text": "return prevToken && prevToken.value === \"(\" && nextToken && nextToken.value === \")\";"
+    }
+   },
+   "advice": [
+    {
+     "line": 19,
+     "rule": "ts-strict",
+     "msg": "TS2502: 'sourceCode' is referenced directly or indirectly in its own type annotation.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 20,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 21,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    }
+   ],
+   "reason": "the two versions differ on outcome"
+  }
+ ]
+}

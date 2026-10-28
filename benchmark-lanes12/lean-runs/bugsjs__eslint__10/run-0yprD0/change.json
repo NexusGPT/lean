@@ -1,0 +1,1113 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "03213bb2b76f53008fe104c473542e71066aafcc",
+ "head": "619fd45239ce489b64732ee62f38e222fd106da9",
+ "files": [
+  {
+   "id": "66673e5fab560bf8fea32dd0b1d4bcdd33097b69daacb79d6fffacba12059a6d",
+   "file": "lib/config.js",
+   "oldPath": "lib/config.js",
+   "newPath": "lib/config.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "c69d120ef7fe26e85fa32efce0658933c5b6f6ad",
+   "newOid": "2db87d9426c64f5d4c40e7841338fd08d297538c",
+   "status": "M",
+   "edits": [
+    "06fcee2ceacbc62fed9210cf419148b5433ea9c8445b5e2a826309526ba1f1b3",
+    "db3c908d6403e18a7b9aac9c808aec4cca4dcde70be4b89d5afe3efe8429a719",
+    "30033e231b8524593d952251315f9dd77e4f9e591c507fa2bb0744a006dc1059"
+   ],
+   "hunks": [
+    {
+     "id": "f4ba3873e4f54982ba2e56eefc7fad26127b2fc3d53a686b572e7fc0b4a8718b",
+     "old": {
+      "start": 68,
+      "count": 0
+     },
+     "new": {
+      "start": 69,
+      "count": 2
+     }
+    },
+    {
+     "id": "b41306263524f3b85adb2c33b370b8b383113aa70a1bbbbff441a36f18eaab26",
+     "old": {
+      "start": 75,
+      "count": 1
+     },
+     "new": {
+      "start": 76,
+      "count": 0
+     }
+    }
+   ],
+   "class": "config",
+   "oldHash": "9fb8f83e205ad12d9f377e5a9a29fe4737f6975af360ad75ee217637ec39e89a",
+   "newHash": "ee028c12b478a52cb7db25b5c9e3be1d85030689516e622ab3f15e64df10a1f0",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "hasRules",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 40,
+      "end": 42,
+      "offset": 1336,
+      "stop": 1433,
+      "id": "5643ab6dfa19046391affc014cfd8a3cfaf552c9274ade4688073a0b40d892f7"
+     },
+     {
+      "name": "Config.constructor",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 57,
+      "end": 119,
+      "offset": 1787,
+      "stop": 3955,
+      "id": "3f8f529590ec5d28b10b028a699b40e25f5f86f1495d4fa3296c71b38b7434c8"
+     },
+     {
+      "name": "Config.loadSpecificConfig",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 126,
+      "end": 140,
+      "offset": 4156,
+      "stop": 4635,
+      "id": "2be7ae13ab0b1b6a213a56797460e22c33d9434ac026fa83101aff7706154f7f"
+     },
+     {
+      "name": "Config.getPersonalConfig",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 147,
+      "end": 163,
+      "offset": 4830,
+      "stop": 5345,
+      "id": "96e66fc5ad5efe9d91da516639ddbe3cae2f57d26da4184c625da7cbe6ecccb5"
+     },
+     {
+      "name": "Config.getConfigHierarchy",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 172,
+      "end": 193,
+      "offset": 5744,
+      "stop": 6511,
+      "id": "21a3b9ae63c6c8287419115cd68792f1c666a68601bfd9e45cf49f2fa7dac6c1"
+     },
+     {
+      "name": "Config.getLocalConfigHierarchy",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 203,
+      "end": 271,
+      "offset": 7038,
+      "stop": 9667,
+      "id": "a55bbabd64e3681e9493cc50053475f3b8f4bf4e1f64e9cfb10585bb478a59c6"
+     },
+     {
+      "name": "Config.getConfigVector",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 283,
+      "end": 304,
+      "offset": 10457,
+      "stop": 11234,
+      "id": "5b3a3782f792fe0f03c2debaa1b6885198ede61b2bf64859c7ffd274d838dd37"
+     },
+     {
+      "name": "Config.findLocalConfigFiles",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 311,
+      "end": 317,
+      "offset": 11492,
+      "stop": 11756,
+      "id": "a28d9f68db1624905a10d01f8ffad35722f4fbd59f61f15c73303e24abc282c4"
+     },
+     {
+      "name": "Config.getConfig",
+      "side": "old",
+      "file": "lib/config.js",
+      "start": 328,
+      "end": 361,
+      "offset": 12403,
+      "stop": 13629,
+      "id": "ffa095244194a33be5143f1fb51f9e8b79071796a9b5f165cd28f29d4e86745e"
+     }
+    ],
+    "new": [
+     {
+      "name": "hasRules",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 40,
+      "end": 42,
+      "offset": 1336,
+      "stop": 1433,
+      "id": "c1e0cb60a7c034f2599f58ae69790f80e0d6a22b9a91caab8e117161d6d4fdbf"
+     },
+     {
+      "name": "Config.constructor",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 57,
+      "end": 120,
+      "offset": 1787,
+      "stop": 3956,
+      "id": "7384d04c8a11ac7b948dacac39fd487e63bbba0668a22f9fa3282c82db76bc15"
+     },
+     {
+      "name": "Config.loadSpecificConfig",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 127,
+      "end": 141,
+      "offset": 4157,
+      "stop": 4636,
+      "id": "0a44a37fd4fed446fc9500d77ff136afbf5c3a33e3351f04881f5c3e7a267bf7"
+     },
+     {
+      "name": "Config.getPersonalConfig",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 148,
+      "end": 164,
+      "offset": 4831,
+      "stop": 5346,
+      "id": "b701f2cfb3587bfa76e4f7450ad1154727e7bcb22c877a22dd1c6c68c0a2ed33"
+     },
+     {
+      "name": "Config.getConfigHierarchy",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 173,
+      "end": 194,
+      "offset": 5745,
+      "stop": 6512,
+      "id": "52d9720638459281d327b51c7035d7eda26db744d0748743e4b04c271a78f75f"
+     },
+     {
+      "name": "Config.getLocalConfigHierarchy",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 204,
+      "end": 272,
+      "offset": 7039,
+      "stop": 9668,
+      "id": "ebed28c9e8f5c1f86722a24d2e87ce831fe875530fef7a9ace81d7c44c79ced3"
+     },
+     {
+      "name": "Config.getConfigVector",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 284,
+      "end": 305,
+      "offset": 10458,
+      "stop": 11235,
+      "id": "3a06e32a119ae6c231c7986e2d5b6b3cdba2bb83b7d7bfd0e8fdb3a88ccc5b42"
+     },
+     {
+      "name": "Config.findLocalConfigFiles",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 312,
+      "end": 318,
+      "offset": 11493,
+      "stop": 11757,
+      "id": "3f53bced280f9d25e866400d01f2ef9e1af09aafff1369392845a30cd59feb3d"
+     },
+     {
+      "name": "Config.getConfig",
+      "side": "new",
+      "file": "lib/config.js",
+      "start": 329,
+      "end": 362,
+      "offset": 12404,
+      "stop": 13630,
+      "id": "537d3dccac83b8bb2a2cbda88a42f73934d23c2e0ec9f3a54ca70eb415d50a38"
+     }
+    ]
+   }
+  },
+  {
+   "id": "9ec615470be4f56354b6f6b0d1880bbc54f44ba48a3412c32d2e99a76df88e84",
+   "file": "lib/config/config-file.js",
+   "oldPath": "lib/config/config-file.js",
+   "newPath": "lib/config/config-file.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "832529952879f4340b2075fd4f8d019be53079bb",
+   "newOid": "c9b6a432d2357f9082480d1727acbf23b14af892",
+   "status": "M",
+   "edits": [
+    "56f955b82128ec93bdc2078ab94866ae89552c5a5a9790b02e92c26225f9737e",
+    "c83c1da2d334c964466448683cb28e26ece70b7b4aba51b44705412bce5991bb",
+    "8c2e39b4f627d0d16061b3141ae2a5312e9595d45f6d55fd85393987a46ef3c1",
+    "3dcf3199278a05ade21ec2dc301a39048ac0613f4ffaa4a90af0d6ea640429ad",
+    "dd0c10248e4f81c7910fd4f7721e9756d7ac8358190580b5458f027b15022d47"
+   ],
+   "hunks": [
+    {
+     "id": "8805645054f2d253a100d9e3544590f4ff04a10973b9744e8a367ad2970d4d80",
+     "old": {
+      "start": 562,
+      "count": 0
+     },
+     "new": {
+      "start": 563,
+      "count": 1
+     }
+    },
+    {
+     "id": "ffc1358c29621c29916f58609d5fedc214ad997744e73454f289bfffbbef5f23",
+     "old": {
+      "start": 566,
+      "count": 2
+     },
+     "new": {
+      "start": 567,
+      "count": 2
+     }
+    }
+   ],
+   "class": "config",
+   "oldHash": "7b1889b34bb4be52f284f862d409f00e3d322982b46751590aeeac7f44ae59e7",
+   "newHash": "49dc9eb33cc9c882f272cbb0690ee6bb4ec2da56deccd5afa9d350d52861f482",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "sortByKey",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 40,
+      "end": 42,
+      "offset": 1372,
+      "stop": 1435,
+      "id": "73b977e18044fd86decc3c36512d51f7295ba8b0b19b3dd81786bf8e2a4e5586"
+     },
+     {
+      "name": "readFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 65,
+      "end": 67,
+      "offset": 1995,
+      "stop": 2095,
+      "id": "571fc886191d1f2677c798633b120dce46f16cf7ffe54a0ba86056d978d4d62e"
+     },
+     {
+      "name": "isFilePath",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 77,
+      "end": 79,
+      "offset": 2475,
+      "stop": 2582,
+      "id": "8f14ee9324f261a912130244ffb40ce20613162d688f16b7fd8abaa3c1b03840"
+     },
+     {
+      "name": "loadYAMLConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 88,
+      "end": 103,
+      "offset": 2805,
+      "stop": 3294,
+      "id": "3c4c92e2c393a681fff9a3cb8d819b28e90b570a2ae89febd35fd2c48fc9f21c"
+     },
+     {
+      "name": "loadJSONConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 112,
+      "end": 122,
+      "offset": 3517,
+      "stop": 3860,
+      "id": "dd5d9b9918fb37deb6e0b6b48198474dad6e7af0f232713e4377280fec80809f"
+     },
+     {
+      "name": "loadLegacyConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 131,
+      "end": 144,
+      "offset": 4097,
+      "stop": 4570,
+      "id": "291050c2ca737b87848bb5e5e5e8904fece6e40f55ffc39e694fb8c166030d34"
+     },
+     {
+      "name": "loadJSConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 153,
+      "end": 162,
+      "offset": 4799,
+      "stop": 5123,
+      "id": "b7ff8bd2a2d5b3862c7df930874f0c62e405fd54fd94102fb0c7df57a9d2c77d"
+     },
+     {
+      "name": "loadPackageJSONConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 171,
+      "end": 180,
+      "offset": 5354,
+      "stop": 5723,
+      "id": "b80288f33c7e711ae79c7747a1884a15d8b99feba9d7db22bb9bfd360a1d97b2"
+     },
+     {
+      "name": "configMissingError",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 188,
+      "end": 196,
+      "offset": 5922,
+      "stop": 6175,
+      "id": "78b79d29890ccd57e1ea015ce4e8e04788c6a12e58197e98ec1200e9ffa81cde"
+     },
+     {
+      "name": "loadConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 205,
+      "end": 241,
+      "offset": 6442,
+      "stop": 7482,
+      "id": "35c53356eff34816dc1d2aa2123819284f9f9deed24b50ff2dbae65cdee2093c"
+     },
+     {
+      "name": "writeJSONConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 250,
+      "end": 256,
+      "offset": 7685,
+      "stop": 7907,
+      "id": "934158a03ebf5e8351f5567968c2e18a7f05a484e6ce0db5041a63c4e27b45f7"
+     },
+     {
+      "name": "writeYAMLConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 265,
+      "end": 274,
+      "offset": 8110,
+      "stop": 8423,
+      "id": "57456a65dd3c7336db40ae9e384f595f093e95b6ea2b6cc41aa308f883e947c3"
+     },
+     {
+      "name": "writeJSConfigFile",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 283,
+      "end": 289,
+      "offset": 8632,
+      "stop": 8873,
+      "id": "8262dd8ecfb8654711c21ed725e0b294c15728bd4581a0a482a07aed59393426"
+     },
+     {
+      "name": "write",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 299,
+      "end": 317,
+      "offset": 9120,
+      "stop": 9579,
+      "id": "820fc88e34d16cfebb6c816a0e1ab6af09595e57adf2ca7bf994fd9062e50817"
+     },
+     {
+      "name": "getBaseDir",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 327,
+      "end": 343,
+      "offset": 9929,
+      "stop": 10470,
+      "id": "dc5b432ebd913f2f39af0af57136c96e9edda05963686828965041bb1ea821f0"
+     },
+     {
+      "name": "getLookupPath",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 352,
+      "end": 356,
+      "offset": 10728,
+      "stop": 10866,
+      "id": "e38272d16f78d2733904f31515263efd8267cc080ffdf269d41592abb859489b"
+     },
+     {
+      "name": "getEslintCoreConfigPath",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 364,
+      "end": 383,
+      "offset": 11028,
+      "stop": 11568,
+      "id": "43c9475b3569c59d3960e62cb75ed92f174c4c817423d8d3820da9998b138235"
+     },
+     {
+      "name": "applyExtends",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 396,
+      "end": 437,
+      "offset": 12063,
+      "stop": 13639,
+      "id": "831860884641372e4c65020cf23d5e5c03b85b338621fcc368890944d6ec6c86"
+     },
+     {
+      "name": "normalizePackageName",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 446,
+      "end": 481,
+      "offset": 13893,
+      "stop": 15141,
+      "id": "83289c29c8c35d724603da5f97ff1b7161d3783ab9c2b797cd5b261850eed469"
+     },
+     {
+      "name": "resolve",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 494,
+      "end": 516,
+      "offset": 15720,
+      "stop": 16735,
+      "id": "48ac281c285ee2fefc61d238963682e115c864e3e5496d08f42252167529b6f3"
+     },
+     {
+      "name": "loadFromDisk",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 524,
+      "end": 558,
+      "offset": 16998,
+      "stop": 18241,
+      "id": "c1c3c363811d8df27cd88244edb69c5a3add54ef75d7b7a6acbd1b32a56f291d"
+     },
+     {
+      "name": "loadObject",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 566,
+      "end": 568,
+      "offset": 18474,
+      "stop": 18592,
+      "id": "b126cd75a5f8958775531e7c17eefd5acd839c493643cf522cdabf5b57a941c9"
+     },
+     {
+      "name": "load",
+      "side": "old",
+      "file": "lib/config/config-file.js",
+      "start": 579,
+      "end": 597,
+      "offset": 19017,
+      "stop": 19574,
+      "id": "8cf1dacc157d0f7861fe29a16a163cc4d6ba0c6b708ff746987b61df9e3fa791"
+     }
+    ],
+    "new": [
+     {
+      "name": "sortByKey",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 40,
+      "end": 42,
+      "offset": 1372,
+      "stop": 1435,
+      "id": "19082ddc3e743378bebda402f9aa49e405b2277d842255c09eade96e89162dbe"
+     },
+     {
+      "name": "readFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 65,
+      "end": 67,
+      "offset": 1995,
+      "stop": 2095,
+      "id": "6365fd22c4b3c333819cb65f9d925e3fc79356843a8aab519e4f3e33878a59b0"
+     },
+     {
+      "name": "isFilePath",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 77,
+      "end": 79,
+      "offset": 2475,
+      "stop": 2582,
+      "id": "75ec0bdc78e2379ab2344bac2a0f3d09fa2e9a3006295fea4b0fb81b3d493aff"
+     },
+     {
+      "name": "loadYAMLConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 88,
+      "end": 103,
+      "offset": 2805,
+      "stop": 3294,
+      "id": "6e5da9f4745c62a4e3ebaae36b460d3c47c4a874a21e38698797ce8b8c42710f"
+     },
+     {
+      "name": "loadJSONConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 112,
+      "end": 122,
+      "offset": 3517,
+      "stop": 3860,
+      "id": "ab50d593ea0e8ee62358c4ffb88fed5845796c6ee324dd44fabca85b67b96f75"
+     },
+     {
+      "name": "loadLegacyConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 131,
+      "end": 144,
+      "offset": 4097,
+      "stop": 4570,
+      "id": "1f746c383d5ba6c2e2db7926ef1f3751a8294a9cf36232db8ef4fbf94fc2a66f"
+     },
+     {
+      "name": "loadJSConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 153,
+      "end": 162,
+      "offset": 4799,
+      "stop": 5123,
+      "id": "1ffebdd6f50d98954ead0cd221a72c624fa6303a98290238b70b38152acf1c91"
+     },
+     {
+      "name": "loadPackageJSONConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 171,
+      "end": 180,
+      "offset": 5354,
+      "stop": 5723,
+      "id": "37ab9f22c3a1dfecf2a52eca788c7752b0cdb9f94dd855ad814867506b1233fd"
+     },
+     {
+      "name": "configMissingError",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 188,
+      "end": 196,
+      "offset": 5922,
+      "stop": 6175,
+      "id": "2a1e1915c27cc7f1620ab30333ac55db8f217f565841939e2dd796ae62083d9a"
+     },
+     {
+      "name": "loadConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 205,
+      "end": 241,
+      "offset": 6442,
+      "stop": 7482,
+      "id": "4c5099992afb5b88f4101087408670f742c288fed366bdcb10a75d043c03eace"
+     },
+     {
+      "name": "writeJSONConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 250,
+      "end": 256,
+      "offset": 7685,
+      "stop": 7907,
+      "id": "2d3eefb9a538dcdea75184734f0c52a33172d661a6d45829512dec7892d02d0f"
+     },
+     {
+      "name": "writeYAMLConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 265,
+      "end": 274,
+      "offset": 8110,
+      "stop": 8423,
+      "id": "5d2017e7dd34f3a75a237c6dddd7bda7ab4639a92afc444c093250bbd8acad58"
+     },
+     {
+      "name": "writeJSConfigFile",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 283,
+      "end": 289,
+      "offset": 8632,
+      "stop": 8873,
+      "id": "d674433bb17ee963750079974faca41ad816d014baffc68838c88e3767d5617a"
+     },
+     {
+      "name": "write",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 299,
+      "end": 317,
+      "offset": 9120,
+      "stop": 9579,
+      "id": "f8b53bc097d4de33238cb8b3e9adfa294daebe018dcc5aa218c13e14173135ed"
+     },
+     {
+      "name": "getBaseDir",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 327,
+      "end": 343,
+      "offset": 9929,
+      "stop": 10470,
+      "id": "27dd49889299657e134a368c6bb71544121505c1ae2ceb83d87b77e498a7928f"
+     },
+     {
+      "name": "getLookupPath",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 352,
+      "end": 356,
+      "offset": 10728,
+      "stop": 10866,
+      "id": "20342824654986b4515f4fcb87d00e33c15123de898fbe26f62fb0282d5e6052"
+     },
+     {
+      "name": "getEslintCoreConfigPath",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 364,
+      "end": 383,
+      "offset": 11028,
+      "stop": 11568,
+      "id": "f59a0fa393299d8a5f0eb142db810bd2673b617236874a7e6d5715f19c301f2f"
+     },
+     {
+      "name": "applyExtends",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 396,
+      "end": 437,
+      "offset": 12063,
+      "stop": 13639,
+      "id": "aeb014d3e0e9853a3b82aac397fbc7cbf892f90079de02e6763ef1bed5e60eaa"
+     },
+     {
+      "name": "normalizePackageName",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 446,
+      "end": 481,
+      "offset": 13893,
+      "stop": 15141,
+      "id": "59c3a28cd3c24ae4538e97ba49fd467e49a898eda5c952bb983cfd18e49588af"
+     },
+     {
+      "name": "resolve",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 494,
+      "end": 516,
+      "offset": 15720,
+      "stop": 16735,
+      "id": "f9dd461a3781b03924c91e648b483931dbb95421f26b81bc61edf0595360d657"
+     },
+     {
+      "name": "loadFromDisk",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 524,
+      "end": 558,
+      "offset": 16998,
+      "stop": 18241,
+      "id": "eabe73771c9614a08b1a3d8b35e6bb0e88249ef44a7a95752ca864c853d630ad"
+     },
+     {
+      "name": "loadObject",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 567,
+      "end": 569,
+      "offset": 18539,
+      "stop": 18687,
+      "id": "df48acf084b326569979653c3d75c4466e559f8188bc1f66fa984ff7dd9e1f7e"
+     },
+     {
+      "name": "load",
+      "side": "new",
+      "file": "lib/config/config-file.js",
+      "start": 580,
+      "end": 598,
+      "offset": 19112,
+      "stop": 19669,
+      "id": "e37e85d41f379fac4f43bcea496cdaa347e32bde37e0676a7bc0264cad66bd3a"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "06fcee2ceacbc62fed9210cf419148b5433ea9c8445b5e2a826309526ba1f1b3",
+   "fileId": "66673e5fab560bf8fea32dd0b1d4bcdd33097b69daacb79d6fffacba12059a6d",
+   "file": "lib/config.js",
+   "class": "config",
+   "kind": "text",
+   "hunkId": "f4ba3873e4f54982ba2e56eefc7fad26127b2fc3d53a686b572e7fc0b4a8718b",
+   "side": "new",
+   "old": {
+    "start": 68,
+    "count": 0
+   },
+   "new": {
+    "start": 69,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2202,
+    "end": 2248
+   },
+   "links": [
+    {
+     "id": "7384d04c8a11ac7b948dacac39fd487e63bbba0668a22f9fa3282c82db76bc15",
+     "file": "lib/config.js",
+     "unit": "Config.constructor",
+     "side": "new",
+     "start": 57,
+     "end": 120
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ClassDeclaration"
+   },
+   "primary": {
+    "kind": "artifact",
+    "reason": "config",
+    "class": "config"
+   }
+  },
+  {
+   "id": "db3c908d6403e18a7b9aac9c808aec4cca4dcde70be4b89d5afe3efe8429a719",
+   "fileId": "66673e5fab560bf8fea32dd0b1d4bcdd33097b69daacb79d6fffacba12059a6d",
+   "file": "lib/config.js",
+   "class": "config",
+   "kind": "text",
+   "hunkId": "f4ba3873e4f54982ba2e56eefc7fad26127b2fc3d53a686b572e7fc0b4a8718b",
+   "side": "new",
+   "old": {
+    "start": 68,
+    "count": 0
+   },
+   "new": {
+    "start": 70,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2248,
+    "end": 2249
+   },
+   "links": [
+    {
+     "id": "7384d04c8a11ac7b948dacac39fd487e63bbba0668a22f9fa3282c82db76bc15",
+     "file": "lib/config.js",
+     "unit": "Config.constructor",
+     "side": "new",
+     "start": 57,
+     "end": 120
+    }
+   ],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "artifact",
+    "reason": "config",
+    "class": "config"
+   }
+  },
+  {
+   "id": "30033e231b8524593d952251315f9dd77e4f9e591c507fa2bb0744a006dc1059",
+   "fileId": "66673e5fab560bf8fea32dd0b1d4bcdd33097b69daacb79d6fffacba12059a6d",
+   "file": "lib/config.js",
+   "class": "config",
+   "kind": "text",
+   "hunkId": "b41306263524f3b85adb2c33b370b8b383113aa70a1bbbbff441a36f18eaab26",
+   "side": "old",
+   "old": {
+    "start": 75,
+    "count": 1
+   },
+   "new": {
+    "start": 76,
+    "count": 0
+   },
+   "offsets": {
+    "start": 2457,
+    "end": 2503
+   },
+   "links": [
+    {
+     "id": "3f8f529590ec5d28b10b028a699b40e25f5f86f1495d4fa3296c71b38b7434c8",
+     "file": "lib/config.js",
+     "unit": "Config.constructor",
+     "side": "old",
+     "start": 57,
+     "end": 119
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ClassDeclaration"
+   },
+   "primary": {
+    "kind": "artifact",
+    "reason": "config",
+    "class": "config"
+   }
+  },
+  {
+   "id": "56f955b82128ec93bdc2078ab94866ae89552c5a5a9790b02e92c26225f9737e",
+   "fileId": "9ec615470be4f56354b6f6b0d1880bbc54f44ba48a3412c32d2e99a76df88e84",
+   "file": "lib/config/config-file.js",
+   "class": "config",
+   "kind": "text",
+   "hunkId": "8805645054f2d253a100d9e3544590f4ff04a10973b9744e8a367ad2970d4d80",
+   "side": "new",
+   "old": {
+    "start": 562,
+    "count": 0
+   },
+   "new": {
+    "start": 563,
+    "count": 1
+   },
+   "offsets": {
+    "start": 18358,
+    "end": 18423
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "primary": {
+    "kind": "artifact",
+    "reason": "config",
+    "class": "config"
+   }
+  },
+  {
+   "id": "c83c1da2d334c964466448683cb28e26ece70b7b4aba51b44705412bce5991bb",
+   "fileId": "9ec615470be4f56354b6f6b0d1880bbc54f44ba48a3412c32d2e99a76df88e84",
+   "file": "lib/config/config-file.js",
+   "class": "config",
+   "kind": "text",
+   "hunkId": "ffc1358c29621c29916f58609d5fedc214ad997744e73454f289bfffbbef5f23",
+   "side": "old",
+   "old": {
+    "start": 566,
+    "count": 1
+   },
+   "new": {
+    "start": 567,
+    "count": 0
+   },
+   "offsets": {
+    "start": 18474,
+    "end": 18510
+   },
+   "links": [
+    {
+     "id": "b126cd75a5f8958775531e7c17eefd5acd839c493643cf522cdabf5b57a941c9",
+     "file": "lib/config/config-file.js",
+     "unit": "loadObject",
+     "side": "old",
+     "start": 566,
+     "end": 568
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "artifact",
+    "reason": "config",
+    "class": "config"
+   }
+  },
+  {
+   "id": "8c2e39b4f627d0d16061b3141ae2a5312e9595d45f6d55fd85393987a46ef3c1",
+   "fileId": "9ec615470be4f56354b6f6b0d1880bbc54f44ba48a3412c32d2e99a76df88e84",
+   "file": "lib/config/config-file.js",
+   "class": "config",
+   "kind": "text",
+   "hunkId": "ffc1358c29621c29916f58609d5fedc214ad997744e73454f289bfffbbef5f23",
+   "side": "old",
+   "old": {
+    "start": 567,
+    "count": 1
+   },
+   "new": {
+    "start": 567,
+    "count": 0
+   },
+   "offsets": {
+    "start": 18510,
+    "end": 18591
+   },
+   "links": [
+    {
+     "id": "b126cd75a5f8958775531e7c17eefd5acd839c493643cf522cdabf5b57a941c9",
+     "file": "lib/config/config-file.js",
+     "unit": "loadObject",
+     "side": "old",
+     "start": 566,
+     "end": 568
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "artifact",
+    "reason": "config",
+    "class": "config"
+   }
+  },
+  {
+   "id": "3dcf3199278a05ade21ec2dc301a39048ac0613f4ffaa4a90af0d6ea640429ad",
+   "fileId": "9ec615470be4f56354b6f6b0d1880bbc54f44ba48a3412c32d2e99a76df88e84",
+   "file": "lib/config/config-file.js",
+   "class": "config",
+   "kind": "text",
+   "hunkId": "ffc1358c29621c29916f58609d5fedc214ad997744e73454f289bfffbbef5f23",
+   "side": "new",
+   "old": {
+    "start": 566,
+    "count": 0
+   },
+   "new": {
+    "start": 567,
+    "count": 1
+   },
+   "offsets": {
+    "start": 18539,
+    "end": 18590
+   },
+   "links": [
+    {
+     "id": "df48acf084b326569979653c3d75c4466e559f8188bc1f66fa984ff7dd9e1f7e",
+     "file": "lib/config/config-file.js",
+     "unit": "loadObject",
+     "side": "new",
+     "start": 567,
+     "end": 569
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "artifact",
+    "reason": "config",
+    "class": "config"
+   }
+  },
+  {
+   "id": "dd0c10248e4f81c7910fd4f7721e9756d7ac8358190580b5458f027b15022d47",
+   "fileId": "9ec615470be4f56354b6f6b0d1880bbc54f44ba48a3412c32d2e99a76df88e84",
+   "file": "lib/config/config-file.js",
+   "class": "config",
+   "kind": "text",
+   "hunkId": "ffc1358c29621c29916f58609d5fedc214ad997744e73454f289bfffbbef5f23",
+   "side": "new",
+   "old": {
+    "start": 566,
+    "count": 0
+   },
+   "new": {
+    "start": 568,
+    "count": 1
+   },
+   "offsets": {
+    "start": 18590,
+    "end": 18686
+   },
+   "links": [
+    {
+     "id": "df48acf084b326569979653c3d75c4466e559f8188bc1f66fa984ff7dd9e1f7e",
+     "file": "lib/config/config-file.js",
+     "unit": "loadObject",
+     "side": "new",
+     "start": 567,
+     "end": 569
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "artifact",
+    "reason": "config",
+    "class": "config"
+   }
+  }
+ ],
+ "id": "e9f1dadbb3fb9cae9fce5ea01e0993f238a18b190db0c199f35c733cf0a1d983",
+ "reconciliation": {
+  "expected": [
+   "06fcee2ceacbc62fed9210cf419148b5433ea9c8445b5e2a826309526ba1f1b3",
+   "db3c908d6403e18a7b9aac9c808aec4cca4dcde70be4b89d5afe3efe8429a719",
+   "30033e231b8524593d952251315f9dd77e4f9e591c507fa2bb0744a006dc1059",
+   "56f955b82128ec93bdc2078ab94866ae89552c5a5a9790b02e92c26225f9737e",
+   "c83c1da2d334c964466448683cb28e26ece70b7b4aba51b44705412bce5991bb",
+   "8c2e39b4f627d0d16061b3141ae2a5312e9595d45f6d55fd85393987a46ef3c1",
+   "3dcf3199278a05ade21ec2dc301a39048ac0613f4ffaa4a90af0d6ea640429ad",
+   "dd0c10248e4f81c7910fd4f7721e9756d7ac8358190580b5458f027b15022d47"
+  ],
+  "unit": [],
+  "artifact": [
+   "06fcee2ceacbc62fed9210cf419148b5433ea9c8445b5e2a826309526ba1f1b3",
+   "db3c908d6403e18a7b9aac9c808aec4cca4dcde70be4b89d5afe3efe8429a719",
+   "30033e231b8524593d952251315f9dd77e4f9e591c507fa2bb0744a006dc1059",
+   "56f955b82128ec93bdc2078ab94866ae89552c5a5a9790b02e92c26225f9737e",
+   "c83c1da2d334c964466448683cb28e26ece70b7b4aba51b44705412bce5991bb",
+   "8c2e39b4f627d0d16061b3141ae2a5312e9595d45f6d55fd85393987a46ef3c1",
+   "3dcf3199278a05ade21ec2dc301a39048ac0613f4ffaa4a90af0d6ea640429ad",
+   "dd0c10248e4f81c7910fd4f7721e9756d7ac8358190580b5458f027b15022d47"
+  ],
+  "unassigned": [],
+  "classes": {
+   "config": {
+    "unit": [],
+    "artifact": [
+     "06fcee2ceacbc62fed9210cf419148b5433ea9c8445b5e2a826309526ba1f1b3",
+     "db3c908d6403e18a7b9aac9c808aec4cca4dcde70be4b89d5afe3efe8429a719",
+     "30033e231b8524593d952251315f9dd77e4f9e591c507fa2bb0744a006dc1059",
+     "56f955b82128ec93bdc2078ab94866ae89552c5a5a9790b02e92c26225f9737e",
+     "c83c1da2d334c964466448683cb28e26ece70b7b4aba51b44705412bce5991bb",
+     "8c2e39b4f627d0d16061b3141ae2a5312e9595d45f6d55fd85393987a46ef3c1",
+     "3dcf3199278a05ade21ec2dc301a39048ac0613f4ffaa4a90af0d6ea640429ad",
+     "dd0c10248e4f81c7910fd4f7721e9756d7ac8358190580b5458f027b15022d47"
+    ],
+    "unassigned": []
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

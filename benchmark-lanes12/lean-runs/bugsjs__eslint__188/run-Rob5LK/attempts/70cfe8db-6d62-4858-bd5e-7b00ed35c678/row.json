@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/valid-jsdoc.js",
+ "unit": "(edit 6f75bde39cb5)",
+ "editIds": [
+  "6f75bde39cb55ababbfbaa92343ed6d304384932d6c126a6e63f923db9185753"
+ ],
+ "lines": [
+  195,
+  195
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

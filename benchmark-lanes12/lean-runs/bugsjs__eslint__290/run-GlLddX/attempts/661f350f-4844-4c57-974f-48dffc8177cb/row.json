@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/space-in-parens.js",
+ "unit": "(edit 4ab2e6603248)",
+ "editIds": [
+  "4ab2e6603248180ad59690d7e09e5c513aeadb5db0a2997b37ae64cd50b13b85"
+ ],
+ "lines": [
+  48,
+  48
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

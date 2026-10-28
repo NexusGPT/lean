@@ -1,0 +1,14 @@
+{
+ "file": "lib/linter.js",
+ "unit": "Linter.verifyAndFix",
+ "lines": [
+  1183,
+  1239
+ ],
+ "caller": true,
+ "verdict": "ASK",
+ "coverage": "checked",
+ "reason": "input 60: parent budget: more than 20000 environment operations",
+ "omitFromReport": true,
+ "laneB": "ASK"
+}

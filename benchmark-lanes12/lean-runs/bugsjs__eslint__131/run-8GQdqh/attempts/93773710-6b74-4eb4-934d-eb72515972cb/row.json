@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-empty.js",
+ "unit": "(edit ce112005da5b)",
+ "editIds": [
+  "ce112005da5b3c666ef862a12d3b00988468abbb0e331f5610784196094bf548"
+ ],
+ "lines": [
+  14,
+  14
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

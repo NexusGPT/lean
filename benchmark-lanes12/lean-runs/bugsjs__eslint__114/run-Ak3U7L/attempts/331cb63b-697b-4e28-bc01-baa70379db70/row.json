@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-extra-boolean-cast.js",
+ "unit": "(edit eef053ab3228)",
+ "editIds": [
+  "eef053ab3228908fd70609757a038d88cfbf787e555499edea9412c07f833e6d"
+ ],
+ "lines": [
+  107,
+  107
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

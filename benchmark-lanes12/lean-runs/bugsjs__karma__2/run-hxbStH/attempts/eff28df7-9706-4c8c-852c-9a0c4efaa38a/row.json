@@ -1,0 +1,21 @@
+{
+ "file": "lib/middleware/proxy.js",
+ "unit": "(edit c4b3596e7771)",
+ "editIds": [
+  "c4b3596e7771cd898d484be4bd538ff116c04bcc4176193a2bae4c9f461dd62c"
+ ],
+ "lines": [
+  49,
+  49
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

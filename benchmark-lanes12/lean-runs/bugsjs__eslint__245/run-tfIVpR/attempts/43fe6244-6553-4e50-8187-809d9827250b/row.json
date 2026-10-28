@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/keyword-spacing.js",
+ "unit": "(edit b3d840e54560)",
+ "editIds": [
+  "b3d840e545606e1544ad6752b6465fc59febbcd1b4e59cf858b8885b6d3750f4"
+ ],
+ "lines": [
+  19,
+  19
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

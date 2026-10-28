@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/capitalized-comments.js",
+ "unit": "(edit b5f12f9271a5)",
+ "editIds": [
+  "b5f12f9271a5c90249e2428e37f423dcb7381dd7e74adddf5b585b7b3d2ec531"
+ ],
+ "lines": [
+  238,
+  238
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

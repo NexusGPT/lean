@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/generator-star-spacing.js",
+ "unit": "(edit 2ed786c04331)",
+ "editIds": [
+  "2ed786c043318e9ad6f1f7bb1dd255ecc0635c99e253488858b85a1e718e250e"
+ ],
+ "lines": [
+  70,
+  70
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

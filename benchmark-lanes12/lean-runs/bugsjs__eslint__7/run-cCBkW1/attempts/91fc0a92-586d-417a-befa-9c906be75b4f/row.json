@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/comma-dangle.js",
+ "unit": "(edit dbdadf45e6e3)",
+ "editIds": [
+  "dbdadf45e6e3746cd3be837166afefd7ec8f38f8808dbf64d6ce3bfd3f4a2947"
+ ],
+ "lines": [
+  44,
+  44
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

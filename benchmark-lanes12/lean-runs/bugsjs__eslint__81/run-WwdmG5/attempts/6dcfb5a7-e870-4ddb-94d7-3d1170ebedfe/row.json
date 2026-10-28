@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/quotes.js",
+ "unit": "(edit ff4fa217cde1)",
+ "editIds": [
+  "ff4fa217cde16ae1c2eaf8191904b472cddf344507f12e873d33940630f4ad29"
+ ],
+ "lines": [
+  128,
+  128
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

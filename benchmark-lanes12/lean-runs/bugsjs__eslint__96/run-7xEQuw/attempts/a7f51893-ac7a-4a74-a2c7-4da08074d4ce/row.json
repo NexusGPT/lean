@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/comma-dangle.js",
+ "unit": "(edit 94d89c6e8b73)",
+ "editIds": [
+  "94d89c6e8b733926df6f09a9fd65265854f996916489d7f6fb8d801fe4e9d4eb"
+ ],
+ "lines": [
+  16,
+  16
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

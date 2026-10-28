@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-extra-boolean-cast.js",
+ "unit": "(edit c5143e58fd69)",
+ "editIds": [
+  "c5143e58fd692ff9d7365d977e584be0df0d70d3b6b363952bbb1a6aa962c62c"
+ ],
+ "lines": [
+  102,
+  102
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

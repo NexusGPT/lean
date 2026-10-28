@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-empty-character-class.js",
+ "unit": "(edit 7fbef0c4e6de)",
+ "editIds": [
+  "7fbef0c4e6def447a3986bf50af0fa0e6e8d9f3ed49f8c2a27b6c93aaaa0eafd"
+ ],
+ "lines": [
+  24,
+  24
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

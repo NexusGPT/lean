@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-useless-computed-key.js",
+ "unit": "(edit 06be92482855)",
+ "editIds": [
+  "06be924828555b4cdbb18b20dfc2b78f134499877ad4f7229c8bdb5f419fa049"
+ ],
+ "lines": [
+  59,
+  59
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

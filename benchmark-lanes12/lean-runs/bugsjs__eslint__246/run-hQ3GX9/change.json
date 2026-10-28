@@ -1,0 +1,1630 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "dffc8e01d20f263a0b8cb0edbe0e917e27a81b83",
+ "head": "8739a5a861c804971c5777874a9c86a05983e1ab",
+ "files": [
+  {
+   "id": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "oldPath": "lib/rules/padded-blocks.js",
+   "newPath": "lib/rules/padded-blocks.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "edb44637bea92f47367c0996b6723f34849ac3c8",
+   "newOid": "12d227f6b118089e021aea329efd07352a273e28",
+   "status": "M",
+   "edits": [
+    "132718e7efe362474488ab8d800cd2c377d6177ade259b7127be94c3cb1107c8",
+    "52db4ed982eca309a711132d3993be7fe1babe3b55f4a19ab4c3e73ab95cc871",
+    "c9d6e1c36d71b825a2e27ec8a0615a85cee7a7ff571c8214e7c81ca9e677f4dd",
+    "a8359455e4bc4623a07db6eed53d1091443eb8df772aa9dfbd69537230952754",
+    "8590422c8e6903f2cc189bbb30f0c3d3d2d22bc3d3b502b2192fc4b48e6b298d",
+    "7ddad2178a03ed9f6ead3878a07f0b0fe432f5421e502090f2a8c6a1483e7285",
+    "fbafb5597109f895faf89777039d8d8f115aa611d38b61339dd8dfd4300f9d25",
+    "086dfeca0e0cea5c3ea3fd41fda95d1b4ae30ad247a60250fe5fb6226e3a819f",
+    "a1bb81deee72c33b69f0ad98318a30a6b36c5fd666d996a1b84dde51864c6dde",
+    "334e8f47129be0dd55d74ac88cd8ee9c8cdfc896c05873b69e70b15e41fad469",
+    "b9538505904184b50a9139e34b1963f5759cf7a457b8075a0c80a065481927b5",
+    "b699f0ea80d69650d5e58f25524507ded713241b47eb2c30cb00df5cf2d12e60",
+    "b92a932fe1ec5ee04b4285a2ccafa09120d027b2b39e6eecceb8c7907eb6273b",
+    "754e28c3f202d770ad21ce6266d5b5109b372fc96408a7bef3ac078abbc1b9dc",
+    "94e7b8ace717cca76e0dd5a3874d762a2ae8f53f7ff59c88a30881b8c6e72064",
+    "0cb62a12a234f4d13e524dfdd8d0cabb70365f440c05ab786a17e5be282b8e90",
+    "a83464409110f8fe45ab9bd7575ec0cc4888d020603bfa34158db3f5e16985e6",
+    "5afda3515784e3af30db6278610a8cdf96e0cc0084f7cb14a1b423e5800cc16c",
+    "aec50a1e710085c158af4402c7f9a666ab697ac141156f70875dd5d13db81e42",
+    "ee7f736a8b57275bfad41fb980295df2cd2cc36abe59fa684b7393a06afa4663",
+    "e0d0e5feed5cd2504b8a708f535aa7d5d9412c15c4bd2064a53a200346c22893",
+    "867496f219d20b726e20e59ca6a235b6181b12ff416bc9d185c4ef6a46026213",
+    "0c075a576a86f1944267c1578799f69869f494886311a7e30f75710a6e4bc874",
+    "9666aee84d394f4c1e0c3d5d766801fd033b383504c18e832e408976e04bd7b8",
+    "40aa89f80da001ab425e4f89423632bb5d1ba2fe628ef1eb5f6371bcf7b173fc",
+    "e8a8602382f3fae3c709bb2caae5a1082f2c72ba3866017c9cbe2c5e7e856c70",
+    "2ba1f9b9a0bd038d8741b73e4a540fb6d7ec96fbb16ed1d7980d9d9ff513e99f",
+    "6808afd5a13b5460903ded0b9af9b21c8b37e04dbd19e56e16f2f3ba5318c824",
+    "8923529aa1e56c92ed4367f8287e7cc0ca0d46893031adb5ae109366af55ae24",
+    "0449b9fc3756d8ae317e3ee28670fa852bfff95896632ba478518e1b6237907b",
+    "9ff1d94d9179cac15a8168d905cb89f4c56758f570d9c33eee55d939d88f8922",
+    "cd648e2e6ce6ce4b42f8ebc5cb0e6de27032c403c4322ae1ed62dbd58d8af0fe",
+    "96568f5e3996733a050a688b96d984a2e3755e034e12de51229ebdc361ca33c5",
+    "8d5d9f3f867b270b9dfa5ddb04d769837675c6fc4308d22dfd1e066efc695944",
+    "d4854cfec3211b2d6ca7debfd429905b712e5ee38bf817dba3a8255a1e6f9841",
+    "09d2800977fa8380b37fef18d49e5ea694e85f0f6e49a232758c9cdcd946d0af",
+    "a1c1b3eacd2108eab51dc097f2433209238a519f0b1f881aaee9ac2f2130d854",
+    "4192231b8a6aa98971785f203e9cf1be543b7e5d00195a5e9f69234c9ebfc3d0",
+    "89b54314b1a9d6c6d0a2a20cf53a0f52a26186b1f96135758cec17a8432d29e2",
+    "b5ca5fb74fb601c45652267d853cc6caa44a6aee5cbd6a7723a8d6b580a01684",
+    "f11f5438227ef87e46868f85ae7b405155aa027cea3b9bb4f986893b397c9266"
+   ],
+   "hunks": [
+    {
+     "id": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+     "old": {
+      "start": 18,
+      "count": 0
+     },
+     "new": {
+      "start": 19,
+      "count": 24
+     }
+    },
+    {
+     "id": "830f5edfc3633b4644672bf2a186e62e66d9b93924ad38e5d7020aa239aa4bf4",
+     "old": {
+      "start": 29,
+      "count": 1
+     },
+     "new": {
+      "start": 53,
+      "count": 2
+     }
+    },
+    {
+     "id": "e18f4213593e0fdf8e99fa4b394140e83bbf803fef1bdbe6a55b94263db2d21d",
+     "old": {
+      "start": 31,
+      "count": 2
+     },
+     "new": {
+      "start": 56,
+      "count": 2
+     }
+    },
+    {
+     "id": "1d8d33746e579a857f8455f9ab9b05db85f10bb7c9e20280433fa29bc55f4299",
+     "old": {
+      "start": 46,
+      "count": 1
+     },
+     "new": {
+      "start": 71,
+      "count": 2
+     }
+    },
+    {
+     "id": "ce979da5e7a9ff38f5e21ab4fb6aad129a870ca4ea210ba1ae37a3087ff863a4",
+     "old": {
+      "start": 48,
+      "count": 1
+     },
+     "new": {
+      "start": 74,
+      "count": 2
+     }
+    },
+    {
+     "id": "6273eed8c2fa536e0ce0754af8ee6f0aeb4f4d1c3121896be351b2b8ec157535",
+     "old": {
+      "start": 50,
+      "count": 2
+     },
+     "new": {
+      "start": 77,
+      "count": 2
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "1cd43604550bcba45ef5e88ddd1d3f8e123b28737f2c69dc65083f34b2f7704c",
+   "newHash": "efd4f792ceabb88fc740fc384df482ee04ec812866fca6ecbcfe174b9ca7b183",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "132718e7efe362474488ab8d800cd2c377d6177ade259b7127be94c3cb1107c8",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 19,
+    "count": 1
+   },
+   "offsets": {
+    "start": 610,
+    "end": 618
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "52db4ed982eca309a711132d3993be7fe1babe3b55f4a19ab4c3e73ab95cc871",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 20,
+    "count": 1
+   },
+   "offsets": {
+    "start": 618,
+    "end": 691
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "c9d6e1c36d71b825a2e27ec8a0615a85cee7a7ff571c8214e7c81ca9e677f4dd",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 21,
+    "count": 1
+   },
+   "offsets": {
+    "start": 691,
+    "end": 734
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "a8359455e4bc4623a07db6eed53d1091443eb8df772aa9dfbd69537230952754",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 22,
+    "count": 1
+   },
+   "offsets": {
+    "start": 734,
+    "end": 789
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8590422c8e6903f2cc189bbb30f0c3d3d2d22bc3d3b502b2192fc4b48e6b298d",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 23,
+    "count": 1
+   },
+   "offsets": {
+    "start": 789,
+    "end": 797
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "7ddad2178a03ed9f6ead3878a07f0b0fe432f5421e502090f2a8c6a1483e7285",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 24,
+    "count": 1
+   },
+   "offsets": {
+    "start": 797,
+    "end": 836
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "fbafb5597109f895faf89777039d8d8f115aa611d38b61339dd8dfd4300f9d25",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 25,
+    "count": 1
+   },
+   "offsets": {
+    "start": 836,
+    "end": 888
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "086dfeca0e0cea5c3ea3fd41fda95d1b4ae30ad247a60250fe5fb6226e3a819f",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 26,
+    "count": 1
+   },
+   "offsets": {
+    "start": 888,
+    "end": 889
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "a1bb81deee72c33b69f0ad98318a30a6b36c5fd666d996a1b84dde51864c6dde",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 27,
+    "count": 1
+   },
+   "offsets": {
+    "start": 889,
+    "end": 944
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "334e8f47129be0dd55d74ac88cd8ee9c8cdfc896c05873b69e70b15e41fad469",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 28,
+    "count": 1
+   },
+   "offsets": {
+    "start": 944,
+    "end": 999
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b9538505904184b50a9139e34b1963f5759cf7a457b8075a0c80a065481927b5",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 29,
+    "count": 1
+   },
+   "offsets": {
+    "start": 999,
+    "end": 1049
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b699f0ea80d69650d5e58f25524507ded713241b47eb2c30cb00df5cf2d12e60",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 30,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1049,
+    "end": 1061
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b92a932fe1ec5ee04b4285a2ccafa09120d027b2b39e6eecceb8c7907eb6273b",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 31,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1061,
+    "end": 1067
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "754e28c3f202d770ad21ce6266d5b5109b372fc96408a7bef3ac078abbc1b9dc",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 32,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1067,
+    "end": 1068
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "94e7b8ace717cca76e0dd5a3874d762a2ae8f53f7ff59c88a30881b8c6e72064",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 33,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1068,
+    "end": 1076
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "0cb62a12a234f4d13e524dfdd8d0cabb70365f440c05ab786a17e5be282b8e90",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 34,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1076,
+    "end": 1173
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "a83464409110f8fe45ab9bd7575ec0cc4888d020603bfa34158db3f5e16985e6",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 35,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1173,
+    "end": 1261
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5afda3515784e3af30db6278610a8cdf96e0cc0084f7cb14a1b423e5800cc16c",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 36,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1261,
+    "end": 1342
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "aec50a1e710085c158af4402c7f9a666ab697ac141156f70875dd5d13db81e42",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 37,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1342,
+    "end": 1399
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "ee7f736a8b57275bfad41fb980295df2cd2cc36abe59fa684b7393a06afa4663",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 38,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1399,
+    "end": 1407
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "e0d0e5feed5cd2504b8a708f535aa7d5d9412c15c4bd2064a53a200346c22893",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 39,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1407,
+    "end": 1444
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "867496f219d20b726e20e59ca6a235b6181b12ff416bc9d185c4ef6a46026213",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 40,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1444,
+    "end": 1484
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "0c075a576a86f1944267c1578799f69869f494886311a7e30f75710a6e4bc874",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 41,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1484,
+    "end": 1490
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "9666aee84d394f4c1e0c3d5d766801fd033b383504c18e832e408976e04bd7b8",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "722e442609f95ab53183add33e6d80549f6f8e9b8c49229b9eb199529923a228",
+   "side": "new",
+   "old": {
+    "start": 18,
+    "count": 0
+   },
+   "new": {
+    "start": 42,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1490,
+    "end": 1491
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "whitespace",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "40aa89f80da001ab425e4f89423632bb5d1ba2fe628ef1eb5f6371bcf7b173fc",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "830f5edfc3633b4644672bf2a186e62e66d9b93924ad38e5d7020aa239aa4bf4",
+   "side": "old",
+   "old": {
+    "start": 29,
+    "count": 1
+   },
+   "new": {
+    "start": 53,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1072,
+    "end": 1138
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "e8a8602382f3fae3c709bb2caae5a1082f2c72ba3866017c9cbe2c5e7e856c70",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "830f5edfc3633b4644672bf2a186e62e66d9b93924ad38e5d7020aa239aa4bf4",
+   "side": "new",
+   "old": {
+    "start": 29,
+    "count": 0
+   },
+   "new": {
+    "start": 53,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1953,
+    "end": 2001
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "2ba1f9b9a0bd038d8741b73e4a540fb6d7ec96fbb16ed1d7980d9d9ff513e99f",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "830f5edfc3633b4644672bf2a186e62e66d9b93924ad38e5d7020aa239aa4bf4",
+   "side": "new",
+   "old": {
+    "start": 29,
+    "count": 0
+   },
+   "new": {
+    "start": 54,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2001,
+    "end": 2041
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "6808afd5a13b5460903ded0b9af9b21c8b37e04dbd19e56e16f2f3ba5318c824",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "e18f4213593e0fdf8e99fa4b394140e83bbf803fef1bdbe6a55b94263db2d21d",
+   "side": "old",
+   "old": {
+    "start": 31,
+    "count": 1
+   },
+   "new": {
+    "start": 56,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1139,
+    "end": 1181
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "8923529aa1e56c92ed4367f8287e7cc0ca0d46893031adb5ae109366af55ae24",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "e18f4213593e0fdf8e99fa4b394140e83bbf803fef1bdbe6a55b94263db2d21d",
+   "side": "old",
+   "old": {
+    "start": 32,
+    "count": 1
+   },
+   "new": {
+    "start": 56,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1181,
+    "end": 1240
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "0449b9fc3756d8ae317e3ee28670fa852bfff95896632ba478518e1b6237907b",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "e18f4213593e0fdf8e99fa4b394140e83bbf803fef1bdbe6a55b94263db2d21d",
+   "side": "new",
+   "old": {
+    "start": 31,
+    "count": 0
+   },
+   "new": {
+    "start": 56,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2042,
+    "end": 2110
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "9ff1d94d9179cac15a8168d905cb89f4c56758f570d9c33eee55d939d88f8922",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "e18f4213593e0fdf8e99fa4b394140e83bbf803fef1bdbe6a55b94263db2d21d",
+   "side": "new",
+   "old": {
+    "start": 31,
+    "count": 0
+   },
+   "new": {
+    "start": 57,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2110,
+    "end": 2163
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "cd648e2e6ce6ce4b42f8ebc5cb0e6de27032c403c4322ae1ed62dbd58d8af0fe",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "1d8d33746e579a857f8455f9ab9b05db85f10bb7c9e20280433fa29bc55f4299",
+   "side": "old",
+   "old": {
+    "start": 46,
+    "count": 1
+   },
+   "new": {
+    "start": 71,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1686,
+    "end": 1750
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "96568f5e3996733a050a688b96d984a2e3755e034e12de51229ebdc361ca33c5",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "1d8d33746e579a857f8455f9ab9b05db85f10bb7c9e20280433fa29bc55f4299",
+   "side": "new",
+   "old": {
+    "start": 46,
+    "count": 0
+   },
+   "new": {
+    "start": 71,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2609,
+    "end": 2661
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8d5d9f3f867b270b9dfa5ddb04d769837675c6fc4308d22dfd1e066efc695944",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "1d8d33746e579a857f8455f9ab9b05db85f10bb7c9e20280433fa29bc55f4299",
+   "side": "new",
+   "old": {
+    "start": 46,
+    "count": 0
+   },
+   "new": {
+    "start": 72,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2661,
+    "end": 2708
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "d4854cfec3211b2d6ca7debfd429905b712e5ee38bf817dba3a8255a1e6f9841",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ce979da5e7a9ff38f5e21ab4fb6aad129a870ca4ea210ba1ae37a3087ff863a4",
+   "side": "old",
+   "old": {
+    "start": 48,
+    "count": 1
+   },
+   "new": {
+    "start": 74,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1795,
+    "end": 1862
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "09d2800977fa8380b37fef18d49e5ea694e85f0f6e49a232758c9cdcd946d0af",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ce979da5e7a9ff38f5e21ab4fb6aad129a870ca4ea210ba1ae37a3087ff863a4",
+   "side": "new",
+   "old": {
+    "start": 48,
+    "count": 0
+   },
+   "new": {
+    "start": 74,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2753,
+    "end": 2801
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "a1c1b3eacd2108eab51dc097f2433209238a519f0b1f881aaee9ac2f2130d854",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "ce979da5e7a9ff38f5e21ab4fb6aad129a870ca4ea210ba1ae37a3087ff863a4",
+   "side": "new",
+   "old": {
+    "start": 48,
+    "count": 0
+   },
+   "new": {
+    "start": 75,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2801,
+    "end": 2858
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "4192231b8a6aa98971785f203e9cf1be543b7e5d00195a5e9f69234c9ebfc3d0",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6273eed8c2fa536e0ce0754af8ee6f0aeb4f4d1c3121896be351b2b8ec157535",
+   "side": "old",
+   "old": {
+    "start": 50,
+    "count": 1
+   },
+   "new": {
+    "start": 77,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1863,
+    "end": 1906
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "89b54314b1a9d6c6d0a2a20cf53a0f52a26186b1f96135758cec17a8432d29e2",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6273eed8c2fa536e0ce0754af8ee6f0aeb4f4d1c3121896be351b2b8ec157535",
+   "side": "old",
+   "old": {
+    "start": 51,
+    "count": 1
+   },
+   "new": {
+    "start": 77,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1906,
+    "end": 1989
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "b5ca5fb74fb601c45652267d853cc6caa44a6aee5cbd6a7723a8d6b580a01684",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6273eed8c2fa536e0ce0754af8ee6f0aeb4f4d1c3121896be351b2b8ec157535",
+   "side": "new",
+   "old": {
+    "start": 50,
+    "count": 0
+   },
+   "new": {
+    "start": 77,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2859,
+    "end": 2929
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "f11f5438227ef87e46868f85ae7b405155aa027cea3b9bb4f986893b397c9266",
+   "fileId": "721fbd2399287961bb81d430cc00be504d8ce7c714da0939f0fd967de1e214e0",
+   "file": "lib/rules/padded-blocks.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "6273eed8c2fa536e0ce0754af8ee6f0aeb4f4d1c3121896be351b2b8ec157535",
+   "side": "new",
+   "old": {
+    "start": 50,
+    "count": 0
+   },
+   "new": {
+    "start": 78,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2929,
+    "end": 2978
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "730ba3db4af87eef725c681fabc7004e84e986d60ff5bb313cab251f03db8b20",
+ "reconciliation": {
+  "expected": [
+   "132718e7efe362474488ab8d800cd2c377d6177ade259b7127be94c3cb1107c8",
+   "52db4ed982eca309a711132d3993be7fe1babe3b55f4a19ab4c3e73ab95cc871",
+   "c9d6e1c36d71b825a2e27ec8a0615a85cee7a7ff571c8214e7c81ca9e677f4dd",
+   "a8359455e4bc4623a07db6eed53d1091443eb8df772aa9dfbd69537230952754",
+   "8590422c8e6903f2cc189bbb30f0c3d3d2d22bc3d3b502b2192fc4b48e6b298d",
+   "7ddad2178a03ed9f6ead3878a07f0b0fe432f5421e502090f2a8c6a1483e7285",
+   "fbafb5597109f895faf89777039d8d8f115aa611d38b61339dd8dfd4300f9d25",
+   "086dfeca0e0cea5c3ea3fd41fda95d1b4ae30ad247a60250fe5fb6226e3a819f",
+   "a1bb81deee72c33b69f0ad98318a30a6b36c5fd666d996a1b84dde51864c6dde",
+   "334e8f47129be0dd55d74ac88cd8ee9c8cdfc896c05873b69e70b15e41fad469",
+   "b9538505904184b50a9139e34b1963f5759cf7a457b8075a0c80a065481927b5",
+   "b699f0ea80d69650d5e58f25524507ded713241b47eb2c30cb00df5cf2d12e60",
+   "b92a932fe1ec5ee04b4285a2ccafa09120d027b2b39e6eecceb8c7907eb6273b",
+   "754e28c3f202d770ad21ce6266d5b5109b372fc96408a7bef3ac078abbc1b9dc",
+   "94e7b8ace717cca76e0dd5a3874d762a2ae8f53f7ff59c88a30881b8c6e72064",
+   "0cb62a12a234f4d13e524dfdd8d0cabb70365f440c05ab786a17e5be282b8e90",
+   "a83464409110f8fe45ab9bd7575ec0cc4888d020603bfa34158db3f5e16985e6",
+   "5afda3515784e3af30db6278610a8cdf96e0cc0084f7cb14a1b423e5800cc16c",
+   "aec50a1e710085c158af4402c7f9a666ab697ac141156f70875dd5d13db81e42",
+   "ee7f736a8b57275bfad41fb980295df2cd2cc36abe59fa684b7393a06afa4663",
+   "e0d0e5feed5cd2504b8a708f535aa7d5d9412c15c4bd2064a53a200346c22893",
+   "867496f219d20b726e20e59ca6a235b6181b12ff416bc9d185c4ef6a46026213",
+   "0c075a576a86f1944267c1578799f69869f494886311a7e30f75710a6e4bc874",
+   "9666aee84d394f4c1e0c3d5d766801fd033b383504c18e832e408976e04bd7b8",
+   "40aa89f80da001ab425e4f89423632bb5d1ba2fe628ef1eb5f6371bcf7b173fc",
+   "e8a8602382f3fae3c709bb2caae5a1082f2c72ba3866017c9cbe2c5e7e856c70",
+   "2ba1f9b9a0bd038d8741b73e4a540fb6d7ec96fbb16ed1d7980d9d9ff513e99f",
+   "6808afd5a13b5460903ded0b9af9b21c8b37e04dbd19e56e16f2f3ba5318c824",
+   "8923529aa1e56c92ed4367f8287e7cc0ca0d46893031adb5ae109366af55ae24",
+   "0449b9fc3756d8ae317e3ee28670fa852bfff95896632ba478518e1b6237907b",
+   "9ff1d94d9179cac15a8168d905cb89f4c56758f570d9c33eee55d939d88f8922",
+   "cd648e2e6ce6ce4b42f8ebc5cb0e6de27032c403c4322ae1ed62dbd58d8af0fe",
+   "96568f5e3996733a050a688b96d984a2e3755e034e12de51229ebdc361ca33c5",
+   "8d5d9f3f867b270b9dfa5ddb04d769837675c6fc4308d22dfd1e066efc695944",
+   "d4854cfec3211b2d6ca7debfd429905b712e5ee38bf817dba3a8255a1e6f9841",
+   "09d2800977fa8380b37fef18d49e5ea694e85f0f6e49a232758c9cdcd946d0af",
+   "a1c1b3eacd2108eab51dc097f2433209238a519f0b1f881aaee9ac2f2130d854",
+   "4192231b8a6aa98971785f203e9cf1be543b7e5d00195a5e9f69234c9ebfc3d0",
+   "89b54314b1a9d6c6d0a2a20cf53a0f52a26186b1f96135758cec17a8432d29e2",
+   "b5ca5fb74fb601c45652267d853cc6caa44a6aee5cbd6a7723a8d6b580a01684",
+   "f11f5438227ef87e46868f85ae7b405155aa027cea3b9bb4f986893b397c9266"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "132718e7efe362474488ab8d800cd2c377d6177ade259b7127be94c3cb1107c8",
+   "52db4ed982eca309a711132d3993be7fe1babe3b55f4a19ab4c3e73ab95cc871",
+   "c9d6e1c36d71b825a2e27ec8a0615a85cee7a7ff571c8214e7c81ca9e677f4dd",
+   "a8359455e4bc4623a07db6eed53d1091443eb8df772aa9dfbd69537230952754",
+   "8590422c8e6903f2cc189bbb30f0c3d3d2d22bc3d3b502b2192fc4b48e6b298d",
+   "7ddad2178a03ed9f6ead3878a07f0b0fe432f5421e502090f2a8c6a1483e7285",
+   "fbafb5597109f895faf89777039d8d8f115aa611d38b61339dd8dfd4300f9d25",
+   "086dfeca0e0cea5c3ea3fd41fda95d1b4ae30ad247a60250fe5fb6226e3a819f",
+   "a1bb81deee72c33b69f0ad98318a30a6b36c5fd666d996a1b84dde51864c6dde",
+   "334e8f47129be0dd55d74ac88cd8ee9c8cdfc896c05873b69e70b15e41fad469",
+   "b9538505904184b50a9139e34b1963f5759cf7a457b8075a0c80a065481927b5",
+   "b699f0ea80d69650d5e58f25524507ded713241b47eb2c30cb00df5cf2d12e60",
+   "b92a932fe1ec5ee04b4285a2ccafa09120d027b2b39e6eecceb8c7907eb6273b",
+   "754e28c3f202d770ad21ce6266d5b5109b372fc96408a7bef3ac078abbc1b9dc",
+   "94e7b8ace717cca76e0dd5a3874d762a2ae8f53f7ff59c88a30881b8c6e72064",
+   "0cb62a12a234f4d13e524dfdd8d0cabb70365f440c05ab786a17e5be282b8e90",
+   "a83464409110f8fe45ab9bd7575ec0cc4888d020603bfa34158db3f5e16985e6",
+   "5afda3515784e3af30db6278610a8cdf96e0cc0084f7cb14a1b423e5800cc16c",
+   "aec50a1e710085c158af4402c7f9a666ab697ac141156f70875dd5d13db81e42",
+   "ee7f736a8b57275bfad41fb980295df2cd2cc36abe59fa684b7393a06afa4663",
+   "e0d0e5feed5cd2504b8a708f535aa7d5d9412c15c4bd2064a53a200346c22893",
+   "867496f219d20b726e20e59ca6a235b6181b12ff416bc9d185c4ef6a46026213",
+   "0c075a576a86f1944267c1578799f69869f494886311a7e30f75710a6e4bc874",
+   "9666aee84d394f4c1e0c3d5d766801fd033b383504c18e832e408976e04bd7b8",
+   "40aa89f80da001ab425e4f89423632bb5d1ba2fe628ef1eb5f6371bcf7b173fc",
+   "e8a8602382f3fae3c709bb2caae5a1082f2c72ba3866017c9cbe2c5e7e856c70",
+   "2ba1f9b9a0bd038d8741b73e4a540fb6d7ec96fbb16ed1d7980d9d9ff513e99f",
+   "6808afd5a13b5460903ded0b9af9b21c8b37e04dbd19e56e16f2f3ba5318c824",
+   "8923529aa1e56c92ed4367f8287e7cc0ca0d46893031adb5ae109366af55ae24",
+   "0449b9fc3756d8ae317e3ee28670fa852bfff95896632ba478518e1b6237907b",
+   "9ff1d94d9179cac15a8168d905cb89f4c56758f570d9c33eee55d939d88f8922",
+   "cd648e2e6ce6ce4b42f8ebc5cb0e6de27032c403c4322ae1ed62dbd58d8af0fe",
+   "96568f5e3996733a050a688b96d984a2e3755e034e12de51229ebdc361ca33c5",
+   "8d5d9f3f867b270b9dfa5ddb04d769837675c6fc4308d22dfd1e066efc695944",
+   "d4854cfec3211b2d6ca7debfd429905b712e5ee38bf817dba3a8255a1e6f9841",
+   "09d2800977fa8380b37fef18d49e5ea694e85f0f6e49a232758c9cdcd946d0af",
+   "a1c1b3eacd2108eab51dc097f2433209238a519f0b1f881aaee9ac2f2130d854",
+   "4192231b8a6aa98971785f203e9cf1be543b7e5d00195a5e9f69234c9ebfc3d0",
+   "89b54314b1a9d6c6d0a2a20cf53a0f52a26186b1f96135758cec17a8432d29e2",
+   "b5ca5fb74fb601c45652267d853cc6caa44a6aee5cbd6a7723a8d6b580a01684",
+   "f11f5438227ef87e46868f85ae7b405155aa027cea3b9bb4f986893b397c9266"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "132718e7efe362474488ab8d800cd2c377d6177ade259b7127be94c3cb1107c8",
+     "52db4ed982eca309a711132d3993be7fe1babe3b55f4a19ab4c3e73ab95cc871",
+     "c9d6e1c36d71b825a2e27ec8a0615a85cee7a7ff571c8214e7c81ca9e677f4dd",
+     "a8359455e4bc4623a07db6eed53d1091443eb8df772aa9dfbd69537230952754",
+     "8590422c8e6903f2cc189bbb30f0c3d3d2d22bc3d3b502b2192fc4b48e6b298d",
+     "7ddad2178a03ed9f6ead3878a07f0b0fe432f5421e502090f2a8c6a1483e7285",
+     "fbafb5597109f895faf89777039d8d8f115aa611d38b61339dd8dfd4300f9d25",
+     "086dfeca0e0cea5c3ea3fd41fda95d1b4ae30ad247a60250fe5fb6226e3a819f",
+     "a1bb81deee72c33b69f0ad98318a30a6b36c5fd666d996a1b84dde51864c6dde",
+     "334e8f47129be0dd55d74ac88cd8ee9c8cdfc896c05873b69e70b15e41fad469",
+     "b9538505904184b50a9139e34b1963f5759cf7a457b8075a0c80a065481927b5",
+     "b699f0ea80d69650d5e58f25524507ded713241b47eb2c30cb00df5cf2d12e60",
+     "b92a932fe1ec5ee04b4285a2ccafa09120d027b2b39e6eecceb8c7907eb6273b",
+     "754e28c3f202d770ad21ce6266d5b5109b372fc96408a7bef3ac078abbc1b9dc",
+     "94e7b8ace717cca76e0dd5a3874d762a2ae8f53f7ff59c88a30881b8c6e72064",
+     "0cb62a12a234f4d13e524dfdd8d0cabb70365f440c05ab786a17e5be282b8e90",
+     "a83464409110f8fe45ab9bd7575ec0cc4888d020603bfa34158db3f5e16985e6",
+     "5afda3515784e3af30db6278610a8cdf96e0cc0084f7cb14a1b423e5800cc16c",
+     "aec50a1e710085c158af4402c7f9a666ab697ac141156f70875dd5d13db81e42",
+     "ee7f736a8b57275bfad41fb980295df2cd2cc36abe59fa684b7393a06afa4663",
+     "e0d0e5feed5cd2504b8a708f535aa7d5d9412c15c4bd2064a53a200346c22893",
+     "867496f219d20b726e20e59ca6a235b6181b12ff416bc9d185c4ef6a46026213",
+     "0c075a576a86f1944267c1578799f69869f494886311a7e30f75710a6e4bc874",
+     "9666aee84d394f4c1e0c3d5d766801fd033b383504c18e832e408976e04bd7b8",
+     "40aa89f80da001ab425e4f89423632bb5d1ba2fe628ef1eb5f6371bcf7b173fc",
+     "e8a8602382f3fae3c709bb2caae5a1082f2c72ba3866017c9cbe2c5e7e856c70",
+     "2ba1f9b9a0bd038d8741b73e4a540fb6d7ec96fbb16ed1d7980d9d9ff513e99f",
+     "6808afd5a13b5460903ded0b9af9b21c8b37e04dbd19e56e16f2f3ba5318c824",
+     "8923529aa1e56c92ed4367f8287e7cc0ca0d46893031adb5ae109366af55ae24",
+     "0449b9fc3756d8ae317e3ee28670fa852bfff95896632ba478518e1b6237907b",
+     "9ff1d94d9179cac15a8168d905cb89f4c56758f570d9c33eee55d939d88f8922",
+     "cd648e2e6ce6ce4b42f8ebc5cb0e6de27032c403c4322ae1ed62dbd58d8af0fe",
+     "96568f5e3996733a050a688b96d984a2e3755e034e12de51229ebdc361ca33c5",
+     "8d5d9f3f867b270b9dfa5ddb04d769837675c6fc4308d22dfd1e066efc695944",
+     "d4854cfec3211b2d6ca7debfd429905b712e5ee38bf817dba3a8255a1e6f9841",
+     "09d2800977fa8380b37fef18d49e5ea694e85f0f6e49a232758c9cdcd946d0af",
+     "a1c1b3eacd2108eab51dc097f2433209238a519f0b1f881aaee9ac2f2130d854",
+     "4192231b8a6aa98971785f203e9cf1be543b7e5d00195a5e9f69234c9ebfc3d0",
+     "89b54314b1a9d6c6d0a2a20cf53a0f52a26186b1f96135758cec17a8432d29e2",
+     "b5ca5fb74fb601c45652267d853cc6caa44a6aee5cbd6a7723a8d6b580a01684",
+     "f11f5438227ef87e46868f85ae7b405155aa027cea3b9bb4f986893b397c9266"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

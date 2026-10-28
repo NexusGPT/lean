@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/object-curly-spacing.js",
+ "unit": "(edit e36f7c608733)",
+ "editIds": [
+  "e36f7c608733a06b38e0a68671dd95a23f2a84c40425e0019161944e9e7bcf5f"
+ ],
+ "lines": [
+  217,
+  217
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

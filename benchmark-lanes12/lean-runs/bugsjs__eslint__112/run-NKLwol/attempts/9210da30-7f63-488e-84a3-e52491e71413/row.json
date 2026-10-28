@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/dot-notation.js",
+ "unit": "(edit 8475d91a83a9)",
+ "editIds": [
+  "8475d91a83a9c32fd39a8aeaaf839fec6bf9061350384531699e92f9768aec4f"
+ ],
+ "lines": [
+  120,
+  120
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

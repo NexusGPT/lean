@@ -1,0 +1,20 @@
+{
+ "file": "lib/eslint.js",
+ "unit": "(edit 5772896d1c43)",
+ "editIds": [
+  "5772896d1c438d0c108600ad961507a5f25b50d7459e71cb027809d468edc70e"
+ ],
+ "lines": [
+  782,
+  782
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

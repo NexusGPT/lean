@@ -1,0 +1,21 @@
+{
+ "file": "lib/plugins/helper/open_graph.js",
+ "unit": "(edit e08481d769d8)",
+ "editIds": [
+  "e08481d769d854f1c636f64312c4cc841d19bf8b640341ec4df130d6a7dacd6b"
+ ],
+ "lines": [
+  89,
+  89
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

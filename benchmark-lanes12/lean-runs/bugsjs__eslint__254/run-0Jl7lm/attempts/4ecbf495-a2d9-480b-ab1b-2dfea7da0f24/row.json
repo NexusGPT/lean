@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/prefer-const.js",
+ "unit": "(edit 2cd351a1b837)",
+ "editIds": [
+  "2cd351a1b83743ae27b23134de95ba3fcb0b8ca9ba0ccf3547cca8fa5160b261"
+ ],
+ "lines": [
+  76,
+  76
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

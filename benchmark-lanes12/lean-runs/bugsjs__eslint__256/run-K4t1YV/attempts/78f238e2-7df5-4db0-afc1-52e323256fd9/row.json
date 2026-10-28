@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-implicit-coercion.js",
+ "unit": "(edit 9e1da997aaf5)",
+ "editIds": [
+  "9e1da997aaf5b9bf854b826002e25f6cd9e683f7b2350a2a77a2a699afe50ba0"
+ ],
+ "lines": [
+  211,
+  211
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

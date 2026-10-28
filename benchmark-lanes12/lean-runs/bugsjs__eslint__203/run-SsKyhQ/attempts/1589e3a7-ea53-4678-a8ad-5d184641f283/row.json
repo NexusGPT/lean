@@ -1,0 +1,20 @@
+{
+ "file": "lib/cli-engine.js",
+ "unit": "(edit 0df986d94bf0)",
+ "editIds": [
+  "0df986d94bf0803b13ebd3c8ed3b9a48a4448afa4bd7808507ba0c098b498d01"
+ ],
+ "lines": [
+  507,
+  507
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

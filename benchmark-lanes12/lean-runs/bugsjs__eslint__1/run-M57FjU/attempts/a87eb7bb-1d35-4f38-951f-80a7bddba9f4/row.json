@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-obj-calls.js",
+ "unit": "(edit 14fcd1d4a340)",
+ "editIds": [
+  "14fcd1d4a34041cfcec60dd7d0ccd020528ba4ccaff924d72791a00be4c2b013"
+ ],
+ "lines": [
+  31,
+  31
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

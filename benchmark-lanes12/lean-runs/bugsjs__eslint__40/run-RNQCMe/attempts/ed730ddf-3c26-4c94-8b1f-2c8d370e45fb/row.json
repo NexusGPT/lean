@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/space-unary-ops.js",
+ "unit": "(edit b01b31509518)",
+ "editIds": [
+  "b01b31509518f433d3ae8579d99ae53acc2388981f600e612cf93b688d5cd09c"
+ ],
+ "lines": [
+  75,
+  75
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

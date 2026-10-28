@@ -1,0 +1,1135 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "b3f209413e3d239a460700c4099f7ed9f575e8da",
+  "head": "741d08d8fa57e6eb3f222b7d24b2cae606e62f34",
+  "files": [
+   {
+    "id": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "oldPath": "lib/rules/no-extra-boolean-cast.js",
+    "newPath": "lib/rules/no-extra-boolean-cast.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "123a7cacc5256a626fbe1087f2632572a0ed8124",
+    "newOid": "e7368b07b4c5d1976b5a7aad539109c6a949278f",
+    "status": "M",
+    "edits": [
+     "28a8f55d19ed1245c290b370cefc3898902ba8f394aefb11f29479f3e837ffb9",
+     "c1630c979029cbd1898a4d77b65e68f301273aa198db9cfae4beb42eae1fca90",
+     "6c674c8292b4e95a23e7b49fc138f35962ed4587a33e2985b1b08f0903503369",
+     "822a3897f76c4059e738f178e5644dfaaf6e487c945a3aa51ec837ffdd8a2483",
+     "750e3e6122f32ca50749bd2b3c82c98a47dd0ba4a4431db93817e6a5112014dd",
+     "87260d8f38779398a24eabe8360b25670bea5f26d77f60a8650155b2d6355760",
+     "f3a1f060f3e32df4676150179d0611afb793629b8e6b88ec1e7375a0b731bbc7",
+     "e081260f282636511755ea4a3554ad19e207f89522788cca30d95723aff57f8f",
+     "bd23ba05c5fbf8c11e744c485ecb268e3339564c3238484af549983bec2fde6c",
+     "c5143e58fd692ff9d7365d977e584be0df0d70d3b6b363952bbb1a6aa962c62c",
+     "9e21bf15db8fd7c0bfbfd3c90a4e7a7c89c0b3ea5ab217c4e4bfea08a91157e8",
+     "3dea4271f6df70c545df05686f327ad1d2ac2919dd2b4fabce95e56d4dc2382c",
+     "9192612b66dac1135c8880038e24e5de34a527b444607661abd414ea12a4a05d",
+     "3d51fcd175715d37d7fb82a69664b1f5684fd8970d9bfa61a5e0f5d248c6dd54",
+     "eef053ab3228908fd70609757a038d88cfbf787e555499edea9412c07f833e6d"
+    ],
+    "hunks": [
+     {
+      "id": "f5e1be28ea0ca5fc1d63a9c5b381d25e332970c442ed68c043d98dc391385791",
+      "old": {
+       "start": 7,
+       "count": 0
+      },
+      "new": {
+       "start": 8,
+       "count": 6
+      }
+     },
+     {
+      "id": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+      "old": {
+       "start": 94,
+       "count": 1
+      },
+      "new": {
+       "start": 100,
+       "count": 8
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "f22da651846de4f5cf591d74071674f2f09ff6ba4067ec91cb4a323ea1881128",
+    "newHash": "195e2e33f9532a122d9c00c19499a97f764cf618f7208ce2bb6ea6c858021dbb",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "28a8f55d19ed1245c290b370cefc3898902ba8f394aefb11f29479f3e837ffb9",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f5e1be28ea0ca5fc1d63a9c5b381d25e332970c442ed68c043d98dc391385791",
+    "side": "new",
+    "old": {
+     "start": 7,
+     "count": 0
+    },
+    "new": {
+     "start": 8,
+     "count": 1
+    },
+    "offsets": {
+     "start": 127,
+     "end": 208
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c1630c979029cbd1898a4d77b65e68f301273aa198db9cfae4beb42eae1fca90",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f5e1be28ea0ca5fc1d63a9c5b381d25e332970c442ed68c043d98dc391385791",
+    "side": "new",
+    "old": {
+     "start": 7,
+     "count": 0
+    },
+    "new": {
+     "start": 9,
+     "count": 1
+    },
+    "offsets": {
+     "start": 208,
+     "end": 224
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "6c674c8292b4e95a23e7b49fc138f35962ed4587a33e2985b1b08f0903503369",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f5e1be28ea0ca5fc1d63a9c5b381d25e332970c442ed68c043d98dc391385791",
+    "side": "new",
+    "old": {
+     "start": 7,
+     "count": 0
+    },
+    "new": {
+     "start": 10,
+     "count": 1
+    },
+    "offsets": {
+     "start": 224,
+     "end": 305
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "822a3897f76c4059e738f178e5644dfaaf6e487c945a3aa51ec837ffdd8a2483",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f5e1be28ea0ca5fc1d63a9c5b381d25e332970c442ed68c043d98dc391385791",
+    "side": "new",
+    "old": {
+     "start": 7,
+     "count": 0
+    },
+    "new": {
+     "start": 11,
+     "count": 1
+    },
+    "offsets": {
+     "start": 305,
+     "end": 306
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "750e3e6122f32ca50749bd2b3c82c98a47dd0ba4a4431db93817e6a5112014dd",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f5e1be28ea0ca5fc1d63a9c5b381d25e332970c442ed68c043d98dc391385791",
+    "side": "new",
+    "old": {
+     "start": 7,
+     "count": 0
+    },
+    "new": {
+     "start": 12,
+     "count": 1
+    },
+    "offsets": {
+     "start": 306,
+     "end": 348
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FirstStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "87260d8f38779398a24eabe8360b25670bea5f26d77f60a8650155b2d6355760",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f5e1be28ea0ca5fc1d63a9c5b381d25e332970c442ed68c043d98dc391385791",
+    "side": "new",
+    "old": {
+     "start": 7,
+     "count": 0
+    },
+    "new": {
+     "start": 13,
+     "count": 1
+    },
+    "offsets": {
+     "start": 348,
+     "end": 349
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f3a1f060f3e32df4676150179d0611afb793629b8e6b88ec1e7375a0b731bbc7",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "old",
+    "old": {
+     "start": 94,
+     "count": 1
+    },
+    "new": {
+     "start": 100,
+     "count": 0
+    },
+    "offsets": {
+     "start": 3075,
+     "end": 3176
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "e081260f282636511755ea4a3554ad19e207f89522788cca30d95723aff57f8f",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "new",
+    "old": {
+     "start": 94,
+     "count": 0
+    },
+    "new": {
+     "start": 100,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3297,
+     "end": 3337
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "bd23ba05c5fbf8c11e744c485ecb268e3339564c3238484af549983bec2fde6c",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "new",
+    "old": {
+     "start": 94,
+     "count": 0
+    },
+    "new": {
+     "start": 101,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3337,
+     "end": 3401
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c5143e58fd692ff9d7365d977e584be0df0d70d3b6b363952bbb1a6aa962c62c",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "new",
+    "old": {
+     "start": 94,
+     "count": 0
+    },
+    "new": {
+     "start": 102,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3401,
+     "end": 3402
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9e21bf15db8fd7c0bfbfd3c90a4e7a7c89c0b3ea5ab217c4e4bfea08a91157e8",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "new",
+    "old": {
+     "start": 94,
+     "count": 0
+    },
+    "new": {
+     "start": 103,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3402,
+     "end": 3508
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3dea4271f6df70c545df05686f327ad1d2ac2919dd2b4fabce95e56d4dc2382c",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "new",
+    "old": {
+     "start": 94,
+     "count": 0
+    },
+    "new": {
+     "start": 104,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3508,
+     "end": 3609
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9192612b66dac1135c8880038e24e5de34a527b444607661abd414ea12a4a05d",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "new",
+    "old": {
+     "start": 94,
+     "count": 0
+    },
+    "new": {
+     "start": 105,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3609,
+     "end": 3639
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3d51fcd175715d37d7fb82a69664b1f5684fd8970d9bfa61a5e0f5d248c6dd54",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "new",
+    "old": {
+     "start": 94,
+     "count": 0
+    },
+    "new": {
+     "start": 106,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3639,
+     "end": 3729
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "eef053ab3228908fd70609757a038d88cfbf787e555499edea9412c07f833e6d",
+    "fileId": "c7f1c65a238566143cbe669ef0466dc1770fd273acf3a5e56129d722baa9f9bc",
+    "file": "lib/rules/no-extra-boolean-cast.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1e08c0dc2756a0d19d20af34383fe5da64f74b744ea50cd03e49901a7b66f3f",
+    "side": "new",
+    "old": {
+     "start": 94,
+     "count": 0
+    },
+    "new": {
+     "start": 107,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3729,
+     "end": 3755
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "7a486523a104750997be788e0abad267d77d28b48f8a42fd4b55f453b2109d6b",
+  "reconciliation": {
+   "expected": [
+    "28a8f55d19ed1245c290b370cefc3898902ba8f394aefb11f29479f3e837ffb9",
+    "c1630c979029cbd1898a4d77b65e68f301273aa198db9cfae4beb42eae1fca90",
+    "6c674c8292b4e95a23e7b49fc138f35962ed4587a33e2985b1b08f0903503369",
+    "822a3897f76c4059e738f178e5644dfaaf6e487c945a3aa51ec837ffdd8a2483",
+    "750e3e6122f32ca50749bd2b3c82c98a47dd0ba4a4431db93817e6a5112014dd",
+    "87260d8f38779398a24eabe8360b25670bea5f26d77f60a8650155b2d6355760",
+    "f3a1f060f3e32df4676150179d0611afb793629b8e6b88ec1e7375a0b731bbc7",
+    "e081260f282636511755ea4a3554ad19e207f89522788cca30d95723aff57f8f",
+    "bd23ba05c5fbf8c11e744c485ecb268e3339564c3238484af549983bec2fde6c",
+    "c5143e58fd692ff9d7365d977e584be0df0d70d3b6b363952bbb1a6aa962c62c",
+    "9e21bf15db8fd7c0bfbfd3c90a4e7a7c89c0b3ea5ab217c4e4bfea08a91157e8",
+    "3dea4271f6df70c545df05686f327ad1d2ac2919dd2b4fabce95e56d4dc2382c",
+    "9192612b66dac1135c8880038e24e5de34a527b444607661abd414ea12a4a05d",
+    "3d51fcd175715d37d7fb82a69664b1f5684fd8970d9bfa61a5e0f5d248c6dd54",
+    "eef053ab3228908fd70609757a038d88cfbf787e555499edea9412c07f833e6d"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "28a8f55d19ed1245c290b370cefc3898902ba8f394aefb11f29479f3e837ffb9",
+    "c1630c979029cbd1898a4d77b65e68f301273aa198db9cfae4beb42eae1fca90",
+    "6c674c8292b4e95a23e7b49fc138f35962ed4587a33e2985b1b08f0903503369",
+    "822a3897f76c4059e738f178e5644dfaaf6e487c945a3aa51ec837ffdd8a2483",
+    "750e3e6122f32ca50749bd2b3c82c98a47dd0ba4a4431db93817e6a5112014dd",
+    "87260d8f38779398a24eabe8360b25670bea5f26d77f60a8650155b2d6355760",
+    "f3a1f060f3e32df4676150179d0611afb793629b8e6b88ec1e7375a0b731bbc7",
+    "e081260f282636511755ea4a3554ad19e207f89522788cca30d95723aff57f8f",
+    "bd23ba05c5fbf8c11e744c485ecb268e3339564c3238484af549983bec2fde6c",
+    "c5143e58fd692ff9d7365d977e584be0df0d70d3b6b363952bbb1a6aa962c62c",
+    "9e21bf15db8fd7c0bfbfd3c90a4e7a7c89c0b3ea5ab217c4e4bfea08a91157e8",
+    "3dea4271f6df70c545df05686f327ad1d2ac2919dd2b4fabce95e56d4dc2382c",
+    "9192612b66dac1135c8880038e24e5de34a527b444607661abd414ea12a4a05d",
+    "3d51fcd175715d37d7fb82a69664b1f5684fd8970d9bfa61a5e0f5d248c6dd54",
+    "eef053ab3228908fd70609757a038d88cfbf787e555499edea9412c07f833e6d"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "28a8f55d19ed1245c290b370cefc3898902ba8f394aefb11f29479f3e837ffb9",
+      "c1630c979029cbd1898a4d77b65e68f301273aa198db9cfae4beb42eae1fca90",
+      "6c674c8292b4e95a23e7b49fc138f35962ed4587a33e2985b1b08f0903503369",
+      "822a3897f76c4059e738f178e5644dfaaf6e487c945a3aa51ec837ffdd8a2483",
+      "750e3e6122f32ca50749bd2b3c82c98a47dd0ba4a4431db93817e6a5112014dd",
+      "87260d8f38779398a24eabe8360b25670bea5f26d77f60a8650155b2d6355760",
+      "f3a1f060f3e32df4676150179d0611afb793629b8e6b88ec1e7375a0b731bbc7",
+      "e081260f282636511755ea4a3554ad19e207f89522788cca30d95723aff57f8f",
+      "bd23ba05c5fbf8c11e744c485ecb268e3339564c3238484af549983bec2fde6c",
+      "c5143e58fd692ff9d7365d977e584be0df0d70d3b6b363952bbb1a6aa962c62c",
+      "9e21bf15db8fd7c0bfbfd3c90a4e7a7c89c0b3ea5ab217c4e4bfea08a91157e8",
+      "3dea4271f6df70c545df05686f327ad1d2ac2919dd2b4fabce95e56d4dc2382c",
+      "9192612b66dac1135c8880038e24e5de34a527b444607661abd414ea12a4a05d",
+      "3d51fcd175715d37d7fb82a69664b1f5684fd8970d9bfa61a5e0f5d248c6dd54",
+      "eef053ab3228908fd70609757a038d88cfbf787e555499edea9412c07f833e6d"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "53d0d4cd581cc5a63b1828721b954a54d3e63fd87d5d4bb7e7bf800af0bd47c6",
+   "attemptId": "411ce459-5ec9-4833-896d-2ffb2d550ce0",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/411ce459-5ec9-4833-896d-2ffb2d550ce0/row.json",
+    "sha256": "85cc7b62bec16c48ab98f147a97bcdb68ae380a23ac58a4e38b2103a1207c40c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "351210ebb85c1dc3576326fc06a24a7d5e47c6eac9ce79a49abb6169fc149a9d",
+   "attemptId": "ae38fd86-b283-4664-9ce0-8c8ed4b48676",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/ae38fd86-b283-4664-9ce0-8c8ed4b48676/row.json",
+    "sha256": "6c996460ca81936ee75f6a38daa76c05e2d80e4658798e9f55cc10488708aa7b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "39cb1bed39d705e398cfa48db53e7cad6d62127979490452a1d261a06064bc82",
+   "attemptId": "7afe47f7-8567-489a-8e65-877601eded18",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/7afe47f7-8567-489a-8e65-877601eded18/row.json",
+    "sha256": "f6c8e1248cef7f3ade9f75143d1d2787392de294e7e3c33ea4f04da3caecb5af"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "e6825c5215fc2955083bd26fc0545aab73897debc40158ca05c963ccde7cbd7b",
+   "attemptId": "86f88bad-7dc2-40a9-89fe-d6c290585ca6",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/86f88bad-7dc2-40a9-89fe-d6c290585ca6/row.json",
+    "sha256": "65ab81ab41eb0c698f4da2b014c01cd836895bc59729740aacf490dbcf5f6340"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "ab21fc51c616b2ea1d217a959f7538ce2aeada49bfc2bdf863589b711eecd406",
+   "attemptId": "62e869e3-a61f-42c5-991c-17977db47eac",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/62e869e3-a61f-42c5-991c-17977db47eac/row.json",
+    "sha256": "12a161fc9928c4de1f447861537d8198e5f74735cc297e7bb5e7b65d1bdaf293"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "f6a63970da61d59afd14d2959014a9dfc18213c1ae7550d2d4eae0b56df6376e",
+   "attemptId": "c5453f9c-ce34-4156-8ee9-e8af7ffca2bf",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/c5453f9c-ce34-4156-8ee9-e8af7ffca2bf/row.json",
+    "sha256": "72c5ee5ef905e99ccb365c19294a45536029325209ae0b9a50f2a3f1124d9079"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "3fa64348b60c419d13002b9be97ab81a926c99b189b6d04b6406468bc3fe7f7a",
+   "attemptId": "e69c4c96-d28c-4758-8a3d-7848626bc762",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/e69c4c96-d28c-4758-8a3d-7848626bc762/row.json",
+    "sha256": "299bc88f7e57332d51fb4b6efeb6e5fa75624a1de04b0c73adfd657098509aeb"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "9c54957f6ae80bd6afb7c6cf1b38181cea1b1e26ac226efac41ea54cc5a62fc4",
+   "attemptId": "109ecf72-1d81-4532-8c72-86e6e17ff518",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/109ecf72-1d81-4532-8c72-86e6e17ff518/row.json",
+    "sha256": "f549053424dbc6d7c4e8e70bb13539e1f2e55f12dacea04c3d2fa66e3d984e03"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "3746457fbee7e51e00f5bd7ada1e7967cd3bbe78a7d8b15d48e8a2f4ab38bbc8",
+   "attemptId": "26cc1877-dd8c-4265-9545-2f787ec6c869",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/26cc1877-dd8c-4265-9545-2f787ec6c869/row.json",
+    "sha256": "c74603f988b45bb882d11008dcdd737f78cec0b43d92a108527e0cda08c22fcc"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "eecbec102a95ef2b67386b87dd2bac34643159493500082a7ff5540e03ce33c4",
+   "attemptId": "200b09eb-9a50-4647-b7e6-14be1b619f24",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/200b09eb-9a50-4647-b7e6-14be1b619f24/row.json",
+    "sha256": "5d093e0d0e6d8e5e92441a515c5d3ba06572d2c8abeadd5f83c22b140c6a8bf9"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a791901d91e89937f52717d4e47383f637a1a665c427e86fbf6c0f31fd3263cc",
+   "attemptId": "e4352670-3298-4dc7-90e6-18a40fea2bf5",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/e4352670-3298-4dc7-90e6-18a40fea2bf5/row.json",
+    "sha256": "ef78d362ab38d9f6ca3e03a6c7cf8bd1cf8d70e47013280d1020eb28cecd1c26"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "8606f678d6317e3b24127318ed18a26cc5643f59def6bf855f65b1028b164398",
+   "attemptId": "ce3ec6e5-1514-4153-beb7-915b0b4ef727",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/ce3ec6e5-1514-4153-beb7-915b0b4ef727/row.json",
+    "sha256": "64ccff828cfc5a891cee72283f531f6f9628f141292d269988a9facda7bfdb92"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1927f50521acec0270a05992148845c6297dfdd4578dffe3cdb7a4833e3cce69",
+   "attemptId": "4a552771-04eb-40b5-9ec5-e5c49f0c6d31",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/4a552771-04eb-40b5-9ec5-e5c49f0c6d31/row.json",
+    "sha256": "7d6ea882d93dbf1d19bf8a2cad8fc1fabf5f717bff2c4cf2b61919d9daa1cdc4"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "27a4bbe8aac1848ef2bc3c1db199d4abf13d0203453b991e335fcacca1ec5e51",
+   "attemptId": "874869ac-4497-4d76-b627-740deee35079",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/874869ac-4497-4d76-b627-740deee35079/row.json",
+    "sha256": "4d69d96c7b0e264276634eee025e69a9ae7019aa21dd8a4de66fb6208e0a87ae"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "8da9000c28ba415eb1a96ba0c95167f8f35efd73ebbd86c44f3ad904556ec581",
+   "attemptId": "331cb63b-697b-4e28-bc01-baa70379db70",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__114/run-Ak3U7L/attempts/331cb63b-697b-4e28-bc01-baa70379db70/row.json",
+    "sha256": "087425bf56f99ba13b19cdbdc26b93ee281e5764b0bc5b7a33470dcfeb402a01"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 28a8f55d19ed)",
+   "editIds": [
+    "28a8f55d19ed1245c290b370cefc3898902ba8f394aefb11f29479f3e837ffb9"
+   ],
+   "lines": [
+    8,
+    8
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit c1630c979029)",
+   "editIds": [
+    "c1630c979029cbd1898a4d77b65e68f301273aa198db9cfae4beb42eae1fca90"
+   ],
+   "lines": [
+    9,
+    9
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 6c674c8292b4)",
+   "editIds": [
+    "6c674c8292b4e95a23e7b49fc138f35962ed4587a33e2985b1b08f0903503369"
+   ],
+   "lines": [
+    10,
+    10
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 822a3897f76c)",
+   "editIds": [
+    "822a3897f76c4059e738f178e5644dfaaf6e487c945a3aa51ec837ffdd8a2483"
+   ],
+   "lines": [
+    11,
+    11
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 750e3e6122f3)",
+   "editIds": [
+    "750e3e6122f32ca50749bd2b3c82c98a47dd0ba4a4431db93817e6a5112014dd"
+   ],
+   "lines": [
+    12,
+    12
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 87260d8f3877)",
+   "editIds": [
+    "87260d8f38779398a24eabe8360b25670bea5f26d77f60a8650155b2d6355760"
+   ],
+   "lines": [
+    13,
+    13
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit f3a1f060f3e3)",
+   "editIds": [
+    "f3a1f060f3e32df4676150179d0611afb793629b8e6b88ec1e7375a0b731bbc7"
+   ],
+   "lines": [
+    94,
+    94
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit e081260f2826)",
+   "editIds": [
+    "e081260f282636511755ea4a3554ad19e207f89522788cca30d95723aff57f8f"
+   ],
+   "lines": [
+    100,
+    100
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit bd23ba05c5fb)",
+   "editIds": [
+    "bd23ba05c5fbf8c11e744c485ecb268e3339564c3238484af549983bec2fde6c"
+   ],
+   "lines": [
+    101,
+    101
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit c5143e58fd69)",
+   "editIds": [
+    "c5143e58fd692ff9d7365d977e584be0df0d70d3b6b363952bbb1a6aa962c62c"
+   ],
+   "lines": [
+    102,
+    102
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 9e21bf15db8f)",
+   "editIds": [
+    "9e21bf15db8fd7c0bfbfd3c90a4e7a7c89c0b3ea5ab217c4e4bfea08a91157e8"
+   ],
+   "lines": [
+    103,
+    103
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 3dea4271f6df)",
+   "editIds": [
+    "3dea4271f6df70c545df05686f327ad1d2ac2919dd2b4fabce95e56d4dc2382c"
+   ],
+   "lines": [
+    104,
+    104
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 9192612b66da)",
+   "editIds": [
+    "9192612b66dac1135c8880038e24e5de34a527b444607661abd414ea12a4a05d"
+   ],
+   "lines": [
+    105,
+    105
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit 3d51fcd17571)",
+   "editIds": [
+    "3d51fcd175715d37d7fb82a69664b1f5684fd8970d9bfa61a5e0f5d248c6dd54"
+   ],
+   "lines": [
+    106,
+    106
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-extra-boolean-cast.js",
+   "unit": "(edit eef053ab3228)",
+   "editIds": [
+    "eef053ab3228908fd70609757a038d88cfbf787e555499edea9412c07f833e6d"
+   ],
+   "lines": [
+    107,
+    107
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "53d0d4cd581cc5a63b1828721b954a54d3e63fd87d5d4bb7e7bf800af0bd47c6",
+   "351210ebb85c1dc3576326fc06a24a7d5e47c6eac9ce79a49abb6169fc149a9d",
+   "39cb1bed39d705e398cfa48db53e7cad6d62127979490452a1d261a06064bc82",
+   "e6825c5215fc2955083bd26fc0545aab73897debc40158ca05c963ccde7cbd7b",
+   "ab21fc51c616b2ea1d217a959f7538ce2aeada49bfc2bdf863589b711eecd406",
+   "f6a63970da61d59afd14d2959014a9dfc18213c1ae7550d2d4eae0b56df6376e",
+   "3fa64348b60c419d13002b9be97ab81a926c99b189b6d04b6406468bc3fe7f7a",
+   "9c54957f6ae80bd6afb7c6cf1b38181cea1b1e26ac226efac41ea54cc5a62fc4",
+   "3746457fbee7e51e00f5bd7ada1e7967cd3bbe78a7d8b15d48e8a2f4ab38bbc8",
+   "eecbec102a95ef2b67386b87dd2bac34643159493500082a7ff5540e03ce33c4",
+   "a791901d91e89937f52717d4e47383f637a1a665c427e86fbf6c0f31fd3263cc",
+   "8606f678d6317e3b24127318ed18a26cc5643f59def6bf855f65b1028b164398",
+   "1927f50521acec0270a05992148845c6297dfdd4578dffe3cdb7a4833e3cce69",
+   "27a4bbe8aac1848ef2bc3c1db199d4abf13d0203453b991e335fcacca1ec5e51",
+   "8da9000c28ba415eb1a96ba0c95167f8f35efd73ebbd86c44f3ad904556ec581"
+  ],
+  "terminal": [
+   "53d0d4cd581cc5a63b1828721b954a54d3e63fd87d5d4bb7e7bf800af0bd47c6",
+   "351210ebb85c1dc3576326fc06a24a7d5e47c6eac9ce79a49abb6169fc149a9d",
+   "39cb1bed39d705e398cfa48db53e7cad6d62127979490452a1d261a06064bc82",
+   "e6825c5215fc2955083bd26fc0545aab73897debc40158ca05c963ccde7cbd7b",
+   "ab21fc51c616b2ea1d217a959f7538ce2aeada49bfc2bdf863589b711eecd406",
+   "f6a63970da61d59afd14d2959014a9dfc18213c1ae7550d2d4eae0b56df6376e",
+   "3fa64348b60c419d13002b9be97ab81a926c99b189b6d04b6406468bc3fe7f7a",
+   "9c54957f6ae80bd6afb7c6cf1b38181cea1b1e26ac226efac41ea54cc5a62fc4",
+   "3746457fbee7e51e00f5bd7ada1e7967cd3bbe78a7d8b15d48e8a2f4ab38bbc8",
+   "eecbec102a95ef2b67386b87dd2bac34643159493500082a7ff5540e03ce33c4",
+   "a791901d91e89937f52717d4e47383f637a1a665c427e86fbf6c0f31fd3263cc",
+   "8606f678d6317e3b24127318ed18a26cc5643f59def6bf855f65b1028b164398",
+   "1927f50521acec0270a05992148845c6297dfdd4578dffe3cdb7a4833e3cce69",
+   "27a4bbe8aac1848ef2bc3c1db199d4abf13d0203453b991e335fcacca1ec5e51",
+   "8da9000c28ba415eb1a96ba0c95167f8f35efd73ebbd86c44f3ad904556ec581"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

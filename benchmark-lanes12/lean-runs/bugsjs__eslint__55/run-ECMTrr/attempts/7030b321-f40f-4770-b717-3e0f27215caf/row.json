@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/consistent-return.js",
+ "unit": "(edit f840432c2b3c)",
+ "editIds": [
+  "f840432c2b3cf480f7d558983ceb505a183ed68445c73e2b76daf9e646ca450e"
+ ],
+ "lines": [
+  92,
+  92
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

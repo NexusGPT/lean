@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/indent.js",
+ "unit": "(edit 55df68c76ad7)",
+ "editIds": [
+  "55df68c76ad72eab4228552fd325f9cc35f1af0779cb7472663dd755c191fe48"
+ ],
+ "lines": [
+  1155,
+  1155
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

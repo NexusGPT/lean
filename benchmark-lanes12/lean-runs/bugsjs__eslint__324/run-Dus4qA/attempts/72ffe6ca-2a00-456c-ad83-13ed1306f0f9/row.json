@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-shadow.js",
+ "unit": "(edit 65444fb303b7)",
+ "editIds": [
+  "65444fb303b7d9f6ab2f6e14e56c6d1c5377174bc108f9c053e237171552206d"
+ ],
+ "lines": [
+  162,
+  162
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

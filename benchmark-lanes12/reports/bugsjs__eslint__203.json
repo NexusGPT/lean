@@ -1,0 +1,856 @@
+{
+ "identity": "20d85ddccec7c180b94f67a5f39bc6129662339135e12edc683f70d1189e65c6",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/cli-engine.js",
+   "unit": "processPath",
+   "lines": [
+    308,
+    334
+   ],
+   "coverage": "refused:var",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 0,
+    "args": [
+     [
+      "x"
+     ]
+    ],
+    "parent": {
+     "outcome": {
+      "returned": {
+       "$fn": "anonymous",
+       "src": "cd10156b8162"
+      }
+     },
+     "heap": {
+      "roots": [
+       {
+        "$ref": 0
+       }
+      ],
+      "own": {},
+      "outcome": {
+       "$fn": "anonymous",
+       "src": "cd10156b8162"
+      },
+      "anchors": 1,
+      "heap": [
+       {
+        "kind": "array",
+        "edges": [
+         "x"
+        ]
+       }
+      ]
+     },
+     "receiver": {},
+     "trace": [],
+     "pending": []
+    },
+    "candidate": {
+     "outcome": {
+      "returned": {
+       "$fn": "anonymous",
+       "src": "12c4fcd22311"
+      }
+     },
+     "heap": {
+      "roots": [
+       {
+        "$ref": 0
+       }
+      ],
+      "own": {},
+      "outcome": {
+       "$fn": "anonymous",
+       "src": "12c4fcd22311"
+      },
+      "anchors": 1,
+      "heap": [
+       {
+        "kind": "array",
+        "edges": [
+         "x"
+        ]
+       }
+      ]
+     },
+     "receiver": {},
+     "trace": [],
+     "pending": []
+    },
+    "where": {
+     "field": "outcome",
+     "lines": {
+      "kind": "completion",
+      "parent": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__203/run-SsKyhQ/sources/lib/.lean_base_41928_cli-engine.js",
+       "start": 325,
+       "end": 333,
+       "text": "return function(pathname) {\n        var newPath = pathname;\n\n        if (shell.test(\"-d\", pathname)) {\n            newPath = pathname + suffix;\n        }\n\n        return newPath.replace(/\\\\/g, \"/\");\n "
+      },
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__203/run-SsKyhQ/sources/lib/.lean_head_41928_cli-engine.js",
+       "start": 325,
+       "end": 333,
+       "text": "return function(pathname) {\n        var newPath = pathname;\n\n        if (shell.test(\"-d\", pathname)) {\n            newPath = pathname + suffix;\n        }\n\n        return newPath.replace(/\\\\/g, \"/\").re"
+      }
+     }
+    }
+   },
+   "reason": "`var` is outside the subset; use let or const",
+   "advice": [
+    {
+     "line": 309,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 325,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    }
+   ],
+   "editIds": [
+    "9f198c4b637ebc2c1c5c70f1b6fcd9d438478ae36d85ef77e94dc732268aae86",
+    "daafb8b74a7e037f616203bd3d88ea9669f1a61d0d9742fb8278cf0c0c2e9c92"
+   ]
+  },
+  {
+   "file": "lib/cli-engine.js",
+   "unit": "(edit 16b59a8c7644)",
+   "editIds": [
+    "16b59a8c7644d61f4b78e326f913893d36d1c91333852eb37ad74afc136a3e06"
+   ],
+   "lines": [
+    496,
+    496
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/cli-engine.js",
+   "unit": "(edit 7b3eb637454b)",
+   "editIds": [
+    "7b3eb637454b71cf333328069a16701fdee12bdc0d2dd176f463abbb00c32d1b"
+   ],
+   "lines": [
+    506,
+    506
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/cli-engine.js",
+   "unit": "(edit 0df986d94bf0)",
+   "editIds": [
+    "0df986d94bf0803b13ebd3c8ed3b9a48a4448afa4bd7808507ba0c098b498d01"
+   ],
+   "lines": [
+    507,
+    507
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/cli-engine.js",
+   "unit": "(edit 762382dc9e06)",
+   "editIds": [
+    "762382dc9e06257971e8028a8385cded252486796fae0e0c94b815f052824cd1"
+   ],
+   "lines": [
+    562,
+    562
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/cli-engine.js",
+   "unit": "(edit 786e617cd317)",
+   "editIds": [
+    "786e617cd317585de88a81fe87004b280718102fd0e4b4154e74e003c12f9385"
+   ],
+   "lines": [
+    563,
+    563
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/cli-engine.js",
+     "unit": "processPath",
+     "lines": [
+      308,
+      334
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "60d61932cd8f8d7b051cf29811954e2406e8995d",
+  "head": "0cbb591f74099fbc0ca8c4a6461bb7e928a3d835",
+  "files": [
+   {
+    "id": "47c5cdae69343c2b3948d0dee5e90acda3e1af6cc03fee9a4309196290277d1c",
+    "file": "lib/cli-engine.js",
+    "oldPath": "lib/cli-engine.js",
+    "newPath": "lib/cli-engine.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "feee09d2e5ddecca097f69109f806f1936890ff7",
+    "newOid": "457e242e67f74c0f71e269d7c534ec6cf4a854b6",
+    "status": "M",
+    "edits": [
+     "9f198c4b637ebc2c1c5c70f1b6fcd9d438478ae36d85ef77e94dc732268aae86",
+     "daafb8b74a7e037f616203bd3d88ea9669f1a61d0d9742fb8278cf0c0c2e9c92",
+     "16b59a8c7644d61f4b78e326f913893d36d1c91333852eb37ad74afc136a3e06",
+     "7b3eb637454b71cf333328069a16701fdee12bdc0d2dd176f463abbb00c32d1b",
+     "0df986d94bf0803b13ebd3c8ed3b9a48a4448afa4bd7808507ba0c098b498d01",
+     "762382dc9e06257971e8028a8385cded252486796fae0e0c94b815f052824cd1",
+     "786e617cd317585de88a81fe87004b280718102fd0e4b4154e74e003c12f9385"
+    ],
+    "hunks": [
+     {
+      "id": "e152e972b875ab0e3ed763c79b2540dc5ae67d44a1546f3ec768ce08356b7a77",
+      "old": {
+       "start": 332,
+       "count": 1
+      },
+      "new": {
+       "start": 332,
+       "count": 1
+      }
+     },
+     {
+      "id": "e5d94669751dbbe7b3581ceee471fff4a979b354115bec3ec515461c77270d23",
+      "old": {
+       "start": 496,
+       "count": 1
+      },
+      "new": {
+       "start": 495,
+       "count": 0
+      }
+     },
+     {
+      "id": "8055cd6cb968fa0a5f8cc88f29cddb39232bfff4ddefef9f4d15a066a05755e0",
+      "old": {
+       "start": 506,
+       "count": 0
+      },
+      "new": {
+       "start": 506,
+       "count": 2
+      }
+     },
+     {
+      "id": "659a980824bcd3bb2fddaed5be904867a4be98ca0fcc22c4d3609aaeaf0da28c",
+      "old": {
+       "start": 562,
+       "count": 1
+      },
+      "new": {
+       "start": 563,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "d80603ebb32593e539f3cca77c2a7ffd9dde4ac08dce1ba3ae0214a5131f31f3",
+    "newHash": "3e7ce10007274638c89bf9bf01574d23512b881a200059de3ed5f4029140ce1c",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "loadPlugins",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 105,
+       "end": 126,
+       "offset": 3490,
+       "stop": 4375,
+       "id": "a8c56d281c40220be5e8cdcab38ee913b4042869a59cd67be9c7ea4ba3c54dba"
+      },
+      {
+       "name": "calculateStatsPerFile",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 134,
+       "end": 146,
+       "offset": 4577,
+       "stop": 4905,
+       "id": "ddc1477b511b4326d5239329ebfb7a96762ef79a9127eaf07dbef392964b7f2d"
+      },
+      {
+       "name": "calculateStatsPerRun",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 154,
+       "end": 163,
+       "offset": 5130,
+       "stop": 5404,
+       "id": "f24ba7ea2d0e5dc22dcd9b44941be3be8aa6adb6cbaa22c9276ef982c95a4ad9"
+      },
+      {
+       "name": "processText",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 174,
+       "end": 240,
+       "offset": 5791,
+       "stop": 7641,
+       "id": "4496eed8717d7976dfcef82144bd9c9b70e80822cc697235f317a86c2f039d0d"
+      },
+      {
+       "name": "processFile",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 251,
+       "end": 258,
+       "offset": 8033,
+       "stop": 8249,
+       "id": "687cc0da6f4a7c3f70f4e1d240183b5fa443e2e23265665522bc556e645a4e8b"
+      },
+      {
+       "name": "createIgnoreResult",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 266,
+       "end": 279,
+       "offset": 8423,
+       "stop": 8796,
+       "id": "f58b3ad58f702c1ad7621e32f3cc6d74e4e4963dbf61c43c08848c9305803bf1"
+      },
+      {
+       "name": "isErrorMessage",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 288,
+       "end": 290,
+       "offset": 8990,
+       "stop": 9061,
+       "id": "3ee2c71bf532be3ea8346ea5cdf041e84f3d2f8464da66f77620689d7bbadddd"
+      },
+      {
+       "name": "processPath",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 308,
+       "end": 334,
+       "offset": 9813,
+       "stop": 10502,
+       "id": "4a2af42089e25541201575411ba4c794e9bc3a3d6f36e32ea0dc7735c54939fc"
+      },
+      {
+       "name": "CLIEngine",
+       "side": "old",
+       "file": "lib/cli-engine.js",
+       "start": 346,
+       "end": 376,
+       "offset": 10830,
+       "stop": 11847,
+       "id": "ff0f43ae669ead86af571c7571426cc5521d78d47a9d4d41621a3eda1b640c26"
+      }
+     ],
+     "new": [
+      {
+       "name": "loadPlugins",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 105,
+       "end": 126,
+       "offset": 3490,
+       "stop": 4375,
+       "id": "1b2c10ad18465b013e97d99ae80ad52cc1ffcd397ec5b8bae532131708441e99"
+      },
+      {
+       "name": "calculateStatsPerFile",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 134,
+       "end": 146,
+       "offset": 4577,
+       "stop": 4905,
+       "id": "9b55fa79a93f2c5ddf8e9c0381f326540b93bb6b3b2ce279518f8c841ce82ecf"
+      },
+      {
+       "name": "calculateStatsPerRun",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 154,
+       "end": 163,
+       "offset": 5130,
+       "stop": 5404,
+       "id": "0dc90abbfba8e32954e68007b21d59cbee805f5af10aee7f5c7e71d35761b1d4"
+      },
+      {
+       "name": "processText",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 174,
+       "end": 240,
+       "offset": 5791,
+       "stop": 7641,
+       "id": "75f49e4013bed8419040f9ba5108532971a35086c4f6602f8637f63b82bda9f4"
+      },
+      {
+       "name": "processFile",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 251,
+       "end": 258,
+       "offset": 8033,
+       "stop": 8249,
+       "id": "cb79e3efe773f5c0ea3b2e3e438cd290079f392338999a63bd4c06153c3073de"
+      },
+      {
+       "name": "createIgnoreResult",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 266,
+       "end": 279,
+       "offset": 8423,
+       "stop": 8796,
+       "id": "f10eb902df06ef0917280346d84573cfc60c3bbd34785a206bd7a5c2515f06fd"
+      },
+      {
+       "name": "isErrorMessage",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 288,
+       "end": 290,
+       "offset": 8990,
+       "stop": 9061,
+       "id": "ae45254d120304f046dc749427357d1b27eeca2b94635251185d97e0ec005d24"
+      },
+      {
+       "name": "processPath",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 308,
+       "end": 334,
+       "offset": 9813,
+       "stop": 10523,
+       "id": "34046413ad303ab83a8f9dda8fd01b54b2d279e354d415f807ae704e1d61584d"
+      },
+      {
+       "name": "CLIEngine",
+       "side": "new",
+       "file": "lib/cli-engine.js",
+       "start": 346,
+       "end": 376,
+       "offset": 10851,
+       "stop": 11868,
+       "id": "2fd6293fcfa2cce451e8107f2bc2f8ee4024e263a7ea22aad30a7d70ceac75aa"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "9f198c4b637ebc2c1c5c70f1b6fcd9d438478ae36d85ef77e94dc732268aae86",
+    "fileId": "47c5cdae69343c2b3948d0dee5e90acda3e1af6cc03fee9a4309196290277d1c",
+    "file": "lib/cli-engine.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e152e972b875ab0e3ed763c79b2540dc5ae67d44a1546f3ec768ce08356b7a77",
+    "side": "old",
+    "old": {
+     "start": 332,
+     "count": 1
+    },
+    "new": {
+     "start": 332,
+     "count": 0
+    },
+    "offsets": {
+     "start": 10450,
+     "end": 10494
+    },
+    "links": [
+     {
+      "id": "4a2af42089e25541201575411ba4c794e9bc3a3d6f36e32ea0dc7735c54939fc",
+      "file": "lib/cli-engine.js",
+      "unit": "processPath",
+      "side": "old",
+      "start": 308,
+      "end": 334
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "4a2af42089e25541201575411ba4c794e9bc3a3d6f36e32ea0dc7735c54939fc",
+     "file": "lib/cli-engine.js",
+     "unit": "processPath",
+     "side": "old",
+     "start": 308,
+     "end": 334
+    }
+   },
+   {
+    "id": "daafb8b74a7e037f616203bd3d88ea9669f1a61d0d9742fb8278cf0c0c2e9c92",
+    "fileId": "47c5cdae69343c2b3948d0dee5e90acda3e1af6cc03fee9a4309196290277d1c",
+    "file": "lib/cli-engine.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e152e972b875ab0e3ed763c79b2540dc5ae67d44a1546f3ec768ce08356b7a77",
+    "side": "new",
+    "old": {
+     "start": 332,
+     "count": 0
+    },
+    "new": {
+     "start": 332,
+     "count": 1
+    },
+    "offsets": {
+     "start": 10450,
+     "end": 10515
+    },
+    "links": [
+     {
+      "id": "34046413ad303ab83a8f9dda8fd01b54b2d279e354d415f807ae704e1d61584d",
+      "file": "lib/cli-engine.js",
+      "unit": "processPath",
+      "side": "new",
+      "start": 308,
+      "end": 334
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "34046413ad303ab83a8f9dda8fd01b54b2d279e354d415f807ae704e1d61584d",
+     "file": "lib/cli-engine.js",
+     "unit": "processPath",
+     "side": "new",
+     "start": 308,
+     "end": 334
+    }
+   },
+   {
+    "id": "16b59a8c7644d61f4b78e326f913893d36d1c91333852eb37ad74afc136a3e06",
+    "fileId": "47c5cdae69343c2b3948d0dee5e90acda3e1af6cc03fee9a4309196290277d1c",
+    "file": "lib/cli-engine.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "e5d94669751dbbe7b3581ceee471fff4a979b354115bec3ec515461c77270d23",
+    "side": "old",
+    "old": {
+     "start": 496,
+     "count": 1
+    },
+    "new": {
+     "start": 495,
+     "count": 0
+    },
+    "offsets": {
+     "start": 15409,
+     "end": 15437
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "7b3eb637454b71cf333328069a16701fdee12bdc0d2dd176f463abbb00c32d1b",
+    "fileId": "47c5cdae69343c2b3948d0dee5e90acda3e1af6cc03fee9a4309196290277d1c",
+    "file": "lib/cli-engine.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8055cd6cb968fa0a5f8cc88f29cddb39232bfff4ddefef9f4d15a066a05755e0",
+    "side": "new",
+    "old": {
+     "start": 506,
+     "count": 0
+    },
+    "new": {
+     "start": 506,
+     "count": 1
+    },
+    "offsets": {
+     "start": 15783,
+     "end": 15833
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "0df986d94bf0803b13ebd3c8ed3b9a48a4448afa4bd7808507ba0c098b498d01",
+    "fileId": "47c5cdae69343c2b3948d0dee5e90acda3e1af6cc03fee9a4309196290277d1c",
+    "file": "lib/cli-engine.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8055cd6cb968fa0a5f8cc88f29cddb39232bfff4ddefef9f4d15a066a05755e0",
+    "side": "new",
+    "old": {
+     "start": 506,
+     "count": 0
+    },
+    "new": {
+     "start": 507,
+     "count": 1
+    },
+    "offsets": {
+     "start": 15833,
+     "end": 15834
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "762382dc9e06257971e8028a8385cded252486796fae0e0c94b815f052824cd1",
+    "fileId": "47c5cdae69343c2b3948d0dee5e90acda3e1af6cc03fee9a4309196290277d1c",
+    "file": "lib/cli-engine.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "659a980824bcd3bb2fddaed5be904867a4be98ca0fcc22c4d3609aaeaf0da28c",
+    "side": "old",
+    "old": {
+     "start": 562,
+     "count": 1
+    },
+    "new": {
+     "start": 563,
+     "count": 0
+    },
+    "offsets": {
+     "start": 18110,
+     "end": 18167
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "786e617cd317585de88a81fe87004b280718102fd0e4b4154e74e003c12f9385",
+    "fileId": "47c5cdae69343c2b3948d0dee5e90acda3e1af6cc03fee9a4309196290277d1c",
+    "file": "lib/cli-engine.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "659a980824bcd3bb2fddaed5be904867a4be98ca0fcc22c4d3609aaeaf0da28c",
+    "side": "new",
+    "old": {
+     "start": 562,
+     "count": 0
+    },
+    "new": {
+     "start": 563,
+     "count": 1
+    },
+    "offsets": {
+     "start": 18154,
+     "end": 18194
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "fd731b3f95993f71818292657c97793a6a77c335f321333cffbea7f3d45f64d2",
+  "reconciliation": {
+   "expected": [
+    "9f198c4b637ebc2c1c5c70f1b6fcd9d438478ae36d85ef77e94dc732268aae86",
+    "daafb8b74a7e037f616203bd3d88ea9669f1a61d0d9742fb8278cf0c0c2e9c92",
+    "16b59a8c7644d61f4b78e326f913893d36d1c91333852eb37ad74afc136a3e06",
+    "7b3eb637454b71cf333328069a16701fdee12bdc0d2dd176f463abbb00c32d1b",
+    "0df986d94bf0803b13ebd3c8ed3b9a48a4448afa4bd7808507ba0c098b498d01",
+    "762382dc9e06257971e8028a8385cded252486796fae0e0c94b815f052824cd1",
+    "786e617cd317585de88a81fe87004b280718102fd0e4b4154e74e003c12f9385"
+   ],
+   "unit": [
+    "9f198c4b637ebc2c1c5c70f1b6fcd9d438478ae36d85ef77e94dc732268aae86",
+    "daafb8b74a7e037f616203bd3d88ea9669f1a61d0d9742fb8278cf0c0c2e9c92"
+   ],
+   "artifact": [],
+   "unassigned": [
+    "16b59a8c7644d61f4b78e326f913893d36d1c91333852eb37ad74afc136a3e06",
+    "7b3eb637454b71cf333328069a16701fdee12bdc0d2dd176f463abbb00c32d1b",
+    "0df986d94bf0803b13ebd3c8ed3b9a48a4448afa4bd7808507ba0c098b498d01",
+    "762382dc9e06257971e8028a8385cded252486796fae0e0c94b815f052824cd1",
+    "786e617cd317585de88a81fe87004b280718102fd0e4b4154e74e003c12f9385"
+   ],
+   "classes": {
+    "source": {
+     "unit": [
+      "9f198c4b637ebc2c1c5c70f1b6fcd9d438478ae36d85ef77e94dc732268aae86",
+      "daafb8b74a7e037f616203bd3d88ea9669f1a61d0d9742fb8278cf0c0c2e9c92"
+     ],
+     "artifact": [],
+     "unassigned": [
+      "16b59a8c7644d61f4b78e326f913893d36d1c91333852eb37ad74afc136a3e06",
+      "7b3eb637454b71cf333328069a16701fdee12bdc0d2dd176f463abbb00c32d1b",
+      "0df986d94bf0803b13ebd3c8ed3b9a48a4448afa4bd7808507ba0c098b498d01",
+      "762382dc9e06257971e8028a8385cded252486796fae0e0c94b815f052824cd1",
+      "786e617cd317585de88a81fe87004b280718102fd0e4b4154e74e003c12f9385"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "fdfd34606d6e2b1bde972e5a2677044d7bca4a9addc86880e3f705f29776c6b2",
+   "567a51e7e7412b03aef9e235c10edb45232d422bb1c5adfb819a78286ca2c150",
+   "aa698730bebe35cea2745b7b921247a25255b1b0b9322738b9d6c292dcd2cedf",
+   "197490de6daf158d4c2dd75abbec9244305fe5c54dfa57a5b3a044ac36aabc58",
+   "de34977fb62c0b73a911eef25a213630f7c6a827f1cc3bf5195515b96aa12443",
+   "1485f9df68e63060eb124ebb89403bd91fff361b3e9b43fde176ae644a88593d"
+  ],
+  "terminal": [
+   "fdfd34606d6e2b1bde972e5a2677044d7bca4a9addc86880e3f705f29776c6b2",
+   "567a51e7e7412b03aef9e235c10edb45232d422bb1c5adfb819a78286ca2c150",
+   "aa698730bebe35cea2745b7b921247a25255b1b0b9322738b9d6c292dcd2cedf",
+   "197490de6daf158d4c2dd75abbec9244305fe5c54dfa57a5b3a044ac36aabc58",
+   "de34977fb62c0b73a911eef25a213630f7c6a827f1cc3bf5195515b96aa12443",
+   "1485f9df68e63060eb124ebb89403bd91fff361b3e9b43fde176ae644a88593d"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [
+    "fdfd34606d6e2b1bde972e5a2677044d7bca4a9addc86880e3f705f29776c6b2/B",
+    "fdfd34606d6e2b1bde972e5a2677044d7bca4a9addc86880e3f705f29776c6b2/A"
+   ],
+   "terminal": [
+    "fdfd34606d6e2b1bde972e5a2677044d7bca4a9addc86880e3f705f29776c6b2/B",
+    "fdfd34606d6e2b1bde972e5a2677044d7bca4a9addc86880e3f705f29776c6b2/A"
+   ],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__203/run-SsKyhQ/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__203/run-SsKyhQ",
+ "callersChecked": 0
+}

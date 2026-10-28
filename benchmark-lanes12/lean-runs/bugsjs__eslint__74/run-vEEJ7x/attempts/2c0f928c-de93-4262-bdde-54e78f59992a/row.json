@@ -1,0 +1,21 @@
+{
+ "file": "lib/config/config-initializer.js",
+ "unit": "(edit 6a0fea9e69f3)",
+ "editIds": [
+  "6a0fea9e69f3f684b2ed87e57e3822e46e6c3ff992f9702ba254fe8d59ee1c07"
+ ],
+ "lines": [
+  321,
+  321
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/object-shorthand.js",
+ "unit": "(edit ff58e23623e1)",
+ "editIds": [
+  "ff58e23623e1a6d92eaf18772b48aa684fa307e0466010f5ecde4ad0cc2d24c8"
+ ],
+ "lines": [
+  329,
+  329
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

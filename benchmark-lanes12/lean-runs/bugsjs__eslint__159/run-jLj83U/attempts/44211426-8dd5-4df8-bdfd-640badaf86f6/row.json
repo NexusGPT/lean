@@ -1,0 +1,174 @@
+{
+ "file": "lib/code-path-analysis/code-path-analyzer.js",
+ "unit": "processCodePathToExit",
+ "lines": [
+  421,
+  520
+ ],
+ "coverage": "refused:type-assertion",
+ "verdict": "WITNESS",
+ "laneB": "WITNESS",
+ "laneA": null,
+ "witness": {
+  "input": 4,
+  "args": [
+   {
+    "$fake": "arg0"
+   },
+   {
+    "$fake": "arg1"
+   }
+  ],
+  "parent": {
+   "outcome": {
+    "threw": {
+     "$error": "TypeError",
+     "message": "Cannot read properties of undefined (reading 'currentSegments')"
+    }
+   },
+   "heap": {
+    "roots": [
+     {
+      "$fake": "arg0"
+     },
+     {
+      "$fake": "arg1"
+     }
+    ],
+    "own": {},
+    "outcome": null,
+    "anchors": 0,
+    "heap": []
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0.codePath",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg1.type",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg1.parent",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg1.type",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg1.parent",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg1.parent.type",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.codePath",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "candidate": {
+   "outcome": {
+    "threw": {
+     "$error": "TypeError",
+     "message": "Cannot read properties of undefined (reading 'currentSegments')"
+    }
+   },
+   "heap": {
+    "roots": [
+     {
+      "$fake": "arg0"
+     },
+     {
+      "$fake": "arg1"
+     }
+    ],
+    "own": {},
+    "outcome": null,
+    "anchors": 0,
+    "heap": []
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0.codePath",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg1.type",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.codePath",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "where": {
+   "field": "trace",
+   "index": 2,
+   "parent": {
+    "op": "get",
+    "path": "arg1.parent",
+    "args": []
+   },
+   "candidate": {
+    "op": "get",
+    "path": "arg0.codePath",
+    "args": []
+   },
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__159/run-jLj83U/sources/lib/code-path-analysis/.lean_base_97420_code-path-analyzer.js",
+     "start": 519,
+     "end": 523,
+     "text": "if (!dontForward && (!node.parent || node.type !== node.parent.type)) {\n\n        // Emits onCodePathSegmentStart events if updated.\n        forwardCurrentToHead(analyzer, node);\n    }"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__159/run-jLj83U/sources/lib/code-path-analysis/.lean_head_97420_code-path-analyzer.js",
+     "start": 138,
+     "end": 138,
+     "text": "const codePath = analyzer.codePath;"
+    }
+   }
+  }
+ },
+ "reason": "`codePath` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+ "advice": [
+  {
+   "line": 423,
+   "rule": "type-assertion",
+   "msg": "`codePath` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+   "do": null
+  }
+ ],
+ "editIds": [
+  "81b1ece62e1c377a2f907527b60c26f3a51b744ee5e659a550e810be5aba6239",
+  "bd5bdf3051a005714f3a3b708e42f4890fdf95d64878489f2cd6687b5a089445",
+  "148d4e9240b5885951a4d95b5177db463ae79d4679178c69ed232265605e8118",
+  "ccb642d38077003217128d6045d98ee9e175427460cc4b2c1332ab7f75c4c009",
+  "e2a648ca5a26230b7038e556cf9451025cacd54e065ec50f0bbce7ee3d84f75f",
+  "f660dd950c15ea06ce0b7ef6a80b7ec3b6775ef355cb8ec8c13b4865e6df70a9",
+  "0d04caef3eabcdc825017c9220354083dbc3d3a891d9dcb7953ff22daf053ed2",
+  "2d98ef0e7cc5ae9f244f610d20acc9644656e856ea06119aaae86250c2d8bd12",
+  "d673fd6e5b74d328c388408cd579392ddc5e5c1b60e65c09230b5aed636b1c87"
+ ]
+}

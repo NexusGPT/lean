@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/key-spacing.js",
+ "unit": "(edit abb61a017ea8)",
+ "editIds": [
+  "abb61a017ea8d39d09720ce8567e15f0f26f72352f9b86ecd881bf1195e6e53a"
+ ],
+ "lines": [
+  421,
+  421
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

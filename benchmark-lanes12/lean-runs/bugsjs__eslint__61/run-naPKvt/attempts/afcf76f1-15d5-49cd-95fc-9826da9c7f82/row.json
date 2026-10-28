@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/operator-assignment.js",
+ "unit": "(edit 3bb5f02b410d)",
+ "editIds": [
+  "3bb5f02b410dfae605ce2d9b2b2b4dbaf320697739db6411c501b53111b56a9d"
+ ],
+ "lines": [
+  12,
+  12
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

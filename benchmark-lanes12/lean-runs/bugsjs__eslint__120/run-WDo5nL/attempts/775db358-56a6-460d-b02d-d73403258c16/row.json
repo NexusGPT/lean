@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/valid-typeof.js",
+ "unit": "(edit fb3c49c2fd1e)",
+ "editIds": [
+  "fb3c49c2fd1e2f30335fb3123aa84227f0acdc502498145bcd715507b771e9ec"
+ ],
+ "lines": [
+  54,
+  54
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/models/post.js",
+ "unit": "(edit 5efe70e24dff)",
+ "editIds": [
+  "5efe70e24dffab40920b71f41efb4601b551d152223afafa4a8903a2827bdbcf"
+ ],
+ "lines": [
+  135,
+  135
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

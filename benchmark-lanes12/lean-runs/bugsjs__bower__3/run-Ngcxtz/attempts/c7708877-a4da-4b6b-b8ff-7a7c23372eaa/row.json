@@ -1,0 +1,21 @@
+{
+ "file": "lib/core/scripts.js",
+ "unit": "(edit 2a13c25d31cf)",
+ "editIds": [
+  "2a13c25d31cfe19f8a66385b8170f008e82063d366f5338999ffe3feafbcf4b9"
+ ],
+ "lines": [
+  86,
+  86
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FirstStatement"
+ },
+ "advice": []
+}

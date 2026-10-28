@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/multiline-comment-style.js",
+ "unit": "(edit d369f67e52e1)",
+ "editIds": [
+  "d369f67e52e153771e245ac1e683df9916f19570fb148491159409762f993726"
+ ],
+ "lines": [
+  192,
+  192
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

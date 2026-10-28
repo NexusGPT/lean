@@ -1,0 +1,226 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__1/run-M57FjU",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "4742d82ee9daf68c9095c283ce1d0dab42fe9e32",
+  "head": "34eabf1c68f005fe7e44468b56b97c979e290467",
+  "files": [
+   {
+    "id": "4a6f0ae7511909ba0be7ee9b1e4071c6c3dd5c6bcdc6bad563cbb82f5d3510b4",
+    "file": "lib/rules/no-obj-calls.js",
+    "oldPath": "lib/rules/no-obj-calls.js",
+    "newPath": "lib/rules/no-obj-calls.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "bd9b6ee4f04f76c220c01f66ebc8526f7fad5e01",
+    "newOid": "617459c4c2808a1648315374c0dc639359e2d732",
+    "status": "M",
+    "edits": [
+     "14fcd1d4a34041cfcec60dd7d0ccd020528ba4ccaff924d72791a00be4c2b013",
+     "3feeab1a84c3f7b1ad1716c0afc7fbfb755f4c5a3f2912d292f5579f7ceafdd4"
+    ],
+    "hunks": [
+     {
+      "id": "f52ffc45fa809efe34d9b4ab1424daf147ce886947ef898a4c0b5b2990bfed47",
+      "old": {
+       "start": 31,
+       "count": 1
+      },
+      "new": {
+       "start": 31,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "0d00f58e530378c673c64e26ab379cf358f451d8c6a5a608cb60528039b364f3",
+    "newHash": "c01c51faec74d62e04e3a6cb5e9030dbc8d4c7f8a55bcb850b6d8856628a2f9c",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "14fcd1d4a34041cfcec60dd7d0ccd020528ba4ccaff924d72791a00be4c2b013",
+    "fileId": "4a6f0ae7511909ba0be7ee9b1e4071c6c3dd5c6bcdc6bad563cbb82f5d3510b4",
+    "file": "lib/rules/no-obj-calls.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f52ffc45fa809efe34d9b4ab1424daf147ce886947ef898a4c0b5b2990bfed47",
+    "side": "old",
+    "old": {
+     "start": 31,
+     "count": 1
+    },
+    "new": {
+     "start": 31,
+     "count": 0
+    },
+    "offsets": {
+     "start": 765,
+     "end": 827
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "old"
+    }
+   },
+   {
+    "id": "3feeab1a84c3f7b1ad1716c0afc7fbfb755f4c5a3f2912d292f5579f7ceafdd4",
+    "fileId": "4a6f0ae7511909ba0be7ee9b1e4071c6c3dd5c6bcdc6bad563cbb82f5d3510b4",
+    "file": "lib/rules/no-obj-calls.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f52ffc45fa809efe34d9b4ab1424daf147ce886947ef898a4c0b5b2990bfed47",
+    "side": "new",
+    "old": {
+     "start": 31,
+     "count": 0
+    },
+    "new": {
+     "start": 31,
+     "count": 1
+    },
+    "offsets": {
+     "start": 765,
+     "end": 849
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "a56a04f26ba00f7635a4a9c5bd1b5d3249ec85fb862cb0fb53f7d4a3b67d85de",
+  "reconciliation": {
+   "expected": [
+    "14fcd1d4a34041cfcec60dd7d0ccd020528ba4ccaff924d72791a00be4c2b013",
+    "3feeab1a84c3f7b1ad1716c0afc7fbfb755f4c5a3f2912d292f5579f7ceafdd4"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "14fcd1d4a34041cfcec60dd7d0ccd020528ba4ccaff924d72791a00be4c2b013",
+    "3feeab1a84c3f7b1ad1716c0afc7fbfb755f4c5a3f2912d292f5579f7ceafdd4"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "14fcd1d4a34041cfcec60dd7d0ccd020528ba4ccaff924d72791a00be4c2b013",
+      "3feeab1a84c3f7b1ad1716c0afc7fbfb755f4c5a3f2912d292f5579f7ceafdd4"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "085e4a3845df23c8e12772838f905cf16f9fd9af07df7cacba49e2af89370950",
+   "attemptId": "a87eb7bb-1d35-4f38-951f-80a7bddba9f4",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__1/run-M57FjU/attempts/a87eb7bb-1d35-4f38-951f-80a7bddba9f4/row.json",
+    "sha256": "6532b108ce33563fadad348e8147bb4c80557a3538223b0d0881b2fc051df683"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "09cc94ad9542e809c24adadebf4012e351fdf0ad1a99f7ad0b9c021b6816169d",
+   "attemptId": "2b5888e4-8133-47e7-9e2e-4559b4097b25",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__1/run-M57FjU/attempts/2b5888e4-8133-47e7-9e2e-4559b4097b25/row.json",
+    "sha256": "4b8c4249d6eff18d5040682ae5895e1e5a209d4d5141744a209f7e9f4d712b36"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/no-obj-calls.js",
+   "unit": "(edit 14fcd1d4a340)",
+   "editIds": [
+    "14fcd1d4a34041cfcec60dd7d0ccd020528ba4ccaff924d72791a00be4c2b013"
+   ],
+   "lines": [
+    31,
+    31
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-obj-calls.js",
+   "unit": "(edit 3feeab1a84c3)",
+   "editIds": [
+    "3feeab1a84c3f7b1ad1716c0afc7fbfb755f4c5a3f2912d292f5579f7ceafdd4"
+   ],
+   "lines": [
+    31,
+    31
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "085e4a3845df23c8e12772838f905cf16f9fd9af07df7cacba49e2af89370950",
+   "09cc94ad9542e809c24adadebf4012e351fdf0ad1a99f7ad0b9c021b6816169d"
+  ],
+  "terminal": [
+   "085e4a3845df23c8e12772838f905cf16f9fd9af07df7cacba49e2af89370950",
+   "09cc94ad9542e809c24adadebf4012e351fdf0ad1a99f7ad0b9c021b6816169d"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

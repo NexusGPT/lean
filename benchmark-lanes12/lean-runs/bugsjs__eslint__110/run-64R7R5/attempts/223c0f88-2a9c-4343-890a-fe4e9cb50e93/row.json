@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-inline-comments.js",
+ "unit": "(edit 905b4c9bcc94)",
+ "editIds": [
+  "905b4c9bcc949af6a4ec89f64ec996711e33dd36bb90ce5a423d318468b334f1"
+ ],
+ "lines": [
+  34,
+  34
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

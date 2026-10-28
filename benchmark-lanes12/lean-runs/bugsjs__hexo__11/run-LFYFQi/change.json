@@ -1,0 +1,586 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "ed1fb58ea4769280cbfa9fc42edd917892edb9fc",
+ "head": "2841cd861e21e587c55c21ae73415907b1c0c172",
+ "files": [
+  {
+   "id": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "oldPath": "lib/hexo/index.js",
+   "newPath": "lib/hexo/index.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "4d1c2d09457cd177c103102569d803bf9bcdcb19",
+   "newOid": "2424307a88bd25820849ec9ba79f58148a76b8aa",
+   "status": "M",
+   "edits": [
+    "5b279fa1fcc44566ab8fe124964a825d2d1a5de49db4e2a98cec14a33b252391",
+    "0c19f548bfd9d20f6cbb24cac4fa9b5e2bb7c3fd6b2abc643ff394a294e1322d",
+    "ed1d95844ed2baf2163287a879e5a661cf223f38734a272ded76d8ef74047a3d",
+    "50f4535cf9aae0b5690c29a1b819f32ce3f6a4f3c9c07c2012964ddb2b2cb3b0",
+    "ce004f61c55ca65b82ad918821f497d5dbd74b04a5de8996550c0dd3b1b6e22a",
+    "b57c27064df1f7104cb7773364583f612a775ea29f29ac86362625d4abc6f15c",
+    "891193f206aae176c044ff9ea8c0819f7503557e56e11ad0591a9cd136a92ad5",
+    "a680d04b023590c6f7f17196a4c9eabf5305d1fe3eed96a82dfb73f4c0b0f3bf",
+    "1a00b9fac814b1996d1d0f10c02d06c6bb96484040b0626682264939da13248f",
+    "568314e66c1814ba2ee1f0fdc485c805745d9c18b0096a65323def822b04a348"
+   ],
+   "hunks": [
+    {
+     "id": "2220184f7ac1812118d4b56f5974643cb33b14c314f830e35a4f7b4014830baf",
+     "old": {
+      "start": 25,
+      "count": 0
+     },
+     "new": {
+      "start": 26,
+      "count": 1
+     }
+    },
+    {
+     "id": "00372ab75ff76956bf49e8bafde0615a133cef8010d5d95a6098f9c0f0249021",
+     "old": {
+      "start": 34,
+      "count": 0
+     },
+     "new": {
+      "start": 36,
+      "count": 2
+     }
+    },
+    {
+     "id": "f29ffe7258e600e332ce47686f36559ebbdea374735272800349e0a04088d3d4",
+     "old": {
+      "start": 56,
+      "count": 4
+     },
+     "new": {
+      "start": 58,
+      "count": 0
+     }
+    },
+    {
+     "id": "9d0d9aac69278d0c067e6bb61d44d91c46657586b2c61b7118ff852bc201a714",
+     "old": {
+      "start": 92,
+      "count": 0
+     },
+     "new": {
+      "start": 92,
+      "count": 3
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "a0792f6ef7d1199ea9fc70f093e709097e8a7c1c4c346fdba1c9030cc688af7e",
+   "newHash": "4de2b7c44aaa0b3712771febb596ca7ddc61dd2480c0c5bd9222172b53b316ba",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "Hexo",
+      "side": "old",
+      "file": "lib/hexo/index.js",
+      "start": 31,
+      "end": 99,
+      "offset": 921,
+      "stop": 2782,
+      "id": "8444d2bc4bb0bfb2c943e1750ad6dcb160eeb22162fe6915509ed62d72472742"
+     },
+     {
+      "name": "stopWatcher",
+      "side": "old",
+      "file": "lib/hexo/index.js",
+      "start": 288,
+      "end": 290,
+      "offset": 7322,
+      "stop": 7390,
+      "id": "c5b72a184d04d065be1b389dcf6fc705d3341839861e4ebfcee46064e5eb37cd"
+     }
+    ],
+    "new": [
+     {
+      "name": "Hexo",
+      "side": "new",
+      "file": "lib/hexo/index.js",
+      "start": 32,
+      "end": 101,
+      "offset": 975,
+      "stop": 2802,
+      "id": "7f058607e50e9077235d655deac1d0cdc72042ab02c19bdc38fe002422a3c000"
+     },
+     {
+      "name": "stopWatcher",
+      "side": "new",
+      "file": "lib/hexo/index.js",
+      "start": 290,
+      "end": 292,
+      "offset": 7342,
+      "stop": 7410,
+      "id": "1b19b026f2538c0e2c54b1eda608b5fb0f71afda66244b293d2b325ec48d3c36"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "5b279fa1fcc44566ab8fe124964a825d2d1a5de49db4e2a98cec14a33b252391",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2220184f7ac1812118d4b56f5974643cb33b14c314f830e35a4f7b4014830baf",
+   "side": "new",
+   "old": {
+    "start": 25,
+    "count": 0
+   },
+   "new": {
+    "start": 26,
+    "count": 1
+   },
+   "offsets": {
+    "start": 838,
+    "end": 892
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "0c19f548bfd9d20f6cbb24cac4fa9b5e2bb7c3fd6b2abc643ff394a294e1322d",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "00372ab75ff76956bf49e8bafde0615a133cef8010d5d95a6098f9c0f0249021",
+   "side": "new",
+   "old": {
+    "start": 34,
+    "count": 0
+   },
+   "new": {
+    "start": 36,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1057,
+    "end": 1096
+   },
+   "links": [
+    {
+     "id": "7f058607e50e9077235d655deac1d0cdc72042ab02c19bdc38fe002422a3c000",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "new",
+     "start": 32,
+     "end": 101
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "ed1d95844ed2baf2163287a879e5a661cf223f38734a272ded76d8ef74047a3d",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "00372ab75ff76956bf49e8bafde0615a133cef8010d5d95a6098f9c0f0249021",
+   "side": "new",
+   "old": {
+    "start": 34,
+    "count": 0
+   },
+   "new": {
+    "start": 37,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1096,
+    "end": 1097
+   },
+   "links": [
+    {
+     "id": "7f058607e50e9077235d655deac1d0cdc72042ab02c19bdc38fe002422a3c000",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "new",
+     "start": 32,
+     "end": 101
+    }
+   ],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "new"
+   }
+  },
+  {
+   "id": "50f4535cf9aae0b5690c29a1b819f32ce3f6a4f3c9c07c2012964ddb2b2cb3b0",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "f29ffe7258e600e332ce47686f36559ebbdea374735272800349e0a04088d3d4",
+   "side": "old",
+   "old": {
+    "start": 56,
+    "count": 1
+   },
+   "new": {
+    "start": 58,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1719,
+    "end": 1781
+   },
+   "links": [
+    {
+     "id": "8444d2bc4bb0bfb2c943e1750ad6dcb160eeb22162fe6915509ed62d72472742",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "old",
+     "start": 31,
+     "end": 99
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "ce004f61c55ca65b82ad918821f497d5dbd74b04a5de8996550c0dd3b1b6e22a",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "f29ffe7258e600e332ce47686f36559ebbdea374735272800349e0a04088d3d4",
+   "side": "old",
+   "old": {
+    "start": 57,
+    "count": 1
+   },
+   "new": {
+    "start": 58,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1781,
+    "end": 1851
+   },
+   "links": [
+    {
+     "id": "8444d2bc4bb0bfb2c943e1750ad6dcb160eeb22162fe6915509ed62d72472742",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "old",
+     "start": 31,
+     "end": 99
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "b57c27064df1f7104cb7773364583f612a775ea29f29ac86362625d4abc6f15c",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "f29ffe7258e600e332ce47686f36559ebbdea374735272800349e0a04088d3d4",
+   "side": "old",
+   "old": {
+    "start": 58,
+    "count": 1
+   },
+   "new": {
+    "start": 58,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1851,
+    "end": 1920
+   },
+   "links": [
+    {
+     "id": "8444d2bc4bb0bfb2c943e1750ad6dcb160eeb22162fe6915509ed62d72472742",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "old",
+     "start": 31,
+     "end": 99
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "891193f206aae176c044ff9ea8c0819f7503557e56e11ad0591a9cd136a92ad5",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "f29ffe7258e600e332ce47686f36559ebbdea374735272800349e0a04088d3d4",
+   "side": "old",
+   "old": {
+    "start": 59,
+    "count": 1
+   },
+   "new": {
+    "start": 58,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1920,
+    "end": 1921
+   },
+   "links": [
+    {
+     "id": "8444d2bc4bb0bfb2c943e1750ad6dcb160eeb22162fe6915509ed62d72472742",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "old",
+     "start": 31,
+     "end": 99
+    }
+   ],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "old"
+   }
+  },
+  {
+   "id": "a680d04b023590c6f7f17196a4c9eabf5305d1fe3eed96a82dfb73f4c0b0f3bf",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "9d0d9aac69278d0c067e6bb61d44d91c46657586b2c61b7118ff852bc201a714",
+   "side": "new",
+   "old": {
+    "start": 92,
+    "count": 0
+   },
+   "new": {
+    "start": 92,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2526,
+    "end": 2584
+   },
+   "links": [
+    {
+     "id": "7f058607e50e9077235d655deac1d0cdc72042ab02c19bdc38fe002422a3c000",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "new",
+     "start": 32,
+     "end": 101
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "1a00b9fac814b1996d1d0f10c02d06c6bb96484040b0626682264939da13248f",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "9d0d9aac69278d0c067e6bb61d44d91c46657586b2c61b7118ff852bc201a714",
+   "side": "new",
+   "old": {
+    "start": 92,
+    "count": 0
+   },
+   "new": {
+    "start": 93,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2584,
+    "end": 2653
+   },
+   "links": [
+    {
+     "id": "7f058607e50e9077235d655deac1d0cdc72042ab02c19bdc38fe002422a3c000",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "new",
+     "start": 32,
+     "end": 101
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "568314e66c1814ba2ee1f0fdc485c805745d9c18b0096a65323def822b04a348",
+   "fileId": "f1309bc0bed2ccdcbd3fb8054efd442320bedbd9e1e8915ce37e549315e706b1",
+   "file": "lib/hexo/index.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "9d0d9aac69278d0c067e6bb61d44d91c46657586b2c61b7118ff852bc201a714",
+   "side": "new",
+   "old": {
+    "start": 92,
+    "count": 0
+   },
+   "new": {
+    "start": 94,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2653,
+    "end": 2654
+   },
+   "links": [
+    {
+     "id": "7f058607e50e9077235d655deac1d0cdc72042ab02c19bdc38fe002422a3c000",
+     "file": "lib/hexo/index.js",
+     "unit": "Hexo",
+     "side": "new",
+     "start": 32,
+     "end": 101
+    }
+   ],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "6191135de9215ef563633aa70b26b2d33b520fc77718ce271410b71e19c64bf2",
+ "reconciliation": {
+  "expected": [
+   "5b279fa1fcc44566ab8fe124964a825d2d1a5de49db4e2a98cec14a33b252391",
+   "0c19f548bfd9d20f6cbb24cac4fa9b5e2bb7c3fd6b2abc643ff394a294e1322d",
+   "ed1d95844ed2baf2163287a879e5a661cf223f38734a272ded76d8ef74047a3d",
+   "50f4535cf9aae0b5690c29a1b819f32ce3f6a4f3c9c07c2012964ddb2b2cb3b0",
+   "ce004f61c55ca65b82ad918821f497d5dbd74b04a5de8996550c0dd3b1b6e22a",
+   "b57c27064df1f7104cb7773364583f612a775ea29f29ac86362625d4abc6f15c",
+   "891193f206aae176c044ff9ea8c0819f7503557e56e11ad0591a9cd136a92ad5",
+   "a680d04b023590c6f7f17196a4c9eabf5305d1fe3eed96a82dfb73f4c0b0f3bf",
+   "1a00b9fac814b1996d1d0f10c02d06c6bb96484040b0626682264939da13248f",
+   "568314e66c1814ba2ee1f0fdc485c805745d9c18b0096a65323def822b04a348"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "5b279fa1fcc44566ab8fe124964a825d2d1a5de49db4e2a98cec14a33b252391",
+   "0c19f548bfd9d20f6cbb24cac4fa9b5e2bb7c3fd6b2abc643ff394a294e1322d",
+   "ed1d95844ed2baf2163287a879e5a661cf223f38734a272ded76d8ef74047a3d",
+   "50f4535cf9aae0b5690c29a1b819f32ce3f6a4f3c9c07c2012964ddb2b2cb3b0",
+   "ce004f61c55ca65b82ad918821f497d5dbd74b04a5de8996550c0dd3b1b6e22a",
+   "b57c27064df1f7104cb7773364583f612a775ea29f29ac86362625d4abc6f15c",
+   "891193f206aae176c044ff9ea8c0819f7503557e56e11ad0591a9cd136a92ad5",
+   "a680d04b023590c6f7f17196a4c9eabf5305d1fe3eed96a82dfb73f4c0b0f3bf",
+   "1a00b9fac814b1996d1d0f10c02d06c6bb96484040b0626682264939da13248f",
+   "568314e66c1814ba2ee1f0fdc485c805745d9c18b0096a65323def822b04a348"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "5b279fa1fcc44566ab8fe124964a825d2d1a5de49db4e2a98cec14a33b252391",
+     "0c19f548bfd9d20f6cbb24cac4fa9b5e2bb7c3fd6b2abc643ff394a294e1322d",
+     "ed1d95844ed2baf2163287a879e5a661cf223f38734a272ded76d8ef74047a3d",
+     "50f4535cf9aae0b5690c29a1b819f32ce3f6a4f3c9c07c2012964ddb2b2cb3b0",
+     "ce004f61c55ca65b82ad918821f497d5dbd74b04a5de8996550c0dd3b1b6e22a",
+     "b57c27064df1f7104cb7773364583f612a775ea29f29ac86362625d4abc6f15c",
+     "891193f206aae176c044ff9ea8c0819f7503557e56e11ad0591a9cd136a92ad5",
+     "a680d04b023590c6f7f17196a4c9eabf5305d1fe3eed96a82dfb73f4c0b0f3bf",
+     "1a00b9fac814b1996d1d0f10c02d06c6bb96484040b0626682264939da13248f",
+     "568314e66c1814ba2ee1f0fdc485c805745d9c18b0096a65323def822b04a348"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

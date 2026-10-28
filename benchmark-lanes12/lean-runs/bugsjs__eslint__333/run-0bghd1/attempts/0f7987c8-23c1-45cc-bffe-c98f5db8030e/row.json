@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/padded-blocks.js",
+ "unit": "(edit e7e35946a085)",
+ "editIds": [
+  "e7e35946a08574184802a13a29cbcea5bc3d70b0e3ef2ce74a48cf4035adf376"
+ ],
+ "lines": [
+  191,
+  191
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

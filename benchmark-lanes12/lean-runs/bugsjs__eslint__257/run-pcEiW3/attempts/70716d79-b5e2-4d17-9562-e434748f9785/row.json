@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/func-names.js",
+ "unit": "(edit 5b1f7cacabaf)",
+ "editIds": [
+  "5b1f7cacabaf7a22af3b0bd7c04e6267c705b8db73b1089f5e7a8eca378ad456"
+ ],
+ "lines": [
+  10,
+  10
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-use-before-define.js",
+ "unit": "(edit dbae9ccbe046)",
+ "editIds": [
+  "dbae9ccbe04660ece9a45295c04abf16ca7a440aab1d42bd1b500068f9f781da"
+ ],
+ "lines": [
+  96,
+  96
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

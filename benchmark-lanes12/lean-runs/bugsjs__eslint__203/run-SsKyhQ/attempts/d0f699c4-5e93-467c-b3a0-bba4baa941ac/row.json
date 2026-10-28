@@ -1,0 +1,21 @@
+{
+ "file": "lib/cli-engine.js",
+ "unit": "(edit 16b59a8c7644)",
+ "editIds": [
+  "16b59a8c7644d61f4b78e326f913893d36d1c91333852eb37ad74afc136a3e06"
+ ],
+ "lines": [
+  496,
+  496
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

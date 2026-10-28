@@ -1,0 +1,21 @@
+{
+ "file": "lib/config/autoconfig.js",
+ "unit": "(edit 3d5a161118a1)",
+ "editIds": [
+  "3d5a161118a142b3a778f32982eabbfbab452d97dcabd9c08d1f42aaa6d4e020"
+ ],
+ "lines": [
+  313,
+  313
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

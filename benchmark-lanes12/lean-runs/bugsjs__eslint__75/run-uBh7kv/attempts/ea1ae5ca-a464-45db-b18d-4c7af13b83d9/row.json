@@ -1,0 +1,429 @@
+{
+ "file": "lib/linter.js",
+ "unit": "isDisabledByReportingConfig",
+ "lines": [
+  410,
+  424
+ ],
+ "coverage": "refused:unsupported-member",
+ "verdict": "WITNESS",
+ "laneB": "WITNESS",
+ "laneA": null,
+ "witness": {
+  "input": 74,
+  "args": [
+   [
+    {
+     "$fake": "arg0[0]"
+    },
+    {
+     "$fake": "arg0[1]"
+    },
+    {
+     "$fake": "arg0[2]"
+    },
+    {
+     "$fake": "arg0[3]"
+    },
+    {
+     "$fake": "arg0[4]"
+    }
+   ],
+   "null",
+   {
+    "$fake": "arg2"
+   }
+  ],
+  "parent": {
+   "outcome": {
+    "returned": false
+   },
+   "heap": {
+    "roots": [
+     {
+      "$ref": 0
+     },
+     "null",
+     {
+      "$fake": "arg2"
+     }
+    ],
+    "own": {},
+    "outcome": false,
+    "anchors": 1,
+    "heap": [
+     {
+      "kind": "array",
+      "edges": [
+       {
+        "$fake": "arg0[0]"
+       },
+       {
+        "$fake": "arg0[1]"
+       },
+       {
+        "$fake": "arg0[2]"
+       },
+       {
+        "$fake": "arg0[3]"
+       },
+       {
+        "$fake": "arg0[4]"
+       }
+      ]
+     }
+    ]
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0[0].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[0].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[1].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[1].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg2.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg2.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg2.column",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start.column",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].end",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg2.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].end",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].end.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg2.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].end",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].end.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[3].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[3].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[4].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[4].rule",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "candidate": {
+   "outcome": {
+    "returned": false
+   },
+   "heap": {
+    "roots": [
+     {
+      "$ref": 0
+     },
+     "null",
+     {
+      "$fake": "arg2"
+     }
+    ],
+    "own": {},
+    "outcome": false,
+    "anchors": 1,
+    "heap": [
+     {
+      "kind": "array",
+      "edges": [
+       {
+        "$fake": "arg0[0]"
+       },
+       {
+        "$fake": "arg0[1]"
+       },
+       {
+        "$fake": "arg0[2]"
+       },
+       {
+        "$fake": "arg0[3]"
+       },
+       {
+        "$fake": "arg0[4]"
+       }
+      ]
+     }
+    ]
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0[0].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[0].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[1].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[1].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg2.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg2.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start.line",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg2.column",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[2].start.column",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[3].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[3].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[4].rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0[4].rule",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "where": {
+   "field": "trace",
+   "index": 14,
+   "parent": {
+    "op": "get",
+    "path": "arg0[2].end",
+    "args": []
+   },
+   "candidate": {
+    "op": "get",
+    "path": "arg0[3].rule",
+    "args": []
+   },
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__75/run-uBh7kv/sources/lib/.lean_base_3930_linter.js",
+     "start": 416,
+     "end": 420,
+     "text": "if ((!ignore.rule || ignore.rule === ruleId) &&\n            (location.line > ignore.start.line || (location.line === ignore.start.line && location.column >= ignore.start.column)) &&\n            (!igno"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__75/run-uBh7kv/sources/lib/.lean_head_3930_linter.js",
+     "start": 416,
+     "end": 420,
+     "text": "if ((!ignore.rule || ignore.rule === ruleId) &&\n            (location.line > ignore.start.line || (location.line === ignore.start.line && location.column > ignore.start.column)) &&\n            (!ignor"
+    }
+   }
+  }
+ },
+ "reason": "property .rule is not declared on Object",
+ "advice": [
+  {
+   "line": 416,
+   "rule": "unsupported-member",
+   "msg": "property .rule is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 416,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'rule' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 416,
+   "rule": "unsupported-member",
+   "msg": "property .rule is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 416,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'rule' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 417,
+   "rule": "unsupported-member",
+   "msg": "property .line is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 417,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'line' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 417,
+   "rule": "unsupported-member",
+   "msg": "property .start is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 417,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'start' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  }
+ ],
+ "editIds": [
+  "2ca9b5e783f5f4449c4ffacedb8bd3a1f649e4f88b20ab67e74321d689e053e2",
+  "cee5648eca3fdee9d1f7fa1067f05cbd6d04cda4febb72ff71a648792f784b50",
+  "37a34b8d94c5d0c64360dd397e123e12cc5ab7953365b3825e150ecacaf50be2",
+  "2b7ded49f981535a59cb7633257c3a1a0d5f12da06731588498204b11f0b11ff"
+ ]
+}

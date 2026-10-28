@@ -1,0 +1,31 @@
+{
+ "change": "b256c29de88e281ee7fba26fda422352bdbe071201b7c68b0b94e3e84c71898d",
+ "tasks": [
+  {
+   "id": "4104887a2db111a04b181c67e2d8b3c853ff4fcec9d0ef093b086dcf77d50401",
+   "file": "lib/ignored-paths.js",
+   "unit": "IgnoredPaths",
+   "lines": [
+    75,
+    165
+   ],
+   "lanes": [
+    "B",
+    "A"
+   ],
+   "editIds": [
+    "a9bacd371455ca8993bafd5a102e83680c555c40126f0f4577f97390f99e9811",
+    "880a1e36feaaf8b9d686e135c6900c7f0bff80b5d8e0abbb98f0b776f581eb45",
+    "11c4ca9475aaafce0b79e4b8bfbce064660e395201d8a631408a9390f8abc571",
+    "fa2f5b4bf5c64249be873144cdb40324332a7c4a907e8564276172c690d6916b",
+    "e4f946349226239dd89ab9a295fc57793edf1a7d4d037e7285638fbbf6d22fe8",
+    "da11ca251efda86f1e5579b1209c62962aa683a5041287292ae6836f6891be45",
+    "172424d8bcc6e41b728a97ffb33b42954a46aad61eb537468b8adcbcbeb4adfc",
+    "727e43d6ea98ae0b51f628dd3bd16d63e5beeceb014ac9db9ee383597d03f1b7",
+    "1fe3ab7d320fc40a8e89db7d9967b511e51b47118245affd1660730019e4cd7f"
+   ],
+   "attemptId": "f69fedc9-08c2-4f8f-92ec-d9b4e61b5f98",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__151/run-FzdIAU/attempts/f69fedc9-08c2-4f8f-92ec-d9b4e61b5f98"
+  }
+ ]
+}

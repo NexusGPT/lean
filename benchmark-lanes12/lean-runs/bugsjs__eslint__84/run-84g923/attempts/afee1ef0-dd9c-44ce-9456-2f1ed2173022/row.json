@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/space-before-keywords.js",
+ "unit": "(edit 6d0371264ad6)",
+ "editIds": [
+  "6d0371264ad66f4aabb4fedfb9e203d18ca82e694f70746ea7aa5ae0064b78de"
+ ],
+ "lines": [
+  188,
+  188
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

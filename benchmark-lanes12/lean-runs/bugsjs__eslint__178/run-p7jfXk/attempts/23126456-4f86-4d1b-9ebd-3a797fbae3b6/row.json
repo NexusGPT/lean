@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/valid-jsdoc.js",
+ "unit": "(edit ef2fa21de6d7)",
+ "editIds": [
+  "ef2fa21de6d77a756dc57387c3d81c733663fa8f1afeb5366474d64b4ae66e92"
+ ],
+ "lines": [
+  344,
+  344
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

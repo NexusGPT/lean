@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/generator-star-spacing.js",
+ "unit": "(edit f7d4fa84ba93)",
+ "editIds": [
+  "f7d4fa84ba931718fb7ccbccbcb8499648649ab59af2b7d3a2d27eb248fb2804"
+ ],
+ "lines": [
+  74,
+  74
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

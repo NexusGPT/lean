@@ -1,0 +1,20 @@
+{
+ "file": "lib/util.js",
+ "unit": "(edit 3662cbdd2844)",
+ "editIds": [
+  "3662cbdd2844b2ab490b7442d744729a8fc53d625bb623261bfc5d70924e41f6"
+ ],
+ "lines": [
+  33,
+  33
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

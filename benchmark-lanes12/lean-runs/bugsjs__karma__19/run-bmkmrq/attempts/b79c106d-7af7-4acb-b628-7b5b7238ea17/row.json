@@ -1,0 +1,20 @@
+{
+ "file": "lib/preprocessor.js",
+ "unit": "(edit 1878402d7b2d)",
+ "editIds": [
+  "1878402d7b2d469cd0f5dffd6cf13faafa38834e7a417d07ef8a121aa745fe76"
+ ],
+ "lines": [
+  63,
+  63
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-else-return.js",
+ "unit": "(edit a59ad377b37f)",
+ "editIds": [
+  "a59ad377b37fec616c7645919eafb9efacbaf8043e480821370a1fc02868cdc8"
+ ],
+ "lines": [
+  205,
+  205
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

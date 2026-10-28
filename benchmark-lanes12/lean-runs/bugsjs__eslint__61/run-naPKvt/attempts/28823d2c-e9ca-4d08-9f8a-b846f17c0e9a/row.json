@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/operator-assignment.js",
+ "unit": "(edit 78d46a26ae6c)",
+ "editIds": [
+  "78d46a26ae6ce28742064428c485033b227ed5f0f81936c9733cf43799f55a8e"
+ ],
+ "lines": [
+  7,
+  7
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

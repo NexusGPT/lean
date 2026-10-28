@@ -1,0 +1,20 @@
+{
+ "file": "lib/util/source-code-fixer.js",
+ "unit": "(edit b7686b2ec947)",
+ "editIds": [
+  "b7686b2ec94726077826a8771ea07edde248d6cd692236b77c09fbf84b9552da"
+ ],
+ "lines": [
+  111,
+  111
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

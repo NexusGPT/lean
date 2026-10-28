@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unused-vars.js",
+ "unit": "(edit 1888b8fb5a81)",
+ "editIds": [
+  "1888b8fb5a811eec8bfb401a60b8d3667c0743ff18e9baa4ec1a6db91016bb43"
+ ],
+ "lines": [
+  123,
+  123
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

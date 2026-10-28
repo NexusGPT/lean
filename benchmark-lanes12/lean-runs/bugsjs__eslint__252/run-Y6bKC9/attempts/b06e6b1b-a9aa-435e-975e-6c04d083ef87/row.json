@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/func-call-spacing.js",
+ "unit": "(edit b2b57863799b)",
+ "editIds": [
+  "b2b57863799ba1bc673ea819d0232e0bbb259d7b3f083cae940d33089d23f099"
+ ],
+ "lines": [
+  90,
+  90
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

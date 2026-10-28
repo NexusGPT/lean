@@ -1,0 +1,20 @@
+{
+ "file": "Makefile",
+ "unit": "(edit 80c457398ffd)",
+ "editIds": [
+  "80c457398ffd99a89a27af99421dfc641428e24cb2060c1f9c841aed8da478ee"
+ ],
+ "lines": [
+  32,
+  32
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:build",
+ "reason": "build",
+ "context": {
+  "reason": "non-source",
+  "parent": null
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/brace-style.js",
+ "unit": "(edit 7ca0e1925337)",
+ "editIds": [
+  "7ca0e192533761212ab9bebd7615eeff8bd2fd152b0b2e13ed7135580f6b795b"
+ ],
+ "lines": [
+  142,
+  142
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

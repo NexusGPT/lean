@@ -1,0 +1,148 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "449b0f5686dffcf4bde2c47b56ef17bd49c1c58c",
+ "head": "44a626245b98a4dc998ee4e2a3c8b855f998bfa4",
+ "files": [
+  {
+   "id": "69d635ff88e480dcc31a372c49cd9b3c9fdc45a00b1dc635c1526fb9d79351b2",
+   "file": "lib/preprocessor.js",
+   "oldPath": "lib/preprocessor.js",
+   "newPath": "lib/preprocessor.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "4e147187c3284b7bbeee05a8c3c1cde820beb6db",
+   "newOid": "3d7db2a5dad9abc5878fab641124d57fe2b8dbba",
+   "status": "M",
+   "edits": [
+    "37a5560e4f2f223f4950d6ab926613923aeb6fd2a0daf360171b543949c4998a",
+    "1173af40096141b8b027a356660ebf1890b657d8ff35921ad994b967bf7f83b8"
+   ],
+   "hunks": [
+    {
+     "id": "fbc253d498424cc191b983eedf0b8607f71eed4b4990b72b9fa883540f92152f",
+     "old": {
+      "start": 54,
+      "count": 0
+     },
+     "new": {
+      "start": 55,
+      "count": 1
+     }
+    },
+    {
+     "id": "4d1d636b915b5c2128d981dc3918269bffade2378d57b1c823a5bdfe02fb44f7",
+     "old": {
+      "start": 96,
+      "count": 1
+     },
+     "new": {
+      "start": 96,
+      "count": 0
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "90585fea82784c0fd8e5693e325ce6fbe3aa8ea1ab356124eab351345c1219ce",
+   "newHash": "12cf15d6051519673d0aff337fa9f26e3f25c5b0aada86d4bb98119533aed401",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "37a5560e4f2f223f4950d6ab926613923aeb6fd2a0daf360171b543949c4998a",
+   "fileId": "69d635ff88e480dcc31a372c49cd9b3c9fdc45a00b1dc635c1526fb9d79351b2",
+   "file": "lib/preprocessor.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "fbc253d498424cc191b983eedf0b8607f71eed4b4990b72b9fa883540f92152f",
+   "side": "new",
+   "old": {
+    "start": 54,
+    "count": 0
+   },
+   "new": {
+    "start": 55,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2172,
+    "end": 2206
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "1173af40096141b8b027a356660ebf1890b657d8ff35921ad994b967bf7f83b8",
+   "fileId": "69d635ff88e480dcc31a372c49cd9b3c9fdc45a00b1dc635c1526fb9d79351b2",
+   "file": "lib/preprocessor.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "4d1d636b915b5c2128d981dc3918269bffade2378d57b1c823a5bdfe02fb44f7",
+   "side": "old",
+   "old": {
+    "start": 96,
+    "count": 1
+   },
+   "new": {
+    "start": 96,
+    "count": 0
+   },
+   "offsets": {
+    "start": 3439,
+    "end": 3470
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FirstStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "old"
+   }
+  }
+ ],
+ "id": "bad5bdcd468590a725df5f4683a6c062f64ec7aa29a9c639f31f049de47bf67f",
+ "reconciliation": {
+  "expected": [
+   "37a5560e4f2f223f4950d6ab926613923aeb6fd2a0daf360171b543949c4998a",
+   "1173af40096141b8b027a356660ebf1890b657d8ff35921ad994b967bf7f83b8"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "37a5560e4f2f223f4950d6ab926613923aeb6fd2a0daf360171b543949c4998a",
+   "1173af40096141b8b027a356660ebf1890b657d8ff35921ad994b967bf7f83b8"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "37a5560e4f2f223f4950d6ab926613923aeb6fd2a0daf360171b543949c4998a",
+     "1173af40096141b8b027a356660ebf1890b657d8ff35921ad994b967bf7f83b8"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

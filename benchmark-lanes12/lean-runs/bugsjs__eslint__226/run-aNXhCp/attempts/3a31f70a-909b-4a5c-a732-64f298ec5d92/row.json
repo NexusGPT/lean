@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/complexity.js",
+ "unit": "(edit 57dbe27aa393)",
+ "editIds": [
+  "57dbe27aa39342b9ae784c3ab43265fac6e132e82010b34961c9feb19c953a18"
+ ],
+ "lines": [
+  45,
+  45
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

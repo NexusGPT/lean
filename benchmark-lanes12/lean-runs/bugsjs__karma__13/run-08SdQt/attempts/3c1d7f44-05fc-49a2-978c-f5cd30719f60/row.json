@@ -1,0 +1,20 @@
+{
+ "file": "lib/launchers/Base.js",
+ "unit": "(edit 4806af7cf1eb)",
+ "editIds": [
+  "4806af7cf1eb210bbad133b798748b53f16b650628287db9c4a5ffc95b51eec7"
+ ],
+ "lines": [
+  121,
+  121
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

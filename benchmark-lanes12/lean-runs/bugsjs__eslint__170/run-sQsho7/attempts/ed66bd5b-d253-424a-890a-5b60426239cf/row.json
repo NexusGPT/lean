@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/new-parens.js",
+ "unit": "(edit 33bd0db86b78)",
+ "editIds": [
+  "33bd0db86b78ca2b3900df6bf884c5af690b17d50a0f140f2e974abc4df81efd"
+ ],
+ "lines": [
+  12,
+  12
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/padded-blocks.js",
+ "unit": "(edit 597c55ad102b)",
+ "editIds": [
+  "597c55ad102b98663bbd132b76804b118f51f4e24146b31f7a68597be18a88b2"
+ ],
+ "lines": [
+  207,
+  207
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

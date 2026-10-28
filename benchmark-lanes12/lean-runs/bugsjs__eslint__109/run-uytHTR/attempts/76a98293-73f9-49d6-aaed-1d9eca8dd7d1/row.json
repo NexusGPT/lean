@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/object-curly-spacing.js",
+ "unit": "(edit 8c1e76508aa3)",
+ "editIds": [
+  "8c1e76508aa3b2fc5c04dff1ac6a518e114aa5d213ebc1fc23729db665d88a14"
+ ],
+ "lines": [
+  225,
+  225
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

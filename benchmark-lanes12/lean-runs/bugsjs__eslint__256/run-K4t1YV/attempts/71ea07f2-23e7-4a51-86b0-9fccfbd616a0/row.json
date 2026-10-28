@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-implicit-coercion.js",
+ "unit": "(edit 3d675118fd20)",
+ "editIds": [
+  "3d675118fd2044c7bc5900fdb5863c4a39a12f0235fa23e2f129bbfb7369ebcd"
+ ],
+ "lines": [
+  207,
+  207
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

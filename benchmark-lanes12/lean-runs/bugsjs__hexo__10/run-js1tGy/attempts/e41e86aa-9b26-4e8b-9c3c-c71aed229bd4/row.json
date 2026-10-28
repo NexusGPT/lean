@@ -1,0 +1,20 @@
+{
+ "file": "lib/hexo/index.js",
+ "unit": "(edit a4045fea40a9)",
+ "editIds": [
+  "a4045fea40a95ebdff161a52d059f7edfbc228d8c3e5d12211099be0ca715e73"
+ ],
+ "lines": [
+  311,
+  311
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

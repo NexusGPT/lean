@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/sort-keys.js",
+ "unit": "(edit 38ac0b7568dd)",
+ "editIds": [
+  "38ac0b7568dd6bedc4880aadd8c302b941c8ca44c23bab9ebff159fa1dcb2a09"
+ ],
+ "lines": [
+  130,
+  130
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

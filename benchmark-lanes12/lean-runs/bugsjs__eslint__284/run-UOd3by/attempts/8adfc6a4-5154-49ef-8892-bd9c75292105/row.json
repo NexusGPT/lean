@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-param-reassign.js",
+ "unit": "(edit 0ab14b3a60c4)",
+ "editIds": [
+  "0ab14b3a60c44e28f50ed83599e421e7a18a7b434943313ff2bd064b1a8fa89a"
+ ],
+ "lines": [
+  102,
+  102
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

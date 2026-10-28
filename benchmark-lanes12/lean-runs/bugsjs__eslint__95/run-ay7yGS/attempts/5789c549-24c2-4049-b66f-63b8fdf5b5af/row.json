@@ -1,0 +1,327 @@
+{
+ "file": "lib/formatters/codeframe.js",
+ "unit": "formatMessage",
+ "lines": [
+  48,
+  71
+ ],
+ "coverage": "refused:unsupported-member",
+ "verdict": "WITNESS",
+ "laneB": "WITNESS",
+ "laneA": null,
+ "witness": {
+  "input": 0,
+  "args": [
+   {
+    "$fake": "arg0"
+   },
+   {
+    "$fake": "arg1"
+   }
+  ],
+  "parent": {
+   "outcome": {
+    "threw": {
+     "$error": "Error",
+     "message": "fault: module:chalk.dim"
+    }
+   },
+   "heap": {
+    "roots": [
+     {
+      "$fake": "arg0"
+     },
+     {
+      "$fake": "arg1"
+     }
+    ],
+    "own": {},
+    "outcome": null,
+    "anchors": 0,
+    "heap": []
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0.fatal",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.severity",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "module:chalk.yellow",
+     "args": []
+    },
+    {
+     "op": "call",
+     "path": "module:chalk.yellow",
+     "args": [
+      "warning"
+     ]
+    },
+    {
+     "op": "get",
+     "path": "module:chalk.bold",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.message",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.message.replace",
+     "args": []
+    },
+    {
+     "op": "call",
+     "path": "arg0.message.replace",
+     "args": [
+      {},
+      ""
+     ]
+    },
+    {
+     "op": "call",
+     "path": "module:chalk.bold",
+     "args": [
+      {
+       "$fake": "arg0.message.replace()#1"
+      }
+     ]
+    },
+    {
+     "op": "get",
+     "path": "arg0.fatal",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "module:chalk.dim",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ruleId",
+     "args": []
+    },
+    {
+     "op": "call",
+     "path": "module:chalk.dim",
+     "args": [
+      "(s15yx)"
+     ]
+    },
+    {
+     "op": "fault",
+     "path": "module:chalk.dim",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "candidate": {
+   "outcome": {
+    "threw": {
+     "$error": "Error",
+     "message": "fault: module:chalk.dim"
+    }
+   },
+   "heap": {
+    "roots": [
+     {
+      "$fake": "arg0"
+     },
+     {
+      "$fake": "arg1"
+     }
+    ],
+    "own": {},
+    "outcome": null,
+    "anchors": 0,
+    "heap": []
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0.fatal",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.severity",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "module:chalk.yellow",
+     "args": []
+    },
+    {
+     "op": "call",
+     "path": "module:chalk.yellow",
+     "args": [
+      "warning"
+     ]
+    },
+    {
+     "op": "get",
+     "path": "module:chalk.bold",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.message",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.message.replace",
+     "args": []
+    },
+    {
+     "op": "call",
+     "path": "arg0.message.replace",
+     "args": [
+      {},
+      "$1"
+     ]
+    },
+    {
+     "op": "call",
+     "path": "module:chalk.bold",
+     "args": [
+      {
+       "$fake": "arg0.message.replace()#1"
+      }
+     ]
+    },
+    {
+     "op": "get",
+     "path": "arg0.fatal",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "module:chalk.dim",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ruleId",
+     "args": []
+    },
+    {
+     "op": "call",
+     "path": "module:chalk.dim",
+     "args": [
+      "(s15yx)"
+     ]
+    },
+    {
+     "op": "fault",
+     "path": "module:chalk.dim",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "where": {
+   "field": "trace",
+   "index": 7,
+   "parent": {
+    "op": "call",
+    "path": "arg0.message.replace",
+    "args": [
+     {},
+     ""
+    ]
+   },
+   "candidate": {
+    "op": "call",
+    "path": "arg0.message.replace",
+    "args": [
+     {},
+     "$1"
+    ]
+   },
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__95/run-ay7yGS/sources/lib/formatters/.lean_base_52317_codeframe.js",
+     "start": 50,
+     "end": 50,
+     "text": "const msg = `${chalk.bold(message.message.replace(/\\.$/, \"\"))}`;"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__95/run-ay7yGS/sources/lib/formatters/.lean_head_52317_codeframe.js",
+     "start": 50,
+     "end": 50,
+     "text": "const msg = `${chalk.bold(message.message.replace(/([^ ])\\.$/, \"$1\"))}`;"
+    }
+   }
+  }
+ },
+ "reason": "property .fatal is not declared on Object",
+ "advice": [
+  {
+   "line": 49,
+   "rule": "unsupported-member",
+   "msg": "property .fatal is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 49,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'fatal' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 49,
+   "rule": "unsupported-member",
+   "msg": "property .severity is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 49,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'severity' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 50,
+   "rule": "unsupported-member",
+   "msg": "property .message is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 50,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'message' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 51,
+   "rule": "unsupported-member",
+   "msg": "property .fatal is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 51,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'fatal' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  }
+ ],
+ "editIds": [
+  "3d17f9039a4f8f328612fb46ea7cdff7230d272048f83a1ab113510ff685dab1",
+  "74dd2be9fdd7a6eb4dc1643fede9fce8827b5b58fcc71f43c0c1c2c514ffffab"
+ ]
+}

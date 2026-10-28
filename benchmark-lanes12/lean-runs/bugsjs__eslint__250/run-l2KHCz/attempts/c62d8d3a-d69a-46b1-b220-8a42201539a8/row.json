@@ -1,0 +1,21 @@
+{
+ "file": "lib/cli.js",
+ "unit": "(edit 8d606e3a35c6)",
+ "editIds": [
+  "8d606e3a35c617fb5fcdef22bc4da792f2d1b03b4da469836abc390dfb75ed16"
+ ],
+ "lines": [
+  170,
+  170
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

@@ -1,0 +1,513 @@
+{
+ "file": "lib/cli.js",
+ "unit": "translateOptions",
+ "lines": [
+  48,
+  69
+ ],
+ "coverage": "refused:unsupported-member",
+ "verdict": "WITNESS",
+ "laneB": "WITNESS",
+ "laneA": null,
+ "witness": {
+  "input": 1,
+  "args": [
+   {
+    "$fake": "arg0"
+   }
+  ],
+  "parent": {
+   "outcome": {
+    "returned": {
+     "allowInlineConfig": false,
+     "cache": {
+      "$fake": "arg0.cache"
+     },
+     "cacheFile": false,
+     "cacheLocation": [],
+     "configFile": false,
+     "envs": null,
+     "extensions": {
+      "$fake": "arg0.ext"
+     },
+     "fix": {
+      "$fake": "arg0.fix"
+     },
+     "globals": {
+      "$fake": "arg0.global"
+     },
+     "ignore": {
+      "$fake": "arg0.ignore"
+     },
+     "ignorePath": {
+      "$fake": "arg0.ignorePath"
+     },
+     "ignorePattern": "",
+     "parser": false,
+     "parserOptions": {
+      "$fake": "arg0.parserOptions"
+     },
+     "plugins": {
+      "$fake": "arg0.plugin"
+     },
+     "rulePaths": {
+      "$fake": "arg0.rulesdir"
+     },
+     "rules": false,
+     "useEslintrc": {
+      "$fake": "arg0.eslintrc"
+     }
+    }
+   },
+   "heap": {
+    "roots": [
+     {
+      "$fake": "arg0"
+     }
+    ],
+    "own": {},
+    "outcome": {
+     "$ref": 0
+    },
+    "anchors": 0,
+    "heap": [
+     {
+      "kind": "record",
+      "edges": {
+       "envs": null,
+       "extensions": {
+        "$fake": "arg0.ext"
+       },
+       "rules": false,
+       "plugins": {
+        "$fake": "arg0.plugin"
+       },
+       "globals": {
+        "$fake": "arg0.global"
+       },
+       "ignore": {
+        "$fake": "arg0.ignore"
+       },
+       "ignorePath": {
+        "$fake": "arg0.ignorePath"
+       },
+       "ignorePattern": "",
+       "configFile": false,
+       "rulePaths": {
+        "$fake": "arg0.rulesdir"
+       },
+       "useEslintrc": {
+        "$fake": "arg0.eslintrc"
+       },
+       "parser": false,
+       "parserOptions": {
+        "$fake": "arg0.parserOptions"
+       },
+       "cache": {
+        "$fake": "arg0.cache"
+       },
+       "cacheFile": false,
+       "cacheLocation": {
+        "$ref": 1
+       },
+       "fix": {
+        "$fake": "arg0.fix"
+       },
+       "allowInlineConfig": false
+      }
+     },
+     {
+      "kind": "array",
+      "edges": []
+     }
+    ]
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0.env",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ext",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.plugin",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.global",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ignore",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ignorePath",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ignorePattern",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.config",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.rulesdir",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.eslintrc",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.parser",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.parserOptions",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.cache",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.cacheFile",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.cacheLocation",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.fix",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.inlineConfig",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "candidate": {
+   "outcome": {
+    "returned": {
+     "allowInlineConfig": false,
+     "cache": {
+      "$fake": "arg0.cache"
+     },
+     "cacheFile": false,
+     "cacheLocation": [],
+     "configFile": false,
+     "envs": null,
+     "extensions": {
+      "$fake": "arg0.ext"
+     },
+     "fix": {
+      "$fn": "quietFixPredicate",
+      "src": "27e37a5cef51"
+     },
+     "globals": {
+      "$fake": "arg0.global"
+     },
+     "ignore": {
+      "$fake": "arg0.ignore"
+     },
+     "ignorePath": {
+      "$fake": "arg0.ignorePath"
+     },
+     "ignorePattern": "",
+     "parser": false,
+     "parserOptions": {
+      "$fake": "arg0.parserOptions"
+     },
+     "plugins": {
+      "$fake": "arg0.plugin"
+     },
+     "rulePaths": {
+      "$fake": "arg0.rulesdir"
+     },
+     "rules": false,
+     "useEslintrc": {
+      "$fake": "arg0.eslintrc"
+     }
+    }
+   },
+   "heap": {
+    "roots": [
+     {
+      "$fake": "arg0"
+     }
+    ],
+    "own": {},
+    "outcome": {
+     "$ref": 0
+    },
+    "anchors": 0,
+    "heap": [
+     {
+      "kind": "record",
+      "edges": {
+       "envs": null,
+       "extensions": {
+        "$fake": "arg0.ext"
+       },
+       "rules": false,
+       "plugins": {
+        "$fake": "arg0.plugin"
+       },
+       "globals": {
+        "$fake": "arg0.global"
+       },
+       "ignore": {
+        "$fake": "arg0.ignore"
+       },
+       "ignorePath": {
+        "$fake": "arg0.ignorePath"
+       },
+       "ignorePattern": "",
+       "configFile": false,
+       "rulePaths": {
+        "$fake": "arg0.rulesdir"
+       },
+       "useEslintrc": {
+        "$fake": "arg0.eslintrc"
+       },
+       "parser": false,
+       "parserOptions": {
+        "$fake": "arg0.parserOptions"
+       },
+       "cache": {
+        "$fake": "arg0.cache"
+       },
+       "cacheFile": false,
+       "cacheLocation": {
+        "$ref": 1
+       },
+       "fix": {
+        "$fn": "quietFixPredicate",
+        "src": "27e37a5cef51"
+       },
+       "allowInlineConfig": false
+      }
+     },
+     {
+      "kind": "array",
+      "edges": []
+     }
+    ]
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0.env",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ext",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.rule",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.plugin",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.global",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ignore",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ignorePath",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.ignorePattern",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.config",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.rulesdir",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.eslintrc",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.parser",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.parserOptions",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.cache",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.cacheFile",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.cacheLocation",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.fix",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.quiet",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.inlineConfig",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "where": {
+   "field": "outcome",
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__310/run-Iq5fBT/sources/lib/.lean_base_29119_cli.js",
+     "start": 38,
+     "end": 57,
+     "text": "return {\n        envs: cliOptions.env,\n        extensions: cliOptions.ext,\n        rules: cliOptions.rule,\n        plugins: cliOptions.plugin,\n        globals: cliOptions.global,\n        ignore: cliOp"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__310/run-Iq5fBT/sources/lib/.lean_head_29119_cli.js",
+     "start": 49,
+     "end": 68,
+     "text": "return {\n        envs: cliOptions.env,\n        extensions: cliOptions.ext,\n        rules: cliOptions.rule,\n        plugins: cliOptions.plugin,\n        globals: cliOptions.global,\n        ignore: cliOp"
+    }
+   }
+  },
+  "through": [
+   {
+    "callee": "quietFixPredicate",
+    "changed": true,
+    "path": [
+     "translateOptions",
+     "quietFixPredicate"
+    ],
+    "side": "candidate only"
+   }
+  ]
+ },
+ "reason": "property .env is not declared on Object",
+ "advice": [
+  {
+   "line": 50,
+   "rule": "unsupported-member",
+   "msg": "property .env is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 50,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'env' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 51,
+   "rule": "unsupported-member",
+   "msg": "property .ext is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 51,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'ext' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 52,
+   "rule": "unsupported-member",
+   "msg": "property .rule is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 52,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'rule' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 53,
+   "rule": "unsupported-member",
+   "msg": "property .plugin is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 53,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'plugin' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  }
+ ],
+ "editIds": [
+  "b73f176a75bdeacb68248aaf59f13b2fdb48720285852b23842f9e3b42d682ee",
+  "377573fd63ba19fe1b91127b1a920b910199fc2c11d14aaddb476a855769bb97"
+ ]
+}

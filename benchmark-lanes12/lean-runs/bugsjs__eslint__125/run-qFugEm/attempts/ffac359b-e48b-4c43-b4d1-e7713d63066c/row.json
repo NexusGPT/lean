@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/space-before-blocks.js",
+ "unit": "(edit 0eae8a547492)",
+ "editIds": [
+  "0eae8a5474921388ea575af9165c4d3c9d2cb25e3c052f0bbdb6d164c9f48e59"
+ ],
+ "lines": [
+  24,
+  24
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

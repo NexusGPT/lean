@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-extra-label.js",
+ "unit": "(edit 1b9296e1cc59)",
+ "editIds": [
+  "1b9296e1cc59fcaf81aa7e8852cbbf56789905efa47a71eda2fa7c550427c1c7"
+ ],
+ "lines": [
+  116,
+  116
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/keyword-spacing.js",
+ "unit": "(edit 1531de838e68)",
+ "editIds": [
+  "1531de838e68985dca71a2db73fd3833af58e20f9dfc58923c145e6ad9b4ce29"
+ ],
+ "lines": [
+  516,
+  516
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

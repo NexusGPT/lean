@@ -1,0 +1,21 @@
+{
+ "file": "lib/core/Project.js",
+ "unit": "(edit 76b10b30398f)",
+ "editIds": [
+  "76b10b30398f7a44636f38d7a975804bb037bda6d313769f9891a24801e20d9a"
+ ],
+ "lines": [
+  99,
+  99
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

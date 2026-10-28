@@ -1,0 +1,20 @@
+{
+ "file": "conf/cli-options.js",
+ "unit": "(edit 78332678f11f)",
+ "editIds": [
+  "78332678f11f4a730838da43daed663870f69e436211e00ccc0cfc2247f096f4"
+ ],
+ "lines": [
+  9,
+  9
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

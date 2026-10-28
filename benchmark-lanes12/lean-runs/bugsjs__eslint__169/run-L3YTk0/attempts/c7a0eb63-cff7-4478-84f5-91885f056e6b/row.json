@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-whitespace-before-property.js",
+ "unit": "(edit 78843e009d09)",
+ "editIds": [
+  "78843e009d099b84f93f9f34c526ee28b8ae0f613b8e6b925353bda91c9313c4"
+ ],
+ "lines": [
+  69,
+  69
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

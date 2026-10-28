@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/object-curly-spacing.js",
+ "unit": "(edit 432a4d65318e)",
+ "editIds": [
+  "432a4d65318efe34e59aea08a168bd40b839270466b7316e1daf1cee80a409f5"
+ ],
+ "lines": [
+  198,
+  198
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

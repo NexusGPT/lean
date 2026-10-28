@@ -1,0 +1,95 @@
+{
+ "change": "1cafeda87ee3eb39452b94dbfd52e95762585b312896ceb082f3f18d9d6baf86",
+ "tasks": [
+  {
+   "id": "95d12d1289065299140fc8bd694ad9122fbfb9cc6238f0d58e592ac0dd294aaf",
+   "file": "lib/cli-engine.js",
+   "unit": "(edit 378d2d961f66)",
+   "lines": [
+    71,
+    71
+   ],
+   "lanes": [],
+   "editIds": [
+    "378d2d961f6677a1095ec4390c35d53fd2e19d52ed7a1f6dc8d97c769388f359"
+   ],
+   "attemptId": "f92f4183-090f-49cd-bfeb-97591f015d2b",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__35/run-8HM4FS/attempts/f92f4183-090f-49cd-bfeb-97591f015d2b"
+  },
+  {
+   "id": "7a454beb064c68509ffa31149b9dfaea946478c3778e3d21b8b1efb9c21c6697",
+   "file": "lib/cli-engine.js",
+   "unit": "(edit 19871f8b430d)",
+   "lines": [
+    72,
+    72
+   ],
+   "lanes": [],
+   "editIds": [
+    "19871f8b430dbc3948462122f0014c56fe60af14ab2311dabcd8c8f42254ef5e"
+   ],
+   "attemptId": "8ea11030-f102-452b-b523-4dc88631bfd1",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__35/run-8HM4FS/attempts/8ea11030-f102-452b-b523-4dc88631bfd1"
+  },
+  {
+   "id": "4d71c2e8d0c6a60428448442c189735b123ce7224adb701172889adcf40d5b24",
+   "file": "lib/cli-engine.js",
+   "unit": "(edit 0de391deeb16)",
+   "lines": [
+    526,
+    526
+   ],
+   "lanes": [],
+   "editIds": [
+    "0de391deeb16922750a8160651f689738256ec10429c3c12f287424c552a5cc4"
+   ],
+   "attemptId": "c6a0a053-0a9e-4eca-a6a6-9a8781812725",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__35/run-8HM4FS/attempts/c6a0a053-0a9e-4eca-a6a6-9a8781812725"
+  },
+  {
+   "id": "ed75803fd2bc2ad3b0639fb066015d2b908c64a14f4fd3b69d26172baeeb359f",
+   "file": "lib/cli-engine.js",
+   "unit": "(edit aa8f9fd63deb)",
+   "lines": [
+    528,
+    528
+   ],
+   "lanes": [],
+   "editIds": [
+    "aa8f9fd63deb608100cd0ab06a93a66612a10ce250c1c034f1849d62a3e970e4"
+   ],
+   "attemptId": "dc1615d5-214e-4390-8615-5d6bd1a6d678",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__35/run-8HM4FS/attempts/dc1615d5-214e-4390-8615-5d6bd1a6d678"
+  },
+  {
+   "id": "b61ff7fd5cc2d85c070ee3ebd2aaa7a1f66cca88378cf57a26edb37506314429",
+   "file": "lib/cli-engine.js",
+   "unit": "(edit f9bc210ca375)",
+   "lines": [
+    529,
+    529
+   ],
+   "lanes": [],
+   "editIds": [
+    "f9bc210ca375708d24b9c48d2187ce5f27888a0f16d0965cfe2bb3489bdcdabb"
+   ],
+   "attemptId": "cbfecd69-8d01-4157-b506-68bc9a48780c",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__35/run-8HM4FS/attempts/cbfecd69-8d01-4157-b506-68bc9a48780c"
+  },
+  {
+   "id": "3d211f2255c750a7ee8111df83fd332b61309fd80da141cebdb6a58dd37be51c",
+   "file": "lib/cli-engine.js",
+   "unit": "(edit ca30c405fd09)",
+   "lines": [
+    530,
+    530
+   ],
+   "lanes": [],
+   "editIds": [
+    "ca30c405fd09ad957cf9ad5080b6a2f2b85bd85a109d6e0210dbff7a91237609"
+   ],
+   "attemptId": "2df30f3b-cf46-41e9-bd99-8062fd8a6197",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__35/run-8HM4FS/attempts/2df30f3b-cf46-41e9-bd99-8062fd8a6197"
+  }
+ ]
+}

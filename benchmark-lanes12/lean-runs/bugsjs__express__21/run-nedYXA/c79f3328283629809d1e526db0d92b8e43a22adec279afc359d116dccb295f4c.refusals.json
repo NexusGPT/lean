@@ -1,0 +1,91 @@
+{
+ "identity": "c79f3328283629809d1e526db0d92b8e43a22adec279afc359d116dccb295f4c",
+ "records": [
+  {
+   "check": "refused:var",
+   "unit": "restore",
+   "file": "lib/router/index.js",
+   "location": {
+    "start": 446,
+    "end": 446
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 446,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 446,
+     "rule": "arguments",
+     "msg": "`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter",
+     "do": "[migration] `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter (`...args`) and read `args.length` and `args[k]`."
+    },
+    {
+     "line": 447,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 447,
+     "rule": "arguments",
+     "msg": "`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter",
+     "do": "[migration] `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter (`...args`) and read `args.length` and `args[k]`."
+    },
+    {
+     "line": 449,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+    },
+    {
+     "line": 450,
+     "rule": "arguments",
+     "msg": "`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter",
+     "do": "[migration] `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter (`...args`) and read `args.length` and `args[k]`."
+    },
+    {
+     "line": 454,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    },
+    {
+     "line": 460,
+     "rule": "implicit-this",
+     "msg": "TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+     "do": "[conditional: the declared type covers every receiver the function is called with] Declare the receiver as the first parameter, `function f(this: T, ...)`: a type annotation, the emitted JavaScript is the same, and a declared receiver is read as the function's first operand."
+    }
+   ],
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__21/run-nedYXA/sources/lib/router/.lean_head_76183_index.js: ASK(CommonJS wrapper): require is not defined"
+  },
+  {
+   "check": "refused:callback-form",
+   "unit": "wrap",
+   "file": "lib/router/index.js",
+   "location": {
+    "start": 466,
+    "end": 466
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 466,
+     "rule": "callback-form",
+     "msg": "the callback must be an arrow function",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    },
+    {
+     "line": 468,
+     "rule": "implicit-this",
+     "msg": "TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+     "do": "[conditional: the declared type covers every receiver the function is called with] Declare the receiver as the first parameter, `function f(this: T, ...)`: a type annotation, the emitted JavaScript is the same, and a declared receiver is read as the function's first operand."
+    }
+   ],
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__21/run-nedYXA/sources/lib/router/.lean_head_76183_index.js: ASK(CommonJS wrapper): require is not defined"
+  }
+ ]
+}

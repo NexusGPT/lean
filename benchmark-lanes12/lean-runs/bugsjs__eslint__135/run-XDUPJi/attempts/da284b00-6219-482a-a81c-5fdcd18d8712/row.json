@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/complexity.js",
+ "unit": "(edit b178ed003409)",
+ "editIds": [
+  "b178ed0034092adc489c32bf841ab5686579f7cd17e2fd3a7a0c7d0c38013b33"
+ ],
+ "lines": [
+  137,
+  137
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

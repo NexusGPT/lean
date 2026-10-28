@@ -1,0 +1,20 @@
+{
+ "file": "lib/linter.js",
+ "unit": "(edit a985dc1c347b)",
+ "editIds": [
+  "a985dc1c347b957066db06d691f48465b1c7964bbd4a65b0cfb54723b20ceec7"
+ ],
+ "lines": [
+  754,
+  754
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

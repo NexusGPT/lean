@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-extra-semi.js",
+ "unit": "(edit 1d479412ba3e)",
+ "editIds": [
+  "1d479412ba3ebd1bc508b0569481338ba5b9489f187adf87fcdbbad4e1302b3d"
+ ],
+ "lines": [
+  78,
+  78
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

@@ -1,0 +1,802 @@
+{
+ "identity": "c9627e21e647c28fff6efe81f67e8d17b0a7cf0229ff316158ed5251dfabbf87",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/comma-dangle.js",
+   "unit": "isTrailingCommaAllowed",
+   "lines": [
+    22,
+    27
+   ],
+   "verdict": "WITNESS",
+   "coverage": "checked",
+   "certificate": {
+    "tool": "lean-ts v3",
+    "identity": "c9627e21e647c28fff6efe81f67e8d17b0a7cf0229ff316158ed5251dfabbf87",
+    "unit": "isTrailingCommaAllowed",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/sources/lib/rules/.lean_base_57220_comma-dangle.js",
+     "sha256": "390a89a7e3ffe72e"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/sources/lib/rules/.lean_head_57220_comma-dangle.js",
+     "sha256": "fd7d82bb481a0b7e"
+    },
+    "lanes": {
+     "B": {
+      "verdict": "WITNESS",
+      "reason": null,
+      "bound": {
+       "n": 100,
+       "seed": 1,
+       "ms": 2000,
+       "reached": {
+        "body": 6,
+        "guard": 0
+       },
+       "states": [
+        {
+         "input": 0,
+         "args": [
+          {
+           "type": "ArrayPattern"
+          },
+          {
+           "$fake": "arg1"
+          }
+         ]
+        },
+        {
+         "input": 1,
+         "args": [
+          {
+           "type": "ObjectPattern"
+          },
+          {
+           "$fake": "arg1"
+          }
+         ]
+        },
+        {
+         "input": 2,
+         "args": [
+          {
+           "type": "ExperimentalRestProperty"
+          },
+          {
+           "type": "RestElement"
+          }
+         ]
+        },
+        {
+         "input": 3,
+         "args": [
+          {
+           "type": "ArrayPattern"
+          },
+          {
+           "type": "RestProperty"
+          }
+         ]
+        },
+        {
+         "input": 4,
+         "args": [
+          {
+           "$fake": "arg0"
+          },
+          {
+           "$fake": "arg1"
+          }
+         ]
+        },
+        {
+         "input": 5,
+         "args": [
+          {
+           "$fake": "arg0"
+          },
+          {
+           "type": "RestProperty"
+          }
+         ]
+        }
+       ],
+       "heaps": {
+        "assignments": 0,
+        "pool": 2,
+        "shapes": {}
+       },
+       "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+       "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+       "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+       "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+       "library": {
+        "records": 0,
+        "ops": {},
+        "calls": {},
+        "sampled": [],
+        "outOfModel": 0,
+        "callbackEffects": 0,
+        "defectRecords": 0,
+        "defects": []
+       }
+      },
+      "witnesses": [
+       {
+        "input": 1,
+        "args": [
+         {
+          "type": "ObjectPattern"
+         },
+         {
+          "$fake": "arg1"
+         }
+        ],
+        "where": {
+         "field": "trace",
+         "index": 0,
+         "parent": null,
+         "candidate": {
+          "op": "get",
+          "path": "arg1.type",
+          "args": []
+         },
+         "lines": {
+          "kind": "effect; parent record absent",
+          "parent": null,
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/sources/lib/rules/.lean_head_57220_comma-dangle.js",
+           "start": 23,
+           "end": 26,
+           "text": "return !(\n        (node.type === \"ArrayPattern\" && lastItem.type === \"RestElement\") ||\n        (node.type === \"ObjectPattern\" && (lastItem.type === \"RestProperty\" || lastItem.type === \"ExperimentalRes"
+          }
+         }
+        }
+       },
+       {
+        "input": 4,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "$fake": "arg1"
+         }
+        ],
+        "where": {
+         "field": "trace",
+         "index": 1,
+         "parent": null,
+         "candidate": {
+          "op": "get",
+          "path": "arg0.type",
+          "args": []
+         },
+         "lines": {
+          "kind": "effect; parent record absent",
+          "parent": null,
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/sources/lib/rules/.lean_head_57220_comma-dangle.js",
+           "start": 23,
+           "end": 26,
+           "text": "return !(\n        (node.type === \"ArrayPattern\" && lastItem.type === \"RestElement\") ||\n        (node.type === \"ObjectPattern\" && (lastItem.type === \"RestProperty\" || lastItem.type === \"ExperimentalRes"
+          }
+         }
+        }
+       },
+       {
+        "input": 5,
+        "args": [
+         {
+          "$fake": "arg0"
+         },
+         {
+          "type": "RestProperty"
+         }
+        ],
+        "where": {
+         "field": "trace",
+         "index": 1,
+         "parent": null,
+         "candidate": {
+          "op": "get",
+          "path": "arg0.type",
+          "args": []
+         },
+         "lines": {
+          "kind": "effect; parent record absent",
+          "parent": null,
+          "candidate": {
+           "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/sources/lib/rules/.lean_head_57220_comma-dangle.js",
+           "start": 23,
+           "end": 26,
+           "text": "return !(\n        (node.type === \"ArrayPattern\" && lastItem.type === \"RestElement\") ||\n        (node.type === \"ObjectPattern\" && (lastItem.type === \"RestProperty\" || lastItem.type === \"ExperimentalRes"
+          }
+         }
+        }
+       }
+      ]
+     }
+    },
+    "tools": {
+     "node": "v24.18.0"
+    },
+    "unitTextEqual": false,
+    "observation": {
+     "layer": "values and the reachable object graph",
+     "renders": null,
+     "effects": "the trace of environment requests and pending work",
+     "schedule": "synchronous; pending work recorded, never fired"
+    },
+    "library": {
+     "records": 0,
+     "ops": {},
+     "outOfModel": 0,
+     "callbackEffects": 0,
+     "defects": 0
+    },
+    "verdict": "WITNESS"
+   },
+   "laneB": "WITNESS",
+   "laneA": null,
+   "witness": {
+    "input": 1,
+    "args": [
+     {
+      "type": "ObjectPattern"
+     },
+     {
+      "$fake": "arg1"
+     }
+    ],
+    "where": {
+     "field": "trace",
+     "index": 0,
+     "parent": null,
+     "candidate": {
+      "op": "get",
+      "path": "arg1.type",
+      "args": []
+     },
+     "lines": {
+      "kind": "effect; parent record absent",
+      "parent": null,
+      "candidate": {
+       "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/sources/lib/rules/.lean_head_57220_comma-dangle.js",
+       "start": 23,
+       "end": 26,
+       "text": "return !(\n        (node.type === \"ArrayPattern\" && lastItem.type === \"RestElement\") ||\n        (node.type === \"ObjectPattern\" && (lastItem.type === \"RestProperty\" || lastItem.type === \"ExperimentalRes"
+      }
+     }
+    }
+   },
+   "reason": null,
+   "advice": [],
+   "editIds": [
+    "796557bf9db62a3c91a0026b93dbf9e20ab643f4c14ea1684220dd741abf2c2e",
+    "a28c0642a7ed39f5ef64214269ba1304935656b83a78cf5058b07cd370e4960b",
+    "6e5847ee003650ee0cf7fbcd7a90b60b984b87d875e4281ee31bf8af532313c5",
+    "5132b7dd5cb8e30fc9ae8a5cd06115a72a15b635e21d774290e1020a1a8a7779",
+    "8ee08425104bf683fab0eac67595b9bb001209e8cb26bea7739f099fb6bf8f46"
+   ]
+  },
+  {
+   "file": "lib/rules/comma-dangle.js",
+   "unit": "(edit 0c00b817ecfe)",
+   "editIds": [
+    "0c00b817ecfe29d9c436adf3a423abb3ed181bac64c4c38e2f2af71e3e7dc9e8"
+   ],
+   "lines": [
+    16,
+    16
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/comma-dangle.js",
+   "unit": "(edit 94d89c6e8b73)",
+   "editIds": [
+    "94d89c6e8b733926df6f09a9fd65265854f996916489d7f6fb8d801fe4e9d4eb"
+   ],
+   "lines": [
+    16,
+    16
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/rules/comma-dangle.js",
+     "unit": "isTrailingCommaAllowed",
+     "lines": [
+      22,
+      27
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "3b11d3f1b39801019acd236639a656f8db07c251",
+  "head": "623836c8c770421d9c396746db59ba37aa2ce9c7",
+  "files": [
+   {
+    "id": "2360462cfda0fb744d9aaeca4d4a5f509c42f552f559e22345a5eb856b5f2810",
+    "file": "lib/rules/comma-dangle.js",
+    "oldPath": "lib/rules/comma-dangle.js",
+    "newPath": "lib/rules/comma-dangle.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "6a737227bacbd1d2dd814f53809ea2355c02747d",
+    "newOid": "2c145a187696ff0032c9bd7ba318570abd5a2e2a",
+    "status": "M",
+    "edits": [
+     "0c00b817ecfe29d9c436adf3a423abb3ed181bac64c4c38e2f2af71e3e7dc9e8",
+     "94d89c6e8b733926df6f09a9fd65265854f996916489d7f6fb8d801fe4e9d4eb",
+     "796557bf9db62a3c91a0026b93dbf9e20ab643f4c14ea1684220dd741abf2c2e",
+     "a28c0642a7ed39f5ef64214269ba1304935656b83a78cf5058b07cd370e4960b",
+     "6e5847ee003650ee0cf7fbcd7a90b60b984b87d875e4281ee31bf8af532313c5",
+     "5132b7dd5cb8e30fc9ae8a5cd06115a72a15b635e21d774290e1020a1a8a7779",
+     "8ee08425104bf683fab0eac67595b9bb001209e8cb26bea7739f099fb6bf8f46"
+    ],
+    "hunks": [
+     {
+      "id": "4553e354dd856cf1c6c851a9634a3898741954ada3962ea2aa42c04cdb15cdac",
+      "old": {
+       "start": 16,
+       "count": 1
+      },
+      "new": {
+       "start": 16,
+       "count": 1
+      }
+     },
+     {
+      "id": "8d7bd5f168e0462d27afa66a5d3c595994672695de9a0ea6ab97da53b6e8a702",
+      "old": {
+       "start": 23,
+       "count": 1
+      },
+      "new": {
+       "start": 23,
+       "count": 4
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "390a89a7e3ffe72e4a6f0ba79d89b5ede346b03b18367bde3886ab1618b1b27a",
+    "newHash": "fd7d82bb481a0b7e5866ba9c36d9b03c90493d0940df0d3f6dc8cbb5d61ad74f",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "isTrailingCommaAllowed",
+       "side": "old",
+       "file": "lib/rules/comma-dangle.js",
+       "start": 22,
+       "end": 24,
+       "offset": 650,
+       "stop": 777,
+       "id": "98637cd59e3f594d2481cfc1e811ebfe6f7fa6958aa60134ec811b978f225b7b"
+      }
+     ],
+     "new": [
+      {
+       "name": "isTrailingCommaAllowed",
+       "side": "new",
+       "file": "lib/rules/comma-dangle.js",
+       "start": 22,
+       "end": 27,
+       "offset": 694,
+       "stop": 969,
+       "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "0c00b817ecfe29d9c436adf3a423abb3ed181bac64c4c38e2f2af71e3e7dc9e8",
+    "fileId": "2360462cfda0fb744d9aaeca4d4a5f509c42f552f559e22345a5eb856b5f2810",
+    "file": "lib/rules/comma-dangle.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4553e354dd856cf1c6c851a9634a3898741954ada3962ea2aa42c04cdb15cdac",
+    "side": "old",
+    "old": {
+     "start": 16,
+     "count": 1
+    },
+    "new": {
+     "start": 16,
+     "count": 0
+    },
+    "offsets": {
+     "start": 403,
+     "end": 459
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "94d89c6e8b733926df6f09a9fd65265854f996916489d7f6fb8d801fe4e9d4eb",
+    "fileId": "2360462cfda0fb744d9aaeca4d4a5f509c42f552f559e22345a5eb856b5f2810",
+    "file": "lib/rules/comma-dangle.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4553e354dd856cf1c6c851a9634a3898741954ada3962ea2aa42c04cdb15cdac",
+    "side": "new",
+    "old": {
+     "start": 16,
+     "count": 0
+    },
+    "new": {
+     "start": 16,
+     "count": 1
+    },
+    "offsets": {
+     "start": 403,
+     "end": 503
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "796557bf9db62a3c91a0026b93dbf9e20ab643f4c14ea1684220dd741abf2c2e",
+    "fileId": "2360462cfda0fb744d9aaeca4d4a5f509c42f552f559e22345a5eb856b5f2810",
+    "file": "lib/rules/comma-dangle.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8d7bd5f168e0462d27afa66a5d3c595994672695de9a0ea6ab97da53b6e8a702",
+    "side": "old",
+    "old": {
+     "start": 23,
+     "count": 1
+    },
+    "new": {
+     "start": 23,
+     "count": 0
+    },
+    "offsets": {
+     "start": 700,
+     "end": 776
+    },
+    "links": [
+     {
+      "id": "98637cd59e3f594d2481cfc1e811ebfe6f7fa6958aa60134ec811b978f225b7b",
+      "file": "lib/rules/comma-dangle.js",
+      "unit": "isTrailingCommaAllowed",
+      "side": "old",
+      "start": 22,
+      "end": 24
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "98637cd59e3f594d2481cfc1e811ebfe6f7fa6958aa60134ec811b978f225b7b",
+     "file": "lib/rules/comma-dangle.js",
+     "unit": "isTrailingCommaAllowed",
+     "side": "old",
+     "start": 22,
+     "end": 24
+    }
+   },
+   {
+    "id": "a28c0642a7ed39f5ef64214269ba1304935656b83a78cf5058b07cd370e4960b",
+    "fileId": "2360462cfda0fb744d9aaeca4d4a5f509c42f552f559e22345a5eb856b5f2810",
+    "file": "lib/rules/comma-dangle.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8d7bd5f168e0462d27afa66a5d3c595994672695de9a0ea6ab97da53b6e8a702",
+    "side": "new",
+    "old": {
+     "start": 23,
+     "count": 0
+    },
+    "new": {
+     "start": 23,
+     "count": 1
+    },
+    "offsets": {
+     "start": 744,
+     "end": 758
+    },
+    "links": [
+     {
+      "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943",
+      "file": "lib/rules/comma-dangle.js",
+      "unit": "isTrailingCommaAllowed",
+      "side": "new",
+      "start": 22,
+      "end": 27
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943",
+     "file": "lib/rules/comma-dangle.js",
+     "unit": "isTrailingCommaAllowed",
+     "side": "new",
+     "start": 22,
+     "end": 27
+    }
+   },
+   {
+    "id": "6e5847ee003650ee0cf7fbcd7a90b60b984b87d875e4281ee31bf8af532313c5",
+    "fileId": "2360462cfda0fb744d9aaeca4d4a5f509c42f552f559e22345a5eb856b5f2810",
+    "file": "lib/rules/comma-dangle.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8d7bd5f168e0462d27afa66a5d3c595994672695de9a0ea6ab97da53b6e8a702",
+    "side": "new",
+    "old": {
+     "start": 23,
+     "count": 0
+    },
+    "new": {
+     "start": 24,
+     "count": 1
+    },
+    "offsets": {
+     "start": 758,
+     "end": 835
+    },
+    "links": [
+     {
+      "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943",
+      "file": "lib/rules/comma-dangle.js",
+      "unit": "isTrailingCommaAllowed",
+      "side": "new",
+      "start": 22,
+      "end": 27
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943",
+     "file": "lib/rules/comma-dangle.js",
+     "unit": "isTrailingCommaAllowed",
+     "side": "new",
+     "start": 22,
+     "end": 27
+    }
+   },
+   {
+    "id": "5132b7dd5cb8e30fc9ae8a5cd06115a72a15b635e21d774290e1020a1a8a7779",
+    "fileId": "2360462cfda0fb744d9aaeca4d4a5f509c42f552f559e22345a5eb856b5f2810",
+    "file": "lib/rules/comma-dangle.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8d7bd5f168e0462d27afa66a5d3c595994672695de9a0ea6ab97da53b6e8a702",
+    "side": "new",
+    "old": {
+     "start": 23,
+     "count": 0
+    },
+    "new": {
+     "start": 25,
+     "count": 1
+    },
+    "offsets": {
+     "start": 835,
+     "end": 961
+    },
+    "links": [
+     {
+      "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943",
+      "file": "lib/rules/comma-dangle.js",
+      "unit": "isTrailingCommaAllowed",
+      "side": "new",
+      "start": 22,
+      "end": 27
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943",
+     "file": "lib/rules/comma-dangle.js",
+     "unit": "isTrailingCommaAllowed",
+     "side": "new",
+     "start": 22,
+     "end": 27
+    }
+   },
+   {
+    "id": "8ee08425104bf683fab0eac67595b9bb001209e8cb26bea7739f099fb6bf8f46",
+    "fileId": "2360462cfda0fb744d9aaeca4d4a5f509c42f552f559e22345a5eb856b5f2810",
+    "file": "lib/rules/comma-dangle.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8d7bd5f168e0462d27afa66a5d3c595994672695de9a0ea6ab97da53b6e8a702",
+    "side": "new",
+    "old": {
+     "start": 23,
+     "count": 0
+    },
+    "new": {
+     "start": 26,
+     "count": 1
+    },
+    "offsets": {
+     "start": 961,
+     "end": 968
+    },
+    "links": [
+     {
+      "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943",
+      "file": "lib/rules/comma-dangle.js",
+      "unit": "isTrailingCommaAllowed",
+      "side": "new",
+      "start": 22,
+      "end": 27
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "f8d9f89877c859a9ecd2e3bc0185b6ce548280749f456375a10b47e209a41943",
+     "file": "lib/rules/comma-dangle.js",
+     "unit": "isTrailingCommaAllowed",
+     "side": "new",
+     "start": 22,
+     "end": 27
+    }
+   }
+  ],
+  "id": "e2ed365b69f3937c5e707bbe99e68958b3c09e7f77a69bf667476060cea4f56d",
+  "reconciliation": {
+   "expected": [
+    "0c00b817ecfe29d9c436adf3a423abb3ed181bac64c4c38e2f2af71e3e7dc9e8",
+    "94d89c6e8b733926df6f09a9fd65265854f996916489d7f6fb8d801fe4e9d4eb",
+    "796557bf9db62a3c91a0026b93dbf9e20ab643f4c14ea1684220dd741abf2c2e",
+    "a28c0642a7ed39f5ef64214269ba1304935656b83a78cf5058b07cd370e4960b",
+    "6e5847ee003650ee0cf7fbcd7a90b60b984b87d875e4281ee31bf8af532313c5",
+    "5132b7dd5cb8e30fc9ae8a5cd06115a72a15b635e21d774290e1020a1a8a7779",
+    "8ee08425104bf683fab0eac67595b9bb001209e8cb26bea7739f099fb6bf8f46"
+   ],
+   "unit": [
+    "796557bf9db62a3c91a0026b93dbf9e20ab643f4c14ea1684220dd741abf2c2e",
+    "a28c0642a7ed39f5ef64214269ba1304935656b83a78cf5058b07cd370e4960b",
+    "6e5847ee003650ee0cf7fbcd7a90b60b984b87d875e4281ee31bf8af532313c5",
+    "5132b7dd5cb8e30fc9ae8a5cd06115a72a15b635e21d774290e1020a1a8a7779",
+    "8ee08425104bf683fab0eac67595b9bb001209e8cb26bea7739f099fb6bf8f46"
+   ],
+   "artifact": [],
+   "unassigned": [
+    "0c00b817ecfe29d9c436adf3a423abb3ed181bac64c4c38e2f2af71e3e7dc9e8",
+    "94d89c6e8b733926df6f09a9fd65265854f996916489d7f6fb8d801fe4e9d4eb"
+   ],
+   "classes": {
+    "source": {
+     "unit": [
+      "796557bf9db62a3c91a0026b93dbf9e20ab643f4c14ea1684220dd741abf2c2e",
+      "a28c0642a7ed39f5ef64214269ba1304935656b83a78cf5058b07cd370e4960b",
+      "6e5847ee003650ee0cf7fbcd7a90b60b984b87d875e4281ee31bf8af532313c5",
+      "5132b7dd5cb8e30fc9ae8a5cd06115a72a15b635e21d774290e1020a1a8a7779",
+      "8ee08425104bf683fab0eac67595b9bb001209e8cb26bea7739f099fb6bf8f46"
+     ],
+     "artifact": [],
+     "unassigned": [
+      "0c00b817ecfe29d9c436adf3a423abb3ed181bac64c4c38e2f2af71e3e7dc9e8",
+      "94d89c6e8b733926df6f09a9fd65265854f996916489d7f6fb8d801fe4e9d4eb"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "d2fbb73ed0eeb84663561463c7b76b5b8a9571e1c0543dbaccbcc95e7c639b77",
+   "94aee34bf988c52d5274f2b7f3ef66fae561da6655f3de84624193b087d6e303",
+   "dc069c1ab4181b4f7ed27b3d4309314389c871968781658b9e16fac62349512c"
+  ],
+  "terminal": [
+   "d2fbb73ed0eeb84663561463c7b76b5b8a9571e1c0543dbaccbcc95e7c639b77",
+   "94aee34bf988c52d5274f2b7f3ef66fae561da6655f3de84624193b087d6e303",
+   "dc069c1ab4181b4f7ed27b3d4309314389c871968781658b9e16fac62349512c"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [
+    "d2fbb73ed0eeb84663561463c7b76b5b8a9571e1c0543dbaccbcc95e7c639b77/B",
+    "d2fbb73ed0eeb84663561463c7b76b5b8a9571e1c0543dbaccbcc95e7c639b77/A"
+   ],
+   "terminal": [
+    "d2fbb73ed0eeb84663561463c7b76b5b8a9571e1c0543dbaccbcc95e7c639b77/B",
+    "d2fbb73ed0eeb84663561463c7b76b5b8a9571e1c0543dbaccbcc95e7c639b77/A"
+   ],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw",
+ "callersChecked": 0
+}

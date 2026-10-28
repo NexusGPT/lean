@@ -1,0 +1,20 @@
+{
+ "file": "lib/ast-utils.js",
+ "unit": "(edit 6c6e88f2c0e4)",
+ "editIds": [
+  "6c6e88f2c0e4e28d2edf7da962e9bdb28b9587f703d8142e4a3f9729901e393e"
+ ],
+ "lines": [
+  721,
+  721
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

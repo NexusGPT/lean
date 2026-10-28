@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/func-call-spacing.js",
+ "unit": "(edit 0f4bfd5f3afe)",
+ "editIds": [
+  "0f4bfd5f3afee059a7cfc622d9a81448e41191b37fa3e27c24f6a104294268c9"
+ ],
+ "lines": [
+  123,
+  123
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

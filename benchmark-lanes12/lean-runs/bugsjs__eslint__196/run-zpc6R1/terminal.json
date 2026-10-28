@@ -1,0 +1,1447 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "9c451a2c7d774c586599a7ec21898479b2970a80",
+  "head": "9574b461ef4c596791180e842df5f6715a9854f1",
+  "files": [
+   {
+    "id": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "oldPath": "lib/rules/indent.js",
+    "newPath": "lib/rules/indent.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "5099255dd39732908ba13def2be46608c0a86bca",
+    "newOid": "3c0c9827d84859645925d1699054af719585befc",
+    "status": "M",
+    "edits": [
+     "844981aad4d5bb2c346b2c9cdc340263e8a8dc78e0f060c500254a992f46bb1f",
+     "b59aadec9decfccdf2e0f1b5cd3e42b4146a4b75a8f58833966f592cd104e470",
+     "c252a363f95d2cff8d51ba0ee6b54ce47c9d709e6ab7318c66ddcf3d9b88b36f",
+     "e0432849d0508c63883df7ce6d2041a908e4ca8d4ebbde8fe86131226a19df52",
+     "bc3feb05cb07de09a55ab9abf7ba609de475af5672df3194c9b5be30de0ea65f",
+     "df3cf377a222ce1c0ec225e439981a61adc2107993663a6f1ec0d61a242766f6",
+     "24d7358a0a083bd2f8683d6e84fdd980555d860b3f63ec94294580fe9cacc3cf",
+     "f95725177593c377fb2b66d9264a4d59c5b67199354b227698552005ab60c59e",
+     "79ea68d745a19c5a0ea30e0dfdefb9fde9d1154fe192f6b99d3994e1b62e04af",
+     "e99aa53863055fe319d54c86f80ae538bb58a3f1da6bcec68d27587e6f9d7366",
+     "1ab669e502b349b777039c70383f9a45c27d829cc885cd773aed212fd9c3615e",
+     "d48d0af0b8a2eb334cfcdcc29e0e75f57fe072cab109b6ea8f6bbdf81a0a0247",
+     "aa64f338dd8714944429109fe102f74c86a8f95958072402fb72d47a65d4e63f",
+     "c4858b4385d975ad7016c05111e244cc3990811af5e5224d639a82c58ef1bf7f",
+     "1775a68773e18feb209f3da624f4639567f315000cffe513eb082457cd151415",
+     "2ea9e4fe507170449ee167646641a28d3373f905d74a9e5aa4514358cf2b58e2",
+     "5cac15a0ebeb69292a90e170694436d171ae771dc56fb979ac2e7c5eda3bb4df",
+     "a56c590be01efe68ebd35b0f8f07b29d4ebd9dbf6c1e83f137db4f9bd1f419e6",
+     "3ec55e33df6adb7a46bf656a48302c73d023d2a3e1e38029baef0f7c6120ac85"
+    ],
+    "hunks": [
+     {
+      "id": "d1fb4732adf83eadf0b2220fefe57ced5e44376229b5b528ea2ad2846fe88434",
+      "old": {
+       "start": 372,
+       "count": 1
+      },
+      "new": {
+       "start": 372,
+       "count": 1
+      }
+     },
+     {
+      "id": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+      "old": {
+       "start": 376,
+       "count": 3
+      },
+      "new": {
+       "start": 376,
+       "count": 8
+      }
+     },
+     {
+      "id": "92f81970d066dda20e358c8cece0dd232cdf2695f825f76bbc2c2c2e2e4e84f8",
+      "old": {
+       "start": 383,
+       "count": 1
+      },
+      "new": {
+       "start": 388,
+       "count": 1
+      }
+     },
+     {
+      "id": "88ac939a0b89b811d9c44ad4ade7e6b885c9aab016793e71bb2676a344185c7a",
+      "old": {
+       "start": 436,
+       "count": 2
+      },
+      "new": {
+       "start": 441,
+       "count": 2
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "c42baa9ebbecfc676f23d0820c56d6613b87d38a909213a9197c7df09b605952",
+    "newHash": "b6bbea084b4e9159f6d7ed8eb77e3730b54e02042ae9ce16e6a1e9b752ca8927",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "844981aad4d5bb2c346b2c9cdc340263e8a8dc78e0f060c500254a992f46bb1f",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1fb4732adf83eadf0b2220fefe57ced5e44376229b5b528ea2ad2846fe88434",
+    "side": "old",
+    "old": {
+     "start": 372,
+     "count": 1
+    },
+    "new": {
+     "start": 372,
+     "count": 0
+    },
+    "offsets": {
+     "start": 13548,
+     "end": 13595
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b59aadec9decfccdf2e0f1b5cd3e42b4146a4b75a8f58833966f592cd104e470",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "d1fb4732adf83eadf0b2220fefe57ced5e44376229b5b528ea2ad2846fe88434",
+    "side": "new",
+    "old": {
+     "start": 372,
+     "count": 0
+    },
+    "new": {
+     "start": 372,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13548,
+     "end": 13609
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c252a363f95d2cff8d51ba0ee6b54ce47c9d709e6ab7318c66ddcf3d9b88b36f",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "old",
+    "old": {
+     "start": 376,
+     "count": 1
+    },
+    "new": {
+     "start": 376,
+     "count": 0
+    },
+    "offsets": {
+     "start": 13709,
+     "end": 13770
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "e0432849d0508c63883df7ce6d2041a908e4ca8d4ebbde8fe86131226a19df52",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "old",
+    "old": {
+     "start": 377,
+     "count": 1
+    },
+    "new": {
+     "start": 376,
+     "count": 0
+    },
+    "offsets": {
+     "start": 13770,
+     "end": 13847
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "bc3feb05cb07de09a55ab9abf7ba609de475af5672df3194c9b5be30de0ea65f",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "old",
+    "old": {
+     "start": 378,
+     "count": 1
+    },
+    "new": {
+     "start": 376,
+     "count": 0
+    },
+    "offsets": {
+     "start": 13847,
+     "end": 13924
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "df3cf377a222ce1c0ec225e439981a61adc2107993663a6f1ec0d61a242766f6",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "new",
+    "old": {
+     "start": 376,
+     "count": 0
+    },
+    "new": {
+     "start": 376,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13723,
+     "end": 13761
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "24d7358a0a083bd2f8683d6e84fdd980555d860b3f63ec94294580fe9cacc3cf",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "new",
+    "old": {
+     "start": 376,
+     "count": 0
+    },
+    "new": {
+     "start": 377,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13761,
+     "end": 13762
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f95725177593c377fb2b66d9264a4d59c5b67199354b227698552005ab60c59e",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "new",
+    "old": {
+     "start": 376,
+     "count": 0
+    },
+    "new": {
+     "start": 378,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13762,
+     "end": 13783
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "79ea68d745a19c5a0ea30e0dfdefb9fde9d1154fe192f6b99d3994e1b62e04af",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "new",
+    "old": {
+     "start": 376,
+     "count": 0
+    },
+    "new": {
+     "start": 379,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13783,
+     "end": 13835
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "e99aa53863055fe319d54c86f80ae538bb58a3f1da6bcec68d27587e6f9d7366",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "new",
+    "old": {
+     "start": 376,
+     "count": 0
+    },
+    "new": {
+     "start": 380,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13835,
+     "end": 13877
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1ab669e502b349b777039c70383f9a45c27d829cc885cd773aed212fd9c3615e",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "new",
+    "old": {
+     "start": 376,
+     "count": 0
+    },
+    "new": {
+     "start": 381,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13877,
+     "end": 13941
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "d48d0af0b8a2eb334cfcdcc29e0e75f57fe072cab109b6ea8f6bbdf81a0a0247",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "new",
+    "old": {
+     "start": 376,
+     "count": 0
+    },
+    "new": {
+     "start": 382,
+     "count": 1
+    },
+    "offsets": {
+     "start": 13941,
+     "end": 14021
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "aa64f338dd8714944429109fe102f74c86a8f95958072402fb72d47a65d4e63f",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "953f9df29b6135dd36e57485d64650faed9de30c1942712cb5c1d85ce43c72e0",
+    "side": "new",
+    "old": {
+     "start": 376,
+     "count": 0
+    },
+    "new": {
+     "start": 383,
+     "count": 1
+    },
+    "offsets": {
+     "start": 14021,
+     "end": 14036
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c4858b4385d975ad7016c05111e244cc3990811af5e5224d639a82c58ef1bf7f",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "92f81970d066dda20e358c8cece0dd232cdf2695f825f76bbc2c2c2e2e4e84f8",
+    "side": "old",
+    "old": {
+     "start": 383,
+     "count": 1
+    },
+    "new": {
+     "start": 388,
+     "count": 0
+    },
+    "offsets": {
+     "start": 13998,
+     "end": 14047
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "1775a68773e18feb209f3da624f4639567f315000cffe513eb082457cd151415",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "92f81970d066dda20e358c8cece0dd232cdf2695f825f76bbc2c2c2e2e4e84f8",
+    "side": "new",
+    "old": {
+     "start": 383,
+     "count": 0
+    },
+    "new": {
+     "start": 388,
+     "count": 1
+    },
+    "offsets": {
+     "start": 14110,
+     "end": 14195
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "2ea9e4fe507170449ee167646641a28d3373f905d74a9e5aa4514358cf2b58e2",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "88ac939a0b89b811d9c44ad4ade7e6b885c9aab016793e71bb2676a344185c7a",
+    "side": "old",
+    "old": {
+     "start": 436,
+     "count": 1
+    },
+    "new": {
+     "start": 441,
+     "count": 0
+    },
+    "offsets": {
+     "start": 15995,
+     "end": 16079
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "5cac15a0ebeb69292a90e170694436d171ae771dc56fb979ac2e7c5eda3bb4df",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "88ac939a0b89b811d9c44ad4ade7e6b885c9aab016793e71bb2676a344185c7a",
+    "side": "old",
+    "old": {
+     "start": 437,
+     "count": 1
+    },
+    "new": {
+     "start": 441,
+     "count": 0
+    },
+    "offsets": {
+     "start": 16079,
+     "end": 16135
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "a56c590be01efe68ebd35b0f8f07b29d4ebd9dbf6c1e83f137db4f9bd1f419e6",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "88ac939a0b89b811d9c44ad4ade7e6b885c9aab016793e71bb2676a344185c7a",
+    "side": "new",
+    "old": {
+     "start": 436,
+     "count": 0
+    },
+    "new": {
+     "start": 441,
+     "count": 1
+    },
+    "offsets": {
+     "start": 16143,
+     "end": 16220
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3ec55e33df6adb7a46bf656a48302c73d023d2a3e1e38029baef0f7c6120ac85",
+    "fileId": "d9bed927fca95f65e1f877ed9132e25ef1d5f6f15205d9b194eb3963c4c7cd4b",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "88ac939a0b89b811d9c44ad4ade7e6b885c9aab016793e71bb2676a344185c7a",
+    "side": "new",
+    "old": {
+     "start": 436,
+     "count": 0
+    },
+    "new": {
+     "start": 442,
+     "count": 1
+    },
+    "offsets": {
+     "start": 16220,
+     "end": 16289
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "e4170262becb6b1ae50063d95abb50c112c958a4a314d502e49c029e00ba5770",
+  "reconciliation": {
+   "expected": [
+    "844981aad4d5bb2c346b2c9cdc340263e8a8dc78e0f060c500254a992f46bb1f",
+    "b59aadec9decfccdf2e0f1b5cd3e42b4146a4b75a8f58833966f592cd104e470",
+    "c252a363f95d2cff8d51ba0ee6b54ce47c9d709e6ab7318c66ddcf3d9b88b36f",
+    "e0432849d0508c63883df7ce6d2041a908e4ca8d4ebbde8fe86131226a19df52",
+    "bc3feb05cb07de09a55ab9abf7ba609de475af5672df3194c9b5be30de0ea65f",
+    "df3cf377a222ce1c0ec225e439981a61adc2107993663a6f1ec0d61a242766f6",
+    "24d7358a0a083bd2f8683d6e84fdd980555d860b3f63ec94294580fe9cacc3cf",
+    "f95725177593c377fb2b66d9264a4d59c5b67199354b227698552005ab60c59e",
+    "79ea68d745a19c5a0ea30e0dfdefb9fde9d1154fe192f6b99d3994e1b62e04af",
+    "e99aa53863055fe319d54c86f80ae538bb58a3f1da6bcec68d27587e6f9d7366",
+    "1ab669e502b349b777039c70383f9a45c27d829cc885cd773aed212fd9c3615e",
+    "d48d0af0b8a2eb334cfcdcc29e0e75f57fe072cab109b6ea8f6bbdf81a0a0247",
+    "aa64f338dd8714944429109fe102f74c86a8f95958072402fb72d47a65d4e63f",
+    "c4858b4385d975ad7016c05111e244cc3990811af5e5224d639a82c58ef1bf7f",
+    "1775a68773e18feb209f3da624f4639567f315000cffe513eb082457cd151415",
+    "2ea9e4fe507170449ee167646641a28d3373f905d74a9e5aa4514358cf2b58e2",
+    "5cac15a0ebeb69292a90e170694436d171ae771dc56fb979ac2e7c5eda3bb4df",
+    "a56c590be01efe68ebd35b0f8f07b29d4ebd9dbf6c1e83f137db4f9bd1f419e6",
+    "3ec55e33df6adb7a46bf656a48302c73d023d2a3e1e38029baef0f7c6120ac85"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "844981aad4d5bb2c346b2c9cdc340263e8a8dc78e0f060c500254a992f46bb1f",
+    "b59aadec9decfccdf2e0f1b5cd3e42b4146a4b75a8f58833966f592cd104e470",
+    "c252a363f95d2cff8d51ba0ee6b54ce47c9d709e6ab7318c66ddcf3d9b88b36f",
+    "e0432849d0508c63883df7ce6d2041a908e4ca8d4ebbde8fe86131226a19df52",
+    "bc3feb05cb07de09a55ab9abf7ba609de475af5672df3194c9b5be30de0ea65f",
+    "df3cf377a222ce1c0ec225e439981a61adc2107993663a6f1ec0d61a242766f6",
+    "24d7358a0a083bd2f8683d6e84fdd980555d860b3f63ec94294580fe9cacc3cf",
+    "f95725177593c377fb2b66d9264a4d59c5b67199354b227698552005ab60c59e",
+    "79ea68d745a19c5a0ea30e0dfdefb9fde9d1154fe192f6b99d3994e1b62e04af",
+    "e99aa53863055fe319d54c86f80ae538bb58a3f1da6bcec68d27587e6f9d7366",
+    "1ab669e502b349b777039c70383f9a45c27d829cc885cd773aed212fd9c3615e",
+    "d48d0af0b8a2eb334cfcdcc29e0e75f57fe072cab109b6ea8f6bbdf81a0a0247",
+    "aa64f338dd8714944429109fe102f74c86a8f95958072402fb72d47a65d4e63f",
+    "c4858b4385d975ad7016c05111e244cc3990811af5e5224d639a82c58ef1bf7f",
+    "1775a68773e18feb209f3da624f4639567f315000cffe513eb082457cd151415",
+    "2ea9e4fe507170449ee167646641a28d3373f905d74a9e5aa4514358cf2b58e2",
+    "5cac15a0ebeb69292a90e170694436d171ae771dc56fb979ac2e7c5eda3bb4df",
+    "a56c590be01efe68ebd35b0f8f07b29d4ebd9dbf6c1e83f137db4f9bd1f419e6",
+    "3ec55e33df6adb7a46bf656a48302c73d023d2a3e1e38029baef0f7c6120ac85"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "844981aad4d5bb2c346b2c9cdc340263e8a8dc78e0f060c500254a992f46bb1f",
+      "b59aadec9decfccdf2e0f1b5cd3e42b4146a4b75a8f58833966f592cd104e470",
+      "c252a363f95d2cff8d51ba0ee6b54ce47c9d709e6ab7318c66ddcf3d9b88b36f",
+      "e0432849d0508c63883df7ce6d2041a908e4ca8d4ebbde8fe86131226a19df52",
+      "bc3feb05cb07de09a55ab9abf7ba609de475af5672df3194c9b5be30de0ea65f",
+      "df3cf377a222ce1c0ec225e439981a61adc2107993663a6f1ec0d61a242766f6",
+      "24d7358a0a083bd2f8683d6e84fdd980555d860b3f63ec94294580fe9cacc3cf",
+      "f95725177593c377fb2b66d9264a4d59c5b67199354b227698552005ab60c59e",
+      "79ea68d745a19c5a0ea30e0dfdefb9fde9d1154fe192f6b99d3994e1b62e04af",
+      "e99aa53863055fe319d54c86f80ae538bb58a3f1da6bcec68d27587e6f9d7366",
+      "1ab669e502b349b777039c70383f9a45c27d829cc885cd773aed212fd9c3615e",
+      "d48d0af0b8a2eb334cfcdcc29e0e75f57fe072cab109b6ea8f6bbdf81a0a0247",
+      "aa64f338dd8714944429109fe102f74c86a8f95958072402fb72d47a65d4e63f",
+      "c4858b4385d975ad7016c05111e244cc3990811af5e5224d639a82c58ef1bf7f",
+      "1775a68773e18feb209f3da624f4639567f315000cffe513eb082457cd151415",
+      "2ea9e4fe507170449ee167646641a28d3373f905d74a9e5aa4514358cf2b58e2",
+      "5cac15a0ebeb69292a90e170694436d171ae771dc56fb979ac2e7c5eda3bb4df",
+      "a56c590be01efe68ebd35b0f8f07b29d4ebd9dbf6c1e83f137db4f9bd1f419e6",
+      "3ec55e33df6adb7a46bf656a48302c73d023d2a3e1e38029baef0f7c6120ac85"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "695733fc65a91f79b8ee8a6ae69cec46759d2b545a6750ba9e1f6d842743f066",
+   "attemptId": "a450b70f-8183-4432-b1fd-1d3674f68749",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/a450b70f-8183-4432-b1fd-1d3674f68749/row.json",
+    "sha256": "0f3608fd6dcf380872e8e7c342fc2194e5e03ca8afffeb018cea2be27fbc55fb"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "dd0db2af0d2dd66095a1546ca1728bc0a38ded4a4a7cd6bae047b8d9e95cc72a",
+   "attemptId": "4484340b-116c-42a0-be99-5e70d809889e",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/4484340b-116c-42a0-be99-5e70d809889e/row.json",
+    "sha256": "60ff09cd37627e1f400d3c11d74aa9ba4d314190cc3e22faea7eb3e17bfacc8b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "266271cdbab92d9d2fda27666c9eb18c5ea9925b11b232fe7179be86033d5a3d",
+   "attemptId": "62947b27-e1e1-4db9-9876-fcad62d2e260",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/62947b27-e1e1-4db9-9876-fcad62d2e260/row.json",
+    "sha256": "723521a87c66bc72287bcd9219911eab1ac23dd98257f9ec73db59c79d8efeaf"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "db7d20a10aa87984c058d0e0c08faff2076c386f216da1b128ee98303abb9dea",
+   "attemptId": "303c767e-ffd2-4800-a5c0-1c021f171930",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/303c767e-ffd2-4800-a5c0-1c021f171930/row.json",
+    "sha256": "780966c7da8f28775ad702654dda8ace8ba287a39d30c4aafc75dc0fbc57835a"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "4bb30e3baa67130394291ab5317c5c69e3748e5eea26c6cb573051ab6af102fe",
+   "attemptId": "e33917ae-b875-467d-bbe1-e0268ebc0f75",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/e33917ae-b875-467d-bbe1-e0268ebc0f75/row.json",
+    "sha256": "7abe7c040b0f403c6544ac03111a62790c245a9f70318c9a78588b5e139d4daa"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "c8a9c60b4ba9c0d788179c354099021c6a754714fd94cec09ad68f2d7f7b5dc0",
+   "attemptId": "22a4cc42-cf7f-46cc-8090-7b4ac2ef3b42",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/22a4cc42-cf7f-46cc-8090-7b4ac2ef3b42/row.json",
+    "sha256": "9fde0539a19b7b13d1ce00947fbc50cf99c116afdb8b5a80cfb0b5d21c842ef3"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "ca4b7980992839ed0675ca36d6b83b85b02a743dc6ea3cc9171959f4dd331a5b",
+   "attemptId": "7bc1f9fb-b34b-45af-86c0-1bc67ed77073",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/7bc1f9fb-b34b-45af-86c0-1bc67ed77073/row.json",
+    "sha256": "3e093036030600867fe7f62d0a88de4a5ee40ad26b6168e3c2a868261bbda9dc"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "594c96f04c3ee3e50d96a4bced89f9bb4b3711b75d00e6e1219b7fdaa2dc0bbb",
+   "attemptId": "a315ccee-1f86-4534-9d62-c3d7fcced4dd",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/a315ccee-1f86-4534-9d62-c3d7fcced4dd/row.json",
+    "sha256": "8b400cc74bc318733aa10c2531d8013404d92a0c29081fc7f4f529249db6d9b7"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "cd86de701d30d545dd9ba2bf423187ea58e45e765e1808e8ed12a6422db47c82",
+   "attemptId": "c40ceac4-df54-4e39-98b3-c05a66e26940",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/c40ceac4-df54-4e39-98b3-c05a66e26940/row.json",
+    "sha256": "be6bb66da02332eced30f05e38eb410feaac8a4da28285445f1013364c09b47b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1cca26a7b8acb345050b4ba73efa2ee77e9cd8378935bef823a395f972f6e6d5",
+   "attemptId": "4fdf9254-9e5d-4b64-a1d7-499227068e1c",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/4fdf9254-9e5d-4b64-a1d7-499227068e1c/row.json",
+    "sha256": "c54d60af4b43321bd99ba321ea6faeb25b53cd06c1a9c8d08f5b64cf6467b022"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "6c3b807910e9e809a6ffc6837905eab4776573e9c0bbe9d523e58f45cad6d917",
+   "attemptId": "84389414-18e7-4f09-b9ab-78c871e05262",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/84389414-18e7-4f09-b9ab-78c871e05262/row.json",
+    "sha256": "39e4a2e9d898311a5078e72a74426887bb2cd13c67bc1aed54bbfa3564534a77"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "12643e3e5bfbac4af6973dbfba73d167e1d682f17e6d6d9b075ce511b7728fae",
+   "attemptId": "12fff95e-6df5-49e5-927c-0559718d4f01",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/12fff95e-6df5-49e5-927c-0559718d4f01/row.json",
+    "sha256": "233956d8348138f9e43947a02740516c04d1f3b95ee8d35f8d8b75f6b2795b68"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1513d3abaab8e24a935c0e07aac8aae41b77368b895f6f3784e8f10840803a4e",
+   "attemptId": "3ca23f7f-56d4-4c40-84c0-251847b57d9b",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/3ca23f7f-56d4-4c40-84c0-251847b57d9b/row.json",
+    "sha256": "2acb9fadcaedb222844e006b469973a7b9f76a72a4417bef0fa91271d3093e45"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "45bf93f983f2e21290f000e027a09879afbf2bdeea8cf28e52c28a40536bede6",
+   "attemptId": "686494d3-394f-46a5-a43d-206c10bf9a40",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/686494d3-394f-46a5-a43d-206c10bf9a40/row.json",
+    "sha256": "83eb286c9d749dcfd817e83f5941210bb086dc0cca53b7fb62b7346241ce3bdc"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "76db72f4ac25a92a83d2f8ec74301efbc7201856e4d6464782862644a3b73ed1",
+   "attemptId": "d3e9a9e8-e2e0-4c93-85a7-54df7e4e4913",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/d3e9a9e8-e2e0-4c93-85a7-54df7e4e4913/row.json",
+    "sha256": "06738130cb31a740419c2ca02e860790d6b909de7028191208206984d28379f1"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "d2821a9940a24beb53ae7411b71d2093a608a4e563c681d875c61209dc15173f",
+   "attemptId": "369026e8-a78a-4286-8c85-af873a61c858",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/369026e8-a78a-4286-8c85-af873a61c858/row.json",
+    "sha256": "714a7c268e69509e5d02cf2d3d1548355982029e8ca7b0d1a3ca280bb9700a4f"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "5043ca697a34bde8542cba0ac8b826bdea7cf2b29ff6c3558d06bb6a599c77f1",
+   "attemptId": "594b78b7-e833-493d-aab0-8388122b3c67",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/594b78b7-e833-493d-aab0-8388122b3c67/row.json",
+    "sha256": "89bcdc673b22182f4d888fbb8e6e375635903e1962cf66ac6e6102f1e146f264"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "ab2bb060386b75b3b898e99da0bb1cd7dd467165a3c5ed5cad181932274c8855",
+   "attemptId": "59e4a5c9-90d4-416d-92c7-70ac5f028688",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/59e4a5c9-90d4-416d-92c7-70ac5f028688/row.json",
+    "sha256": "f5ae93fd928a098e4268bb8b2aa9a3e0b297ec7e859fe5768dc32b0b4d09bfc5"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "69f3e27812990999770200822c4f176ec0f2d6e34c5348fc4b6f490c7143e5d9",
+   "attemptId": "b3a73034-b240-4ccc-b3b1-6ff97414211c",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__196/run-zpc6R1/attempts/b3a73034-b240-4ccc-b3b1-6ff97414211c/row.json",
+    "sha256": "fab584c47b29f7cfcd7302cf0f75985131d1f899851e051aa32e06ab0dd49663"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 844981aad4d5)",
+   "editIds": [
+    "844981aad4d5bb2c346b2c9cdc340263e8a8dc78e0f060c500254a992f46bb1f"
+   ],
+   "lines": [
+    372,
+    372
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit b59aadec9dec)",
+   "editIds": [
+    "b59aadec9decfccdf2e0f1b5cd3e42b4146a4b75a8f58833966f592cd104e470"
+   ],
+   "lines": [
+    372,
+    372
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit c252a363f95d)",
+   "editIds": [
+    "c252a363f95d2cff8d51ba0ee6b54ce47c9d709e6ab7318c66ddcf3d9b88b36f"
+   ],
+   "lines": [
+    376,
+    376
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit e0432849d050)",
+   "editIds": [
+    "e0432849d0508c63883df7ce6d2041a908e4ca8d4ebbde8fe86131226a19df52"
+   ],
+   "lines": [
+    377,
+    377
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit bc3feb05cb07)",
+   "editIds": [
+    "bc3feb05cb07de09a55ab9abf7ba609de475af5672df3194c9b5be30de0ea65f"
+   ],
+   "lines": [
+    378,
+    378
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit df3cf377a222)",
+   "editIds": [
+    "df3cf377a222ce1c0ec225e439981a61adc2107993663a6f1ec0d61a242766f6"
+   ],
+   "lines": [
+    376,
+    376
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 24d7358a0a08)",
+   "editIds": [
+    "24d7358a0a083bd2f8683d6e84fdd980555d860b3f63ec94294580fe9cacc3cf"
+   ],
+   "lines": [
+    377,
+    377
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit f95725177593)",
+   "editIds": [
+    "f95725177593c377fb2b66d9264a4d59c5b67199354b227698552005ab60c59e"
+   ],
+   "lines": [
+    378,
+    378
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 79ea68d745a1)",
+   "editIds": [
+    "79ea68d745a19c5a0ea30e0dfdefb9fde9d1154fe192f6b99d3994e1b62e04af"
+   ],
+   "lines": [
+    379,
+    379
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit e99aa5386305)",
+   "editIds": [
+    "e99aa53863055fe319d54c86f80ae538bb58a3f1da6bcec68d27587e6f9d7366"
+   ],
+   "lines": [
+    380,
+    380
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 1ab669e502b3)",
+   "editIds": [
+    "1ab669e502b349b777039c70383f9a45c27d829cc885cd773aed212fd9c3615e"
+   ],
+   "lines": [
+    381,
+    381
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit d48d0af0b8a2)",
+   "editIds": [
+    "d48d0af0b8a2eb334cfcdcc29e0e75f57fe072cab109b6ea8f6bbdf81a0a0247"
+   ],
+   "lines": [
+    382,
+    382
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit aa64f338dd87)",
+   "editIds": [
+    "aa64f338dd8714944429109fe102f74c86a8f95958072402fb72d47a65d4e63f"
+   ],
+   "lines": [
+    383,
+    383
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit c4858b4385d9)",
+   "editIds": [
+    "c4858b4385d975ad7016c05111e244cc3990811af5e5224d639a82c58ef1bf7f"
+   ],
+   "lines": [
+    383,
+    383
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 1775a68773e1)",
+   "editIds": [
+    "1775a68773e18feb209f3da624f4639567f315000cffe513eb082457cd151415"
+   ],
+   "lines": [
+    388,
+    388
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 2ea9e4fe5071)",
+   "editIds": [
+    "2ea9e4fe507170449ee167646641a28d3373f905d74a9e5aa4514358cf2b58e2"
+   ],
+   "lines": [
+    436,
+    436
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 5cac15a0ebeb)",
+   "editIds": [
+    "5cac15a0ebeb69292a90e170694436d171ae771dc56fb979ac2e7c5eda3bb4df"
+   ],
+   "lines": [
+    437,
+    437
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit a56c590be01e)",
+   "editIds": [
+    "a56c590be01efe68ebd35b0f8f07b29d4ebd9dbf6c1e83f137db4f9bd1f419e6"
+   ],
+   "lines": [
+    441,
+    441
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 3ec55e33df6a)",
+   "editIds": [
+    "3ec55e33df6adb7a46bf656a48302c73d023d2a3e1e38029baef0f7c6120ac85"
+   ],
+   "lines": [
+    442,
+    442
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "695733fc65a91f79b8ee8a6ae69cec46759d2b545a6750ba9e1f6d842743f066",
+   "dd0db2af0d2dd66095a1546ca1728bc0a38ded4a4a7cd6bae047b8d9e95cc72a",
+   "266271cdbab92d9d2fda27666c9eb18c5ea9925b11b232fe7179be86033d5a3d",
+   "db7d20a10aa87984c058d0e0c08faff2076c386f216da1b128ee98303abb9dea",
+   "4bb30e3baa67130394291ab5317c5c69e3748e5eea26c6cb573051ab6af102fe",
+   "c8a9c60b4ba9c0d788179c354099021c6a754714fd94cec09ad68f2d7f7b5dc0",
+   "ca4b7980992839ed0675ca36d6b83b85b02a743dc6ea3cc9171959f4dd331a5b",
+   "594c96f04c3ee3e50d96a4bced89f9bb4b3711b75d00e6e1219b7fdaa2dc0bbb",
+   "cd86de701d30d545dd9ba2bf423187ea58e45e765e1808e8ed12a6422db47c82",
+   "1cca26a7b8acb345050b4ba73efa2ee77e9cd8378935bef823a395f972f6e6d5",
+   "6c3b807910e9e809a6ffc6837905eab4776573e9c0bbe9d523e58f45cad6d917",
+   "12643e3e5bfbac4af6973dbfba73d167e1d682f17e6d6d9b075ce511b7728fae",
+   "1513d3abaab8e24a935c0e07aac8aae41b77368b895f6f3784e8f10840803a4e",
+   "45bf93f983f2e21290f000e027a09879afbf2bdeea8cf28e52c28a40536bede6",
+   "76db72f4ac25a92a83d2f8ec74301efbc7201856e4d6464782862644a3b73ed1",
+   "d2821a9940a24beb53ae7411b71d2093a608a4e563c681d875c61209dc15173f",
+   "5043ca697a34bde8542cba0ac8b826bdea7cf2b29ff6c3558d06bb6a599c77f1",
+   "ab2bb060386b75b3b898e99da0bb1cd7dd467165a3c5ed5cad181932274c8855",
+   "69f3e27812990999770200822c4f176ec0f2d6e34c5348fc4b6f490c7143e5d9"
+  ],
+  "terminal": [
+   "695733fc65a91f79b8ee8a6ae69cec46759d2b545a6750ba9e1f6d842743f066",
+   "dd0db2af0d2dd66095a1546ca1728bc0a38ded4a4a7cd6bae047b8d9e95cc72a",
+   "266271cdbab92d9d2fda27666c9eb18c5ea9925b11b232fe7179be86033d5a3d",
+   "db7d20a10aa87984c058d0e0c08faff2076c386f216da1b128ee98303abb9dea",
+   "4bb30e3baa67130394291ab5317c5c69e3748e5eea26c6cb573051ab6af102fe",
+   "c8a9c60b4ba9c0d788179c354099021c6a754714fd94cec09ad68f2d7f7b5dc0",
+   "ca4b7980992839ed0675ca36d6b83b85b02a743dc6ea3cc9171959f4dd331a5b",
+   "594c96f04c3ee3e50d96a4bced89f9bb4b3711b75d00e6e1219b7fdaa2dc0bbb",
+   "cd86de701d30d545dd9ba2bf423187ea58e45e765e1808e8ed12a6422db47c82",
+   "1cca26a7b8acb345050b4ba73efa2ee77e9cd8378935bef823a395f972f6e6d5",
+   "6c3b807910e9e809a6ffc6837905eab4776573e9c0bbe9d523e58f45cad6d917",
+   "12643e3e5bfbac4af6973dbfba73d167e1d682f17e6d6d9b075ce511b7728fae",
+   "1513d3abaab8e24a935c0e07aac8aae41b77368b895f6f3784e8f10840803a4e",
+   "45bf93f983f2e21290f000e027a09879afbf2bdeea8cf28e52c28a40536bede6",
+   "76db72f4ac25a92a83d2f8ec74301efbc7201856e4d6464782862644a3b73ed1",
+   "d2821a9940a24beb53ae7411b71d2093a608a4e563c681d875c61209dc15173f",
+   "5043ca697a34bde8542cba0ac8b826bdea7cf2b29ff6c3558d06bb6a599c77f1",
+   "ab2bb060386b75b3b898e99da0bb1cd7dd467165a3c5ed5cad181932274c8855",
+   "69f3e27812990999770200822c4f176ec0f2d6e34c5348fc4b6f490c7143e5d9"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

@@ -1,0 +1,388 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__3/run-jUgeUm",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "e71014f522fb8db9ba1ef634f2e9f2c8069e4b6c",
+  "head": "829fb78af7d901b909473b8532d73a00148168ed",
+  "files": [
+   {
+    "id": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+    "file": "lib/response.js",
+    "oldPath": "lib/response.js",
+    "newPath": "lib/response.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "50b0579b57ef95a548671c60b4888f905da4cd88",
+    "newOid": "5334515eeb4e9ad698e2621a37955c8b86ef696b",
+    "status": "M",
+    "edits": [
+     "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+     "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+     "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+     "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+    ],
+    "hunks": [
+     {
+      "id": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+      "old": {
+       "start": 609,
+       "count": 1
+      },
+      "new": {
+       "start": 609,
+       "count": 3
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "0c33d7cfa0997b5f6c0a94d28b70195eb526d27dfbd98170d5b15d0d2246b100",
+    "newHash": "f9f60cb4c92b1d0df284a75f2c9fd4232fd95adb8189a0bf85089e4d528b9331",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "sendfile",
+       "side": "old",
+       "file": "lib/response.js",
+       "start": 944,
+       "end": 1032,
+       "offset": 23113,
+       "stop": 24747,
+       "id": "84231934a8dbc70792fd49cdef69e1b7f8cdd2e6204a42c96c84bb5916557227"
+      }
+     ],
+     "new": [
+      {
+       "name": "sendfile",
+       "side": "new",
+       "file": "lib/response.js",
+       "start": 946,
+       "end": 1034,
+       "offset": 23147,
+       "stop": 24781,
+       "id": "cc9a722d898dc028f5414c0960d02e496557096103252ebab3aa716f2ca85770"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+    "fileId": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+    "file": "lib/response.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+    "side": "old",
+    "old": {
+     "start": 609,
+     "count": 1
+    },
+    "new": {
+     "start": 609,
+     "count": 0
+    },
+    "offsets": {
+     "start": 15353,
+     "end": 15384
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+    "fileId": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+    "file": "lib/response.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+    "side": "new",
+    "old": {
+     "start": 609,
+     "count": 0
+    },
+    "new": {
+     "start": 609,
+     "count": 1
+    },
+    "offsets": {
+     "start": 15353,
+     "end": 15381
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+    "fileId": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+    "file": "lib/response.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+    "side": "new",
+    "old": {
+     "start": 609,
+     "count": 0
+    },
+    "new": {
+     "start": 610,
+     "count": 1
+    },
+    "offsets": {
+     "start": 15381,
+     "end": 15405
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2",
+    "fileId": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+    "file": "lib/response.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+    "side": "new",
+    "old": {
+     "start": 609,
+     "count": 0
+    },
+    "new": {
+     "start": 611,
+     "count": 1
+    },
+    "offsets": {
+     "start": 15405,
+     "end": 15418
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "160f27ce384a2231a3c8528a120c667ef61ae3a761a742218a8299d906691808",
+  "reconciliation": {
+   "expected": [
+    "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+    "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+    "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+    "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+    "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+    "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+    "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+      "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+      "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+      "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "a2d463b3fe3d7f4e8ebea89569dd28124c2a5f810a78eb5bc445dec58f3dfc8f",
+   "attemptId": "d836af0b-1029-473f-86bc-f0ed368ea51b",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__3/run-jUgeUm/attempts/d836af0b-1029-473f-86bc-f0ed368ea51b/row.json",
+    "sha256": "2bd7b50c113ada03760d93eb93e57120cf9fe87c9294db11970511659b5a6331"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "0c31affe7a9e2dbfef1321b54cd430d774a769820b7813c6392cbc0b4a8e74b8",
+   "attemptId": "f9fcf9a2-2d9f-4cb6-819a-37e48ed54ecf",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__3/run-jUgeUm/attempts/f9fcf9a2-2d9f-4cb6-819a-37e48ed54ecf/row.json",
+    "sha256": "af62ce0e714d1fe6ded652b2ada764602e656cf23f39d5bdd79e8927d9105b13"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "5399708f188b70af1ab14a3140f88ce068f6e8aeb54228534a390837b64e1e37",
+   "attemptId": "8817ebda-b307-4942-b772-09f3470955e5",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__3/run-jUgeUm/attempts/8817ebda-b307-4942-b772-09f3470955e5/row.json",
+    "sha256": "6ad160e7f605c6e431b6226b2e6299721f9133c3acf45100dd1e7c0658c4ca73"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "50ed9b6fc904d36a147b81edb4eba708a33fee02c6323afced5634e39631c546",
+   "attemptId": "896c844a-9e03-4b4c-b17a-72964f571b76",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__express__3/run-jUgeUm/attempts/896c844a-9e03-4b4c-b17a-72964f571b76/row.json",
+    "sha256": "e15a81fbeb374bf4fa1de990c49aa17ae955e8caeae9f1af980d53bd0aad5626"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/response.js",
+   "unit": "(edit e7079a56dc2b)",
+   "editIds": [
+    "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a"
+   ],
+   "lines": [
+    609,
+    609
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/response.js",
+   "unit": "(edit 9330fab5e1fb)",
+   "editIds": [
+    "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce"
+   ],
+   "lines": [
+    609,
+    609
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/response.js",
+   "unit": "(edit 8251dfa19e62)",
+   "editIds": [
+    "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44"
+   ],
+   "lines": [
+    610,
+    610
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/response.js",
+   "unit": "(edit a3313a2658d9)",
+   "editIds": [
+    "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+   ],
+   "lines": [
+    611,
+    611
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "a2d463b3fe3d7f4e8ebea89569dd28124c2a5f810a78eb5bc445dec58f3dfc8f",
+   "0c31affe7a9e2dbfef1321b54cd430d774a769820b7813c6392cbc0b4a8e74b8",
+   "5399708f188b70af1ab14a3140f88ce068f6e8aeb54228534a390837b64e1e37",
+   "50ed9b6fc904d36a147b81edb4eba708a33fee02c6323afced5634e39631c546"
+  ],
+  "terminal": [
+   "a2d463b3fe3d7f4e8ebea89569dd28124c2a5f810a78eb5bc445dec58f3dfc8f",
+   "0c31affe7a9e2dbfef1321b54cd430d774a769820b7813c6392cbc0b4a8e74b8",
+   "5399708f188b70af1ab14a3140f88ce068f6e8aeb54228534a390837b64e1e37",
+   "50ed9b6fc904d36a147b81edb4eba708a33fee02c6323afced5634e39631c546"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

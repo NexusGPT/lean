@@ -1,0 +1,71 @@
+{
+ "file": "lib/config/plugins.js",
+ "unit": "Plugins.loadAll",
+ "lines": [
+  161,
+  174
+ ],
+ "coverage": "refused:unresolved-module",
+ "verdict": "PASS-bounded",
+ "laneB": "PASS-bounded",
+ "laneA": null,
+ "witness": null,
+ "reason": "TS2304: Cannot find name 'Environments'.",
+ "advice": [
+  {
+   "line": 31,
+   "rule": "unresolved-module",
+   "msg": "TS2304: Cannot find name 'Environments'.",
+   "do": "[migration] The project cannot resolve this import; the proof reads it as opaque."
+  },
+  {
+   "line": 32,
+   "rule": "unresolved-module",
+   "msg": "TS2304: Cannot find name 'Rules'.",
+   "do": "[migration] The project cannot resolve this import; the proof reads it as opaque."
+  },
+  {
+   "line": 55,
+   "rule": "ts-strict",
+   "msg": "TS2531: Object is possibly 'null'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 119,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'messageTemplate' does not exist on type 'Error'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 120,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'messageData' does not exist on type 'Error'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 133,
+   "rule": "unresolved-module",
+   "msg": "TS2591: Cannot find name 'require'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+   "do": "[migration] The project cannot resolve this import; the proof reads it as opaque."
+  },
+  {
+   "line": 173,
+   "rule": "foreach",
+   "msg": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter",
+   "do": "[migration] Write `for (const x of xs) { ... }`; a loop may update a local, a callback may not."
+  }
+ ],
+ "editIds": [
+  "1eab96d077d291f64fdf2610cc43b8a8ad716c779a259c41feb7c0afd95b9041",
+  "34acaedd59531ad57946bef5904d33d937dd5f90de9a495474dcf1b810d5df67",
+  "60033b2b8cebe030c1537cc92bce3a0e69fac70fd60ed43d7012e88f81a09085",
+  "0dc922df8c702a22f70e2685d2270fdfbd61de1048fb81631fc4e65ccff30631",
+  "ab80d98d94d18b9917b758b230911caf50b387a133ba8305aa32f3927eaf6081",
+  "5beb989b1e3a2ba2eb8353e4f2b759f19b2a38b585d2ff4cde743213935670ad",
+  "8382a23c4a757dde7b61427178d0a60c0e55813738340a3de4a542e77a89db55",
+  "1eebde45190d6c8083ac5ce7643d5501d098e04de4c530d90e6d9326aa67ce25",
+  "0e6815ccef93bcba317d7a0ee1f7fdfb1a09b4a81d262aa8f853e7096eea215c",
+  "0e33b4654ff9c3706b0519fa05138f1566bd4390a9e958daadd95ac3f74d93a9",
+  "53dc0db66586770acbec8129269fd5df333c1b69bb06c7d44196708a4c8993d4"
+ ]
+}

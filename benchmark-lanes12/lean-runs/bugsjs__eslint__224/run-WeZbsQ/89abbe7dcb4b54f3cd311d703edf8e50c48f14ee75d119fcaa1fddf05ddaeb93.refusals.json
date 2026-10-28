@@ -1,0 +1,34 @@
+{
+ "identity": "89abbe7dcb4b54f3cd311d703edf8e50c48f14ee75d119fcaa1fddf05ddaeb93",
+ "records": [
+  {
+   "check": "lane-B",
+   "unit": "isNonCommutativeOperatorWithShorthand",
+   "file": "lib/rules/operator-assignment.js",
+   "location": {
+    "start": 31,
+    "end": 31
+   },
+   "kind": "witness",
+   "input": [
+    "+"
+   ],
+   "lines": {
+    "kind": "completion",
+    "parent": {
+     "file": "lib/rules/operator-assignment.js",
+     "start": 31,
+     "end": 31,
+     "text": "return [\"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+    },
+    "candidate": {
+     "file": "lib/rules/operator-assignment.js",
+     "start": 31,
+     "end": 31,
+     "text": "return [\"+\", \"-\", \"/\", \"%\", \"<<\", \">>\", \">>>\"].indexOf(operator) >= 0;"
+    }
+   },
+   "reason": "the two versions differ on outcome"
+  }
+ ]
+}

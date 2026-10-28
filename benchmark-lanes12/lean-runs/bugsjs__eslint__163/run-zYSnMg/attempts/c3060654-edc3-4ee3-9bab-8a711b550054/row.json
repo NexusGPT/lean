@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-return-await.js",
+ "unit": "(edit 818e6a561f1f)",
+ "editIds": [
+  "818e6a561f1fc9bbda141ab2382c55bc145f6717e6712832c1b450573649412d"
+ ],
+ "lines": [
+  8,
+  8
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

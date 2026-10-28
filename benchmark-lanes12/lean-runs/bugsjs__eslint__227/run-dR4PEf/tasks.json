@@ -1,0 +1,65 @@
+{
+ "change": "70a3ad7f998e1faa8255b4429bed4baac32a19a4c6082c0c944978c0e7297114",
+ "tasks": [
+  {
+   "id": "3e2593c6587c34e680e8fd7c813160de0bd1ce40f9571d178f80b507902753b6",
+   "file": "lib/rules/no-fallthrough.js",
+   "unit": "(edit 5562e4f28841)",
+   "lines": [
+    39,
+    39
+   ],
+   "lanes": [],
+   "editIds": [
+    "5562e4f288418caa744ca35879bc845e7b24470db3464545db39db2f7127c746"
+   ],
+   "attemptId": "6df7bdf4-6baf-4faa-8eb1-533e2d16e370",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__227/run-dR4PEf/attempts/6df7bdf4-6baf-4faa-8eb1-533e2d16e370"
+  },
+  {
+   "id": "faeb15d056c98e8d2577607e8df6d7865473335a8613a4ddd8cef3cb7dd03506",
+   "file": "lib/rules/no-fallthrough.js",
+   "unit": "(edit 15845ea3fd72)",
+   "lines": [
+    40,
+    40
+   ],
+   "lanes": [],
+   "editIds": [
+    "15845ea3fd72aae3fc8134d07ed293f70436d2328ba877da077990a49297942b"
+   ],
+   "attemptId": "9e758b46-bc3b-4ea0-814e-9dcdda201318",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__227/run-dR4PEf/attempts/9e758b46-bc3b-4ea0-814e-9dcdda201318"
+  },
+  {
+   "id": "9a3085895d3cdad9865f790dfb4cb1133d01852d7ffbd774ab6e300c063e07d6",
+   "file": "lib/rules/no-fallthrough.js",
+   "unit": "(edit a3a8a6a5218c)",
+   "lines": [
+    39,
+    39
+   ],
+   "lanes": [],
+   "editIds": [
+    "a3a8a6a5218c32689717a5e0c62a3131a8232c99ff52bbf1c11480a67da6e59c"
+   ],
+   "attemptId": "8544520b-f00f-444c-a54d-590cd8092a6d",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__227/run-dR4PEf/attempts/8544520b-f00f-444c-a54d-590cd8092a6d"
+  },
+  {
+   "id": "55fa280fc7009754b28b358f8667af5a8386887c9c8d703871cfb96669b6cdcf",
+   "file": "lib/rules/no-fallthrough.js",
+   "unit": "(edit 8e1f4cdd98b4)",
+   "lines": [
+    40,
+    40
+   ],
+   "lanes": [],
+   "editIds": [
+    "8e1f4cdd98b4c4d7daf06d04f3047dd12bb8a8c442c3b51b7c310da69a532724"
+   ],
+   "attemptId": "fa0936cf-e552-4e36-b5b9-06a8b7e6d321",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__227/run-dR4PEf/attempts/fa0936cf-e552-4e36-b5b9-06a8b7e6d321"
+  }
+ ]
+}

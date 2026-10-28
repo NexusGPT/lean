@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-unused-vars.js",
+ "unit": "(edit d85cf77491e8)",
+ "editIds": [
+  "d85cf77491e8d94231dff2782c7b9352796bf0f901104960828d01d5c4a2185a"
+ ],
+ "lines": [
+  251,
+  251
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

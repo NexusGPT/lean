@@ -1,0 +1,20 @@
+{
+ "file": "lib/hexo/index.js",
+ "unit": "(edit 891193f206aa)",
+ "editIds": [
+  "891193f206aae176c044ff9ea8c0819f7503557e56e11ad0591a9cd136a92ad5"
+ ],
+ "lines": [
+  59,
+  59
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,308 @@
+{
+ "key": "4f37e79d58f9bd5a4d1c17a1e7ebea22e515bd29ba2b0a17f1c9c5385e6794d7",
+ "context": "14ba61d2315bf824673beff79eb771744bd9453665538d5ebda2a01551aade6d",
+ "row": {
+  "file": "lib/rules/prefer-template.js",
+  "unit": "hasNonLiteral",
+  "lines": [
+   30,
+   38
+  ],
+  "verdict": "WITNESS",
+  "coverage": "checked",
+  "certificate": {
+   "tool": "lean-ts v3",
+   "identity": "f639cb4043b52a746bc3b4d15f551e732f64ab9d6c0881ea088a4bae69ff98e9",
+   "unit": "hasNonLiteral",
+   "parent": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__3/run-PYxqDv/sources/lib/rules/.lean_base_10920_prefer-template.js",
+    "sha256": "978d92aaf910d808"
+   },
+   "candidate": {
+    "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__3/run-PYxqDv/sources/lib/rules/.lean_head_10920_prefer-template.js",
+    "sha256": "b2faa6e12744e751"
+   },
+   "lanes": {
+    "B": {
+     "verdict": "WITNESS",
+     "reason": null,
+     "bound": {
+      "n": 100,
+      "seed": 1,
+      "ms": 2000,
+      "reached": {
+       "body": 4,
+       "guard": 0
+      },
+      "states": [
+       {
+        "input": 0,
+        "args": [
+         {
+          "argument": {
+           "$fake": "arg0.argument"
+          },
+          "left": {
+           "$fake": "arg0.left"
+          },
+          "right": {
+           "$fake": "arg0.right"
+          },
+          "type": "BinaryExpression"
+         }
+        ]
+       },
+       {
+        "input": 1,
+        "args": [
+         {
+          "argument": {
+           "$fake": "arg0.argument"
+          },
+          "left": {
+           "$fake": "arg0.left"
+          },
+          "right": {
+           "$fake": "arg0.right"
+          },
+          "type": "UnaryExpression"
+         }
+        ]
+       },
+       {
+        "input": 2,
+        "args": [
+         {
+          "argument": {
+           "$fake": "arg0.argument"
+          },
+          "left": {
+           "$fake": "arg0.left"
+          },
+          "right": {
+           "$fake": "arg0.right"
+          },
+          "type": "Literal"
+         }
+        ]
+       },
+       {
+        "input": 3,
+        "args": [
+         {
+          "argument": {
+           "$fake": "arg0.argument"
+          },
+          "left": {
+           "$fake": "arg0.left"
+          },
+          "right": {
+           "$fake": "arg0.right"
+          },
+          "type": "TemplateLiteral"
+         }
+        ]
+       }
+      ],
+      "heaps": {
+       "assignments": 0,
+       "pool": 2,
+       "shapes": {}
+      },
+      "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+      "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+      "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+      "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+      "library": {
+       "records": 0,
+       "ops": {},
+       "calls": {},
+       "sampled": [],
+       "outOfModel": 0,
+       "callbackEffects": 0,
+       "defectRecords": 0,
+       "defects": []
+      }
+     },
+     "witnesses": [
+      {
+       "input": 0,
+       "args": [
+        {
+         "argument": {
+          "$fake": "arg0.argument"
+         },
+         "left": {
+          "$fake": "arg0.left"
+         },
+         "right": {
+          "$fake": "arg0.right"
+         },
+         "type": "BinaryExpression"
+        }
+       ],
+       "where": {
+        "field": "trace",
+        "index": 2,
+        "parent": null,
+        "candidate": {
+         "op": "get",
+         "path": "arg0.left.type",
+         "args": []
+        },
+        "lines": {
+         "kind": "effect; parent record absent",
+         "parent": null,
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__3/run-PYxqDv/sources/lib/rules/.lean_head_10920_prefer-template.js",
+          "start": 37,
+          "end": 37,
+          "text": "return node.type !== \"Literal\" && node.type !== \"TemplateLiteral\";"
+         }
+        }
+       }
+      },
+      {
+       "input": 1,
+       "args": [
+        {
+         "argument": {
+          "$fake": "arg0.argument"
+         },
+         "left": {
+          "$fake": "arg0.left"
+         },
+         "right": {
+          "$fake": "arg0.right"
+         },
+         "type": "UnaryExpression"
+        }
+       ],
+       "where": {
+        "field": "trace",
+        "index": 0,
+        "parent": null,
+        "candidate": {
+         "op": "get",
+         "path": "arg0.argument.type",
+         "args": []
+        },
+        "lines": {
+         "kind": "effect; parent record absent",
+         "parent": null,
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__3/run-PYxqDv/sources/lib/rules/.lean_head_10920_prefer-template.js",
+          "start": 31,
+          "end": 33,
+          "text": "if (node.type === \"BinaryExpression\") {\n        return hasNonLiteral(node.left) || hasNonLiteral(node.right);\n    }"
+         }
+        }
+       }
+      },
+      {
+       "input": 3,
+       "args": [
+        {
+         "argument": {
+          "$fake": "arg0.argument"
+         },
+         "left": {
+          "$fake": "arg0.left"
+         },
+         "right": {
+          "$fake": "arg0.right"
+         },
+         "type": "TemplateLiteral"
+        }
+       ],
+       "where": {
+        "field": "outcome",
+        "lines": {
+         "kind": "completion",
+         "parent": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__3/run-PYxqDv/sources/lib/rules/.lean_base_10920_prefer-template.js",
+          "start": 34,
+          "end": 34,
+          "text": "return node.type !== \"Literal\";"
+         },
+         "candidate": {
+          "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__3/run-PYxqDv/sources/lib/rules/.lean_head_10920_prefer-template.js",
+          "start": 37,
+          "end": 37,
+          "text": "return node.type !== \"Literal\" && node.type !== \"TemplateLiteral\";"
+         }
+        }
+       }
+      }
+     ]
+    }
+   },
+   "tools": {
+    "node": "v24.18.0"
+   },
+   "unitTextEqual": false,
+   "observation": {
+    "layer": "values and the reachable object graph",
+    "renders": null,
+    "effects": "the trace of environment requests and pending work",
+    "schedule": "synchronous; pending work recorded, never fired"
+   },
+   "library": {
+    "records": 0,
+    "ops": {},
+    "outOfModel": 0,
+    "callbackEffects": 0,
+    "defects": 0
+   },
+   "verdict": "WITNESS"
+  },
+  "laneB": "WITNESS",
+  "laneA": null,
+  "witness": {
+   "input": 0,
+   "args": [
+    {
+     "argument": {
+      "$fake": "arg0.argument"
+     },
+     "left": {
+      "$fake": "arg0.left"
+     },
+     "right": {
+      "$fake": "arg0.right"
+     },
+     "type": "BinaryExpression"
+    }
+   ],
+   "where": {
+    "field": "trace",
+    "index": 2,
+    "parent": null,
+    "candidate": {
+     "op": "get",
+     "path": "arg0.left.type",
+     "args": []
+    },
+    "lines": {
+     "kind": "effect; parent record absent",
+     "parent": null,
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__3/run-PYxqDv/sources/lib/rules/.lean_head_10920_prefer-template.js",
+      "start": 37,
+      "end": 37,
+      "text": "return node.type !== \"Literal\" && node.type !== \"TemplateLiteral\";"
+     }
+    }
+   }
+  },
+  "reason": null,
+  "advice": [],
+  "editIds": [
+   "b80a3d54c791d4717621051371ab53bc17542a1e8a6b73b65c2fb82e45fb9c37",
+   "20e4f32ae0ae16be953cf88c2393de92ff1da012f7aefd36a5a51b089c7bc178",
+   "d1ac8cdd89a45cbbea13dc1697cd5d3f154368f35d22d94145046248ba82b25f",
+   "96a3fcf1375fbbcb307157920d5b0b5510c6cbdfa348448c51eb560d2d70efbc",
+   "ebc8fd734a23b2cc9e05312cd9f3175f4094a6b3a89d0c6f301d8aac957beeba"
+  ]
+ }
+}

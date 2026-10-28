@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/object-curly-newline.js",
+ "unit": "(edit 0fe1f1731ff8)",
+ "editIds": [
+  "0fe1f1731ff846ccfb5d990c65f7f097c6667ca18d10c7a70b717a01dbca5a78"
+ ],
+ "lines": [
+  167,
+  167
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

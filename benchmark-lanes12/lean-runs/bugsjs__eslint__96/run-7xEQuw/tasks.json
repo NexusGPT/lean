@@ -1,0 +1,57 @@
+{
+ "change": "e2ed365b69f3937c5e707bbe99e68958b3c09e7f77a69bf667476060cea4f56d",
+ "tasks": [
+  {
+   "id": "d2fbb73ed0eeb84663561463c7b76b5b8a9571e1c0543dbaccbcc95e7c639b77",
+   "file": "lib/rules/comma-dangle.js",
+   "unit": "isTrailingCommaAllowed",
+   "lines": [
+    22,
+    27
+   ],
+   "lanes": [
+    "B",
+    "A"
+   ],
+   "editIds": [
+    "796557bf9db62a3c91a0026b93dbf9e20ab643f4c14ea1684220dd741abf2c2e",
+    "a28c0642a7ed39f5ef64214269ba1304935656b83a78cf5058b07cd370e4960b",
+    "6e5847ee003650ee0cf7fbcd7a90b60b984b87d875e4281ee31bf8af532313c5",
+    "5132b7dd5cb8e30fc9ae8a5cd06115a72a15b635e21d774290e1020a1a8a7779",
+    "8ee08425104bf683fab0eac67595b9bb001209e8cb26bea7739f099fb6bf8f46"
+   ],
+   "attemptId": "52cf2b6f-aa35-4963-803d-283a2c211751",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/attempts/52cf2b6f-aa35-4963-803d-283a2c211751"
+  },
+  {
+   "id": "94aee34bf988c52d5274f2b7f3ef66fae561da6655f3de84624193b087d6e303",
+   "file": "lib/rules/comma-dangle.js",
+   "unit": "(edit 0c00b817ecfe)",
+   "lines": [
+    16,
+    16
+   ],
+   "lanes": [],
+   "editIds": [
+    "0c00b817ecfe29d9c436adf3a423abb3ed181bac64c4c38e2f2af71e3e7dc9e8"
+   ],
+   "attemptId": "c2efb4a3-9e6f-4a41-91c9-581ab3ff1b6a",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/attempts/c2efb4a3-9e6f-4a41-91c9-581ab3ff1b6a"
+  },
+  {
+   "id": "dc069c1ab4181b4f7ed27b3d4309314389c871968781658b9e16fac62349512c",
+   "file": "lib/rules/comma-dangle.js",
+   "unit": "(edit 94d89c6e8b73)",
+   "lines": [
+    16,
+    16
+   ],
+   "lanes": [],
+   "editIds": [
+    "94d89c6e8b733926df6f09a9fd65265854f996916489d7f6fb8d801fe4e9d4eb"
+   ],
+   "attemptId": "a7f51893-ac7a-4a74-a2c7-4da08074d4ce",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__96/run-7xEQuw/attempts/a7f51893-ac7a-4a74-a2c7-4da08074d4ce"
+  }
+ ]
+}

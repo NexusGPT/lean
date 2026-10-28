@@ -1,0 +1,137 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "2ffe51636a64e9ae0cd7621a7c61936346025ca0",
+ "head": "651681522d6134bd683862516919362a1b333ab8",
+ "files": [
+  {
+   "id": "8acbad8f3f66eb3d194f61ad4f010c63b471362e797cba93e46b6acffeb3d903",
+   "file": "lib/rules/semi.js",
+   "oldPath": "lib/rules/semi.js",
+   "newPath": "lib/rules/semi.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "7fc80ab8dabfd6b3c5eb05a395071d23ef612a85",
+   "newOid": "2f28f1614d1a4218c7cd45058ec60f23fed15bce",
+   "status": "M",
+   "edits": [
+    "e2d4cb486eaf750909feaa6640f6d123c2bfc59c62dda9c0399dc4c138b2c5b8",
+    "87f7d7034d55fe272f7f2255d1dcecb69a3d3eda8f76fbbe4b6101480748cead"
+   ],
+   "hunks": [
+    {
+     "id": "a7a9d53dcb6b7c8a6fbef9cc613314607d2cac29aed49158fc97e5742b507801",
+     "old": {
+      "start": 56,
+      "count": 1
+     },
+     "new": {
+      "start": 56,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "624c25dea2dafd333ad74677e069a0ef15609f59ed6db9f908f089bea8aa2e0c",
+   "newHash": "60275490c5bd2df18d5a7565ceabdcfff58fec692debaefaf0e474ae1886a4aa",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "e2d4cb486eaf750909feaa6640f6d123c2bfc59c62dda9c0399dc4c138b2c5b8",
+   "fileId": "8acbad8f3f66eb3d194f61ad4f010c63b471362e797cba93e46b6acffeb3d903",
+   "file": "lib/rules/semi.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a7a9d53dcb6b7c8a6fbef9cc613314607d2cac29aed49158fc97e5742b507801",
+   "side": "old",
+   "old": {
+    "start": 56,
+    "count": 1
+   },
+   "new": {
+    "start": 56,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1480,
+    "end": 1544
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "87f7d7034d55fe272f7f2255d1dcecb69a3d3eda8f76fbbe4b6101480748cead",
+   "fileId": "8acbad8f3f66eb3d194f61ad4f010c63b471362e797cba93e46b6acffeb3d903",
+   "file": "lib/rules/semi.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a7a9d53dcb6b7c8a6fbef9cc613314607d2cac29aed49158fc97e5742b507801",
+   "side": "new",
+   "old": {
+    "start": 56,
+    "count": 0
+   },
+   "new": {
+    "start": 56,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1480,
+    "end": 1560
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "441a1be4a36116ad41d0a25a1182c5fb0313960294c82f45f5c7bbd7b5e583c0",
+ "reconciliation": {
+  "expected": [
+   "e2d4cb486eaf750909feaa6640f6d123c2bfc59c62dda9c0399dc4c138b2c5b8",
+   "87f7d7034d55fe272f7f2255d1dcecb69a3d3eda8f76fbbe4b6101480748cead"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "e2d4cb486eaf750909feaa6640f6d123c2bfc59c62dda9c0399dc4c138b2c5b8",
+   "87f7d7034d55fe272f7f2255d1dcecb69a3d3eda8f76fbbe4b6101480748cead"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "e2d4cb486eaf750909feaa6640f6d123c2bfc59c62dda9c0399dc4c138b2c5b8",
+     "87f7d7034d55fe272f7f2255d1dcecb69a3d3eda8f76fbbe4b6101480748cead"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

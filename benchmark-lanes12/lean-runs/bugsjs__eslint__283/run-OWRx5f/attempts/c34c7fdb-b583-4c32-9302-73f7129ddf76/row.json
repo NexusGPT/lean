@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/max-statements-per-line.js",
+ "unit": "(edit 4dd3afd66201)",
+ "editIds": [
+  "4dd3afd66201164f7449420060d7cc24a372c012b11874140aec9150bcb7f5dd"
+ ],
+ "lines": [
+  102,
+  102
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

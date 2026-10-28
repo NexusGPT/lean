@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-constant-condition.js",
+ "unit": "(edit c15dd83af31e)",
+ "editIds": [
+  "c15dd83af31e790325e3071ab020b3f7edf56e2e9f6317ebd1bcc9b4a6ec73f6"
+ ],
+ "lines": [
+  141,
+  141
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

@@ -1,0 +1,150 @@
+{
+ "identity": "94718f4a7d8206a29cbbca5164d650d9c3d7b06bed6ba84a2ceaf9903617febd",
+ "records": [
+  {
+   "check": "refused:unsupported-member",
+   "unit": "initOptions",
+   "file": "lib/rules/key-spacing.js",
+   "location": {
+    "start": 121,
+    "end": 121
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 121,
+     "rule": "unsupported-member",
+     "msg": "property .align is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 121,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 124,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 124,
+     "rule": "unsupported-member",
+     "msg": "property .align is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 124,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 125,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 125,
+     "rule": "unsupported-member",
+     "msg": "property .align is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 125,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "property .align is not declared on Object"
+  },
+  {
+   "check": "lane-B",
+   "unit": "initOptions",
+   "file": "lib/rules/key-spacing.js",
+   "location": {
+    "start": 137,
+    "end": 142
+   },
+   "kind": "witness",
+   "input": [
+    {
+     "$fake": "arg0"
+    },
+    {
+     "$fake": "arg1"
+    }
+   ],
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "lib/rules/key-spacing.js",
+     "start": 137,
+     "end": 142,
+     "text": "toOptions.align = {\n                on: toOptions.multiLine.align.on,\n                mode: toOptions.multiLine.mode,\n                beforeColon: toOptions.multiLine.align.beforeColon,\n              "
+    },
+    "candidate": {
+     "file": "lib/rules/key-spacing.js",
+     "start": 137,
+     "end": 142,
+     "text": "toOptions.align = {\n                on: toOptions.multiLine.align.on,\n                mode: toOptions.multiLine.align.mode || toOptions.multiLine.mode,\n                beforeColon: toOptions.multiLine"
+    }
+   },
+   "advice": [
+    {
+     "line": 121,
+     "rule": "unsupported-member",
+     "msg": "property .align is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 121,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 124,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 124,
+     "rule": "unsupported-member",
+     "msg": "property .align is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 124,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 125,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    },
+    {
+     "line": 125,
+     "rule": "unsupported-member",
+     "msg": "property .align is not declared on Object",
+     "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+    },
+    {
+     "line": 125,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'align' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "the two versions differ on trace"
+  }
+ ]
+}

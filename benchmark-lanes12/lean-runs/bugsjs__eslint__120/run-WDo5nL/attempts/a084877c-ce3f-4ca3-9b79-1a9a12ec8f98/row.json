@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/valid-typeof.js",
+ "unit": "(edit e5939a23844e)",
+ "editIds": [
+  "e5939a23844e48034cd30f7e72dec78809fa2dd2a275a37f13765ec5b4d4dbfd"
+ ],
+ "lines": [
+  39,
+  39
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/router/index.js",
+ "unit": "(edit 2f14bd854045)",
+ "editIds": [
+  "2f14bd854045f7b19de441214bc3da9d1faeb49af906de2bf57db474ddb4453d"
+ ],
+ "lines": [
+  572,
+  572
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

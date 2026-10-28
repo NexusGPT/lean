@@ -1,0 +1,21 @@
+{
+ "file": "lib/ignored-paths.js",
+ "unit": "(edit 635b870cd9c8)",
+ "editIds": [
+  "635b870cd9c8ff30bfb441de9c863a1ae5bcfb2640690dc80152ae2fd4af103d"
+ ],
+ "lines": [
+  125,
+  125
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

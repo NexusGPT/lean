@@ -1,0 +1,125 @@
+{
+ "change": "e66145c25c522a5c2257fbd32c413b5f4eb9a94bf49ebc29ff56de511a4c146e",
+ "tasks": [
+  {
+   "id": "534ad377b8a12560b56d93b5b4cbf9687b668c71cb4ff9604d3c78958bfa56c9",
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit 5adb4f78652a)",
+   "lines": [
+    242,
+    242
+   ],
+   "lanes": [],
+   "editIds": [
+    "5adb4f78652a5b5e65b15b2e7dd68e62ad7091b459862242199e573ecbaa2c26"
+   ],
+   "attemptId": "1a3c104e-927a-43bc-a4c7-69fe4845015e",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__108/run-U8gOnD/attempts/1a3c104e-927a-43bc-a4c7-69fe4845015e"
+  },
+  {
+   "id": "6b93d3d48b3ca83ccf2cb2bed8d527310dff395bef76bbd5e5f8f7786a0b08b2",
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit 72618f357633)",
+   "lines": [
+    243,
+    243
+   ],
+   "lanes": [],
+   "editIds": [
+    "72618f35763315a13bb86dbea392573bbbc9ad1014c22b57e400893d948041c0"
+   ],
+   "attemptId": "1bf57006-e3f2-4625-a550-39da57f7cb04",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__108/run-U8gOnD/attempts/1bf57006-e3f2-4625-a550-39da57f7cb04"
+  },
+  {
+   "id": "e1ad57321007053746440733e89122f0712ddc148ac1faf9360d8dceb94c25fc",
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit 7a70180ed543)",
+   "lines": [
+    244,
+    244
+   ],
+   "lanes": [],
+   "editIds": [
+    "7a70180ed543204b3f1256d7a1500aa7dc8833953de6b40be781053d1ff0bc19"
+   ],
+   "attemptId": "6ac163c3-acdd-477e-abb9-dd0566f72f5c",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__108/run-U8gOnD/attempts/6ac163c3-acdd-477e-abb9-dd0566f72f5c"
+  },
+  {
+   "id": "a2d49d460c6512d869235462b55ac2ec7ce6306f641764a2920f7b82e48cf58d",
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit bbb81493d829)",
+   "lines": [
+    245,
+    245
+   ],
+   "lanes": [],
+   "editIds": [
+    "bbb81493d829819e33744985a3bd75857ba80bb916ef3f15069674691017422e"
+   ],
+   "attemptId": "46eede9e-13c9-416e-9651-bf958bfb7794",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__108/run-U8gOnD/attempts/46eede9e-13c9-416e-9651-bf958bfb7794"
+  },
+  {
+   "id": "a7d2f8769c60a45e507c18fa577d05ee389d47b0e229257fc858eec2664e5c09",
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit 3c339f97d8bc)",
+   "lines": [
+    242,
+    242
+   ],
+   "lanes": [],
+   "editIds": [
+    "3c339f97d8bc244ad5e0908944318162f027c64a6820f69deb5a45234d7c5579"
+   ],
+   "attemptId": "f05110a3-5e83-44f4-b5ea-6053ad2fe15a",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__108/run-U8gOnD/attempts/f05110a3-5e83-44f4-b5ea-6053ad2fe15a"
+  },
+  {
+   "id": "016f06ff1b2e6d7aa672cdfb18c00b78c8784df0bec4f0feba5f7f2b02499c0b",
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit 8c234a6398d7)",
+   "lines": [
+    243,
+    243
+   ],
+   "lanes": [],
+   "editIds": [
+    "8c234a6398d7fe73809aff01225a1e5c0da3464318d4b60a3440e8af740176a8"
+   ],
+   "attemptId": "55918d12-a843-42ec-a798-f4aad4159eb1",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__108/run-U8gOnD/attempts/55918d12-a843-42ec-a798-f4aad4159eb1"
+  },
+  {
+   "id": "913c053ebf89a6e0f6234eb5aae2df8fa39e72cc57cda64ba9bb7ae744d850dc",
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit a0f8351e4d8a)",
+   "lines": [
+    244,
+    244
+   ],
+   "lanes": [],
+   "editIds": [
+    "a0f8351e4d8a37e539bf41de00ed04d4329b9e3cc832063498aef87fcd6083f7"
+   ],
+   "attemptId": "facffd95-df6f-478f-8824-c2dbb0af711a",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__108/run-U8gOnD/attempts/facffd95-df6f-478f-8824-c2dbb0af711a"
+  },
+  {
+   "id": "da8131d5318fed31cc6becaa255de061e4a8dd179e1c0552aa2868e41a13dd7d",
+   "file": "lib/rules/yoda.js",
+   "unit": "(edit b42bde10cf0f)",
+   "lines": [
+    245,
+    245
+   ],
+   "lanes": [],
+   "editIds": [
+    "b42bde10cf0fa72ce4a0e1385c6b4e53bbc7f1eb2281eef81c607c8c4d0c767b"
+   ],
+   "attemptId": "26cea705-fae4-440f-9899-6436978992f2",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__108/run-U8gOnD/attempts/26cea705-fae4-440f-9899-6436978992f2"
+  }
+ ]
+}

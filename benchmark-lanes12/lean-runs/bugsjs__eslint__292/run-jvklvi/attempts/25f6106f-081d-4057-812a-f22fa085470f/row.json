@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-undef-init.js",
+ "unit": "(edit 7d3e26bfd740)",
+ "editIds": [
+  "7d3e26bfd740e7924b4aed5187bd8dbf20739c11e19d1193cc361e197f02a33a"
+ ],
+ "lines": [
+  49,
+  49
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (whitespace)",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

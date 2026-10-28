@@ -1,0 +1,16 @@
+{
+ "identity": "92218780207f8814a77a6c56d99dff09fd491c2bed1acc9b476e66a2200f19b2",
+ "records": [
+  {
+   "check": "failed:loader",
+   "unit": "checkPackageJson",
+   "file": "lib/util/npm-util.js",
+   "location": {
+    "start": 133,
+    "end": 135
+   },
+   "kind": "coverage",
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/sources/lib/util/.lean_head_99387_npm-util.js: ASK(CommonJS wrapper): require is not defined"
+  }
+ ]
+}

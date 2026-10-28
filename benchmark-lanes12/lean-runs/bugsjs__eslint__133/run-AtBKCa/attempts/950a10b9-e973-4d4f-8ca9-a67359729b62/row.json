@@ -1,0 +1,21 @@
+{
+ "file": "lib/token-store/utils.js",
+ "unit": "(edit 7716847d300b)",
+ "editIds": [
+  "7716847d300b68784d1164c0deb1e072873180baa43127b386964846ebcd3d7e"
+ ],
+ "lines": [
+  93,
+  93
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

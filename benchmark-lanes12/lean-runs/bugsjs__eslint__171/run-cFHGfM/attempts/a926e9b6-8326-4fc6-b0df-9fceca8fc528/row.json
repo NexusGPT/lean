@@ -1,0 +1,21 @@
+{
+ "file": "lib/file-finder.js",
+ "unit": "(edit 2e911aca71c1)",
+ "editIds": [
+  "2e911aca71c1552e9abdf66701928b1fb59679464d147eddbf57d60e0faf9a44"
+ ],
+ "lines": [
+  92,
+  92
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

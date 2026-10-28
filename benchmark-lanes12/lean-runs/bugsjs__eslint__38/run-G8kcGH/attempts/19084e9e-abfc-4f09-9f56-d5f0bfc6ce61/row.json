@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/camelcase.js",
+ "unit": "(edit b4c7b179f11a)",
+ "editIds": [
+  "b4c7b179f11a0f360e7b18b24dc53575325a37a8e8cfe995e36d9561021ea497"
+ ],
+ "lines": [
+  119,
+  119
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,226 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__111/run-Ftn83L",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "e0163841067cf3f9e84e83b8a8d914306f3618ee",
+  "head": "96cc9ca9796fc1112fae34774a2ca524a9596605",
+  "files": [
+   {
+    "id": "e588163260094433d836b73563d5ed7292f9c0f8eecc42f393b1071d3f85ffdf",
+    "file": "lib/rules/eol-last.js",
+    "oldPath": "lib/rules/eol-last.js",
+    "newPath": "lib/rules/eol-last.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "03691c690310a286fc1c8374513d066bf580113f",
+    "newOid": "a8fac6ac4f2dfc00ecf2a7a45cfc6d15d88232b9",
+    "status": "M",
+    "edits": [
+     "a0ec7330ca4fdd66ffeefb5b4d039d36fb2b4eccf87d6d3cbf1238eb8071926b",
+     "7e797870ad3114b37258b0debaea2e05dc5eb4e6fa636c620d6c5bcf9c29880b"
+    ],
+    "hunks": [
+     {
+      "id": "b0dc14f5f6a9ba57b5b89387f95664ec2208054676b6d7265dfab1d933ac3246",
+      "old": {
+       "start": 42,
+       "count": 1
+      },
+      "new": {
+       "start": 42,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "601cabd36b0c1c9fd17d74670c2a6f697e78a4ac413b2ba97cacff9a78a70744",
+    "newHash": "df5b952d5111364f0eb7b96adafc987593466ba58f966cc9e40f300c4ab068cc",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "a0ec7330ca4fdd66ffeefb5b4d039d36fb2b4eccf87d6d3cbf1238eb8071926b",
+    "fileId": "e588163260094433d836b73563d5ed7292f9c0f8eecc42f393b1071d3f85ffdf",
+    "file": "lib/rules/eol-last.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b0dc14f5f6a9ba57b5b89387f95664ec2208054676b6d7265dfab1d933ac3246",
+    "side": "old",
+    "old": {
+     "start": 42,
+     "count": 1
+    },
+    "new": {
+     "start": 42,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1317,
+     "end": 1352
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "old"
+    }
+   },
+   {
+    "id": "7e797870ad3114b37258b0debaea2e05dc5eb4e6fa636c620d6c5bcf9c29880b",
+    "fileId": "e588163260094433d836b73563d5ed7292f9c0f8eecc42f393b1071d3f85ffdf",
+    "file": "lib/rules/eol-last.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "b0dc14f5f6a9ba57b5b89387f95664ec2208054676b6d7265dfab1d933ac3246",
+    "side": "new",
+    "old": {
+     "start": 42,
+     "count": 0
+    },
+    "new": {
+     "start": 42,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1317,
+     "end": 1387
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "object-literal member",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "a463bcae704b001bafc13c7ba45f3509abeb4e61c18971fb3d61f5619b91067c",
+  "reconciliation": {
+   "expected": [
+    "a0ec7330ca4fdd66ffeefb5b4d039d36fb2b4eccf87d6d3cbf1238eb8071926b",
+    "7e797870ad3114b37258b0debaea2e05dc5eb4e6fa636c620d6c5bcf9c29880b"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "a0ec7330ca4fdd66ffeefb5b4d039d36fb2b4eccf87d6d3cbf1238eb8071926b",
+    "7e797870ad3114b37258b0debaea2e05dc5eb4e6fa636c620d6c5bcf9c29880b"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "a0ec7330ca4fdd66ffeefb5b4d039d36fb2b4eccf87d6d3cbf1238eb8071926b",
+      "7e797870ad3114b37258b0debaea2e05dc5eb4e6fa636c620d6c5bcf9c29880b"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "b88183fd5ccc00f047e5a93d9b377c912eff0f1006f799a18cfb7caec77be9de",
+   "attemptId": "1eb83b48-f2f0-4490-9148-47b2015864b1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__111/run-Ftn83L/attempts/1eb83b48-f2f0-4490-9148-47b2015864b1/row.json",
+    "sha256": "9ce9c4093a532e7f10d469177bfdf3c0972104a81ba38d056c822cdbbdcfcda2"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "e624d47f9da4c567fb89b0ca0870eae3ee0232c0715e2bbd127ecaf5af2683a6",
+   "attemptId": "619c15da-e392-4435-84f6-f64e4afd7521",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__111/run-Ftn83L/attempts/619c15da-e392-4435-84f6-f64e4afd7521/row.json",
+    "sha256": "880663587d3ecdae4c1fad0dab12a720f83c34ffa52145a539536f72ef6c4c2b"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/rules/eol-last.js",
+   "unit": "(edit a0ec7330ca4f)",
+   "editIds": [
+    "a0ec7330ca4fdd66ffeefb5b4d039d36fb2b4eccf87d6d3cbf1238eb8071926b"
+   ],
+   "lines": [
+    42,
+    42
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/eol-last.js",
+   "unit": "(edit 7e797870ad31)",
+   "editIds": [
+    "7e797870ad3114b37258b0debaea2e05dc5eb4e6fa636c620d6c5bcf9c29880b"
+   ],
+   "lines": [
+    42,
+    42
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (object-literal member)",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "b88183fd5ccc00f047e5a93d9b377c912eff0f1006f799a18cfb7caec77be9de",
+   "e624d47f9da4c567fb89b0ca0870eae3ee0232c0715e2bbd127ecaf5af2683a6"
+  ],
+  "terminal": [
+   "b88183fd5ccc00f047e5a93d9b377c912eff0f1006f799a18cfb7caec77be9de",
+   "e624d47f9da4c567fb89b0ca0870eae3ee0232c0715e2bbd127ecaf5af2683a6"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ }
+}

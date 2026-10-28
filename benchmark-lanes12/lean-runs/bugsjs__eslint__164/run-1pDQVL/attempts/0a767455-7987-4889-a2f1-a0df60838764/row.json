@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/lines-around-directive.js",
+ "unit": "(edit 6e987deae176)",
+ "editIds": [
+  "6e987deae17639fd5ba157c2113e85a7b7a90c14304279ca7e5c4ce46127f20b"
+ ],
+ "lines": [
+  66,
+  66
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

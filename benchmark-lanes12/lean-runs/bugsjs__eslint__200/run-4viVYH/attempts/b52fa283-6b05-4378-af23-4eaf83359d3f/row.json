@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/lines-around-comment.js",
+ "unit": "(edit 59f6abbbe91d)",
+ "editIds": [
+  "59f6abbbe91d440fbc29f64647bbe81419a0c9778f99eb883ae00c3ce938859c"
+ ],
+ "lines": [
+  273,
+  273
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

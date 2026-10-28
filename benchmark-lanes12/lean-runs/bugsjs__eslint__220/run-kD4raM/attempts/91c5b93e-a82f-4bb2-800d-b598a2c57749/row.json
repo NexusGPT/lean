@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/array-bracket-spacing.js",
+ "unit": "(edit 1949bfe1e851)",
+ "editIds": [
+  "1949bfe1e8519015cf10b114e8c8e0edce0344b03c507d7de1664f3aaad3758e"
+ ],
+ "lines": [
+  183,
+  183
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

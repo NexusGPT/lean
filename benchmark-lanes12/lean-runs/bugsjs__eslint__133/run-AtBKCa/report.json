@@ -1,0 +1,1542 @@
+{
+ "identity": "234936fb9eaef9e05818c08a2516aa33dbe7753797dca69cf635c09cc76cad41",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/token-store/index.js",
+   "unit": "(edit 8bd70a87d70c)",
+   "editIds": [
+    "8bd70a87d70c41404e4c32a29a02f97188ddb2b01e7f1a121391aaa167561cd9"
+   ],
+   "lines": [
+    48,
+    48
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/index.js",
+   "unit": "(edit a35e33ab9385)",
+   "editIds": [
+    "a35e33ab93857d8f8ceb85545fcac996f358da8c324c596ae553e18ff4be4d1d"
+   ],
+   "lines": [
+    48,
+    48
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 56477dcc9615)",
+   "editIds": [
+    "56477dcc96152b08ca2d5271643fb1b76ffffddb0c555e7219a08808c8511ac0"
+   ],
+   "lines": [
+    64,
+    64
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 9a2d64f7d699)",
+   "editIds": [
+    "9a2d64f7d699f581eb8a5d7b6729947175e3c2c1d07c48683279bd821ee018eb"
+   ],
+   "lines": [
+    64,
+    64
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 37d0e104554f)",
+   "editIds": [
+    "37d0e104554f5dfb8c5c63b20e0f4ed195ae5ceaf4c2151a9f087e9a3ce43a4a"
+   ],
+   "lines": [
+    65,
+    65
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 514d00df0c30)",
+   "editIds": [
+    "514d00df0c30ba1c9a59306e47adbef5ce8dd00247a5a58f577514cf758dd5cc"
+   ],
+   "lines": [
+    66,
+    66
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 3fec187ac5e1)",
+   "editIds": [
+    "3fec187ac5e1daa14c50061d3ceb95464a49ce026f99f623df54f3363e56c9e9"
+   ],
+   "lines": [
+    67,
+    67
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 350cfe83b45f)",
+   "editIds": [
+    "350cfe83b45fa5934e6a54ea6998c5d41c86c0280dee13f6ae6f241c93765f12"
+   ],
+   "lines": [
+    68,
+    68
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit d47928ecdf7a)",
+   "editIds": [
+    "d47928ecdf7a85318b2cfca4f9a49812fb1360c1a8b0692e32369c9dc1f123b5"
+   ],
+   "lines": [
+    69,
+    69
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 9a88a96bc7b7)",
+   "editIds": [
+    "9a88a96bc7b7e8cd35beb95e9fa1502684e3807ae76f57a31d40497cb98913f6"
+   ],
+   "lines": [
+    70,
+    70
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit be4f7fb7ccdb)",
+   "editIds": [
+    "be4f7fb7ccdb9533035d4897a9514cc9eda2ebb399b970560fd58f0b89ab4692"
+   ],
+   "lines": [
+    71,
+    71
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 401fbd748c82)",
+   "editIds": [
+    "401fbd748c825a7a37bf58098f48686e16ca5a32b4021a6fd0bcc53555e9b022"
+   ],
+   "lines": [
+    72,
+    72
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 5fa17f570a58)",
+   "editIds": [
+    "5fa17f570a58f9e9b56dbafe5542bd20e83f2306fef4e872d78b592a7891c2ca"
+   ],
+   "lines": [
+    84,
+    84
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit a7279e92af70)",
+   "editIds": [
+    "a7279e92af70a595a00495364413432b2e9d1be19eaccc0335030a96fa0db63c"
+   ],
+   "lines": [
+    92,
+    92
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 7716847d300b)",
+   "editIds": [
+    "7716847d300b68784d1164c0deb1e072873180baa43127b386964846ebcd3d7e"
+   ],
+   "lines": [
+    93,
+    93
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit f2f1aba8dcfc)",
+   "editIds": [
+    "f2f1aba8dcfc49445ce757e86deeeb82f0de5d306542b663e348d5086463a66d"
+   ],
+   "lines": [
+    94,
+    94
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit cd172b7f8df8)",
+   "editIds": [
+    "cd172b7f8df88b1ed9c103e6da7409ff813421fcf7ad1ba692771e0eeb4eec8c"
+   ],
+   "lines": [
+    95,
+    95
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 38e55968336f)",
+   "editIds": [
+    "38e55968336fefe37a75bcba3f8329cfa12486d5227fdb64088cc19b3a8c1807"
+   ],
+   "lines": [
+    96,
+    96
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 7e99da0a77bf)",
+   "editIds": [
+    "7e99da0a77bfb407bf469943b5a2d8f94aceace66488d373a20dc819b0eaa9e8"
+   ],
+   "lines": [
+    97,
+    97
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 98a159a5f82f)",
+   "editIds": [
+    "98a159a5f82f9eca19972f807ac51579e9503141e141fcd50918e20c24bbda88"
+   ],
+   "lines": [
+    98,
+    98
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 472ca85d8e12)",
+   "editIds": [
+    "472ca85d8e12d27c5ef9ab9940c90f3cecebb515dd1bc611f502b63dd87c1ecd"
+   ],
+   "lines": [
+    99,
+    99
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/token-store/utils.js",
+   "unit": "(edit 49187a56aac9)",
+   "editIds": [
+    "49187a56aac907ea65fe04522e0430f94f08697e935cb2f424d3f16cca2de661"
+   ],
+   "lines": [
+    100,
+    100
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "c53e03417a9710f6be69937b328585b90e1c16b3",
+  "head": "e37b05fd1b427c18cb723e1c460729d12e98ac12",
+  "files": [
+   {
+    "id": "ffde6eb70faf027b0f477547211727e1d2d5dd3d07452d8aa69058b66a2e8d19",
+    "file": "lib/token-store/index.js",
+    "oldPath": "lib/token-store/index.js",
+    "newPath": "lib/token-store/index.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "b74126b9059fa14c66c922872228a7635b5e033a",
+    "newOid": "bd523fdaacbf2a4898c59b24b62f3b5a1bfc95f2",
+    "status": "M",
+    "edits": [
+     "8bd70a87d70c41404e4c32a29a02f97188ddb2b01e7f1a121391aaa167561cd9",
+     "a35e33ab93857d8f8ceb85545fcac996f358da8c324c596ae553e18ff4be4d1d"
+    ],
+    "hunks": [
+     {
+      "id": "594a4855c68b7948f7a74583e072a455f9bda2ffc726cc5c01bf58c6fa391634",
+      "old": {
+       "start": 48,
+       "count": 1
+      },
+      "new": {
+       "start": 48,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "41240968193601ec6629c8fe1a078da4554993837a23096f2021326d76f2712a",
+    "newHash": "568c64537c162f30535be7de0c21e1fb31ecb5d3a84a7609c4ef0c5941017e54",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "createIndexMap",
+       "side": "old",
+       "file": "lib/token-store/index.js",
+       "start": 55,
+       "end": 79,
+       "offset": 1556,
+       "stop": 2505,
+       "id": "9626c84884d7ea562b2cd5a4877bbf654509b8411fb479fad4c53abc78518d72"
+      },
+      {
+       "name": "createCursorWithSkip",
+       "side": "old",
+       "file": "lib/token-store/index.js",
+       "start": 97,
+       "end": 115,
+       "offset": 3430,
+       "stop": 4160,
+       "id": "2b3f1b9082276867673d44a51bdb3b7cdf99ddf99bb091eda1f482d840c8387f"
+      },
+      {
+       "name": "createCursorWithCount",
+       "side": "old",
+       "file": "lib/token-store/index.js",
+       "start": 133,
+       "end": 154,
+       "offset": 5141,
+       "stop": 6008,
+       "id": "bc561d2029c4160b513c74f966bdf431f8245ab4646e9f83eb72d83c48560b04"
+      },
+      {
+       "name": "createCursorWithPadding",
+       "side": "old",
+       "file": "lib/token-store/index.js",
+       "start": 185,
+       "end": 193,
+       "offset": 7514,
+       "stop": 8109,
+       "id": "b0d946389fe349705d11b04115567c3848e42f6afb667c723bcbe9aefa4fbe12"
+      }
+     ],
+     "new": [
+      {
+       "name": "createIndexMap",
+       "side": "new",
+       "file": "lib/token-store/index.js",
+       "start": 55,
+       "end": 79,
+       "offset": 1552,
+       "stop": 2501,
+       "id": "c9953b6626eacc9769e2d43920883e1da5978ace32e0c573ddbaaf35b65e5f5a"
+      },
+      {
+       "name": "createCursorWithSkip",
+       "side": "new",
+       "file": "lib/token-store/index.js",
+       "start": 97,
+       "end": 115,
+       "offset": 3426,
+       "stop": 4156,
+       "id": "e48e1df3d365fb3ce42cda28774b49d5a493042cd0f803f5d5300d574cbaed95"
+      },
+      {
+       "name": "createCursorWithCount",
+       "side": "new",
+       "file": "lib/token-store/index.js",
+       "start": 133,
+       "end": 154,
+       "offset": 5137,
+       "stop": 6004,
+       "id": "e390928d93c21e17919f2c568de0dcc7480595d893ee6ae19fbe0cbbf52ec569"
+      },
+      {
+       "name": "createCursorWithPadding",
+       "side": "new",
+       "file": "lib/token-store/index.js",
+       "start": 185,
+       "end": 193,
+       "offset": 7510,
+       "stop": 8105,
+       "id": "f4f0a28e6759ba95914b8f4cc6aa376d6b9ddf135e242635c5fd25ac09c44248"
+      }
+     ]
+    }
+   },
+   {
+    "id": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "oldPath": "lib/token-store/utils.js",
+    "newPath": "lib/token-store/utils.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "2dea7636fb3fbbc3f5f3ece8ec316eedc460d04d",
+    "newOid": "2f6cff1c781cebc6c33621fa3af538d63e3669c4",
+    "status": "M",
+    "edits": [
+     "56477dcc96152b08ca2d5271643fb1b76ffffddb0c555e7219a08808c8511ac0",
+     "9a2d64f7d699f581eb8a5d7b6729947175e3c2c1d07c48683279bd821ee018eb",
+     "37d0e104554f5dfb8c5c63b20e0f4ed195ae5ceaf4c2151a9f087e9a3ce43a4a",
+     "514d00df0c30ba1c9a59306e47adbef5ce8dd00247a5a58f577514cf758dd5cc",
+     "3fec187ac5e1daa14c50061d3ceb95464a49ce026f99f623df54f3363e56c9e9",
+     "350cfe83b45fa5934e6a54ea6998c5d41c86c0280dee13f6ae6f241c93765f12",
+     "d47928ecdf7a85318b2cfca4f9a49812fb1360c1a8b0692e32369c9dc1f123b5",
+     "9a88a96bc7b7e8cd35beb95e9fa1502684e3807ae76f57a31d40497cb98913f6",
+     "be4f7fb7ccdb9533035d4897a9514cc9eda2ebb399b970560fd58f0b89ab4692",
+     "401fbd748c825a7a37bf58098f48686e16ca5a32b4021a6fd0bcc53555e9b022",
+     "5fa17f570a58f9e9b56dbafe5542bd20e83f2306fef4e872d78b592a7891c2ca",
+     "a7279e92af70a595a00495364413432b2e9d1be19eaccc0335030a96fa0db63c",
+     "7716847d300b68784d1164c0deb1e072873180baa43127b386964846ebcd3d7e",
+     "f2f1aba8dcfc49445ce757e86deeeb82f0de5d306542b663e348d5086463a66d",
+     "cd172b7f8df88b1ed9c103e6da7409ff813421fcf7ad1ba692771e0eeb4eec8c",
+     "38e55968336fefe37a75bcba3f8329cfa12486d5227fdb64088cc19b3a8c1807",
+     "7e99da0a77bfb407bf469943b5a2d8f94aceace66488d373a20dc819b0eaa9e8",
+     "98a159a5f82f9eca19972f807ac51579e9503141e141fcd50918e20c24bbda88",
+     "472ca85d8e12d27c5ef9ab9940c90f3cecebb515dd1bc611f502b63dd87c1ecd",
+     "49187a56aac907ea65fe04522e0430f94f08697e935cb2f424d3f16cca2de661"
+    ],
+    "hunks": [
+     {
+      "id": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+      "old": {
+       "start": 64,
+       "count": 1
+      },
+      "new": {
+       "start": 64,
+       "count": 9
+      }
+     },
+     {
+      "id": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+      "old": {
+       "start": 84,
+       "count": 1
+      },
+      "new": {
+       "start": 92,
+       "count": 9
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "c73d1ab3044fd3b5cfde31dff58140be439a74ce8425787fcb342649ac3addf5",
+    "newHash": "33499fa55376decd4677be2d049ff7d9d36fa83bba6423596f3162b8cf35c3b7",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "getStartLocation",
+       "side": "old",
+       "file": "lib/token-store/utils.js",
+       "start": 24,
+       "end": 26,
+       "offset": 664,
+       "stop": 727,
+       "id": "c20d8655bcd4dfa804e8ac2a8ce286a1851d6c6d35933399fdaeb8993f4d6117"
+      }
+     ],
+     "new": [
+      {
+       "name": "getStartLocation",
+       "side": "new",
+       "file": "lib/token-store/utils.js",
+       "start": 24,
+       "end": 26,
+       "offset": 664,
+       "stop": 727,
+       "id": "c9a2dd3183c90763427538ac519e65b2c6e3f575ab10be0a555f8e2f990ff56b"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "8bd70a87d70c41404e4c32a29a02f97188ddb2b01e7f1a121391aaa167561cd9",
+    "fileId": "ffde6eb70faf027b0f477547211727e1d2d5dd3d07452d8aa69058b66a2e8d19",
+    "file": "lib/token-store/index.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "594a4855c68b7948f7a74583e072a455f9bda2ffc726cc5c01bf58c6fa391634",
+    "side": "old",
+    "old": {
+     "start": 48,
+     "count": 1
+    },
+    "new": {
+     "start": 48,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1262,
+     "end": 1363
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "a35e33ab93857d8f8ceb85545fcac996f358da8c324c596ae553e18ff4be4d1d",
+    "fileId": "ffde6eb70faf027b0f477547211727e1d2d5dd3d07452d8aa69058b66a2e8d19",
+    "file": "lib/token-store/index.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "594a4855c68b7948f7a74583e072a455f9bda2ffc726cc5c01bf58c6fa391634",
+    "side": "new",
+    "old": {
+     "start": 48,
+     "count": 0
+    },
+    "new": {
+     "start": 48,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1262,
+     "end": 1359
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "56477dcc96152b08ca2d5271643fb1b76ffffddb0c555e7219a08808c8511ac0",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "old",
+    "old": {
+     "start": 64,
+     "count": 1
+    },
+    "new": {
+     "start": 64,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1999,
+     "end": 2042
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "9a2d64f7d699f581eb8a5d7b6729947175e3c2c1d07c48683279bd821ee018eb",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 64,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1999,
+     "end": 2045
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "37d0e104554f5dfb8c5c63b20e0f4ed195ae5ceaf4c2151a9f087e9a3ce43a4a",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 65,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2045,
+     "end": 2129
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "514d00df0c30ba1c9a59306e47adbef5ce8dd00247a5a58f577514cf758dd5cc",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 66,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2129,
+     "end": 2130
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3fec187ac5e1daa14c50061d3ceb95464a49ce026f99f623df54f3363e56c9e9",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 67,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2130,
+     "end": 2234
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "350cfe83b45fa5934e6a54ea6998c5d41c86c0280dee13f6ae6f241c93765f12",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 68,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2234,
+     "end": 2278
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "d47928ecdf7a85318b2cfca4f9a49812fb1360c1a8b0692e32369c9dc1f123b5",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 69,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2278,
+     "end": 2329
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "9a88a96bc7b7e8cd35beb95e9fa1502684e3807ae76f57a31d40497cb98913f6",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 70,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2329,
+     "end": 2355
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "be4f7fb7ccdb9533035d4897a9514cc9eda2ebb399b970560fd58f0b89ab4692",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 71,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2355,
+     "end": 2365
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "401fbd748c825a7a37bf58098f48686e16ca5a32b4021a6fd0bcc53555e9b022",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "8a2956fdba3eeb4af730810371f2075966072981c87b41337a1f4a864ca696ef",
+    "side": "new",
+    "old": {
+     "start": 64,
+     "count": 0
+    },
+    "new": {
+     "start": 72,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2365,
+     "end": 2391
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "5fa17f570a58f9e9b56dbafe5542bd20e83f2306fef4e872d78b592a7891c2ca",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "old",
+    "old": {
+     "start": 84,
+     "count": 1
+    },
+    "new": {
+     "start": 92,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2664,
+     "end": 2701
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "a7279e92af70a595a00495364413432b2e9d1be19eaccc0335030a96fa0db63c",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 92,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3013,
+     "end": 3057
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "7716847d300b68784d1164c0deb1e072873180baa43127b386964846ebcd3d7e",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 93,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3057,
+     "end": 3141
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f2f1aba8dcfc49445ce757e86deeeb82f0de5d306542b663e348d5086463a66d",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 94,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3141,
+     "end": 3142
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "cd172b7f8df88b1ed9c103e6da7409ff813421fcf7ad1ba692771e0eeb4eec8c",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 95,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3142,
+     "end": 3246
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "38e55968336fefe37a75bcba3f8329cfa12486d5227fdb64088cc19b3a8c1807",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 96,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3246,
+     "end": 3288
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "7e99da0a77bfb407bf469943b5a2d8f94aceace66488d373a20dc819b0eaa9e8",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 97,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3288,
+     "end": 3336
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "98a159a5f82f9eca19972f807ac51579e9503141e141fcd50918e20c24bbda88",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 98,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3336,
+     "end": 3366
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "472ca85d8e12d27c5ef9ab9940c90f3cecebb515dd1bc611f502b63dd87c1ecd",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 99,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3366,
+     "end": 3376
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "49187a56aac907ea65fe04522e0430f94f08697e935cb2f424d3f16cca2de661",
+    "fileId": "476cbd6639b08012f8bd496052cf21653e1f497e3548130eb9f7878802e06fcb",
+    "file": "lib/token-store/utils.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "14a0f2b8590acc25bb955483bdc84669b5e4c52f419e8188735451b9605d4ce0",
+    "side": "new",
+    "old": {
+     "start": 84,
+     "count": 0
+    },
+    "new": {
+     "start": 100,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3376,
+     "end": 3398
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "234936fb9eaef9e05818c08a2516aa33dbe7753797dca69cf635c09cc76cad41",
+  "reconciliation": {
+   "expected": [
+    "8bd70a87d70c41404e4c32a29a02f97188ddb2b01e7f1a121391aaa167561cd9",
+    "a35e33ab93857d8f8ceb85545fcac996f358da8c324c596ae553e18ff4be4d1d",
+    "56477dcc96152b08ca2d5271643fb1b76ffffddb0c555e7219a08808c8511ac0",
+    "9a2d64f7d699f581eb8a5d7b6729947175e3c2c1d07c48683279bd821ee018eb",
+    "37d0e104554f5dfb8c5c63b20e0f4ed195ae5ceaf4c2151a9f087e9a3ce43a4a",
+    "514d00df0c30ba1c9a59306e47adbef5ce8dd00247a5a58f577514cf758dd5cc",
+    "3fec187ac5e1daa14c50061d3ceb95464a49ce026f99f623df54f3363e56c9e9",
+    "350cfe83b45fa5934e6a54ea6998c5d41c86c0280dee13f6ae6f241c93765f12",
+    "d47928ecdf7a85318b2cfca4f9a49812fb1360c1a8b0692e32369c9dc1f123b5",
+    "9a88a96bc7b7e8cd35beb95e9fa1502684e3807ae76f57a31d40497cb98913f6",
+    "be4f7fb7ccdb9533035d4897a9514cc9eda2ebb399b970560fd58f0b89ab4692",
+    "401fbd748c825a7a37bf58098f48686e16ca5a32b4021a6fd0bcc53555e9b022",
+    "5fa17f570a58f9e9b56dbafe5542bd20e83f2306fef4e872d78b592a7891c2ca",
+    "a7279e92af70a595a00495364413432b2e9d1be19eaccc0335030a96fa0db63c",
+    "7716847d300b68784d1164c0deb1e072873180baa43127b386964846ebcd3d7e",
+    "f2f1aba8dcfc49445ce757e86deeeb82f0de5d306542b663e348d5086463a66d",
+    "cd172b7f8df88b1ed9c103e6da7409ff813421fcf7ad1ba692771e0eeb4eec8c",
+    "38e55968336fefe37a75bcba3f8329cfa12486d5227fdb64088cc19b3a8c1807",
+    "7e99da0a77bfb407bf469943b5a2d8f94aceace66488d373a20dc819b0eaa9e8",
+    "98a159a5f82f9eca19972f807ac51579e9503141e141fcd50918e20c24bbda88",
+    "472ca85d8e12d27c5ef9ab9940c90f3cecebb515dd1bc611f502b63dd87c1ecd",
+    "49187a56aac907ea65fe04522e0430f94f08697e935cb2f424d3f16cca2de661"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "8bd70a87d70c41404e4c32a29a02f97188ddb2b01e7f1a121391aaa167561cd9",
+    "a35e33ab93857d8f8ceb85545fcac996f358da8c324c596ae553e18ff4be4d1d",
+    "56477dcc96152b08ca2d5271643fb1b76ffffddb0c555e7219a08808c8511ac0",
+    "9a2d64f7d699f581eb8a5d7b6729947175e3c2c1d07c48683279bd821ee018eb",
+    "37d0e104554f5dfb8c5c63b20e0f4ed195ae5ceaf4c2151a9f087e9a3ce43a4a",
+    "514d00df0c30ba1c9a59306e47adbef5ce8dd00247a5a58f577514cf758dd5cc",
+    "3fec187ac5e1daa14c50061d3ceb95464a49ce026f99f623df54f3363e56c9e9",
+    "350cfe83b45fa5934e6a54ea6998c5d41c86c0280dee13f6ae6f241c93765f12",
+    "d47928ecdf7a85318b2cfca4f9a49812fb1360c1a8b0692e32369c9dc1f123b5",
+    "9a88a96bc7b7e8cd35beb95e9fa1502684e3807ae76f57a31d40497cb98913f6",
+    "be4f7fb7ccdb9533035d4897a9514cc9eda2ebb399b970560fd58f0b89ab4692",
+    "401fbd748c825a7a37bf58098f48686e16ca5a32b4021a6fd0bcc53555e9b022",
+    "5fa17f570a58f9e9b56dbafe5542bd20e83f2306fef4e872d78b592a7891c2ca",
+    "a7279e92af70a595a00495364413432b2e9d1be19eaccc0335030a96fa0db63c",
+    "7716847d300b68784d1164c0deb1e072873180baa43127b386964846ebcd3d7e",
+    "f2f1aba8dcfc49445ce757e86deeeb82f0de5d306542b663e348d5086463a66d",
+    "cd172b7f8df88b1ed9c103e6da7409ff813421fcf7ad1ba692771e0eeb4eec8c",
+    "38e55968336fefe37a75bcba3f8329cfa12486d5227fdb64088cc19b3a8c1807",
+    "7e99da0a77bfb407bf469943b5a2d8f94aceace66488d373a20dc819b0eaa9e8",
+    "98a159a5f82f9eca19972f807ac51579e9503141e141fcd50918e20c24bbda88",
+    "472ca85d8e12d27c5ef9ab9940c90f3cecebb515dd1bc611f502b63dd87c1ecd",
+    "49187a56aac907ea65fe04522e0430f94f08697e935cb2f424d3f16cca2de661"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "8bd70a87d70c41404e4c32a29a02f97188ddb2b01e7f1a121391aaa167561cd9",
+      "a35e33ab93857d8f8ceb85545fcac996f358da8c324c596ae553e18ff4be4d1d",
+      "56477dcc96152b08ca2d5271643fb1b76ffffddb0c555e7219a08808c8511ac0",
+      "9a2d64f7d699f581eb8a5d7b6729947175e3c2c1d07c48683279bd821ee018eb",
+      "37d0e104554f5dfb8c5c63b20e0f4ed195ae5ceaf4c2151a9f087e9a3ce43a4a",
+      "514d00df0c30ba1c9a59306e47adbef5ce8dd00247a5a58f577514cf758dd5cc",
+      "3fec187ac5e1daa14c50061d3ceb95464a49ce026f99f623df54f3363e56c9e9",
+      "350cfe83b45fa5934e6a54ea6998c5d41c86c0280dee13f6ae6f241c93765f12",
+      "d47928ecdf7a85318b2cfca4f9a49812fb1360c1a8b0692e32369c9dc1f123b5",
+      "9a88a96bc7b7e8cd35beb95e9fa1502684e3807ae76f57a31d40497cb98913f6",
+      "be4f7fb7ccdb9533035d4897a9514cc9eda2ebb399b970560fd58f0b89ab4692",
+      "401fbd748c825a7a37bf58098f48686e16ca5a32b4021a6fd0bcc53555e9b022",
+      "5fa17f570a58f9e9b56dbafe5542bd20e83f2306fef4e872d78b592a7891c2ca",
+      "a7279e92af70a595a00495364413432b2e9d1be19eaccc0335030a96fa0db63c",
+      "7716847d300b68784d1164c0deb1e072873180baa43127b386964846ebcd3d7e",
+      "f2f1aba8dcfc49445ce757e86deeeb82f0de5d306542b663e348d5086463a66d",
+      "cd172b7f8df88b1ed9c103e6da7409ff813421fcf7ad1ba692771e0eeb4eec8c",
+      "38e55968336fefe37a75bcba3f8329cfa12486d5227fdb64088cc19b3a8c1807",
+      "7e99da0a77bfb407bf469943b5a2d8f94aceace66488d373a20dc819b0eaa9e8",
+      "98a159a5f82f9eca19972f807ac51579e9503141e141fcd50918e20c24bbda88",
+      "472ca85d8e12d27c5ef9ab9940c90f3cecebb515dd1bc611f502b63dd87c1ecd",
+      "49187a56aac907ea65fe04522e0430f94f08697e935cb2f424d3f16cca2de661"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "465c04ea39d0d5f8f7001e779d86ba36a8d7a415d4b65e8b3a0d0fefdf76b662",
+   "858356ada443601598b46b824cb96b3f36381a63d961e5d4b19f25877bbf261c",
+   "738dfab284610751173bb4eb85e722bd76c3f8c4ced0a573f53dca36e53bddc1",
+   "c1deafdfee1e720a5a93fc7278b35c278f40f3588704ec87d550ac7af294b87a",
+   "766017eedb19fb6901e9b77e0ea458e726c1e089631cf08e0a18b2139455dc95",
+   "6e98db747769b8855794e694d4a880e8c9edba8cb0902f2d2901ff904030a21f",
+   "5de6a80d297f8d542d722f606ffa8408712da063911f6e50c585f6e3d1955128",
+   "b17a69cb80b0d6604c0f687ee984ccfa217448ab0079bd731adaef6397001c28",
+   "ee15461962e1db83b50a470f5add664f5a230fd546ae79510076dbfaa242eb5d",
+   "6c9a8a05dbea101ad8392098057b2411213b1517d31e2f88e44c91de23a417e3",
+   "ef3f02d4474ef9f23495f1497a294aa9f26e489d6d32ec2b0dc7d0b68ddc6f13",
+   "c0fd63426bfa3785a7bf7241d7ebd8040d3b01912681df9e7614eac78dc2d29b",
+   "44c36b2f9caa9de7f99265bf949d229bb138b7ca5aa451c9c7258ae61c0bc4d4",
+   "2ffbcc5887d062d71d2e7df18e1e2dc5a7c03f1d0011b8f7c5e72f35c7c4c322",
+   "194607a53e775fca21d54c0760e90f36d2615b20512f36400134247d38a68641",
+   "c7b36a9d41a25d227db3e2a2600cba13c8ed62fc61a229704ac62044fbdb324f",
+   "4d947ceaef26fcafe2d07a24bb39735d095356098e4cfd4915307f7778a18c87",
+   "0ccfab76f9fbc4333d25aad6dec6c39bbb8f84d95b3bca65ba2a9f930df6bced",
+   "b533f31c05ec27935b4083dceb137fc0cde2b128a005af05e6faec65e3c9baaa",
+   "a8308221d1805c086e2d97388729a4ab76e6a8707db947f997d5132208d0aa62",
+   "5c4d05dfdba24dacfbf88b19d0ca7667bd19a7a694df8734f72799f3a444d7e4",
+   "e6a10e6ab94628680b4dc881106eec342b9c2d9ea78a7499b7cc27417dc86429"
+  ],
+  "terminal": [
+   "465c04ea39d0d5f8f7001e779d86ba36a8d7a415d4b65e8b3a0d0fefdf76b662",
+   "858356ada443601598b46b824cb96b3f36381a63d961e5d4b19f25877bbf261c",
+   "738dfab284610751173bb4eb85e722bd76c3f8c4ced0a573f53dca36e53bddc1",
+   "c1deafdfee1e720a5a93fc7278b35c278f40f3588704ec87d550ac7af294b87a",
+   "766017eedb19fb6901e9b77e0ea458e726c1e089631cf08e0a18b2139455dc95",
+   "6e98db747769b8855794e694d4a880e8c9edba8cb0902f2d2901ff904030a21f",
+   "5de6a80d297f8d542d722f606ffa8408712da063911f6e50c585f6e3d1955128",
+   "b17a69cb80b0d6604c0f687ee984ccfa217448ab0079bd731adaef6397001c28",
+   "ee15461962e1db83b50a470f5add664f5a230fd546ae79510076dbfaa242eb5d",
+   "6c9a8a05dbea101ad8392098057b2411213b1517d31e2f88e44c91de23a417e3",
+   "ef3f02d4474ef9f23495f1497a294aa9f26e489d6d32ec2b0dc7d0b68ddc6f13",
+   "c0fd63426bfa3785a7bf7241d7ebd8040d3b01912681df9e7614eac78dc2d29b",
+   "44c36b2f9caa9de7f99265bf949d229bb138b7ca5aa451c9c7258ae61c0bc4d4",
+   "2ffbcc5887d062d71d2e7df18e1e2dc5a7c03f1d0011b8f7c5e72f35c7c4c322",
+   "194607a53e775fca21d54c0760e90f36d2615b20512f36400134247d38a68641",
+   "c7b36a9d41a25d227db3e2a2600cba13c8ed62fc61a229704ac62044fbdb324f",
+   "4d947ceaef26fcafe2d07a24bb39735d095356098e4cfd4915307f7778a18c87",
+   "0ccfab76f9fbc4333d25aad6dec6c39bbb8f84d95b3bca65ba2a9f930df6bced",
+   "b533f31c05ec27935b4083dceb137fc0cde2b128a005af05e6faec65e3c9baaa",
+   "a8308221d1805c086e2d97388729a4ab76e6a8707db947f997d5132208d0aa62",
+   "5c4d05dfdba24dacfbf88b19d0ca7667bd19a7a694df8734f72799f3a444d7e4",
+   "e6a10e6ab94628680b4dc881106eec342b9c2d9ea78a7499b7cc27417dc86429"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__133/run-AtBKCa/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__133/run-AtBKCa"
+}

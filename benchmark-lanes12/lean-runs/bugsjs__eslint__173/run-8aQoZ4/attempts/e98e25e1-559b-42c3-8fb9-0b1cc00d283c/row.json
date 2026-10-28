@@ -1,0 +1,177 @@
+{
+ "file": "lib/rules/no-invalid-this.js",
+ "unit": "hasJSDocThisTag",
+ "lines": [
+  37,
+  50
+ ],
+ "coverage": "refused:var",
+ "verdict": "WITNESS",
+ "laneB": "WITNESS",
+ "laneA": null,
+ "witness": {
+  "input": 0,
+  "args": [
+   {
+    "$fake": "arg0"
+   }
+  ],
+  "parent": {
+   "outcome": {
+    "returned": false
+   },
+   "heap": {
+    "roots": [
+     {
+      "$fake": "arg0"
+     }
+    ],
+    "own": {},
+    "outcome": false,
+    "anchors": 0,
+    "heap": []
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0.leadingComments",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.trailingComments",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.type",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "candidate": {
+   "outcome": {
+    "returned": false
+   },
+   "heap": {
+    "roots": [
+     {
+      "$fake": "arg0"
+     }
+    ],
+    "own": {},
+    "outcome": false,
+    "anchors": 0,
+    "heap": []
+   },
+   "receiver": {},
+   "trace": [
+    {
+     "op": "get",
+     "path": "arg0.parent",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.loc",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.loc.start",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.type",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.leadingComments",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.trailingComments",
+     "args": []
+    },
+    {
+     "op": "get",
+     "path": "arg0.type",
+     "args": []
+    }
+   ],
+   "pending": []
+  },
+  "where": {
+   "field": "trace",
+   "index": 0,
+   "parent": {
+    "op": "get",
+    "path": "arg0.leadingComments",
+    "args": []
+   },
+   "candidate": {
+    "op": "get",
+    "path": "arg0.parent",
+    "args": []
+   },
+   "lines": {
+    "kind": "effect",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/ast-utils.js",
+     "start": 75,
+     "end": 76,
+     "text": "var leadingComments = node.leadingComments || [],\n            trailingComments = node.trailingComments || [];"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__173/run-8aQoZ4/sources/lib/ast-utils.js",
+     "start": 104,
+     "end": 105,
+     "text": "var parent = node.parent,\n            line = node.loc.start.line;"
+    }
+   }
+  }
+ },
+ "reason": "`var` is outside the subset; use let or const",
+ "advice": [
+  {
+   "line": 38,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  },
+  {
+   "line": 47,
+   "rule": "unsupported-member",
+   "msg": "property .leading is not declared on Object",
+   "do": "[migration] This property is not declared on the type; declare it or narrow the type. A member of a type parameter is read through its constraint when that is one record declaring it; an indexed `this` type reads as an opaque value; `never` is unreachable."
+  },
+  {
+   "line": 47,
+   "rule": "ts-strict",
+   "msg": "TS2339: Property 'leading' does not exist on type 'Object'.",
+   "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+  },
+  {
+   "line": 47,
+   "rule": "callback-form",
+   "msg": "the callback must be an arrow function",
+   "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+  }
+ ],
+ "editIds": [
+  "ee78aa0074856a257ba57e274e235c0efbce038c1bbc40618340417f6a314d89",
+  "d4970ef8d96c4b8f2b8625fdcb26951e1c6b4e252f52e78ef7e05f4235a439c1",
+  "c6d19534f9d25a4dd96a7fdcb41940059cd91764222d86245f010fa471303424",
+  "b7d0f53960e4e704dbac8d819f3323adf6f90670d7cbd3a2a84a92740810f729",
+  "0a069b84e78d469b4286a6741449bef57961b8f3629c5142222840747643de55",
+  "2231666de9ed87c8d04f242bf92176624e3f844ec2cddb6b867c78e6d388447b",
+  "9d7fe0c7a103db212a3d9432eb458bd3df72eb68e01566250ebfb26baa404615",
+  "a1466314543559d1d9284e8e05ac3ae9e05a96f429adfe25189312fbe1dc36e5",
+  "6070bbaa0de318f4cd516efe97c94a639c58050b290bf97c53843bd37d6bc291"
+ ]
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-regex-spaces.js",
+ "unit": "(edit 0417a034614f)",
+ "editIds": [
+  "0417a034614fdc534399a91359753828534f3c3e42ff8900a91836bc813bcd96"
+ ],
+ "lines": [
+  40,
+  40
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

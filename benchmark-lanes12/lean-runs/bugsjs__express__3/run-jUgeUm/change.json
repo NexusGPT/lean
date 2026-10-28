@@ -1,0 +1,233 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "e71014f522fb8db9ba1ef634f2e9f2c8069e4b6c",
+ "head": "829fb78af7d901b909473b8532d73a00148168ed",
+ "files": [
+  {
+   "id": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+   "file": "lib/response.js",
+   "oldPath": "lib/response.js",
+   "newPath": "lib/response.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "50b0579b57ef95a548671c60b4888f905da4cd88",
+   "newOid": "5334515eeb4e9ad698e2621a37955c8b86ef696b",
+   "status": "M",
+   "edits": [
+    "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+    "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+    "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+    "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+   ],
+   "hunks": [
+    {
+     "id": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+     "old": {
+      "start": 609,
+      "count": 1
+     },
+     "new": {
+      "start": 609,
+      "count": 3
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "0c33d7cfa0997b5f6c0a94d28b70195eb526d27dfbd98170d5b15d0d2246b100",
+   "newHash": "f9f60cb4c92b1d0df284a75f2c9fd4232fd95adb8189a0bf85089e4d528b9331",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "sendfile",
+      "side": "old",
+      "file": "lib/response.js",
+      "start": 944,
+      "end": 1032,
+      "offset": 23113,
+      "stop": 24747,
+      "id": "84231934a8dbc70792fd49cdef69e1b7f8cdd2e6204a42c96c84bb5916557227"
+     }
+    ],
+    "new": [
+     {
+      "name": "sendfile",
+      "side": "new",
+      "file": "lib/response.js",
+      "start": 946,
+      "end": 1034,
+      "offset": 23147,
+      "stop": 24781,
+      "id": "cc9a722d898dc028f5414c0960d02e496557096103252ebab3aa716f2ca85770"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+   "fileId": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+   "file": "lib/response.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+   "side": "old",
+   "old": {
+    "start": 609,
+    "count": 1
+   },
+   "new": {
+    "start": 609,
+    "count": 0
+   },
+   "offsets": {
+    "start": 15353,
+    "end": 15384
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "old"
+   }
+  },
+  {
+   "id": "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+   "fileId": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+   "file": "lib/response.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+   "side": "new",
+   "old": {
+    "start": 609,
+    "count": 0
+   },
+   "new": {
+    "start": 609,
+    "count": 1
+   },
+   "offsets": {
+    "start": 15353,
+    "end": 15381
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+   "fileId": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+   "file": "lib/response.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+   "side": "new",
+   "old": {
+    "start": 609,
+    "count": 0
+   },
+   "new": {
+    "start": 610,
+    "count": 1
+   },
+   "offsets": {
+    "start": 15381,
+    "end": 15405
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2",
+   "fileId": "59b0fd72a867430cdeaecb41acc29ee3b727c9d869c5a2f5ba7347404e01fc42",
+   "file": "lib/response.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "4782e1f02cebb88d905063a1f465914b0dc8877728eb6f7c89dc49a4447ab3ee",
+   "side": "new",
+   "old": {
+    "start": 609,
+    "count": 0
+   },
+   "new": {
+    "start": 611,
+    "count": 1
+   },
+   "offsets": {
+    "start": 15405,
+    "end": 15418
+   },
+   "links": [],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "160f27ce384a2231a3c8528a120c667ef61ae3a761a742218a8299d906691808",
+ "reconciliation": {
+  "expected": [
+   "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+   "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+   "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+   "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+   "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+   "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+   "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "e7079a56dc2bf57893941975bc7fb8927407ab8668eed68e43941cda67a4104a",
+     "9330fab5e1fbe107b261557e2238625c42c0e7747b991ba6d0b7e481d50034ce",
+     "8251dfa19e629f12d6aabab9ee2b5b8f3421d779c8a6d8bfd25be9a4df68dc44",
+     "a3313a2658d957d7cc4420b744fb90fe743a4f5df45775d9ee154266200a2ea2"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

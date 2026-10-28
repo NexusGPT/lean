@@ -1,0 +1,21 @@
+{
+ "file": "lib/config/config-rule.js",
+ "unit": "(edit 64ba9ff5517a)",
+ "editIds": [
+  "64ba9ff5517a599eaa1844e080f529be3a32453043ce9b2db6fce01eca801896"
+ ],
+ "lines": [
+  277,
+  277
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

@@ -1,0 +1,137 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "0cf081ef7249c8e3b9e2cba4710f6205ef996b02",
+ "head": "8bd49ebaff895a62553ef141b7d66f00f5ecdf4d",
+ "files": [
+  {
+   "id": "94a9b3eafb8a267869ec49fd31091a204db544efcdae67536f2a48e8b0716f80",
+   "file": "lib/rules/prefer-destructuring.js",
+   "oldPath": "lib/rules/prefer-destructuring.js",
+   "newPath": "lib/rules/prefer-destructuring.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "eeb5e060ca01ecead59d45267014c1dc23f66bb5",
+   "newOid": "56c348a4785321e118119970c3ef846c9bfd2b21",
+   "status": "M",
+   "edits": [
+    "1f77b54ace9ac66769d30825e1fe4768e2a27da7df3d4f4d0124687f7b79603e",
+    "0f2f256c5c2f6f0930be5e1787f19143b69581130e2a3fd63e319f38718d2f8f"
+   ],
+   "hunks": [
+    {
+     "id": "dcbd682903e79527e8436f4e120d4b7bf460147a627626d85fcb4fa81280411f",
+     "old": {
+      "start": 148,
+      "count": 1
+     },
+     "new": {
+      "start": 148,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "f5ccb6a0c86ed804bac541efd3891c16aee8b9aee4ea5f159cd09138b1bb2b8a",
+   "newHash": "9e53a0935ea62661a6ac9ab6a660dd72152621c4ed396e0d008739d693949e6c",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "1f77b54ace9ac66769d30825e1fe4768e2a27da7df3d4f4d0124687f7b79603e",
+   "fileId": "94a9b3eafb8a267869ec49fd31091a204db544efcdae67536f2a48e8b0716f80",
+   "file": "lib/rules/prefer-destructuring.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dcbd682903e79527e8436f4e120d4b7bf460147a627626d85fcb4fa81280411f",
+   "side": "old",
+   "old": {
+    "start": 148,
+    "count": 1
+   },
+   "new": {
+    "start": 148,
+    "count": 0
+   },
+   "offsets": {
+    "start": 5647,
+    "end": 5704
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "0f2f256c5c2f6f0930be5e1787f19143b69581130e2a3fd63e319f38718d2f8f",
+   "fileId": "94a9b3eafb8a267869ec49fd31091a204db544efcdae67536f2a48e8b0716f80",
+   "file": "lib/rules/prefer-destructuring.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "dcbd682903e79527e8436f4e120d4b7bf460147a627626d85fcb4fa81280411f",
+   "side": "new",
+   "old": {
+    "start": 148,
+    "count": 0
+   },
+   "new": {
+    "start": 148,
+    "count": 1
+   },
+   "offsets": {
+    "start": 5647,
+    "end": 5741
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "ac656221752e5a861f91ed4885a41c7134f6a837ecea2f69b6a702fe095d60a0",
+ "reconciliation": {
+  "expected": [
+   "1f77b54ace9ac66769d30825e1fe4768e2a27da7df3d4f4d0124687f7b79603e",
+   "0f2f256c5c2f6f0930be5e1787f19143b69581130e2a3fd63e319f38718d2f8f"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "1f77b54ace9ac66769d30825e1fe4768e2a27da7df3d4f4d0124687f7b79603e",
+   "0f2f256c5c2f6f0930be5e1787f19143b69581130e2a3fd63e319f38718d2f8f"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "1f77b54ace9ac66769d30825e1fe4768e2a27da7df3d4f4d0124687f7b79603e",
+     "0f2f256c5c2f6f0930be5e1787f19143b69581130e2a3fd63e319f38718d2f8f"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

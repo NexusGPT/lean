@@ -1,0 +1,35 @@
+{
+ "file": "lib/rules/no-use-before-define.js",
+ "unit": "isInInitializer",
+ "lines": [
+  103,
+  134
+ ],
+ "coverage": "refused:var",
+ "verdict": "PASS-bounded",
+ "laneB": "PASS-bounded",
+ "laneA": null,
+ "witness": null,
+ "reason": "`var` is outside the subset; use let or const",
+ "advice": [
+  {
+   "line": 108,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  },
+  {
+   "line": 109,
+   "rule": "var",
+   "msg": "`var` is outside the subset; use let or const",
+   "do": "[conditional: the binding is inside a function, has one declaration, every use follows it in the same block, and no closure inside a loop captures it] Replace var with let only under the precondition. Hoisting, repeated declarations and loop closures can change the result."
+  }
+ ],
+ "editIds": [
+  "a787ae556d89a771b55b85b771076639127efbdba86025f493061e90b359acf3",
+  "f6cb26c7c3b384718faee7c66482e93fd3d09a2f5ad36f372696dcdb81a17a41",
+  "94f6169a1f71350a9dbb7c06a010a5586da97619f6c393a624f6813a31847555",
+  "d253c8a7bf6793fb15ec56e5effe7f90b08c533baf6be8ad4f5690fad837c1d7",
+  "17b4ec670c949dc132e01bb0677606b3f7add76dfd760c2163ff9585ffa132f7"
+ ]
+}

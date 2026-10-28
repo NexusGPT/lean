@@ -1,0 +1,1052 @@
+{
+ "identity": "31150a4b5c0ebfedc80db0b9e35b4b34ba1de3cc4a75d42042fa0c394da5d4dc",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit d36c38666393)",
+   "editIds": [
+    "d36c38666393e5c6ba96c7d93dac5724e8cdab9099f0249d0e61a6e46507e260"
+   ],
+   "lines": [
+    27,
+    27
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 03bd51a22cb5)",
+   "editIds": [
+    "03bd51a22cb575e95bc380db32a2a805b894af49e1255c8db2c0f1149b86bea5"
+   ],
+   "lines": [
+    28,
+    28
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit be8aad1dc1e6)",
+   "editIds": [
+    "be8aad1dc1e63ea23f86b660edd6cbc43950ddc8ac3ff64d19227bb084b01568"
+   ],
+   "lines": [
+    29,
+    29
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 4e80e24adac4)",
+   "editIds": [
+    "4e80e24adac4fe21024e72100cad6a05a3590cea421051bd15fc5d28e87e2875"
+   ],
+   "lines": [
+    30,
+    30
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit a3b0fe250dc0)",
+   "editIds": [
+    "a3b0fe250dc04c53306d2759da9b187f4ea06bcd0aed9799e3185e9c0500a786"
+   ],
+   "lines": [
+    31,
+    31
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 898ad3b64225)",
+   "editIds": [
+    "898ad3b642259fdff8e47a7f165f93876a149f2b36069f996ba98f67272bc559"
+   ],
+   "lines": [
+    27,
+    27
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 10c957e66b00)",
+   "editIds": [
+    "10c957e66b0061f21fca534a9603ee03ef587259b2c50bd282f12b77b418505d"
+   ],
+   "lines": [
+    28,
+    28
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 55389f619e70)",
+   "editIds": [
+    "55389f619e70f6a1a6fd1e95ee08738aeaaa3fe902d8d466dcfea32d3e03f9fc"
+   ],
+   "lines": [
+    29,
+    29
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 47a67e3448e1)",
+   "editIds": [
+    "47a67e3448e16eee22ca3568f6103c7bbb6973d4f3bca26adc27791deca76982"
+   ],
+   "lines": [
+    30,
+    30
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 482263aa8cfd)",
+   "editIds": [
+    "482263aa8cfdb790051fd7c0dfbcbffe92c7400c7c8bed7e258ef1bd9469845e"
+   ],
+   "lines": [
+    31,
+    31
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit bded9a7cc6c1)",
+   "editIds": [
+    "bded9a7cc6c1608d2349e303d095dd42d58ed2cc3a3675978352f4fee4eb420e"
+   ],
+   "lines": [
+    32,
+    32
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit ae3eaab39f07)",
+   "editIds": [
+    "ae3eaab39f07249aebdb4745e68e1339248e4fe195ce26317b884573ea0aa9b5"
+   ],
+   "lines": [
+    37,
+    37
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 60bd91860917)",
+   "editIds": [
+    "60bd918609175067ba3af3128e26c944e5253bed891ef6aadc540565c08c7157"
+   ],
+   "lines": [
+    38,
+    38
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit 3b0bdc2c92f2)",
+   "editIds": [
+    "3b0bdc2c92f204ed0e4fb403e2e50019f943b95f243002791f2ad24a66dcdb7b"
+   ],
+   "lines": [
+    39,
+    39
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit f819e173312a)",
+   "editIds": [
+    "f819e173312ae7a50627e539ae129e7be536df1fb5c12fb2b04a5331d68d3275"
+   ],
+   "lines": [
+    40,
+    40
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/no-spaced-func.js",
+   "unit": "(edit f7fb92b27385)",
+   "editIds": [
+    "f7fb92b2738572284046d47cc8a1c76ad8698a3878514d1897427311ad1c15fc"
+   ],
+   "lines": [
+    41,
+    41
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:exported property assignment",
+   "reason": "exported property assignment",
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "ff21d3387eef839fe89e45a9793cfde39d47effd",
+  "head": "729ff1804daee1c70ac76e878f879d2b89227c25",
+  "files": [
+   {
+    "id": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "oldPath": "lib/rules/no-spaced-func.js",
+    "newPath": "lib/rules/no-spaced-func.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "4513d80472d285482e68efdf6dc7a5a9308b5393",
+    "newOid": "551a3c609717c5f128792003532aa711da7387f5",
+    "status": "M",
+    "edits": [
+     "d36c38666393e5c6ba96c7d93dac5724e8cdab9099f0249d0e61a6e46507e260",
+     "03bd51a22cb575e95bc380db32a2a805b894af49e1255c8db2c0f1149b86bea5",
+     "be8aad1dc1e63ea23f86b660edd6cbc43950ddc8ac3ff64d19227bb084b01568",
+     "4e80e24adac4fe21024e72100cad6a05a3590cea421051bd15fc5d28e87e2875",
+     "a3b0fe250dc04c53306d2759da9b187f4ea06bcd0aed9799e3185e9c0500a786",
+     "898ad3b642259fdff8e47a7f165f93876a149f2b36069f996ba98f67272bc559",
+     "10c957e66b0061f21fca534a9603ee03ef587259b2c50bd282f12b77b418505d",
+     "55389f619e70f6a1a6fd1e95ee08738aeaaa3fe902d8d466dcfea32d3e03f9fc",
+     "47a67e3448e16eee22ca3568f6103c7bbb6973d4f3bca26adc27791deca76982",
+     "482263aa8cfdb790051fd7c0dfbcbffe92c7400c7c8bed7e258ef1bd9469845e",
+     "bded9a7cc6c1608d2349e303d095dd42d58ed2cc3a3675978352f4fee4eb420e",
+     "ae3eaab39f07249aebdb4745e68e1339248e4fe195ce26317b884573ea0aa9b5",
+     "60bd918609175067ba3af3128e26c944e5253bed891ef6aadc540565c08c7157",
+     "3b0bdc2c92f204ed0e4fb403e2e50019f943b95f243002791f2ad24a66dcdb7b",
+     "f819e173312ae7a50627e539ae129e7be536df1fb5c12fb2b04a5331d68d3275",
+     "f7fb92b2738572284046d47cc8a1c76ad8698a3878514d1897427311ad1c15fc"
+    ],
+    "hunks": [
+     {
+      "id": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+      "old": {
+       "start": 27,
+       "count": 5
+      },
+      "new": {
+       "start": 27,
+       "count": 6
+      }
+     },
+     {
+      "id": "1a378560ee4c535193904b725453b8ce4230f9c7d460b87cbd6411dd36ccc2e3",
+      "old": {
+       "start": 37,
+       "count": 1
+      },
+      "new": {
+       "start": 38,
+       "count": 4
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "c7065989859efba0e9f6406efafccc47c1a4a184e611b819ad55f69bc40e47e8",
+    "newHash": "c6e87a3fc6f6ced3ec9975d2be105de93c12dce5577d31ac92eeb8b4a24aaf54",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "d36c38666393e5c6ba96c7d93dac5724e8cdab9099f0249d0e61a6e46507e260",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "old",
+    "old": {
+     "start": 27,
+     "count": 1
+    },
+    "new": {
+     "start": 27,
+     "count": 0
+    },
+    "offsets": {
+     "start": 780,
+     "end": 839
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "03bd51a22cb575e95bc380db32a2a805b894af49e1255c8db2c0f1149b86bea5",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "old",
+    "old": {
+     "start": 28,
+     "count": 1
+    },
+    "new": {
+     "start": 27,
+     "count": 0
+    },
+    "offsets": {
+     "start": 839,
+     "end": 859
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "be8aad1dc1e63ea23f86b660edd6cbc43950ddc8ac3ff64d19227bb084b01568",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "old",
+    "old": {
+     "start": 29,
+     "count": 1
+    },
+    "new": {
+     "start": 27,
+     "count": 0
+    },
+    "offsets": {
+     "start": 859,
+     "end": 869
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "4e80e24adac4fe21024e72100cad6a05a3590cea421051bd15fc5d28e87e2875",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "old",
+    "old": {
+     "start": 30,
+     "count": 1
+    },
+    "new": {
+     "start": 27,
+     "count": 0
+    },
+    "offsets": {
+     "start": 869,
+     "end": 870
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "old"
+    }
+   },
+   {
+    "id": "a3b0fe250dc04c53306d2759da9b187f4ea06bcd0aed9799e3185e9c0500a786",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "old",
+    "old": {
+     "start": 31,
+     "count": 1
+    },
+    "new": {
+     "start": 27,
+     "count": 0
+    },
+    "offsets": {
+     "start": 870,
+     "end": 913
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "898ad3b642259fdff8e47a7f165f93876a149f2b36069f996ba98f67272bc559",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "new",
+    "old": {
+     "start": 27,
+     "count": 0
+    },
+    "new": {
+     "start": 27,
+     "count": 1
+    },
+    "offsets": {
+     "start": 780,
+     "end": 824
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "10c957e66b0061f21fca534a9603ee03ef587259b2c50bd282f12b77b418505d",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "new",
+    "old": {
+     "start": 27,
+     "count": 0
+    },
+    "new": {
+     "start": 28,
+     "count": 1
+    },
+    "offsets": {
+     "start": 824,
+     "end": 840
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "55389f619e70f6a1a6fd1e95ee08738aeaaa3fe902d8d466dcfea32d3e03f9fc",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "new",
+    "old": {
+     "start": 27,
+     "count": 0
+    },
+    "new": {
+     "start": 29,
+     "count": 1
+    },
+    "offsets": {
+     "start": 840,
+     "end": 866
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "47a67e3448e16eee22ca3568f6103c7bbb6973d4f3bca26adc27791deca76982",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "new",
+    "old": {
+     "start": 27,
+     "count": 0
+    },
+    "new": {
+     "start": 30,
+     "count": 1
+    },
+    "offsets": {
+     "start": 866,
+     "end": 917
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "482263aa8cfdb790051fd7c0dfbcbffe92c7400c7c8bed7e258ef1bd9469845e",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "new",
+    "old": {
+     "start": 27,
+     "count": 0
+    },
+    "new": {
+     "start": 31,
+     "count": 1
+    },
+    "offsets": {
+     "start": 917,
+     "end": 954
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "bded9a7cc6c1608d2349e303d095dd42d58ed2cc3a3675978352f4fee4eb420e",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "f83e20d29462bb469ccc3913e5100ad3429c2c94f8fa88734ea096628f0e8030",
+    "side": "new",
+    "old": {
+     "start": 27,
+     "count": 0
+    },
+    "new": {
+     "start": 32,
+     "count": 1
+    },
+    "offsets": {
+     "start": 954,
+     "end": 966
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ae3eaab39f07249aebdb4745e68e1339248e4fe195ce26317b884573ea0aa9b5",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1a378560ee4c535193904b725453b8ce4230f9c7d460b87cbd6411dd36ccc2e3",
+    "side": "old",
+    "old": {
+     "start": 37,
+     "count": 1
+    },
+    "new": {
+     "start": 38,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1089,
+     "end": 1159
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "old"
+    }
+   },
+   {
+    "id": "60bd918609175067ba3af3128e26c944e5253bed891ef6aadc540565c08c7157",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1a378560ee4c535193904b725453b8ce4230f9c7d460b87cbd6411dd36ccc2e3",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 38,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1142,
+     "end": 1168
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "3b0bdc2c92f204ed0e4fb403e2e50019f943b95f243002791f2ad24a66dcdb7b",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1a378560ee4c535193904b725453b8ce4230f9c7d460b87cbd6411dd36ccc2e3",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 39,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1168,
+     "end": 1219
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f819e173312ae7a50627e539ae129e7be536df1fb5c12fb2b04a5331d68d3275",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1a378560ee4c535193904b725453b8ce4230f9c7d460b87cbd6411dd36ccc2e3",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 40,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1219,
+     "end": 1286
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f7fb92b2738572284046d47cc8a1c76ad8698a3878514d1897427311ad1c15fc",
+    "fileId": "8c3bce29b35b13f7a8e1aaca49e3566c659f6dc93feb74e57a02e06cb58f7f0f",
+    "file": "lib/rules/no-spaced-func.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "1a378560ee4c535193904b725453b8ce4230f9c7d460b87cbd6411dd36ccc2e3",
+    "side": "new",
+    "old": {
+     "start": 37,
+     "count": 0
+    },
+    "new": {
+     "start": 41,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1286,
+     "end": 1298
+    },
+    "links": [],
+    "context": {
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "node": "BinaryExpression"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "exported property assignment",
+     "parent": "ExpressionStatement",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "31150a4b5c0ebfedc80db0b9e35b4b34ba1de3cc4a75d42042fa0c394da5d4dc",
+  "reconciliation": {
+   "expected": [
+    "d36c38666393e5c6ba96c7d93dac5724e8cdab9099f0249d0e61a6e46507e260",
+    "03bd51a22cb575e95bc380db32a2a805b894af49e1255c8db2c0f1149b86bea5",
+    "be8aad1dc1e63ea23f86b660edd6cbc43950ddc8ac3ff64d19227bb084b01568",
+    "4e80e24adac4fe21024e72100cad6a05a3590cea421051bd15fc5d28e87e2875",
+    "a3b0fe250dc04c53306d2759da9b187f4ea06bcd0aed9799e3185e9c0500a786",
+    "898ad3b642259fdff8e47a7f165f93876a149f2b36069f996ba98f67272bc559",
+    "10c957e66b0061f21fca534a9603ee03ef587259b2c50bd282f12b77b418505d",
+    "55389f619e70f6a1a6fd1e95ee08738aeaaa3fe902d8d466dcfea32d3e03f9fc",
+    "47a67e3448e16eee22ca3568f6103c7bbb6973d4f3bca26adc27791deca76982",
+    "482263aa8cfdb790051fd7c0dfbcbffe92c7400c7c8bed7e258ef1bd9469845e",
+    "bded9a7cc6c1608d2349e303d095dd42d58ed2cc3a3675978352f4fee4eb420e",
+    "ae3eaab39f07249aebdb4745e68e1339248e4fe195ce26317b884573ea0aa9b5",
+    "60bd918609175067ba3af3128e26c944e5253bed891ef6aadc540565c08c7157",
+    "3b0bdc2c92f204ed0e4fb403e2e50019f943b95f243002791f2ad24a66dcdb7b",
+    "f819e173312ae7a50627e539ae129e7be536df1fb5c12fb2b04a5331d68d3275",
+    "f7fb92b2738572284046d47cc8a1c76ad8698a3878514d1897427311ad1c15fc"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "d36c38666393e5c6ba96c7d93dac5724e8cdab9099f0249d0e61a6e46507e260",
+    "03bd51a22cb575e95bc380db32a2a805b894af49e1255c8db2c0f1149b86bea5",
+    "be8aad1dc1e63ea23f86b660edd6cbc43950ddc8ac3ff64d19227bb084b01568",
+    "4e80e24adac4fe21024e72100cad6a05a3590cea421051bd15fc5d28e87e2875",
+    "a3b0fe250dc04c53306d2759da9b187f4ea06bcd0aed9799e3185e9c0500a786",
+    "898ad3b642259fdff8e47a7f165f93876a149f2b36069f996ba98f67272bc559",
+    "10c957e66b0061f21fca534a9603ee03ef587259b2c50bd282f12b77b418505d",
+    "55389f619e70f6a1a6fd1e95ee08738aeaaa3fe902d8d466dcfea32d3e03f9fc",
+    "47a67e3448e16eee22ca3568f6103c7bbb6973d4f3bca26adc27791deca76982",
+    "482263aa8cfdb790051fd7c0dfbcbffe92c7400c7c8bed7e258ef1bd9469845e",
+    "bded9a7cc6c1608d2349e303d095dd42d58ed2cc3a3675978352f4fee4eb420e",
+    "ae3eaab39f07249aebdb4745e68e1339248e4fe195ce26317b884573ea0aa9b5",
+    "60bd918609175067ba3af3128e26c944e5253bed891ef6aadc540565c08c7157",
+    "3b0bdc2c92f204ed0e4fb403e2e50019f943b95f243002791f2ad24a66dcdb7b",
+    "f819e173312ae7a50627e539ae129e7be536df1fb5c12fb2b04a5331d68d3275",
+    "f7fb92b2738572284046d47cc8a1c76ad8698a3878514d1897427311ad1c15fc"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "d36c38666393e5c6ba96c7d93dac5724e8cdab9099f0249d0e61a6e46507e260",
+      "03bd51a22cb575e95bc380db32a2a805b894af49e1255c8db2c0f1149b86bea5",
+      "be8aad1dc1e63ea23f86b660edd6cbc43950ddc8ac3ff64d19227bb084b01568",
+      "4e80e24adac4fe21024e72100cad6a05a3590cea421051bd15fc5d28e87e2875",
+      "a3b0fe250dc04c53306d2759da9b187f4ea06bcd0aed9799e3185e9c0500a786",
+      "898ad3b642259fdff8e47a7f165f93876a149f2b36069f996ba98f67272bc559",
+      "10c957e66b0061f21fca534a9603ee03ef587259b2c50bd282f12b77b418505d",
+      "55389f619e70f6a1a6fd1e95ee08738aeaaa3fe902d8d466dcfea32d3e03f9fc",
+      "47a67e3448e16eee22ca3568f6103c7bbb6973d4f3bca26adc27791deca76982",
+      "482263aa8cfdb790051fd7c0dfbcbffe92c7400c7c8bed7e258ef1bd9469845e",
+      "bded9a7cc6c1608d2349e303d095dd42d58ed2cc3a3675978352f4fee4eb420e",
+      "ae3eaab39f07249aebdb4745e68e1339248e4fe195ce26317b884573ea0aa9b5",
+      "60bd918609175067ba3af3128e26c944e5253bed891ef6aadc540565c08c7157",
+      "3b0bdc2c92f204ed0e4fb403e2e50019f943b95f243002791f2ad24a66dcdb7b",
+      "f819e173312ae7a50627e539ae129e7be536df1fb5c12fb2b04a5331d68d3275",
+      "f7fb92b2738572284046d47cc8a1c76ad8698a3878514d1897427311ad1c15fc"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "644df213b8015b5915327a52c5ded03c27dd725ba1f8648cf5023f1b453c566b",
+   "32a342cbbcccf83b1850141e925a178c686879ed169cb9ed1171e6ccddba5166",
+   "584c53c26071574b10b06c83c2ce32e76127cb0c4a1f6d2e695aa68fe9edd760",
+   "4929c205153ae974fa78c34e128db6b9e49a8ac1c7ebbc233b83c19253acafaa",
+   "0a58d941399e7c01822a0cf0f2cf821168df37a1077deb0c52cbc8f7231bff96",
+   "a09744f6d51ff114d5a3c89ae5d074a15335afc6e071c43b8aa9ec36e36bf5d8",
+   "131bef19f6e72fb49a811af05072369b868cc1317da9e0630ecbb6fcdffa290e",
+   "727b35fa4ee875c976e00ce53aae7c3d20b6b1def988a2d195e2f8d1c38e83c1",
+   "71ca1cb88afd982d180e5f57cff5fec5d543664fffdcd6221ac46931c5ead0f8",
+   "05c1fad7561e5f68979c6980049b02b46a569d35dd9c68bb0b92887ddaa94920",
+   "a8689be69039831987fe54c5e94456ad51b0c3cdfde6d10232785f019650a339",
+   "46f27b5cc36b4fe758d4cdb56821b4e27ed13fc92908a130b37235e96f39f578",
+   "1232269f3fc319b57cddbaffa054c5173acc404a45687fd301a4d297f88012c8",
+   "6a5427e889a8c6ac3cc995612228416653b468f50b9fa18a7ac1386da173627b",
+   "52850cc03d371a9c86b6d30af3c37c5d413a1089a6776b10e978bc3d8216a8ef",
+   "047a1bff58ed59b968f2fef4b7e067cf7e4e3102d2d1e6aea894aead3b5a53bd"
+  ],
+  "terminal": [
+   "644df213b8015b5915327a52c5ded03c27dd725ba1f8648cf5023f1b453c566b",
+   "32a342cbbcccf83b1850141e925a178c686879ed169cb9ed1171e6ccddba5166",
+   "584c53c26071574b10b06c83c2ce32e76127cb0c4a1f6d2e695aa68fe9edd760",
+   "4929c205153ae974fa78c34e128db6b9e49a8ac1c7ebbc233b83c19253acafaa",
+   "0a58d941399e7c01822a0cf0f2cf821168df37a1077deb0c52cbc8f7231bff96",
+   "a09744f6d51ff114d5a3c89ae5d074a15335afc6e071c43b8aa9ec36e36bf5d8",
+   "131bef19f6e72fb49a811af05072369b868cc1317da9e0630ecbb6fcdffa290e",
+   "727b35fa4ee875c976e00ce53aae7c3d20b6b1def988a2d195e2f8d1c38e83c1",
+   "71ca1cb88afd982d180e5f57cff5fec5d543664fffdcd6221ac46931c5ead0f8",
+   "05c1fad7561e5f68979c6980049b02b46a569d35dd9c68bb0b92887ddaa94920",
+   "a8689be69039831987fe54c5e94456ad51b0c3cdfde6d10232785f019650a339",
+   "46f27b5cc36b4fe758d4cdb56821b4e27ed13fc92908a130b37235e96f39f578",
+   "1232269f3fc319b57cddbaffa054c5173acc404a45687fd301a4d297f88012c8",
+   "6a5427e889a8c6ac3cc995612228416653b468f50b9fa18a7ac1386da173627b",
+   "52850cc03d371a9c86b6d30af3c37c5d413a1089a6776b10e978bc3d8216a8ef",
+   "047a1bff58ed59b968f2fef4b7e067cf7e4e3102d2d1e6aea894aead3b5a53bd"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__156/run-WgLogQ/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__156/run-WgLogQ"
+}

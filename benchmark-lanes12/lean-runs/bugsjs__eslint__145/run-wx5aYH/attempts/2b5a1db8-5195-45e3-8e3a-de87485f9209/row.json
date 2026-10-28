@@ -1,0 +1,21 @@
+{
+ "file": "conf/default-config-options.js",
+ "unit": "(edit c14205faf9b0)",
+ "editIds": [
+  "c14205faf9b0d006b0119ea011e2e61e93ffb7e4b7adbebecb10df98efd42d4a"
+ ],
+ "lines": [
+  32,
+  32
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/token-store/utils.js",
+ "unit": "(edit 38e55968336f)",
+ "editIds": [
+  "38e55968336fefe37a75bcba3f8329cfa12486d5227fdb64088cc19b3a8c1807"
+ ],
+ "lines": [
+  96,
+  96
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

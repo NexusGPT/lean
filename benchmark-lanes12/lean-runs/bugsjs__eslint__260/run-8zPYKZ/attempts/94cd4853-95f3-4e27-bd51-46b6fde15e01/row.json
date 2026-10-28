@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/vars-on-top.js",
+ "unit": "(edit 3dc65a8019ca)",
+ "editIds": [
+  "3dc65a8019ca8b5d84c651164ccdf97cff2202bbd8d9aafb9e28ea87d8c1716b"
+ ],
+ "lines": [
+  114,
+  114
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

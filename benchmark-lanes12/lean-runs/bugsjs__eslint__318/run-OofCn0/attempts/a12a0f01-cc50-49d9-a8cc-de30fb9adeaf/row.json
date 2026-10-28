@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/use-isnan.js",
+ "unit": "(edit ef0d10803a49)",
+ "editIds": [
+  "ef0d10803a49fce3664a95f4762d7d9e34f25da281cc30f1b7774f52729479da"
+ ],
+ "lines": [
+  5,
+  5
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

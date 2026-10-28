@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/lines-around-directive.js",
+ "unit": "(edit a495c9d4c632)",
+ "editIds": [
+  "a495c9d4c632cf82b030152a720ed9736a8ddfc35ce2f18b75d323f9a57b0ffb"
+ ],
+ "lines": [
+  112,
+  112
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

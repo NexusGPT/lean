@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-multi-spaces.js",
+ "unit": "(edit 2e2b5c1dd502)",
+ "editIds": [
+  "2e2b5c1dd50289d05a3c78b4125bde4c5fe43700c43f83d380e035d3523f5bd7"
+ ],
+ "lines": [
+  146,
+  146
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

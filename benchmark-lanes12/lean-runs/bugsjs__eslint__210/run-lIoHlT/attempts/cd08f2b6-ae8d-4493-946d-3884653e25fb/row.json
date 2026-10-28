@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/prefer-arrow-callback.js",
+ "unit": "(edit 81beb76698f7)",
+ "editIds": [
+  "81beb76698f7aea5d6b07ef7dddd883868e59b9b698ec319f0563aea83d3a7d2"
+ ],
+ "lines": [
+  15,
+  15
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "SourceFile"
+ },
+ "advice": []
+}

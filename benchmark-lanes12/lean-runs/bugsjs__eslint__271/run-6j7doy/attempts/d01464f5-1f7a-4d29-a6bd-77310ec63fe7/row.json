@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/comma-style.js",
+ "unit": "(edit 4c3cb98b4912)",
+ "editIds": [
+  "4c3cb98b49129dd43f30cd92e7e638601e82b37f23675c8474a4b911316ace0d"
+ ],
+ "lines": [
+  126,
+  126
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

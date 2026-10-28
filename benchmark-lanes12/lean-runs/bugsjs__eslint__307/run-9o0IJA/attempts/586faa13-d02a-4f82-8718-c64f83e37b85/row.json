@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-multi-spaces.js",
+ "unit": "(edit 3b89f6eae613)",
+ "editIds": [
+  "3b89f6eae613c4f56a97e9e0e2284dee0c1bdc049332d34adc342a03b2fe869b"
+ ],
+ "lines": [
+  79,
+  79
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

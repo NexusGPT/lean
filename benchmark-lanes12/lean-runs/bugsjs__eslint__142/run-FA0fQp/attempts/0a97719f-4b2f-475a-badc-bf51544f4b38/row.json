@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-cond-assign.js",
+ "unit": "(edit b1ed8579b22c)",
+ "editIds": [
+  "b1ed8579b22cbc00c16ceabd1be5f51078276afe1e82551c9503998ec7d726ed"
+ ],
+ "lines": [
+  83,
+  83
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

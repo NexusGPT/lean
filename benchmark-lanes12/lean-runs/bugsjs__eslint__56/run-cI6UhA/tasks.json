@@ -1,0 +1,170 @@
+{
+ "change": "a0f830aef66b3e779e99aebf055b824aaae0483253aff4bc2abaf6d6579ba9d5",
+ "tasks": [
+  {
+   "id": "453773c07a33375ff6c02a4cc45a862702ac734159258ae748a5d4dd1c9db039",
+   "file": "lib/eslint.js",
+   "unit": "(edit 71b0adedea1a)",
+   "lines": [
+    781,
+    781
+   ],
+   "lanes": [],
+   "editIds": [
+    "71b0adedea1a97d4dd8b6fa9938cbdc4f10108ecf5012dad9bb0e7edcf5c385c"
+   ],
+   "attemptId": "b2aeea16-f391-49d3-b57c-e3b7f9d1c236",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/b2aeea16-f391-49d3-b57c-e3b7f9d1c236"
+  },
+  {
+   "id": "7f25e70e92fb55dd427137919b053c573f46f1e48bec4428126e24922cf57142",
+   "file": "lib/eslint.js",
+   "unit": "(edit 5772896d1c43)",
+   "lines": [
+    782,
+    782
+   ],
+   "lanes": [],
+   "editIds": [
+    "5772896d1c438d0c108600ad961507a5f25b50d7459e71cb027809d468edc70e"
+   ],
+   "attemptId": "1afddb3a-e0b3-4862-be93-9dcb9d687498",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/1afddb3a-e0b3-4862-be93-9dcb9d687498"
+  },
+  {
+   "id": "1daa5828f890a2c68f806c90378e0ef38f6c06727ca0d7876f405210a7ec19ce",
+   "file": "lib/eslint.js",
+   "unit": "(edit 247b558ad3c3)",
+   "lines": [
+    782,
+    782
+   ],
+   "lanes": [],
+   "editIds": [
+    "247b558ad3c3d882229818696db54fcea102cf3d4e255301b06f0c50a37eda8f"
+   ],
+   "attemptId": "d83bb051-2b43-499e-8a49-f207065075ec",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/d83bb051-2b43-499e-8a49-f207065075ec"
+  },
+  {
+   "id": "14b4267fbb2531c47043589324ff78f8e1af18718642a53830a9806b7e32f582",
+   "file": "lib/eslint.js",
+   "unit": "(edit 0120a7bd9e6c)",
+   "lines": [
+    783,
+    783
+   ],
+   "lanes": [],
+   "editIds": [
+    "0120a7bd9e6c59973a79414880d1673a03b2a2b813e0c01f777b126a9efe136a"
+   ],
+   "attemptId": "6d7983b1-19e5-4d2d-ae49-b1d253e78920",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/6d7983b1-19e5-4d2d-ae49-b1d253e78920"
+  },
+  {
+   "id": "145b9506bb88885c0d51304cde2f231fd6286813411d5111a4b8c4bb91cd43a5",
+   "file": "lib/eslint.js",
+   "unit": "(edit 8c191c2f082d)",
+   "lines": [
+    784,
+    784
+   ],
+   "lanes": [],
+   "editIds": [
+    "8c191c2f082d6865eac222c642f80b9d67b3026e85ad0314dd6188af4cbfa121"
+   ],
+   "attemptId": "bac1e67c-074d-4979-bd79-652357f054de",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/bac1e67c-074d-4979-bd79-652357f054de"
+  },
+  {
+   "id": "9c38be8c4e61637b8571b6b77960d57c70c8c381d50cc6c193156bfbd1b8c3fc",
+   "file": "lib/eslint.js",
+   "unit": "(edit a8435cceb140)",
+   "lines": [
+    785,
+    785
+   ],
+   "lanes": [],
+   "editIds": [
+    "a8435cceb1404e19694f6717cc417152bdc2cc598f411b0ef2119b2cadd155b1"
+   ],
+   "attemptId": "d8c850c0-623b-42d4-af88-dd2bca6df8c8",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/d8c850c0-623b-42d4-af88-dd2bca6df8c8"
+  },
+  {
+   "id": "482f03bcb0d56a7a385f07177691581c17cff423ab380aa7292e4d22c5214046",
+   "file": "lib/eslint.js",
+   "unit": "(edit 6da4e2a5ea97)",
+   "lines": [
+    784,
+    784
+   ],
+   "lanes": [],
+   "editIds": [
+    "6da4e2a5ea9765a4cb96e5583385737950e339ef093d7c96b5f404d0276612ac"
+   ],
+   "attemptId": "9a2bb090-6b11-4a62-b2bf-ab5afd973137",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/9a2bb090-6b11-4a62-b2bf-ab5afd973137"
+  },
+  {
+   "id": "83878503c0c6bec877e83884361912cffef5964745814843b8b700803e0abf64",
+   "file": "lib/eslint.js",
+   "unit": "(edit 46bb56984988)",
+   "lines": [
+    786,
+    786
+   ],
+   "lanes": [],
+   "editIds": [
+    "46bb56984988ad0732b19c1b852df06c5d3e3610c4d1873d2bfeac152836e653"
+   ],
+   "attemptId": "432761e0-d962-442e-a56e-b80c8facf2b3",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/432761e0-d962-442e-a56e-b80c8facf2b3"
+  },
+  {
+   "id": "50a6ba2fdba46e33a3340b71393e6858ef72cbcf390a21c06c9a466d91106b41",
+   "file": "lib/eslint.js",
+   "unit": "(edit bac52cad5b61)",
+   "lines": [
+    787,
+    787
+   ],
+   "lanes": [],
+   "editIds": [
+    "bac52cad5b613a610fc4cc006db7d142367475191c5b6f99e1454243f35df19e"
+   ],
+   "attemptId": "7bd000f8-4d41-4001-bc33-62a548c73127",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/7bd000f8-4d41-4001-bc33-62a548c73127"
+  },
+  {
+   "id": "d11ad9c0ac608eca90311f282dc26d44338918cd688c4f952103f1a4b5364fad",
+   "file": "lib/eslint.js",
+   "unit": "(edit 36ac9c69ade7)",
+   "lines": [
+    791,
+    791
+   ],
+   "lanes": [],
+   "editIds": [
+    "36ac9c69ade7a008a9eebe67e40ebbe07b45ae5edcf757d8163486e1808beb6e"
+   ],
+   "attemptId": "f91ef6cf-32d1-4e5d-b237-b537db0e37e9",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/f91ef6cf-32d1-4e5d-b237-b537db0e37e9"
+  },
+  {
+   "id": "dc25cf0657f996102b65351b460f0f6f4459adb6ba865c074383bd02b0ef5360",
+   "file": "lib/eslint.js",
+   "unit": "(edit 72841c732103)",
+   "lines": [
+    792,
+    792
+   ],
+   "lanes": [],
+   "editIds": [
+    "72841c7321034a341578fc92f35fc0011b962f168d39f77f95b0f194ab489788"
+   ],
+   "attemptId": "f0e12750-2297-4598-b5f0-7e0f925ec7ff",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__56/run-cI6UhA/attempts/f0e12750-2297-4598-b5f0-7e0f925ec7ff"
+  }
+ ]
+}

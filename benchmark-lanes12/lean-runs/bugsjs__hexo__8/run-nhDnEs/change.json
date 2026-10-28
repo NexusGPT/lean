@@ -1,0 +1,353 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "1da7ad5c920fb16e182342c4acda7d8a94af31f9",
+ "head": "dd501b7f2d5a8365964f795ae9c7924e7f4a064d",
+ "files": [
+  {
+   "id": "441eeb2e337c0a4fc729473628d40249c5417dea07b767bc70267f2717135636",
+   "file": "lib/plugins/helper/open_graph.js",
+   "oldPath": "lib/plugins/helper/open_graph.js",
+   "newPath": "lib/plugins/helper/open_graph.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "718b31ee1ac42b0d9ac5063c87b2230436b09933",
+   "newOid": "8180a956dcd340008713bbc8e2b4b9ee47c5d371",
+   "status": "M",
+   "edits": [
+    "2eac9bfd54a8dbb1ce0a162033181f8809ebb87be4a3cab28c12d7833a930d7b",
+    "e08481d769d854f1c636f64312c4cc841d19bf8b640341ec4df130d6a7dacd6b",
+    "a6c1a7cef7f606ff9c3311290070be8eed03fd59e9202410ef5277c5c8d8c04a",
+    "e5633219454b29066a436401cce89a043239590d56e63036d8b24d131d6c963e",
+    "6277809af310603f9bc16dd92d05409b667d91a12a7a23bb396d125de2244088"
+   ],
+   "hunks": [
+    {
+     "id": "c4cd0af35ae8fb3043c7431fe7a033b23997984a287c24c9ce69ca2d2ea51f70",
+     "old": {
+      "start": 88,
+      "count": 2
+     },
+     "new": {
+      "start": 88,
+      "count": 3
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "892ed5ea00e45c568aeb6d1b7d5b75dd1ed159b3d3d4ab0f5649bc2e0d5dc4d4",
+   "newHash": "2400daa7bba580180d828682f7f78cc97e316141475402339a1e084f251248ac",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "meta",
+      "side": "old",
+      "file": "lib/plugins/helper/open_graph.js",
+      "start": 10,
+      "end": 15,
+      "offset": 182,
+      "stop": 291,
+      "id": "f133c551b68991a27747db590234d8dd913203ab8f27a765e7a63a6debb77d47"
+     },
+     {
+      "name": "og",
+      "side": "old",
+      "file": "lib/plugins/helper/open_graph.js",
+      "start": 17,
+      "end": 22,
+      "offset": 293,
+      "stop": 404,
+      "id": "c42631debcf1844fce6f18797372d808a66fce8e0f19f5c2939b305591ef63c9"
+     },
+     {
+      "name": "openGraphHelper",
+      "side": "old",
+      "file": "lib/plugins/helper/open_graph.js",
+      "start": 24,
+      "end": 139,
+      "offset": 406,
+      "stop": 3504,
+      "id": "3b3950b23d6440295124ad70cf995b34c8a5efa91c32f8a73c6d3b7bc12cd8f2"
+     }
+    ],
+    "new": [
+     {
+      "name": "meta",
+      "side": "new",
+      "file": "lib/plugins/helper/open_graph.js",
+      "start": 10,
+      "end": 15,
+      "offset": 182,
+      "stop": 291,
+      "id": "df21e21dd170a35455a97cd82eb636b8fee772226b9ca02ef021c5221d5bd464"
+     },
+     {
+      "name": "og",
+      "side": "new",
+      "file": "lib/plugins/helper/open_graph.js",
+      "start": 17,
+      "end": 22,
+      "offset": 293,
+      "stop": 404,
+      "id": "08433ec292a952505db65a756c9a4d787f39813fe4bbec6d73c1f2e28bc5da7e"
+     },
+     {
+      "name": "openGraphHelper",
+      "side": "new",
+      "file": "lib/plugins/helper/open_graph.js",
+      "start": 24,
+      "end": 140,
+      "offset": 406,
+      "stop": 3618,
+      "id": "b0a1bf24faa78d986d3d6c2754569b2ea758c1d027906b2d3207c03c9450b128"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "2eac9bfd54a8dbb1ce0a162033181f8809ebb87be4a3cab28c12d7833a930d7b",
+   "fileId": "441eeb2e337c0a4fc729473628d40249c5417dea07b767bc70267f2717135636",
+   "file": "lib/plugins/helper/open_graph.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "c4cd0af35ae8fb3043c7431fe7a033b23997984a287c24c9ce69ca2d2ea51f70",
+   "side": "old",
+   "old": {
+    "start": 88,
+    "count": 1
+   },
+   "new": {
+    "start": 88,
+    "count": 0
+   },
+   "offsets": {
+    "start": 2304,
+    "end": 2350
+   },
+   "links": [
+    {
+     "id": "3b3950b23d6440295124ad70cf995b34c8a5efa91c32f8a73c6d3b7bc12cd8f2",
+     "file": "lib/plugins/helper/open_graph.js",
+     "unit": "openGraphHelper",
+     "side": "old",
+     "start": 24,
+     "end": 139
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "e08481d769d854f1c636f64312c4cc841d19bf8b640341ec4df130d6a7dacd6b",
+   "fileId": "441eeb2e337c0a4fc729473628d40249c5417dea07b767bc70267f2717135636",
+   "file": "lib/plugins/helper/open_graph.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "c4cd0af35ae8fb3043c7431fe7a033b23997984a287c24c9ce69ca2d2ea51f70",
+   "side": "old",
+   "old": {
+    "start": 89,
+    "count": 1
+   },
+   "new": {
+    "start": 88,
+    "count": 0
+   },
+   "offsets": {
+    "start": 2350,
+    "end": 2382
+   },
+   "links": [
+    {
+     "id": "3b3950b23d6440295124ad70cf995b34c8a5efa91c32f8a73c6d3b7bc12cd8f2",
+     "file": "lib/plugins/helper/open_graph.js",
+     "unit": "openGraphHelper",
+     "side": "old",
+     "start": 24,
+     "end": 139
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "a6c1a7cef7f606ff9c3311290070be8eed03fd59e9202410ef5277c5c8d8c04a",
+   "fileId": "441eeb2e337c0a4fc729473628d40249c5417dea07b767bc70267f2717135636",
+   "file": "lib/plugins/helper/open_graph.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "c4cd0af35ae8fb3043c7431fe7a033b23997984a287c24c9ce69ca2d2ea51f70",
+   "side": "new",
+   "old": {
+    "start": 88,
+    "count": 0
+   },
+   "new": {
+    "start": 88,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2304,
+    "end": 2375
+   },
+   "links": [
+    {
+     "id": "b0a1bf24faa78d986d3d6c2754569b2ea758c1d027906b2d3207c03c9450b128",
+     "file": "lib/plugins/helper/open_graph.js",
+     "unit": "openGraphHelper",
+     "side": "new",
+     "start": 24,
+     "end": 140
+    }
+   ],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "comment",
+    "side": "new"
+   }
+  },
+  {
+   "id": "e5633219454b29066a436401cce89a043239590d56e63036d8b24d131d6c963e",
+   "fileId": "441eeb2e337c0a4fc729473628d40249c5417dea07b767bc70267f2717135636",
+   "file": "lib/plugins/helper/open_graph.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "c4cd0af35ae8fb3043c7431fe7a033b23997984a287c24c9ce69ca2d2ea51f70",
+   "side": "new",
+   "old": {
+    "start": 88,
+    "count": 0
+   },
+   "new": {
+    "start": 89,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2375,
+    "end": 2443
+   },
+   "links": [
+    {
+     "id": "b0a1bf24faa78d986d3d6c2754569b2ea758c1d027906b2d3207c03c9450b128",
+     "file": "lib/plugins/helper/open_graph.js",
+     "unit": "openGraphHelper",
+     "side": "new",
+     "start": 24,
+     "end": 140
+    }
+   ],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "comment",
+    "side": "new"
+   }
+  },
+  {
+   "id": "6277809af310603f9bc16dd92d05409b667d91a12a7a23bb396d125de2244088",
+   "fileId": "441eeb2e337c0a4fc729473628d40249c5417dea07b767bc70267f2717135636",
+   "file": "lib/plugins/helper/open_graph.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "c4cd0af35ae8fb3043c7431fe7a033b23997984a287c24c9ce69ca2d2ea51f70",
+   "side": "new",
+   "old": {
+    "start": 88,
+    "count": 0
+   },
+   "new": {
+    "start": 90,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2443,
+    "end": 2496
+   },
+   "links": [
+    {
+     "id": "b0a1bf24faa78d986d3d6c2754569b2ea758c1d027906b2d3207c03c9450b128",
+     "file": "lib/plugins/helper/open_graph.js",
+     "unit": "openGraphHelper",
+     "side": "new",
+     "start": 24,
+     "end": 140
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "3089f7f2d03fb741a1a4284c65c8f984827ffe6a1433f6786c524961641404a4",
+ "reconciliation": {
+  "expected": [
+   "2eac9bfd54a8dbb1ce0a162033181f8809ebb87be4a3cab28c12d7833a930d7b",
+   "e08481d769d854f1c636f64312c4cc841d19bf8b640341ec4df130d6a7dacd6b",
+   "a6c1a7cef7f606ff9c3311290070be8eed03fd59e9202410ef5277c5c8d8c04a",
+   "e5633219454b29066a436401cce89a043239590d56e63036d8b24d131d6c963e",
+   "6277809af310603f9bc16dd92d05409b667d91a12a7a23bb396d125de2244088"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "2eac9bfd54a8dbb1ce0a162033181f8809ebb87be4a3cab28c12d7833a930d7b",
+   "e08481d769d854f1c636f64312c4cc841d19bf8b640341ec4df130d6a7dacd6b",
+   "a6c1a7cef7f606ff9c3311290070be8eed03fd59e9202410ef5277c5c8d8c04a",
+   "e5633219454b29066a436401cce89a043239590d56e63036d8b24d131d6c963e",
+   "6277809af310603f9bc16dd92d05409b667d91a12a7a23bb396d125de2244088"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "2eac9bfd54a8dbb1ce0a162033181f8809ebb87be4a3cab28c12d7833a930d7b",
+     "e08481d769d854f1c636f64312c4cc841d19bf8b640341ec4df130d6a7dacd6b",
+     "a6c1a7cef7f606ff9c3311290070be8eed03fd59e9202410ef5277c5c8d8c04a",
+     "e5633219454b29066a436401cce89a043239590d56e63036d8b24d131d6c963e",
+     "6277809af310603f9bc16dd92d05409b667d91a12a7a23bb396d125de2244088"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

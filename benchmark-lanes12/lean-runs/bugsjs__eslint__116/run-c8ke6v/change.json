@@ -1,0 +1,223 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "d311a6229353e2b4e11c3339a6caed689c50e3e2",
+ "head": "3624c0bfe724ee2db8688bdb1a5f3c81bc03970c",
+ "files": [
+  {
+   "id": "a336cdf440e6c15c867f927b09a1e6111b954d76f15e22ebe4a1fcf57caaaef9",
+   "file": "lib/rules/no-loop-func.js",
+   "oldPath": "lib/rules/no-loop-func.js",
+   "newPath": "lib/rules/no-loop-func.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "2b76093cce4d8f14f17ed9c656d08467acac47e7",
+   "newOid": "247dc52cd47516fc5353dfcd640066d04c6d816b",
+   "status": "M",
+   "edits": [
+    "da87f50959393c3c2940d09157d38c0e5b3762e859e68ad3e35dad19ed42ffc9",
+    "a008515806a96c4adb793f3eb6099a448aaa95a2cbd5fd1aa6bef94bc447c056"
+   ],
+   "hunks": [
+    {
+     "id": "346db644d9d40d27841723eb4937fdb490d4f534a3cdd916e73c1e181f4c66c7",
+     "old": {
+      "start": 76,
+      "count": 1
+     },
+     "new": {
+      "start": 76,
+      "count": 1
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "ae70fdc41e63a82e758c63e0ad8b41ba2a5489838bcaf5b9ba47a8ad0a73bcba",
+   "newHash": "7d69542805fca68c0ff85a808476658baa2a88c021456f4387eccf59f27a5000",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "getContainingLoopNode",
+      "side": "old",
+      "file": "lib/rules/no-loop-func.js",
+      "start": 22,
+      "end": 64,
+      "offset": 623,
+      "stop": 1645,
+      "id": "dc0816e74d3e57ee5310ac6b92291282bdfc96fdb8dc91428eca33c0e99d8171"
+     },
+     {
+      "name": "getTopLoopNode",
+      "side": "old",
+      "file": "lib/rules/no-loop-func.js",
+      "start": 75,
+      "end": 85,
+      "offset": 1976,
+      "stop": 2239,
+      "id": "9b890faa2dc1e636a360fc61544d8f15e6dd85c10befa14859195cc33cc657f1"
+     },
+     {
+      "name": "isSafe",
+      "side": "old",
+      "file": "lib/rules/no-loop-func.js",
+      "start": 96,
+      "end": 148,
+      "offset": 2584,
+      "stop": 4332,
+      "id": "ae568633baba8c91cacce7223d8ad7ceb5bb01c7939cc5ecaf53a21cc98e1203"
+     }
+    ],
+    "new": [
+     {
+      "name": "getContainingLoopNode",
+      "side": "new",
+      "file": "lib/rules/no-loop-func.js",
+      "start": 22,
+      "end": 64,
+      "offset": 623,
+      "stop": 1645,
+      "id": "bb0d64f2fadbadce20c5409d75ce0bae81fb19495cc8a0e36ec11d3055cce7d4"
+     },
+     {
+      "name": "getTopLoopNode",
+      "side": "new",
+      "file": "lib/rules/no-loop-func.js",
+      "start": 75,
+      "end": 85,
+      "offset": 1976,
+      "stop": 2239,
+      "id": "29d669a41f2d5091775dcabecfcae991186f359cb4f5b1a25e9cc9be1552c3ef"
+     },
+     {
+      "name": "isSafe",
+      "side": "new",
+      "file": "lib/rules/no-loop-func.js",
+      "start": 96,
+      "end": 148,
+      "offset": 2584,
+      "stop": 4332,
+      "id": "d98bb5a80f67b0a93a6339b7e6c819dd2f2659b682180375fdb9b90c9b82026b"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "da87f50959393c3c2940d09157d38c0e5b3762e859e68ad3e35dad19ed42ffc9",
+   "fileId": "a336cdf440e6c15c867f927b09a1e6111b954d76f15e22ebe4a1fcf57caaaef9",
+   "file": "lib/rules/no-loop-func.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "346db644d9d40d27841723eb4937fdb490d4f534a3cdd916e73c1e181f4c66c7",
+   "side": "old",
+   "old": {
+    "start": 76,
+    "count": 1
+   },
+   "new": {
+    "start": 76,
+    "count": 0
+   },
+   "offsets": {
+    "start": 2022,
+    "end": 2043
+   },
+   "links": [
+    {
+     "id": "9b890faa2dc1e636a360fc61544d8f15e6dd85c10befa14859195cc33cc657f1",
+     "file": "lib/rules/no-loop-func.js",
+     "unit": "getTopLoopNode",
+     "side": "old",
+     "start": 75,
+     "end": 85
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unit",
+    "id": "9b890faa2dc1e636a360fc61544d8f15e6dd85c10befa14859195cc33cc657f1",
+    "file": "lib/rules/no-loop-func.js",
+    "unit": "getTopLoopNode",
+    "side": "old",
+    "start": 75,
+    "end": 85
+   }
+  },
+  {
+   "id": "a008515806a96c4adb793f3eb6099a448aaa95a2cbd5fd1aa6bef94bc447c056",
+   "fileId": "a336cdf440e6c15c867f927b09a1e6111b954d76f15e22ebe4a1fcf57caaaef9",
+   "file": "lib/rules/no-loop-func.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "346db644d9d40d27841723eb4937fdb490d4f534a3cdd916e73c1e181f4c66c7",
+   "side": "new",
+   "old": {
+    "start": 76,
+    "count": 0
+   },
+   "new": {
+    "start": 76,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2022,
+    "end": 2043
+   },
+   "links": [
+    {
+     "id": "29d669a41f2d5091775dcabecfcae991186f359cb4f5b1a25e9cc9be1552c3ef",
+     "file": "lib/rules/no-loop-func.js",
+     "unit": "getTopLoopNode",
+     "side": "new",
+     "start": 75,
+     "end": 85
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unit",
+    "id": "29d669a41f2d5091775dcabecfcae991186f359cb4f5b1a25e9cc9be1552c3ef",
+    "file": "lib/rules/no-loop-func.js",
+    "unit": "getTopLoopNode",
+    "side": "new",
+    "start": 75,
+    "end": 85
+   }
+  }
+ ],
+ "id": "d42472dfb175ba38f452bfd82f8e96048fe7fdde4fa81e0571cc0da07f521e67",
+ "reconciliation": {
+  "expected": [
+   "da87f50959393c3c2940d09157d38c0e5b3762e859e68ad3e35dad19ed42ffc9",
+   "a008515806a96c4adb793f3eb6099a448aaa95a2cbd5fd1aa6bef94bc447c056"
+  ],
+  "unit": [
+   "da87f50959393c3c2940d09157d38c0e5b3762e859e68ad3e35dad19ed42ffc9",
+   "a008515806a96c4adb793f3eb6099a448aaa95a2cbd5fd1aa6bef94bc447c056"
+  ],
+  "artifact": [],
+  "unassigned": [],
+  "classes": {
+   "source": {
+    "unit": [
+     "da87f50959393c3c2940d09157d38c0e5b3762e859e68ad3e35dad19ed42ffc9",
+     "a008515806a96c4adb793f3eb6099a448aaa95a2cbd5fd1aa6bef94bc447c056"
+    ],
+    "artifact": [],
+    "unassigned": []
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

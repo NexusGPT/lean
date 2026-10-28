@@ -1,0 +1,20 @@
+{
+ "file": "lib/router/index.js",
+ "unit": "(edit 8ae9a7a2c8be)",
+ "editIds": [
+  "8ae9a7a2c8be55862ad05b5b8ede998696e308a469174e87e2d134e189a446ae"
+ ],
+ "lines": [
+  350,
+  350
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

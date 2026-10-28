@@ -1,0 +1,687 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "cec65e3f57f47e46b142719bbf0a85c89e3275e6",
+ "head": "4e30181d1ae21283c85dc91fd75abd5e26042717",
+ "files": [
+  {
+   "id": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "oldPath": "lib/rules/arrow-spacing.js",
+   "newPath": "lib/rules/arrow-spacing.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "fb2fbbfa356c5ce745370264146cf03df2262cb2",
+   "newOid": "3bc9017630ba72f63877e52c4643b4c39055b690",
+   "status": "M",
+   "edits": [
+    "18b7ba5a00a77f1ed861d6e188657167f7354ba1117ad58ad7868fbaeeb9b6ba",
+    "e16dc04f9274088e3b85fb8c2873a00dd14d904a1bfb045ec864e2e4133322be",
+    "4b8aa3ff5b7b72435944958d049b1b23ca7fb52e20842c35d5f45bbaf8e26dfa",
+    "50a0123425dd0053feaf3b068282e4d2591250f3b6f9b50e9fff2ef63293ad77",
+    "1eb7ec5fb513f90ed5d5d418892fc403a43c80bba46aa634074897048eba78cd",
+    "6860c400c85406af32c557eeb83b32e007bc373ae67479a72aee1a375da3d1ad",
+    "456edc0cbffa4053af25384b7926ec96068697b704b9c59e970ff4763251aa85",
+    "b30a900f98cfbc8093aaf5d4c13b8a4d255a75ba72e4552e51b8fa9202972fbd",
+    "4de34d7c646dd59f95d911dee146b22e3b57133d1ff628647d270203aea1acad",
+    "02bbf59becec4acaac80eae3f4972ecff0bfcad95a0892e82087ffc9c48b0ba0",
+    "c447d0b5f12d8e3280c8219567e60d65211c5dcf5e5abcd0210c28c5911478d4",
+    "3ab594cbcb092439286ef9ea95cdb2f4700f6e715c4d4683fd7b534f6f7646d1",
+    "d05f285734cc8ddb99bd9f5c0239db7c166a4fe6bbe78b6868f9538912f9d817",
+    "5da2a64e4abec6da90ac8a340f922eb23c930f641f63d5b5dc926653b96f707a",
+    "1b66652beec3162e400f5b3f2258f8828bf1c2159228531ee3a739bde252ddb0",
+    "ab19db674ebe341476cb44f6a26ac0a5261961992c335478b79e86488b1cfeed"
+   ],
+   "hunks": [
+    {
+     "id": "8b2de39eeb966f1c5bedc8cc24790a40ef2de137334b11c70b40326504bd9fec",
+     "old": {
+      "start": 54,
+      "count": 2
+     },
+     "new": {
+      "start": 54,
+      "count": 1
+     }
+    },
+    {
+     "id": "0fd98d460a5b99cc01d1dbcf643775c91482548d0b9aed1fe845aa80ef1c13c6",
+     "old": {
+      "start": 57,
+      "count": 3
+     },
+     "new": {
+      "start": 56,
+      "count": 3
+     }
+    },
+    {
+     "id": "7a2269d2393fdb2e9518757ce20496245a6988eb1d773b1d1dea2f9709bfb0dd",
+     "old": {
+      "start": 61,
+      "count": 1
+     },
+     "new": {
+      "start": 59,
+      "count": 0
+     }
+    },
+    {
+     "id": "93727fbfaf48c10d7294241095b1307d7559b7a31cf0e1b47d59e632efdad648",
+     "old": {
+      "start": 63,
+      "count": 1
+     },
+     "new": {
+      "start": 61,
+      "count": 5
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "40747bd6f3682ffd14146cf2c72b34206ec6fe07459102a8864b273ebe8764d2",
+   "newHash": "9eb939ad9b10cb32852f7d12319a1fd004bfea3bf0f715ec05644172ab68d2a4",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "18b7ba5a00a77f1ed861d6e188657167f7354ba1117ad58ad7868fbaeeb9b6ba",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "8b2de39eeb966f1c5bedc8cc24790a40ef2de137334b11c70b40326504bd9fec",
+   "side": "old",
+   "old": {
+    "start": 54,
+    "count": 1
+   },
+   "new": {
+    "start": 54,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1484,
+    "end": 1536
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "e16dc04f9274088e3b85fb8c2873a00dd14d904a1bfb045ec864e2e4133322be",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "8b2de39eeb966f1c5bedc8cc24790a40ef2de137334b11c70b40326504bd9fec",
+   "side": "old",
+   "old": {
+    "start": 55,
+    "count": 1
+   },
+   "new": {
+    "start": 54,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1536,
+    "end": 1560
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "4b8aa3ff5b7b72435944958d049b1b23ca7fb52e20842c35d5f45bbaf8e26dfa",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "8b2de39eeb966f1c5bedc8cc24790a40ef2de137334b11c70b40326504bd9fec",
+   "side": "new",
+   "old": {
+    "start": 54,
+    "count": 0
+   },
+   "new": {
+    "start": 54,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1484,
+    "end": 1546
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "50a0123425dd0053feaf3b068282e4d2591250f3b6f9b50e9fff2ef63293ad77",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0fd98d460a5b99cc01d1dbcf643775c91482548d0b9aed1fe845aa80ef1c13c6",
+   "side": "old",
+   "old": {
+    "start": 57,
+    "count": 1
+   },
+   "new": {
+    "start": 56,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1561,
+    "end": 1627
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "1eb7ec5fb513f90ed5d5d418892fc403a43c80bba46aa634074897048eba78cd",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0fd98d460a5b99cc01d1dbcf643775c91482548d0b9aed1fe845aa80ef1c13c6",
+   "side": "old",
+   "old": {
+    "start": 58,
+    "count": 1
+   },
+   "new": {
+    "start": 56,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1627,
+    "end": 1655
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "6860c400c85406af32c557eeb83b32e007bc373ae67479a72aee1a375da3d1ad",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0fd98d460a5b99cc01d1dbcf643775c91482548d0b9aed1fe845aa80ef1c13c6",
+   "side": "old",
+   "old": {
+    "start": 59,
+    "count": 1
+   },
+   "new": {
+    "start": 56,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1655,
+    "end": 1704
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "456edc0cbffa4053af25384b7926ec96068697b704b9c59e970ff4763251aa85",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0fd98d460a5b99cc01d1dbcf643775c91482548d0b9aed1fe845aa80ef1c13c6",
+   "side": "new",
+   "old": {
+    "start": 57,
+    "count": 0
+   },
+   "new": {
+    "start": 56,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1547,
+    "end": 1579
+   },
+   "links": [],
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "comment",
+    "parent": "SourceFile",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b30a900f98cfbc8093aaf5d4c13b8a4d255a75ba72e4552e51b8fa9202972fbd",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0fd98d460a5b99cc01d1dbcf643775c91482548d0b9aed1fe845aa80ef1c13c6",
+   "side": "new",
+   "old": {
+    "start": 57,
+    "count": 0
+   },
+   "new": {
+    "start": 57,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1579,
+    "end": 1622
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "4de34d7c646dd59f95d911dee146b22e3b57133d1ff628647d270203aea1acad",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "0fd98d460a5b99cc01d1dbcf643775c91482548d0b9aed1fe845aa80ef1c13c6",
+   "side": "new",
+   "old": {
+    "start": 57,
+    "count": 0
+   },
+   "new": {
+    "start": 58,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1622,
+    "end": 1680
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "02bbf59becec4acaac80eae3f4972ecff0bfcad95a0892e82087ffc9c48b0ba0",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "7a2269d2393fdb2e9518757ce20496245a6988eb1d773b1d1dea2f9709bfb0dd",
+   "side": "old",
+   "old": {
+    "start": 61,
+    "count": 1
+   },
+   "new": {
+    "start": 59,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1718,
+    "end": 1773
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "c447d0b5f12d8e3280c8219567e60d65211c5dcf5e5abcd0210c28c5911478d4",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93727fbfaf48c10d7294241095b1307d7559b7a31cf0e1b47d59e632efdad648",
+   "side": "old",
+   "old": {
+    "start": 63,
+    "count": 1
+   },
+   "new": {
+    "start": 61,
+    "count": 0
+   },
+   "offsets": {
+    "start": 1774,
+    "end": 1822
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "ShorthandPropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "old"
+   }
+  },
+  {
+   "id": "3ab594cbcb092439286ef9ea95cdb2f4700f6e715c4d4683fd7b534f6f7646d1",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93727fbfaf48c10d7294241095b1307d7559b7a31cf0e1b47d59e632efdad648",
+   "side": "new",
+   "old": {
+    "start": 63,
+    "count": 0
+   },
+   "new": {
+    "start": 61,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1695,
+    "end": 1716
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "d05f285734cc8ddb99bd9f5c0239db7c166a4fe6bbe78b6868f9538912f9d817",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93727fbfaf48c10d7294241095b1307d7559b7a31cf0e1b47d59e632efdad648",
+   "side": "new",
+   "old": {
+    "start": 63,
+    "count": 0
+   },
+   "new": {
+    "start": 62,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1716,
+    "end": 1774
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5da2a64e4abec6da90ac8a340f922eb23c930f641f63d5b5dc926653b96f707a",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93727fbfaf48c10d7294241095b1307d7559b7a31cf0e1b47d59e632efdad648",
+   "side": "new",
+   "old": {
+    "start": 63,
+    "count": 0
+   },
+   "new": {
+    "start": 63,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1774,
+    "end": 1797
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "ShorthandPropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "1b66652beec3162e400f5b3f2258f8828bf1c2159228531ee3a739bde252ddb0",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93727fbfaf48c10d7294241095b1307d7559b7a31cf0e1b47d59e632efdad648",
+   "side": "new",
+   "old": {
+    "start": 63,
+    "count": 0
+   },
+   "new": {
+    "start": 64,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1797,
+    "end": 1852
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "ab19db674ebe341476cb44f6a26ac0a5261961992c335478b79e86488b1cfeed",
+   "fileId": "a6d0ceebde1e04f09cb7da27fbfb514eacb4115bb8e0a5ea2ce2d8822327cb57",
+   "file": "lib/rules/arrow-spacing.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "93727fbfaf48c10d7294241095b1307d7559b7a31cf0e1b47d59e632efdad648",
+   "side": "new",
+   "old": {
+    "start": 63,
+    "count": 0
+   },
+   "new": {
+    "start": 65,
+    "count": 1
+   },
+   "offsets": {
+    "start": 1852,
+    "end": 1867
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "8d47d60f7bbe004a3582f6f2a8f4e61e1ef287bc09087b50fb50c549d7d82f7d",
+ "reconciliation": {
+  "expected": [
+   "18b7ba5a00a77f1ed861d6e188657167f7354ba1117ad58ad7868fbaeeb9b6ba",
+   "e16dc04f9274088e3b85fb8c2873a00dd14d904a1bfb045ec864e2e4133322be",
+   "4b8aa3ff5b7b72435944958d049b1b23ca7fb52e20842c35d5f45bbaf8e26dfa",
+   "50a0123425dd0053feaf3b068282e4d2591250f3b6f9b50e9fff2ef63293ad77",
+   "1eb7ec5fb513f90ed5d5d418892fc403a43c80bba46aa634074897048eba78cd",
+   "6860c400c85406af32c557eeb83b32e007bc373ae67479a72aee1a375da3d1ad",
+   "456edc0cbffa4053af25384b7926ec96068697b704b9c59e970ff4763251aa85",
+   "b30a900f98cfbc8093aaf5d4c13b8a4d255a75ba72e4552e51b8fa9202972fbd",
+   "4de34d7c646dd59f95d911dee146b22e3b57133d1ff628647d270203aea1acad",
+   "02bbf59becec4acaac80eae3f4972ecff0bfcad95a0892e82087ffc9c48b0ba0",
+   "c447d0b5f12d8e3280c8219567e60d65211c5dcf5e5abcd0210c28c5911478d4",
+   "3ab594cbcb092439286ef9ea95cdb2f4700f6e715c4d4683fd7b534f6f7646d1",
+   "d05f285734cc8ddb99bd9f5c0239db7c166a4fe6bbe78b6868f9538912f9d817",
+   "5da2a64e4abec6da90ac8a340f922eb23c930f641f63d5b5dc926653b96f707a",
+   "1b66652beec3162e400f5b3f2258f8828bf1c2159228531ee3a739bde252ddb0",
+   "ab19db674ebe341476cb44f6a26ac0a5261961992c335478b79e86488b1cfeed"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "18b7ba5a00a77f1ed861d6e188657167f7354ba1117ad58ad7868fbaeeb9b6ba",
+   "e16dc04f9274088e3b85fb8c2873a00dd14d904a1bfb045ec864e2e4133322be",
+   "4b8aa3ff5b7b72435944958d049b1b23ca7fb52e20842c35d5f45bbaf8e26dfa",
+   "50a0123425dd0053feaf3b068282e4d2591250f3b6f9b50e9fff2ef63293ad77",
+   "1eb7ec5fb513f90ed5d5d418892fc403a43c80bba46aa634074897048eba78cd",
+   "6860c400c85406af32c557eeb83b32e007bc373ae67479a72aee1a375da3d1ad",
+   "456edc0cbffa4053af25384b7926ec96068697b704b9c59e970ff4763251aa85",
+   "b30a900f98cfbc8093aaf5d4c13b8a4d255a75ba72e4552e51b8fa9202972fbd",
+   "4de34d7c646dd59f95d911dee146b22e3b57133d1ff628647d270203aea1acad",
+   "02bbf59becec4acaac80eae3f4972ecff0bfcad95a0892e82087ffc9c48b0ba0",
+   "c447d0b5f12d8e3280c8219567e60d65211c5dcf5e5abcd0210c28c5911478d4",
+   "3ab594cbcb092439286ef9ea95cdb2f4700f6e715c4d4683fd7b534f6f7646d1",
+   "d05f285734cc8ddb99bd9f5c0239db7c166a4fe6bbe78b6868f9538912f9d817",
+   "5da2a64e4abec6da90ac8a340f922eb23c930f641f63d5b5dc926653b96f707a",
+   "1b66652beec3162e400f5b3f2258f8828bf1c2159228531ee3a739bde252ddb0",
+   "ab19db674ebe341476cb44f6a26ac0a5261961992c335478b79e86488b1cfeed"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "18b7ba5a00a77f1ed861d6e188657167f7354ba1117ad58ad7868fbaeeb9b6ba",
+     "e16dc04f9274088e3b85fb8c2873a00dd14d904a1bfb045ec864e2e4133322be",
+     "4b8aa3ff5b7b72435944958d049b1b23ca7fb52e20842c35d5f45bbaf8e26dfa",
+     "50a0123425dd0053feaf3b068282e4d2591250f3b6f9b50e9fff2ef63293ad77",
+     "1eb7ec5fb513f90ed5d5d418892fc403a43c80bba46aa634074897048eba78cd",
+     "6860c400c85406af32c557eeb83b32e007bc373ae67479a72aee1a375da3d1ad",
+     "456edc0cbffa4053af25384b7926ec96068697b704b9c59e970ff4763251aa85",
+     "b30a900f98cfbc8093aaf5d4c13b8a4d255a75ba72e4552e51b8fa9202972fbd",
+     "4de34d7c646dd59f95d911dee146b22e3b57133d1ff628647d270203aea1acad",
+     "02bbf59becec4acaac80eae3f4972ecff0bfcad95a0892e82087ffc9c48b0ba0",
+     "c447d0b5f12d8e3280c8219567e60d65211c5dcf5e5abcd0210c28c5911478d4",
+     "3ab594cbcb092439286ef9ea95cdb2f4700f6e715c4d4683fd7b534f6f7646d1",
+     "d05f285734cc8ddb99bd9f5c0239db7c166a4fe6bbe78b6868f9538912f9d817",
+     "5da2a64e4abec6da90ac8a340f922eb23c930f641f63d5b5dc926653b96f707a",
+     "1b66652beec3162e400f5b3f2258f8828bf1c2159228531ee3a739bde252ddb0",
+     "ab19db674ebe341476cb44f6a26ac0a5261961992c335478b79e86488b1cfeed"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-self-compare.js",
+ "unit": "(edit f6259f7c702b)",
+ "editIds": [
+  "f6259f7c702bf27a5d18489c942276d89626ddf1a2f63f66a52c6b0d63f9f38e"
+ ],
+ "lines": [
+  32,
+  32
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

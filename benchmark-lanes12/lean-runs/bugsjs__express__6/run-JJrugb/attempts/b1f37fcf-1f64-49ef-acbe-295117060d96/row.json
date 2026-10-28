@@ -1,0 +1,20 @@
+{
+ "file": "lib/application.js",
+ "unit": "(edit 058ffc9c5827)",
+ "editIds": [
+  "058ffc9c582763848a7e1a0dce072b97c62239d53c531a22476df346455731bd"
+ ],
+ "lines": [
+  559,
+  559
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

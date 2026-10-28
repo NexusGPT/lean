@@ -1,0 +1,21 @@
+{
+ "file": "lib/config/config-validator.js",
+ "unit": "(edit f05c0108d639)",
+ "editIds": [
+  "f05c0108d639526648682501a57f4797dce4dcb57993f2e6fcca0b5af1a4cd7a"
+ ],
+ "lines": [
+  86,
+  86
+ ],
+ "verdict": "ASK",
+ "decision": "artifact",
+ "coverage": "artifact:config",
+ "reason": "config",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/response.js",
+ "unit": "(edit cd94fb7797d9)",
+ "editIds": [
+  "cd94fb7797d93f0fef27533381044bcafa76db26f7d6d91205bce289e1737927"
+ ],
+ "lines": [
+  110,
+  110
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:module-level statement",
+ "reason": "module-level statement",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "ExpressionStatement"
+ },
+ "advice": []
+}

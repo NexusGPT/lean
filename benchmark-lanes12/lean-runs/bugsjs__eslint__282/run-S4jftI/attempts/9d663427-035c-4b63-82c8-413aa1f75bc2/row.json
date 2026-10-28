@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/space-unary-ops.js",
+ "unit": "(edit e44e8773e0bb)",
+ "editIds": [
+  "e44e8773e0bb8b419de846eceeab4de9e75430affe6d501a381fa1f1d60d54d2"
+ ],
+ "lines": [
+  69,
+  69
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

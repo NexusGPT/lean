@@ -1,0 +1,621 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "ef6e15d0c8be73c42620b5fccb626d3b55094cf4",
+ "head": "e571981b12e79eaffa6d85a75238664c8ba9f596",
+ "files": [
+  {
+   "id": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "oldPath": "lib/models/post.js",
+   "newPath": "lib/models/post.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "558faeab1c0a98057d582b23a22e1d6860714920",
+   "newOid": "27b943834eeecbe2c6861848130e4430c7d1fa0d",
+   "status": "M",
+   "edits": [
+    "1b61cf7f77363a2319b4618872825c5f2834d05e97ea98f6b8beab7053d01df1",
+    "15a354dcec21baaffe73e3ba428e12729abe3a2a3a1a50b508e0eb48e4e6ccbb",
+    "b90dce4781543ab82b7fbfbfa129d9a14851b15ecfee3ed501289503e31f3695",
+    "5c2d7a1252ea1fee239d47e4483e466b669ce226aec0a96083244f287fd01356",
+    "8e24f29b62f6521e1c1b6316454c2ca4e06bb1903fe0f4ba120e9d3c04185c96",
+    "f96f0e78398208435a14c16706d2872bcce94d0b999081aca0ebdd10d97dca74",
+    "f554d0fa273d5683dcc76d98ec26f34ffca5fcfb3ebf39724cf415ff798785cd",
+    "a802718e07fb94cf3388bc905f67e766d413efeaaaf117ffa76c39a7393f3aab",
+    "24499dc781c47489308c3f719d72a13b8f2a5843fa4f8e0576dd58113d90fde5",
+    "00106c6c7d1d918d0e342a44951b832c719a1feb6fde801675efeafed81c0aa2",
+    "e3ca657cce3691faf51a240da60b3e24477d3eccaefeb1bff0c13b5858ddff81",
+    "5efe70e24dffab40920b71f41efb4601b551d152223afafa4a8903a2827bdbcf"
+   ],
+   "hunks": [
+    {
+     "id": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+     "old": {
+      "start": 13,
+      "count": 0
+     },
+     "new": {
+      "start": 14,
+      "count": 8
+     }
+    },
+    {
+     "id": "de30fd7d1ad7016ebd17e1496734906f1444ff46777c8358434bc00dfff36026",
+     "old": {
+      "start": 74,
+      "count": 0
+     },
+     "new": {
+      "start": 83,
+      "count": 2
+     }
+    },
+    {
+     "id": "2d147fde2647dcbde5d9867e49e8fcf5876ba2abd59302951643b34e390d31ff",
+     "old": {
+      "start": 123,
+      "count": 0
+     },
+     "new": {
+      "start": 134,
+      "count": 2
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "c326376680c5cc54f824a4fbcc2cdf0a0a8dd1493b12c0ad903020c0a9bece5e",
+   "newHash": "3ff41f7acc4f33d9aa83e6da7314f7d8f7b21b5723b70c9f4e36e36428cadcd3",
+   "kind": "text",
+   "units": {
+    "old": [
+     {
+      "name": "pickID",
+      "side": "old",
+      "file": "lib/models/post.js",
+      "start": 10,
+      "end": 12,
+      "offset": 222,
+      "stop": 266,
+      "id": "89cf8beea2fa47fbf91e17ca1af6745868e4c4de867284164c39b24833d911f3"
+     }
+    ],
+    "new": [
+     {
+      "name": "pickID",
+      "side": "new",
+      "file": "lib/models/post.js",
+      "start": 10,
+      "end": 12,
+      "offset": 222,
+      "stop": 266,
+      "id": "5d51e19fd2761757dd1448718b92f9c6d4116b6bbec14d4361992d5695ffb7a6"
+     },
+     {
+      "name": "removeEmptyTag",
+      "side": "new",
+      "file": "lib/models/post.js",
+      "start": 14,
+      "end": 20,
+      "offset": 268,
+      "stop": 428,
+      "id": "db718596d212796d5907e7186e231550b7785e717d09b75065cc31b8f0424ca9"
+     }
+    ]
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "1b61cf7f77363a2319b4618872825c5f2834d05e97ea98f6b8beab7053d01df1",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+   "side": "new",
+   "old": {
+    "start": 13,
+    "count": 0
+   },
+   "new": {
+    "start": 14,
+    "count": 1
+   },
+   "offsets": {
+    "start": 268,
+    "end": 300
+   },
+   "links": [
+    {
+     "id": "db718596d212796d5907e7186e231550b7785e717d09b75065cc31b8f0424ca9",
+     "file": "lib/models/post.js",
+     "unit": "removeEmptyTag",
+     "side": "new",
+     "start": 14,
+     "end": 20
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "15a354dcec21baaffe73e3ba428e12729abe3a2a3a1a50b508e0eb48e4e6ccbb",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+   "side": "new",
+   "old": {
+    "start": 13,
+    "count": 0
+   },
+   "new": {
+    "start": 15,
+    "count": 1
+   },
+   "offsets": {
+    "start": 300,
+    "end": 337
+   },
+   "links": [
+    {
+     "id": "db718596d212796d5907e7186e231550b7785e717d09b75065cc31b8f0424ca9",
+     "file": "lib/models/post.js",
+     "unit": "removeEmptyTag",
+     "side": "new",
+     "start": 14,
+     "end": 20
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b90dce4781543ab82b7fbfbfa129d9a14851b15ecfee3ed501289503e31f3695",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+   "side": "new",
+   "old": {
+    "start": 13,
+    "count": 0
+   },
+   "new": {
+    "start": 16,
+    "count": 1
+   },
+   "offsets": {
+    "start": 337,
+    "end": 375
+   },
+   "links": [
+    {
+     "id": "db718596d212796d5907e7186e231550b7785e717d09b75065cc31b8f0424ca9",
+     "file": "lib/models/post.js",
+     "unit": "removeEmptyTag",
+     "side": "new",
+     "start": 14,
+     "end": 20
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5c2d7a1252ea1fee239d47e4483e466b669ce226aec0a96083244f287fd01356",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+   "side": "new",
+   "old": {
+    "start": 13,
+    "count": 0
+   },
+   "new": {
+    "start": 17,
+    "count": 1
+   },
+   "offsets": {
+    "start": 375,
+    "end": 400
+   },
+   "links": [
+    {
+     "id": "db718596d212796d5907e7186e231550b7785e717d09b75065cc31b8f0424ca9",
+     "file": "lib/models/post.js",
+     "unit": "removeEmptyTag",
+     "side": "new",
+     "start": 14,
+     "end": 20
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "8e24f29b62f6521e1c1b6316454c2ca4e06bb1903fe0f4ba120e9d3c04185c96",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+   "side": "new",
+   "old": {
+    "start": 13,
+    "count": 0
+   },
+   "new": {
+    "start": 18,
+    "count": 1
+   },
+   "offsets": {
+    "start": 400,
+    "end": 421
+   },
+   "links": [
+    {
+     "id": "db718596d212796d5907e7186e231550b7785e717d09b75065cc31b8f0424ca9",
+     "file": "lib/models/post.js",
+     "unit": "removeEmptyTag",
+     "side": "new",
+     "start": 14,
+     "end": 20
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "f96f0e78398208435a14c16706d2872bcce94d0b999081aca0ebdd10d97dca74",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+   "side": "new",
+   "old": {
+    "start": 13,
+    "count": 0
+   },
+   "new": {
+    "start": 19,
+    "count": 1
+   },
+   "offsets": {
+    "start": 421,
+    "end": 427
+   },
+   "links": [
+    {
+     "id": "db718596d212796d5907e7186e231550b7785e717d09b75065cc31b8f0424ca9",
+     "file": "lib/models/post.js",
+     "unit": "removeEmptyTag",
+     "side": "new",
+     "start": 14,
+     "end": 20
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "f554d0fa273d5683dcc76d98ec26f34ffca5fcfb3ebf39724cf415ff798785cd",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+   "side": "new",
+   "old": {
+    "start": 13,
+    "count": 0
+   },
+   "new": {
+    "start": 20,
+    "count": 1
+   },
+   "offsets": {
+    "start": 427,
+    "end": 429
+   },
+   "links": [
+    {
+     "id": "db718596d212796d5907e7186e231550b7785e717d09b75065cc31b8f0424ca9",
+     "file": "lib/models/post.js",
+     "unit": "removeEmptyTag",
+     "side": "new",
+     "start": 14,
+     "end": 20
+    }
+   ],
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "module-level statement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "a802718e07fb94cf3388bc905f67e766d413efeaaaf117ffa76c39a7393f3aab",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "a5d3c09e241f2b910965252bcb3aa9d7bbc37dd6e73d8f874e52ee056b831654",
+   "side": "new",
+   "old": {
+    "start": 13,
+    "count": 0
+   },
+   "new": {
+    "start": 21,
+    "count": 1
+   },
+   "offsets": {
+    "start": 429,
+    "end": 430
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "new"
+   }
+  },
+  {
+   "id": "24499dc781c47489308c3f719d72a13b8f2a5843fa4f8e0576dd58113d90fde5",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "de30fd7d1ad7016ebd17e1496734906f1444ff46777c8358434bc00dfff36026",
+   "side": "new",
+   "old": {
+    "start": 74,
+    "count": 0
+   },
+   "new": {
+    "start": 83,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2209,
+    "end": 2242
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "exported property assignment",
+    "side": "new"
+   }
+  },
+  {
+   "id": "00106c6c7d1d918d0e342a44951b832c719a1feb6fde801675efeafed81c0aa2",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "de30fd7d1ad7016ebd17e1496734906f1444ff46777c8358434bc00dfff36026",
+   "side": "new",
+   "old": {
+    "start": 74,
+    "count": 0
+   },
+   "new": {
+    "start": 84,
+    "count": 1
+   },
+   "offsets": {
+    "start": 2242,
+    "end": 2243
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "new"
+   }
+  },
+  {
+   "id": "e3ca657cce3691faf51a240da60b3e24477d3eccaefeb1bff0c13b5858ddff81",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d147fde2647dcbde5d9867e49e8fcf5876ba2abd59302951643b34e390d31ff",
+   "side": "new",
+   "old": {
+    "start": 123,
+    "count": 0
+   },
+   "new": {
+    "start": 134,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3731,
+    "end": 3764
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "exported property assignment",
+    "side": "new"
+   }
+  },
+  {
+   "id": "5efe70e24dffab40920b71f41efb4601b551d152223afafa4a8903a2827bdbcf",
+   "fileId": "c5308bc176b41b1abda7afee4b888e1703e947c8843fcce8b2e676d10fa02de2",
+   "file": "lib/models/post.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "2d147fde2647dcbde5d9867e49e8fcf5876ba2abd59302951643b34e390d31ff",
+   "side": "new",
+   "old": {
+    "start": 123,
+    "count": 0
+   },
+   "new": {
+    "start": 135,
+    "count": 1
+   },
+   "offsets": {
+    "start": 3764,
+    "end": 3765
+   },
+   "links": [],
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "untyped JavaScript file",
+    "context": "whitespace",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "208139c045bd7e0d0d5bb3c3711ddcc73623f9dd33364d9098c1bbe1001299e9",
+ "reconciliation": {
+  "expected": [
+   "1b61cf7f77363a2319b4618872825c5f2834d05e97ea98f6b8beab7053d01df1",
+   "15a354dcec21baaffe73e3ba428e12729abe3a2a3a1a50b508e0eb48e4e6ccbb",
+   "b90dce4781543ab82b7fbfbfa129d9a14851b15ecfee3ed501289503e31f3695",
+   "5c2d7a1252ea1fee239d47e4483e466b669ce226aec0a96083244f287fd01356",
+   "8e24f29b62f6521e1c1b6316454c2ca4e06bb1903fe0f4ba120e9d3c04185c96",
+   "f96f0e78398208435a14c16706d2872bcce94d0b999081aca0ebdd10d97dca74",
+   "f554d0fa273d5683dcc76d98ec26f34ffca5fcfb3ebf39724cf415ff798785cd",
+   "a802718e07fb94cf3388bc905f67e766d413efeaaaf117ffa76c39a7393f3aab",
+   "24499dc781c47489308c3f719d72a13b8f2a5843fa4f8e0576dd58113d90fde5",
+   "00106c6c7d1d918d0e342a44951b832c719a1feb6fde801675efeafed81c0aa2",
+   "e3ca657cce3691faf51a240da60b3e24477d3eccaefeb1bff0c13b5858ddff81",
+   "5efe70e24dffab40920b71f41efb4601b551d152223afafa4a8903a2827bdbcf"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "1b61cf7f77363a2319b4618872825c5f2834d05e97ea98f6b8beab7053d01df1",
+   "15a354dcec21baaffe73e3ba428e12729abe3a2a3a1a50b508e0eb48e4e6ccbb",
+   "b90dce4781543ab82b7fbfbfa129d9a14851b15ecfee3ed501289503e31f3695",
+   "5c2d7a1252ea1fee239d47e4483e466b669ce226aec0a96083244f287fd01356",
+   "8e24f29b62f6521e1c1b6316454c2ca4e06bb1903fe0f4ba120e9d3c04185c96",
+   "f96f0e78398208435a14c16706d2872bcce94d0b999081aca0ebdd10d97dca74",
+   "f554d0fa273d5683dcc76d98ec26f34ffca5fcfb3ebf39724cf415ff798785cd",
+   "a802718e07fb94cf3388bc905f67e766d413efeaaaf117ffa76c39a7393f3aab",
+   "24499dc781c47489308c3f719d72a13b8f2a5843fa4f8e0576dd58113d90fde5",
+   "00106c6c7d1d918d0e342a44951b832c719a1feb6fde801675efeafed81c0aa2",
+   "e3ca657cce3691faf51a240da60b3e24477d3eccaefeb1bff0c13b5858ddff81",
+   "5efe70e24dffab40920b71f41efb4601b551d152223afafa4a8903a2827bdbcf"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "1b61cf7f77363a2319b4618872825c5f2834d05e97ea98f6b8beab7053d01df1",
+     "15a354dcec21baaffe73e3ba428e12729abe3a2a3a1a50b508e0eb48e4e6ccbb",
+     "b90dce4781543ab82b7fbfbfa129d9a14851b15ecfee3ed501289503e31f3695",
+     "5c2d7a1252ea1fee239d47e4483e466b669ce226aec0a96083244f287fd01356",
+     "8e24f29b62f6521e1c1b6316454c2ca4e06bb1903fe0f4ba120e9d3c04185c96",
+     "f96f0e78398208435a14c16706d2872bcce94d0b999081aca0ebdd10d97dca74",
+     "f554d0fa273d5683dcc76d98ec26f34ffca5fcfb3ebf39724cf415ff798785cd",
+     "a802718e07fb94cf3388bc905f67e766d413efeaaaf117ffa76c39a7393f3aab",
+     "24499dc781c47489308c3f719d72a13b8f2a5843fa4f8e0576dd58113d90fde5",
+     "00106c6c7d1d918d0e342a44951b832c719a1feb6fde801675efeafed81c0aa2",
+     "e3ca657cce3691faf51a240da60b3e24477d3eccaefeb1bff0c13b5858ddff81",
+     "5efe70e24dffab40920b71f41efb4601b551d152223afafa4a8903a2827bdbcf"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

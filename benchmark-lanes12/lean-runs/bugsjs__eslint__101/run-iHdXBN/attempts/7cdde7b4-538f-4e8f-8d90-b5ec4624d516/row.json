@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-useless-escape.js",
+ "unit": "(edit 6b8f0c09d943)",
+ "editIds": [
+  "6b8f0c09d943bf22f350a3c4798137fb6f6e02cf9d6c776bd7b9777b50bfd0a4"
+ ],
+ "lines": [
+  153,
+  153
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

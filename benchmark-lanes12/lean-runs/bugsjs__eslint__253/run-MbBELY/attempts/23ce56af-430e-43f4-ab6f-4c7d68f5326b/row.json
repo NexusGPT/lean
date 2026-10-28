@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-useless-return.js",
+ "unit": "(edit 673cbc9022f4)",
+ "editIds": [
+  "673cbc9022f41a1ffc7932fc614c586b4fe9e21ca77dce966b293a49999a8070"
+ ],
+ "lines": [
+  137,
+  137
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:object-literal member",
+ "reason": "object-literal member",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "MethodDeclaration"
+ },
+ "advice": []
+}

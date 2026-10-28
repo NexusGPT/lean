@@ -1,0 +1,24 @@
+{
+ "identity": "32f6522c4ce2ae5c35821c7f29c7d3d3dcc57197935cd3ee5b5a779ec30a625d",
+ "records": [
+  {
+   "check": "refused:ts-strict",
+   "unit": "createStubRule",
+   "file": "lib/linter.js",
+   "location": {
+    "start": 523,
+    "end": 523
+   },
+   "kind": "coverage",
+   "advice": [
+    {
+     "line": 523,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'report' does not exist on type 'Object'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "reason": "TS2339: Property 'report' does not exist on type 'Object'."
+  }
+ ]
+}

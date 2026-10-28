@@ -1,0 +1,507 @@
+{
+ "identity": "9b357a146d5e521079e6a507f4c30e3ffb59efbbe71dfeb734781a929344ef64",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit c221876b04d9)",
+   "editIds": [
+    "c221876b04d9a8fe27f9d7d6e73c74a5597dc6c385bd67342442a33fb2859b0c"
+   ],
+   "lines": [
+    899,
+    899
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit b9985978bd68)",
+   "editIds": [
+    "b9985978bd680264fe9101ba9931c21d6357fc3dddedffec556c593adc652720"
+   ],
+   "lines": [
+    899,
+    899
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "be8d3548cbd2dc15d8384055f4b19f76a93df01e",
+  "head": "b6c950132b950dd68c8b9f9139ac4cbf29210a4a",
+  "files": [
+   {
+    "id": "45816b1d5d5a20a8df514bb62821bf95e1cc171414df756eb3f1227536a85073",
+    "file": "lib/rules/indent.js",
+    "oldPath": "lib/rules/indent.js",
+    "newPath": "lib/rules/indent.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "30ecc4757a882edeaf5445bf7c763a19b40fabb4",
+    "newOid": "6babe29c9dad204951c7a32902e83b1a68e5471e",
+    "status": "M",
+    "edits": [
+     "c221876b04d9a8fe27f9d7d6e73c74a5597dc6c385bd67342442a33fb2859b0c",
+     "b9985978bd680264fe9101ba9931c21d6357fc3dddedffec556c593adc652720"
+    ],
+    "hunks": [
+     {
+      "id": "38ca07fe57670726f436e1cbe72d8893d709857fcfe3fe47bbc7208a6215f6d0",
+      "old": {
+       "start": 899,
+       "count": 1
+      },
+      "new": {
+       "start": 899,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "0741ca56a9a027511a1c2dc422f3b350c4875712255170ba23f588510de7f77a",
+    "newHash": "4dfa7b807ca23647bccec1b92347d224d8ccdb3a6ad743d37f75ed5d32c390a0",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "TokenInfo.constructor",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 125,
+       "end": 136,
+       "offset": 3462,
+       "stop": 3990,
+       "id": "ea2247299d09a04b504c3d555deb74d0e9be9bf9dde299ef699d6defff6a6112"
+      },
+      {
+       "name": "TokenInfo.getAllTokens",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 142,
+       "end": 144,
+       "offset": 4108,
+       "stop": 4180,
+       "id": "538a57d77279d1444fbdca42bb23ee63051d6c5d006647ba11c27e12bd5187db"
+      },
+      {
+       "name": "TokenInfo.getFirstTokenOfLine",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 151,
+       "end": 153,
+       "offset": 4360,
+       "stop": 4465,
+       "id": "efcb3b991034a8480569705b729a0ee4f79ca571f9aac0255c26bf621a673602"
+      },
+      {
+       "name": "TokenInfo.isFirstTokenOfLine",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 160,
+       "end": 162,
+       "offset": 4657,
+       "stop": 4748,
+       "id": "22303e22814ac9f455e8fd11b2a6e931c75a929364d17a31c52df2224d9b97c3"
+      },
+      {
+       "name": "TokenInfo.getTokenIndent",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 169,
+       "end": 171,
+       "offset": 4975,
+       "stop": 5104,
+       "id": "5c1e55fb42404bde5930f2fab9ec952f3e8643a9dd3be1dba11cff4c3336671d"
+      },
+      {
+       "name": "OffsetStorage.constructor",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 184,
+       "end": 207,
+       "offset": 5462,
+       "stop": 6617,
+       "id": "e2ff260b80558e5f33367d0a29d7dd39fd3895192c6e0f8b2e05707200947b96"
+      },
+      {
+       "name": "OffsetStorage.matchIndentOf",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 215,
+       "end": 219,
+       "offset": 6875,
+       "stop": 7059,
+       "id": "f2e6c419c7a20213912d01b4cee2afc6d46d1711eb8b02b2f051b1f1c31d9c34"
+      },
+      {
+       "name": "OffsetStorage.matchOffsetOf",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 229,
+       "end": 239,
+       "offset": 7538,
+       "stop": 8193,
+       "id": "69998f2ad425585fd24c59d5fb034ebc6771716f2aac871e57d059cc56c6d907"
+      },
+      {
+       "name": "OffsetStorage.setDesiredOffset",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 298,
+       "end": 304,
+       "offset": 10767,
+       "stop": 11056,
+       "id": "5f85dc7a03d251169972a7d90f0380a195aab2000ca6fd0d0af0d022fa124f2b"
+      },
+      {
+       "name": "OffsetStorage.forceSetDesiredOffset",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 314,
+       "end": 316,
+       "offset": 11449,
+       "stop": 11581,
+       "id": "1ae333c518ece29b910686389fc59918c7d2d31d19f66b7d4bf9dab9d9afb3b1"
+      },
+      {
+       "name": "OffsetStorage.setDesiredOffsets",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 325,
+       "end": 336,
+       "offset": 11878,
+       "stop": 12646,
+       "id": "e707e7ad7401ec7670d8ca17bc3e5348b4e10e333cff62de030669ccd519c33e"
+      },
+      {
+       "name": "OffsetStorage.getDesiredIndent",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 343,
+       "end": 368,
+       "offset": 12801,
+       "stop": 14161,
+       "id": "ce12dc8be30936e7059413b3203d851f748c34410a2744e494af57b4af3d4003"
+      },
+      {
+       "name": "OffsetStorage.ignoreToken",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 375,
+       "end": 379,
+       "offset": 14299,
+       "stop": 14434,
+       "id": "dfa2fe95f48691bc327480f61db46503c5ab409d3694a8d89a83e8d72d3b4aba"
+      },
+      {
+       "name": "OffsetStorage.getFirstDependency",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 386,
+       "end": 388,
+       "offset": 14689,
+       "stop": 14779,
+       "id": "10f305d2379b6fa4e3b2bd9bd7d122b7aaeabf1abe61134d6d4c90f3c15008b4"
+      },
+      {
+       "name": "OffsetStorage.increaseOffset",
+       "side": "old",
+       "file": "lib/rules/indent.js",
+       "start": 396,
+       "end": 400,
+       "offset": 15064,
+       "stop": 15296,
+       "id": "896e913092c62d8b59f32bc54890d7c1cc93d579ab64f8d8fd12e167a95518ba"
+      }
+     ],
+     "new": [
+      {
+       "name": "TokenInfo.constructor",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 125,
+       "end": 136,
+       "offset": 3462,
+       "stop": 3990,
+       "id": "e2b9817cd32e059fff738a81d4aa553582b20da95b599917b3ce4da1fe1ef9b1"
+      },
+      {
+       "name": "TokenInfo.getAllTokens",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 142,
+       "end": 144,
+       "offset": 4108,
+       "stop": 4180,
+       "id": "1c2206b00c8d18be7c8d1b19ad7bf6a4956c765c628d8a8f5396d9e812eef4ce"
+      },
+      {
+       "name": "TokenInfo.getFirstTokenOfLine",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 151,
+       "end": 153,
+       "offset": 4360,
+       "stop": 4465,
+       "id": "f237d2718193a12628f0849cfa379823539e36fceab2d712ef2bf291571b9c57"
+      },
+      {
+       "name": "TokenInfo.isFirstTokenOfLine",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 160,
+       "end": 162,
+       "offset": 4657,
+       "stop": 4748,
+       "id": "baeb85ad9804f0c3575f04f093fd56570fe7902c7d2948f15aa893c554988fa5"
+      },
+      {
+       "name": "TokenInfo.getTokenIndent",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 169,
+       "end": 171,
+       "offset": 4975,
+       "stop": 5104,
+       "id": "c769ad8ddcbc6127326c0a72751450fdcd04f736cc64fe0baf2fb8695276dcad"
+      },
+      {
+       "name": "OffsetStorage.constructor",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 184,
+       "end": 207,
+       "offset": 5462,
+       "stop": 6617,
+       "id": "ba223b9f719756a6bad27b423259d005dea01a8bba1c06b8f2b37dc171b72149"
+      },
+      {
+       "name": "OffsetStorage.matchIndentOf",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 215,
+       "end": 219,
+       "offset": 6875,
+       "stop": 7059,
+       "id": "83cc2ae0524f2b0c26110c32fa9b2bfa2e3eff3f2e65d1908dfd81b861be6802"
+      },
+      {
+       "name": "OffsetStorage.matchOffsetOf",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 229,
+       "end": 239,
+       "offset": 7538,
+       "stop": 8193,
+       "id": "3c8292669a8fddc798be02b078829c1b22aae04f95407748ff2c9da2be961350"
+      },
+      {
+       "name": "OffsetStorage.setDesiredOffset",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 298,
+       "end": 304,
+       "offset": 10767,
+       "stop": 11056,
+       "id": "a65c85b6495789566758e50afea99ba77340f8d9990f552dfc0abd7317db4178"
+      },
+      {
+       "name": "OffsetStorage.forceSetDesiredOffset",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 314,
+       "end": 316,
+       "offset": 11449,
+       "stop": 11581,
+       "id": "c30fb887416a879b49348070c317643089e32140b97bc6ac384cb97ba3af7b64"
+      },
+      {
+       "name": "OffsetStorage.setDesiredOffsets",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 325,
+       "end": 336,
+       "offset": 11878,
+       "stop": 12646,
+       "id": "775889ce7213ed0aed13615425c5044d9fb1b0dc4497a39e75ec9ea861e1a857"
+      },
+      {
+       "name": "OffsetStorage.getDesiredIndent",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 343,
+       "end": 368,
+       "offset": 12801,
+       "stop": 14161,
+       "id": "3aa30c820b75fae322fd6f363d1b6297bb37f1d86255a33f5e44fabd0d1a6729"
+      },
+      {
+       "name": "OffsetStorage.ignoreToken",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 375,
+       "end": 379,
+       "offset": 14299,
+       "stop": 14434,
+       "id": "c63e70a83d2db8324360b6c870ef2eca640ec2292ce1dfdd3a676355d7ecfcae"
+      },
+      {
+       "name": "OffsetStorage.getFirstDependency",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 386,
+       "end": 388,
+       "offset": 14689,
+       "stop": 14779,
+       "id": "285cc9c1829a85510eeefced588238a28b8e17a21ea274e46685b8bc95c8af9a"
+      },
+      {
+       "name": "OffsetStorage.increaseOffset",
+       "side": "new",
+       "file": "lib/rules/indent.js",
+       "start": 396,
+       "end": 400,
+       "offset": 15064,
+       "stop": 15296,
+       "id": "f9a282d076e7b3fca46c00eae3344011af3ce23d41e8c8d72b2f9030c67f58ea"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "c221876b04d9a8fe27f9d7d6e73c74a5597dc6c385bd67342442a33fb2859b0c",
+    "fileId": "45816b1d5d5a20a8df514bb62821bf95e1cc171414df756eb3f1227536a85073",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38ca07fe57670726f436e1cbe72d8893d709857fcfe3fe47bbc7208a6215f6d0",
+    "side": "old",
+    "old": {
+     "start": 899,
+     "count": 1
+    },
+    "new": {
+     "start": 899,
+     "count": 0
+    },
+    "offsets": {
+     "start": 36050,
+     "end": 36137
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b9985978bd680264fe9101ba9931c21d6357fc3dddedffec556c593adc652720",
+    "fileId": "45816b1d5d5a20a8df514bb62821bf95e1cc171414df756eb3f1227536a85073",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "38ca07fe57670726f436e1cbe72d8893d709857fcfe3fe47bbc7208a6215f6d0",
+    "side": "new",
+    "old": {
+     "start": 899,
+     "count": 0
+    },
+    "new": {
+     "start": 899,
+     "count": 1
+    },
+    "offsets": {
+     "start": 36050,
+     "end": 36140
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "9b357a146d5e521079e6a507f4c30e3ffb59efbbe71dfeb734781a929344ef64",
+  "reconciliation": {
+   "expected": [
+    "c221876b04d9a8fe27f9d7d6e73c74a5597dc6c385bd67342442a33fb2859b0c",
+    "b9985978bd680264fe9101ba9931c21d6357fc3dddedffec556c593adc652720"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "c221876b04d9a8fe27f9d7d6e73c74a5597dc6c385bd67342442a33fb2859b0c",
+    "b9985978bd680264fe9101ba9931c21d6357fc3dddedffec556c593adc652720"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "c221876b04d9a8fe27f9d7d6e73c74a5597dc6c385bd67342442a33fb2859b0c",
+      "b9985978bd680264fe9101ba9931c21d6357fc3dddedffec556c593adc652720"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "aaa9e5da7dc9767b2100a606917c2464f5e63740a98bc814d3463da7ec64748a",
+   "db7765d205762e1ea4fd85f68dd898ab89f5f72ad3e9c85a6170bfa0f80a3ebd"
+  ],
+  "terminal": [
+   "aaa9e5da7dc9767b2100a606917c2464f5e63740a98bc814d3463da7ec64748a",
+   "db7765d205762e1ea4fd85f68dd898ab89f5f72ad3e9c85a6170bfa0f80a3ebd"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__158/run-m28CB8/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__158/run-m28CB8"
+}

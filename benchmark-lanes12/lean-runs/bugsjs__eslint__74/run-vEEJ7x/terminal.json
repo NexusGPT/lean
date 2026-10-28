@@ -1,0 +1,2199 @@
+{
+ "schema": "lean/terminal-ledger/v1",
+ "run": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x",
+ "state": "done",
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "031a35614f9353b57c072ba14aff16f930ab6520",
+  "head": "eda6079b4191072ee5ae022b39ccfb7617fbd1e8",
+  "files": [
+   {
+    "id": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "oldPath": "lib/config/config-initializer.js",
+    "newPath": "lib/config/config-initializer.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "3d0e78fefe1140d9f16c54cc6589da7a349c365e",
+    "newOid": "91d2454a8a44f349c5d1a04c0eba6a320c77baf8",
+    "status": "M",
+    "edits": [
+     "6a29815ae58076aec9b5b7651f8d5ceeedafa871c9c851f26cf6acedd8bf2fdf",
+     "6a0fea9e69f3f684b2ed87e57e3822e46e6c3ff992f9702ba254fe8d59ee1c07",
+     "0554966b8e20650bf2054d0c4eab582c82d789e970ff2674febe4c4368de7735",
+     "c9dfd2f9810b325de483fa503856ef5107ea6315a9b0c3238a89fef655002f16",
+     "7b57454852104f33d790b525f88d457cbc770977da12bf63c52bff0c399b812a",
+     "e73a67db5356a06c6a791c36cb7f21cd09a151e29496b3cb0cf80ea1a5047a72",
+     "c30579fd06bfe334f48dd2e9b775870c785a0c2badae4d3a64ab852cf2aecb12",
+     "5f44b761efa768bf4bb940dc78fd111aafb53a75b705ccf32ebdfb0de9aafbb6",
+     "40f4a0d43a2c3d330980cd58e4e7af5d42ceaa3271170951f11b8a2a6f7a65ab",
+     "91e319b571120971af63f0bb17dc557084daba8642441fee8e2e86d23160f038",
+     "e88423d4af0fa529cebc94c53c2b5edb94c128ba04e5cba98980a9b7ec6c35d2"
+    ],
+    "hunks": [
+     {
+      "id": "157210206e0378e4bcf15a0e790fa1180cde5c9eeb6a80e26daf60b401da552b",
+      "old": {
+       "start": 49,
+       "count": 1
+      },
+      "new": {
+       "start": 48,
+       "count": 0
+      }
+     },
+     {
+      "id": "83ea61e0d5f9bf026ebaa90df96a39570e00d069b3c97dbc33999ebec9675d64",
+      "old": {
+       "start": 321,
+       "count": 1
+      },
+      "new": {
+       "start": 320,
+       "count": 2
+      }
+     },
+     {
+      "id": "c11e9d520f05604877e62f1279ef8f78d7288994a9e98f6508132100f050b22f",
+      "old": {
+       "start": 345,
+       "count": 1
+      },
+      "new": {
+       "start": 345,
+       "count": 1
+      }
+     },
+     {
+      "id": "bf2c9a2cad903a918e916e7687f27d545cd4d95e0ca5fd76d9c7f07d90a1b00f",
+      "old": {
+       "start": 351,
+       "count": 0
+      },
+      "new": {
+       "start": 352,
+       "count": 5
+      }
+     }
+    ],
+    "class": "config",
+    "oldHash": "5e8ab556607078c37c80902a14cbb35be53296f36c507dc9681d3ff89ca5246b",
+    "newHash": "0f84e321cdd3bf3e8334049fceca75feab537b2c632f454820dd8e4e15341da2",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "writeFile",
+       "side": "old",
+       "file": "lib/config/config-initializer.js",
+       "start": 38,
+       "end": 56,
+       "offset": 1255,
+       "stop": 1779,
+       "id": "48d8061f180ef6bd791b4a16c3d583d7e01d9794ed41da093d66b53c819e52b6"
+      },
+      {
+       "name": "installModules",
+       "side": "old",
+       "file": "lib/config/config-initializer.js",
+       "start": 63,
+       "end": 104,
+       "offset": 1938,
+       "stop": 3236,
+       "id": "1d639f56bc070c9d6f0d65da0698a232f317656e846d1f55a146a1f890016c7b"
+      },
+      {
+       "name": "configureRules",
+       "side": "old",
+       "file": "lib/config/config-initializer.js",
+       "start": 116,
+       "end": 221,
+       "offset": 3604,
+       "stop": 7717,
+       "id": "e343c121e9ca336beea1d8bddd7338ca5254f100f80d5f851a95371cc4b56f3b"
+      },
+      {
+       "name": "processAnswers",
+       "side": "old",
+       "file": "lib/config/config-initializer.js",
+       "start": 228,
+       "end": 271,
+       "offset": 7871,
+       "stop": 9303,
+       "id": "1b1a29a9bf20ea4d4ab3838e59eb70bc9db1b655f82fa8f0363895705584733e"
+      },
+      {
+       "name": "getConfigForStyleGuide",
+       "side": "old",
+       "file": "lib/config/config-initializer.js",
+       "start": 278,
+       "end": 292,
+       "offset": 9485,
+       "stop": 9871,
+       "id": "f3c3fc5ffe45b8db9e6ccbd2f235ac17a07b98c6712dac9f855de7e65d0616b0"
+      },
+      {
+       "name": "promptUser",
+       "side": "old",
+       "file": "lib/config/config-initializer.js",
+       "start": 300,
+       "end": 480,
+       "offset": 10072,
+       "stop": 16467,
+       "id": "97ecea2d976ea967959c95c5523daa5df7a3ca6d32f33adf81ff2ce657602354"
+      }
+     ],
+     "new": [
+      {
+       "name": "writeFile",
+       "side": "new",
+       "file": "lib/config/config-initializer.js",
+       "start": 38,
+       "end": 55,
+       "offset": 1255,
+       "stop": 1778,
+       "id": "b9a151d5f6d0eb685e9facdefd2e2ed196fe977c2fd0d609adb18916c1ab9fe4"
+      },
+      {
+       "name": "installModules",
+       "side": "new",
+       "file": "lib/config/config-initializer.js",
+       "start": 62,
+       "end": 103,
+       "offset": 1937,
+       "stop": 3235,
+       "id": "966aeb32a76e6ddaabee188ba7c7d103dd7cdef34cb46656f930015c750f25c2"
+      },
+      {
+       "name": "configureRules",
+       "side": "new",
+       "file": "lib/config/config-initializer.js",
+       "start": 115,
+       "end": 220,
+       "offset": 3603,
+       "stop": 7716,
+       "id": "4d8e96c21e5a05dc610ee496460f831dc8f4b85ca87c22a7848423d70a5d3369"
+      },
+      {
+       "name": "processAnswers",
+       "side": "new",
+       "file": "lib/config/config-initializer.js",
+       "start": 227,
+       "end": 270,
+       "offset": 7870,
+       "stop": 9302,
+       "id": "e08e275e83ac507483b3898c7338df94921e7297084f85e90e9a17a65e935348"
+      },
+      {
+       "name": "getConfigForStyleGuide",
+       "side": "new",
+       "file": "lib/config/config-initializer.js",
+       "start": 277,
+       "end": 291,
+       "offset": 9484,
+       "stop": 9870,
+       "id": "1623b1ce30aa7fa15cf15003348377c1273fdde849ebbb92948ac281ee50fc77"
+      },
+      {
+       "name": "promptUser",
+       "side": "new",
+       "file": "lib/config/config-initializer.js",
+       "start": 299,
+       "end": 485,
+       "offset": 10071,
+       "stop": 16846,
+       "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e"
+      }
+     ]
+    }
+   },
+   {
+    "id": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "oldPath": "lib/util/npm-util.js",
+    "newPath": "lib/util/npm-util.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "27120ad817d4ca6f6ee2c91bfc62463ebf4a82b2",
+    "newOid": "9f28dc2b7edc5a7080e3e06bf2db5408fc0f159a",
+    "status": "M",
+    "edits": [
+     "3948ca073d0df5f2e5203cbc95532097a86301a8d653518a352ea7420a2d490c",
+     "1fb6ad32c9f906d0f0e8a806092e2b01c469c57787e870917a17f5b8f9b3612b",
+     "4328551878a9fc45dcea4d68374ff1fc0d4f149710a326d5ab41f21e0480a1ef",
+     "4bae76c4ac73c6e3ca75d146380e788519fd8cfe56aff4764eb6076633e64d34",
+     "40924c69bf2aca81bb6716732f2854865d961eed0f0ada46e464864e2b62f6c8",
+     "f6ed54f20d54a60c3e823a51eb3bc74e1291fdf1e53206155997fd9d730fe870",
+     "29dbf8180dafb5b4e39e9635bd11514f0359879a53ed775bfa22d82f858b2f75",
+     "f6ab714516ec1407ed59f09d437387bae998e9b58352976771b48999957b9d28",
+     "3d885a6a0be681c958683649938a314cf18ae1f1ba76e9ac81b6e92c32492833",
+     "09391c43b3c004dd686d454c67091b11f5f2802572b941b8c5b7257ea50516be",
+     "fdc3269cd0fe742a66e968c6c4fee9d7caf14b91f40152278b419822f8559319",
+     "17e7b757ec29f54c0b3c845cc7367cda3241d80bc1539e866cad2fe53f12ecb9",
+     "ad8dcaf7d91cc68869f25731808f786936db7fedc5c0173a95da93e5c8291af4"
+    ],
+    "hunks": [
+     {
+      "id": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+      "old": {
+       "start": 126,
+       "count": 0
+      },
+      "new": {
+       "start": 127,
+       "count": 10
+      }
+     },
+     {
+      "id": "0762301237ed475604fbf20bdb3d22319817e0f7f6921b218d88ec23b0122532",
+      "old": {
+       "start": 134,
+       "count": 1
+      },
+      "new": {
+       "start": 144,
+       "count": 2
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "aaee860929a8a63a02202ec8f87071ecbb44d4da8a9579cf977d9b9b5e3b7af2",
+    "newHash": "acdb59cc9bfe11f68410965e9a504eb4538ddfa3ed3eec451d58817a460e5d74",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "findPackageJson",
+       "side": "old",
+       "file": "lib/util/npm-util.js",
+       "start": 28,
+       "end": 41,
+       "offset": 844,
+       "stop": 1201,
+       "id": "25044603b647a6c262c679622fb6bcd062b172985c977d1a09666238c7522a09"
+      },
+      {
+       "name": "installSyncSaveDev",
+       "side": "old",
+       "file": "lib/util/npm-util.js",
+       "start": 52,
+       "end": 57,
+       "offset": 1559,
+       "stop": 1748,
+       "id": "942bed86b1d08252485f58befe4b82ca0e2cce86292b4053b518f74e60fd5c19"
+      },
+      {
+       "name": "check",
+       "side": "old",
+       "file": "lib/util/npm-util.js",
+       "start": 70,
+       "end": 96,
+       "offset": 2388,
+       "stop": 3317,
+       "id": "2105e33ff61f12b5709759bb4faea82f89070a227befdd20dd647a25f2eead78"
+      },
+      {
+       "name": "checkDeps",
+       "side": "old",
+       "file": "lib/util/npm-util.js",
+       "start": 109,
+       "end": 111,
+       "offset": 3763,
+       "stop": 3873,
+       "id": "b8a012d54cca46fcced7043d91802f2f6c39cede5086d68e8ae9009782a2b5a4"
+      },
+      {
+       "name": "checkDevDeps",
+       "side": "old",
+       "file": "lib/util/npm-util.js",
+       "start": 123,
+       "end": 125,
+       "offset": 4249,
+       "stop": 4337,
+       "id": "db424b57ae1d0f27e1780bacc8896f89b55425c4adaebb78db927b8d2bc8ea82"
+      }
+     ],
+     "new": [
+      {
+       "name": "findPackageJson",
+       "side": "new",
+       "file": "lib/util/npm-util.js",
+       "start": 28,
+       "end": 41,
+       "offset": 844,
+       "stop": 1201,
+       "id": "e510672e34036b28360520bc04b4782e926f143681483a771912268c48e6ff60"
+      },
+      {
+       "name": "installSyncSaveDev",
+       "side": "new",
+       "file": "lib/util/npm-util.js",
+       "start": 52,
+       "end": 57,
+       "offset": 1559,
+       "stop": 1748,
+       "id": "1989e3f02d08ee29ea4b714c3e6f8393facdd84a4922c8cfa9c496f137104c88"
+      },
+      {
+       "name": "check",
+       "side": "new",
+       "file": "lib/util/npm-util.js",
+       "start": 70,
+       "end": 96,
+       "offset": 2388,
+       "stop": 3317,
+       "id": "e4d1dc1177b526041eefd7167b821cf95c29dc1015326ec4432549191cd59dff"
+      },
+      {
+       "name": "checkDeps",
+       "side": "new",
+       "file": "lib/util/npm-util.js",
+       "start": 109,
+       "end": 111,
+       "offset": 3763,
+       "stop": 3873,
+       "id": "c0e637dba3e7c042a46d8845799a6e5dd39c36ba054e6a76a3cf4523d944541f"
+      },
+      {
+       "name": "checkDevDeps",
+       "side": "new",
+       "file": "lib/util/npm-util.js",
+       "start": 123,
+       "end": 125,
+       "offset": 4249,
+       "stop": 4337,
+       "id": "9d923c26a7a428cf00b373477679cd4b7769316cd14af7c6845e158ce37e0614"
+      },
+      {
+       "name": "checkPackageJson",
+       "side": "new",
+       "file": "lib/util/npm-util.js",
+       "start": 133,
+       "end": 135,
+       "offset": 4527,
+       "stop": 4606,
+       "id": "526fdc14e0040626832b9cdb07c229702b8bbd44aaf157c4d9bb0bb63321a397"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "6a29815ae58076aec9b5b7651f8d5ceeedafa871c9c851f26cf6acedd8bf2fdf",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "157210206e0378e4bcf15a0e790fa1180cde5c9eeb6a80e26daf60b401da552b",
+    "side": "old",
+    "old": {
+     "start": 49,
+     "count": 1
+    },
+    "new": {
+     "start": 48,
+     "count": 0
+    },
+    "offsets": {
+     "start": 1466,
+     "end": 1467
+    },
+    "links": [
+     {
+      "id": "48d8061f180ef6bd791b4a16c3d583d7e01d9794ed41da093d66b53c819e52b6",
+      "file": "lib/config/config-initializer.js",
+      "unit": "writeFile",
+      "side": "old",
+      "start": 38,
+      "end": 56
+     }
+    ],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "6a0fea9e69f3f684b2ed87e57e3822e46e6c3ff992f9702ba254fe8d59ee1c07",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "83ea61e0d5f9bf026ebaa90df96a39570e00d069b3c97dbc33999ebec9675d64",
+    "side": "old",
+    "old": {
+     "start": 321,
+     "count": 1
+    },
+    "new": {
+     "start": 320,
+     "count": 0
+    },
+    "offsets": {
+     "start": 10873,
+     "end": 10924
+    },
+    "links": [
+     {
+      "id": "97ecea2d976ea967959c95c5523daa5df7a3ca6d32f33adf81ff2ce657602354",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "old",
+      "start": 300,
+      "end": 480
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "0554966b8e20650bf2054d0c4eab582c82d789e970ff2674febe4c4368de7735",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "83ea61e0d5f9bf026ebaa90df96a39570e00d069b3c97dbc33999ebec9675d64",
+    "side": "new",
+    "old": {
+     "start": 321,
+     "count": 0
+    },
+    "new": {
+     "start": 320,
+     "count": 1
+    },
+    "offsets": {
+     "start": 10872,
+     "end": 10944
+    },
+    "links": [
+     {
+      "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "new",
+      "start": 299,
+      "end": 485
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "c9dfd2f9810b325de483fa503856ef5107ea6315a9b0c3238a89fef655002f16",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "83ea61e0d5f9bf026ebaa90df96a39570e00d069b3c97dbc33999ebec9675d64",
+    "side": "new",
+    "old": {
+     "start": 321,
+     "count": 0
+    },
+    "new": {
+     "start": 321,
+     "count": 1
+    },
+    "offsets": {
+     "start": 10944,
+     "end": 11024
+    },
+    "links": [
+     {
+      "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "new",
+      "start": 299,
+      "end": 485
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "7b57454852104f33d790b525f88d457cbc770977da12bf63c52bff0c399b812a",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "c11e9d520f05604877e62f1279ef8f78d7288994a9e98f6508132100f050b22f",
+    "side": "old",
+    "old": {
+     "start": 345,
+     "count": 1
+    },
+    "new": {
+     "start": 345,
+     "count": 0
+    },
+    "offsets": {
+     "start": 11730,
+     "end": 11812
+    },
+    "links": [
+     {
+      "id": "97ecea2d976ea967959c95c5523daa5df7a3ca6d32f33adf81ff2ce657602354",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "old",
+      "start": 300,
+      "end": 480
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "e73a67db5356a06c6a791c36cb7f21cd09a151e29496b3cb0cf80ea1a5047a72",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "c11e9d520f05604877e62f1279ef8f78d7288994a9e98f6508132100f050b22f",
+    "side": "new",
+    "old": {
+     "start": 345,
+     "count": 0
+    },
+    "new": {
+     "start": 345,
+     "count": 1
+    },
+    "offsets": {
+     "start": 11830,
+     "end": 11943
+    },
+    "links": [
+     {
+      "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "new",
+      "start": 299,
+      "end": 485
+     }
+    ],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "c30579fd06bfe334f48dd2e9b775870c785a0c2badae4d3a64ab852cf2aecb12",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "bf2c9a2cad903a918e916e7687f27d545cd4d95e0ca5fd76d9c7f07d90a1b00f",
+    "side": "new",
+    "old": {
+     "start": 351,
+     "count": 0
+    },
+    "new": {
+     "start": 352,
+     "count": 1
+    },
+    "offsets": {
+     "start": 12100,
+     "end": 12151
+    },
+    "links": [
+     {
+      "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "new",
+      "start": 299,
+      "end": 485
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "5f44b761efa768bf4bb940dc78fd111aafb53a75b705ccf32ebdfb0de9aafbb6",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "bf2c9a2cad903a918e916e7687f27d545cd4d95e0ca5fd76d9c7f07d90a1b00f",
+    "side": "new",
+    "old": {
+     "start": 351,
+     "count": 0
+    },
+    "new": {
+     "start": 353,
+     "count": 1
+    },
+    "offsets": {
+     "start": 12151,
+     "end": 12309
+    },
+    "links": [
+     {
+      "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "new",
+      "start": 299,
+      "end": 485
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "40f4a0d43a2c3d330980cd58e4e7af5d42ceaa3271170951f11b8a2a6f7a65ab",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "bf2c9a2cad903a918e916e7687f27d545cd4d95e0ca5fd76d9c7f07d90a1b00f",
+    "side": "new",
+    "old": {
+     "start": 351,
+     "count": 0
+    },
+    "new": {
+     "start": 354,
+     "count": 1
+    },
+    "offsets": {
+     "start": 12309,
+     "end": 12333
+    },
+    "links": [
+     {
+      "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "new",
+      "start": 299,
+      "end": 485
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "91e319b571120971af63f0bb17dc557084daba8642441fee8e2e86d23160f038",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "bf2c9a2cad903a918e916e7687f27d545cd4d95e0ca5fd76d9c7f07d90a1b00f",
+    "side": "new",
+    "old": {
+     "start": 351,
+     "count": 0
+    },
+    "new": {
+     "start": 355,
+     "count": 1
+    },
+    "offsets": {
+     "start": 12333,
+     "end": 12347
+    },
+    "links": [
+     {
+      "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "new",
+      "start": 299,
+      "end": 485
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "e88423d4af0fa529cebc94c53c2b5edb94c128ba04e5cba98980a9b7ec6c35d2",
+    "fileId": "2ae618495460ef5b944ee818035c8edb211df1310f790631ae509899c082acab",
+    "file": "lib/config/config-initializer.js",
+    "class": "config",
+    "kind": "text",
+    "hunkId": "bf2c9a2cad903a918e916e7687f27d545cd4d95e0ca5fd76d9c7f07d90a1b00f",
+    "side": "new",
+    "old": {
+     "start": 351,
+     "count": 0
+    },
+    "new": {
+     "start": 356,
+     "count": 1
+    },
+    "offsets": {
+     "start": 12347,
+     "end": 12348
+    },
+    "links": [
+     {
+      "id": "a6584bd96c04937e41f5636f07e832d8d2f670637bc235d581f12ea96532054e",
+      "file": "lib/config/config-initializer.js",
+      "unit": "promptUser",
+      "side": "new",
+      "start": 299,
+      "end": 485
+     }
+    ],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "artifact",
+     "reason": "config",
+     "class": "config"
+    }
+   },
+   {
+    "id": "3948ca073d0df5f2e5203cbc95532097a86301a8d653518a352ea7420a2d490c",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 127,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4339,
+     "end": 4343
+    },
+    "links": [],
+    "context": {
+     "reason": "comment",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "comment",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "1fb6ad32c9f906d0f0e8a806092e2b01c469c57787e870917a17f5b8f9b3612b",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 128,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4343,
+     "end": 4399
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4328551878a9fc45dcea4d68374ff1fc0d4f149710a326d5ab41f21e0480a1ef",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 129,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4399,
+     "end": 4402
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "4bae76c4ac73c6e3ca75d146380e788519fd8cfe56aff4764eb6076633e64d34",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 130,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4402,
+     "end": 4452
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "40924c69bf2aca81bb6716732f2854865d961eed0f0ada46e464864e2b62f6c8",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 131,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4452,
+     "end": 4523
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "f6ed54f20d54a60c3e823a51eb3bc74e1291fdf1e53206155997fd9d730fe870",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 132,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4523,
+     "end": 4527
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "29dbf8180dafb5b4e39e9635bd11514f0359879a53ed775bfa22d82f858b2f75",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 133,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4527,
+     "end": 4565
+    },
+    "links": [
+     {
+      "id": "526fdc14e0040626832b9cdb07c229702b8bbd44aaf157c4d9bb0bb63321a397",
+      "file": "lib/util/npm-util.js",
+      "unit": "checkPackageJson",
+      "side": "new",
+      "start": 133,
+      "end": 135
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "526fdc14e0040626832b9cdb07c229702b8bbd44aaf157c4d9bb0bb63321a397",
+     "file": "lib/util/npm-util.js",
+     "unit": "checkPackageJson",
+     "side": "new",
+     "start": 133,
+     "end": 135
+    }
+   },
+   {
+    "id": "f6ab714516ec1407ed59f09d437387bae998e9b58352976771b48999957b9d28",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 134,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4565,
+     "end": 4605
+    },
+    "links": [
+     {
+      "id": "526fdc14e0040626832b9cdb07c229702b8bbd44aaf157c4d9bb0bb63321a397",
+      "file": "lib/util/npm-util.js",
+      "unit": "checkPackageJson",
+      "side": "new",
+      "start": 133,
+      "end": 135
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "526fdc14e0040626832b9cdb07c229702b8bbd44aaf157c4d9bb0bb63321a397",
+     "file": "lib/util/npm-util.js",
+     "unit": "checkPackageJson",
+     "side": "new",
+     "start": 133,
+     "end": 135
+    }
+   },
+   {
+    "id": "3d885a6a0be681c958683649938a314cf18ae1f1ba76e9ac81b6e92c32492833",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 135,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4605,
+     "end": 4607
+    },
+    "links": [
+     {
+      "id": "526fdc14e0040626832b9cdb07c229702b8bbd44aaf157c4d9bb0bb63321a397",
+      "file": "lib/util/npm-util.js",
+      "unit": "checkPackageJson",
+      "side": "new",
+      "start": 133,
+      "end": 135
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "526fdc14e0040626832b9cdb07c229702b8bbd44aaf157c4d9bb0bb63321a397",
+     "file": "lib/util/npm-util.js",
+     "unit": "checkPackageJson",
+     "side": "new",
+     "start": 133,
+     "end": 135
+    }
+   },
+   {
+    "id": "09391c43b3c004dd686d454c67091b11f5f2802572b941b8c5b7257ea50516be",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "bfe46ed3be816564965479dd72ff6a73b8d709c23fd3b4c4621dfc1cafa0c2f2",
+    "side": "new",
+    "old": {
+     "start": 126,
+     "count": 0
+    },
+    "new": {
+     "start": 136,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4607,
+     "end": 4608
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "whitespace",
+     "parent": "SourceFile",
+     "side": "new"
+    }
+   },
+   {
+    "id": "fdc3269cd0fe742a66e968c6c4fee9d7caf14b91f40152278b419822f8559319",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "0762301237ed475604fbf20bdb3d22319817e0f7f6921b218d88ec23b0122532",
+    "side": "old",
+    "old": {
+     "start": 134,
+     "count": 1
+    },
+    "new": {
+     "start": 144,
+     "count": 0
+    },
+    "offsets": {
+     "start": 4611,
+     "end": 4642
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "17e7b757ec29f54c0b3c845cc7367cda3241d80bc1539e866cad2fe53f12ecb9",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "0762301237ed475604fbf20bdb3d22319817e0f7f6921b218d88ec23b0122532",
+    "side": "new",
+    "old": {
+     "start": 134,
+     "count": 0
+    },
+    "new": {
+     "start": 144,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4880,
+     "end": 4912
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "ad8dcaf7d91cc68869f25731808f786936db7fedc5c0173a95da93e5c8291af4",
+    "fileId": "f044aaae25e54d2e867b255f2d403942f314ec6ff34b5098851df78c5a88f5b1",
+    "file": "lib/util/npm-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "0762301237ed475604fbf20bdb3d22319817e0f7f6921b218d88ec23b0122532",
+    "side": "new",
+    "old": {
+     "start": 134,
+     "count": 0
+    },
+    "new": {
+     "start": 145,
+     "count": 1
+    },
+    "offsets": {
+     "start": 4912,
+     "end": 4951
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "PropertyAssignment"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "406eea92d408b770198d5e4d35271c7f49013d359f2718cd4661adc8c361d289",
+  "reconciliation": {
+   "expected": [
+    "6a29815ae58076aec9b5b7651f8d5ceeedafa871c9c851f26cf6acedd8bf2fdf",
+    "6a0fea9e69f3f684b2ed87e57e3822e46e6c3ff992f9702ba254fe8d59ee1c07",
+    "0554966b8e20650bf2054d0c4eab582c82d789e970ff2674febe4c4368de7735",
+    "c9dfd2f9810b325de483fa503856ef5107ea6315a9b0c3238a89fef655002f16",
+    "7b57454852104f33d790b525f88d457cbc770977da12bf63c52bff0c399b812a",
+    "e73a67db5356a06c6a791c36cb7f21cd09a151e29496b3cb0cf80ea1a5047a72",
+    "c30579fd06bfe334f48dd2e9b775870c785a0c2badae4d3a64ab852cf2aecb12",
+    "5f44b761efa768bf4bb940dc78fd111aafb53a75b705ccf32ebdfb0de9aafbb6",
+    "40f4a0d43a2c3d330980cd58e4e7af5d42ceaa3271170951f11b8a2a6f7a65ab",
+    "91e319b571120971af63f0bb17dc557084daba8642441fee8e2e86d23160f038",
+    "e88423d4af0fa529cebc94c53c2b5edb94c128ba04e5cba98980a9b7ec6c35d2",
+    "3948ca073d0df5f2e5203cbc95532097a86301a8d653518a352ea7420a2d490c",
+    "1fb6ad32c9f906d0f0e8a806092e2b01c469c57787e870917a17f5b8f9b3612b",
+    "4328551878a9fc45dcea4d68374ff1fc0d4f149710a326d5ab41f21e0480a1ef",
+    "4bae76c4ac73c6e3ca75d146380e788519fd8cfe56aff4764eb6076633e64d34",
+    "40924c69bf2aca81bb6716732f2854865d961eed0f0ada46e464864e2b62f6c8",
+    "f6ed54f20d54a60c3e823a51eb3bc74e1291fdf1e53206155997fd9d730fe870",
+    "29dbf8180dafb5b4e39e9635bd11514f0359879a53ed775bfa22d82f858b2f75",
+    "f6ab714516ec1407ed59f09d437387bae998e9b58352976771b48999957b9d28",
+    "3d885a6a0be681c958683649938a314cf18ae1f1ba76e9ac81b6e92c32492833",
+    "09391c43b3c004dd686d454c67091b11f5f2802572b941b8c5b7257ea50516be",
+    "fdc3269cd0fe742a66e968c6c4fee9d7caf14b91f40152278b419822f8559319",
+    "17e7b757ec29f54c0b3c845cc7367cda3241d80bc1539e866cad2fe53f12ecb9",
+    "ad8dcaf7d91cc68869f25731808f786936db7fedc5c0173a95da93e5c8291af4"
+   ],
+   "unit": [
+    "29dbf8180dafb5b4e39e9635bd11514f0359879a53ed775bfa22d82f858b2f75",
+    "f6ab714516ec1407ed59f09d437387bae998e9b58352976771b48999957b9d28",
+    "3d885a6a0be681c958683649938a314cf18ae1f1ba76e9ac81b6e92c32492833"
+   ],
+   "artifact": [
+    "6a29815ae58076aec9b5b7651f8d5ceeedafa871c9c851f26cf6acedd8bf2fdf",
+    "6a0fea9e69f3f684b2ed87e57e3822e46e6c3ff992f9702ba254fe8d59ee1c07",
+    "0554966b8e20650bf2054d0c4eab582c82d789e970ff2674febe4c4368de7735",
+    "c9dfd2f9810b325de483fa503856ef5107ea6315a9b0c3238a89fef655002f16",
+    "7b57454852104f33d790b525f88d457cbc770977da12bf63c52bff0c399b812a",
+    "e73a67db5356a06c6a791c36cb7f21cd09a151e29496b3cb0cf80ea1a5047a72",
+    "c30579fd06bfe334f48dd2e9b775870c785a0c2badae4d3a64ab852cf2aecb12",
+    "5f44b761efa768bf4bb940dc78fd111aafb53a75b705ccf32ebdfb0de9aafbb6",
+    "40f4a0d43a2c3d330980cd58e4e7af5d42ceaa3271170951f11b8a2a6f7a65ab",
+    "91e319b571120971af63f0bb17dc557084daba8642441fee8e2e86d23160f038",
+    "e88423d4af0fa529cebc94c53c2b5edb94c128ba04e5cba98980a9b7ec6c35d2"
+   ],
+   "unassigned": [
+    "3948ca073d0df5f2e5203cbc95532097a86301a8d653518a352ea7420a2d490c",
+    "1fb6ad32c9f906d0f0e8a806092e2b01c469c57787e870917a17f5b8f9b3612b",
+    "4328551878a9fc45dcea4d68374ff1fc0d4f149710a326d5ab41f21e0480a1ef",
+    "4bae76c4ac73c6e3ca75d146380e788519fd8cfe56aff4764eb6076633e64d34",
+    "40924c69bf2aca81bb6716732f2854865d961eed0f0ada46e464864e2b62f6c8",
+    "f6ed54f20d54a60c3e823a51eb3bc74e1291fdf1e53206155997fd9d730fe870",
+    "09391c43b3c004dd686d454c67091b11f5f2802572b941b8c5b7257ea50516be",
+    "fdc3269cd0fe742a66e968c6c4fee9d7caf14b91f40152278b419822f8559319",
+    "17e7b757ec29f54c0b3c845cc7367cda3241d80bc1539e866cad2fe53f12ecb9",
+    "ad8dcaf7d91cc68869f25731808f786936db7fedc5c0173a95da93e5c8291af4"
+   ],
+   "classes": {
+    "config": {
+     "unit": [],
+     "artifact": [
+      "6a29815ae58076aec9b5b7651f8d5ceeedafa871c9c851f26cf6acedd8bf2fdf",
+      "6a0fea9e69f3f684b2ed87e57e3822e46e6c3ff992f9702ba254fe8d59ee1c07",
+      "0554966b8e20650bf2054d0c4eab582c82d789e970ff2674febe4c4368de7735",
+      "c9dfd2f9810b325de483fa503856ef5107ea6315a9b0c3238a89fef655002f16",
+      "7b57454852104f33d790b525f88d457cbc770977da12bf63c52bff0c399b812a",
+      "e73a67db5356a06c6a791c36cb7f21cd09a151e29496b3cb0cf80ea1a5047a72",
+      "c30579fd06bfe334f48dd2e9b775870c785a0c2badae4d3a64ab852cf2aecb12",
+      "5f44b761efa768bf4bb940dc78fd111aafb53a75b705ccf32ebdfb0de9aafbb6",
+      "40f4a0d43a2c3d330980cd58e4e7af5d42ceaa3271170951f11b8a2a6f7a65ab",
+      "91e319b571120971af63f0bb17dc557084daba8642441fee8e2e86d23160f038",
+      "e88423d4af0fa529cebc94c53c2b5edb94c128ba04e5cba98980a9b7ec6c35d2"
+     ],
+     "unassigned": []
+    },
+    "source": {
+     "unit": [
+      "29dbf8180dafb5b4e39e9635bd11514f0359879a53ed775bfa22d82f858b2f75",
+      "f6ab714516ec1407ed59f09d437387bae998e9b58352976771b48999957b9d28",
+      "3d885a6a0be681c958683649938a314cf18ae1f1ba76e9ac81b6e92c32492833"
+     ],
+     "artifact": [],
+     "unassigned": [
+      "3948ca073d0df5f2e5203cbc95532097a86301a8d653518a352ea7420a2d490c",
+      "1fb6ad32c9f906d0f0e8a806092e2b01c469c57787e870917a17f5b8f9b3612b",
+      "4328551878a9fc45dcea4d68374ff1fc0d4f149710a326d5ab41f21e0480a1ef",
+      "4bae76c4ac73c6e3ca75d146380e788519fd8cfe56aff4764eb6076633e64d34",
+      "40924c69bf2aca81bb6716732f2854865d961eed0f0ada46e464864e2b62f6c8",
+      "f6ed54f20d54a60c3e823a51eb3bc74e1291fdf1e53206155997fd9d730fe870",
+      "09391c43b3c004dd686d454c67091b11f5f2802572b941b8c5b7257ea50516be",
+      "fdc3269cd0fe742a66e968c6c4fee9d7caf14b91f40152278b419822f8559319",
+      "17e7b757ec29f54c0b3c845cc7367cda3241d80bc1539e866cad2fe53f12ecb9",
+      "ad8dcaf7d91cc68869f25731808f786936db7fedc5c0173a95da93e5c8291af4"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "tasks": [
+  {
+   "id": "07eea5ad8686118bce2b799a9e0dd3ef8ae4a38e3f39acd5189d8cae45066fdc",
+   "attemptId": "ade4ff1e-ad6f-4f6e-a6fd-e202ae34b36a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/ade4ff1e-ad6f-4f6e-a6fd-e202ae34b36a/row.json",
+    "sha256": "5c2f66965d23b9a3495ce1d7e8ac39af77f716bfe87c7eccc25e0bbe66abf044"
+   },
+   "lanes": {
+    "B": "done",
+    "A": "not-run"
+   }
+  },
+  {
+   "id": "8896ff83787ec4ba7ac656167e0fecca8f46c7b6d1df6a596515673eb5ad64dc",
+   "attemptId": "2b4a3937-68f0-44a1-9cd3-10a0cd86fc81",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/2b4a3937-68f0-44a1-9cd3-10a0cd86fc81/row.json",
+    "sha256": "35746b4ac1c80b7a3a32fb4383e2e4a483e07d90e4a8cd0bca4a5d037e7bd49b"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "8bd0cbb76703072d543cb138605e32215c697ffa4ede007f413f9f05c46d9c02",
+   "attemptId": "2c0f928c-de93-4262-bdde-54e78f59992a",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/2c0f928c-de93-4262-bdde-54e78f59992a/row.json",
+    "sha256": "fd75858bafd343add758b9d99ee8a427da9af2987ab1f0552ae7ecb80c282328"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "6438e4875c291499c8f76f9ba951d5e74f4c4502ac3212480c17967958afc7ad",
+   "attemptId": "5c52113d-f07e-4938-b69d-95e57bfb7f24",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/5c52113d-f07e-4938-b69d-95e57bfb7f24/row.json",
+    "sha256": "f766adf3ef253bce8af7474e78425c4f51d8292d5cee59f5e8e0ba4bd4b95e03"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "c7356ac914bf5887babea6cc2a13bdcb30ced87c0bdfb7378024686203fde5bc",
+   "attemptId": "5aafc5b1-4f85-4da1-aa4d-512e653151ab",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/5aafc5b1-4f85-4da1-aa4d-512e653151ab/row.json",
+    "sha256": "f87a63f4bb445a2e6e9cb8717a604f5e9addb272e9006dc74ea0121e6af4d6b9"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "84e4753eef34a230158bbd7c15da6858ab9788ec52583376ce9acc15ed4d83d4",
+   "attemptId": "832d5640-939b-4ecd-a732-f080eaf15695",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/832d5640-939b-4ecd-a732-f080eaf15695/row.json",
+    "sha256": "89c4b9a3f11a6f16b63a92d45f9774563926805cb2613355bf8fb0500eef58df"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "bdf8b2643a29750bd97a8cb7be7de1db41e0447c40973ffb88b057ef75a0b1e6",
+   "attemptId": "6f4bf838-8583-4260-b549-080b30c2b048",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/6f4bf838-8583-4260-b549-080b30c2b048/row.json",
+    "sha256": "3ef727d649462772099c78b5351b3dcba1b35af44a3ed8da7d24f862ad41bdfc"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "5a0809f5376bbe6ff4318e4bcc4aad457427540f0b069f37ce4e28ce198355d6",
+   "attemptId": "4fcf24c5-b59b-4fe5-a634-da912061dc86",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/4fcf24c5-b59b-4fe5-a634-da912061dc86/row.json",
+    "sha256": "3fd55d481f01e7488d30c907662a98ed71d90e582d76461b7c018adf7ce07b17"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "f0dd81e24dbc8930ad9dcbc395108d2858193885c78bc42ca7d3c4b9063a26fc",
+   "attemptId": "7685f46b-514f-42ea-b989-563165ba039b",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/7685f46b-514f-42ea-b989-563165ba039b/row.json",
+    "sha256": "f59c0fe08cb790d464c8a33352a87f3cd97c16e4d3ddf0abb55ad479b12d6f03"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "07e4db6bfb9358a584d2c84a96fe9e119c074e714022e614d6257eb75779367e",
+   "attemptId": "65ceccee-3095-40b6-a2e2-788379dbf5b9",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/65ceccee-3095-40b6-a2e2-788379dbf5b9/row.json",
+    "sha256": "87e95285cb089c43c2c2d70ccb01a26aa2599ba1e64b64b4c4877064b0558794"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "918eb63b04d7740d1a90c1ca3eb5e260672c7bbcb0238ca439c6c73005543493",
+   "attemptId": "328fead2-d0f6-4a2b-be28-06a924f42d39",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/328fead2-d0f6-4a2b-be28-06a924f42d39/row.json",
+    "sha256": "e42c7b2f65c3cf1d6f1d14a71d875e9be5b7461f3053fefaad80d34c34f50e42"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "4bd6389f530b3dc241567106fd18f8d0c685f4e5715724ae408840a458b6ae1c",
+   "attemptId": "190404ea-4bcc-45bd-b760-ff46fff95709",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/190404ea-4bcc-45bd-b760-ff46fff95709/row.json",
+    "sha256": "c77a0b960fc156afc875577844017526323869f7b33f8c9a6ea229112cde226c"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "1d6a655974b213192afc365adc00fefea0475d5be407e0cd4875941e97ffac0f",
+   "attemptId": "400eb68d-4b71-406b-8b8e-35b6e4e77140",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/400eb68d-4b71-406b-8b8e-35b6e4e77140/row.json",
+    "sha256": "965f0c65090fc4bdf5d2b877a537ed5d81976d91b473e56f4a5832d7f571d3f7"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "d284d38fb264a2ab939519e932598df5dc229157a7e6d32806f356acaac32711",
+   "attemptId": "5a212003-4290-4e96-8cc4-992762e4fff7",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/5a212003-4290-4e96-8cc4-992762e4fff7/row.json",
+    "sha256": "9348658c4662228b2077774b77b27a720a95b3d88d68734045a0679f1a2b8797"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "d8a6ff48901d50f03e12598c3e106032336328100d4a5a452e8e3b91bab583f0",
+   "attemptId": "f5b1df19-8644-4f0e-a81b-ad82f611d176",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/f5b1df19-8644-4f0e-a81b-ad82f611d176/row.json",
+    "sha256": "c937f25e2c81751084ac27c77a77c16d320f7ae05597446d5b4dc77be59de1e1"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "b642dec553a80cf4b3e9979a9a411fa3f2b487a92954d8d55c9e9bb65b4c41a7",
+   "attemptId": "3794cb97-d89b-4983-88e8-ed6e43da3611",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/3794cb97-d89b-4983-88e8-ed6e43da3611/row.json",
+    "sha256": "c07cd56119e0902f38de3a18fd5f21caf05ce06f4e4f1d0934f357bc7495e8d0"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "9be660b45abc9e3c9ae0d5088c45311f2b4cac1d788175aaa5632f30ae475c6a",
+   "attemptId": "cc025b9d-5916-4556-b2b2-7a7bcd096bbf",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/cc025b9d-5916-4556-b2b2-7a7bcd096bbf/row.json",
+    "sha256": "ffda08f6c518939eb20d5ebd874054026ec0b1824f5d9b0cd9ac56b125fc9276"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "a0e94bc61c38b5b326d11a04629bb0f52043cf5da2bbf3ccd1396ae273a86e9f",
+   "attemptId": "058fb653-8129-4555-bea9-e7b4d6929554",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/058fb653-8129-4555-bea9-e7b4d6929554/row.json",
+    "sha256": "1d282ae70fbe3a57f454a81f9b4cc58c87289a228120369d8ee7c3d9c6deeb6f"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "b119f703578c494f5e8f4f54bd999f0841b3e2ce90ddbb0fec9e7adea8d1c7f6",
+   "attemptId": "4752292a-f608-40e2-9731-4d5ace17d2d1",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/4752292a-f608-40e2-9731-4d5ace17d2d1/row.json",
+    "sha256": "2c64809b50ad92111e4ae7382cd9db946eb285bee558fc27dadac829a9fdf0e9"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "3ca297c25753e43eb7ac08dc7a685749d6380d87264bf99ee5bc41ef0b12408a",
+   "attemptId": "b9f6bee6-b9bb-484b-9e00-781f247c66fe",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/b9f6bee6-b9bb-484b-9e00-781f247c66fe/row.json",
+    "sha256": "d739dd9999479749f917267d25322df4d1201871824b1976b06e62328fab3bd4"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "92745832610ad11bcb2fa4b44fcfce617ec285c0ec49d682fd6c5bac819b2ffb",
+   "attemptId": "1549b37b-b67f-4838-80b2-bf90a2b122de",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/1549b37b-b67f-4838-80b2-bf90a2b122de/row.json",
+    "sha256": "b8ef7c8e8d93e14f97ff04eb0292cd27946c7b7ed7b3c01a1797303dbba5ce11"
+   },
+   "lanes": {}
+  },
+  {
+   "id": "9acbbd3070d1b7ffe76ea90c4945f5e18c80f9f842e0f2b8a17cfcce93f737fb",
+   "attemptId": "f12d0ab5-bbf9-46aa-8170-67e5556834d2",
+   "state": "done",
+   "artifact": {
+    "path": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/attempts/f12d0ab5-bbf9-46aa-8170-67e5556834d2/row.json",
+    "sha256": "f31a4312093f61cd9686ff32fafaca0e1a01c8c1635cd7d11e09ddc3215aea53"
+   },
+   "lanes": {}
+  }
+ ],
+ "rows": [
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "checkPackageJson",
+   "lines": [
+    133,
+    135
+   ],
+   "verdict": "ASK",
+   "coverage": "failed:loader",
+   "certificate": {
+    "tool": "lean-ts v3",
+    "identity": "92218780207f8814a77a6c56d99dff09fd491c2bed1acc9b476e66a2200f19b2",
+    "unit": "checkPackageJson",
+    "parent": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/sources/lib/util/.lean_base_99387_npm-util.js",
+     "sha256": "aaee860929a8a63a"
+    },
+    "candidate": {
+     "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/sources/lib/util/.lean_head_99387_npm-util.js",
+     "sha256": "acdb59cc9bfe11f6"
+    },
+    "lanes": {
+     "B": {
+      "candidateOnly": true,
+      "unit": "checkPackageJson",
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/sources/lib/util/.lean_head_99387_npm-util.js",
+      "assumptions": {
+       "externalPackages": "declared packages, their aliases and resolved node_modules targets are recording fakes; declared packages need no installation",
+       "sourceImports": "local and aliased source resolve with TypeScript; named exports link with Node",
+       "undeclaredPackages": "Node supplies the error; missing external packages are ASK, not repository linkage refusals",
+       "dynamicImports": "literal specifiers are resolved before inputs; computed specifiers are checked only when drawn",
+       "loadVerdicts": "REFUSE only for local linkage; generated/build output and all evaluation failures are ASK with their environment class; test modules are excluded before loading",
+       "observation": "bounded inputs under fakes, no equality or correctness claim"
+      },
+      "verdict": "ASK",
+      "kind": "load",
+      "phase": "evaluation",
+      "environmentClass": "CommonJS wrapper",
+      "loaded": false,
+      "inputs": 0,
+      "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/sources/lib/util/.lean_head_99387_npm-util.js: ASK(CommonJS wrapper): require is not defined",
+      "error": "ReferenceError: require is not defined\n    at /Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/sources/lib/util/.lean_head_99387_npm-util.js:9:10\n    at SourceTextModule.evaluate (node:internal/vm/module:233:26)\n    at loadCandidate (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/langs/ts/exec/new-unit.mjs:158:15)\n    at async runNew (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/langs/ts/exec/new-unit.mjs:221:5)\n    at async file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/langs/ts/exec/new-unit.mjs:250:91",
+      "bound": {
+       "n": 100,
+       "seed": 1,
+       "ms": 2000,
+       "fakes": "demand-driven proxies, seeded primitives, frozen clock",
+       "inputs": "from parameter types with boundary values first"
+      }
+     }
+    },
+    "tools": {
+     "node": "v24.18.0"
+    },
+    "unitTextEqual": null,
+    "observation": {
+     "layer": "values and the reachable object graph",
+     "renders": null,
+     "effects": "the trace of environment requests and pending work",
+     "schedule": "synchronous; pending work recorded, never fired"
+    },
+    "verdict": "ASK"
+   },
+   "laneB": "ASK",
+   "laneA": null,
+   "witness": null,
+   "reason": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__74/run-vEEJ7x/sources/lib/util/.lean_head_99387_npm-util.js: ASK(CommonJS wrapper): require is not defined",
+   "advice": [],
+   "editIds": [
+    "29dbf8180dafb5b4e39e9635bd11514f0359879a53ed775bfa22d82f858b2f75",
+    "f6ab714516ec1407ed59f09d437387bae998e9b58352976771b48999957b9d28",
+    "3d885a6a0be681c958683649938a314cf18ae1f1ba76e9ac81b6e92c32492833"
+   ]
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit 6a29815ae580)",
+   "editIds": [
+    "6a29815ae58076aec9b5b7651f8d5ceeedafa871c9c851f26cf6acedd8bf2fdf"
+   ],
+   "lines": [
+    49,
+    49
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit 6a0fea9e69f3)",
+   "editIds": [
+    "6a0fea9e69f3f684b2ed87e57e3822e46e6c3ff992f9702ba254fe8d59ee1c07"
+   ],
+   "lines": [
+    321,
+    321
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit 0554966b8e20)",
+   "editIds": [
+    "0554966b8e20650bf2054d0c4eab582c82d789e970ff2674febe4c4368de7735"
+   ],
+   "lines": [
+    320,
+    320
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit c9dfd2f9810b)",
+   "editIds": [
+    "c9dfd2f9810b325de483fa503856ef5107ea6315a9b0c3238a89fef655002f16"
+   ],
+   "lines": [
+    321,
+    321
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit 7b5745485210)",
+   "editIds": [
+    "7b57454852104f33d790b525f88d457cbc770977da12bf63c52bff0c399b812a"
+   ],
+   "lines": [
+    345,
+    345
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit e73a67db5356)",
+   "editIds": [
+    "e73a67db5356a06c6a791c36cb7f21cd09a151e29496b3cb0cf80ea1a5047a72"
+   ],
+   "lines": [
+    345,
+    345
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit c30579fd06bf)",
+   "editIds": [
+    "c30579fd06bfe334f48dd2e9b775870c785a0c2badae4d3a64ab852cf2aecb12"
+   ],
+   "lines": [
+    352,
+    352
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit 5f44b761efa7)",
+   "editIds": [
+    "5f44b761efa768bf4bb940dc78fd111aafb53a75b705ccf32ebdfb0de9aafbb6"
+   ],
+   "lines": [
+    353,
+    353
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit 40f4a0d43a2c)",
+   "editIds": [
+    "40f4a0d43a2c3d330980cd58e4e7af5d42ceaa3271170951f11b8a2a6f7a65ab"
+   ],
+   "lines": [
+    354,
+    354
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit 91e319b57112)",
+   "editIds": [
+    "91e319b571120971af63f0bb17dc557084daba8642441fee8e2e86d23160f038"
+   ],
+   "lines": [
+    355,
+    355
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "FunctionDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/config/config-initializer.js",
+   "unit": "(edit e88423d4af0f)",
+   "editIds": [
+    "e88423d4af0fa529cebc94c53c2b5edb94c128ba04e5cba98980a9b7ec6c35d2"
+   ],
+   "lines": [
+    356,
+    356
+   ],
+   "verdict": "ASK",
+   "decision": "artifact",
+   "coverage": "artifact:config",
+   "reason": "config",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit 3948ca073d0d)",
+   "editIds": [
+    "3948ca073d0df5f2e5203cbc95532097a86301a8d653518a352ea7420a2d490c"
+   ],
+   "lines": [
+    127,
+    127
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:comment",
+   "reason": "comment",
+   "context": {
+    "reason": "comment",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit 1fb6ad32c9f9)",
+   "editIds": [
+    "1fb6ad32c9f906d0f0e8a806092e2b01c469c57787e870917a17f5b8f9b3612b"
+   ],
+   "lines": [
+    128,
+    128
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit 4328551878a9)",
+   "editIds": [
+    "4328551878a9fc45dcea4d68374ff1fc0d4f149710a326d5ab41f21e0480a1ef"
+   ],
+   "lines": [
+    129,
+    129
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit 4bae76c4ac73)",
+   "editIds": [
+    "4bae76c4ac73c6e3ca75d146380e788519fd8cfe56aff4764eb6076633e64d34"
+   ],
+   "lines": [
+    130,
+    130
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit 40924c69bf2a)",
+   "editIds": [
+    "40924c69bf2aca81bb6716732f2854865d961eed0f0ada46e464864e2b62f6c8"
+   ],
+   "lines": [
+    131,
+    131
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit f6ed54f20d54)",
+   "editIds": [
+    "f6ed54f20d54a60c3e823a51eb3bc74e1291fdf1e53206155997fd9d730fe870"
+   ],
+   "lines": [
+    132,
+    132
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:module-level statement",
+   "reason": "module-level statement",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit 09391c43b3c0)",
+   "editIds": [
+    "09391c43b3c004dd686d454c67091b11f5f2802572b941b8c5b7257ea50516be"
+   ],
+   "lines": [
+    136,
+    136
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:whitespace",
+   "reason": "whitespace",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit fdc3269cd0fe)",
+   "editIds": [
+    "fdc3269cd0fe742a66e968c6c4fee9d7caf14b91f40152278b419822f8559319"
+   ],
+   "lines": [
+    134,
+    134
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit 17e7b757ec29)",
+   "editIds": [
+    "17e7b757ec29f54c0b3c845cc7367cda3241d80bc1539e866cad2fe53f12ecb9"
+   ],
+   "lines": [
+    144,
+    144
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/util/npm-util.js",
+   "unit": "(edit ad8dcaf7d91c)",
+   "editIds": [
+    "ad8dcaf7d91cc68869f25731808f786936db7fedc5c0173a95da93e5c8291af4"
+   ],
+   "lines": [
+    145,
+    145
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "PropertyAssignment"
+   },
+   "advice": []
+  }
+ ],
+ "reconciliation": {
+  "expected": [
+   "07eea5ad8686118bce2b799a9e0dd3ef8ae4a38e3f39acd5189d8cae45066fdc",
+   "8896ff83787ec4ba7ac656167e0fecca8f46c7b6d1df6a596515673eb5ad64dc",
+   "8bd0cbb76703072d543cb138605e32215c697ffa4ede007f413f9f05c46d9c02",
+   "6438e4875c291499c8f76f9ba951d5e74f4c4502ac3212480c17967958afc7ad",
+   "c7356ac914bf5887babea6cc2a13bdcb30ced87c0bdfb7378024686203fde5bc",
+   "84e4753eef34a230158bbd7c15da6858ab9788ec52583376ce9acc15ed4d83d4",
+   "bdf8b2643a29750bd97a8cb7be7de1db41e0447c40973ffb88b057ef75a0b1e6",
+   "5a0809f5376bbe6ff4318e4bcc4aad457427540f0b069f37ce4e28ce198355d6",
+   "f0dd81e24dbc8930ad9dcbc395108d2858193885c78bc42ca7d3c4b9063a26fc",
+   "07e4db6bfb9358a584d2c84a96fe9e119c074e714022e614d6257eb75779367e",
+   "918eb63b04d7740d1a90c1ca3eb5e260672c7bbcb0238ca439c6c73005543493",
+   "4bd6389f530b3dc241567106fd18f8d0c685f4e5715724ae408840a458b6ae1c",
+   "1d6a655974b213192afc365adc00fefea0475d5be407e0cd4875941e97ffac0f",
+   "d284d38fb264a2ab939519e932598df5dc229157a7e6d32806f356acaac32711",
+   "d8a6ff48901d50f03e12598c3e106032336328100d4a5a452e8e3b91bab583f0",
+   "b642dec553a80cf4b3e9979a9a411fa3f2b487a92954d8d55c9e9bb65b4c41a7",
+   "9be660b45abc9e3c9ae0d5088c45311f2b4cac1d788175aaa5632f30ae475c6a",
+   "a0e94bc61c38b5b326d11a04629bb0f52043cf5da2bbf3ccd1396ae273a86e9f",
+   "b119f703578c494f5e8f4f54bd999f0841b3e2ce90ddbb0fec9e7adea8d1c7f6",
+   "3ca297c25753e43eb7ac08dc7a685749d6380d87264bf99ee5bc41ef0b12408a",
+   "92745832610ad11bcb2fa4b44fcfce617ec285c0ec49d682fd6c5bac819b2ffb",
+   "9acbbd3070d1b7ffe76ea90c4945f5e18c80f9f842e0f2b8a17cfcce93f737fb"
+  ],
+  "terminal": [
+   "07eea5ad8686118bce2b799a9e0dd3ef8ae4a38e3f39acd5189d8cae45066fdc",
+   "8896ff83787ec4ba7ac656167e0fecca8f46c7b6d1df6a596515673eb5ad64dc",
+   "8bd0cbb76703072d543cb138605e32215c697ffa4ede007f413f9f05c46d9c02",
+   "6438e4875c291499c8f76f9ba951d5e74f4c4502ac3212480c17967958afc7ad",
+   "c7356ac914bf5887babea6cc2a13bdcb30ced87c0bdfb7378024686203fde5bc",
+   "84e4753eef34a230158bbd7c15da6858ab9788ec52583376ce9acc15ed4d83d4",
+   "bdf8b2643a29750bd97a8cb7be7de1db41e0447c40973ffb88b057ef75a0b1e6",
+   "5a0809f5376bbe6ff4318e4bcc4aad457427540f0b069f37ce4e28ce198355d6",
+   "f0dd81e24dbc8930ad9dcbc395108d2858193885c78bc42ca7d3c4b9063a26fc",
+   "07e4db6bfb9358a584d2c84a96fe9e119c074e714022e614d6257eb75779367e",
+   "918eb63b04d7740d1a90c1ca3eb5e260672c7bbcb0238ca439c6c73005543493",
+   "4bd6389f530b3dc241567106fd18f8d0c685f4e5715724ae408840a458b6ae1c",
+   "1d6a655974b213192afc365adc00fefea0475d5be407e0cd4875941e97ffac0f",
+   "d284d38fb264a2ab939519e932598df5dc229157a7e6d32806f356acaac32711",
+   "d8a6ff48901d50f03e12598c3e106032336328100d4a5a452e8e3b91bab583f0",
+   "b642dec553a80cf4b3e9979a9a411fa3f2b487a92954d8d55c9e9bb65b4c41a7",
+   "9be660b45abc9e3c9ae0d5088c45311f2b4cac1d788175aaa5632f30ae475c6a",
+   "a0e94bc61c38b5b326d11a04629bb0f52043cf5da2bbf3ccd1396ae273a86e9f",
+   "b119f703578c494f5e8f4f54bd999f0841b3e2ce90ddbb0fec9e7adea8d1c7f6",
+   "3ca297c25753e43eb7ac08dc7a685749d6380d87264bf99ee5bc41ef0b12408a",
+   "92745832610ad11bcb2fa4b44fcfce617ec285c0ec49d682fd6c5bac819b2ffb",
+   "9acbbd3070d1b7ffe76ea90c4945f5e18c80f9f842e0f2b8a17cfcce93f737fb"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [
+    "07eea5ad8686118bce2b799a9e0dd3ef8ae4a38e3f39acd5189d8cae45066fdc/B",
+    "07eea5ad8686118bce2b799a9e0dd3ef8ae4a38e3f39acd5189d8cae45066fdc/A"
+   ],
+   "terminal": [
+    "07eea5ad8686118bce2b799a9e0dd3ef8ae4a38e3f39acd5189d8cae45066fdc/B",
+    "07eea5ad8686118bce2b799a9e0dd3ef8ae4a38e3f39acd5189d8cae45066fdc/A"
+   ],
+   "complete": true
+  },
+  "complete": true
+ }
+}

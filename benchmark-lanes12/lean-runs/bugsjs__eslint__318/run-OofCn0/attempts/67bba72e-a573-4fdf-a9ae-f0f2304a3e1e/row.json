@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/use-isnan.js",
+ "unit": "(edit 07c3d7d7edb0)",
+ "editIds": [
+  "07c3d7d7edb0585b8167d3c5076fdd13be2fd1c51d9910f87da481bf3e3e18cd"
+ ],
+ "lines": [
+  18,
+  18
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/id-length.js",
+ "unit": "(edit caae80c7cf87)",
+ "editIds": [
+  "caae80c7cf8720da3c22db494cd6ae2761a1040d9e8b1de003ec25d4b085a393"
+ ],
+ "lines": [
+  28,
+  28
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (object-literal member)",
+ "context": {
+  "reason": "object-literal member",
+  "parent": "ObjectLiteralExpression",
+  "node": "PropertyAssignment"
+ },
+ "advice": []
+}

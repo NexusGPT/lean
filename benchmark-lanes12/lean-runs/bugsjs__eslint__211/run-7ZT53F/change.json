@@ -1,0 +1,285 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "c16246620d2c98a886f1baf6356d8c4aab0d8039",
+ "head": "06d79c1253133b9fbc23e0c28bce39f2cccdba58",
+ "files": [
+  {
+   "id": "5219fb6e9be25aafdb97557ab76976ffe444a914bb83187013279edceabe0c07",
+   "file": "lib/rules/indent.js",
+   "oldPath": "lib/rules/indent.js",
+   "newPath": "lib/rules/indent.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "08f3eecea3efcaa3eb9d0b266733796ff2fe2a10",
+   "newOid": "41fae33caa0cb3f28f49ea333ded93ae0c2b0b76",
+   "status": "M",
+   "edits": [
+    "905f03d952d39975af840d309d7753b9a72ee2d82ae70de93da03015fcab9f55",
+    "119006a481ee977da1627258c461368c2a0de89d1615cb2759feb720bff31ea7",
+    "a7585b08fa912923959e1ed119be7db3fa62b0c0a5a0ce1678354e261bcce666",
+    "85009177647c0bc53f8fa23747e1f5b207c1992061c4ff88ab0bc65b082f0a89",
+    "ecb6058362b05ad148fbf6432f3def3e1b26f56c8c51129fff9b26d64001a41d",
+    "b0dd36dfd8cb16d871719e49362a29f5eed5d1a9f4c26f08d75e4604b02ff744"
+   ],
+   "hunks": [
+    {
+     "id": "5042b3021858135aeb454b206831cb65e3a453757b7ef0f8174268706c823e01",
+     "old": {
+      "start": 419,
+      "count": 1
+     },
+     "new": {
+      "start": 419,
+      "count": 5
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "f9fb0d43788e8e3001d5755dbdf610166d55b0fe3d966843868ad2fb9702a940",
+   "newHash": "b457d02da23c2c5a4f3bc3fb907ee5ad00f2fb580c2e6889f81942283ec7ef50",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "905f03d952d39975af840d309d7753b9a72ee2d82ae70de93da03015fcab9f55",
+   "fileId": "5219fb6e9be25aafdb97557ab76976ffe444a914bb83187013279edceabe0c07",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "5042b3021858135aeb454b206831cb65e3a453757b7ef0f8174268706c823e01",
+   "side": "old",
+   "old": {
+    "start": 419,
+    "count": 1
+   },
+   "new": {
+    "start": 419,
+    "count": 0
+   },
+   "offsets": {
+    "start": 15446,
+    "end": 15566
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "old"
+   }
+  },
+  {
+   "id": "119006a481ee977da1627258c461368c2a0de89d1615cb2759feb720bff31ea7",
+   "fileId": "5219fb6e9be25aafdb97557ab76976ffe444a914bb83187013279edceabe0c07",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "5042b3021858135aeb454b206831cb65e3a453757b7ef0f8174268706c823e01",
+   "side": "new",
+   "old": {
+    "start": 419,
+    "count": 0
+   },
+   "new": {
+    "start": 419,
+    "count": 1
+   },
+   "offsets": {
+    "start": 15446,
+    "end": 15475
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "a7585b08fa912923959e1ed119be7db3fa62b0c0a5a0ce1678354e261bcce666",
+   "fileId": "5219fb6e9be25aafdb97557ab76976ffe444a914bb83187013279edceabe0c07",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "5042b3021858135aeb454b206831cb65e3a453757b7ef0f8174268706c823e01",
+   "side": "new",
+   "old": {
+    "start": 419,
+    "count": 0
+   },
+   "new": {
+    "start": 420,
+    "count": 1
+   },
+   "offsets": {
+    "start": 15475,
+    "end": 15536
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "85009177647c0bc53f8fa23747e1f5b207c1992061c4ff88ab0bc65b082f0a89",
+   "fileId": "5219fb6e9be25aafdb97557ab76976ffe444a914bb83187013279edceabe0c07",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "5042b3021858135aeb454b206831cb65e3a453757b7ef0f8174268706c823e01",
+   "side": "new",
+   "old": {
+    "start": 419,
+    "count": 0
+   },
+   "new": {
+    "start": 421,
+    "count": 1
+   },
+   "offsets": {
+    "start": 15536,
+    "end": 15598
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "ecb6058362b05ad148fbf6432f3def3e1b26f56c8c51129fff9b26d64001a41d",
+   "fileId": "5219fb6e9be25aafdb97557ab76976ffe444a914bb83187013279edceabe0c07",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "5042b3021858135aeb454b206831cb65e3a453757b7ef0f8174268706c823e01",
+   "side": "new",
+   "old": {
+    "start": 419,
+    "count": 0
+   },
+   "new": {
+    "start": 422,
+    "count": 1
+   },
+   "offsets": {
+    "start": 15598,
+    "end": 15661
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  },
+  {
+   "id": "b0dd36dfd8cb16d871719e49362a29f5eed5d1a9f4c26f08d75e4604b02ff744",
+   "fileId": "5219fb6e9be25aafdb97557ab76976ffe444a914bb83187013279edceabe0c07",
+   "file": "lib/rules/indent.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "5042b3021858135aeb454b206831cb65e3a453757b7ef0f8174268706c823e01",
+   "side": "new",
+   "old": {
+    "start": 419,
+    "count": 0
+   },
+   "new": {
+    "start": 423,
+    "count": 1
+   },
+   "offsets": {
+    "start": 15661,
+    "end": 15674
+   },
+   "links": [],
+   "context": {
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "node": "BinaryExpression"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "exported property assignment",
+    "parent": "ExpressionStatement",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "44661e8dbb0289436cc43fae970bd5ca8ebfca05369f5a1096dc1a562498b570",
+ "reconciliation": {
+  "expected": [
+   "905f03d952d39975af840d309d7753b9a72ee2d82ae70de93da03015fcab9f55",
+   "119006a481ee977da1627258c461368c2a0de89d1615cb2759feb720bff31ea7",
+   "a7585b08fa912923959e1ed119be7db3fa62b0c0a5a0ce1678354e261bcce666",
+   "85009177647c0bc53f8fa23747e1f5b207c1992061c4ff88ab0bc65b082f0a89",
+   "ecb6058362b05ad148fbf6432f3def3e1b26f56c8c51129fff9b26d64001a41d",
+   "b0dd36dfd8cb16d871719e49362a29f5eed5d1a9f4c26f08d75e4604b02ff744"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "905f03d952d39975af840d309d7753b9a72ee2d82ae70de93da03015fcab9f55",
+   "119006a481ee977da1627258c461368c2a0de89d1615cb2759feb720bff31ea7",
+   "a7585b08fa912923959e1ed119be7db3fa62b0c0a5a0ce1678354e261bcce666",
+   "85009177647c0bc53f8fa23747e1f5b207c1992061c4ff88ab0bc65b082f0a89",
+   "ecb6058362b05ad148fbf6432f3def3e1b26f56c8c51129fff9b26d64001a41d",
+   "b0dd36dfd8cb16d871719e49362a29f5eed5d1a9f4c26f08d75e4604b02ff744"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "905f03d952d39975af840d309d7753b9a72ee2d82ae70de93da03015fcab9f55",
+     "119006a481ee977da1627258c461368c2a0de89d1615cb2759feb720bff31ea7",
+     "a7585b08fa912923959e1ed119be7db3fa62b0c0a5a0ce1678354e261bcce666",
+     "85009177647c0bc53f8fa23747e1f5b207c1992061c4ff88ab0bc65b082f0a89",
+     "ecb6058362b05ad148fbf6432f3def3e1b26f56c8c51129fff9b26d64001a41d",
+     "b0dd36dfd8cb16d871719e49362a29f5eed5d1a9f4c26f08d75e4604b02ff744"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

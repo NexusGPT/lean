@@ -1,0 +1,205 @@
+{
+ "identity": "102c24eb5bee4d62ff53c2983bb8c679c9c7d0e93ff26aa57bc915c282e962d7",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit 7e56563b5533)",
+   "editIds": [
+    "7e56563b5533a6aade380472a574336d13beadcba8d8b3c25a05541aa64323a3"
+   ],
+   "lines": [
+    732,
+    732
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/indent.js",
+   "unit": "(edit ef79f2e29844)",
+   "editIds": [
+    "ef79f2e298449875b8dbfc23c7f56b7c02c8bc58414ae12b3b72b3eaa5b41195"
+   ],
+   "lines": [
+    732,
+    732
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "a7bd66a66606ba13ce9f27cb0daa168f79e443fe",
+  "head": "d95760a5b881795ef57b20cc101bca279f2c0335",
+  "files": [
+   {
+    "id": "830a68e53379dcfc3ea22c408d918738087611ad7910b16d9de909785ded7c2d",
+    "file": "lib/rules/indent.js",
+    "oldPath": "lib/rules/indent.js",
+    "newPath": "lib/rules/indent.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "6c3c27c8e1941a4e80dcba9513331c068e428f07",
+    "newOid": "2762027e527956dc34111bc351d23ac2ad748f28",
+    "status": "M",
+    "edits": [
+     "7e56563b5533a6aade380472a574336d13beadcba8d8b3c25a05541aa64323a3",
+     "ef79f2e298449875b8dbfc23c7f56b7c02c8bc58414ae12b3b72b3eaa5b41195"
+    ],
+    "hunks": [
+     {
+      "id": "fd18e2bb33c88d4048dfd70ddac8c80540f47170e4b0ffc177167c9f71617218",
+      "old": {
+       "start": 732,
+       "count": 1
+      },
+      "new": {
+       "start": 732,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "6cc4b7a08cad3bd63a29e3a6eb6d2b5a3e2d67f085dbf6684ed75d37ce4f28d0",
+    "newHash": "51fe16a9c455da8605ed41270bf724b7557006a87739b8dfa2c5127137719ae7",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "7e56563b5533a6aade380472a574336d13beadcba8d8b3c25a05541aa64323a3",
+    "fileId": "830a68e53379dcfc3ea22c408d918738087611ad7910b16d9de909785ded7c2d",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "fd18e2bb33c88d4048dfd70ddac8c80540f47170e4b0ffc177167c9f71617218",
+    "side": "old",
+    "old": {
+     "start": 732,
+     "count": 1
+    },
+    "new": {
+     "start": 732,
+     "count": 0
+    },
+    "offsets": {
+     "start": 29498,
+     "end": 29652
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "ef79f2e298449875b8dbfc23c7f56b7c02c8bc58414ae12b3b72b3eaa5b41195",
+    "fileId": "830a68e53379dcfc3ea22c408d918738087611ad7910b16d9de909785ded7c2d",
+    "file": "lib/rules/indent.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "fd18e2bb33c88d4048dfd70ddac8c80540f47170e4b0ffc177167c9f71617218",
+    "side": "new",
+    "old": {
+     "start": 732,
+     "count": 0
+    },
+    "new": {
+     "start": 732,
+     "count": 1
+    },
+    "offsets": {
+     "start": 29498,
+     "end": 29673
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "102c24eb5bee4d62ff53c2983bb8c679c9c7d0e93ff26aa57bc915c282e962d7",
+  "reconciliation": {
+   "expected": [
+    "7e56563b5533a6aade380472a574336d13beadcba8d8b3c25a05541aa64323a3",
+    "ef79f2e298449875b8dbfc23c7f56b7c02c8bc58414ae12b3b72b3eaa5b41195"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "7e56563b5533a6aade380472a574336d13beadcba8d8b3c25a05541aa64323a3",
+    "ef79f2e298449875b8dbfc23c7f56b7c02c8bc58414ae12b3b72b3eaa5b41195"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "7e56563b5533a6aade380472a574336d13beadcba8d8b3c25a05541aa64323a3",
+      "ef79f2e298449875b8dbfc23c7f56b7c02c8bc58414ae12b3b72b3eaa5b41195"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "04e6fe4163eda7de8333e83adb0685ddb26d258d6ac0315391489e1e6ad4da0a",
+   "a77d3f9ac575800d008bd840378c9b8d23d401e7ddc289bcbe6419f4b717a219"
+  ],
+  "terminal": [
+   "04e6fe4163eda7de8333e83adb0685ddb26d258d6ac0315391489e1e6ad4da0a",
+   "a77d3f9ac575800d008bd840378c9b8d23d401e7ddc289bcbe6419f4b717a219"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__232/run-c7Zpn8/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__232/run-c7Zpn8"
+}

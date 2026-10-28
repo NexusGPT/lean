@@ -1,0 +1,21 @@
+{
+ "file": "lib/plugins/console/generate.js",
+ "unit": "(edit 87a1ee967fcc)",
+ "editIds": [
+  "87a1ee967fccede00ad1e3e9c2a05104737fd80e3523fdc9827d804933b55b41"
+ ],
+ "lines": [
+  24,
+  24
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (module-level statement)",
+ "context": {
+  "reason": "module-level statement",
+  "parent": "SourceFile",
+  "node": "FunctionDeclaration"
+ },
+ "advice": []
+}

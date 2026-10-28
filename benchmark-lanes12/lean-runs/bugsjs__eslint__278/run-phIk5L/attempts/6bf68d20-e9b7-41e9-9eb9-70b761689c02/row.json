@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/no-var.js",
+ "unit": "(edit 7d82f89f2829)",
+ "editIds": [
+  "7d82f89f2829957831fdc5479c8e7645eef68d82bae33e429263c5378bdd2b5b"
+ ],
+ "lines": [
+  26,
+  26
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

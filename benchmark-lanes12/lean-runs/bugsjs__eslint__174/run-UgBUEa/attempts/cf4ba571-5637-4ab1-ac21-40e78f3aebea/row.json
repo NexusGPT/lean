@@ -1,0 +1,20 @@
+{
+ "file": "lib/rules/prefer-arrow-callback.js",
+ "unit": "(edit 809695e5bbc3)",
+ "editIds": [
+  "809695e5bbc370e7942d716e5afe291173002998cfe223666bcabf13ac3c1a9b"
+ ],
+ "lines": [
+  282,
+  282
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

@@ -1,0 +1,314 @@
+{
+ "identity": "ffe53722c6131102eedc2dd36d6796827428f4913fe9aa58c5c4606663a39217",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/util/glob-util.js",
+   "unit": "resolveFileGlobPatterns",
+   "lines": [
+    85,
+    90
+   ],
+   "coverage": "refused:callback-form",
+   "verdict": "PASS-bounded",
+   "laneB": "PASS-bounded",
+   "laneA": null,
+   "witness": null,
+   "reason": "an effectful array callback needs an inline arrow so its world transitions are read in array order",
+   "advice": [
+    {
+     "line": 89,
+     "rule": "callback-form",
+     "msg": "an effectful array callback needs an inline arrow so its world transitions are read in array order",
+     "do": "[conditional: the function has no `this`, `arguments` or `new.target` in it and is never called with `new`] The callback must be an arrow function with plain parameters. A named function is read by name when its own parameters are plain; otherwise pass it the arguments JavaScript passes, `xs.map((x, i, a) => f(x, i, a))`, or only the ones it reads. An effectful callback may destructure its element or default it where the element type never holds undefined; name the fields you read instead of a rest element."
+    },
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'Function' is not assignable to parameter of type '(value: string, index: number, array: string[]) => string'.   Type 'Function' provides no match for the signature '(value: string, index: number, array: string[]): string'.",
+     "do": "[migration] A type error under strict mode; the proof needs the types to hold."
+    }
+   ],
+   "editIds": [
+    "bb3f42102b7909b2105ac0d9a9e6a6b8c05882838c48df59081b830d31e9c22a",
+    "96b08d371097dcc94d8321b8f08da42ba92b63258fc5f7668c62a8e54ab088c3"
+   ]
+  }
+ ],
+ "order": [
+  {
+   "group": "changed",
+   "units": [
+    {
+     "file": "lib/util/glob-util.js",
+     "unit": "resolveFileGlobPatterns",
+     "lines": [
+      85,
+      90
+     ]
+    }
+   ]
+  },
+  {
+   "group": "callers",
+   "units": []
+  },
+  {
+   "group": "heap",
+   "units": []
+  }
+ ],
+ "stop": {
+  "reason": "none",
+  "reached": 1,
+  "total": 1
+ },
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "27616a81ff0636f94e2ea15c977b56e7c7e23a19",
+  "head": "d0fb38929a95273568c717de150b38fb06adde87",
+  "files": [
+   {
+    "id": "a593be5e70ae76b7d40a0618dede81bc422f76472083ea832cccb6332f90cde7",
+    "file": "lib/util/glob-util.js",
+    "oldPath": "lib/util/glob-util.js",
+    "newPath": "lib/util/glob-util.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "d414f783f17ade9976f2c12f987d8038e4af4b83",
+    "newOid": "4c21fc55106d992e24794b2a891360793de3419f",
+    "status": "M",
+    "edits": [
+     "bb3f42102b7909b2105ac0d9a9e6a6b8c05882838c48df59081b830d31e9c22a",
+     "96b08d371097dcc94d8321b8f08da42ba92b63258fc5f7668c62a8e54ab088c3"
+    ],
+    "hunks": [
+     {
+      "id": "3a57ce716dcb7237d5f9ad3985addc47c7ad8a44aa71b8cc2d1144a68d4cc6a4",
+      "old": {
+       "start": 89,
+       "count": 1
+      },
+      "new": {
+       "start": 89,
+       "count": 1
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "28eaef0f96c7cced49dc8a17c5a90c585e9f08c1f5d8f2f6a05e21ffde13d171",
+    "newHash": "a6e8a5067213f980f715303c0bb8b8f69704a7d1314302e9b055e987a17f3d9d",
+    "kind": "text",
+    "units": {
+     "old": [
+      {
+       "name": "processPath",
+       "side": "old",
+       "file": "lib/util/glob-util.js",
+       "start": 42,
+       "end": 73,
+       "offset": 1663,
+       "stop": 2595,
+       "id": "be5fee25e5255b362c45d89ce8cba406740c1ce1f65c97c84d7fbf6631c7d4d1"
+      },
+      {
+       "name": "resolveFileGlobPatterns",
+       "side": "old",
+       "file": "lib/util/glob-util.js",
+       "start": 85,
+       "end": 90,
+       "offset": 3084,
+       "stop": 3245,
+       "id": "22d9934bd988f3b5a5820ae9b5d649ee20d9d6c3759bafed802e4a2f2d9ba815"
+      },
+      {
+       "name": "listFilesToProcess",
+       "side": "old",
+       "file": "lib/util/glob-util.js",
+       "start": 104,
+       "end": 178,
+       "offset": 3914,
+       "stop": 6480,
+       "id": "9ee1be1fe8184a5040d200f8040362f11efde4edfc0d7004076a0e9f2d41dc87"
+      }
+     ],
+     "new": [
+      {
+       "name": "processPath",
+       "side": "new",
+       "file": "lib/util/glob-util.js",
+       "start": 42,
+       "end": 73,
+       "offset": 1663,
+       "stop": 2595,
+       "id": "30edf01f30ef16276e87e2f0405099fccd0323c106f1b7e0b8b7b6edbe9f7bbe"
+      },
+      {
+       "name": "resolveFileGlobPatterns",
+       "side": "new",
+       "file": "lib/util/glob-util.js",
+       "start": 85,
+       "end": 90,
+       "offset": 3084,
+       "stop": 3267,
+       "id": "d2839bedce473954405a92e1af0597157a80bf6a4e9312dc8d8b374634a62d9e"
+      },
+      {
+       "name": "listFilesToProcess",
+       "side": "new",
+       "file": "lib/util/glob-util.js",
+       "start": 104,
+       "end": 178,
+       "offset": 3936,
+       "stop": 6502,
+       "id": "524d091d6addbf3db16f07d5da8c17dcb98585ba1442dec1a0f16c562bfa1a34"
+      }
+     ]
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "bb3f42102b7909b2105ac0d9a9e6a6b8c05882838c48df59081b830d31e9c22a",
+    "fileId": "a593be5e70ae76b7d40a0618dede81bc422f76472083ea832cccb6332f90cde7",
+    "file": "lib/util/glob-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "3a57ce716dcb7237d5f9ad3985addc47c7ad8a44aa71b8cc2d1144a68d4cc6a4",
+    "side": "old",
+    "old": {
+     "start": 89,
+     "count": 1
+    },
+    "new": {
+     "start": 89,
+     "count": 0
+    },
+    "offsets": {
+     "start": 3196,
+     "end": 3244
+    },
+    "links": [
+     {
+      "id": "22d9934bd988f3b5a5820ae9b5d649ee20d9d6c3759bafed802e4a2f2d9ba815",
+      "file": "lib/util/glob-util.js",
+      "unit": "resolveFileGlobPatterns",
+      "side": "old",
+      "start": 85,
+      "end": 90
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "22d9934bd988f3b5a5820ae9b5d649ee20d9d6c3759bafed802e4a2f2d9ba815",
+     "file": "lib/util/glob-util.js",
+     "unit": "resolveFileGlobPatterns",
+     "side": "old",
+     "start": 85,
+     "end": 90
+    }
+   },
+   {
+    "id": "96b08d371097dcc94d8321b8f08da42ba92b63258fc5f7668c62a8e54ab088c3",
+    "fileId": "a593be5e70ae76b7d40a0618dede81bc422f76472083ea832cccb6332f90cde7",
+    "file": "lib/util/glob-util.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "3a57ce716dcb7237d5f9ad3985addc47c7ad8a44aa71b8cc2d1144a68d4cc6a4",
+    "side": "new",
+    "old": {
+     "start": 89,
+     "count": 0
+    },
+    "new": {
+     "start": 89,
+     "count": 1
+    },
+    "offsets": {
+     "start": 3196,
+     "end": 3266
+    },
+    "links": [
+     {
+      "id": "d2839bedce473954405a92e1af0597157a80bf6a4e9312dc8d8b374634a62d9e",
+      "file": "lib/util/glob-util.js",
+      "unit": "resolveFileGlobPatterns",
+      "side": "new",
+      "start": 85,
+      "end": 90
+     }
+    ],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "FunctionDeclaration"
+    },
+    "primary": {
+     "kind": "unit",
+     "id": "d2839bedce473954405a92e1af0597157a80bf6a4e9312dc8d8b374634a62d9e",
+     "file": "lib/util/glob-util.js",
+     "unit": "resolveFileGlobPatterns",
+     "side": "new",
+     "start": 85,
+     "end": 90
+    }
+   }
+  ],
+  "id": "76a57f326367e4e8117aa1e3d19e8b0f6506ad3fa1de517deca8907e857fdc09",
+  "reconciliation": {
+   "expected": [
+    "bb3f42102b7909b2105ac0d9a9e6a6b8c05882838c48df59081b830d31e9c22a",
+    "96b08d371097dcc94d8321b8f08da42ba92b63258fc5f7668c62a8e54ab088c3"
+   ],
+   "unit": [
+    "bb3f42102b7909b2105ac0d9a9e6a6b8c05882838c48df59081b830d31e9c22a",
+    "96b08d371097dcc94d8321b8f08da42ba92b63258fc5f7668c62a8e54ab088c3"
+   ],
+   "artifact": [],
+   "unassigned": [],
+   "classes": {
+    "source": {
+     "unit": [
+      "bb3f42102b7909b2105ac0d9a9e6a6b8c05882838c48df59081b830d31e9c22a",
+      "96b08d371097dcc94d8321b8f08da42ba92b63258fc5f7668c62a8e54ab088c3"
+     ],
+     "artifact": [],
+     "unassigned": []
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "9249569533e0affed49c1ef7821802b7b71e06e220192199e286665fa3473a49"
+  ],
+  "terminal": [
+   "9249569533e0affed49c1ef7821802b7b71e06e220192199e286665fa3473a49"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [
+    "9249569533e0affed49c1ef7821802b7b71e06e220192199e286665fa3473a49/B",
+    "9249569533e0affed49c1ef7821802b7b71e06e220192199e286665fa3473a49/A"
+   ],
+   "terminal": [
+    "9249569533e0affed49c1ef7821802b7b71e06e220192199e286665fa3473a49/B",
+    "9249569533e0affed49c1ef7821802b7b71e06e220192199e286665fa3473a49/A"
+   ],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__23/run-T3mGwT/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__23/run-T3mGwT",
+ "callersChecked": 0
+}

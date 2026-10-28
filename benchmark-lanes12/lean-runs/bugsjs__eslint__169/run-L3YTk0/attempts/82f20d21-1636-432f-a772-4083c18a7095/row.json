@@ -1,0 +1,20 @@
+{
+ "file": "lib/ast-utils.js",
+ "unit": "(edit 172780db904f)",
+ "editIds": [
+  "172780db904fb516e46da17bc23dd88aab84cfe4333d7ba82ac42619b3111761"
+ ],
+ "lines": [
+  719,
+  719
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:whitespace",
+ "reason": "whitespace",
+ "context": {
+  "reason": "whitespace",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

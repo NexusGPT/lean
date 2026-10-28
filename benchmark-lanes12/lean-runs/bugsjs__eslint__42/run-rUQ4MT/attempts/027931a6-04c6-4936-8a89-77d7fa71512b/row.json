@@ -1,0 +1,20 @@
+{
+ "file": "lib/ignored-paths.js",
+ "unit": "(edit 3b2713cf9884)",
+ "editIds": [
+  "3b2713cf988444ce1dd685ddd8708b2971c1c327f00a8063b7f1cbd038c76aa5"
+ ],
+ "lines": [
+  122,
+  122
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:comment",
+ "reason": "comment",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

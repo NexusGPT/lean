@@ -1,0 +1,174 @@
+{
+ "schema": "lean/change-ledger/v1",
+ "base": "427543afb4bf024869b8a243c793824eca73ad67",
+ "head": "4c4f1a628852aa877c89270d66f539c7646eb1ae",
+ "files": [
+  {
+   "id": "ea10e7e7e2112f16f9a10e00e044382fd6e5cebfc9be3e8871a118be53e30304",
+   "file": "lib/rules/brace-style.js",
+   "oldPath": "lib/rules/brace-style.js",
+   "newPath": "lib/rules/brace-style.js",
+   "oldMode": "100644",
+   "newMode": "100644",
+   "oldOid": "c109228bd8f95674d50c78f9c14ffe848f9133ba",
+   "newOid": "bde74371e44e11332c81228356c9f0eb91c3757a",
+   "status": "M",
+   "edits": [
+    "58d2297962b945a0a571d5c04b68395a502f606d0d6d5b083f7d617cef2f5c7c",
+    "e6a66c4f462e13def78e7937e313c8c8f5eae70773d6e6376c5fbbf334d181ba",
+    "737f4607282a9c035431f2feb6d289661d5be55b02fd838e5d120a59f4d3b6db"
+   ],
+   "hunks": [
+    {
+     "id": "88ab8b57dbab6ea4cdc0c33d7f7a2451699fe28e2198bf9ea579642b5d8a6f3c",
+     "old": {
+      "start": 142,
+      "count": 0
+     },
+     "new": {
+      "start": 143,
+      "count": 3
+     }
+    }
+   ],
+   "class": "source",
+   "oldHash": "f7abc1d3fc468f1829482d2511721042b7d6f1faf29b32e0338334b1fe53d3a0",
+   "newHash": "e91c0ded3b280f5e0568cd5943fc7f821bbd4f3c659913f1a5049e2d875ae2de",
+   "kind": "text",
+   "units": {
+    "old": [],
+    "new": []
+   }
+  }
+ ],
+ "edits": [
+  {
+   "id": "58d2297962b945a0a571d5c04b68395a502f606d0d6d5b083f7d617cef2f5c7c",
+   "fileId": "ea10e7e7e2112f16f9a10e00e044382fd6e5cebfc9be3e8871a118be53e30304",
+   "file": "lib/rules/brace-style.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "88ab8b57dbab6ea4cdc0c33d7f7a2451699fe28e2198bf9ea579642b5d8a6f3c",
+   "side": "new",
+   "old": {
+    "start": 142,
+    "count": 0
+   },
+   "new": {
+    "start": 143,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6388,
+    "end": 6418
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "e6a66c4f462e13def78e7937e313c8c8f5eae70773d6e6376c5fbbf334d181ba",
+   "fileId": "ea10e7e7e2112f16f9a10e00e044382fd6e5cebfc9be3e8871a118be53e30304",
+   "file": "lib/rules/brace-style.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "88ab8b57dbab6ea4cdc0c33d7f7a2451699fe28e2198bf9ea579642b5d8a6f3c",
+   "side": "new",
+   "old": {
+    "start": 142,
+    "count": 0
+   },
+   "new": {
+    "start": 144,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6418,
+    "end": 6516
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  },
+  {
+   "id": "737f4607282a9c035431f2feb6d289661d5be55b02fd838e5d120a59f4d3b6db",
+   "fileId": "ea10e7e7e2112f16f9a10e00e044382fd6e5cebfc9be3e8871a118be53e30304",
+   "file": "lib/rules/brace-style.js",
+   "class": "source",
+   "kind": "text",
+   "hunkId": "88ab8b57dbab6ea4cdc0c33d7f7a2451699fe28e2198bf9ea579642b5d8a6f3c",
+   "side": "new",
+   "old": {
+    "start": 142,
+    "count": 0
+   },
+   "new": {
+    "start": 145,
+    "count": 1
+   },
+   "offsets": {
+    "start": 6516,
+    "end": 6531
+   },
+   "links": [],
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "primary": {
+    "kind": "unassigned",
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "side": "new"
+   }
+  }
+ ],
+ "id": "1e99e01af15c4dfb73b04902ff866ff1d904a24567cbffdbedadc4a01eb2230e",
+ "reconciliation": {
+  "expected": [
+   "58d2297962b945a0a571d5c04b68395a502f606d0d6d5b083f7d617cef2f5c7c",
+   "e6a66c4f462e13def78e7937e313c8c8f5eae70773d6e6376c5fbbf334d181ba",
+   "737f4607282a9c035431f2feb6d289661d5be55b02fd838e5d120a59f4d3b6db"
+  ],
+  "unit": [],
+  "artifact": [],
+  "unassigned": [
+   "58d2297962b945a0a571d5c04b68395a502f606d0d6d5b083f7d617cef2f5c7c",
+   "e6a66c4f462e13def78e7937e313c8c8f5eae70773d6e6376c5fbbf334d181ba",
+   "737f4607282a9c035431f2feb6d289661d5be55b02fd838e5d120a59f4d3b6db"
+  ],
+  "classes": {
+   "source": {
+    "unit": [],
+    "artifact": [],
+    "unassigned": [
+     "58d2297962b945a0a571d5c04b68395a502f606d0d6d5b083f7d617cef2f5c7c",
+     "e6a66c4f462e13def78e7937e313c8c8f5eae70773d6e6376c5fbbf334d181ba",
+     "737f4607282a9c035431f2feb6d289661d5be55b02fd838e5d120a59f4d3b6db"
+    ]
+   }
+  },
+  "missing": [],
+  "unexpected": [],
+  "complete": true
+ }
+}

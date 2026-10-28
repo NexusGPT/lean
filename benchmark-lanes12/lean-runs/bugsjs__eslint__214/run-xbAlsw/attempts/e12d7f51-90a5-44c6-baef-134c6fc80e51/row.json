@@ -1,0 +1,21 @@
+{
+ "file": "lib/rules/no-shadow.js",
+ "unit": "(edit dda9e157a688)",
+ "editIds": [
+  "dda9e157a6886a4c08a08826915b6b4bece3bb72f1cb9b302e2a1c3fadbbbc65"
+ ],
+ "lines": [
+  43,
+  43
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:exported property assignment",
+ "reason": "exported property assignment",
+ "context": {
+  "reason": "exported property assignment",
+  "parent": "ExpressionStatement",
+  "node": "BinaryExpression"
+ },
+ "advice": []
+}

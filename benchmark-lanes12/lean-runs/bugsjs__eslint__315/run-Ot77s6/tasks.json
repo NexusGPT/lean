@@ -1,0 +1,35 @@
+{
+ "change": "6ff583439d9ee0a5978d7efefae05150bfb47e4294c6b2f798d6db9af78d051a",
+ "tasks": [
+  {
+   "id": "6657153233388a50aeddda7a89c0bccdcdbbba28c8170a109f12a14d504c26b0",
+   "file": "lib/rules/no-await-in-loop.js",
+   "unit": "(edit 4f1810bb9c0e)",
+   "lines": [
+    87,
+    87
+   ],
+   "lanes": [],
+   "editIds": [
+    "4f1810bb9c0e2967683c42f96932af70d9eab7d60d1ac50fdb0172fe81a5868c"
+   ],
+   "attemptId": "1ca3e4f9-c9e7-4b43-9e56-ee0b2a12410e",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__315/run-Ot77s6/attempts/1ca3e4f9-c9e7-4b43-9e56-ee0b2a12410e"
+  },
+  {
+   "id": "36be9f541745e4875afd1692bf19d03368a466ea3145aa3559f738e1517eea59",
+   "file": "lib/rules/no-await-in-loop.js",
+   "unit": "(edit 6e07aaf86a61)",
+   "lines": [
+    87,
+    87
+   ],
+   "lanes": [],
+   "editIds": [
+    "6e07aaf86a6131a3b4c835e73f13640f3a4b43f350616b965008d106cf3a452a"
+   ],
+   "attemptId": "4b329d4b-2038-485b-8c18-1336c4ce8851",
+   "folder": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__315/run-Ot77s6/attempts/4b329d4b-2038-485b-8c18-1336c4ce8851"
+  }
+ ]
+}

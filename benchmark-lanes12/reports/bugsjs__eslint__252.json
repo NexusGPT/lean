@@ -1,0 +1,445 @@
+{
+ "identity": "a2eadd34648865524d2b74da1b5dd5431c43f2209c6fb9c68f6a67450a35d595",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 521b4bdbca85)",
+   "editIds": [
+    "521b4bdbca85c8201a4c35066553d54cc12aaa7892af50c4b6e1db1a4d08101c"
+   ],
+   "lines": [
+    89,
+    89
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit b2b57863799b)",
+   "editIds": [
+    "b2b57863799ba1bc673ea819d0232e0bbb259d7b3f083cae940d33089d23f099"
+   ],
+   "lines": [
+    90,
+    90
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit b96a6cb8650c)",
+   "editIds": [
+    "b96a6cb8650c3abe17a6e33668e9120759dc4c64004595f906b6d816f39a86a6"
+   ],
+   "lines": [
+    91,
+    91
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit 45993f5d296c)",
+   "editIds": [
+    "45993f5d296c16d38722e67f934d3debb127b679b9282a93bafb1b735c3ce5b0"
+   ],
+   "lines": [
+    89,
+    89
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit c48eb60b893d)",
+   "editIds": [
+    "c48eb60b893dfa3170c8746a11d84377010a4279a910dce397232f73020fdfda"
+   ],
+   "lines": [
+    90,
+    90
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  },
+  {
+   "file": "lib/rules/func-call-spacing.js",
+   "unit": "(edit e5c41a3e9921)",
+   "editIds": [
+    "e5c41a3e9921c7340bf98a521753f71c5596dd2c83963db0e7e136860ba63040"
+   ],
+   "lines": [
+    91,
+    91
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:object-literal member",
+   "reason": "object-literal member",
+   "context": {
+    "reason": "object-literal member",
+    "parent": "ObjectLiteralExpression",
+    "node": "MethodDeclaration"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "a664e8aefb732b20be68d443eab34700a4436a96",
+  "head": "1f0717c31b9a52f4a5d7fa4d6377871e29ff2ec3",
+  "files": [
+   {
+    "id": "f0b27e97956cbd0ef4604c0603eb1ff86add1f1a63f07b77a0f92bfb4f0ec9f1",
+    "file": "lib/rules/func-call-spacing.js",
+    "oldPath": "lib/rules/func-call-spacing.js",
+    "newPath": "lib/rules/func-call-spacing.js",
+    "oldMode": "100644",
+    "newMode": "100644",
+    "oldOid": "5c416f0373fcac1208ec77889448d65ea251fde0",
+    "newOid": "651ee9266616f69af224d2bad42197a64057c68f",
+    "status": "M",
+    "edits": [
+     "521b4bdbca85c8201a4c35066553d54cc12aaa7892af50c4b6e1db1a4d08101c",
+     "b2b57863799ba1bc673ea819d0232e0bbb259d7b3f083cae940d33089d23f099",
+     "b96a6cb8650c3abe17a6e33668e9120759dc4c64004595f906b6d816f39a86a6",
+     "45993f5d296c16d38722e67f934d3debb127b679b9282a93bafb1b735c3ce5b0",
+     "c48eb60b893dfa3170c8746a11d84377010a4279a910dce397232f73020fdfda",
+     "e5c41a3e9921c7340bf98a521753f71c5596dd2c83963db0e7e136860ba63040"
+    ],
+    "hunks": [
+     {
+      "id": "2f87b000c7ef06b349b826c1c61e8791998e4b369883c61c014aee6cedf61137",
+      "old": {
+       "start": 89,
+       "count": 3
+      },
+      "new": {
+       "start": 89,
+       "count": 3
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "c2152501761a60d206b12172b2eacc8d5e606cca8a3cae264e23d65d263793e3",
+    "newHash": "5bbbbb4d9d2aaa5c510edc43ea801e9781ccd729a9145a232383bc0a51df4cc4",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "521b4bdbca85c8201a4c35066553d54cc12aaa7892af50c4b6e1db1a4d08101c",
+    "fileId": "f0b27e97956cbd0ef4604c0603eb1ff86add1f1a63f07b77a0f92bfb4f0ec9f1",
+    "file": "lib/rules/func-call-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2f87b000c7ef06b349b826c1c61e8791998e4b369883c61c014aee6cedf61137",
+    "side": "old",
+    "old": {
+     "start": 89,
+     "count": 1
+    },
+    "new": {
+     "start": 89,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2769,
+     "end": 2859
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b2b57863799ba1bc673ea819d0232e0bbb259d7b3f083cae940d33089d23f099",
+    "fileId": "f0b27e97956cbd0ef4604c0603eb1ff86add1f1a63f07b77a0f92bfb4f0ec9f1",
+    "file": "lib/rules/func-call-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2f87b000c7ef06b349b826c1c61e8791998e4b369883c61c014aee6cedf61137",
+    "side": "old",
+    "old": {
+     "start": 90,
+     "count": 1
+    },
+    "new": {
+     "start": 89,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2859,
+     "end": 2907
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "b96a6cb8650c3abe17a6e33668e9120759dc4c64004595f906b6d816f39a86a6",
+    "fileId": "f0b27e97956cbd0ef4604c0603eb1ff86add1f1a63f07b77a0f92bfb4f0ec9f1",
+    "file": "lib/rules/func-call-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2f87b000c7ef06b349b826c1c61e8791998e4b369883c61c014aee6cedf61137",
+    "side": "old",
+    "old": {
+     "start": 91,
+     "count": 1
+    },
+    "new": {
+     "start": 89,
+     "count": 0
+    },
+    "offsets": {
+     "start": 2907,
+     "end": 3015
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "old"
+    }
+   },
+   {
+    "id": "45993f5d296c16d38722e67f934d3debb127b679b9282a93bafb1b735c3ce5b0",
+    "fileId": "f0b27e97956cbd0ef4604c0603eb1ff86add1f1a63f07b77a0f92bfb4f0ec9f1",
+    "file": "lib/rules/func-call-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2f87b000c7ef06b349b826c1c61e8791998e4b369883c61c014aee6cedf61137",
+    "side": "new",
+    "old": {
+     "start": 89,
+     "count": 0
+    },
+    "new": {
+     "start": 89,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2769,
+     "end": 2888
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "c48eb60b893dfa3170c8746a11d84377010a4279a910dce397232f73020fdfda",
+    "fileId": "f0b27e97956cbd0ef4604c0603eb1ff86add1f1a63f07b77a0f92bfb4f0ec9f1",
+    "file": "lib/rules/func-call-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2f87b000c7ef06b349b826c1c61e8791998e4b369883c61c014aee6cedf61137",
+    "side": "new",
+    "old": {
+     "start": 89,
+     "count": 0
+    },
+    "new": {
+     "start": 90,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2888,
+     "end": 2952
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   },
+   {
+    "id": "e5c41a3e9921c7340bf98a521753f71c5596dd2c83963db0e7e136860ba63040",
+    "fileId": "f0b27e97956cbd0ef4604c0603eb1ff86add1f1a63f07b77a0f92bfb4f0ec9f1",
+    "file": "lib/rules/func-call-spacing.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "2f87b000c7ef06b349b826c1c61e8791998e4b369883c61c014aee6cedf61137",
+    "side": "new",
+    "old": {
+     "start": 89,
+     "count": 0
+    },
+    "new": {
+     "start": 91,
+     "count": 1
+    },
+    "offsets": {
+     "start": 2952,
+     "end": 3046
+    },
+    "links": [],
+    "context": {
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "node": "MethodDeclaration"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "object-literal member",
+     "parent": "ObjectLiteralExpression",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "a2eadd34648865524d2b74da1b5dd5431c43f2209c6fb9c68f6a67450a35d595",
+  "reconciliation": {
+   "expected": [
+    "521b4bdbca85c8201a4c35066553d54cc12aaa7892af50c4b6e1db1a4d08101c",
+    "b2b57863799ba1bc673ea819d0232e0bbb259d7b3f083cae940d33089d23f099",
+    "b96a6cb8650c3abe17a6e33668e9120759dc4c64004595f906b6d816f39a86a6",
+    "45993f5d296c16d38722e67f934d3debb127b679b9282a93bafb1b735c3ce5b0",
+    "c48eb60b893dfa3170c8746a11d84377010a4279a910dce397232f73020fdfda",
+    "e5c41a3e9921c7340bf98a521753f71c5596dd2c83963db0e7e136860ba63040"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "521b4bdbca85c8201a4c35066553d54cc12aaa7892af50c4b6e1db1a4d08101c",
+    "b2b57863799ba1bc673ea819d0232e0bbb259d7b3f083cae940d33089d23f099",
+    "b96a6cb8650c3abe17a6e33668e9120759dc4c64004595f906b6d816f39a86a6",
+    "45993f5d296c16d38722e67f934d3debb127b679b9282a93bafb1b735c3ce5b0",
+    "c48eb60b893dfa3170c8746a11d84377010a4279a910dce397232f73020fdfda",
+    "e5c41a3e9921c7340bf98a521753f71c5596dd2c83963db0e7e136860ba63040"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "521b4bdbca85c8201a4c35066553d54cc12aaa7892af50c4b6e1db1a4d08101c",
+      "b2b57863799ba1bc673ea819d0232e0bbb259d7b3f083cae940d33089d23f099",
+      "b96a6cb8650c3abe17a6e33668e9120759dc4c64004595f906b6d816f39a86a6",
+      "45993f5d296c16d38722e67f934d3debb127b679b9282a93bafb1b735c3ce5b0",
+      "c48eb60b893dfa3170c8746a11d84377010a4279a910dce397232f73020fdfda",
+      "e5c41a3e9921c7340bf98a521753f71c5596dd2c83963db0e7e136860ba63040"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "9663cc6a903f21a4aa1e4db9e446fa3016a0421a8f1bb553a549569fdeac3f64",
+   "c8d789d25386fad83a6d7b3ea66d46ecda40c4f393a16d42432c824d21016c2e",
+   "ecbedefb3b91e8ecbc1aec9a36efc45b802d7a4c59a14435bafd491e21dd5dd4",
+   "e31bb21a02af36257af297089793835949cc91f336fc85d36ae917a8499f967b",
+   "1e778d28603e9f590b0dd71ddf760afad0c302c08458e9c1df8d0fc8ee673a89",
+   "870905187e1cbfea84be5157cdec933f08c3884375f90184e93af9db9b477fd5"
+  ],
+  "terminal": [
+   "9663cc6a903f21a4aa1e4db9e446fa3016a0421a8f1bb553a549569fdeac3f64",
+   "c8d789d25386fad83a6d7b3ea66d46ecda40c4f393a16d42432c824d21016c2e",
+   "ecbedefb3b91e8ecbc1aec9a36efc45b802d7a4c59a14435bafd491e21dd5dd4",
+   "e31bb21a02af36257af297089793835949cc91f336fc85d36ae917a8499f967b",
+   "1e778d28603e9f590b0dd71ddf760afad0c302c08458e9c1df8d0fc8ee673a89",
+   "870905187e1cbfea84be5157cdec933f08c3884375f90184e93af9db9b477fd5"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__252/run-Y6bKC9/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__252/run-Y6bKC9"
+}

@@ -1,0 +1,20 @@
+{
+ "file": "lib/core/PackageRepository.js",
+ "unit": "(edit f152ba986567)",
+ "editIds": [
+  "f152ba986567a4196004312490602fe8d1948106b27adce4cbe6e3856d11c4ae"
+ ],
+ "lines": [
+  49,
+  49
+ ],
+ "verdict": "ASK",
+ "decision": "unassigned",
+ "coverage": "unassigned:untyped JavaScript file",
+ "reason": "untyped JavaScript file (comment)",
+ "context": {
+  "reason": "comment",
+  "parent": "SourceFile"
+ },
+ "advice": []
+}

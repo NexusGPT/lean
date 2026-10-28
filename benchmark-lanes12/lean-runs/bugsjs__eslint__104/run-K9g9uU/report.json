@@ -1,0 +1,203 @@
+{
+ "identity": "3299986531f5a22f03ef0c375d9a3dfd3fec87b13bf94abd58213243d4662c59",
+ "leanVersion": "815fc01fec5f51af99003faa686f25330e7c33ad",
+ "rows": [
+  {
+   "file": "bin/eslint.js",
+   "unit": "(edit c65c38c743ff)",
+   "editIds": [
+    "c65c38c743ff011ca349f54882d4b4002940449888330ca7ae3d197aa3767eff"
+   ],
+   "lines": [
+    50,
+    50
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (whitespace)",
+   "context": {
+    "reason": "whitespace",
+    "parent": "SourceFile"
+   },
+   "advice": []
+  },
+  {
+   "file": "bin/eslint.js",
+   "unit": "(edit 402cf9f658bf)",
+   "editIds": [
+    "402cf9f658bff0281e12227800658a2960849bfa96c6370880adb9b7af546d7b"
+   ],
+   "lines": [
+    51,
+    51
+   ],
+   "verdict": "ASK",
+   "decision": "unassigned",
+   "coverage": "unassigned:untyped JavaScript file",
+   "reason": "untyped JavaScript file (module-level statement)",
+   "context": {
+    "reason": "module-level statement",
+    "parent": "SourceFile",
+    "node": "ExpressionStatement"
+   },
+   "advice": []
+  }
+ ],
+ "ledger": {
+  "schema": "lean/change-ledger/v1",
+  "base": "50e3cf384d7eda2583a3d4f2273678baad96680e",
+  "head": "2ee7227dfcb74d91b09703a70b8d7f808edbc8cf",
+  "files": [
+   {
+    "id": "1935b57d01da6479159b627bc57f8465b727575292cad07ea0527cf885b87443",
+    "file": "bin/eslint.js",
+    "oldPath": "bin/eslint.js",
+    "newPath": "bin/eslint.js",
+    "oldMode": "100755",
+    "newMode": "100755",
+    "oldOid": "7c05ad3b6e68151b4af97882b1ac5c078fcb7ac2",
+    "newOid": "10a7f73dae1fcb21a8326b8c73ce58d1046fc3cc",
+    "status": "M",
+    "edits": [
+     "c65c38c743ff011ca349f54882d4b4002940449888330ca7ae3d197aa3767eff",
+     "402cf9f658bff0281e12227800658a2960849bfa96c6370880adb9b7af546d7b"
+    ],
+    "hunks": [
+     {
+      "id": "fecc2bc044969a16088c0692306c329a1301e0762f5288fc0697b35e45dcf87d",
+      "old": {
+       "start": 49,
+       "count": 0
+      },
+      "new": {
+       "start": 50,
+       "count": 2
+      }
+     }
+    ],
+    "class": "source",
+    "oldHash": "8f49bb13a5d09a2d8fde5cbd8e8ccbf04380787fe14668b8c391b03a1848d5d6",
+    "newHash": "6222c5407e3b3698ab1ede400c0d1575f7bfa8e2db8f89f10fb7d2e37b8e751b",
+    "kind": "text",
+    "units": {
+     "old": [],
+     "new": []
+    }
+   }
+  ],
+  "edits": [
+   {
+    "id": "c65c38c743ff011ca349f54882d4b4002940449888330ca7ae3d197aa3767eff",
+    "fileId": "1935b57d01da6479159b627bc57f8465b727575292cad07ea0527cf885b87443",
+    "file": "bin/eslint.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "fecc2bc044969a16088c0692306c329a1301e0762f5288fc0697b35e45dcf87d",
+    "side": "new",
+    "old": {
+     "start": 49,
+     "count": 0
+    },
+    "new": {
+     "start": 50,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1646,
+     "end": 1647
+    },
+    "links": [],
+    "context": {
+     "reason": "whitespace",
+     "parent": "SourceFile"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "whitespace",
+     "side": "new"
+    }
+   },
+   {
+    "id": "402cf9f658bff0281e12227800658a2960849bfa96c6370880adb9b7af546d7b",
+    "fileId": "1935b57d01da6479159b627bc57f8465b727575292cad07ea0527cf885b87443",
+    "file": "bin/eslint.js",
+    "class": "source",
+    "kind": "text",
+    "hunkId": "fecc2bc044969a16088c0692306c329a1301e0762f5288fc0697b35e45dcf87d",
+    "side": "new",
+    "old": {
+     "start": 49,
+     "count": 0
+    },
+    "new": {
+     "start": 51,
+     "count": 1
+    },
+    "offsets": {
+     "start": 1647,
+     "end": 1683
+    },
+    "links": [],
+    "context": {
+     "reason": "module-level statement",
+     "parent": "SourceFile",
+     "node": "ExpressionStatement"
+    },
+    "primary": {
+     "kind": "unassigned",
+     "reason": "untyped JavaScript file",
+     "context": "module-level statement",
+     "side": "new"
+    }
+   }
+  ],
+  "id": "3299986531f5a22f03ef0c375d9a3dfd3fec87b13bf94abd58213243d4662c59",
+  "reconciliation": {
+   "expected": [
+    "c65c38c743ff011ca349f54882d4b4002940449888330ca7ae3d197aa3767eff",
+    "402cf9f658bff0281e12227800658a2960849bfa96c6370880adb9b7af546d7b"
+   ],
+   "unit": [],
+   "artifact": [],
+   "unassigned": [
+    "c65c38c743ff011ca349f54882d4b4002940449888330ca7ae3d197aa3767eff",
+    "402cf9f658bff0281e12227800658a2960849bfa96c6370880adb9b7af546d7b"
+   ],
+   "classes": {
+    "source": {
+     "unit": [],
+     "artifact": [],
+     "unassigned": [
+      "c65c38c743ff011ca349f54882d4b4002940449888330ca7ae3d197aa3767eff",
+      "402cf9f658bff0281e12227800658a2960849bfa96c6370880adb9b7af546d7b"
+     ]
+    }
+   },
+   "missing": [],
+   "unexpected": [],
+   "complete": true
+  }
+ },
+ "reconciliation": {
+  "expected": [
+   "45f85b3e5ac7a93f2437795a5155dcf166e4e761520c9e7dec92a4b10ad89a54",
+   "fa08bdf5f3cb6864a4b5d78520aa0d94b79bc2eeb34a4cb688f4898a582caa42"
+  ],
+  "terminal": [
+   "45f85b3e5ac7a93f2437795a5155dcf166e4e761520c9e7dec92a4b10ad89a54",
+   "fa08bdf5f3cb6864a4b5d78520aa0d94b79bc2eeb34a4cb688f4898a582caa42"
+  ],
+  "missing": [],
+  "unexpected": [],
+  "lanes": {
+   "expected": [],
+   "terminal": [],
+   "complete": true
+  },
+  "complete": true
+ },
+ "terminalFile": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__104/run-K9g9uU/terminal.json",
+ "runDir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/benchmark-lanes12/lean-runs/bugsjs__eslint__104/run-K9g9uU"
+}
