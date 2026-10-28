@@ -18,6 +18,16 @@ export function specOf(file, unitName, opts = {}) {
   const defs = {};
   // the names the file mentions: a member a file never names is never asked, so only named members of a service are typed
   const named = new Set(); { const w = (n) => { if (ts.isIdentifier(n) || ts.isPrivateIdentifier(n)) named.add(n.text); ts.forEachChild(n, w); }; w(sf); }
+  // the keys a record with an index signature is drawn with (recordSpec): member names and string literals of the unit
+  let openKeyList = null;
+  const openKeys = () => {
+    if (openKeyList) return openKeyList;
+    const out = []; const proto = new Set(Object.getOwnPropertyNames(Object.prototype));
+    const add = (k) => { if (k && k.length <= 40 && !proto.has(k) && !out.includes(k)) out.push(k); };
+    const w = (n) => { if (ts.isPropertyAccessExpression(n)) add(n.name.text); else if (ts.isElementAccessExpression(n) && ts.isStringLiteralLike(n.argumentExpression)) add(n.argumentExpression.text); else if (ts.isStringLiteralLike(n) && !ts.isImportDeclaration(n.parent) && !ts.isExportDeclaration(n.parent) && !ts.isLiteralTypeNode(n.parent)) add(n.text); ts.forEachChild(n, w); };
+    w(u.node ?? sf);
+    return (openKeyList = out);
+  };
   let budget = 20000; // shape nodes; a type with a very large closure (a database client) ends in opaque leaves
   function spec(t, depth = 0) {
     const f = t.flags;
@@ -96,6 +106,13 @@ export function specOf(file, unitName, opts = {}) {
     const out = { kind: 'record', fields: {} };
     seen.set(key, out); defs[key] = out;
     for (const p of props) out.fields[p.name] = { spec: spec(checker.getTypeOfSymbolAtLocation(p, u.node), depth + 1), optional: !!(p.flags & ts.SymbolFlags.Optional) };
+    // a record with an index signature beside its fields holds entries the fields do not name: up to two optional
+    // entries of the signature's type, keyed by names the unit reads as members or writes as strings and the type does
+    // not declare (a generic key when it names none), never '__proto__' nor another Object.prototype name
+    if (ix) {
+      const keys = openKeys().filter((k) => !props.some((p) => p.name === k)).slice(0, 2);
+      for (const k of keys.length ? keys : ['k0']) out.fields[k] = { spec: spec(ix.type, depth + 1), optional: true };
+    }
     return out;
   }
   const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, spec: spec(checker.getTypeAtLocation(p.name)) }));

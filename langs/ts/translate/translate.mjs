@@ -35,6 +35,7 @@ import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-for
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { openRecordType, OPEN_RECORD_WHY } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
@@ -3123,6 +3124,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     { let e = n.expression; while (e && ts.isParenthesizedExpression(e)) e = e.expression;
       if (e && ts.isIdentifier(e)) { const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (o.kind === 'local' && o.sym) { const dt = symType(o.sym, e); const bd = isOptional(dt) ? baseOf(dt) : dt; if (isRecordish(bd) && dtype(bd, n) !== dtype(recvT, n)) recvT = bd; } } }
     if (isRecordish(recvT)) {
+      if (!checker.getPropertyOfType(recvT, name) && openRecordType(checker, recvT)) fail(n, `dynamic-key: ${OPEN_RECORD_WHY(checker.typeToString(recvT))}`); // common.mjs openRecordType: the datatype holds no undeclared key
       const props = checker.getPropertiesOfType(recvT);
       const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
       const T = dtype(recvT, n);
@@ -3292,7 +3294,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (isRecordish(base)) {
       // a finite key selects a declared field; receiver and key are evaluated once, in that order
       const keyParts = at.flags & TF.Union ? at.types : [at];
-      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) return openKeyRead(n, base, at);
+      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) { if (openRecordType(checker, base)) fail(n, `dynamic-key: ${OPEN_RECORD_WHY(checker.typeToString(base))}`); return openKeyRead(n, base, at); }
       const keys = keyParts.map((x) => x.value);
       const R = `rr${tempCount++}_`, Kc = `rk${tempCount++}_`;
       const receiver = expr(n.expression);

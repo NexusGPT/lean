@@ -1267,3 +1267,23 @@ export function reduceAccumulator(param, checker, write = null) {
   if (ts.isIdentifier(target)) return target.text === name;
   return (ts.isPropertyAccessExpression(target) || ts.isElementAccessExpression(target)) && ts.isIdentifier(bare(target.expression)) && bare(target.expression).text === name;
 }
+
+// An OPEN record type: an object type that declares fields and carries an index signature (string or number) beside
+// them (`interface H { accept?: string; [name: string]: string | undefined }`, IncomingHttpHeaders, ProcessEnv). The
+// value reading holds its declared fields alone (a datatype of them), so a read of a key the type does not declare
+// reads an entry that reading dropped: `h.other` and `({ accept: h.accept }).other` would read alike. Shared by the
+// lint (dot and bracket reads) and the translator (its backstop at the member read): such a read is refused.
+export function openRecordType(checker, t) {
+  const TF = ts.TypeFlags;
+  if (!t || !(t.flags & TF.Object)) return false;
+  if (!checker.getPropertiesOfType(t).length) return false;
+  return !!(checker.getIndexInfoOfType(t, ts.IndexKind.String) || checker.getIndexInfoOfType(t, ts.IndexKind.Number));
+}
+// a read of `name` (a declared key or not) on a type that may be a union: true when some open member lacks that key;
+// `name` null for a key the reading does not fix (a string, a number), which no open type declares
+export function undeclaredOpenRead(checker, t, name) {
+  const TF = ts.TypeFlags;
+  const parts = t && t.flags & TF.Union ? t.types : t ? [t] : [];
+  return parts.some((p) => openRecordType(checker, p) && (name === null || !checker.getPropertyOfType(p, name)));
+}
+export const OPEN_RECORD_WHY = (typeText) => `${typeText} declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own`;

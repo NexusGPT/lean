@@ -14,6 +14,7 @@ import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, i
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
+import { openRecordType, OPEN_RECORD_WHY } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -2073,8 +2074,14 @@ export function lintFile(file, ranges = null, opts = {}) {
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)}: constrain the type parameter to one record declaring it`);
       }
       if (!isRecordish(t)) return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
+      if (!checker.getPropertyOfType(t, name) && openRecordType(checker, t) && !worldRootedRead(e)) return v(e, 'dynamic-key', OPEN_RECORD_WHY(checker.typeToString(t))); // an undeclared name on an open record (common.mjs openRecordType)
       if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length) return v(e, 'unsupported-member', `property .${name} is not declared on ${checker.typeToString(t)}`);
     }
+  }
+  // a read rooted at an outside or lib global (`process.env[k]`, `process.env.K`): a read of the world, which holds every key
+  function worldRootedRead(e) {
+    let r = e.expression; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isAsExpression(r) || ts.isNonNullExpression(r)) r = r.expression;
+    return ts.isIdentifier(r) && ((outsideRoot(checker, r, sf, current) && r.text !== 'require') || libGlobalRoot(checker, r, sf, current));
   }
   // an open key (a string, a number, an unknown) on a plain record of data fields, or a number-keyed dictionary, reads as one
   // uninterpreted lookup of the value and the key; a key call, a method, a getter, a class instance or a symbol stays out
@@ -2120,10 +2127,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a record that declares fields and an index signature: its value reading holds the declared fields alone, so a key
       // the type does not declare reads an entry the reading dropped (a copy of the declared fields would read alike)
       // (a read rooted at an outside or lib global, `process.env[k]`, is a read of the world, which holds every key)
-      let wroot = e.expression; while (ts.isPropertyAccessExpression(wroot) || ts.isElementAccessExpression(wroot) || ts.isParenthesizedExpression(wroot) || ts.isAsExpression(wroot) || ts.isNonNullExpression(wroot)) wroot = wroot.expression;
-      const worldRooted = ts.isIdentifier(wroot) && ((outsideRoot(checker, wroot, sf, current) && wroot.text !== 'require') || libGlobalRoot(checker, wroot, sf, current));
-      const openIndex = !worldRooted && checker.getPropertiesOfType(parts[0]).length && (checker.getIndexInfoOfType(parts[0], ts.IndexKind.String) || checker.getIndexInfoOfType(parts[0], ts.IndexKind.Number));
-      const INDEX_WHY = `${checker.typeToString(rt)} declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own`;
+      const openIndex = !worldRootedRead(e) && openRecordType(checker, parts[0]);
+      const INDEX_WHY = OPEN_RECORD_WHY(checker.typeToString(rt));
       if (!keys && openIndex) return v(e, 'dynamic-key', INDEX_WHY);
       if (!keys) { const why = openKeyRefusal(e, parts[0], at); return why ? v(e, 'dynamic-key', why) : undefined; } // an open key: an uninterpreted lookup of the record value and the key
       let keyCall = false;
