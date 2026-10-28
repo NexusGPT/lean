@@ -110,8 +110,12 @@ var (wld, out) := tokens_loop0(ext_Ext_RegExpStringIterator_to_seq_..(ext_call_a
   array. `this.items.shift()` as a value: the array lives in the world and the translator rebinds a local only.
 - `toString()` on an object reads `Object.prototype.toString` or the object's own method (validated: `{}`, an object with
   its own `toString`, and `Object.create(null)` which throws). A prototype the unit does not own stays refused.
-- `a.push.apply(a, b)` is `a.push(...b)` (validated on four inputs) but the translator rebinds only the receiver of a
-  push statement, so the function-value form needs a case in `translate.mjs`, which this lane does not own.
+- `a.push.apply(a, b)` is `a.push(...b)` (validated on four inputs), but nine analyses key on the mutator's name as the
+  callee: the lint's `MUT_NAMES` and `PARAM_MUTATORS`, the translator's `MUTATOR_NAMES`, `MUTATORS` and `MUT`, the heap
+  core's `MUTATORS`, and `BUCKET_MUTATORS`, `CHANGERS` and `RECEIVER_WRITERS` in `common.mjs`. A scratch reading that
+  taught the lint, `isMutCall` and `isEffectCall` the form translated it to `a + b` and still left a mutated parameter
+  out of `syntacticMutations`, which would have treated the parameter as unchanged. The form is read only when all nine
+  agree, in a lane that owns `translate.mjs`; until then it is refused with the escape `a.push(...b)`.
 - Match fields: `m.index` is a function of the pattern and the string for a non-global literal only; `m.groups` is an
   object the match builds, which the sequence reading of a match does not carry.
 
