@@ -99,6 +99,27 @@ export function specOf(file, unitName, opts = {}) {
     return out;
   }
   const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, spec: spec(checker.getTypeAtLocation(p.name)) }));
+  // a parameter read as an error: the unit tests `x instanceof C` where C is Error or a class that extends it, and x is the
+  // parameter, or a local whose value comes from it or from a `.cause` of such a value (a walk down an error's cause
+  // chain, ECMA-262 20.5.6.3 InstallErrorCause). A declared type of unknown, any or Error gives no Error instance to that
+  // test (an unknown draws a fake, an Error type a plain record), so such a parameter also draws an Error whose `cause`
+  // is another Error, to a drawn depth (gen.mjs 'error'); the declared draw stays one option of the union
+  {
+    const isErr = (x, d = 0) => { if (!x || d > 8) return false; if (x.symbol?.name === 'Error') return true; const tg = x.target ?? x; if (!(tg.objectFlags & (ts.ObjectFlags.Class | ts.ObjectFlags.Interface))) return false; return checker.getBaseTypes(tg).some((b) => isErr(b, d + 1)); }; // Error, or a class or interface that extends it
+    const errorClass = (c) => { if (ts.isIdentifier(c) && c.text === 'Error') return true; let t = null; try { t = checker.getTypeAtLocation(c); } catch { return false; } const sig = t && checker.getSignaturesOfType(t, ts.SignatureKind.Construct)[0]; return !!sig && isErr(sig.getReturnType()); };
+    const source = (e, d = 0) => { // the parameter a value comes from, through a local's initializer, its assignments, `.cause` and parentheses
+      while (e && (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e) || (ts.isPropertyAccessExpression(e) && e.name.text === 'cause'))) e = e.expression;
+      if (!e || !ts.isIdentifier(e) || d > 6) return -1;
+      const decl = checker.getSymbolAtLocation(e)?.valueDeclaration;
+      if (decl && ts.isParameter(decl)) return u.params.indexOf(decl);
+      if (decl && ts.isVariableDeclaration(decl) && decl.initializer) return source(decl.initializer, d + 1);
+      return -1;
+    };
+    const errorParams = new Set();
+    const walkErr = (n) => { if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword && errorClass(n.right)) { const i = source(n.left); if (i >= 0) errorParams.add(i); } ts.forEachChild(n, walkErr); };
+    if (u.body) walkErr(u.body);
+    for (const i of errorParams) { const p = params[i]; if (p && (p.spec.kind === 'opaque' || p.spec.kind === 'record' || p.spec.kind === 'ref')) p.spec = { kind: 'union', options: [{ kind: 'error', chain: 6 }, p.spec] }; }
+  }
   let rt = checker.getSignatureFromDeclaration(u.fn).getReturnType();
   if (rt.symbol?.name === 'Promise') rt = checker.getTypeArguments(rt)[0];
   const literals = []; const strings = []; const regexes = [];
