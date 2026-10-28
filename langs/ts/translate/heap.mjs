@@ -437,6 +437,25 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const impUsed = new Map(); // key -> Dafny type of each imported constant a core unit reads
   const strUsed = new Set();
   const isAbsent = (x) => { x = unparen(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined' && !(checker.getSymbolAtLocation(x)?.valueDeclaration?.getSourceFile() === sf)); };
+  // a node read through a key: `const chat = state.chats[id]` of a dictionary of records, a const of the unit. JavaScript
+  // reads the node for a key the dictionary owns, Object.prototype's member for a key of Object.prototype it does not own
+  // (a function, or the prototype object for `__proto__`: truthy, a foreign object), and undefined otherwise. So a test
+  // of the name (`!chat`, `chat`, `chat === undefined`, `chat == null`) reads DictIn_ (own, or a prototype name under an
+  // ordinary prototype), bound with DictOwn_ and the key where the read stands. A use of the name marks the world unless
+  // the key was owned (a read through undefined throws; a read of a foreign object's field is no value of the field's
+  // type), except a plain `=` of a field: through a foreign object it is a bodiless transition of the world keyed by the
+  // field and the key (ForeignSet_), the same on both sides, any world after it. Any other reference the core reads is a
+  // present node: an object, truthy.
+  const keyedLocal = (x, fn) => {
+    x = unparen(x); if (!ts.isIdentifier(x)) return null;
+    const d = checker.getSymbolAtLocation(x)?.valueDeclaration;
+    if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !d.initializer || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) || d.getSourceFile() !== sf || d.pos < fn.pos || d.end > fn.end) return null;
+    const i = unparen(d.initializer); if (!ts.isElementAccessExpression(i) || i.questionDotToken) return null;
+    const s = shapeOf(typeOf(i.expression)); return s && s.kind === 'dict' && s.v.kind === 'rec' ? d : null;
+  };
+  const presName = (d) => `has_${dn(d.name.text)}_`; // the read's truthiness beside the name (a generated name ends in an underscore, a name of the unit never does)
+  const ownName = (d) => `own_${dn(d.name.text)}_`, keyName = (d) => `key_${dn(d.name.text)}_`; // whether the key was owned, and the key itself
+  let keyMarkUsed = false; const foreignUsed = new Map(); // ForeignSet_<shape>_<field> -> the field's Dafny type
   // an expression with no call, allocation or element access: it reads the heap and nothing else, so reading it eagerly is exact
   const pureExpr = (x) => { x = unparen(x); if (ts.isIdentifier(x) || ts.isNumericLiteral(x) || ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || [K.TrueKeyword, K.FalseKeyword, K.ThisKeyword].includes(x.kind)) return true; if (ts.isPropertyAccessExpression(x)) return pureExpr(x.expression); if (ts.isBinaryExpression(x)) return pureExpr(x.left) && pureExpr(x.right); if (ts.isPrefixUnaryExpression(x)) return pureExpr(x.operand); return false; };
   const isVoidT = (t) => !!t && !!(t.flags & TF.Void); // a declared or inferred `void` result
@@ -483,7 +502,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const names = new Set(); let lambdaDepth = 0; let usesIndex = false; const loopCalls = new Set(); let callsOut = false;
     // `a[i]` on an array path, `i` a number: the access is read through Idx_/SetIdx_ and marks the world when out of range
     // a condition is read by its truthiness: a boolean, a number (not 0), a string (not ""), a value that may be absent
-    const checkCond = (c) => { const sh = shapeOf(typeOf(c)); if (!sh || !(sh.kind === 'prim' || sh.kind === 'opt')) return no('condition on a reference'); if ((sh.kind === 'prim' ? sh.d : sh.inner.d) === 'real') return no('truthiness of a real (NaN is falsy)'); return checkExpr(c); };
+    const checkCond = (c) => { const sh = shapeOf(typeOf(c)); if (sh && isRefShape(sh) && (keyedLocal(c, u.fn) || pureExpr(c))) { if (lambdaDepth) return no('a reference tested inside a callback'); return checkExpr(c); } // a node read through a key: its presence; any other reference: present, an object, truthy
+      if (!sh || !(sh.kind === 'prim' || sh.kind === 'opt')) return no('condition on a reference'); if ((sh.kind === 'prim' ? sh.d : sh.inner.d) === 'real') return no('truthiness of a real (NaN is falsy)'); return checkExpr(c); };
     // undefined or null where a value that may be absent is expected: an assignment, an initializer, a return, an
     // argument, a field of a literal (the contextual type says so)
     const absentOk = (e) => shapeOf(checker.getContextualType(e))?.kind === 'opt';
@@ -506,7 +526,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const e = unparen(e0);
       if (negZeroRisk(e)) { if (lambdaDepth) return no('a negative zero inside a callback (its mark has nowhere to go)'); usesIndex = true; } // the world is marked where it may escape
       if (isAbsent(e)) return absentOk(e) ? undefined : no('undefined or null outside an optional place');
-      if (ts.isIdentifier(e)) { if (e.text === HW) no('name hw_'); else if (!declaredInside(e)) { if (!outsideValue(e)) no(`outside name ${e.text}`); } else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
+      if (ts.isIdentifier(e)) { if (lambdaDepth && keyedLocal(e, u.fn)) return no('a node read through a key, used inside a callback (its absence mark has nowhere to go)'); if (e.text === HW) no('name hw_'); else if (!declaredInside(e)) { if (!outsideValue(e)) no(`outside name ${e.text}`); } else if (!shapeOf(typeOf(e))) no(`value type: ${shapeWhy(typeOf(e))}`); return; }
       if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return;
       if (ts.isConditionalExpression(e)) { if (!shapeOf(typeOf(e))) return no(`conditional type: ${shapeWhy(typeOf(e))}`); checkCond(e.condition); checkExpr(e.whenTrue); return checkExpr(e.whenFalse); } // c ? a : b: only the selected operand is evaluated
       if (ts.isTemplateExpression(e)) { for (const sp of e.templateSpans) { const sh = shapeOf(typeOf(sp.expression)); if (!sh || isRefShape(sh)) return no('template hole of a reference (it reads the object through toString)'); checkExpr(sp.expression); } return; } // a string concatenation, each hole by ToString
@@ -557,7 +577,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (shapeOf(typeOf(e.left))?.kind !== 'opt') return no('?? on a value that is never absent'); if (!pureExpr(e.right)) return no('?? with a right side that calls or allocates'); if (!shapeOf(typeOf(e))) return no('?? result type'); checkExpr(e.left); return checkExpr(e.right);
       }
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind) && (isAbsent(e.left) || isAbsent(e.right))) { // a presence test
-        const other = isAbsent(e.left) ? e.right : e.left; if (isAbsent(other)) return no('absent compared to absent'); if (shapeOf(typeOf(other))?.kind !== 'opt') return no('presence test of a value that is never absent'); return checkExpr(other);
+        const other = isAbsent(e.left) ? e.right : e.left; if (isAbsent(other)) return no('absent compared to absent'); { const os = shapeOf(typeOf(other)); if (os && isRefShape(os) && (keyedLocal(other, u.fn) || pureExpr(other))) { if (lambdaDepth) return no('a reference tested inside a callback'); return checkExpr(other); } } if (shapeOf(typeOf(other))?.kind !== 'opt') return no('presence test of a value that is never absent'); return checkExpr(other);
       }
       if (ts.isBinaryExpression(e) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken].includes(e.operatorToken.kind) && !(isNumT(typeOf(e.left)) && isNumT(typeOf(e.right))) && !(helper && (typeOf(e.left).flags & TF.StringLike) && (typeOf(e.right).flags & TF.StringLike))) return no('an order between values that are not both numbers or both strings'); // strings by their code units (StrLt)
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(e.operatorToken.kind)) { const a = shapeOf(typeOf(e.left)), b = shapeOf(typeOf(e.right)); if (a?.kind === 'opt' && b?.kind === 'opt' && a.absent !== b.absent) return no('=== across null and undefined (one Option would hold both absences)'); } // null !== undefined: two absences of different kinds are not one value
@@ -840,6 +860,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       else { out.push('function TruncDivI(a: int, b: int): int requires b != 0 { var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q }'); out.push('function TruncDivT(a: int, b: int): int { if b == 0 then 0 else TruncDivI(a, b) }'); out.push('function FloorDivT(a: int, b: int): int { if b == 0 then 0 else var q := TruncDivI(a, b); if a - b * q != 0 && (a < 0) != (b < 0) then q - 1 else q }'); } // Math.trunc and Math.floor of an int division
     }
     if (isReal && (divUsed || strUsed.has('truncr'))) out.push('function TruncR(a: real): int { if a < 0.0 then -(-a).Floor else a.Floor }'); // the truncation of a real toward zero
+    if (keyMarkUsed) out.push('function KeyMark(hw: HWorld, present: bool): HWorld { if present then hw else hw.(oob := true) }'); // a node read through a key, used where the key was not owned: not modelled
+    for (const [key, T] of [...foreignUsed].sort()) { out.push(`function ${key.replace('ForeignSet_', 'ForeignStep_')}(hw: HWorld, k: string, v: ${T}): HWorld`); out.push(`function ${key}(hw: HWorld, k: string, v: ${T}): HWorld { ${key.replace('ForeignSet_', 'ForeignStep_')}(hw, k, v).(oob := hw.oob) }`); } // a field written through Object.prototype's member under key k: a transition of the world, any world after it; the out-of-model flag is the reading's own, kept
     if (strUsed.has('dictkeys')) out.push('function DictKeysJs(keys: seq<string>): seq<string>'); // Object.keys of a dictionary: integer-like keys first, ascending, then the rest in insertion order: a function of the insertion sequence
     if (strUsed.has('re_test')) out.push('function ReTest(re: string, s: string): bool'); // RegExp.prototype.test of a literal: a function of its text and the input
     if (strUsed.has('re_replace')) out.push('function ReReplace(re: string, s: string, r: string): string'); // replace by a literal regular expression, the replacement's $ patterns included
@@ -977,7 +999,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       return exprAs(x, to);
     }
     const truthyPrim = (c, sh) => (sh.d === 'bool' ? c : sh.d === 'string' ? `(${c} != "")` : `(${c} != 0)`); // 0 and "" are falsy (the int reading has no NaN)
-    const cond = (x) => { const sh = locShape(x); const c = expr(x); return sh.kind === 'opt' ? `((${c}).Some? && ${truthyPrim(`OptOr(${c}, ${dflt(sh.inner)})`, sh.inner)})` : truthyPrim(c, sh); };
+    const cond = (x) => { if (keyedLocal(x, u.fn)) return presName(keyedLocal(x, u.fn)); if (locShape(x) && isRefShape(locShape(x))) { expr(x); return 'true'; } // a node read through a key: its presence; any other reference: an object
+      const sh = locShape(x); const c = expr(x); return sh.kind === 'opt' ? `((${c}).Some? && ${truthyPrim(`OptOr(${c}, ${dflt(sh.inner)})`, sh.inner)})` : truthyPrim(c, sh); };
     // ToString of a template hole: a string is itself, a boolean its name, a number a function of the number
     // alone (bodiless: the same on both sides, nothing assumed of its digits), absent its name "undefined" or "null"
     const primStr = (c, sh) => { if (sh.d === 'string') return c; if (sh.d === 'bool') return `(if ${c} then "true" else "false")`; strUsed.add(`numstr_${sh.d}`); return `NumStr_${sh.d}(${c})`; };
@@ -991,6 +1014,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const e = unparen(e0);
       if (isAbsent(e)) return absentCode(e, shapeOf(checker.getContextualType(e)));
       if (ts.isIdentifier(e) && !inUnit(e)) { const ov = outsideValue(e); if (ov.kind === 'const') return `(${expr(ov.init)})`; impUsed.set(ov.key, ov.sh.d); return `${ov.key}()`; } // a module constant by its initializer, an import by its key
+      if (ts.isIdentifier(e) && keyedLocal(e, u.fn)) { keyMarkUsed = true; lines.push(`var ${HW} := KeyMark(${HW}, ${ownName(keyedLocal(e, u.fn))});`); return dn(e.text); } // a use other than a test or a field's plain write: modelled only when the key was owned
       if (ts.isIdentifier(e)) { const ds = declShape(e), ls = locShape(e); if (ds?.kind === 'opt' && ls && ls.kind !== 'opt') return `OptOr(${dn(e.text)}, ${dflt(ls)})`; return dn(e.text); }
       if (e.kind === K.ThisKeyword) return dn('this');
       if (ts.isNumericLiteral(e)) return num(e.text);
@@ -1066,8 +1090,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!${cond(e.operand)}` : e.operator === K.PlusToken ? expr(e.operand) : e.operator === K.TildeToken ? (bitwise ? bitwiseCode(e) : `${helper('JsBitNot', [NUM])}(${expr(e.operand)})`) : negZeroRisk(e) ? (() => { divUsed = true; const x = bind(expr(e.operand), 'n'); lines.push(`var ${HW} := NegZeroMark(${HW}, ${x} == ${isReal ? '0.0' : '0'});`); return `(-(${x}))`; })() : `(-(${expr(e.operand)}))`;
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { const ls = locShape(e); const a = expr(e.left); return ls.kind === 'opt' ? `OptOrOpt(${a}, ${exprAs(e.right, ls)})` : `OptOr(${a}, ${expr(e.right)})`; }
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind) && (isAbsent(e.left) || isAbsent(e.right))) {
-        const lit = isAbsent(e.left) ? unparen(e.left) : unparen(e.right), other = isAbsent(e.left) ? e.right : e.left; const sh = locShape(other); const c = expr(other);
+        const lit = isAbsent(e.left) ? unparen(e.left) : unparen(e.right), other = isAbsent(e.left) ? e.right : e.left;
         const negated = [K.ExclamationEqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind), loose = [K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind);
+        if (locShape(other) && isRefShape(locShape(other))) { // a node read through a key is undefined when absent (never null: the values are nodes); any other reference is a present object
+          const kd = keyedLocal(other, u.fn); if (!kd) expr(other); const absent = kd && (loose || lit.kind !== K.NullKeyword) ? `!${presName(kd)}` : 'false';
+          return negated ? (absent === 'false' ? 'true' : presName(kd)) : absent;
+        }
+        const sh = locShape(other); const c = expr(other);
         if (!loose && (lit.kind === K.NullKeyword ? 'n' : 'u') !== sh.absent) return negated ? 'true' : 'false'; // undefined is not null under ===
         return `(${c}).${negated ? 'Some' : 'None'}?`;
       }
@@ -1191,6 +1220,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isElementAccessExpression(t) && shapeExpr(t.expression).kind === 'dict') { const [s, r, i] = element(t); return { as: (x) => expr(x), read: () => dictRead(s, r, i), write: (v) => lines.push(`var ${HW} := DictSet_${s.key}(${HW}, ${r}, ${i}, ${v});`) }; }
       if (tuplePos(t)) { const tp = tuplePos(t); const r = bind(expr(t.expression), 'o'); const f = fieldOf(tp.s, tp.field); return { as: (x) => exprField(x, f.shape), read: () => `Get_${tp.s.key}_${dn(tp.field)}(${HW}, ${r})`, write: (v) => lines.push(`var ${HW} := Set_${tp.s.key}_${dn(tp.field)}(${HW}, ${r}, ${v});`) }; }
       if (ts.isElementAccessExpression(t)) { const [s, r, i] = element(t); const safe = safeIndex.has(t); return { as: (x) => expr(x), read: () => { if (!safe) lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; }, write: (v) => lines.push(`var ${HW} := ${safe ? 'SetIdxIn' : 'SetIdx'}_${s.key}(${HW}, ${r}, ${i}, ${v});`) }; }
+      if (keyedLocal(t.expression, u.fn)) { // a field of a node read through a key: the name is read without a mark; a read of the field needs the key owned, a plain write goes to the node, or through Object.prototype's member (ForeignSet_), and marks the world when the key was absent
+        const kd = keyedLocal(t.expression, u.fn); const s = shapeExpr(t.expression); const r = dn(t.expression.text); const f = fieldOf(s, t.name.text); const fk = `ForeignSet_${s.key}_${dn(f.name)}`;
+        return { as: (x) => exprField(x, f.shape), read: () => { keyMarkUsed = true; lines.push(`var ${HW} := KeyMark(${HW}, ${ownName(kd)});`); return `Get_${s.key}_${dn(f.name)}(${HW}, ${r})`; }, write: (v) => { keyMarkUsed = true; foreignUsed.set(fk, fieldD(f.shape)); const vv = bind(v, 'w'); lines.push(`var ${HW} := KeyMark(${HW}, ${presName(kd)});`); lines.push(`var ${HW} := if ${ownName(kd)} then Set_${s.key}_${dn(f.name)}(${HW}, ${r}, ${vv}) else ${fk}(${HW}, ${keyName(kd)}, ${vv});`); } };
+      }
       const s = shapeExpr(t.expression); const r = bind(expr(writeReceiver(t)), 'o'); // the receiver first: an element of a parameter is read (and its index marked) before the right side
       return { as: (x) => exprField(x, fieldOf(s, t.name.text).shape), read: () => `Get_${s.key}_${dn(t.name.text)}(${HW}, ${r})`, write: (v) => lines.push(`var ${HW} := Set_${s.key}_${dn(t.name.text)}(${HW}, ${r}, ${v});`) };
     }
@@ -1210,7 +1243,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           out.push(`${pre ? pre + '\n' : ''}if ${c} then\n${indent(t)}\nelse\n${indent(el)}`);
           return out.filter(Boolean).join('\n');
         }
-        if (ts.isVariableStatement(s)) { for (const d of s.declarationList.declarations) { const v = exprAs(d.initializer, shapeOf(typeOf(d.name))); lines.push(`var ${dn(d.name.text)} := ${v};`); } out.push(flush()); continue; }
+        if (ts.isVariableStatement(s)) { for (const d of s.declarationList.declarations) { if (keyedLocal(d.name, u.fn)) { const [ks, kr, ki] = element(unparen(d.initializer)); lines.push(`var ${keyName(d)} := ${ki};`); lines.push(`var ${presName(d)} := DictIn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${ownName(d)} := DictOwn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${dn(d.name.text)} := DictGet_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); continue; } const v = exprAs(d.initializer, shapeOf(typeOf(d.name))); lines.push(`var ${dn(d.name.text)} := ${v};`); } out.push(flush()); continue; } // a node read through a key: its presence beside it (keyedLocal)
         if (ts.isReturnStatement(s)) { const v = s.expression ? exprAs(s.expression, rt) : '()'; const pre = flush(); out.push(`${pre ? pre + '\n' : ''}(${HW}, ${v})`); return out.filter(Boolean).join('\n'); }
         if (ts.isIfStatement(s)) {
           const c = cond(s.expression); const pre = flush();
