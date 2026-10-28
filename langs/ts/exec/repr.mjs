@@ -8,8 +8,8 @@
 //
 // A representation input keeps every value the declared draw made (its streams are not touched): the families only
 // add structure around those values, except the three that replace a leaf (a string key, an unread value, an input
-// promise), whose replacement holds the same value where one exists. Each family is on its own switch: LEAN_REACH
-// unset or `all` is every family, `none` turns the tier off, `a,b` names the families on, `-a,-b` the families off.
+// promise), whose replacement holds the same value where one exists. Each family is on its own switch (familiesOn):
+// the contract families by default, the reflection families when LEAN_REACH names them (CONTRACT, REFLECTION below).
 // The generated inputs of the tier are every REACH-th one from the second period on (gen.mjs reachTurn); of their
 // turns every third holds every family the unit's spec admits (applicableFamilies) at once, and the others one family
 // alone, cycling through them in the order below, so a family that another one masks still meets the unit by itself.
@@ -18,30 +18,44 @@ import path from 'node:path';
 import { makeRng } from './fake.mjs';
 
 export const FAMILIES = [
-  { name: 'extra-key', on: 'record', why: 'an own key the type does not declare: a spread, Object.assign, Object.keys, for-in and JSON.stringify carry it, fields copied one by one drop it' },
-  { name: 'inherited-key', on: 'record, dictionary', why: 'a key held on the prototype (an optional field left off the object itself): a read and `in` see it, Object.hasOwn, Object.keys, a spread and JSON.stringify do not' },
-  { name: 'accessor-key', on: 'record, dictionary', why: 'a field held by a getter with no setter: a read sees its value, a write to it throws a TypeError in strict code, a descriptor copy keeps the getter' },
-  { name: 'non-enumerable-key', on: 'record, dictionary', why: 'a field that is not enumerable: a read sees it, a spread, Object.assign, Object.keys, for-in and JSON.stringify skip it' },
-  { name: 'symbol-key', on: 'record', why: 'an own symbol key: a spread and Object.assign copy it, Object.keys, for-in and JSON.stringify skip it' },
-  { name: 'null-prototype', on: 'record, dictionary', why: 'an object with no prototype: `x.hasOwnProperty(k)`, `String(x)` and a template literal throw, `instanceof Object` is false, `k in x` sees own keys only' },
-  { name: 'proto-name-key', on: 'dictionary, a string parameter', why: 'a key that names an Object.prototype member (constructor, toString, __proto__): `k in d` and `d[k]` read the prototype where Object.hasOwn and a Map do not; `o[k] = v` with `__proto__` sets the prototype' },
-  { name: 'sparse-array', on: 'array', why: 'an array with a hole: forEach, map, filter and for-in skip it, an index loop and for-of read undefined there, its length counts it' },
-  { name: 'array-extra-property', on: 'array', why: 'an own key beside the indices: for-in, Object.keys, Object.assign and a spread into an object carry it, for-of, map and forEach do not' },
-  { name: 'shared-reference', on: 'arguments', why: 'every position of one shape holds one object, and a record links to every object of the shapes its fields name (cycles across arguments): a write through one name is seen through the other' },
-  { name: 'coercion-hooks', on: 'a value of an unread type (any, unknown, a bare type parameter)', why: 'an object with valueOf and toString, or with Symbol.toPrimitive: `x + ""`, `${x}`, String(x), `+x` and `==` each take a different hint' },
-  { name: 'thenable', on: 'an input promise', why: 'an object with `then` and no `catch` or `finally`, settling to the same value: await and Promise.resolve accept it, `instanceof Promise` is false, `.catch` throws, and it settles two microtasks later than a promise' },
-  { name: 'settlement-order', on: 'input promises', why: 'the caller decides when its promises settle: they stay pending when the call starts and settle after the unit first waits on one, one per macrotask, in an order the turn picks among every order of up to four (the declared draw settles them at once, in position order); `Promise.race`, a first-come loop and work done between two awaits see the order' },
-  { name: 'timer-order', on: 'timers armed for one instant', why: 'the timers due at one instant fire in another order the event loop allows: a timer may run before an earlier-armed one of another kind (an immediate before a timeout); two timeouts or intervals keep their arm order, which Node guarantees for equal delays and lean cannot tell apart (run.mjs runTimers, legal)' },
+  { name: 'extra-key', class: 'contract', on: 'record', why: 'an own key the type does not declare: a spread, Object.assign, Object.keys, for-in and JSON.stringify carry it, fields copied one by one drop it' },
+  { name: 'inherited-key', class: 'reflection', on: 'record, dictionary', why: 'a key held on the prototype (an optional field left off the object itself): a read and `in` see it, Object.hasOwn, Object.keys, a spread and JSON.stringify do not' },
+  { name: 'accessor-key', class: 'reflection', on: 'record, dictionary', why: 'a field held by a getter with no setter: a read sees its value, a write to it throws a TypeError in strict code, a descriptor copy keeps the getter' },
+  { name: 'non-enumerable-key', class: 'reflection', on: 'record, dictionary', why: 'a field that is not enumerable: a read sees it, a spread, Object.assign, Object.keys, for-in and JSON.stringify skip it' },
+  { name: 'symbol-key', class: 'reflection', on: 'record', why: 'an own symbol key: a spread and Object.assign copy it, Object.keys, for-in and JSON.stringify skip it' },
+  { name: 'null-prototype', class: 'reflection', on: 'record, dictionary', why: 'an object with no prototype: `x.hasOwnProperty(k)`, `String(x)` and a template literal throw, `instanceof Object` is false, `k in x` sees own keys only' },
+  { name: 'proto-name-key', class: 'contract', on: 'dictionary, a string parameter', why: 'a key that names an Object.prototype member (constructor, toString, __proto__): `k in d` and `d[k]` read the prototype where Object.hasOwn and a Map do not; `o[k] = v` with `__proto__` sets the prototype' },
+  { name: 'sparse-array', class: 'reflection', on: 'array', why: 'an array with a hole: forEach, map, filter and for-in skip it, an index loop and for-of read undefined there, its length counts it' },
+  { name: 'array-extra-property', class: 'reflection', on: 'array', why: 'an own key beside the indices: for-in, Object.keys, Object.assign and a spread into an object carry it, for-of, map and forEach do not' },
+  { name: 'shared-reference', class: 'contract', on: 'arguments', why: 'every position of one shape holds one object, and a record links to every object of the shapes its fields name (cycles across arguments): a write through one name is seen through the other' },
+  { name: 'coercion-hooks', class: 'contract', on: 'a value of an unread type (any, unknown, a bare type parameter)', why: 'an object with valueOf and toString, or with Symbol.toPrimitive: `x + ""`, `${x}`, String(x), `+x` and `==` each take a different hint' },
+  { name: 'thenable', class: 'reflection', on: 'an input promise', why: 'an object with `then` and no `catch` or `finally`, settling to the same value: await and Promise.resolve accept it, `instanceof Promise` is false, `.catch` throws, and it settles two microtasks later than a promise' },
+  { name: 'settlement-order', class: 'contract', on: 'input promises', why: 'the caller decides when its promises settle: they stay pending when the call starts and settle after the unit first waits on one, one per macrotask, in an order the turn picks among every order of up to four (the declared draw settles them at once, in position order); `Promise.race`, a first-come loop and work done between two awaits see the order' },
+  { name: 'timer-order', class: 'contract', on: 'timers armed for one instant', why: 'the timers due at one instant fire in another order the event loop allows: a timer may run before an earlier-armed one of another kind (an immediate before a timeout); two timeouts or intervals keep their arm order, which Node guarantees for equal delays and lean cannot tell apart (run.mjs runTimers, legal)' },
 ];
 const NAMES = FAMILIES.map((f) => f.name);
+// Two distributions (research, Semantic Assurance section 9: report contract-respecting and semantic-adversarial inputs
+// separately). A contract family draws a value a program can make with the declared type and no reflection: a wider
+// object (structural typing), any string as a key, a value of `any` or `unknown`, two names for one object, the order in
+// which the caller and the event loop settle what the unit waits on. A reflection family draws a form only reflection or
+// a cast makes (defineProperty, Object.create, delete, a symbol key, a hole, a key on an array, a thenable where a Promise
+// is declared). The default is the contract families: their witnesses are lane B's verdict. The reflection families run
+// when LEAN_REACH names them (`reflection`, `all`, or a list): a witness of theirs is a difference of the two versions on
+// a value the declared type does not promise, reported under that switch, never by default
+export const CONTRACT = FAMILIES.filter((f) => f.class === 'contract').map((f) => f.name);
+export const REFLECTION = FAMILIES.filter((f) => f.class === 'reflection').map((f) => f.name);
 
-// the families switched on, from LEAN_REACH (read at each draw, so a minimisation can narrow them per run)
+// the families switched on, from LEAN_REACH (read at each draw, so a minimisation can narrow them per run): unset or
+// `contract` the contract families, `reflection` the reflection families, `all` both, `none`, `a,b`, or `-a,-b` (every
+// contract family but those)
 export function familiesOn(text = process.env.LEAN_REACH) {
-  if (text === undefined || text === '' || text === 'all') return NAMES.slice();
+  if (text === undefined || text === '' || text === 'contract') return CONTRACT.slice();
+  if (text === 'all') return NAMES.slice();
+  if (text === 'reflection') return REFLECTION.slice();
   if (text === 'none') return [];
   const parts = text.split(',').map((x) => x.trim()).filter(Boolean);
   for (const p of parts) if (!NAMES.includes(p.replace(/^-/, ''))) throw new Error(`LEAN_REACH: unknown family ${p.replace(/^-/, '')} (${NAMES.join(', ')})`);
-  if (parts.every((p) => p.startsWith('-'))) { const off = new Set(parts.map((p) => p.slice(1))); return NAMES.filter((n) => !off.has(n)); }
+  if (parts.every((p) => p.startsWith('-'))) { const off = new Set(parts.map((p) => p.slice(1))); return CONTRACT.filter((n) => !off.has(n)); }
   return NAMES.filter((n) => parts.includes(n));
 }
 // the families of turn j of the tier, among `on` (switched on and admitted by the spec): every one at once on every

@@ -14,27 +14,40 @@ other leaf keeps its value. The tier holds every REACH-th (4) generated input fr
 inputs 5, 9, 13 and so on, outside the known phase (gen.mjs reachTurn). Every third turn holds every family the unit's
 spec admits (repr.mjs applicableFamilies); the other turns hold one family alone, cycling through them. This keeps a
 family that another family masks reachable on its own (accessor-key and non-enumerable-key take the same field when
-both are on). Each family has its own switch: `LEAN_REACH` is `all` (the default), `none`, `a,b` or `-a,-b`.
+both are on). Each family has its own switch (`LEAN_REACH`).
 
-| family | on | why it can separate two versions |
-|---|---|---|
-| extra-key | record | a spread, Object.assign, Object.keys, for-in and JSON.stringify carry an undeclared own key; fields copied one by one drop it |
-| inherited-key | record, dict | `in` and a read see a key on the prototype; Object.hasOwn, Object.keys, a spread and JSON.stringify do not |
-| accessor-key | record, dict | a write to a getter-only field throws in strict code; a read sees its value |
-| non-enumerable-key | record, dict | a read sees it; a spread, assign, keys, for-in and JSON.stringify skip it |
-| symbol-key | record | a spread and assign copy an own symbol key; keys, for-in and JSON skip it |
-| null-prototype | record, dict | `x.hasOwnProperty`, `String(x)` and a template literal throw; `instanceof Object` is false |
-| proto-name-key | dict, string parameter | `k in d` and `d[k]` read Object.prototype where Object.hasOwn and a Map do not; `o[k] = v` with `__proto__` sets the prototype |
-| sparse-array | array | forEach, map, filter and for-in skip a hole; an index loop and for-of read undefined; length counts it |
-| array-extra-property | array | for-in, Object.keys, Object.assign and a spread into an object carry it; for-of, map, forEach do not |
-| shared-reference | 2 or more object positions | every position of one shape holds one object, and record fields link across shapes (cycles across arguments) |
-| coercion-hooks | any, unknown, bare type parameter | valueOf with toString, or Symbol.toPrimitive: `x + ""`, a template, String(x), `+x` and `==` take different hints |
-| thenable | input promise | `then` without `catch`: await accepts it, `.catch` throws, `instanceof Promise` is false, it settles later |
-| settlement-order | input promises | tier 3, below |
-| timer-order | a file that arms timers | tier 3, below |
+Two distributions (Semantic Assurance, section 9: report contract-respecting and semantic-adversarial inputs apart).
+A contract family draws a value that a program can make with the declared type and no reflection: a wider object
+(structural typing), any string as a key, a value of `any` or `unknown`, two names for one object, or the order in
+which the caller and the event loop settle what the unit waits on. A reflection family draws a form that only
+reflection or a cast makes: defineProperty, Object.create, delete, a symbol key, a hole, a key on an array, or a
+thenable where a Promise is declared. The default (`LEAN_REACH` unset or `contract`) runs the contract families, and
+their witnesses are lane B's verdict. The reflection families run when `LEAN_REACH` names them (`reflection`, `all`,
+or a list). Their witnesses are differences on values the declared type does not promise. They are reported apart and
+never move a default verdict: on the suite's pairs they moved 17 rows of units lane A proves (listed in the lane
+report), which is evidence for the owner's open question on the input domain, not a default verdict.
+
+| family | on | why it can separate two versions | class |
+|---|---|---|---|
+| extra-key | record | a spread, Object.assign, Object.keys, for-in and JSON.stringify carry an undeclared own key; fields copied one by one drop it | contract |
+| inherited-key | record, dict | `in` and a read see a key on the prototype; Object.hasOwn, Object.keys, a spread and JSON.stringify do not | reflection |
+| accessor-key | record, dict | a write to a getter-only field throws in strict code; a read sees its value | reflection |
+| non-enumerable-key | record, dict | a read sees it; a spread, assign, keys, for-in and JSON.stringify skip it | reflection |
+| symbol-key | record | a spread and assign copy an own symbol key; keys, for-in and JSON skip it | reflection |
+| null-prototype | record, dict | `x.hasOwnProperty`, `String(x)` and a template literal throw; `instanceof Object` is false | reflection |
+| proto-name-key | dict, string parameter | `k in d` and `d[k]` read Object.prototype where Object.hasOwn and a Map do not; `o[k] = v` with `__proto__` sets the prototype | contract |
+| sparse-array | array | forEach, map, filter and for-in skip a hole; an index loop and for-of read undefined; length counts it | reflection |
+| array-extra-property | array | for-in, Object.keys, Object.assign and a spread into an object carry it; for-of, map, forEach do not | reflection |
+| shared-reference | 2 or more object positions | every position of one shape holds one object, and record fields link across shapes (cycles across arguments) | contract |
+| coercion-hooks | any, unknown, bare type parameter | valueOf with toString, or Symbol.toPrimitive: `x + ""`, a template, String(x), `+x` and `==` take different hints | contract |
+| thenable | input promise | `then` without `catch`: await accepts it, `.catch` throws, `instanceof Promise` is false, it settles later | reflection |
+| settlement-order | input promises | tier 3, below | contract |
+| timer-order | a file that arms timers | tier 3, below | contract |
 
 Three families replace a leaf: proto-name-key replaces a string parameter, coercion-hooks replaces an unread value, and
-thenable replaces an input promise. The replacement settles to the same value where one exists. The other families
+thenable replaces an input promise. The replacement settles to the same value where one exists. A coercion object
+replaces only a value the unit converts: an unread value whose members or elements the unit reads (a union that
+usage.mjs shaped into an array or a record) keeps its fake, which answers those reads. The other families
 only add structure. The shared-reference family forces the sharing that aliasInputs draws at random, and adds links
 across shapes. The enumerated heaps (korat.mjs) already draw every sharing of the record shapes, so this family adds
 certainty, not reach: the pair unit sharedReference is WITNESS on the base too.
@@ -52,7 +65,9 @@ or a local const holding one) becomes a target. The other side gives the values:
   integer neighbours (a string gives itself, itself plus "x", and "");
 - another parameter path gives a copy of that path's drawn value, plus 0, 1 or -1.
 
-Both versions are read, so the constants on both sides of a changed comparison are drawn. The tier holds generated
+Both versions are read, so the constants on both sides of a changed comparison are drawn. A target keeps only the
+values its leaf's declared type admits (a neighbour of a literal type's member is not a value of it), and a copied
+value is written only where the target's type admits it. The tier holds generated
 inputs 2, 6, 10 and so on, when the unit has targets. A `.length` target cuts or extends its string or array. Syntax
 only: a side computed by a call, by arithmetic or from the receiver is no target. A concolic step would cover those
 sides (see the measurement: the misses that remain are listed with their changed condition).

@@ -290,6 +290,9 @@ export function specOf(file, unitName, opts = {}) {
   // the changed-path tier (gen.mjs changedTurn): the comparisons the two versions do not share, as targets on the inputs
   let changed = null;
   if (opts.usageFrom) { try { const o = other(); const up = topLevelFunctions(o.sf).get(unitName); if (up) changed = changedTargets({ sf, checker, unit: u }, { sf: o.sf, checker: o.checker, unit: up }, constOf); } catch { changed = null; } }
+  // a target keeps only the values its leaf's declared type admits (a neighbour of a literal type's member is no value
+  // of it), and carries its leaf's spec, so a copied value is written only where the type admits it (gen.mjs)
+  if (changed) changed = changed.map((tg) => { const leaf = tg.at.length ? null : specAtPath(params[tg.at.param], tg.at.chain, usedDefs); if (!tg.at.length && !leaf) return null; if (tg.values) { const vs = tg.at.length ? tg.values : tg.values.filter((v) => (v && typeof v === 'object' && v.t === 'undefined' ? leaf.optional || admitsUndefined(leaf.spec, usedDefs) : fits(leaf.spec, v, usedDefs))); return vs.length ? { ...tg, values: vs } : null; } return { ...tg, ...(leaf ? { leaf: leaf.spec } : {}) }; }).filter(Boolean);
   const timers = /\b(setTimeout|setInterval|setImmediate|requestAnimationFrame|requestIdleCallback)\b/.test(sf.text); // the file arms timers: the timer-order family has ties to reorder
   return { unit: unitName, shaped, ...(known ? { known } : {}), ...(changed && changed.length ? { changed } : {}), ...(timers ? { timers } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}) };
 }
@@ -506,6 +509,21 @@ function knownOf(sp, values, vfn) {
 // sides of a changed one are drawn. Syntax only: a side computed by a call, an arithmetic expression or the receiver is
 // no target (design/lane-b-reach.md, "Tier 2").
 const COMPARE = new Set([ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanEqualsToken, ts.SyntaxKind.GreaterThanToken, ts.SyntaxKind.GreaterThanEqualsToken, ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken]);
+// the spec of a leaf a target names: a parameter, then record fields through references and union options; with
+// `optional` when the last step is an optional field or parameter; null when the path leaves the declared shape
+function specAtPath(param, chain, defs) {
+  if (!param) return null;
+  let cur = { spec: param.spec, optional: !!param.optional };
+  const resolve = (s, d = 0) => (s && s.kind === 'ref' && d < 8 ? resolve(defs[s.key], d + 1) : s);
+  for (const name of chain) {
+    let s = resolve(cur.spec); if (!s) return null;
+    if (s.kind === 'union') s = s.options.map((o) => resolve(o)).find((o) => o && o.kind === 'record' && o.fields?.[name]) ?? null;
+    if (!s || s.kind !== 'record' || !s.fields?.[name]) return null;
+    cur = { spec: s.fields[name].spec, optional: !!s.fields[name].optional };
+  }
+  return cur;
+}
+const admitsUndefined = (s, defs, d = 0) => !!s && d < 8 && (s.kind === 'undefined' || s.kind === 'opaque' || (s.kind === 'ref' && admitsUndefined(defs[s.key], defs, d + 1)) || (s.kind === 'union' && s.options.some((o) => admitsUndefined(o, defs, d + 1))));
 export function changedTargets(cand, par, constOf) {
   const textOf = (side, n) => n.getText(side.sf).replace(/\s+/g, ' ');
   if (textOf(cand, cand.unit.node) === textOf(par, par.unit.node)) return [];
