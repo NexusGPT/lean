@@ -83,3 +83,32 @@ export function share(p: Post): boolean {
   p.pinned = t;
   return t === p.pinned;
 }
+
+// shape 6: seed drops the nested write (WITNESS); later reads the count after the write to active (another cell: proved);
+// named writes through a const name for the node (proved); retitle swaps its two writes through a key that may be
+// missing: the TypeError comes from the other statement (WITNESS on the thrown value), and the read marks: not proved
+export interface Chat { title: string; unread: number }
+export interface Inbox { chats: Record<string, Chat>; active: string }
+
+export function seed(b: Inbox, t: string): void {
+  b.chats["draft"] = { title: t, unread: 0 };
+}
+
+export function later(b: Inbox, t: string): number {
+  b.chats["draft"] = { title: t, unread: 0 };
+  b.active = t;
+  const n = b.chats["draft"].unread;
+  return n;
+}
+
+export function named(b: Inbox, t: string): void {
+  b.chats["draft"] = { title: t, unread: 0 };
+  const chat = b.chats["draft"];
+  chat.unread = 1;
+}
+
+export function retitle(b: Inbox, id: string, t: string): void {
+  const chat = b.chats[id];
+  chat.unread += 1;
+  chat.title = t;
+}

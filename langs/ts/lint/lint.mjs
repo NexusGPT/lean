@@ -873,9 +873,12 @@ export function lintFile(file, ranges = null, opts = {}) {
   // registry) is no parameter's node and stays refused (escape heap_shapes_outside_node).
   const plainNode = (t) => !!t && !(t.flags & TF.Union) && (plainDataRecord(checker, t) || (checker.isArrayType(t) && ((x) => !!x && (!!(x.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) || plainDataRecord(checker, x)))(checker.getTypeArguments(t)[0]))); // a plain data record, or an array of primitives or of plain data records: the shapes the heap core holds as cells
   const primDict = (t) => !!t && !(t.flags & TF.Union) && !!(t.flags & TF.Object) && !checker.getPropertiesOfType(t).length && !t.getCallSignatures().length && !checker.getIndexInfoOfType(t, ts.IndexKind.Number) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !!(checker.getIndexInfoOfType(t, ts.IndexKind.String).type.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) && !(checker.getIndexInfoOfType(t, ts.IndexKind.String).type.flags & TF.Union && checker.getIndexInfoOfType(t, ts.IndexKind.String).type.types.some((x) => x.flags & (TF.Undefined | TF.Null))); // Record<string, T> of a primitive: the heap core's dictionary cell
-  const heldNodePath = (x) => { // the parameter of this unit whose node x is, and the field steps from it, or null
+  // Record<string, T> of a plain data record: its values are nodes, each reached by its key (DictGet_ then field steps)
+  const recDict = (t) => !!t && !(t.flags & TF.Union) && !!(t.flags & TF.Object) && !checker.getPropertiesOfType(t).length && !t.getCallSignatures().length && !checker.getIndexInfoOfType(t, ts.IndexKind.Number) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && plainDataRecord(checker, checker.getIndexInfoOfType(t, ts.IndexKind.String).type);
+  const quietKey = (k) => { k = unparenX(k); return (ts.isIdentifier(k) || ts.isStringLiteral(k) || ts.isNoSubstitutionTemplateLiteral(k)) && nonNull(tOf(k)).every(isStr); }; // a name or a literal: the key is read once and calls nothing
+  const heldNodePath = (x) => { // the parameter of this unit whose node x is, and the field (or dictionary key) steps from it, or null
     let steps = 0; x = unparenX(x);
-    for (;;) { if (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { x = x.expression; continue; } if (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; continue; } break; }
+    for (;;) { if (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { x = x.expression; continue; } if (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; continue; } if (ts.isElementAccessExpression(x) && !x.questionDotToken && recDict(tOf(x.expression)) && quietKey(x.argumentExpression)) { steps++; x = x.expression; continue; } break; }
     if (!ts.isIdentifier(x) || !currentFn) return null;
     const o = declOf(x); if (o.kind !== 'local' || !isParam(o.decl) || o.decl.parent !== currentFn || !ownedHere(o.decl)) return null;
     return { decl: o.decl, steps };
@@ -978,12 +981,19 @@ export function lintFile(file, ranges = null, opts = {}) {
             return expr(e.right);
           }
           const throughElement = (() => { let x = l.expression; while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x)) { if (ts.isElementAccessExpression(x)) return true; x = x.expression; } return false; })();
+          if (throughElement && heldNodePath(l.expression)) { if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field'); expr(l.expression); return expr(e.right); } // a field of a record a dictionary of a parameter's node holds by key (`s.chats[id].unread = 0`): a heap step on that record
           if (!throughElement && heldCall(root)) { if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field'); expr(l.expression); return expr(e.right); } // a field of the node a same-file call returns (`pick(b, true).status = v`, `this.current().n = 0`): a heap step on that node
           if (throughElement) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`: a field of an element is written when the path from a parameter takes field and array-element steps only, each index a number that calls nothing (name it first: \`const k = ...\`), and \`!\` or \`as T\` stand only on an element, T its own type`);
           else if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
           else if (aliasHere(o.decl, l) && !heldAlias(o.decl)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl)); // a const name for a node a parameter holds: the write is a step on that node (heap shapes)
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
+        }
+        else if (ts.isElementAccessExpression(l) && !l.questionDotToken && (heldNodePath(l.expression)?.steps ?? 0) >= 1 && recDict(tOf(l.expression))) { // a record stored under a key of a dictionary of records a parameter's node holds: DictSet_ of the reference; a key that may be `__proto__` would replace the prototype instead
+          if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
+          else if (!nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
+          else if (protoKeyWrite(checker, l.argumentExpression, e.right) !== 'free') v(l, 'prototype', 'a key that may be \'__proto__\' with an object value replaces the dictionary\'s prototype (the setter of Object.prototype.__proto__) and makes no key; use a literal key, or a Map');
+          expr(l.expression); expr(l.argumentExpression);
         }
         else if (ts.isElementAccessExpression(l) && !l.questionDotToken && (heldNodePath(l.expression)?.steps ?? 0) >= 1 && primDict(tOf(l.expression))) { // a key of a dictionary a parameter's node holds (`r.headers[k] = v`, Record<string, T> of a primitive): DictSet_ on that node (heap.mjs); a primitive written to `__proto__` is ignored by its setter, as the core reads it
           if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
@@ -1002,7 +1012,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
       if (ts.isPropertyAccessExpression(e.operand) && elementWritePath(checker, e.operand)) { const ep = elementWritePath(checker, e.operand); const po = declOf(ep.root); if (po.kind === 'local' && isParam(po.decl) && po.decl.parent === currentFn && !aliasLocals.has(po.decl) && ownedHere(po.decl)) return expr(e.operand.expression); } // a field of a parameter's element: a heap step on that element
-      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && (!aliasHere(o.decl, e) || heldAlias(o.decl)) && ownedHere(o.decl)) return; if (heldCall(r)) return expr(r); return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
+      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && (!aliasHere(o.decl, e) || heldAlias(o.decl)) && ownedHere(o.decl)) return; if (heldCall(r)) return expr(r); if (heldNodePath(e.operand.expression)) return expr(e.operand.expression); return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
       if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
@@ -1020,7 +1030,11 @@ export function lintFile(file, ranges = null, opts = {}) {
         const ownedTarget = ts.isIdentifier(t0) && declOf(t0).kind === 'local' && ownedHere(declOf(t0).decl) && !aliasHere(declOf(t0).decl, e);
         const plainRecord = (x) => { const t = tOf(x); if (!isRecordish(t) || nonNull(t).length !== 1 || t.flags & (TF.Null | TF.Undefined)) return false; return checker.getPropertiesOfType(t).every((p) => !(p.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor | ts.SymbolFlags.Method))); };
         const targetProps = ownedTarget && plainRecord(t0) ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
-        const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
+        // a source's keys must be known exactly: Object.assign copies every own enumerable key of the source, and a value of a
+        // declared record type may carry keys its type does not name (structural typing), so only a literal source is read
+        const exactSource = (x) => { x = unparenX(x); return ts.isObjectLiteralExpression(x) && x.properties.every((p) => (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) || ts.isShorthandPropertyAssignment(p)); };
+        const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => exactSource(s) && plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
+        if (ownedTarget && targetProps && e.arguments.slice(1).some((s) => !exactSource(s) && isRecordish(tOf(s)))) return v(e, 'assign-target', '`Object.assign` copies every own key of its source, and a value of a record type may carry keys its type does not name; pass a literal of the fields it copies (`Object.assign(t, { a: s.a })`) or write them by name');
         if (ownedTarget && sourcesFit) { checkIdent(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
         // a node a parameter holds (`p.headers`, or a const name for it) as the target, and literal sources: the copy is a
         // sequence of field writes on that node in the literal's key order, after every value is evaluated (heap.mjs)
