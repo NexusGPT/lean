@@ -1269,10 +1269,10 @@ export function translate(file, fnName, opts = {}) {
     return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
   }
   // the open record's two slots and the rest's carrier: MoreBuilt for a value a literal made (no key beyond the declared
-  // ones), MoreFrom for a value from the outside, an opaque source standing for the keys and values its type does not name
+  // ones), MoreFrom for a value from the outside, its source a name standing for the keys and values its type does not name
   const OPEN_REST = 'open_rest_', OPEN_INDEX = 'open_index_';
   const openSlots = (d) => { const text = d ? prelude.get(`datatype ${recordAlias.get(d) ?? d}`) ?? '' : ''; return [OPEN_INDEX, OPEN_REST].filter((x) => text.includes(`${x}: `)); }; // the open slots a record datatype declares
-  const moreType = () => { addPrelude('MoreSrc', 'type MoreSrc(==)'); addPrelude('More', 'datatype More = MoreBuilt | MoreFrom(src: MoreSrc)'); return 'More'; };
+  const moreType = () => { addPrelude('More', 'datatype More = MoreBuilt | MoreFrom(src: int)'); return 'More'; }; // the source is a name only compared, an int so that a differential run compiles it
   const typeNameOf = (t) => t.aliasSymbol?.name ??(t.symbol && t.symbol.name !== '__type' && t.symbol.name !== '__object' ? t.symbol.name : null);
   function recordType(t, n, depth) {
     const props = checker.getPropertiesOfType(t);

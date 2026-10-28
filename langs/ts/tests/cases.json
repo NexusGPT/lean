@@ -1489,5 +1489,47 @@
     ]
    ]
   ]
+ },
+ {
+  "name": "open_datatype_flagCount",
+  "file": "open_datatype.ts",
+  "fn": "flagCount",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    [
+     "a",
+     "b",
+     "a"
+    ]
+   ],
+   [
+    []
+   ],
+   [
+    [
+     "__proto__",
+     "x"
+    ]
+   ]
+  ]
+ },
+ {
+  "name": "open_datatype_acceptOf",
+  "file": "open_datatype.ts",
+  "fn": "acceptOf",
+  "core": true,
+  "coreOnly": true,
+  "samples": [
+   [
+    "q",
+    1
+   ],
+   [
+    "q",
+    0
+   ]
+  ]
  }
 ]
