@@ -35,3 +35,17 @@ export class Desk {
   current(): Run { return this.open; }
   reset(): void { this.current().status = "new"; }
 }
+
+// shape 3: cacheOff names the key first (the same write: proved); tag writes the two keys in the other order (a new key
+// goes last, so the key order differs: WITNESS)
+export interface Call { url: string; headers: Record<string, string> }
+
+export function cacheOff(c: Call): void {
+  const key = "Cache-Control";
+  c.headers[key] = "no-cache";
+}
+
+export function tag(c: Call, k: string, v: string): void {
+  c.headers["X-Seen"] = "1";
+  c.headers[k] = v;
+}

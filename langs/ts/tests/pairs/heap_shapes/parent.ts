@@ -35,3 +35,16 @@ export class Desk {
   current(): Run { return this.open; }
   reset(): void { this.current().status = "new"; }
 }
+
+// shape 3: an index write with a string key on a dictionary a parameter's node holds is DictSet_ on that node (a new
+// key goes last: the key order is observed)
+export interface Call { url: string; headers: Record<string, string> }
+
+export function cacheOff(c: Call): void {
+  c.headers["Cache-Control"] = "no-cache";
+}
+
+export function tag(c: Call, k: string, v: string): void {
+  c.headers[k] = v;
+  c.headers["X-Seen"] = "1";
+}

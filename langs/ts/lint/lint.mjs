@@ -982,6 +982,11 @@ export function lintFile(file, ranges = null, opts = {}) {
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
         }
+        else if (ts.isElementAccessExpression(l) && !l.questionDotToken && (heldNodePath(l.expression)?.steps ?? 0) >= 1 && primDict(tOf(l.expression))) { // a key of a dictionary a parameter's node holds (`r.headers[k] = v`, Record<string, T> of a primitive): DictSet_ on that node (heap.mjs); a primitive written to `__proto__` is ignored by its setter, as the core reads it
+          if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
+          else if (!nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
+          expr(l.expression); expr(l.argumentExpression);
+        }
         else if (ts.isElementAccessExpression(l)) v(l, 'index-assign', 'write a record field by name, or use a local Record<string, T> dictionary');
         else v(l, 'unsupported-syntax', 'assignment target');
         return expr(e.right);
