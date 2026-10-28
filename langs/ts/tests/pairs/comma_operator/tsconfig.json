@@ -1,1 +1,1 @@
-{ "compilerOptions": { "strict": true, "module": "commonjs", "target": "es2020", "baseUrl": ".", "paths": { "@/*": ["src/*"] } } }
+{ "compilerOptions": { "strict": true, "module": "commonjs", "target": "es2022", "baseUrl": ".", "paths": { "@/*": ["src/*"] } } }

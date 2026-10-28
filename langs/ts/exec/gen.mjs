@@ -125,6 +125,9 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'union': { const j = Math.floor(rng() * spec.options.length); return gen(spec.options[spec.prefer != null && walking && brng() >= 1 / 3 ? spec.prefer : j], depth + 1, env, path); } // while walking, the option leading to a compared leaf two times in three; the declared draw stays reachable
       case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
+      // an Error whose `cause` is another Error, `chain` links at most: the links a unit walks through `.cause`; the last
+      // link has no cause (the option bag is omitted, so `'cause' in e` is false there)
+      case 'error': { const n = pick([0, 1, 2, 3, spec.chain ?? 6], () => Math.floor(rng() * ((spec.chain ?? 6) + 1))); let e; for (let i = n; i >= 0; i--) { const m = gen({ kind: 'string' }, depth + 1, env, `${path}.cause${i}.message`); e = e === undefined ? new Error(m) : new Error(m, { cause: e }); } return e; }
       case 'function': return env ? env.fake(`${path}#fn`, spec.returns ? { kind: 'method', returns: spec.returns } : null) : () => undefined;
       case 'service': return env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path, spec)) : {}; // a handle: often one the unit was handed, so a lookup keyed by an argument can hit
       case 'class': return env ? env.fake(path, spec) : function () {};

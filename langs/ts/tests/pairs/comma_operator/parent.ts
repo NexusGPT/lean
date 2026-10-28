@@ -36,3 +36,25 @@ export function aliasTag(s: string): { tag: string; text: string } {
   const tag = label(s);
   return { tag, text: s + ':' };
 }
+
+class StopError extends Error {}
+
+// an error read through its cause chain: the loop walks `.cause` while the value is an Error, at most four steps
+export function causeDepth(e: unknown): number {
+  let depth = 0;
+  for (let inner: unknown = e; inner instanceof Error && depth < 4; inner = inner.cause, depth++) {
+    if (inner instanceof StopError) return -1;
+  }
+  return depth;
+}
+
+// the message at the end of the chain, from a parameter declared Error
+export function rootMessage(e: Error): string {
+  let cur: Error = e;
+  for (let i = 0; i < 8; i++) {
+    const next: unknown = cur.cause;
+    if (!(next instanceof Error)) return cur.message;
+    cur = next;
+  }
+  return cur.message;
+}
