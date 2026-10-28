@@ -39,6 +39,7 @@ import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, read
 import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
+import { lintFindings } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -202,7 +203,10 @@ function forInDelete(s, checker, sf) {
   return hit;
 }
 
-export function lintFile(file, ranges = null, opts = {}) {
+// the lint's findings: the lowering's record of the file (lower.mjs), whose first phase is admissionFindings below and whose
+// last is the translator's reading of every unit it admitted, so a unit the translator refuses is never advised as admitted
+export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
+export function admissionFindings(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
   const given = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
   const { sf, checker, diagnostics } = normaliseApplyCalls(given); // an exact apply/call is read as the direct call (common.mjs applyCall)

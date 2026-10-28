@@ -42,7 +42,8 @@ import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or f
 import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
 import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype)
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
-import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
+import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
+import { admitUnits } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
@@ -74,7 +75,7 @@ const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCod
 export function translate(file, fnName, opts = {}) {
   const { real: realFlag = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null, heap = false, heapUnits = null } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
-  const loaded = normaliseApplyCalls(loadProgram(file, { project })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
+  const loaded = normaliseApplyCalls(opts.loaded ?? loadProgram(file, { project })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
   const { sf, checker } = loaded;
   let real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
   const fns = topLevelFunctions(sf);
@@ -98,7 +99,7 @@ export function translate(file, fnName, opts = {}) {
   const staticReceiver = (u) => { let found = false; const walk = (n) => { if (ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isClassLike(n)) return; if (n.kind === K.ThisKeyword || n.kind === K.SuperKeyword) found = true; ts.forEachChild(n, walk); }; walk(u.body); return found; };
   for (const u of fns.values()) if (u.isStatic && !u.accessor && u.params.every((p) => ts.isIdentifier(p.name)) && staticReceiver(u)) accessorOpaque.add(u.name);
   if ([...fns.values()].some((u) => u.accessor)) {
-    const findings = lintFile(file, null, { project, loaded, accessorBodies: true }).filter((g) => !g.env);
+    const findings = admissionFindings(file, null, { project, loaded, accessorBodies: true }).filter((g) => !g.env);
     for (const u of fns.values()) if (u.accessor) { let staticThis = false; const walk = (n) => { if (u.isStatic && n.kind === K.ThisKeyword) staticThis = true; ts.forEachChild(n, walk); }; walk(u.body); if (staticThis || findings.some((g) => g.line >= lineOf(sf, u.node.getStart(sf)) && g.line <= lineOf(sf, u.node.getEnd()))) accessorOpaque.add(u.name); }
   }
   function accessorOf(n, kind, owner = currentUnit) {
@@ -158,8 +159,8 @@ export function translate(file, fnName, opts = {}) {
 
   // ----- the subset gate: refuse before translating -----
   const promiseReadings = new Set();
-  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
-  const report = { lintedOut: [], translated: [], failed: [] }; // --tolerant: per-unit outcomes for a census
+  const gate0 = admitUnits(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings, ...(opts.loaded ? { loaded: opts.loaded } : {}) }, loaded).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  const report = Object.assign(opts.report ?? {}, { lintedOut: [], translated: [], failed: [] }); // --tolerant: per-unit outcomes for a census (opts.report: the lowering's)
   const failedUnits = new Set();
   let gate = gate0;
   if (tolerant) {
@@ -5918,7 +5919,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (tolerant) {
       const before = chunks.length; const savedPending = pending;
       try { sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`); if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); if (heapT.needsInRange(u)) { heapHyps.push(`// INRANGE ${fname(u.name)}`); heapHyps.push(`// SOURCE ${fname(u.name)}: ${sourceKey(u)}`); } } else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(promiseHandleGuard(u, heapT.guard(u)))}`); } cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`); fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`); report.translated.push(u.name); }
-      catch (e) { if (!(e instanceof Unsupported)) throw e; chunks.length = before; pending = savedPending; failedUnits.add(u.name); report.failed.push({ unit: u.name, message: String(e.message).split('\n')[0].slice(0, 160) }); currentUnit = null; yieldState = null; }
+      catch (e) { if (!(e instanceof Unsupported)) throw e; chunks.length = before; pending = savedPending; failedUnits.add(u.name); report.failed.push({ unit: u.name, message: String(e.message).split('\n')[0].slice(0, 160), text: String(e.message).split('\n')[0], stack: e.stack }); currentUnit = null; yieldState = null; }
       continue;
     }
     sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`);
