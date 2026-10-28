@@ -609,6 +609,39 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
   add('witness-lines', 'advice', 'the site supplies the lint rewrite', r.status === 0 && got?.verdict === 'WITNESS' && advice?.rule === 'freeze' && advice?.label === 'migration' && advice?.advice === expected, JSON.stringify(advice) ?? 'no advice');
 }
 
+// ----- convert: each transform's fixture through the converter and pr.mjs (langs/ts/design/converter.md) -----
+// before.ts is committed in a scratch repository and converted; the result must be after.ts, applied with every
+// changed function PASS-proved or PASS-bounded; then wrong.ts (a near rewrite that changes behaviour) must be a WITNESS
+{
+  const convDir = path.join(here, 'fixtures/convert');
+  const converter = path.join(here, '../convert.mjs'), prTool = path.join(here, '../pr.mjs');
+  const cache = path.join(tmp, 'convert-cache');
+  const count = (rs) => Object.entries(rs.reduce((c, r) => ({ ...c, [r.verdict ?? 'none']: (c[r.verdict ?? 'none'] ?? 0) + 1 }), {})).map(([k, v]) => `${v} ${k}`).join(', ');
+  for (const name of fs.existsSync(convDir) ? fs.readdirSync(convDir).sort() : []) {
+    const d = path.join(convDir, name);
+    const work = fs.mkdtempSync(path.join(tmp, `convert-${name}-`));
+    const unit = path.join(work, 'unit.ts');
+    fs.copyFileSync(path.join(d, 'before.ts'), unit);
+    const g = [['init', '-q'], ['add', '-A'], ['-c', 'user.email=lean@local', '-c', 'user.name=lean', 'commit', '-qm', 'before']].map((a) => spawnSync('git', ['-C', work, ...a], { encoding: 'utf8' }));
+    if (g.some((r) => r.status !== 0)) { add('convert', name, 'scratch repository', false, g.map((r) => r.stderr).join(' ').trim().slice(0, 160)); continue; }
+    const json = path.join(tmp, `convert-${name}.json`);
+    const c = run('node', [converter, work, '--no-project', '--n', '30', '--dafny-seconds', '30', '--cache-dir', cache, '--json', json]);
+    const got = fs.readFileSync(unit, 'utf8'), want = fs.readFileSync(path.join(d, 'after.ts'), 'utf8');
+    const at = got.split('\n').findIndex((l, i) => l !== want.split('\n')[i]);
+    add('convert', name, 'before converts to after.ts', got === want, got === want ? 'same text' : `differs at line ${at + 1}: ${JSON.stringify(got.split('\n')[at] ?? '')}`);
+    let rep = null; try { rep = JSON.parse(fs.readFileSync(json, 'utf8'))[0]; } catch { /* no report fails below */ }
+    const file = rep?.files?.[0], rs = (rep?.rows ?? []).filter((r) => !r.caller);
+    const ok = c.status === 0 && (file?.applied?.length ?? 0) > 0 && !file?.reverted && rs.length > 0 && rs.every((r) => r.verdict === 'PASS-proved' || r.verdict === 'PASS-bounded');
+    add('convert', name, 'applied and proved, no WITNESS', ok, rep ? `${file?.applied?.length ?? 0} applied, ${file?.listed?.length ?? 0} listed; ${count(rs)}${file?.reverted ? '; reverted: ' + file.reverted : ''}` : (c.stderr || c.stdout).trim().slice(-160));
+    fs.writeFileSync(unit, fs.readFileSync(path.join(d, 'wrong.ts'), 'utf8'));
+    const wj = path.join(tmp, `convert-${name}-wrong.json`);
+    const w = run('node', [prTool, '--repo', work, '--base', 'HEAD', '--no-project', '--n', '30', '--dafny-seconds', '30', '--cache-dir', cache, '--json', wj, '--out', path.join(tmp, `convert-${name}-wrong.md`)]);
+    let wr = null; try { wr = JSON.parse(fs.readFileSync(wj, 'utf8')).rows; } catch { /* no rows fails below */ }
+    const hit = (wr ?? []).filter((r) => r.verdict === 'WITNESS');
+    add('convert', name, 'wrong after refuted', hit.length > 0, hit.length ? hit.map((r) => `${r.unit} WITNESS at input ${r.witness?.input ?? '?'}`).join(', ') : `no WITNESS: ${wr ? count(wr) : (w.stderr || w.stdout).trim().slice(-160)}`);
+  }
+}
+
 // ----- table -----
 const w = (k, s) => Math.max(s.length, ...rows.map((r) => String(r[k]).length));
 const cols = ['kind', 'name', 'check'];

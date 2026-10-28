@@ -124,6 +124,8 @@ quote.ts:6:9  any-type  `seats` is any (inferred); its uses say number
 
 **Impact:** code written with the rule on is provable from its first line. More (labels, the review rules under `--advice`, the census of a whole repository): [`docs/editor-and-agents.md`](docs/editor-and-agents.md).
 
+`node langs/ts/convert.mjs <folder>` applies those rewrites itself as syntax-tree transforms, a proved one at every site it matches, a conditional one where its precondition is decided and a migration only in a narrowed shape whose guard keeps behaviour, and keeps a file only when `pr.mjs` finds no WITNESS on a function it changed. Its transforms and what each keeps: [`langs/ts/design/converter.md`](langs/ts/design/converter.md).
+
 ### 4. The front end
 
 <p align="center"><img src="docs/component.svg" width="100%" alt="A React component as a machine: props and hook slots in, a tree out, one step per command"></p>
