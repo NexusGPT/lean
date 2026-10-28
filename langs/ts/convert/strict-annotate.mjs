@@ -4,6 +4,7 @@
 // transform proves that at the site: the file's emitted JavaScript is the same text before and after the edit, under
 // decorator metadata (where a type annotation becomes a run-time value) and under both readings of class fields. A
 // site whose emit changes is listed. The converter's round then keeps the edit only when no new type error appears.
+import { createHash } from 'node:crypto';
 import { ts } from './util.mjs';
 
 // the JavaScript TypeScript emits for a file's text under one set of options; types are erased, everything else stays
@@ -14,6 +15,10 @@ function emitOf(text, fileName, extra) {
 // the same JavaScript before and after, under each option set a project may hold that lets a type reach run time
 const EMIT_SETS = [{ useDefineForClassFields: true }, { useDefineForClassFields: false }];
 export const ERASURE_SETTINGS = 'ts.transpileModule, target ES2022, experimentalDecorators and emitDecoratorMetadata on, once with useDefineForClassFields true and once false';
+// the hash of the emitted JavaScript under each setting erased() compares, for the certificate
+export function emitHashes(fileName, text) {
+  return EMIT_SETS.map((o) => ({ setting: `useDefineForClassFields ${o.useDefineForClassFields}`, sha256: createHash('sha256').update(emitOf(text, fileName, o)).digest('hex') }));
+}
 export function erased(fileName, before, after) {
   if (before === after) return true;
   try { return EMIT_SETS.every((o) => emitOf(before, fileName, o) === emitOf(after, fileName, o)); } catch { return false; }

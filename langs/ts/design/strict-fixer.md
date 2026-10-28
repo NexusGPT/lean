@@ -32,10 +32,10 @@ parent throws, and an early `throw` throws another value: a behaviour change on 
 ## The proof
 
 pr.mjs cannot prove an annotation: the parameter's Dafny type changes (`Any` to `int`: ASK:interface), and a parent
-unit holding a strict error is outside lane A. So `convert.mjs` proves a file whose emit is unchanged by erasure, a
-named step of its report per file with the settings compared, and one PASS-proved row per changed unit, reading
-`erasure`; a file with other rewrites too goes through pr.mjs as before. Once annotated, lane A reads the unit with
-its type and proves it against itself (pair `strict_fixer`), `scaled` before and after:
+unit holding a strict error is outside lane A. So `convert.mjs` gives a file whose emit is unchanged the verdict
+PASS-erased per changed unit, a named step of its report; the certificate holds the settings, the emit hashes on both
+sides and the self-proof: check.mjs on the converted unit against itself, where lane A reads it with its type. A file
+with other rewrites too goes through pr.mjs as before. `scaled` before and after (pair `strict_fixer`):
 
 ```
 function scaled_parent(x: Any, k: int): int
