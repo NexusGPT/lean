@@ -1,15 +1,15 @@
-// strict_fixer: a near rewrite that changes behaviour: `?.` with a default where the converter writes `!`
+// strict_fixer: a near rewrite that changes behaviour: `?.` with a default at an absent read the converter lists
 export interface Address { city: string; zip?: string }
 export interface User { name?: string; age: number; address?: Address }
 
-// a possibly absent value read as a receiver (TS18048): the guard writes `!`
+// a possibly absent value read as a receiver (TS18048): listed, a person writes the narrowing
 export function nameLength(u: User): number {
   return u.name?.length ?? 0;
 }
 
-// a possibly absent record read through (TS18048): the guard writes `!`
+// a possibly absent record read through (TS18048): listed, a person writes the narrowing
 export function cityOf(u: User): string {
-  return u.address!.city.toUpperCase();
+  return u.address.city.toUpperCase();
 }
 
 // a parameter typed any by inference: the annotation writes the type its uses need

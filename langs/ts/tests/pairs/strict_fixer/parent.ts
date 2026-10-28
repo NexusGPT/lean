@@ -2,12 +2,12 @@
 export interface Address { city: string; zip?: string }
 export interface User { name?: string; age: number; address?: Address }
 
-// a possibly absent value read as a receiver (TS18048): the guard writes `!`
+// a possibly absent value read as a receiver (TS18048): listed, a person writes the narrowing
 export function nameLength(u: User): number {
   return u.name.length;
 }
 
-// a possibly absent record read through (TS18048): the guard writes `!`
+// a possibly absent record read through (TS18048): listed, a person writes the narrowing
 export function cityOf(u: User): string {
   return u.address.city.toUpperCase();
 }

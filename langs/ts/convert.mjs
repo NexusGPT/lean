@@ -28,7 +28,7 @@ import { ts, loadProgram, topLevelFunctions } from './common.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { ADVICE } from './lint/advice.mjs';
 import { nodeAt } from './convert/util.mjs';
-import { erased, concreteType } from './convert/strict-annotate.mjs';
+import { erased, concreteType, ERASURE_SETTINGS } from './convert/strict-annotate.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CODE = /\.(ts|tsx|mts|cts)$/;
@@ -260,7 +260,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     if (!noProve && byErasure.length) { proof ??= { rows: [], reverted: new Map() }; for (const r of byErasure) proof.rows.push(...erasureRows(repo, r)); }
     if (proof) witness += proof.rows.filter((r) => r.verdict === 'WITNESS').length;
     md.push(table(path.relative(repo, abs) || '.', results, proof, repo), '', detail(results, repo));
-    json.push({ target: path.relative(repo, abs), base, files: results.map(({ original, text, ...r }) => ({ ...r, file: path.relative(repo, r.file), reverted: proof?.reverted.get(path.relative(repo, r.file)) ?? null })), rows: proof?.rows.map((r) => ({ file: r.file, unit: r.unit, verdict: r.verdict, coverage: r.coverage, laneA: r.laneA, laneB: r.laneB, caller: !!r.caller, reason: r.reason, control: r.control ?? null })) ?? null });
+    // the strict family's proof, named per file: the emitted JavaScript compared under each setting erased() reads
+    if (!noProve && byErasure.length) md.push('#### erasure: the emitted JavaScript is identical', '', ...byErasure.map((r) => `- ${path.relative(repo, r.file)}: identical under ${ERASURE_SETTINGS}`), '');
+    json.push({ target: path.relative(repo, abs), base, files: results.map(({ original, text, ...r }) => ({ ...r, file: path.relative(repo, r.file), reverted: proof?.reverted.get(path.relative(repo, r.file)) ?? null, erasure: !noProve && byErasure.includes(r) ? ERASURE_SETTINGS : null })), rows: proof?.rows.map((r) => ({ file: r.file, unit: r.unit, verdict: r.verdict, coverage: r.coverage, laneA: r.laneA, laneB: r.laneB, caller: !!r.caller, reason: r.reason, control: r.control ?? null })) ?? null });
   }
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(json, null, 1));
   if (opt('--out')) fs.writeFileSync(opt('--out'), md.join('\n'));

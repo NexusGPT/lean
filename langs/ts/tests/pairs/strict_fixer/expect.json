@@ -1,18 +1,6 @@
 {
-  "why": "parent.ts holds five type errors under strict mode: two possibly absent receivers (TS18048), an implicit-any parameter, a local written any, and a cast the compiler rejects (TS2352). candidate.ts is exactly what lean convert makes of it: the strict family writes `!` at the two receivers and the proposed type at the two declarations, and lists the cast as a migration. Each edit is erased from the emitted JavaScript, so the converter proves the file by erasure (its rows are PASS-proved, reading erasure). Lane A cannot prove the edits against parent.ts: the parent's own strict error keeps nameLength, cityOf and asCount outside the subset (PASS-bounded, lane B finds no difference), and scaled's parameter changes from any to number (ASK:interface); label reads a boxed any against a number (lane A unproved, PASS-bounded). Once converted, every converted unit is inside the subset and proved (candidate against itself). wrong.ts is the near rewrite the plan named, `u.name?.length ?? 0`: it returns 0 where the parent throws, and lane B witnesses it.",
+  "why": "parent.ts holds five type errors under strict mode: two possibly absent receivers (TS18048), an implicit-any parameter, a local written any, and a cast the compiler rejects (TS2352). candidate.ts is exactly what lean convert makes of it: the strict family writes the proposed type at the two declarations, and lists the two absent reads (a narrowing a person writes: `x!` is refused as non-null-assertion and `?.` changes the absent case) and the cast (a migration). Each annotation is erased from the emitted JavaScript, so the converter proves the file by erasure (its rows are PASS-proved, reading erasure, the compared settings named in its report). Lane A cannot prove the annotations against parent.ts: scaled's parameter goes from any to number (ASK:interface) and label reads a boxed any against a number (unproved, PASS-bounded); the unconverted units stay outside the subset (PASS-bounded). Once annotated, scaled and label are inside the subset and proved (candidate against itself). wrong.ts is the `?.` rewrite at an absent read, `u.name?.length ?? 0`: it returns 0 where the parent throws, and lane B witnesses it.",
   "candidateOnly": [
-    {
-      "file": "candidate.ts",
-      "parent": "candidate.ts",
-      "unit": "nameLength",
-      "verdict": "PASS-proved"
-    },
-    {
-      "file": "candidate.ts",
-      "parent": "candidate.ts",
-      "unit": "cityOf",
-      "verdict": "PASS-proved"
-    },
     {
       "file": "candidate.ts",
       "parent": "candidate.ts",

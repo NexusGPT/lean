@@ -13,6 +13,7 @@ function emitOf(text, fileName, extra) {
 }
 // the same JavaScript before and after, under each option set a project may hold that lets a type reach run time
 const EMIT_SETS = [{ useDefineForClassFields: true }, { useDefineForClassFields: false }];
+export const ERASURE_SETTINGS = 'ts.transpileModule, target ES2022, experimentalDecorators and emitDecoratorMetadata on, once with useDefineForClassFields true and once false';
 export function erased(fileName, before, after) {
   if (before === after) return true;
   try { return EMIT_SETS.every((o) => emitOf(before, fileName, o) === emitOf(after, fileName, o)); } catch { return false; }

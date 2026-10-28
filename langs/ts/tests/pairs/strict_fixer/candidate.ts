@@ -1,15 +1,15 @@
-// strict_fixer: what lean convert makes of parent.ts (the strict family: two guards, two annotations; the cast listed)
+// strict_fixer: what lean convert makes of parent.ts (two annotations; the two absent reads and the cast listed)
 export interface Address { city: string; zip?: string }
 export interface User { name?: string; age: number; address?: Address }
 
-// a possibly absent value read as a receiver (TS18048): the guard writes `!`
+// a possibly absent value read as a receiver (TS18048): listed, a person writes the narrowing
 export function nameLength(u: User): number {
-  return u.name!.length;
+  return u.name.length;
 }
 
-// a possibly absent record read through (TS18048): the guard writes `!`
+// a possibly absent record read through (TS18048): listed, a person writes the narrowing
 export function cityOf(u: User): string {
-  return u.address!.city.toUpperCase();
+  return u.address.city.toUpperCase();
 }
 
 // a parameter typed any by inference: the annotation writes the type its uses need
