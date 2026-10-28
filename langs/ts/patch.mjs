@@ -15,8 +15,16 @@
 //   move       a keyed child whose place among the kept keys changed (the kept keys outside a longest run in order)
 // A changed tag at one position is a remove and an insert. A path is the child-index path from the root in the labels
 // the handlers carry (exec/run.mjs treeHandlers): `[i]` under an array or a fragment, `div[i]` under a div, `C[i]` under
-// a component; '' is the root itself. Values are printed with render (exec/fake.mjs), so a fake prints as its path.
+// a component; '' is the root itself. Values are printed with render (exec/fake.mjs), so a fake prints as its path; an
+// op's node is printed with renderTree, whose depth bound restarts at every element, so a deep subtree keeps its
+// elements and their children lists (render alone cuts a deep element's children to one {$deep} object).
+// `children` is read one way by every reader (kidsOf): nothing is no child, an array is the children, anything else (one
+// element, one text, a rendered value cut by a depth bound) is one child.
 import { render } from './exec/fake.mjs';
+
+// an op's node rendered to its last element: render's depth bound restarts at every element, as in the observed trees
+// (exec/run.mjs renderTree, the same rule); a value inside a prop keeps the bound
+const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 
 const KINDS = ['insert', 'remove', 'text', 'attribute', 'move'];
 const MAX_DEPTH = 64, MAX_OPS = 500; // the walk is total: past the depth a differing subtree is one remove and one insert; past the op budget the list is cut and says so
@@ -25,7 +33,9 @@ const isFake = (v) => (typeof v === 'object' || typeof v === 'function') && v !=
 const isNode = (v) => !!v && typeof v === 'object' && !isFake(v) && !Array.isArray(v) && Object.hasOwn(v, '$el');
 const isNothing = (v) => v === null || v === undefined || typeof v === 'boolean' || (!!v && typeof v === 'object' && !isFake(v) && v.$undefined === true && Object.keys(v).length === 1); // React renders nothing for these
 const isText = (v) => typeof v === 'string' || typeof v === 'number';
+export const kidsOf = (v) => (v === null || v === undefined ? [] : Array.isArray(v) ? v : [v]);
 const json = (v) => JSON.stringify(render(v));
+const treeJson = (v) => JSON.stringify(renderTree(v)); // a tree compared to its last element, never equal because both sides were cut at one depth
 // a function prop is compared as 'fn': a raw function, a rendered {$fn}, an observed {$handler}
 const isFnValue = (v) => (typeof v === 'function' && !isFake(v)) || (!!v && typeof v === 'object' && !isFake(v) && (Object.hasOwn(v, '$fn') || Object.hasOwn(v, '$handler')));
 const propValue = (v) => (isFnValue(v) ? 'fn' : render(v));
@@ -52,13 +62,13 @@ function diffChildren(A, B, prefix, seg, st, depth) {
   const ka = keysOf(A), kb = keysOf(B);
   if (ka && kb && A.length && B.length) { // keyed: React's reconciliation identity
     const ia = new Map(ka.map((k, i) => [k, i])), ib = new Map(kb.map((k, j) => [k, j]));
-    ka.forEach((k, i) => { if (!ib.has(k)) emit(st, { kind: 'remove', path: join(prefix, seg(i)), key: render(A[i].props.key), before: render(A[i]), after: null }); });
+    ka.forEach((k, i) => { if (!ib.has(k)) emit(st, { kind: 'remove', path: join(prefix, seg(i)), key: render(A[i].props.key), before: renderTree(A[i]), after: null }); });
     const kept = kb.map((k, j) => [k, j]).filter(([k]) => ia.has(k));
     const inOrder = longestRun(kept.map(([k]) => ia.get(k)));
     let m = 0;
     kb.forEach((k, j) => {
       const p = join(prefix, seg(j));
-      if (!ia.has(k)) { emit(st, { kind: 'insert', path: p, key: render(B[j].props.key), before: null, after: render(B[j]) }); return; }
+      if (!ia.has(k)) { emit(st, { kind: 'insert', path: p, key: render(B[j].props.key), before: null, after: renderTree(B[j]) }); return; }
       const i = ia.get(k);
       if (!inOrder.has(m)) emit(st, { kind: 'move', path: p, key: render(B[j].props.key), before: i, after: j });
       m++;
@@ -68,8 +78,8 @@ function diffChildren(A, B, prefix, seg, st, depth) {
   }
   for (let i = 0; i < Math.max(A.length, B.length); i++) { // by position
     const p = join(prefix, seg(i));
-    if (i >= B.length) emit(st, { kind: 'remove', path: p, before: render(A[i]), after: null });
-    else if (i >= A.length) emit(st, { kind: 'insert', path: p, before: null, after: render(B[i]) });
+    if (i >= B.length) emit(st, { kind: 'remove', path: p, before: renderTree(A[i]), after: null });
+    else if (i >= A.length) emit(st, { kind: 'insert', path: p, before: null, after: renderTree(B[i]) });
     else diffNode(A[i], B[i], p, st, depth + 1);
   }
 }
@@ -83,13 +93,13 @@ function diffNode(a, b, path, st, depth) {
       const x = Object.hasOwn(pa, name) ? propValue(pa[name]) : render(undefined), y = Object.hasOwn(pb, name) ? propValue(pb[name]) : render(undefined);
       if (JSON.stringify(x) !== JSON.stringify(y)) emit(st, { kind: 'attribute', path, name, before: x, after: y });
     }
-    diffChildren(a.children ?? [], b.children ?? [], path, (i) => `${segTag(b)}[${i}]`, st, depth);
+    diffChildren(kidsOf(a.children), kidsOf(b.children), path, (i) => `${segTag(b)}[${i}]`, st, depth);
     if (Object.hasOwn(a, 'rendered') || Object.hasOwn(b, 'rendered')) diffRoot(a.rendered, b.rendered, join(path, 'rendered'), st, depth + 1); // --deep: the child component's own tree
     return;
   }
-  if (json(eraseFns(a)) === json(eraseFns(b))) return; // the same fake, the same value
-  emit(st, { kind: 'remove', path, before: render(a), after: null });
-  emit(st, { kind: 'insert', path, before: null, after: render(b) });
+  if (treeJson(eraseFns(a)) === treeJson(eraseFns(b))) return; // the same fake, the same value
+  emit(st, { kind: 'remove', path, before: renderTree(a), after: null });
+  emit(st, { kind: 'insert', path, before: null, after: renderTree(b) });
 }
 
 function diffRoot(a, b, path, st, depth) {
@@ -97,7 +107,7 @@ function diffRoot(a, b, path, st, depth) {
   else diffNode(a, b, path, st, depth);
 }
 const toList = (v) => (Array.isArray(v) ? v : isNothing(v) ? [] : [v]);
-const eraseFns = (v) => (Array.isArray(v) ? v.map(eraseFns) : isNode(v) ? { ...v, props: Object.fromEntries(Object.entries(v.props ?? {}).map(([k, x]) => [k, isFnValue(x) ? 'fn' : x])), children: (v.children ?? []).map(eraseFns), ...(Object.hasOwn(v, 'rendered') ? { rendered: eraseFns(v.rendered) } : {}) } : v);
+const eraseFns = (v) => (Array.isArray(v) ? v.map(eraseFns) : isNode(v) ? { ...v, props: Object.fromEntries(Object.entries(v.props ?? {}).map(([k, x]) => [k, isFnValue(x) ? 'fn' : x])), children: kidsOf(v.children).map(eraseFns), ...(Object.hasOwn(v, 'rendered') ? { rendered: eraseFns(v.rendered) } : {}) } : v);
 function emit(st, op) { if (st.cut) return; if (st.ops.length >= MAX_OPS) { st.cut = true; return; } st.ops.push(op); }
 
 // a tree lane B can render: an element, an array, or (beside one) text or nothing
@@ -150,27 +160,42 @@ function witnessPatchOf(parentObs, candidateObs, otherwise) {
   const ops = patch(p.tree, c.tree);
   if (ops.reason) return { patch: [], patchSummary: `no patch: ${ops.reason}` };
   if (ops.length) return { patch: ops, patchSummary: summarize(ops) };
-  if (json(p.tree) !== json(c.tree)) return { patch: [], patchSummary: "no element difference; a handler's observed result differs" };
+  if (treeJson(p.tree) !== treeJson(c.tree)) return { patch: [], patchSummary: "no element difference; a handler's observed result differs" };
   const other = parentObs && candidateObs && typeof parentObs === 'object' && typeof candidateObs === 'object' && !Array.isArray(parentObs) && !treeish(parentObs)
     ? Object.keys(FIELD).filter((k) => k !== 'outcome' && (Object.hasOwn(parentObs, k) || Object.hasOwn(candidateObs, k)) && json(parentObs[k]) !== json(candidateObs[k])) : [];
   if (other.length) return { patch: [], patchSummary: `no tree difference; ${other.map((k) => FIELD[k]).join(' and ')} ${other.length > 1 ? 'differ' : 'differs'}` };
   return { patch: [], patchSummary: `no tree difference; ${otherwise ?? 'the difference is outside the tree'}` };
 }
 
-// one op on one line, path first
-const short = (v, room = 100) => { const s = shortNode(v); return s.length > room ? s.slice(0, room - 3) + '...' : s; };
-function shortNode(v) {
-  if (typeof v === 'string') return JSON.stringify(v);
+// one op on one line, path first. Total, the same contract as witnessPatch: a value the line printer cannot print (a
+// bigint, a cycle, a getter that throws) is printed as its rendered JSON with a note, so a verdict's report never kills
+// a run. The walk stops once the line is past its room, so a large subtree costs its first `room` characters.
+const ellipsis = (s, room) => (s.length > room ? s.slice(0, room - 3) + '...' : s);
+const short = (v, room = 100) => {
+  try { return ellipsis(shortNode(v, { left: room + 1 }), room); }
+  catch (e) {
+    let s; try { s = JSON.stringify(render(v)) ?? String(v); } catch { s = Object.prototype.toString.call(v); }
+    return `${ellipsis(s, room)} (not printed as a tree: ${String(e && e.message).slice(0, 60)})`;
+  }
+};
+function shortNode(v, budget) {
+  const spend = (s) => { budget.left -= s.length; return s; };
+  if (budget.left <= 0) return '';
+  if (typeof v === 'string') return spend(JSON.stringify(v));
   if (isNode(v)) {
     const tag = typeof v.$el === 'string' ? (v.$el || 'fragment') : v.$el && v.$el.$component ? v.$el.$component : v.$el && v.$el.$fake ? v.$el.$fake : JSON.stringify(v.$el);
     const attrs = Object.entries(v.props ?? {}).map(([k, x]) => `${k}=${isFnValue(x) ? 'fn' : JSON.stringify(x)}`).join(' ');
-    const kids = (v.children ?? []).map(shortNode).join(' ');
-    return `<${tag}${attrs ? ' ' + attrs : ''}>${kids}</${tag}>`;
+    const open = spend(`<${tag}${attrs ? ' ' + attrs : ''}>`);
+    const kids = []; for (const c of kidsOf(v.children)) { if (budget.left <= 0) break; kids.push(shortNode(c, budget)); }
+    return `${open}${kids.join(' ')}</${tag}>`;
   }
-  if (v && typeof v === 'object' && Object.hasOwn(v, '$fake')) return String(v.$fake);
-  return JSON.stringify(v);
+  if (v && typeof v === 'object' && Object.hasOwn(v, '$fake')) return spend(String(v.$fake));
+  return spend(JSON.stringify(v));
 }
 export function formatOp(op) {
+  try { return formatOpOf(op); } catch (e) { return `${(op && op.path) || '(root)'} ${op && op.kind} (not printed: ${String(e && e.message).slice(0, 60)})`; }
+}
+function formatOpOf(op) {
   const at = op.path || '(root)';
   if (op.kind === 'insert') return `${at} insert ${short(op.after)}`;
   if (op.kind === 'remove') return `${at} remove ${short(op.before)}`;

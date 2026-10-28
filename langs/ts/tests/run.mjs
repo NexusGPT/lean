@@ -434,6 +434,10 @@ const clocks = run('node', [path.join(here, 'clock-read.mjs')]);
 add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clocks.stdout + clocks.stderr).trim());
 { const r = run('node', ['--test', path.join(here, 'pairs/rest_param/paths.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'rest_param/paths.test.mjs', 'drawn rest slot spread at every call boundary', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }
 // a run never ends without a verdict: a drained loop and a budget stop are ASK, exit 2; a wide record, a deep nesting and an `@/` alias get verdicts
+// an element's children read one way (kidsOf) by every reader: a single object or a string child is diffed, printed and
+// handler-compared, and the op printer is total (a witness is never lost to its rendering)
+const kids = run('node', [path.join(here, 'patch-children.mjs')]);
+add('runtime', 'patch-children', 'single-object and string children diffed and printed; the printer is total', kids.status === 0, (kids.stdout + kids.stderr).trim().split('\n').pop());
 const silent = run('node', [path.join(here, 'no-silent-exit.mjs')]);
 add('runtime', 'no-silent-exit', 'ASK on a drained loop or a budget stop; verdicts on wide, nested and aliased inputs', silent.status === 0, (silent.stdout + silent.stderr).trim().split('\n').pop());
 const importers = run('node', [path.join(here, 'no-silent-exit-importers.mjs')]); // an importer's error outside a unit run exits 1; pr.mjs without git history names lean unknown
