@@ -1654,8 +1654,9 @@ export function signedZero(checker, fn) {
   const typeAt = (n) => { try { return checker.getTypeAtLocation(n); } catch { return null; } };
   const strip = (n) => { while (n && (ts.isParenthesizedExpression(n) || ts.isAsExpression(n) || ts.isNonNullExpression(n) || ts.isSatisfiesExpression(n) || ts.isTypeAssertionExpression(n))) n = n.expression; return n; };
   const litNum = (n) => { n = strip(n); if (ts.isNumericLiteral(n)) return Number(n.text.replace(/_/g, '')); if (ts.isPrefixUnaryExpression(n) && [ts.SyntaxKind.MinusToken, ts.SyntaxKind.PlusToken].includes(n.operator)) { const v = litNum(n.operand); return v === null ? null : n.operator === ts.SyntaxKind.MinusToken ? -v : v; } return null; };
-  // a type holding a number that may be zero: a number, or a union with one; a literal union without 0 excludes zero
-  const zeroNumber = (t) => { if (!t) return false; const parts = t.flags & TF.Union ? t.types : [t]; return parts.some((p) => (p.flags & (TF.Number | TF.Any | TF.Unknown | TF.TypeParameter)) || ((p.flags & TF.NumberLiteral) && p.value === 0) || ((p.flags & TF.Enum) && !(p.flags & TF.Union))); };
+  // the model's inputs are never -0 (a parameter, a field, an element, an outside answer), as they are never NaN or
+  // infinite: lane B draws -0 for them (gen.mjs), so a version that differs only on a -0 input is witnessed there
+  const inputNegZero = () => false;
   const numberish = (t) => !!t && (t.flags & TF.Union ? t.types : [t]).some((p) => p.flags & (TF.NumberLike));
   const symOf = (n) => { try { const s = checker.getSymbolAtLocation(n); return s && (s.flags & ts.SymbolFlags.Alias) ? checker.getAliasedSymbol(s) : s; } catch { return null; } };
   const K = ts.SyntaxKind;
@@ -1717,10 +1718,10 @@ export function signedZero(checker, fn) {
   const memoDecl = new Map(), memoFn = new Map(), busy = new Set();
   let changed = false;
   const declMay = (s, d) => { // a name's value, from its declaration and every write of it (a least fixpoint over the file's writes)
-    if (ts.isParameter(d) || ts.isBindingElement(d)) return zeroNumber(typeAt(d.name ?? d));
+    if (ts.isParameter(d) || ts.isBindingElement(d)) return inputNegZero();
     if (ts.isVariableDeclaration(d)) {
-      if (d.parent && ts.isVariableDeclarationList(d.parent) && d.parent.parent && (ts.isForOfStatement(d.parent.parent) || ts.isForInStatement(d.parent.parent))) return zeroNumber(typeAt(d.name));
-      if (!ts.isIdentifier(d.name)) return zeroNumber(typeAt(d.name));
+      if (d.parent && ts.isVariableDeclarationList(d.parent) && d.parent.parent && (ts.isForOfStatement(d.parent.parent) || ts.isForInStatement(d.parent.parent))) return inputNegZero();
+      if (!ts.isIdentifier(d.name)) return inputNegZero();
       if (!memoDecl.has(s)) memoDecl.set(s, false);
       if (busy.has(s)) return memoDecl.get(s); // a write reading the name itself: the value found so far
       busy.add(s);
@@ -1728,7 +1729,7 @@ export function signedZero(checker, fn) {
       for (const w of writes.get(s) ?? []) {
         if (v) break;
         if (w.op === 'update' || w.op === K.AmpersandEqualsToken || w.op === K.BarEqualsToken || w.op === K.CaretEqualsToken || w.op === K.LessThanLessThanEqualsToken || w.op === K.GreaterThanGreaterThanEqualsToken || w.op === K.GreaterThanGreaterThanGreaterThanEqualsToken) continue; // an update or a bitwise write never yields -0
-        if (w.op === null) { v = zeroNumber(typeAt(d.name)); continue; }
+        if (w.op === null) { v = inputNegZero(); continue; }
         if (w.op === K.EqualsToken || w.op === K.BarBarEqualsToken) v = mayNegZero(w.rhs);
         else if (w.op === K.PlusEqualsToken) v = memoDecl.get(s) && mayNegZero(w.rhs);
         else if (w.op === K.MinusEqualsToken) v = memoDecl.get(s);
@@ -1739,7 +1740,7 @@ export function signedZero(checker, fn) {
       if (v && !memoDecl.get(s)) { memoDecl.set(s, true); changed = true; }
       return memoDecl.get(s);
     }
-    return zeroNumber(typeAt(d)); // a field, a class member, an import: an input
+    return inputNegZero(); // a field, a class member, an import: an input
   };
   const callMay = (n) => { // a call of a function of this file: whether any number it returns may be -0
     let decl = null; try { decl = checker.getResolvedSignature(n)?.declaration ?? null; } catch { decl = null; }
@@ -1780,11 +1781,11 @@ export function signedZero(checker, fn) {
       const s = symOf(e); if (!s) return true;
       if (guarded(e, s)) return false;
       const d = s.valueDeclaration ?? s.declarations?.[0];
-      if (!d) return zeroNumber(typeAt(e));
-      if (d.getSourceFile() !== sf) return zeroNumber(typeAt(e));
+      if (!d) return inputNegZero();
+      if (d.getSourceFile() !== sf) return inputNegZero();
       return declMay(s, d);
     }
-    if (ts.isPropertyAccessExpression(e)) return !NEVER_NEG_ZERO_MEMBERS.has(e.name.text) && zeroNumber(typeAt(e));
+    if (ts.isPropertyAccessExpression(e)) return !NEVER_NEG_ZERO_MEMBERS.has(e.name.text) && inputNegZero();
     if (ts.isCallExpression(e)) {
       const m = mathName(e.expression), a = e.arguments;
       if (m) {
@@ -1795,12 +1796,13 @@ export function signedZero(checker, fn) {
         return true; // round, ceil, trunc, cbrt, sin, tan, parseInt, parseFloat, ...
       }
       const callee = strip(e.expression);
+      if (ts.isIdentifier(callee) && ['parseInt', 'parseFloat'].includes(callee.text) && !sf.locals?.has?.(callee.text)) return true; // parseFloat("-0") is -0
       if (ts.isPropertyAccessExpression(callee) && NEVER_NEG_ZERO_METHODS.has(callee.name.text)) return false;
       const own = callMay(e);
       if (own !== null) return own;
-      return zeroNumber(typeAt(e)); // an outside answer, a parse
+      return inputNegZero(); // an outside answer, a parse
     }
-    return zeroNumber(typeAt(e)); // an element, a tagged value: an input
+    return inputNegZero(); // an element, a tagged value: an input
   }
   // the first place a function's number result may be -0: a returned number, or a number in the literal it returns
   function resultMay(f) {

@@ -1365,11 +1365,11 @@ export function translate(file, fnName, opts = {}) {
     return null;
   };
   const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
-  // the sign of zero (design/signed-zero.md, common.mjs signedZero, the lint's own test): a unit whose number result
-  // may be -0, or which tells -0 from 0, is read as one opaque unit keyed by its source and stays out of the heap core,
-  // whose numbers are values too; the same source on both sides is the same function, a changed one is not proved
+  // the sign of zero (design/signed-zero.md, common.mjs signedZero): a unit of the ordinary lane whose number result
+  // may be a -0 an operation makes, or which tells -0 from 0, is read as one opaque unit keyed by its source (the heap
+  // core marks its world where such a -0 may escape, NegZeroMark); the same source on both sides is the same function
   const signedZeroUnits = new Set(order.filter((u) => signedZero(checker, u.fn)).map((u) => u.name));
-  if (heapT && heap) heapT.plan(order, signedZeroUnits.size ? (heapUnits ?? order.map((u) => u.name)).filter((n) => !signedZeroUnits.has(n)) : heapUnits); // after the type reading it relies on exists
+  if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
   const anyTarget = () => checker.getAnyType();
   const symType = (sym, n) => (checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n));
 
