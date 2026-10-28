@@ -52,8 +52,6 @@ A strict error no erased edit fixes: a union the code never narrows (TS2339), an
 TS18048 on an operand), a rejected cast (TS2352), a missing initializer, a lib or JSX setting. The lint keeps `ts-strict`
 with the compiler's message; the converter lists it. Escape fixture `fixtures/escapes/ts/strict_unfixable.ts`.
 
-## Lane B
-
 Lane B runs the emitted JavaScript, which the edit does not change; its inputs draw the absent value for an optional
 field (the pair's `wrong.ts` WITNESS on `nameLength` is that draw).
 
