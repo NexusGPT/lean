@@ -1287,3 +1287,67 @@ export function undeclaredOpenRead(checker, t, name) {
   return parts.some((p) => openRecordType(checker, p) && (name === null || !checker.getPropertyOfType(p, name)));
 }
 export const OPEN_RECORD_WHY = (typeText) => `${typeText} declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own`;
+// The key order of a for-in, shared by the lint and the translator (design/forin-order.md). ECMA-262 14.7.5.9 visits
+// the own enumerable keys in OrdinaryOwnPropertyKeys order (10.1.11): array indexes ascending, then the other keys in
+// creation order. A record datatype forgets creation order, so a record's keys are read only where the unit fixes them:
+// the iterated value is a plain literal, or a `const` local without a type that a plain literal initialises and whose
+// every other use keeps its own keys (a field read, a write of a field it has, a nested read or write, a key
+// enumeration). Returns { free: true } when the order is a function of the value alone (a string, a number, an array, a
+// Set, a Map, a dictionary: its carrier holds its order), { keys, literal } with the keys in property order, or null
+// when the order is not known (a parameter, a spread, a class instance, an any value): the for-in is refused.
+export function forInKeyOrder(checker, e, unitNode) {
+  const TF = ts.TypeFlags, K = ts.SyntaxKind;
+  while (ts.isParenthesizedExpression(e)) e = e.expression;
+  const t = checker.getTypeAtLocation(e);
+  const parts = (t.flags & TF.Union ? t.types : [t]).filter((p) => !(p.flags & (TF.Null | TF.Undefined | TF.Void)));
+  const freePart = (p) => {
+    if (p.flags & (TF.Any | TF.Unknown)) return false;
+    if (p.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike)) return true;
+    if (isArrayLike(checker, p)) return true;
+    const name = (p.aliasSymbol ?? p.getSymbol?.())?.getName?.();
+    if (p.flags & TF.Object && ['Set', 'Map', 'ReadonlySet', 'ReadonlyMap'].includes(name)) return true;
+    return !!(p.flags & TF.Object) && !!checker.getIndexInfoOfType(p, ts.IndexKind.String) && !checker.getPropertiesOfType(p).length; // a dictionary
+  };
+  if (parts.length && parts.every(freePart)) return { free: true };
+  let literal = e, sym = null;
+  if (ts.isIdentifier(e)) {
+    sym = checker.getSymbolAtLocation(e); const d = sym?.valueDeclaration;
+    if (!d || !unitNode || !(d.pos >= unitNode.pos && d.end <= unitNode.end) || !ts.isVariableDeclaration(d) || d.type || !d.initializer || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) return null;
+    literal = d.initializer; while (ts.isParenthesizedExpression(literal)) literal = literal.expression;
+  }
+  if (!ts.isObjectLiteralExpression(literal)) return null;
+  const created = [];
+  for (const p of literal.properties) {
+    if (!(ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p))) return null; // a spread, a method, an accessor
+    let key;
+    if (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) || ts.isNoSubstitutionTemplateLiteral(p.name)) key = p.name.text;
+    else if (ts.isNumericLiteral(p.name)) key = String(Number(p.name.text)); // ToPropertyKey of a number is its ToString
+    else return null; // a computed or private name
+    if (key === '__proto__' && ts.isPropertyAssignment(p)) return null; // sets the prototype, no own key
+    if (!created.includes(key)) created.push(key); // a repeated key keeps its first place (10.1.9)
+  }
+  if (sym) {
+    const d = sym.valueDeclaration; let safe = true;
+    const assigns = (op) => op >= K.FirstAssignment && op <= K.LastAssignment;
+    const own = (x) => { // x names the local: the use keeps the object's own keys
+      const c = x.parent;
+      if (ts.isForInStatement(c) && c.expression === x) return true;
+      if (ts.isTypeQueryNode(c)) return true;
+      if (ts.isCallExpression(c) && c.arguments.length === 1 && c.arguments[0] === x && ts.isPropertyAccessExpression(c.expression) && ts.isIdentifier(c.expression.expression) && c.expression.expression.text === 'Object' && ['keys', 'values', 'entries'].includes(c.expression.name.text) && originOf(checker, c.expression.expression, x.getSourceFile(), unitNode).kind === 'global') return true; // Object.keys, values, entries read the keys
+      if (!((ts.isPropertyAccessExpression(c) || ts.isElementAccessExpression(c)) && c.expression === x)) return false; // passed, returned, spread, aliased: another place may change its keys
+      const top = c.parent;
+      if (ts.isDeleteExpression(top) || (ts.isCallExpression(top) && top.expression === c)) return false; // a delete removes a key; a method call runs with `this` the object
+      let pattern = top; while (pattern && (ts.isArrayLiteralExpression(pattern) || ts.isObjectLiteralExpression(pattern) || ts.isPropertyAssignment(pattern) || ts.isShorthandPropertyAssignment(pattern) || ts.isSpreadElement(pattern) || ts.isSpreadAssignment(pattern))) pattern = pattern.parent;
+      const destructured = pattern !== top && pattern && ((ts.isBinaryExpression(pattern) && assigns(pattern.operatorToken.kind) && pattern.left.pos <= c.pos && c.end <= pattern.left.end) || ((ts.isForOfStatement(pattern) || ts.isForInStatement(pattern)) && pattern.initializer.pos <= c.pos && c.end <= pattern.initializer.end));
+      const written = (ts.isBinaryExpression(top) && top.left === c && assigns(top.operatorToken.kind)) || ((ts.isPrefixUnaryExpression(top) || ts.isPostfixUnaryExpression(top)) && [K.PlusPlusToken, K.MinusMinusToken].includes(top.operator)) || ((ts.isForInStatement(top) || ts.isForOfStatement(top)) && top.initializer === c) || destructured;
+      if (!written) return true;
+      return ts.isPropertyAccessExpression(c) && created.includes(c.name.text); // a write of a key the literal made keeps its place; a new or computed key may create one
+    };
+    const walk = (x) => { if (!safe) return; if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym && !own(x)) safe = false; ts.forEachChild(x, walk); };
+    walk(unitNode);
+    if (!safe) return null;
+  }
+  const isIndex = (k) => /^(0|[1-9][0-9]*)$/.test(k) && Number(k) < 4294967295;
+  const keys = [...created.filter(isIndex).sort((a, b) => Number(a) - Number(b)), ...created.filter((k) => !isIndex(k))];
+  return { keys, literal };
+}

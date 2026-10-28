@@ -15,6 +15,7 @@ import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedu
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY } from '../common.mjs';
+import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the translator
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -638,6 +639,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ForInStatement: { // `for (const k in o)`: a loop over the keys of o, each a string
         const init = s.initializer;
         if (!(ts.isVariableDeclarationList(init) && init.declarations.length === 1 && ts.isIdentifier(init.declarations[0].name))) return v(s, 'for-in', 'for-in takes `const k`');
+        if (!forInKeyOrder(checker, s.expression, currentFn)) v(s.expression, 'key-order', 'a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this object is not fixed in the function (a parameter, a spread, a class instance, an any value, or a local passed elsewhere); loop over a const local a plain literal makes in this function, or over a Record<string, T> dictionary, or name the keys in an array');
         { const del = forInDelete(s, checker, sf); if (del) v(del, 'for-in-delete', 'a for-in skips a key deleted before its visit (ECMA-262 14.7.5.9), and the reading visits the keys the object held at the start; delete only the current key inside the loop, or delete after the loop'); }
         expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return;
       }
