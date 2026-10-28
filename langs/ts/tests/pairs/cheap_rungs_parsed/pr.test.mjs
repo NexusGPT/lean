@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import os from 'node:os';
 import { prReport } from '../../../pr.mjs';
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../..');
-test('PR lint-refused unit receives a certified proof, retaining bounded evidence', async () => {
- const dir=path.join(root,'measure');fs.mkdirSync(dir,{recursive:true});
- const repo=fs.mkdtempSync(path.join(dir,'pr-fixture-'));
+test('PR lint-refused unit receives a certified proof, retaining bounded evidence', async (t) => {
+ // the fixture repository lives in the system temp folder, never inside the lean worktree
+ const repo=fs.mkdtempSync(path.join(os.tmpdir(),'lean-rung-pr-'));
+ t.after(()=>fs.rmSync(repo,{recursive:true,force:true}));
  const git=(...args)=>{const r=spawnSync('git',['-C',repo,...args],{encoding:'utf8'});process.stdout.write(r.stdout);process.stderr.write(r.stderr);assert.equal(r.status,0);return r.stdout.trim();};
  git('init');
  const file=path.join(repo,'f.ts');
