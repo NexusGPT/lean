@@ -1,5 +1,5 @@
-// type_assertions: `e as T` checks nothing at run time; a narrowing assertion is refused (type-assertion), one to a type
-// its source is assignable to passes the value through with its real type and is read
+// type_assertions: `e as T` checks nothing at run time, and neither does an any or unknown value filling a typed slot.
+// Such a value is read with its real type (the source's, or the opaque Any), so `v` and `v + 0` stay different terms
 export type Mode = "a" | "b";
 export type Wide = "a" | "b" | "c";
 
@@ -9,7 +9,7 @@ export function anyAs(x: any): number {
   return n + 0;
 }
 
-// a union asserted to one member: a string flows on, so `+ 0` appends "0"
+// a union asserted to one member: a string flows on
 export function asCast(x: string | number): number {
   return (x as number) + 0;
 }
@@ -25,15 +25,6 @@ export function parsedA(s: string): number {
   return o.a + 0;
 }
 
-// a string literal union narrowed: an exhaustive switch reads "c" as one of its cases
-export function modeCode(s: Wide): number {
-  const m = s as Mode;
-  switch (m) {
-    case "a": return 1;
-    default: return 2;
-  }
-}
-
 // an assertion to a supertype: the string passes through
 export function widen(x: string): string | number {
   return x;
@@ -43,6 +34,18 @@ export function widen(x: string): string | number {
 export function rank(m: Mode): number {
   const w = m as Wide;
   return w === "b" ? 2 : w === "a" ? 1 : 3;
+}
+
+// a number asserted to a literal union: read as the number it is, so arithmetic on it is exact
+export function bump(n: number): number {
+  const k = n as 1 | 2;
+  return 1 + k;
+}
+
+// the same operation on an opaque value on both sides: the same uninterpreted term
+export function twice(x: any): number {
+  const n: number = x;
+  return n + n;
 }
 
 // no assertion

@@ -54,7 +54,7 @@ export async function finalReject(n: number): Promise<number> {
   return Promise.resolve(n).finally(() => Promise.reject(n + 2));
 }
 export async function thrown(n: number): Promise<number> {
-  return Promise.resolve(n).then(x => { throw x + 2; }).catch(e => e as number);
+  return Promise.resolve(n).then(x => { throw x + 2; }).catch(e => (typeof e === "number" ? e : 0));
 }
 
 export async function recovered(svc: Service, id: number): Promise<number> {

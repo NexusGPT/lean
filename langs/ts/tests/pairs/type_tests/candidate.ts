@@ -58,9 +58,6 @@ export function assertedType(x: unknown): string { return "number"; }
 export function assertedIn(x: object): boolean { return true; }
 export function assertedDictionary(x: { key: number }): boolean { return false; }
 export function assertedOptional(x: unknown): string { return "number"; }
-export function assertedAssignment(x: unknown): boolean { return true; }
 export function assertedTag(x: { kind: string }): boolean { return true; }
-export function assertedContainer(x: unknown): boolean { return true; }
-export function assertedDestructure(x: unknown): boolean { return true; }
 export function nonNullExact(x: number[] | undefined): boolean { return x !== undefined; }
 export function assertedRefactor(x: unknown): boolean { const value = <number[]>x; return Array.isArray(value); }

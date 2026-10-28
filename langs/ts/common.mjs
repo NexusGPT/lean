@@ -1301,68 +1301,183 @@ export function nonNullOnAbsent(checker, n) {
   let t = null; try { t = checker.getTypeAtLocation(n.expression); } catch { return false; }
   return !!t && !!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => !!(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null)));
 }
-// a type assertion `e as T` (or `<T>e`) that narrows: JavaScript checks nothing there (ECMA-262 has no assertion; the
-// emit drops it), so the value flows on with its run-time type while the proof lane reads it as a T, and an operation
-// that is the identity on T (`+ 0` on a number, `+ ""` on a string) or a test T makes exhaustive (a switch over a
-// literal union) is not one on the real value. An assertion to a type its source is assignable to (a supertype, a
-// literal into its union, `as const`) passes the value through with its real type and stays read. A source typed any
-// or unknown, or holding one in an element, field or index (`any[]`, `{ a: any }`), is narrowed by any assertion to a
-// type that is not itself any or unknown. Shared by the lint (rule type-assertion) and the translator (its `as` case);
-// the text of the refusal, or null
-export function typeAssertion(checker, n) {
-  if (n && !ts.isAsExpression(n) && !ts.isTypeAssertionExpression(n)) return implicitAssertion(checker, n);
-  if (!n) return null;
-  if (ts.isTypeReferenceNode(n.type) && n.type.typeName.getText() === 'const') return null;
-  const TF = ts.TypeFlags;
-  let from = null, to = null;
-  try { from = checker.getTypeAtLocation(n.expression); to = checker.getTypeAtLocation(n); } catch { return null; }
-  if (!from || !to || from === to) return null;
-  const opaque = (t) => !!(t.flags & (TF.Any | TF.Unknown));
-  if (opaque(to)) return null; // a widening into the opaque value
-  const what = `\`${n.getText().slice(0, 60)}\``;
-  if (assertionHoldsOpaque(checker, from)) return `${what} asserts a value typed ${checker.typeToString(from).slice(0, 60)} to ${checker.typeToString(to).slice(0, 60)}; the assertion checks nothing at run time, so the value may be of another type; test it first (\`typeof x === "number"\`, a field test) or give its source that type`;
-  if (!checker.isTypeAssignableTo(from, to)) return `${what} narrows ${checker.typeToString(from).slice(0, 60)} to ${checker.typeToString(to).slice(0, 60)}; the assertion checks nothing at run time, so the value keeps its own type; narrow it with a test (\`typeof\`, \`in\`, a tag comparison) instead`;
-  return null;
-}
-// any or unknown at the top of a type or in a member, an element, a type argument or an index signature, a few levels
-// down (an assertion from such a type is a narrowing the assignability test does not see: any is assignable to all)
-function assertionHoldsOpaque(checker, t, depth = 0, seen = new Set()) {
+// A type assertion checks nothing at run time (ECMA-262 has none; the emit drops `e as T`, `<T>e`, and the assertion
+// TypeScript makes when a value typed any or unknown fills a slot of another type, `const n: number = x`). The value
+// keeps its run-time type. So a value whose static type is not the type of its value, HELD below, is read with its
+// real type: the source's type for `e as T` from a source not assignable to T, the opaque Any for a source typed any or
+// unknown (or holding one, `any[]`); an operation on a held value is then an operation on that real value (on Any, an
+// uninterpreted application, so `v` and `v + 0` are different terms). A held value may go where its reading carries it
+// (an operand, a receiver, a test, a held local, the unit's own result, an argument to an outside call); in a slot
+// whose reading needs the asserted type (a same-file callee's parameter, a field, an element) the unit is refused,
+// rule type-assertion. Shared by the lint (every expression) and the translator (typeOf reads `assertionHeld`,
+// convertToD asks `typeAssertion` before it converts). The checker's error type (an unresolved import) is the
+// environment's and never held.
+const opaqueT = (t) => !!t && !!(t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) && t.intrinsicName !== 'error';
+function holdsOpaque(checker, t, depth = 0, seen = new Set()) {
   const TF = ts.TypeFlags;
   if (!t || depth > 3 || seen.has(t)) return false;
   seen.add(t);
-  if (t.flags & (TF.Any | TF.Unknown)) return t.intrinsicName !== 'error'; // an unresolved type is the environment's
-  if (t.flags & (TF.Union | TF.Intersection)) return t.types.some((x) => assertionHoldsOpaque(checker, x, depth, seen));
+  if (t.flags & (TF.Any | TF.Unknown)) return t.intrinsicName !== 'error';
+  if (t.flags & (TF.Union | TF.Intersection)) return t.types.some((x) => holdsOpaque(checker, x, depth, seen));
   if (!(t.flags & TF.Object)) return false;
   const args = t.objectFlags & ts.ObjectFlags.Reference ? checker.getTypeArguments(t) : [];
-  if (args.some((x) => assertionHoldsOpaque(checker, x, depth + 1, seen))) return true;
-  for (const kind of [ts.IndexKind.String, ts.IndexKind.Number]) { const info = checker.getIndexInfoOfType(t, kind); if (info && assertionHoldsOpaque(checker, info.type, depth + 1, seen)) return true; }
+  if (args.some((x) => holdsOpaque(checker, x, depth + 1, seen))) return true;
+  for (const kind of [ts.IndexKind.String, ts.IndexKind.Number]) { const info = checker.getIndexInfoOfType(t, kind); if (info && holdsOpaque(checker, info.type, depth + 1, seen)) return true; }
   const props = checker.getPropertiesOfType(t);
   if (props.length > 40) return false;
   for (const p of props) {
     const d = p.valueDeclaration ?? p.declarations?.[0];
-    if (d && (ts.isMethodDeclaration(d) || ts.isMethodSignature(d))) continue; // a method's own any parameters are not a value the assertion narrows
+    if (d && (ts.isMethodDeclaration(d) || ts.isMethodSignature(d))) continue;
     let pt = null; try { pt = checker.getTypeOfSymbol(p); } catch { continue; }
-    if (assertionHoldsOpaque(checker, pt, depth + 1, seen)) return true;
+    if (holdsOpaque(checker, pt, depth + 1, seen)) return true;
   }
   return false;
 }
-// the same narrowing without the keyword: a value typed any or unknown in a slot of another type (`const n: number =
-// x`, `return x` from a function returning number, an argument to a number parameter), where TypeScript asserts it to the
-// slot's type. A value whose type the checkout cannot resolve (an unresolved import, read without its project: the
-// checker's error type) is the environment's and admitted, as implicit-any-policy.md admits it; a slot typed any,
-// unknown, a union holding one, or a type parameter is no narrowing. Reported on the outermost expression (parentheses
-// and an explicit assertion around it own the report).
-function implicitAssertion(checker, n) {
-  const TF = ts.TypeFlags;
-  if (!n || !ts.isExpression(n) || ts.isParenthesizedExpression(n.parent) || ts.isAsExpression(n.parent) || ts.isTypeAssertionExpression(n.parent) || ts.isSatisfiesExpression(n.parent)) return null;
-  if (ts.isSpreadElement(n.parent) || ts.isSpreadAssignment(n.parent)) return null;
-  let t = null, ct = null;
-  try { t = checker.getTypeAtLocation(n); } catch { return null; }
-  if (!t || !(t.flags & (TF.Any | TF.Unknown)) || t.intrinsicName === 'error') return null; // a type the checkout cannot resolve is the environment's
-  try { ct = checker.getContextualType(n); } catch { return null; }
-  if (!ct) return null;
-  const parts = ct.flags & TF.Union ? ct.types : [ct];
-  if (parts.some((x) => x.flags & (TF.Any | TF.Unknown | TF.TypeParameter | TF.Void))) return null;
-  if (ct.flags & (TF.Intersection | TF.Index | TF.IndexedAccess | TF.Conditional | TF.Substitution)) return null;
-  return `\`${n.getText().slice(0, 60)}\` is typed ${checker.typeToString(t)} and sits where a ${checker.typeToString(ct).slice(0, 60)} is expected, so TypeScript asserts it without a check and the value may be of another type; test it first (\`typeof x === "number"\`, a field test) or type its source`;
+const tAt = (checker, n) => { try { return checker.getTypeAtLocation(n); } catch { return null; } };
+const isConstAssertion = (n) => !!n.type && ts.isTypeReferenceNode(n.type) && n.type.typeName.getText() === 'const';
+// the writes of a local variable of a function: its initializer and every `name = value`
+const localWrites = new WeakMap();
+function writesOf(checker, sym) {
+  const d = sym?.valueDeclaration;
+  if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name)) return null;
+  let fn = d.parent; while (fn && !ts.isFunctionLike(fn) && !ts.isSourceFile(fn)) fn = fn.parent;
+  if (!fn || ts.isSourceFile(fn)) return null; // a module variable is a cell of the world, never held
+  let m = localWrites.get(fn);
+  if (!m) {
+    m = new Map();
+    const walk = (x) => {
+      if (ts.isBinaryExpression(x) && x.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(x.left)) { const s = checker.getSymbolAtLocation(x.left); if (s) { if (!m.has(s)) m.set(s, []); m.get(s).push(x.right); } }
+      ts.forEachChild(x, walk);
+    };
+    walk(fn); localWrites.set(fn, m);
+  }
+  return [...(d.initializer ? [d.initializer] : []), ...(m.get(sym) ?? [])];
+}
+// a real type an operation reads exactly as written: one primitive family (numbers, strings or booleans, literals
+// included), so `k + 1` on a number asserted to `1 | 2` is the number's own sum; any other real type (Any, a union of
+// families, an object) makes the operation one on the opaque value
+const admitsAbsence = (t) => !!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null));
+const primitiveFamily = (t) => { const TF = ts.TypeFlags; const ps = t.flags & TF.Union ? t.types : [t]; return [TF.NumberLike, TF.StringLike, TF.BooleanLike].some((f) => ps.every((x) => x.flags & f)); };
+// the real type of a held value (a TypeScript type; the any type for an opaque one), or null when the value is not held
+export function assertionHeld(checker, n, seen = new Map()) {
+  if (!n) return null;
+  if (seen.has(n)) return seen.get(n); // a node met again: its answer, or null while it is being decided (a cycle)
+  seen.set(n, null);
+  const r = heldOf(checker, n, seen);
+  seen.set(n, r);
+  return r;
+}
+function heldOf(checker, n, seen) {
+  const any = () => checker.getAnyType();
+  const opaqueOperand = (x) => { const h = assertionHeld(checker, x, seen); return !!h && !primitiveFamily(h); };
+  if (ts.isParenthesizedExpression(n) || ts.isNonNullExpression(n) || ts.isSatisfiesExpression(n)) return assertionHeld(checker, n.expression, seen);
+  if (ts.isAwaitExpression(n)) return assertionHeld(checker, n.expression, seen) ? any() : null;
+  if (ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)) {
+    if (isConstAssertion(n)) return assertionHeld(checker, n.expression, seen);
+    const from = tAt(checker, n.expression), to = tAt(checker, n);
+    if (!from || !to || opaqueT(to)) return null;
+    if (admitsAbsence(to) && !assertionHeld(checker, n.expression, seen)) return null; // a target that admits absence keeps the absence-lifting reading, as a local does
+    const inner = assertionHeld(checker, n.expression, seen);
+    if (inner) return inner;
+    if (holdsOpaque(checker, from)) return any();
+    if (from !== to && !checker.isTypeAssignableTo(from, to)) return primitiveFamily(from) ? from : any(); // a source of one primitive family is read as itself; any other as the opaque value
+    return null;
+  }
+  if (ts.isIdentifier(n)) {
+    let sym = null; try { sym = checker.getSymbolAtLocation(n); } catch { return null; }
+    const ws = writesOf(checker, sym);
+    if (!ws) return null;
+    const declared = tAt(checker, sym.valueDeclaration.name);
+    if (!declared || opaqueT(declared)) return null;
+    const heldWrites = ws.map((w) => assertionHeld(checker, w, seen));
+    if (admitsAbsence(declared) && heldWrites.every((h) => !h)) return null; // an any value in a slot that admits absence keeps the absence-lifting reading (liftAny): its absence test is exact
+    const real = ws.map((w, i) => heldWrites[i] ?? (opaqueT(tAt(checker, w)) ? any() : null));
+    if (!real.some(Boolean)) return null;
+    return real.length === 1 ? real[0] : any();
+  }
+  if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) return opaqueOperand(n.expression) ? any() : null;
+  if (ts.isCallExpression(n)) return (ts.isPropertyAccessExpression(n.expression) || ts.isElementAccessExpression(n.expression)) && opaqueOperand(n.expression.expression) ? any() : null;
+  if (ts.isBinaryExpression(n)) {
+    const k = n.operatorToken.kind;
+    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return null;
+    if ([ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken, ts.SyntaxKind.InstanceOfKeyword, ts.SyntaxKind.InKeyword].includes(k)) return null; // a boolean whatever its operands are
+    return opaqueOperand(n.left) || opaqueOperand(n.right) ? any() : null;
+  }
+  if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) return opaqueOperand(n.operand) ? any() : null;
+  if (ts.isConditionalExpression(n)) return opaqueOperand(n.whenTrue) || opaqueOperand(n.whenFalse) ? any() : null;
+  return null;
+}
+// a unit of the file: a top-level function, an arrow or function const at top level, a method of a top-level class
+function unitFunction(fn) {
+  if (!fn) return false;
+  if (ts.isFunctionDeclaration(fn)) return ts.isSourceFile(fn.parent);
+  if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) { const d = fn.parent; return !!d && ts.isVariableDeclaration(d) && d.initializer === fn && ts.isVariableDeclarationList(d.parent) && ts.isVariableStatement(d.parent.parent) && ts.isSourceFile(d.parent.parent.parent); }
+  if (ts.isMethodDeclaration(fn) || ts.isConstructorDeclaration(fn) || ts.isGetAccessorDeclaration(fn) || ts.isSetAccessorDeclaration(fn)) return !!fn.parent && ts.isClassDeclaration(fn.parent) && ts.isSourceFile(fn.parent.parent);
+  return false;
+}
+const enclosingFn = (n) => { let p = n.parent; while (p && !ts.isFunctionLike(p) && !ts.isSourceFile(p)) p = p.parent; return p && ts.isFunctionLike(p) ? p : null; };
+const importRooted = (checker, e) => {
+  let r = e; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isCallExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r)) r = r.expression;
+  if (!ts.isIdentifier(r)) return false;
+  let s = null; try { s = checker.getSymbolAtLocation(r); } catch { return false; }
+  const d = s?.declarations?.[0];
+  return !!d && (ts.isImportSpecifier(d) || ts.isImportClause(d) || ts.isNamespaceImport(d) || ts.isImportEqualsDeclaration(d));
+};
+// where a held value's reading carries it: no conversion to the asserted type happens there
+function carried(checker, n) {
+  const p = n.parent;
+  if (!p) return true;
+  if (ts.isVariableDeclaration(p) && p.initializer === n) return ts.isIdentifier(p.name) && !!writesOf(checker, checker.getSymbolAtLocation(p.name));
+  if (ts.isBinaryExpression(p)) {
+    const k = p.operatorToken.kind;
+    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return false; // a write reads the target's declared type
+    return true; // an operand: an operation on the real value
+  }
+  if (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p) || ts.isTypeOfExpression(p) || ts.isExpressionStatement(p) || ts.isTemplateSpan(p)) return true;
+  if (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isSatisfiesExpression(p) || ts.isAwaitExpression(p) || ts.isAsExpression(p) || ts.isTypeAssertionExpression(p)) return true; // the wrapper is held in turn
+  if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === n) return true;
+  if (ts.isConditionalExpression(p)) return true; // the condition is a truth test; a branch makes the whole held
+  if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isSwitchStatement(p) || ts.isCaseClause(p)) && p.expression === n) return true; // a test, or a switch over the real value
+  if (ts.isCallExpression(p)) {
+    if (p.expression === n) return false; // calling a held value
+    if (p.expression.getText() === 'Array.isArray') return true; // a test of the run-time value
+    return importRooted(checker, p.expression); // the outside receives the value as it is
+  }
+  if (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === n)) return unitFunction(ts.isReturnStatement(p) ? enclosingFn(p) : p); // the unit's own result
+  return false;
+}
+// a same-file unit whose result is a held value: a caller would read it with the asserted type
+function returnsHeld(checker, fn) {
+  if (!fn || !fn.body) return false;
+  if (!ts.isBlock(fn.body)) return !!assertionHeld(checker, fn.body);
+  let hit = false;
+  const walk = (x) => { if (hit || (x !== fn.body && ts.isFunctionLike(x))) return; if (ts.isReturnStatement(x) && x.expression && (assertionHeld(checker, x.expression) || (opaqueT(tAt(checker, x.expression)) && (() => { const ct = checker.getContextualType(x.expression); return !!ct && !opaqueT(ct); })()))) hit = true; ts.forEachChild(x, walk); };
+  walk(fn.body);
+  return hit;
+}
+// the refusal text for a held value (or an any or unknown value in a slot of another type) where its reading does not
+// carry it, or for a call of a same-file unit whose result is held; null otherwise
+export function typeAssertion(checker, n) {
+  if (!n || !ts.isExpression(n)) return null;
+  if (ts.isCallExpression(n)) {
+    let decl = null; try { decl = checker.getResolvedSignature(n)?.declaration ?? null; } catch { /* unresolved */ }
+    if (decl && decl.getSourceFile() === n.getSourceFile() && ts.isFunctionLike(decl) && unitFunction(decl) && returnsHeld(checker, decl)) return `\`${n.getText().slice(0, 60)}\` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type`;
+  }
+  if (ts.isParenthesizedExpression(n.parent) || ts.isNonNullExpression(n.parent) || ts.isSatisfiesExpression(n.parent)) return null; // the outermost wrapper owns the report
+  const held = assertionHeld(checker, n);
+  if (!held) {
+    const t = tAt(checker, n);
+    if (!opaqueT(t)) return null;
+    if ((ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)) && !opaqueT(tAt(checker, n.expression)) && ts.isCallExpression(n.parent) && n.parent.expression !== n) {
+      // `e as any` of a typed value handed to a callee outside the file: the value is the typed source's, widened on purpose
+      let decl = null; try { decl = checker.getResolvedSignature(n.parent)?.declaration ?? null; } catch { /* unresolved */ }
+      if (!decl || decl.getSourceFile() !== n.getSourceFile()) return null;
+    }
+    let ct = null; try { ct = checker.getContextualType(n); } catch { return null; }
+    if (!ct) return null;
+    const parts = ct.flags & ts.TypeFlags.Union ? ct.types : [ct];
+    if (parts.some((x) => x.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.TypeParameter | ts.TypeFlags.Void))) return null;
+  }
+  if (carried(checker, n)) return null;
+  return `\`${n.getText().slice(0, 60)}\` holds a value whose type nothing checked (an \`as\` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (\`typeof x === "number"\`, a field test), or keep it in a local, an operation or the result`;
 }
