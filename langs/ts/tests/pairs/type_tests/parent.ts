@@ -64,6 +64,7 @@ export function assertedType(x: unknown): string { return typeof (<number>x); }
 export function assertedIn(x: object): boolean { const value = x as { key: number }; return "key" in value; }
 export function assertedDictionary(x: { key: number }): boolean { const value = x as Record<string, number>; return "key" in value; }
 export function assertedOptional(x: unknown): string { const value = x as number | undefined; return typeof value; }
+export function assertedAssignment(x: unknown): boolean { let value: number[] = []; value = x as number[]; const alias = value; return Array.isArray(alias); }
 export function assertedTag(x: { kind: string }): boolean { const value = x as { kind: "a" }; return value.kind === "a"; }
 export function nonNullExact(x: number[] | undefined): boolean { if (x === undefined) return false; return Array.isArray(x!); }
 export function assertedRefactor(x: unknown): boolean { const value = x as number[]; return Array.isArray(value); }

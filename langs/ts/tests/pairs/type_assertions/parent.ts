@@ -25,6 +25,18 @@ export function parsedA(s: string): number {
   return o.a;
 }
 
+// any in a slot that admits absence: opaque in its definedness and its payload, so a string payload stays a string
+export function optAny(v: any): string {
+  const s: string | undefined = v;
+  return s === undefined ? "none" : s;
+}
+
+// the same slot filled by a checked value: the payload is a number, read exactly
+export function optChecked(x: unknown): number {
+  const n = typeof x === "number" ? x : undefined;
+  return n === undefined ? 0 : n;
+}
+
 // an assertion to a supertype: the string passes through
 export function widen(x: string): string | number {
   return x as string | number;

@@ -13,8 +13,8 @@ value keeps its run-time type whatever T says. `"a" as unknown as number` is the
 - `e as T` from a source not assignable to T: the source's type when it is one primitive family (a number asserted to
   `1 | 2` stays the number, a `Wide` string union asserted to `Mode` stays `Wide`), else Any (`string | number`).
 - a local of a function whose initializer or a later `=` is held, or typed any or unknown while the local is not: its
-  real type (Any when the writes disagree). A local whose declared type admits absence keeps the absence-lifting
-  reading (`liftAny`): its absence test is exact.
+  real type (Any when the writes disagree). A local or an `as` target typed `T | undefined` is no exception: the
+  value is opaque in its definedness and its payload (landed, the structural reading, not the interim refusal).
 - an operation, a member read or a method call on a held operand whose real type is not one primitive family: Any.
   An equality, `in` or `instanceof` stays a boolean.
 
@@ -33,24 +33,31 @@ The checker's error type (an import the checkout cannot resolve) is the environm
 `typeAssertion(checker, node)`, the same file, used by the lint (rule `type-assertion`, every expression) and by the
 translator (`convertToD`, before it converts): a held value, or an any or unknown value in a slot of another type, is
 admitted where its reading carries it: an operand, a receiver, a test (`typeof`, `instanceof`, `in`,
-`Array.isArray`, a condition, a switch), a held local, the unit's own result, an argument to an outside call
-(imported, or a lib call taking `e as any` of a typed value). Elsewhere the unit is refused: a same-file callee's
-parameter, a field of a literal, an array element, a callback's result, an index, a hook setter. A call of a same-file
-unit whose result is held is refused too: the caller would read it with the asserted type.
+`Array.isArray`, a condition, a switch), a local (declared or written by `=`: the translator's `symType` reads its
+real type too), the unit's own result, an argument to an outside call (imported, or a lib call taking `e as any` of
+a typed value). Refused where the opaque value cannot be carried, each with its structural follow-up:
+- a same-file callee's parameter: the callee's lemma ranges over its declared type (follow-up: read the callee once
+  more at Any for such a call);
+- a field of a literal, an array element (`push`), a callback's result, an index: the datatype or sequence holds the
+  declared Dafny type (follow-up: a held field or element typed Any in its datatype);
+- a call of a same-file unit whose result is held: the callee's signature returns the asserted type (follow-up: such a
+  unit returns Any);
+- a compound write (`+=`): it reads the target's declared operator.
 
 ## Soundness
 
 A wrong proof needs a value whose run-time type differs from the type its reading gives it and an operation exact on
 the read type but not on the real value. The held reading gives every such value its real type, so the operations
 on it are its own; a slot that converts it to the asserted type is either the lemma's own result (compared as the same
-uninterpreted conversion of two terms, equal only when the terms are) or refused. The one remaining open case:
-a local whose declared type admits absence, filled by an any value, is read by `liftAny`, whose present branch is an
-uninterpreted conversion followed by the declared type's reading; it is the pre-existing reading and stays as it was.
+uninterpreted conversion of two terms, equal only when the terms are) or refused. A slot that admits absence is
+read the same way: `s === undefined` is the uninterpreted `is_undefined` test on Any and the payload stays Any, so
+`s` and `s + ""` differ (optAny); the base proved them equal. branch_types' `missing` still proves: both sides make the
+same test. This reading needs symType and typeOf to agree on the held local (dd9c58d); with it the interim refusal
+named in the brief was not needed.
 
 Refused: `type-assertion`, escape `fixtures/escapes/ts/type_assertion.ts` (an `x as number` from unknown passed to a
 same-file number parameter). Lane B runs the emitted JavaScript, where the assertion is gone; its inputs draw the
 source's declared type, so it witnesses every must-not-prove unit of `pairs/type_assertions`.
-
 ## Instances (census nexus tree)
 
 Each is refused at the slot named; the unit reads its held value faithfully up to there:
@@ -62,8 +69,12 @@ Each is refused at the slot named; the unit reads its held value faithfully up t
 
 ## Measured
 
-`node langs/ts/census.mjs <root>`, inside the subset (base 9d6229a, then be3045d):
+`node langs/ts/census.mjs <root>`, inside the subset (base 9d6229a, then dd9c58d):
 | tree | before | after | type-assertion the only rule |
 |---|---:|---:|---:|
-| nexus | 23,850 of 26,520 | 22,393 | 1,279 units (1,121 a slot, 158 a call of a held-result unit) |
-| langchainjs | 3,441 of 4,871 | 3,162 | |
+| nexus | 23,850 of 26,520 | 22,411; 22,296 with optional slots held (17fbd38) | 1,263 units at dd9c58d |
+| langchainjs | 3,441 of 4,871 | 3,167; 3,160 with optional slots held | |
+
+The invariant: no value is given a Dafny type its run-time value has not been shown to have; a value whose type was
+asserted rather than checked is read at the type its source proves, and converted to the asserted type only as the
+unit's own result, where both sides apply the same uninterpreted conversion.
