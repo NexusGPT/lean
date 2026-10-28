@@ -54,6 +54,7 @@ class Unsupported extends Error {}
 
 import { dn } from '../common.mjs';
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
+import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
 import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -2098,9 +2099,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       case K.NonNullExpression: {
         const t = typeOf(n.expression);
-        if (!isOptional(t)) return expr(n.expression);
-        const d = dtype(baseOf(t), n); const v = `nn_${hash(n.getText(sf)).slice(0, 4)}`;
-        return `(var ${v} := ${rawOperand(n.expression)}; if ${v}.Some? then ${v}.value else ${external(`absent_${mangle(d)}`, [], d)}())`;
+        // on a type that admits absence `x!` checks nothing: the absent value flows on or the read through it throws, and
+        // an uninterpreted value of the type in its place would prove `u.name!` equal to `u.name! + ""`; refused
+        if (nonNullOnAbsent(checker, n) || isOptional(t)) fail(n, 'non-null-assertion: `x!` on a value that may be null or undefined');
+        return expr(n.expression);
       }
       case K.PrefixUnaryExpression:
         if (n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;

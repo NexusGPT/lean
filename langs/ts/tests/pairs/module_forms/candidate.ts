@@ -52,7 +52,7 @@ let initialValue = 12;
 export function readInitial(): number { return initialValue; }
 export function optionalGlobal(): number | undefined {
   const g = globalThis as { config?: { port: number } };
-  return g.config!.port;
+  return (g.config ?? { port: 0 }).port;
 }
 
 export function defaultCounter(value: number = counter): number { return value; }

@@ -14,7 +14,7 @@ import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, i
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
-import { openRecordType, OPEN_RECORD_WHY, openRecordIn } from '../common.mjs';
+import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -1310,7 +1310,9 @@ export function lintFile(file, ranges = null, opts = {}) {
         // passes it through an uninterpreted conversion, the same on both sides
         return expr(e.expression);
       }
-      case K.NonNullExpression: return expr(e.expression); // absence becomes an uninterpreted value
+      case K.NonNullExpression: // on a type that admits absence, `x!` is refused: the absent value would flow on, or the read through it throw
+        if (nonNullOnAbsent(checker, e)) v(e, 'non-null-assertion', '`x!` on a value that may be null or undefined checks nothing at run time; test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)');
+        return expr(e.expression);
       case K.PrefixUnaryExpression:
         if (e.operator === K.ExclamationToken || e.operator === K.MinusToken) return expr(e.operand);
         if (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) return operatorValue(e);

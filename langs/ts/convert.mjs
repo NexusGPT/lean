@@ -24,10 +24,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ts, loadProgram } from './common.mjs';
+import { ts, loadProgram, topLevelFunctions } from './common.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { ADVICE } from './lint/advice.mjs';
 import { nodeAt } from './convert/util.mjs';
+import { erased, concreteType, emitHashes, ERASURE_SETTINGS } from './convert/strict-annotate.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CODE = /\.(ts|tsx|mts|cts)$/;
@@ -67,10 +68,19 @@ export function policy(finding, strict) {
 
 const typingCount = (fs_) => fs_.filter((f) => f.rule === 'ts-strict' || f.rule === 'unresolved-module').length;
 
+// the strict family (convert/strict-*.mjs): a type error under strict mode and a value typed any are fixed only by
+// edits that TypeScript erases, which each transform checks at its site (the emitted JavaScript is unchanged), so the
+// label at such a site is proved by erasure whatever the advice table says; an any-type finding enters the converter
+// only when it proposes one concrete type, the others stay the lint's advice (`--any-type`)
+const STRICT_RULES = new Set(['ts-strict', 'any-type']);
+const strictPolicy = (f) => (STRICT_RULES.has(f.rule) ? { act: 'apply', how: 'proved by erasure (decided at the site by the transform)' } : null);
+// a strict finding is keyed by its site (a compiler message carries no source text, and two values may share a name)
+const strictFindings = (fs_) => fs_.filter((f) => f.rule !== 'any-type' || concreteType(f.proposal)).map((f) => (STRICT_RULES.has(f.rule) ? { ...f, text: `${f.line}:${f.col} ${f.text ?? f.msg}` } : f));
+
 function lintText(file, project) {
   const loaded = loadProgram(file, { project });
   const syntax = loaded.program.getSyntacticDiagnostics(loaded.sf).length;
-  return { loaded, findings: lintFile(file, null, { loaded, advisory: true }), syntax };
+  return { loaded, findings: strictFindings(lintFile(file, null, { loaded, advisory: true, anyType: true })), syntax };
 }
 
 function applyEdits(text, edits) {
@@ -87,7 +97,7 @@ function planAll(file, sf, checker, findings, transforms, strict, skip) {
     const t = transforms.get(f.rule);
     const key = `${f.rule}:${f.text}`;
     if (!t) { listed.push({ ...f, why: 'no transform for this rule' }); continue; }
-    const pol = policy(f, strict);
+    const pol = strictPolicy(f) ?? policy(f, strict);
     if (pol.act === 'list') { listed.push({ ...f, why: pol.why }); continue; }
     if (skip.has(key)) { listed.push({ ...f, why: skip.get(key) }); continue; }
     let res;
@@ -169,6 +179,27 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
   return { rows, reverted };
 }
 
+// the rows of a file whose emitted JavaScript is the parent's: every unit whose text changed gets the verdict
+// PASS-erased (what was checked: the emit under each setting, its hashes on both sides, the same), and its certificate
+// carries the self-proof of the converted unit (check.mjs, the unit against itself: lane A reads it with its new types)
+async function erasureRows(repo, r, { n, project, dafnySeconds }) {
+  const { check } = await import('./check.mjs');
+  const units = (text) => topLevelFunctions(ts.createSourceFile(r.file, text, ts.ScriptTarget.Latest, true));
+  const before = units(r.original), after = units(r.text);
+  const rel = path.relative(repo, r.file);
+  const parentEmit = emitHashes(r.file, r.original), candidateEmit = emitHashes(r.file, r.text);
+  const rows = [];
+  for (const u of [...after.values()].filter((x) => before.get(x.name)?.node.getText() !== x.node.getText())) {
+    let self = null;
+    try { const res = await check({ parent: r.file, candidate: r.file, unit: u.name, n, project, dafnySeconds }); self = { verdict: res.verdict, laneA: res.certificate?.lanes?.A?.verdict ?? null, dafny: res.certificate?.lanes?.A?.dafny ?? null }; }
+    catch (e) { self = { verdict: null, error: String(e.message).slice(0, 160) }; }
+    rows.push({ file: rel, unit: u.name, verdict: 'PASS-erased', coverage: 'checked', laneA: 'erasure', laneB: null, caller: false, control: null,
+      reason: `erasure: the emitted JavaScript is the parent's under ${ERASURE_SETTINGS}; the converted unit against itself: ${self.verdict ?? 'no verdict'}`,
+      certificate: { verdict: 'PASS-erased', unit: u.name, checked: 'identical emitted JavaScript under each setting, and the converted unit proved against itself', settings: ERASURE_SETTINGS, parentEmit, candidateEmit, self } });
+  }
+  return rows;
+}
+
 const verdictCell = (rows) => {
   const c = {};
   for (const r of rows) { const k = r.verdict ?? r.coverage ?? 'none'; c[k] = (c[k] ?? 0) + 1; }
@@ -232,11 +263,18 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
       results.push(r);
       console.error(`${path.relative(repo, f)}: ${r.before} finding(s), ${r.applied.length} applied, ${r.listed.length} listed`);
     }
-    const changed = results.filter((r) => r.text !== r.original).map((r) => r.file);
-    const proof = noProve || !changed.length ? null : await prove({ repo, base, files: changed, project, n, dafnySeconds, cacheDir });
+    const changedAll = results.filter((r) => r.text !== r.original);
+    // a file whose emitted JavaScript is the parent's (the strict family's edits only) is proved by erasure, unit by unit;
+    // the others go through pr.mjs
+    const byErasure = changedAll.filter((r) => erased(r.file, r.original, r.text));
+    const changed = changedAll.filter((r) => !byErasure.includes(r)).map((r) => r.file);
+    let proof = noProve || !changed.length ? null : await prove({ repo, base, files: changed, project, n, dafnySeconds, cacheDir });
+    if (!noProve && byErasure.length) { proof ??= { rows: [], reverted: new Map() }; for (const r of byErasure) proof.rows.push(...await erasureRows(repo, r, { n, project, dafnySeconds })); }
     if (proof) witness += proof.rows.filter((r) => r.verdict === 'WITNESS').length;
     md.push(table(path.relative(repo, abs) || '.', results, proof, repo), '', detail(results, repo));
-    json.push({ target: path.relative(repo, abs), base, files: results.map(({ original, text, ...r }) => ({ ...r, file: path.relative(repo, r.file), reverted: proof?.reverted.get(path.relative(repo, r.file)) ?? null })), rows: proof?.rows.map((r) => ({ file: r.file, unit: r.unit, verdict: r.verdict, coverage: r.coverage, laneA: r.laneA, laneB: r.laneB, caller: !!r.caller, reason: r.reason, control: r.control ?? null })) ?? null });
+    // the strict family's proof, named per file: the emitted JavaScript compared under each setting erased() reads
+    if (!noProve && byErasure.length) md.push('#### PASS-erased: the emitted JavaScript is identical', '', ...byErasure.map((r) => `- ${path.relative(repo, r.file)}: identical under ${ERASURE_SETTINGS}`), '');
+    json.push({ target: path.relative(repo, abs), base, files: results.map(({ original, text, ...r }) => ({ ...r, file: path.relative(repo, r.file), reverted: proof?.reverted.get(path.relative(repo, r.file)) ?? null, erasure: !noProve && byErasure.includes(r) ? ERASURE_SETTINGS : null })), rows: proof?.rows.map((r) => ({ file: r.file, unit: r.unit, verdict: r.verdict, coverage: r.coverage, laneA: r.laneA, laneB: r.laneB, caller: !!r.caller, reason: r.reason, control: r.control ?? null, ...(r.verdict === 'PASS-erased' ? { certificate: r.certificate } : {}) })) ?? null });
   }
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(json, null, 1));
   if (opt('--out')) fs.writeFileSync(opt('--out'), md.join('\n'));

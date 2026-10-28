@@ -14,7 +14,7 @@ export function twice(): number {
 }
 export function cached(key: "hit" | "miss"): number {
   const snapshot = cache;
-  if (snapshot.has(key)) return snapshot.get(key)!;
+  if (snapshot.has(key)) return snapshot.get(key) ?? 0;
   return 0;
 }
 export async function handler(x: number): Promise<number> {
