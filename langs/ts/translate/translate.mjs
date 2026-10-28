@@ -1921,6 +1921,13 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       let binding;
       if (ts.isElementAccessExpression(target)) {
         const root = target.expression;
+        const ix = !isArrayLike(checker, baseOf(typeOf(root))) ? stringIndex(baseOf(typeOf(root))) : null;
+        if (ix && dictCarrier(root)) { // a dictionary entry written in a value (`(acc[k] = v), acc`): the statement's reading, DictPut on the ordered carrier, a primitive written to '__proto__' ignored
+          const pw = update ? null : protoKeyWrite(checker, target.argumentExpression, n.right);
+          if (pw === 'prototype') fail(n, 'prototype: a key that may be \'__proto__\' with an object or null value replaces the prototype');
+          const put = (k) => `DictPut(${receiver}, ${k}, ${outerParens(storedAs(dtype(ix.type, target)))})`;
+          binding = [root.text, pw === 'free' ? put(key) : `(if ${key} == ${strEsc('__proto__')} && ${key} !in ${receiver}.m then ${receiver} else ${put(key)})`, root];
+        } else
         binding = [root.text, `${receiver}[${key} := ${storedAs(dtype(typeOf(target), target))}]`, root];
       } else binding = pathUpdate(target, (cur, p, ft) => storedAs(dtype(ft, target)));
       if (!binding) return update && ts.isPostfixUnaryExpression(n) ? old : value;
