@@ -937,7 +937,7 @@ async function runPairOnce(opts) {
   let programRun = null;
   if (spec.isMethod && !spec.isStatic && !spec.accessor && spec.unit.split('.')[1] !== 'constructor') {
     const { runPrograms } = await import('./programs.mjs'); step('programs');
-    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
+    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
   }
   for (let i = 0; i < n; i++) {
     step('lane B', i); let sides = await mountSides(i);
@@ -995,7 +995,7 @@ async function runPairOnce(opts) {
     if (programRun.verdict === 'WITNESS') {
       const mine = programRun.program.some((c) => c.method === member);
       bound.programs.divergence = { method: programRun.divergence.method, commands: programRun.program.length, program: programRun.program, mine };
-      if (mine) return { verdict: 'WITNESS', unit, witnesses: [{ input: `program ${programRun.programIndex}`, program: programRun.program, args: programRun.program.map((c) => c.args), parent: programRun.divergence.parent, candidate: programRun.divergence.candidate, where: { ...programRun.divergence.where, command: programRun.divergence.command, method: programRun.divergence.method } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+      if (mine) return { verdict: 'WITNESS', unit, witnesses: [{ record: programRun.record, input: `program ${programRun.programIndex}`, program: programRun.program, args: programRun.program.map((c) => c.args), parent: programRun.divergence.parent, candidate: programRun.divergence.candidate, where: { ...programRun.divergence.where, command: programRun.divergence.command, method: programRun.divergence.method } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
     }
   }
   // races (design/schedules.md): an async unit called twice, the second call arriving while the first is pending, every

@@ -98,3 +98,18 @@ test('lane-A-refused PR rows retain the bounded lane B certificate', async () =>
     assert.equal(r.certificate.lanes.B.record.drawDomain.parameters[0].count, 3);
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
+
+test('method programs carry constructor inputs and every command snapshot', async () => {
+  const { runPair } = await import('./run.mjs'); const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'program-record-test-'));
+  try {
+    const src = 'export class C { n: number; constructor(x: number) { this.n = x; } step(x: number) { this.n += x; return this.n; } }';
+    fs.writeFileSync(path.join(d, 'parent.ts'), src); fs.writeFileSync(path.join(d, 'candidate.ts'), src.replace('this.n += x', 'this.n += x + 1'));
+    const r = await runPair({ parent: path.join(d, 'parent.ts'), candidate: path.join(d, 'candidate.ts'), unit: 'C.step', project: false, n: 1 });
+    assert.equal(r.verdict, 'WITNESS'); const w = r.witnesses[0]; assert.match(w.input, /^program /);
+    assert.equal(w.record.invocation.kind, 'program');
+    assert.equal(w.record.sides.parent.commands.length, w.program.length);
+    assert.equal(w.record.sides.parent.args.t, 'array');
+    assert.ok(r.record.programRuns.some(p => JSON.stringify(p) === JSON.stringify(w.record)));
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
