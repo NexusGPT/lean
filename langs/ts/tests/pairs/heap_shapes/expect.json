@@ -1,7 +1,7 @@
 {
- "scope": ["sign", "stamp"],
- "equal": {"sign": false, "stamp": true},
- "why": "shape 1: sign drops a field the literal source wrote (WITNESS); stamp writes the literal's keys in the other order (the same field writes on the headers node: proved).",
- "b": {"sign": "WITNESS", "stamp": "PASS-bounded"},
+ "scope": ["sign", "stamp", "pick_run", "finish", "close", "desk_current", "desk_reset"],
+ "equal": {"sign": false, "stamp": true, "pick_run": true, "finish": false, "close": true, "desk_current": true, "desk_reset": true},
+ "why": "shape 1: sign drops a field the literal source wrote (WITNESS); stamp writes the literal's keys in the other order (the same field writes on the headers node: proved). shape 2: finish writes the status of the other node the call returns (WITNESS); close moves the count first and writes the status through the path the call returns (the same writes on the same node: proved); Desk.reset writes through this.current() (untouched).",
+ "b": {"sign": "WITNESS", "stamp": "PASS-bounded", "pickRun": "PASS-bounded", "finish": "WITNESS", "close": "PASS-bounded", "Desk.reset": "PASS-bounded"},
  "heap": true
 }
