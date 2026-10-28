@@ -597,6 +597,8 @@ export function translate(file, fnName, opts = {}) {
   // the route a throwing callback's loop exits by, set by faultTr (a forEach statement: the enclosing fault path after
   // the loop) or callbackValue (a hoisted loop value: a fault checkpoint after it), taken by the next loop built here
   let loopFault = null;
+  // the type an opaque block's return has while a throwing callback's or handler's body is read: the callback's value
+  let opaqueRet = null;
   function fakeForOf(st, fe, collect = null) {
     const faults = loopFault; loopFault = null;
     if (fe.named) return Object.assign(namedForOf(st, fe, collect), { __faults: faults });
@@ -2260,6 +2262,18 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${value});\n${promisePair(promiseFailure(R))}`;
     });
   }
+  // an inline handler that calls a throwing same-file unit: the throw inside a reaction rejects the derived promise
+  // (ECMA-262 27.2.2.1 NewPromiseReactionJob: an abrupt handler completion rejects it), so the handler's statements are
+  // read by faultTr, a fault leaving the handler at once as the rejection, its value the fulfilment
+  const handlerFaults = (cb) => { let f = false; const w = (x) => { if (f || ts.isFunctionLike(x)) return; if ((ts.isCallExpression(x) || ts.isNewExpression(x)) && exceptionUnits.has(unitNameOfCall(x))) { f = true; return; } ts.forEachChild(x, w); }; w(cb.body); return f; };
+  function faultHandlerBody(cb, outputT, R, done) {
+    const list = ts.isBlock(cb.body) ? [...cb.body.statements] : [{ kind: K.ReturnStatement, expression: cb.body, parent: cb, pos: cb.body.pos, end: cb.body.end, getStart: () => cb.body.getStart(sf), getEnd: () => cb.body.getEnd(), getText: () => cb.body.getText(sf), getFullStart: () => cb.body.getFullStart() }];
+    const ownT = checker.getSignatureFromDeclaration(cb).getReturnType();
+    const ctx = { ret: (code) => (isPromiseT(ownT) ? fail(cb, 'promise-handler: a promise returned from an opaque block of a throwing handler is not read') : promisePair(convert(code, ownT, outputT, cb))), fault: () => promisePair(promiseFailure(R)), check: false };
+    ctx.step = (s) => faultEval(() => (s.expression ? promiseValueCode(s.expression, outputT) : promiseAbsent(outputT, s)), (code) => promisePair(code), ctx);
+    const savedRet = opaqueRet; opaqueRet = isPromiseT(ownT) ? R : dtype(ownT, cb); // a return is the handler's value
+    try { return faultTr(list, done, currentUnit, ctx); } finally { opaqueRet = savedRet; }
+  }
   function promiseHandlerBody(cb, argument, argumentD, outputT, argumentT = null) {
     const R = dtype(outputT, cb);
     const argumentAs = (D) => argumentT ? convertToD(argument, argumentT, D, cb) : convertD(argument, argumentD, D);
@@ -2282,7 +2296,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     const bindings = cb.parameters.map((p) => `var ${dn(p.name.text)}: ${dtype(typeOf(p.name), p)} := ${argumentAs(dtype(typeOf(p.name), p))};`).join('\n');
     const done = () => promisePair(promiseAbsent(outputT, cb));
-    const body = ts.isBlock(cb.body) ? promiseStatements([...cb.body.statements], outputT, done) : capture(() => {
+    const body = handlerFaults(cb) ? faultHandlerBody(cb, outputT, R, done) : ts.isBlock(cb.body) ? promiseStatements([...cb.body.statements], outputT, done) : capture(() => {
       const value = promiseValueCode(cb.body, outputT);
       return containsEffect(cb.body) ? promiseGuard(promisePair(value), R) : promisePair(value);
     });
@@ -5066,7 +5080,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     };
     w(s);
     const text = s.getText(sf).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' ').trim();
-    const RD = u.isCtor ? 'Unit' : dtype(retType(u), s);
+    const RD = opaqueRet ?? (u.isCtor ? 'Unit' : dtype(retType(u), s)); // inside a throwing callback or handler a return is the callback's value
     const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
     const jumpTag = jumps.length ? '_exits_' + jumps.map((j) => `${j > 0 ? 'b' : 'c'}${Math.abs(j)}`).join('_') : '';
     const moduleTag = moduleBindings.size ? `_modules_${hash([...moduleBindings].sort().join('|'))}` : '';
@@ -5472,9 +5486,16 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const stepStmts = generalFor(s) && s.incrementor ? [forStep(s)] : [];
     loopCtx.push({ label: labelId(s), jump: (code) => jumps.length ? completed(code) : fail(s, 'a labelled exit lacks its completion channel'), cont: stepStmts.length ? () => tr(stepStmts, next, u) : next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ? { ...s.__collect, element: ts.isIdentifier(s.initializer.declarations[0].name) ? dn(s.initializer.declarations[0].name.text) : `seq${id}[idx${id}]`, index: `idx${id}` } : null, ret: (code) => (returns ? completed('0', `Some(${code})`) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
-    const fctx = lf ? { ret: () => fail(s, 'a return inside an opaque block of a throwing callback'), fault: () => exitVal(), check: false } : null;
-    if (fctx) { const top = loopCtx[loopCtx.length - 1]; fctx.step = (r) => faultStep(r, top, fctx); }
-    try { const bodyList = derivedBound(s)?.body ? (ts.isBlock(s.statement) ? scopedList(s.statement, derivedBound(s).body) : derivedBound(s).body) : [...sflatten(s.statement), ...stepStmts]; const bodyFin = s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next; bodyE = fctx ? faultTr(bodyList, bodyFin, u, fctx) : tr(bodyList, bodyFin, u); } finally { loopCtx.pop(); } // the step is the body's last statement; only `continue` runs it through loopCtx.cont
+    const fctx = lf ? { fault: () => exitVal(), check: false } : null;
+    const savedRet = opaqueRet;
+    if (fctx) {
+      const top = loopCtx[loopCtx.length - 1], c = top.collect;
+      fctx.step = (r) => faultStep(r, top, fctx);
+      // an opaque block of the body that returns: its value is the callback's, as the method reads it
+      fctx.ret = (code) => (!c ? top.cont() : callbackStepTail(['filter', 'find', 'findIndex', 'some', 'every'].includes(c.method) ? outerParens(valueTruth(code, c.valueD)) : code, top));
+      opaqueRet = c ? c.valueD : 'Unit';
+    }
+    try { const bodyList = derivedBound(s)?.body ? (ts.isBlock(s.statement) ? scopedList(s.statement, derivedBound(s).body) : derivedBound(s).body) : [...sflatten(s.statement), ...stepStmts]; const bodyFin = s.__collect ? () => callbackStep(null, loopCtx[loopCtx.length - 1]) : next; bodyE = fctx ? faultTr(bodyList, bodyFin, u, fctx) : tr(bodyList, bodyFin, u); } finally { loopCtx.pop(); opaqueRet = savedRet; } // the step is the body's last statement; only `continue` runs it through loopCtx.cont
     const params = [...lead, ...constParams, ...stateParams];
     const selfArgs = [...lead.map((p) => p.split(':')[0]), ...constArgs, ...mNames];
     const callS = `${hn}(${selfArgs.join(', ')})`;

@@ -1071,12 +1071,12 @@ export function lintFile(file, ranges = null, opts = {}) {
     for (const [target, saved] of [[aliasLocals, aliases], [seenTypes, types], [promiseReadings, selected]]) { target.clear(); for (const value of saved) target.add(value); }
     return false;
   }
-  function unsafePromiseCallee(u, seen = new Set()) {
+  function unsafePromiseCallee(u, seen = new Set(), throws = true) { // throws false: a then, catch or finally handler's throw rejects the derived promise (the translator's faultHandlerBody), so only a mutation is unsafe
     if (!u || !u.body || seen.has(u.name)) return false; // a declared function without a body is refused on its own (unsupported-syntax)
     seen.add(u.name); let unsafe = false;
     const w = (x) => {
-      if (ts.isThrowStatement(x) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;
-      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), seen)) unsafe = true;
+      if ((throws && ts.isThrowStatement(x)) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), seen, throws)) unsafe = true;
       ts.forEachChild(x, w);
     };
     w(u.body); return unsafe;
@@ -1091,22 +1091,22 @@ export function lintFile(file, ranges = null, opts = {}) {
       const sg = checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call)[0];
       if (!sg || sg.typeParameters?.length || checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call).length !== 1 || sg.parameters.some((p) => p.valueDeclaration && ts.isParameter(p.valueDeclaration) && (p.valueDeclaration.dotDotDotToken || p.valueDeclaration.initializer || p.valueDeclaration.questionToken)) || sg.parameters.length > arity || (o.kind !== 'unit' && o.kind !== 'import' && o.kind !== 'other')) return v(a, 'promise-handler', 'use an arrow or a named same-file or imported function with at most one plain parameter');
       if (u) {
-        if (unsafePromiseCallee(u) || u.params.some((p) => p.initializer || p.dotDotDotToken || p.questionToken || !ts.isIdentifier(p.name))) return v(a, 'promise-handler', 'inline a handler that throws or mutates so its fault and state are visible');
+        if (unsafePromiseCallee(u, new Set(), false) || u.params.some((p) => p.initializer || p.dotDotDotToken || p.questionToken || !ts.isIdentifier(p.name))) return v(a, 'promise-handler', 'inline a handler that mutates so its state is visible');
       }
       const rt = sg.getReturnType();
       if (isAny(rt) || (!isNativePromise(rt, checker) && checker.getPropertyOfType(rt, 'then'))) return v(a, 'promise-thenable', 'give a named handler a plain or native Promise return type');
       return checkIdent(a, true);
     }
     if (!ts.isArrowFunction(a) || a.typeParameters?.length || a.parameters.length > arity || a.parameters.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken)) return v(a, 'promise-handler', 'use an arrow with plain parameters');
-    promiseBody(a.body);
+    promiseBody(a.body, true);
     const values = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) promiseValueType(x.expression); ts.forEachChild(x, values); };
     if (ts.isBlock(a.body)) values(a.body); else promiseValueType(a.body);
     promiseCallback(a);
   }
-  function promiseBody(body) {
+  function promiseBody(body, handler = false) { // handler: a then, catch or finally handler, whose throw rejects the derived promise
     const w = (x) => {
       if (ts.isFunctionLike(x)) return;
-      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text))) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), new Set(), !handler)) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
       if (ts.isStatement(x) && ![K.Block, K.VariableStatement, K.ExpressionStatement, K.IfStatement, K.ReturnStatement, K.ThrowStatement, K.EmptyStatement].includes(x.kind)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
       ts.forEachChild(x, w);
     };
