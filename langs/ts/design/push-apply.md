@@ -47,7 +47,7 @@ A message built from a node that contains a rewritten call (a few rules print th
 blanks: the form the rule judged, the one the message tells the owner to write. The converter plans its edits on its
 own, un-normalised program and copies source from it: `tests/fixtures/convert/apply-site` converts two forEach whose
 callbacks call push through apply and call, and the result keeps those calls byte for byte. Lane B runs the file as
-written; Dafny names built from a block's text (an opaque block) differ between the apply and direct forms, which
+written, so a witness line quotes the owner's text; Dafny names built from a block's text (an opaque block) differ between the apply and direct forms, which
 leaves such a block unproved, never wrongly proved.
 
 ## Soundness
