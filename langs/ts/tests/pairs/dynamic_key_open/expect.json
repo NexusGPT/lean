@@ -1,9 +1,10 @@
 {
  "laneBOnly": true,
- "why": "Must not prove. agentOf and traceOf read a key Headers does not declare, by bracket and by dot; the candidate reads it from a copy of the declared fields, which holds no index entry. Lane A refuses both (dynamic-key, common.mjs openRecordType: the datatype holds the declared fields alone; on base 6661006 both were PASS-proved). Lane B draws Headers with entries keyed by the names the unit reads (exec/spec.mjs recordSpec) and witnesses. protoText reads toString against valueOf on an empty dictionary: lane A refuses the literal prototype name (prototype; on the base lane A proved them equal); lane B witnesses.",
+ "why": "Must not prove. agentOf, traceOf and hasAgent read or test a key Headers does not declare, by bracket, by dot and by `in`; the candidate reads it from a copy of the declared fields, which holds no index entry. Lane A refuses all three (dynamic-key, common.mjs openRecordType: the datatype holds the declared fields alone; on base 6661006 both were PASS-proved). Lane B draws Headers with entries keyed by the names the unit reads (exec/spec.mjs recordSpec) and witnesses. protoText reads toString against valueOf on an empty dictionary: lane A refuses the literal prototype name (prototype; on the base lane A proved them equal); lane B witnesses.",
  "b": {
   "agentOf": "WITNESS",
   "traceOf": "WITNESS",
-  "protoText": "WITNESS"
+  "protoText": "WITNESS",
+  "hasAgent": "WITNESS"
  }
 }

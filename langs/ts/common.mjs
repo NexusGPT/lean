@@ -1279,11 +1279,16 @@ export function openRecordType(checker, t) {
   if (!checker.getPropertiesOfType(t).length) return false;
   return !!(checker.getIndexInfoOfType(t, ts.IndexKind.String) || checker.getIndexInfoOfType(t, ts.IndexKind.Number));
 }
-// a read of `name` (a declared key or not) on a type that may be a union: true when some open member lacks that key;
-// `name` null for a key the reading does not fix (a string, a number), which no open type declares
-export function undeclaredOpenRead(checker, t, name) {
+// `k in r` on a type that may be open: refused unless the key is a string literal every open member declares (the
+// datatype answers a declared key; an entry of the index is not in it, so `"x" in h` and `"x" in { accept: h.accept }`
+// would answer alike); the text of the refusal, or null
+export function openRecordIn(checker, keyNode, objType) {
   const TF = ts.TypeFlags;
-  const parts = t && t.flags & TF.Union ? t.types : t ? [t] : [];
-  return parts.some((p) => openRecordType(checker, p) && (name === null || !checker.getPropertyOfType(p, name)));
+  const parts = objType && objType.flags & TF.Union ? objType.types : objType ? [objType] : [];
+  const open = parts.filter((p) => openRecordType(checker, p));
+  if (!open.length) return null;
+  let k = keyNode; while (ts.isParenthesizedExpression(k)) k = k.expression;
+  if (ts.isStringLiteralLike(k) && open.every((p) => checker.getPropertyOfType(p, k.text))) return null;
+  return `${OPEN_RECORD_WHY(checker.typeToString(objType))}; \`in\` answers only a declared key`;
 }
 export const OPEN_RECORD_WHY = (typeText) => `${typeText} declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own`;
