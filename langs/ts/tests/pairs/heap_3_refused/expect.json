@@ -1,0 +1,11 @@
+{
+ "laneBOnly": true,
+ "why": "heap-3 (design/heap-3.md section 1). Every parent unit is outside the proof subset by spread-source (escape spread_source): on the base each was proved equal to the fields copied by hand. Lane B: an open record draws (copyBag, bumpBag, assignBag) an undeclared entry the copy carries (WITNESS); a plain record draws declared fields only (PASS-bounded, no undeclared key drawn); an optional field spread after a member is overwritten by an own undefined (WITNESS). copyRec stays PASS-bounded only because lane B draws no undeclared key on a plain record parameter (exec/spec.mjs): the open-record datatype row needs that draw (zero to one extra key, as the index-signature draw does).",
+ "b": {
+  "copyBag": "WITNESS",
+  "bumpBag": "WITNESS",
+  "assignBag": "WITNESS",
+  "copyRec": "PASS-bounded",
+  "late": "WITNESS"
+ }
+}
