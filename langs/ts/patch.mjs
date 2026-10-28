@@ -15,10 +15,12 @@
 //   move       a keyed child whose place among the kept keys changed (the kept keys outside a longest run in order)
 // A changed tag at one position is a remove and an insert. A path is the child-index path from the root in the labels
 // the handlers carry (exec/run.mjs treeHandlers): `[i]` under an array or a fragment, `div[i]` under a div, `C[i]` under
-// a component; '' is the root itself. Values are printed with render (exec/fake.mjs), so a fake prints as its path.
+// a component; '' is the root itself. Values are printed with render (exec/fake.mjs), so a fake prints as its path; an
+// op's node is printed with renderTree, whose depth bound restarts at every element, so a deep subtree keeps its
+// elements and their children lists (render alone cuts a deep element's children to one {$deep} object).
 // `children` is read one way by every reader (kidsOf): nothing is no child, an array is the children, anything else (one
 // element, one text, a rendered value cut by a depth bound) is one child.
-import { render } from './exec/fake.mjs';
+import { render, renderTree } from './exec/fake.mjs';
 
 const KINDS = ['insert', 'remove', 'text', 'attribute', 'move'];
 const MAX_DEPTH = 64, MAX_OPS = 500; // the walk is total: past the depth a differing subtree is one remove and one insert; past the op budget the list is cut and says so
@@ -29,6 +31,7 @@ const isNothing = (v) => v === null || v === undefined || typeof v === 'boolean'
 const isText = (v) => typeof v === 'string' || typeof v === 'number';
 export const kidsOf = (v) => (v === null || v === undefined ? [] : Array.isArray(v) ? v : [v]);
 const json = (v) => JSON.stringify(render(v));
+const treeJson = (v) => JSON.stringify(renderTree(v)); // a tree compared to its last element, never equal because both sides were cut at one depth
 // a function prop is compared as 'fn': a raw function, a rendered {$fn}, an observed {$handler}
 const isFnValue = (v) => (typeof v === 'function' && !isFake(v)) || (!!v && typeof v === 'object' && !isFake(v) && (Object.hasOwn(v, '$fn') || Object.hasOwn(v, '$handler')));
 const propValue = (v) => (isFnValue(v) ? 'fn' : render(v));
@@ -55,13 +58,13 @@ function diffChildren(A, B, prefix, seg, st, depth) {
   const ka = keysOf(A), kb = keysOf(B);
   if (ka && kb && A.length && B.length) { // keyed: React's reconciliation identity
     const ia = new Map(ka.map((k, i) => [k, i])), ib = new Map(kb.map((k, j) => [k, j]));
-    ka.forEach((k, i) => { if (!ib.has(k)) emit(st, { kind: 'remove', path: join(prefix, seg(i)), key: render(A[i].props.key), before: render(A[i]), after: null }); });
+    ka.forEach((k, i) => { if (!ib.has(k)) emit(st, { kind: 'remove', path: join(prefix, seg(i)), key: render(A[i].props.key), before: renderTree(A[i]), after: null }); });
     const kept = kb.map((k, j) => [k, j]).filter(([k]) => ia.has(k));
     const inOrder = longestRun(kept.map(([k]) => ia.get(k)));
     let m = 0;
     kb.forEach((k, j) => {
       const p = join(prefix, seg(j));
-      if (!ia.has(k)) { emit(st, { kind: 'insert', path: p, key: render(B[j].props.key), before: null, after: render(B[j]) }); return; }
+      if (!ia.has(k)) { emit(st, { kind: 'insert', path: p, key: render(B[j].props.key), before: null, after: renderTree(B[j]) }); return; }
       const i = ia.get(k);
       if (!inOrder.has(m)) emit(st, { kind: 'move', path: p, key: render(B[j].props.key), before: i, after: j });
       m++;
@@ -71,8 +74,8 @@ function diffChildren(A, B, prefix, seg, st, depth) {
   }
   for (let i = 0; i < Math.max(A.length, B.length); i++) { // by position
     const p = join(prefix, seg(i));
-    if (i >= B.length) emit(st, { kind: 'remove', path: p, before: render(A[i]), after: null });
-    else if (i >= A.length) emit(st, { kind: 'insert', path: p, before: null, after: render(B[i]) });
+    if (i >= B.length) emit(st, { kind: 'remove', path: p, before: renderTree(A[i]), after: null });
+    else if (i >= A.length) emit(st, { kind: 'insert', path: p, before: null, after: renderTree(B[i]) });
     else diffNode(A[i], B[i], p, st, depth + 1);
   }
 }
@@ -90,9 +93,9 @@ function diffNode(a, b, path, st, depth) {
     if (Object.hasOwn(a, 'rendered') || Object.hasOwn(b, 'rendered')) diffRoot(a.rendered, b.rendered, join(path, 'rendered'), st, depth + 1); // --deep: the child component's own tree
     return;
   }
-  if (json(eraseFns(a)) === json(eraseFns(b))) return; // the same fake, the same value
-  emit(st, { kind: 'remove', path, before: render(a), after: null });
-  emit(st, { kind: 'insert', path, before: null, after: render(b) });
+  if (treeJson(eraseFns(a)) === treeJson(eraseFns(b))) return; // the same fake, the same value
+  emit(st, { kind: 'remove', path, before: renderTree(a), after: null });
+  emit(st, { kind: 'insert', path, before: null, after: renderTree(b) });
 }
 
 function diffRoot(a, b, path, st, depth) {
@@ -153,7 +156,7 @@ function witnessPatchOf(parentObs, candidateObs, otherwise) {
   const ops = patch(p.tree, c.tree);
   if (ops.reason) return { patch: [], patchSummary: `no patch: ${ops.reason}` };
   if (ops.length) return { patch: ops, patchSummary: summarize(ops) };
-  if (json(p.tree) !== json(c.tree)) return { patch: [], patchSummary: "no element difference; a handler's observed result differs" };
+  if (treeJson(p.tree) !== treeJson(c.tree)) return { patch: [], patchSummary: "no element difference; a handler's observed result differs" };
   const other = parentObs && candidateObs && typeof parentObs === 'object' && typeof candidateObs === 'object' && !Array.isArray(parentObs) && !treeish(parentObs)
     ? Object.keys(FIELD).filter((k) => k !== 'outcome' && (Object.hasOwn(parentObs, k) || Object.hasOwn(candidateObs, k)) && json(parentObs[k]) !== json(candidateObs[k])) : [];
   if (other.length) return { patch: [], patchSummary: `no tree difference; ${other.map((k) => FIELD[k]).join(' and ')} ${other.length > 1 ? 'differ' : 'differs'}` };
