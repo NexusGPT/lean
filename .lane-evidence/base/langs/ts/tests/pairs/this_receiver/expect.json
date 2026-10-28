@@ -1,0 +1,28 @@
+{
+ "scope": [
+  "caption",
+  "caption_of",
+  "sized",
+  "size_of",
+  "same",
+  "same_of"
+ ],
+ "equal": {
+  "caption": false,
+  "caption_of": false,
+  "sized": false,
+  "size_of": false,
+  "same": true,
+  "same_of": true
+ },
+ "why": "A free function with a declared `this` parameter reads `this` as its first operand, as a whole value (`const self = this`, `return this`) or through a field. caption appends to the receiver's label: a changed receiver read, witnessed and not proved, and captionOf which calls it changes with it. sized binds the receiver to a local and multiplies, the candidate reads the field directly and commutes the product: proved; sizeOf passes the same receiver through apply instead of call: proved. same and sameOf return the receiver untouched: proved. Since signed-zero (design/signed-zero.md), sized and sizeOf are not proved: `self.n * k` is -0 for n = -1, k = 0, a -0 an operation makes, so both units are read opaque; the doubles reading (row 0d8976c3) proves them.",
+ "heap": false,
+ "b": {
+  "caption": "WITNESS",
+  "captionOf": "WITNESS",
+  "sized": "PASS-bounded",
+  "sizeOf": "PASS-bounded",
+  "same": "PASS-bounded",
+  "sameOf": "PASS-bounded"
+ }
+}

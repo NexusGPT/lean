@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1b2d"/><stop offset="1" stop-color="#1c2f4a"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/></pattern>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fb3c8"/></marker>
+    <marker id="arrRed" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d98c8c"/></marker>
+    <marker id="arrGreen" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8fd1b0"/></marker>
+    <marker id="arrAmber" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d9c08c"/></marker>
+    <marker id="arrBlue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fc7ea"/></marker>
+    <marker id="arrPale" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c7d9ea"/></marker>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <text x="64" y="80" font-size="40" fill="#f3efe6" letter-spacing="-0.5">How lean reaches a verdict</text>
+  <text x="66" y="120" font-size="22" fill="#9fb3c8">Run both versions, then prove them equal. A component whose state is finite gets a third rung.</text>
+  <rect x="64" y="190" width="250" height="92" fill="#0b1422" stroke="#3c5272" stroke-width="1"/>
+  <text x="189" y="230" font-size="22" fill="#f3efe6" text-anchor="middle" font-family="Menlo, Consolas, monospace" xml:space="preserve">parent.ts</text>
+  <text x="189" y="260" font-size="18" fill="#9fb3c8" text-anchor="middle">before the change</text>
+  <rect x="64" y="310" width="250" height="92" fill="#0b1422" stroke="#3c5272" stroke-width="1"/>
+  <text x="189" y="350" font-size="22" fill="#f3efe6" text-anchor="middle" font-family="Menlo, Consolas, monospace" xml:space="preserve">candidate.ts</text>
+  <text x="189" y="380" font-size="18" fill="#9fb3c8" text-anchor="middle">after the change</text>
+  <rect x="64" y="430" width="250" height="92" fill="#0b1422" stroke="#3c5272" stroke-width="1"/>
+  <text x="189" y="470" font-size="22" fill="#f3efe6" text-anchor="middle" font-family="Menlo, Consolas, monospace" xml:space="preserve">--scope</text>
+  <text x="189" y="500" font-size="18" fill="#9fb3c8" text-anchor="middle">what was meant to change</text>
+  <text x="64" y="580" font-size="18" fill="#8a9bb0">read inside their project:</text>
+  <text x="64" y="605" font-size="18" fill="#8a9bb0">the tsconfig, the imports,</text>
+  <text x="64" y="630" font-size="18" fill="#8a9bb0">the types; nothing to rewrite</text>
+  <polyline points="314,356 372,356" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <rect x="380" y="236" width="280" height="240" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="400" y="270" font-size="16" fill="#9fb3c8" letter-spacing="2">THE LINT</text>
+  <text x="400" y="312" font-size="21" fill="#f3efe6">does every construct</text>
+  <text x="400" y="341" font-size="21" fill="#f3efe6">have a reading as</text>
+  <text x="400" y="370" font-size="21" fill="#f3efe6">mathematics?</text>
+  <text x="400" y="420" font-size="17" fill="#9fb3c8">no: the rule, the line, and</text>
+  <text x="400" y="443" font-size="17" fill="#9fb3c8">what to write instead</text>
+  <polyline points="660,300 690,300 690,285 716,285" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <polyline points="660,420 690,420 690,555 716,555" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="392" y="520" font-size="17" fill="#8a9bb0">refused: the proof is withheld,</text>
+  <text x="392" y="544" font-size="17" fill="#8a9bb0">lane B still runs</text>
+  <rect x="722" y="170" width="470" height="230" fill="#0b1422" stroke="#4f7391" stroke-width="1.5"/>
+  <rect x="722" y="170" width="470" height="46" fill="#2a4256"/>
+  <text x="742" y="201" font-size="19" fill="#f3efe6" letter-spacing="1.5">LANE B · RUN BOTH</text>
+  <text x="1176" y="201" font-size="16" fill="#c9d4e0" text-anchor="end">seconds</text>
+  <text x="742" y="252" font-size="19" fill="#c9d4e0">both versions, one process, the same fakes</text>
+  <text x="742" y="281" font-size="19" fill="#c9d4e0">inputs from the types, boundaries first</text>
+  <text x="742" y="310" font-size="19" fill="#c9d4e0">a virtual clock, an object graph per call</text>
+  <text x="742" y="339" font-size="19" fill="#c9d4e0">compares the outcome, the objects reached,</text>
+  <text x="742" y="368" font-size="19" fill="#c9d4e0">the effect trace and the pending work</text>
+  <rect x="722" y="440" width="470" height="230" fill="#0b1422" stroke="#3d7a62" stroke-width="1.5"/>
+  <rect x="722" y="440" width="470" height="46" fill="#1f4a3a"/>
+  <text x="742" y="471" font-size="19" fill="#f3efe6" letter-spacing="1.5">LANE A · PROVE</text>
+  <text x="1176" y="471" font-size="16" fill="#bfe3d0" text-anchor="end">seconds to a minute</text>
+  <text x="742" y="522" font-size="19" fill="#c9d4e0">both sides translated to Dafny</text>
+  <text x="742" y="551" font-size="19" fill="#c9d4e0">every effect a step of an explicit world</text>
+  <text x="742" y="580" font-size="19" fill="#c9d4e0">one lemma per function: equal outside S</text>
+  <text x="742" y="609" font-size="19" fill="#c9d4e0">unchanged code is aliased, not proved</text>
+  <text x="742" y="638" font-size="19" fill="#c9d4e0">Dafny and Z3 decide</text>
+  <rect x="722" y="704" width="470" height="100" fill="#0b1422" stroke="#4f7391" stroke-width="1" stroke-dasharray="6 5"/>
+  <text x="742" y="734" font-size="15" fill="#c7d9ea" letter-spacing="2">A COMPONENT FINITE BY ITS TYPES</text>
+  <text x="742" y="766" font-size="19" fill="#c9d4e0">every click order from every prop value,</text>
+  <text x="742" y="793" font-size="19" fill="#c9d4e0">explored to the end</text>
+  <text x="1250" y="166" font-size="15" fill="#9fb3c8" letter-spacing="2">THE STRONGEST THAT HOLDS</text>
+  <rect x="1250" y="186" width="290" height="70" fill="#5a2a2a" stroke="#8a4a4a" stroke-width="1.5"/>
+  <text x="1395.0" y="217.0" font-size="21" fill="#f3efe6" text-anchor="middle" font-weight="bold">WITNESS</text>
+  <text x="1395.0" y="241.0" font-size="16" fill="#c9d4e0" text-anchor="middle">the input that shows it</text>
+  <polyline points="1192,230 1222,230 1222,221 1246,221" fill="none" stroke="#d98c8c" stroke-width="1.4" marker-end="url(#arrRed)"/>
+  <rect x="1250" y="300" width="290" height="70" fill="#2a4256" stroke="#4f7391" stroke-width="1.5"/>
+  <text x="1395.0" y="331.0" font-size="21" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-bounded</text>
+  <text x="1395.0" y="355.0" font-size="16" fill="#c9d4e0" text-anchor="middle">no difference within the bound</text>
+  <polyline points="1192,340 1222,340 1222,335 1246,335" fill="none" stroke="#c7d9ea" stroke-width="1.4" marker-end="url(#arrPale)"/>
+  <rect x="1250" y="470" width="290" height="70" fill="#1f4a3a" stroke="#3d7a62" stroke-width="1.5"/>
+  <text x="1395.0" y="501.0" font-size="21" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-proved</text>
+  <text x="1395.0" y="525.0" font-size="16" fill="#c9d4e0" text-anchor="middle">a theorem, for every input</text>
+  <polyline points="1192,500 1222,500 1222,505 1246,505" fill="none" stroke="#8fd1b0" stroke-width="1.4" marker-end="url(#arrGreen)"/>
+  <rect x="1250" y="584" width="290" height="70" fill="#4a3f1f" stroke="#8a7540" stroke-width="1.5"/>
+  <text x="1395.0" y="615.0" font-size="21" fill="#f3efe6" text-anchor="middle" font-weight="bold">ASK</text>
+  <text x="1395.0" y="639.0" font-size="16" fill="#c9d4e0" text-anchor="middle">the rule or lemma that did not close</text>
+  <polyline points="1192,610 1222,610 1222,619 1246,619" fill="none" stroke="#d9c08c" stroke-width="1.4" marker-end="url(#arrAmber)"/>
+  <rect x="1250" y="718" width="290" height="70" fill="#24445c" stroke="#4f7391" stroke-width="1.5"/>
+  <text x="1395.0" y="749.0" font-size="21" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-decided</text>
+  <text x="1395.0" y="773.0" font-size="16" fill="#c9d4e0" text-anchor="middle">every click order, to the end</text>
+  <polyline points="1192,754 1222,754 1222,753 1246,753" fill="none" stroke="#9fc7ea" stroke-width="1.4" marker-end="url(#arrBlue)"/>
+  <line x1="64" y1="836" x2="1536" y2="836" stroke="#3c5272" stroke-width="1"/>
+  <text x="64" y="868" font-size="18" fill="#8a9bb0">The certificate travels with every verdict: both file hashes, the bound, the theorem and prover version, each lemma, and for a WITNESS the input.</text>
+</svg>

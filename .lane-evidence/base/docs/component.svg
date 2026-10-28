@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1b2d"/><stop offset="1" stop-color="#1c2f4a"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/></pattern>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fb3c8"/></marker>
+    <marker id="arrRed" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d98c8c"/></marker>
+    <marker id="arrGreen" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8fd1b0"/></marker>
+    <marker id="arrAmber" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d9c08c"/></marker>
+    <marker id="arrBlue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fc7ea"/></marker>
+    <marker id="arrPale" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c7d9ea"/></marker>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <text x="64" y="80" font-size="40" fill="#f3efe6" letter-spacing="-0.5">A React component is a machine</text>
+  <text x="66" y="120" font-size="22" fill="#9fb3c8">Props and hook slots in, a tree out, one step per command. Both versions are stepped together.</text>
+  <rect x="64" y="160" width="560" height="640" fill="#0b1422" stroke="#3c5272" stroke-width="1.2"/>
+  <text x="88" y="196" font-size="15" fill="#9fb3c8" letter-spacing="2">STATE</text>
+  <rect x="88" y="212" width="512" height="40" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="104" y="239" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">props   items: string[], limit</text>
+  <rect x="88" y="262" width="512" height="40" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="104" y="289" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">slot 0  q: string</text>
+  <rect x="88" y="312" width="512" height="40" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="104" y="339" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">slot 1  open: boolean</text>
+  <rect x="88" y="362" width="512" height="40" fill="#13223a" stroke="#3c5272" stroke-width="1"/>
+  <text x="104" y="389" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">slot 2  hits: string[]</text>
+  <text x="88" y="450" font-size="15" fill="#9fb3c8" letter-spacing="2">ONE COMMAND</text>
+  <text x="88" y="488" font-size="19" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">fire</text>
+  <text x="200" y="488" font-size="19" fill="#c9d4e0">a handler: a click, a change</text>
+  <text x="88" y="522" font-size="19" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">settle</text>
+  <text x="200" y="522" font-size="19" fill="#c9d4e0">effects whose deps changed</text>
+  <text x="88" y="556" font-size="19" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">tick</text>
+  <text x="200" y="556" font-size="19" fill="#c9d4e0">the virtual clock fires due timers</text>
+  <text x="88" y="590" font-size="19" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">unmount</text>
+  <text x="200" y="590" font-size="19" fill="#c9d4e0">every cleanup runs</text>
+  <text x="88" y="660" font-size="15" fill="#9fb3c8" letter-spacing="2">OUTPUT, AFTER EACH COMMAND</text>
+  <text x="88" y="696" font-size="19" fill="#c9d4e0">the element tree, the effect and request</text>
+  <text x="88" y="724" font-size="19" fill="#c9d4e0">trace, and the pending work</text>
+  <polyline points="624,480 720,480" fill="none" stroke="#9fb3c8" stroke-width="1.4" marker-end="url(#arr)"/>
+  <text x="672" y="456" font-size="16" fill="#9fb3c8" text-anchor="middle">compared</text>
+  <text x="672" y="516" font-size="16" fill="#9fb3c8" text-anchor="middle">each step</text>
+  <rect x="728" y="160" width="808" height="200" fill="#0b1422" stroke="#8a4a4a" stroke-width="1.5"/>
+  <rect x="748" y="182" width="210" height="44" fill="#5a2a2a" stroke="#8a4a4a" stroke-width="1.5"/>
+  <text x="853.0" y="211.0" font-size="19" fill="#f3efe6" text-anchor="middle" font-weight="bold">WITNESS</text>
+  <text x="982" y="212" font-size="22" fill="#f3efe6">Search keeps one hit too many</text>
+  <text x="748" y="272" font-size="19" fill="#c9d4e0" font-family="Menlo, Consolas, monospace" xml:space="preserve">show click, the timer fires, settle:</text>
+  <text x="748" y="306" font-size="19" fill="#c9d4e0" font-family="Menlo, Consolas, monospace" xml:space="preserve">div[2]/ul[0] insert &lt;li key="vefqj"&gt;</text>
+  <rect x="728" y="380" width="808" height="200" fill="#0b1422" stroke="#4f7391" stroke-width="1.5"/>
+  <rect x="748" y="402" width="210" height="44" fill="#24445c" stroke="#4f7391" stroke-width="1.5"/>
+  <text x="853.0" y="431.0" font-size="19" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-decided</text>
+  <text x="982" y="432" font-size="22" fill="#f3efe6">Panel reorders two setter calls</text>
+  <text x="748" y="492" font-size="19" fill="#c9d4e0">finite by its types: every click order,</text>
+  <text x="748" y="526" font-size="19" fill="#c9d4e0">8 state pairs over 2 prop assignments</text>
+  <rect x="728" y="600" width="808" height="200" fill="#0b1422" stroke="#4f7391" stroke-width="1.5"/>
+  <rect x="748" y="622" width="210" height="44" fill="#2a4256" stroke="#4f7391" stroke-width="1.5"/>
+  <text x="853.0" y="651.0" font-size="19" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-bounded</text>
+  <text x="982" y="652" font-size="22" fill="#f3efe6">any other component</text>
+  <text x="748" y="712" font-size="19" fill="#c9d4e0">click sequences to a stated depth,</text>
+  <text x="748" y="746" font-size="19" fill="#c9d4e0">the depth and the seed in the certificate</text>
+  <line x1="64" y1="836" x2="1536" y2="836" stroke="#3c5272" stroke-width="1"/>
+  <text x="64" y="868" font-size="18" fill="#8a9bb0">Decided at the element-tree layer, with effects, timers and requests; styles under a pinned Tailwind table. Pixels and layout are never judged.</text>
+</svg>

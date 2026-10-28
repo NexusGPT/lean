@@ -1,0 +1,114 @@
+# lean on a pull request: the table of every changed function as one comment, updated on every push.
+# A reusable workflow: a repository calls it from its own pull_request workflow (langs/ts/design/ci.md has the
+# caller). Blocking is off unless the caller sets `block`; the token is the runner's own GITHUB_TOKEN.
+name: lean pull request
+
+on:
+  workflow_call:
+    inputs:
+      lean-ref:
+        description: the lean commit to run, the same sha the caller pins in `uses:`
+        type: string
+        required: true
+      block:
+        description: none (a comment only), witness (fail on a WITNESS row), ask (fail on WITNESS or ASK)
+        type: string
+        default: "none"
+      paths:
+        description: globs of the files to report, one per line or comma separated; empty means the whole repository
+        type: string
+        default: ""
+      max-functions:
+        description: the most changed functions one run checks
+        type: number
+        default: 40
+      install:
+        description: a command run in the checkout before lean, so imports resolve (for example `npm ci`); empty runs none
+        type: string
+        default: ""
+      project:
+        description: empty reads each file in its nearest tsconfig.json; a path names one tsconfig; `none` reads each file alone
+        type: string
+        default: ""
+      proof:
+        description: install Dafny and run the proof lane; false gives lane B verdicts only
+        type: boolean
+        default: true
+      dafny-install:
+        description: the command that puts dafny 4 on PATH; the owner validates it on a first run
+        type: string
+        default: "brew install dafny"
+      timeout-minutes:
+        description: the job's time limit
+        type: number
+        default: 30
+    secrets:
+      lean-token:
+        description: a token that can read the lean repository when it is private; the runner's token otherwise
+        required: false
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: check out the pull request with its history
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          fetch-depth: 0
+      - name: check out lean at the pinned ref
+        uses: actions/checkout@v4
+        with:
+          repository: NexusGPT/lean
+          ref: ${{ inputs.lean-ref }}
+          path: .lean
+          token: ${{ secrets.lean-token || github.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - if: ${{ inputs.proof }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install dafny
+        if: ${{ inputs.proof }}
+        env:
+          DAFNY_INSTALL: ${{ inputs.dafny-install }}
+        run: |
+          bash -c "$DAFNY_INSTALL"
+          dafny --version
+      - name: install the repository's dependencies
+        if: ${{ inputs.install != '' }}
+        working-directory: repo
+        env:
+          INSTALL: ${{ inputs.install }}
+        run: bash -c "$INSTALL"
+      - name: lean table and comment
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LEAN_PR: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          BLOCK: ${{ inputs.block }}
+          PATHS: ${{ inputs.paths }}
+          MAX: ${{ inputs.max-functions }}
+          PROJECT: ${{ inputs.project }}
+        run: |
+          project=()
+          if [ "$PROJECT" = "none" ]; then project=(--no-project); elif [ -n "$PROJECT" ]; then project=(--project "$GITHUB_WORKSPACE/repo/$PROJECT"); fi
+          node .lean/langs/ts/ci/comment.mjs --repo repo --base "$BASE" --head "$HEAD" \
+            --paths "$PATHS" --max-functions "$MAX" "${project[@]}" \
+            --out lean-report.md --json lean-report.json --post --inline --block "$BLOCK"
+      - name: keep the full report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-report
+          path: |
+            lean-report.md
+            lean-report.json
+          if-no-files-found: ignore

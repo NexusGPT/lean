@@ -1,0 +1,203 @@
+{
+ "totals": {
+  "pairs": 2,
+  "pairsSkipped": 0,
+  "pairsFailed": 0,
+  "units": 9,
+  "executable": 7,
+  "agree": 5,
+  "disagree": 2,
+  "notExecutable": 2,
+  "outsideDomain": 0,
+  "notBridged": 0,
+  "modelError": 0,
+  "unitsSkipped": 0,
+  "inputs": 270,
+  "coupled": 0,
+  "productInputs": 61,
+  "unseen": 0
+ },
+ "inputTally": {
+  "agree": 302,
+  "not executable": 122,
+  "outside the model domain": 106,
+  "Node did not answer": 4,
+  "disagree": 6
+ },
+ "rows": [
+  {
+   "pair": "implicit_any_policy",
+   "unit": "failure",
+   "status": "agree",
+   "detail": "38 agree, 0 disagree, 8 not executable, 14 outside, 0 not bridged of 60; most: outside the model domain: NaN or an infinity, outside the finite number model"
+  },
+  {
+   "pair": "implicit_any_policy",
+   "unit": "reason",
+   "status": "agree",
+   "detail": "30 agree, 0 disagree, 18 not executable, 12 outside, 0 not bridged of 60; most: not executable: reaches ext_call_args_new_Error_Option_string, a part with no body"
+  },
+  {
+   "pair": "implicit_any_policy",
+   "unit": "arity",
+   "status": "agree",
+   "detail": "60 agree, 0 disagree, 0 not executable, 0 outside, 0 not bridged of 60"
+  },
+  {
+   "pair": "implicit_any_policy",
+   "unit": "depth",
+   "status": "not executable",
+   "detail": "0 agree, 0 disagree, 48 not executable, 8 outside, 0 not bridged, 4 Node did not answer of 60; most: not executable: reaches ext_Any_of_int_int, a part with no body"
+  },
+  {
+   "pair": "operators",
+   "unit": "sum",
+   "status": "DISAGREE",
+   "detail": "38 agree, 2 disagree, 0 not executable, 20 outside, 0 not bridged of 60; most: outside the model domain: NaN or an infinity, outside the finite number model"
+  },
+  {
+   "pair": "operators",
+   "unit": "total",
+   "status": "DISAGREE",
+   "detail": "36 agree, 4 disagree, 0 not executable, 20 outside, 0 not bridged of 60; most: outside the model domain: NaN or an infinity, outside the finite number model"
+  },
+  {
+   "pair": "operators",
+   "unit": "headTail",
+   "status": "agree",
+   "detail": "40 agree, 0 disagree, 0 not executable, 20 outside, 0 not bridged of 60; most: outside the model domain: NaN or an infinity, outside the finite number model"
+  },
+  {
+   "pair": "operators",
+   "unit": "withDefault",
+   "status": "agree",
+   "detail": "60 agree, 0 disagree, 0 not executable, 0 outside, 0 not bridged of 60"
+  },
+  {
+   "pair": "operators",
+   "unit": "area",
+   "status": "not executable",
+   "detail": "0 agree, 0 disagree, 48 not executable, 12 outside, 0 not bridged of 60; most: not executable: reaches ext_pow_int_int, a part with no body"
+  }
+ ],
+ "findings": [
+  {
+   "pair": "operators",
+   "unit": "sum",
+   "laneA": true,
+   "side": "parent",
+   "input": 17,
+   "args": [
+    [
+     1000000000,
+     9007199254740991
+    ]
+   ],
+   "node": {
+    "returned": 9007200254740992
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "pair": "operators",
+   "unit": "sum",
+   "laneA": true,
+   "side": "candidate",
+   "input": 17,
+   "args": [
+    [
+     1000000000,
+     9007199254740991
+    ]
+   ],
+   "node": {
+    "returned": 9007200254740992
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "pair": "operators",
+   "unit": "total",
+   "laneA": true,
+   "side": "parent",
+   "input": 8,
+   "args": [
+    1000000000,
+    9007199254740991,
+    []
+   ],
+   "node": {
+    "returned": 9007200254740992
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "pair": "operators",
+   "unit": "total",
+   "laneA": true,
+   "side": "candidate",
+   "input": 8,
+   "args": [
+    1000000000,
+    9007199254740991,
+    []
+   ],
+   "node": {
+    "returned": 9007200254740992
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "pair": "operators",
+   "unit": "total",
+   "laneA": true,
+   "side": "parent",
+   "input": 28,
+   "args": [
+    824,
+    1000000000,
+    [
+     823,
+     1000000001,
+     824,
+     9007199254740991,
+     1000000000
+    ]
+   ],
+   "node": {
+    "returned": 9007202254743464
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007202254743463 against 9007202254743464"
+  },
+  {
+   "pair": "operators",
+   "unit": "total",
+   "laneA": true,
+   "side": "candidate",
+   "input": 28,
+   "args": [
+    824,
+    1000000000,
+    [
+     823,
+     1000000001,
+     824,
+     9007199254740991,
+     1000000000
+    ]
+   ],
+   "node": {
+    "returned": 9007202254743464
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007202254743463 against 9007202254743464"
+  }
+ ],
+ "couplings": [],
+ "work": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/oracle-final"
+}

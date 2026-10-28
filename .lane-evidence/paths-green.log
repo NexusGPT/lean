@@ -1,0 +1,21 @@
+✔ helper expands only the declared rest slot without cloning its values (1.421333ms)
+✔ free: default followed by empty or multiple rest elements (1171.105416ms)
+✔ Direct.staticCall: default followed by empty or multiple rest elements (332.534875ms)
+✔ constructor and instance method (313.981291ms)
+✔ explicit this stays the receiver and ordinary optional arrays stay positional (561.422834ms)
+✔ tuple rest, array-valued rest elements, and reachable mutations (623.690459ms)
+✔ RestConstructor: retained commands (1712.476166ms)
+✔ RestConstructor: both class-race arrivals (1016.646625ms)
+✔ RestMethod: retained commands (1277.949042ms)
+✔ RestMethod: both class-race arrivals (1170.629875ms)
+✔ environment commands (243.696041ms)
+✔ both free-race arrivals (473.003583ms)
+✔ new pair detects the changed rest-length threshold and its draw replays (3483.01575ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13209.249417

@@ -1,0 +1,1 @@
+{"functions":{"pad":{"in_scope":"false"}},"adapters":{"pad":{"from":["x"],"to":["x"],"map":["Some(x)"],"door":"comment"}},"summaries":true}

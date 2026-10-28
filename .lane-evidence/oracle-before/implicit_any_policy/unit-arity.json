@@ -1,0 +1,1155 @@
+{
+ "unit": "arity",
+ "dafny": "arity",
+ "laneA": true,
+ "inputs": 30,
+ "sides": {
+  "parent": {
+   "disagree": 26,
+   "agree": 4
+  },
+  "candidate": {
+   "disagree": 26,
+   "agree": 4
+  }
+ },
+ "disagreements": [
+  {
+   "side": "parent",
+   "input": 0,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 0,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 2,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 2,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 3,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 3,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 4,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 4,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 5,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 5,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 6,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 6,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 7,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 7,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 8,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 8,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 9,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 9,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 10,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 10,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 11,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 11,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 12,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 12,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 13,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 13,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 14,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 14,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 15,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 15,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 17,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 17,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 18,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 18,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 19,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 19,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 20,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 20,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 22,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 22,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 23,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 23,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 24,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 24,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 25,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 25,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 27,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 27,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 4 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 28,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 28,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 3 against 1"
+  },
+  {
+   "side": "parent",
+   "input": 29,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  },
+  {
+   "side": "candidate",
+   "input": 29,
+   "args": [
+    [
+     {
+      "$fake": "arg0[0]"
+     },
+     {
+      "$fake": "arg0[1]"
+     },
+     {
+      "$fake": "arg0[2]"
+     },
+     {
+      "$fake": "arg0[3]"
+     },
+     {
+      "$fake": "arg0[4]"
+     }
+    ]
+   ],
+   "node": {
+    "returned": 1
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 5 against 1"
+  }
+ ],
+ "coupling": [],
+ "product": {
+  "inputs": 0,
+  "coupled": 0,
+  "agreedAllSeeds": 0
+ },
+ "unseen": 0
+}

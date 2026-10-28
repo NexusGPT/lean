@@ -1,0 +1,33 @@
+{
+ "scope": [
+  "add_key",
+  "deposit",
+  "push_item",
+  "scaled",
+  "sum_both",
+  "count"
+ ],
+ "equal": {
+  "add_key": false,
+  "deposit": false,
+  "push_item": false,
+  "scaled": false,
+  "sum_both": true,
+  "count": true
+ },
+ "why": "A witness's args are the input as drawn, rendered before either side runs. addKey adds a key to its Map argument, deposit writes a field of its record argument, pushItem pushes onto its array argument; each candidate writes a different value, so lane B finds a WITNESS on the argument after the call, and the witness's args must show the argument before the parent's write. scaled writes nothing and its outcome changes: its args are the draw as well. sumBoth reads the length through a local and adds in the other order: proved. count is untouched.",
+ "b": {
+  "addKey": "WITNESS",
+  "deposit": "WITNESS",
+  "pushItem": "WITNESS",
+  "scaled": "WITNESS",
+  "sumBoth": "PASS-bounded",
+  "count": "PASS-bounded"
+ },
+ "witnessArgs": {
+  "addKey": "writes",
+  "deposit": "writes",
+  "pushItem": "writes",
+  "scaled": "pure"
+ }
+}

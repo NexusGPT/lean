@@ -1,0 +1,15 @@
+{
+ "scope": ["label_", "bump", "app", "shell", "frame", "board"],
+ "equal": {"label_": true, "bump": true, "app": false, "shell": true, "frame": true, "board": true},
+ "why": "Tree with context (design/ui-layers.md). Label and Bump read a context of React's own; App provides Count with a bump function whose text is the same on both sides but whose captured step goes from 1 to 2: as a tree of names App renders the same provider and the same Bump tag (PASS-bounded), and lane A sees the captured cell differ (not proved). With --deep, Bump renders under App's provider, its useContext reads the provider's value, and a click on its button bumps App's count by a different step: WITNESS, where the older deep render (no context) read an outside draw and stayed PASS-bounded. Shell names the provider's value through a local: proved, and PASS-bounded in both modes. Frame and Board are untouched; Board at depth 2 renders Label inside Frame's section, and Label reads Frame's provider; at depth 1 Label is a handle.",
+ "heap": false,
+ "b": {"Label": "PASS-bounded", "Bump": "PASS-bounded", "App": "PASS-bounded", "Shell": "PASS-bounded", "Frame": "PASS-bounded", "Board": "PASS-bounded"},
+ "deep": {"App": {"deep": "WITNESS", "names": "PASS-bounded"}, "Shell": {"deep": "PASS-bounded", "names": "PASS-bounded"}},
+ "layers": [
+  {"unit": "App", "deep": 1, "verdict": "WITNESS", "tree": "WITNESS", "rendered": ["Bump"], "handles": [], "contexts": [{"frame": "Bump#1", "from": "provider"}], "styles": "PASS-bounded"},
+  {"unit": "Shell", "deep": 1, "verdict": "PASS-proved", "tree": "PASS-bounded", "rendered": ["Label"], "contexts": [{"frame": "Label#1", "from": "provider"}], "styles": "PASS-bounded"},
+  {"unit": "Board", "deep": 2, "verdict": "PASS-proved", "tree": "PASS-bounded", "rendered": ["Frame", "Label"], "handles": [], "contexts": [{"frame": "Frame#1>Label#1", "from": "provider"}]},
+  {"unit": "Board", "deep": 1, "tree": "PASS-bounded", "rendered": ["Frame"], "handles": ["Label"]},
+  {"unit": "Label", "tree": "PASS-bounded", "rendered": [], "contexts": [{"frame": "unit", "from": "outside"}], "styles": "PASS-bounded"}
+ ]
+}

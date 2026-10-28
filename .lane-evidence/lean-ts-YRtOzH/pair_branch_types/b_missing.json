@@ -1,0 +1,310 @@
+{
+ "verdict": "PASS-bounded",
+ "unit": "missing",
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 30,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   },
+   {
+    "input": 5,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   },
+   {
+    "input": 6,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 7,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   },
+   {
+    "input": 8,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 9,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 10,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 11,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   },
+   {
+    "input": 12,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 13,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 14,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   },
+   {
+    "input": 15,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 16,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 17,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 18,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 19,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 20,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 21,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 22,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   },
+   {
+    "input": 23,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 24,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 25,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 26,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   },
+   {
+    "input": 27,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 28,
+    "args": [
+     {
+      "$fake": "arg0"
+     }
+    ]
+   },
+   {
+    "input": 29,
+    "args": [
+     {
+      "$undefined": true
+     }
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  },
+  "environmentPrograms": {
+   "runs": 12,
+   "maxCommands": 6,
+   "seed": 1,
+   "commands": "call, invoke, fire, tick, settle, next, throw, return",
+   "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "v",
+    "optional": false,
+    "spec": {
+     "kind": "opaque",
+     "boundary": {
+      "cmp": [
+       {
+        "t": "undefined"
+       },
+       {
+        "t": "draw"
+       }
+      ],
+      "falsy": [],
+      "rank": 0,
+      "radix": 1
+     }
+    }
+   }
+  ],
+  "returns": {
+   "kind": "boolean"
+  },
+  "literals": [],
+  "strings": []
+ }
+}

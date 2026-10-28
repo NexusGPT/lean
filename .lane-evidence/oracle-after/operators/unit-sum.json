@@ -1,0 +1,59 @@
+{
+ "unit": "sum",
+ "dafny": "sum",
+ "laneA": true,
+ "inputs": 30,
+ "sides": {
+  "parent": {
+   "agree": 19,
+   "outside the model domain: NaN or an infinity, outside the finite number model": 7,
+   "outside the model domain: a fraction where the model reads number as int": 3,
+   "disagree": 1
+  },
+  "candidate": {
+   "agree": 19,
+   "outside the model domain: NaN or an infinity, outside the finite number model": 7,
+   "outside the model domain: a fraction where the model reads number as int": 3,
+   "disagree": 1
+  }
+ },
+ "disagreements": [
+  {
+   "side": "parent",
+   "input": 17,
+   "args": [
+    [
+     1000000000,
+     9007199254740991
+    ]
+   ],
+   "node": {
+    "returned": 9007200254740992
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007200254740991 against 9007200254740992"
+  },
+  {
+   "side": "candidate",
+   "input": 17,
+   "args": [
+    [
+     1000000000,
+     9007199254740991
+    ]
+   ],
+   "node": {
+    "returned": 9007200254740992
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007200254740991 against 9007200254740992"
+  }
+ ],
+ "coupling": [],
+ "product": {
+  "inputs": 0,
+  "coupled": 0,
+  "agreedAllSeeds": 0
+ },
+ "unseen": 0
+}

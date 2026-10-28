@@ -1,0 +1,29 @@
+| pair                | unit        | status         | detail
+| implicit_any_policy | failure     | agree          | 38 agree, 0 disagree, 8 not executable, 14 outside, 0 not bridged of 60; most: outside the model domain: NaN or an infinity, outside the finite number model
+| implicit_any_policy | reason      | agree          | 30 agree, 0 disagree, 18 not executable, 12 outside, 0 not bridged of 60; most: not executable: reaches ext_call_args_new_Error_Option_string, a part with no body
+| implicit_any_policy | arity       | DISAGREE       | 8 agree, 52 disagree, 0 not executable, 0 outside, 0 not bridged of 60
+| implicit_any_policy | depth       | not executable | 0 agree, 0 disagree, 48 not executable, 8 outside, 0 not bridged, 4 Node did not answer of 60; most: not executable: reaches ext_Any_of_int_int, a part with no body
+| operators           | sum         | DISAGREE       | 0 agree, 40 disagree, 0 not executable, 20 outside, 0 not bridged of 60; most: outside the model domain: NaN or an infinity, outside the finite number model
+| operators           | total       | DISAGREE       | 36 agree, 4 disagree, 0 not executable, 20 outside, 0 not bridged of 60; most: outside the model domain: NaN or an infinity, outside the finite number model
+| operators           | headTail    | agree          | 40 agree, 0 disagree, 0 not executable, 20 outside, 0 not bridged of 60; most: outside the model domain: NaN or an infinity, outside the finite number model
+| operators           | withDefault | agree          | 60 agree, 0 disagree, 0 not executable, 0 outside, 0 not bridged of 60
+| operators           | area        | not executable | 0 agree, 0 disagree, 48 not executable, 12 outside, 0 not bridged of 60; most: not executable: reaches ext_pow_int_int, a part with no body
+
+## Disagreements: 96 (input, side), 3 units, 2 causes
+
+### a rest parameter: lane B passes the drawn array as one argument: 88
+- implicit_any_policy/arity (52: parent, candidate; the pair expects lane A proved) [known: d7e54baf]: input 0 [[{"$fake":"arg0[0]"},{"$fake":"arg0[1]"},{"$fake":"arg0[2]"}]]; Node {"returned":1}; result: model 3 against 1
+- operators/sum (36: parent, candidate; the pair expects lane A proved) [known: d7e54baf]: input 0 [[0,1,-1]]; Node {"returned":"00,1,-1"}; result: model 0 against "00,1,-1"
+
+### an integer past 2^53: the model is exact, Node rounds to binary64: 8
+- operators/sum (4: parent, candidate; the pair expects lane A proved) [known: d7e54baf]: input 17 [[1000000000,9007199254740991]]; Node {"returned":"01000000000,9007199254740991"}; result: model 9007200254740991 against "01000000000,9007199254740991"
+- operators/total (4: parent, candidate; the pair expects lane A proved) [known: d7e54baf]: input 8 [1000000000,9007199254740991,[]]; Node {"returned":9007200254740992}; result: model 9007200254740991 against 9007200254740992
+
+## The product check: 0 inputs where both models agree under every seed and Node differs, of 61 inputs that reached a part with no body
+(0 under a lemma lane A proves: findings; 0 under a lemma lane A does not prove or withholds: sampled agreement, no finding, by unit: none)
+
+## Inputs: 270 drawn, 540 model runs; 0 positions of Node's result lane B rendered as a second sight, not compared
+
+## Inputs by status (both sides): agree 212, not executable 122, outside the model domain 106, disagree 96, Node did not answer 4
+| MODEL-CONFORMANCE TOTAL | 9 units in 2 pairs (0 skipped) | 7 executable: 4 agree, 3 disagree | 2 not executable, 0 outside domain, 0 not bridged, 0 model error, 0 skipped | 0 coupling finding(s) (0 sampled) | NO NEW FINDING |
+EXIT 0

@@ -1,0 +1,18 @@
+{
+ "scope": [
+  "dot_key",
+  "in_key",
+  "open_key"
+ ],
+ "equal": {
+  "open_key": false,
+  "dot_key": false,
+  "in_key": false
+ },
+ "why": "class 1, open key on a record with declared fields and a string index signature (bracket, dot, in, for-in): the record is a datatype of the declared fields, so the extras lane B never draws are lost. Failing on 1e55e21 until the fix lands: Equal_open_key, Equal_dot_key, Equal_in_key, Equal_keys_h proved (lane B PASS-bounded). keysH (for-in over the parameter) moved to the escape proof_hunt_key_order on 28 Oct: key-order refuses it by name until the datatype carries a key order, and a refused unit would stop the whole pair file. Lane B rows openKey, dotKey, inKey are WITNESS since 28 Oct: lane B draws an extra key on a plain or open record parameter (open-datatype), so the dropped or undeclared key is seen.",
+ "b": {
+  "openKey": "WITNESS",
+  "dotKey": "WITNESS",
+  "inKey": "WITNESS"
+ }
+}

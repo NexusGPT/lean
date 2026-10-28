@@ -1,0 +1,169 @@
+{
+ "verdict": "PASS-bounded",
+ "unit": "performanceOnce",
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 30,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": []
+   },
+   {
+    "input": 1,
+    "args": []
+   },
+   {
+    "input": 2,
+    "args": []
+   },
+   {
+    "input": 3,
+    "args": []
+   },
+   {
+    "input": 4,
+    "args": []
+   },
+   {
+    "input": 5,
+    "args": []
+   },
+   {
+    "input": 6,
+    "args": []
+   },
+   {
+    "input": 7,
+    "args": []
+   },
+   {
+    "input": 8,
+    "args": []
+   },
+   {
+    "input": 9,
+    "args": []
+   },
+   {
+    "input": 10,
+    "args": []
+   },
+   {
+    "input": 11,
+    "args": []
+   },
+   {
+    "input": 12,
+    "args": []
+   },
+   {
+    "input": 13,
+    "args": []
+   },
+   {
+    "input": 14,
+    "args": []
+   },
+   {
+    "input": 15,
+    "args": []
+   },
+   {
+    "input": 16,
+    "args": []
+   },
+   {
+    "input": 17,
+    "args": []
+   },
+   {
+    "input": 18,
+    "args": []
+   },
+   {
+    "input": 19,
+    "args": []
+   },
+   {
+    "input": 20,
+    "args": []
+   },
+   {
+    "input": 21,
+    "args": []
+   },
+   {
+    "input": 22,
+    "args": []
+   },
+   {
+    "input": 23,
+    "args": []
+   },
+   {
+    "input": 24,
+    "args": []
+   },
+   {
+    "input": 25,
+    "args": []
+   },
+   {
+    "input": 26,
+    "args": []
+   },
+   {
+    "input": 27,
+    "args": []
+   },
+   {
+    "input": 28,
+    "args": []
+   },
+   {
+    "input": 29,
+    "args": []
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  },
+  "environmentPrograms": {
+   "runs": 12,
+   "maxCommands": 6,
+   "seed": 1,
+   "commands": "call, invoke, fire, tick, settle, next, throw, return",
+   "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+  }
+ },
+ "spec": {
+  "params": [],
+  "returns": {
+   "kind": "number"
+  },
+  "literals": [],
+  "strings": []
+ }
+}

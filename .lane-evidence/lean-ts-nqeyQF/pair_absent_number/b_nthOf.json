@@ -1,0 +1,526 @@
+{
+ "verdict": "WITNESS",
+ "unit": "nthOf",
+ "witnesses": [
+  {
+   "input": 1,
+   "args": [
+    {
+     "mechanic_kind": "buy_n_get_m_free",
+     "mechanic_params": {},
+     "mechanic_raw": null,
+     "nth": "v7zoh",
+     "unlock_quantity": 1
+    }
+   ],
+   "parent": {
+    "outcome": {
+     "returned": null
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": null,
+     "anchors": 2,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "mechanic_raw": null,
+        "mechanic_kind": "buy_n_get_m_free",
+        "mechanic_params": {
+         "$ref": 1
+        },
+        "unlock_quantity": 1,
+        "nth": "v7zoh"
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {}
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 1
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": 1,
+     "anchors": 2,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "mechanic_raw": null,
+        "mechanic_kind": "buy_n_get_m_free",
+        "mechanic_params": {
+         "$ref": 1
+        },
+        "unlock_quantity": 1,
+        "nth": "v7zoh"
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {}
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/absent_number/parent.ts",
+      "start": 78,
+      "end": 78,
+      "text": "return pick(offer.mechanic_params, \"nth\") ?? (offer.unlock_quantity > 1 ? offer.unlock_quantity : null);"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/absent_number/candidate.ts",
+      "start": 79,
+      "end": 79,
+      "text": "return pick(offer.mechanic_params, \"nth\") ?? offer.unlock_quantity;"
+     }
+    }
+   }
+  },
+  {
+   "input": 3,
+   "args": [
+    {
+     "mechanic_kind": "pct_off",
+     "mechanic_params": null,
+     "mechanic_raw": null,
+     "nth": " ",
+     "unlock_quantity": 0
+    }
+   ],
+   "parent": {
+    "outcome": {
+     "returned": null
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": null,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "mechanic_raw": null,
+        "mechanic_kind": "pct_off",
+        "mechanic_params": null,
+        "unlock_quantity": 0,
+        "nth": " "
+       }
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": 0,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "mechanic_raw": null,
+        "mechanic_kind": "pct_off",
+        "mechanic_params": null,
+        "unlock_quantity": 0,
+        "nth": " "
+       }
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/absent_number/parent.ts",
+      "start": 78,
+      "end": 78,
+      "text": "return pick(offer.mechanic_params, \"nth\") ?? (offer.unlock_quantity > 1 ? offer.unlock_quantity : null);"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/absent_number/candidate.ts",
+      "start": 79,
+      "end": 79,
+      "text": "return pick(offer.mechanic_params, \"nth\") ?? offer.unlock_quantity;"
+     }
+    }
+   }
+  },
+  {
+   "input": 4,
+   "args": [
+    {
+     "mechanic_kind": "buy_n_get_m_free",
+     "mechanic_params": null,
+     "mechanic_raw": "vjs4m",
+     "unlock_quantity": {
+      "$nan": true
+     }
+    }
+   ],
+   "parent": {
+    "outcome": {
+     "returned": null
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": null,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "mechanic_raw": "vjs4m",
+        "mechanic_kind": "buy_n_get_m_free",
+        "mechanic_params": null,
+        "unlock_quantity": {
+         "$nan": true
+        }
+       }
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": {
+      "$nan": true
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": {
+      "$nan": true
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "mechanic_raw": "vjs4m",
+        "mechanic_kind": "buy_n_get_m_free",
+        "mechanic_params": null,
+        "unlock_quantity": {
+         "$nan": true
+        }
+       }
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/absent_number/parent.ts",
+      "start": 78,
+      "end": 78,
+      "text": "return pick(offer.mechanic_params, \"nth\") ?? (offer.unlock_quantity > 1 ? offer.unlock_quantity : null);"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/absent_number/candidate.ts",
+      "start": 79,
+      "end": 79,
+      "text": "return pick(offer.mechanic_params, \"nth\") ?? offer.unlock_quantity;"
+     }
+    }
+   }
+  }
+ ],
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 5,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     {
+      "mechanic_kind": "n_for_price",
+      "mechanic_params": null,
+      "mechanic_raw": null,
+      "nth": "nth",
+      "unlock_quantity": 2
+     }
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     {
+      "mechanic_kind": "buy_n_get_m_free",
+      "mechanic_params": {},
+      "mechanic_raw": null,
+      "nth": "v7zoh",
+      "unlock_quantity": 1
+     }
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     {
+      "mechanic_kind": null,
+      "mechanic_params": null,
+      "mechanic_raw": null,
+      "nth": "abc",
+      "unlock_quantity": 2
+     }
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     {
+      "mechanic_kind": "pct_off",
+      "mechanic_params": null,
+      "mechanic_raw": null,
+      "nth": " ",
+      "unlock_quantity": 0
+     }
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     {
+      "mechanic_kind": "buy_n_get_m_free",
+      "mechanic_params": null,
+      "mechanic_raw": "vjs4m",
+      "unlock_quantity": {
+       "$nan": true
+      }
+     }
+    ]
+   }
+  ],
+  "heaps": {
+   "enumerated": 1,
+   "assignments": 2,
+   "space": 2,
+   "pool": 2,
+   "shapes": {
+    "[[\"mechanic_kind\",null],[\"mechanic_params\",\"dict\"],[\"mechanic_raw\",\"string\"],[\"nth\",\"string\"],[\"unlock_quantity\",\"number\"]]": {
+     "slots": 0,
+     "prims": 5
+    }
+   }
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "offer",
+    "optional": false,
+    "spec": {
+     "kind": "record",
+     "fields": {
+      "mechanic_raw": {
+       "spec": {
+        "kind": "union",
+        "options": [
+         {
+          "kind": "null"
+         },
+         {
+          "kind": "string"
+         }
+        ]
+       },
+       "optional": false
+      },
+      "mechanic_kind": {
+       "spec": {
+        "kind": "union",
+        "options": [
+         {
+          "kind": "null"
+         },
+         {
+          "kind": "literal",
+          "values": [
+           "buy_n_get_m_free"
+          ]
+         },
+         {
+          "kind": "literal",
+          "values": [
+           "nth_at_pct_off"
+          ]
+         },
+         {
+          "kind": "literal",
+          "values": [
+           "n_for_price"
+          ]
+         },
+         {
+          "kind": "literal",
+          "values": [
+           "pct_off"
+          ]
+         }
+        ]
+       },
+       "optional": false
+      },
+      "mechanic_params": {
+       "spec": {
+        "kind": "union",
+        "options": [
+         {
+          "kind": "null"
+         },
+         {
+          "kind": "dict",
+          "value": {
+           "kind": "number"
+          }
+         }
+        ],
+        "boundary": {
+         "cmp": [
+          {
+           "t": "draw"
+          },
+          null
+         ],
+         "falsy": [
+          null
+         ],
+         "rank": 1,
+         "radix": 3
+        }
+       },
+       "optional": false,
+       "shaped": true
+      },
+      "unlock_quantity": {
+       "spec": {
+        "kind": "number",
+        "boundary": {
+         "cmp": [
+          1,
+          2,
+          0
+         ],
+         "falsy": [],
+         "rank": 0,
+         "radix": 1
+        }
+       },
+       "optional": false,
+       "shaped": true
+      },
+      "nth": {
+       "spec": {
+        "kind": "string"
+       },
+       "optional": true,
+       "extra": true
+      }
+     }
+    }
+   }
+  ],
+  "returns": {
+   "kind": "union",
+   "options": [
+    {
+     "kind": "null"
+    },
+    {
+     "kind": "number"
+    }
+   ]
+  },
+  "literals": [],
+  "strings": [
+   "nth"
+  ]
+ },
+ "unitTextEqual": false
+}

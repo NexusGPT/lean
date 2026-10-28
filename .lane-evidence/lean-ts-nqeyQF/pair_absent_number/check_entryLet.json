@@ -1,0 +1,406 @@
+{
+ "verdict": "PASS-bounded",
+ "certificate": {
+  "tool": "lean-ts v3",
+  "unit": "entryLet",
+  "parent": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/absent_number/parent.ts",
+   "sha256": "cad8c768e026d321"
+  },
+  "candidate": {
+   "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/absent_number/candidate.ts",
+   "sha256": "48ecc8916a0212a9"
+  },
+  "lanes": {
+   "B": {
+    "verdict": "PASS-bounded",
+    "reason": null,
+    "bound": {
+     "n": 30,
+     "seed": 1,
+     "ms": 2000,
+     "reached": {
+      "body": 30,
+      "guard": 0
+     },
+     "states": [
+      {
+       "input": 0,
+       "args": [
+        {
+         "k0": -254,
+         "k1": 0
+        },
+        "a"
+       ]
+      },
+      {
+       "input": 1,
+       "args": [
+        {
+         "k0": 347
+        },
+        "number"
+       ]
+      },
+      {
+       "input": 2,
+       "args": [
+        {},
+        "number"
+       ]
+      },
+      {
+       "input": 3,
+       "args": [
+        {
+         "k0": {
+          "$nan": true
+         }
+        },
+        "number"
+       ]
+      },
+      {
+       "input": 4,
+       "args": [
+        {
+         "k0": 845,
+         "k1": 908,
+         "k2": 844
+        },
+        "x y"
+       ]
+      },
+      {
+       "input": 5,
+       "args": [
+        {
+         "k0": -698,
+         "k1": 100,
+         "k2": 100
+        },
+        "-1"
+       ]
+      },
+      {
+       "input": 6,
+       "args": [
+        {
+         "k0": 45,
+         "k1": 858
+        },
+        "vfe38"
+       ]
+      },
+      {
+       "input": 7,
+       "args": [
+        {
+         "k0": {
+          "$infinity": 1
+         },
+         "k1": 0.5,
+         "k2": {
+          "$infinity": -1
+         }
+        },
+        "日本"
+       ]
+      },
+      {
+       "input": 8,
+       "args": [
+        {
+         "k0": 1,
+         "k1": 9007199254740991
+        },
+        "number"
+       ]
+      },
+      {
+       "input": 9,
+       "args": [
+        {
+         "k0": 9007199254740991
+        },
+        "va04m"
+       ]
+      },
+      {
+       "input": 10,
+       "args": [
+        {
+         "k0": 0
+        },
+        "vglhb"
+       ]
+      },
+      {
+       "input": 11,
+       "args": [
+        {
+         "k0": {
+          "$infinity": -1
+         },
+         "k1": {
+          "$negativeZero": true
+         },
+         "k2": {
+          "$nan": true
+         }
+        },
+        "number"
+       ]
+      },
+      {
+       "input": 12,
+       "args": [
+        {
+         "k0": -1
+        },
+        "number"
+       ]
+      },
+      {
+       "input": 13,
+       "args": [
+        {
+         "k0": 2,
+         "k1": 0,
+         "k2": 2
+        },
+        "vgc02"
+       ]
+      },
+      {
+       "input": 14,
+       "args": [
+        {
+         "k0": -100
+        },
+        "number"
+       ]
+      },
+      {
+       "input": 15,
+       "args": [
+        {
+         "k0": {
+          "$negativeZero": true
+         },
+         "k1": {
+          "$nan": true
+         },
+         "k2": {
+          "$infinity": 1
+         }
+        },
+        "  padded  "
+       ]
+      },
+      {
+       "input": 16,
+       "args": [
+        {},
+        "number"
+       ]
+      },
+      {
+       "input": 17,
+       "args": [
+        {},
+        "a,b,c"
+       ]
+      },
+      {
+       "input": 18,
+       "args": [
+        {},
+        "number"
+       ]
+      },
+      {
+       "input": 19,
+       "args": [
+        {
+         "k0": {
+          "$nan": true
+         }
+        },
+        ""
+       ]
+      },
+      {
+       "input": 20,
+       "args": [
+        {
+         "k0": 0.5
+        },
+        "number"
+       ]
+      },
+      {
+       "input": 21,
+       "args": [
+        {
+         "k0": 1,
+         "k1": 0
+        },
+        "a"
+       ]
+      },
+      {
+       "input": 22,
+       "args": [
+        {},
+        "number"
+       ]
+      },
+      {
+       "input": 23,
+       "args": [
+        {
+         "k0": {
+          "$infinity": 1
+         },
+         "k1": {
+          "$infinity": -1
+         }
+        },
+        "vfixb"
+       ]
+      },
+      {
+       "input": 24,
+       "args": [
+        {},
+        "number"
+       ]
+      },
+      {
+       "input": 25,
+       "args": [
+        {
+         "k0": 1000000000,
+         "k1": -100
+        },
+        "vget0"
+       ]
+      },
+      {
+       "input": 26,
+       "args": [
+        {},
+        "-1"
+       ]
+      },
+      {
+       "input": 27,
+       "args": [
+        {
+         "k0": {
+          "$infinity": -1
+         },
+         "k1": {
+          "$negativeZero": true
+         },
+         "k2": {
+          "$nan": true
+         }
+        },
+        "number"
+       ]
+      },
+      {
+       "input": 28,
+       "args": [
+        {
+         "k0": 196,
+         "k1": 197,
+         "k2": 1000000000
+        },
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+       ]
+      },
+      {
+       "input": 29,
+       "args": [
+        {},
+        "number"
+       ]
+      }
+     ],
+     "heaps": {
+      "assignments": 0,
+      "pool": 2,
+      "shapes": {}
+     },
+     "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+     "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+     "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+     "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+     "library": {
+      "records": 0,
+      "ops": {},
+      "calls": {},
+      "sampled": [],
+      "outOfModel": 0,
+      "callbackEffects": 0,
+      "defectRecords": 0,
+      "defects": []
+     },
+     "environmentPrograms": {
+      "runs": 12,
+      "maxCommands": 6,
+      "seed": 1,
+      "commands": "call, invoke, fire, tick, settle, next, throw, return",
+      "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+     }
+    },
+    "witnesses": null
+   },
+   "A": {
+    "verdict": "ASK:unproved",
+    "identity": null,
+    "lemmas": {
+     "Equal_entry_let": false
+    },
+    "reading": null,
+    "canonical": null,
+    "heapCore": [],
+    "dafny": "Dafny program verifier finished with 9 verified, 1 error",
+    "theoremSha256": "5709e254c45d0cb8",
+    "preludeSha256": "bd7d5b36d0deba3c",
+    "dafnyVersion": "4.11.0",
+    "timeLimitSeconds": 30,
+    "dir": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/lean-check-vRdhNF",
+    "restsOn": [],
+    "cells": {
+     "cells": [],
+     "obligations": []
+    }
+   }
+  },
+  "tools": {
+   "node": "v24.18.0",
+   "dafny": "4.11.0",
+   "z3": "Z3 version 5.3.2 - 64 bit",
+   "z3Source": "z3 on PATH"
+  },
+  "unitTextEqual": false,
+  "observation": {
+   "layer": "values and the reachable object graph",
+   "renders": null,
+   "effects": "the trace of environment requests and pending work",
+   "schedule": "synchronous; pending work recorded, never fired"
+  },
+  "library": {
+   "records": 0,
+   "ops": {},
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defects": 0
+  }
+ }
+}

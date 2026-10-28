@@ -1,0 +1,484 @@
+{
+ "verdict": "WITNESS",
+ "unit": "notify",
+ "witnesses": [
+  {
+   "input": 0,
+   "args": [
+    {
+     "$fake": "arg0"
+    },
+    0
+   ],
+   "parent": {
+    "outcome": {
+     "returned": {
+      "$undefined": true
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$fake": "arg0"
+      },
+      0
+     ],
+     "own": {},
+     "outcome": {
+      "$undefined": true
+     },
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [
+      {
+       "$fake": "arg0"
+      },
+      0
+     ],
+     "own": {},
+     "outcome": 0,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "arg0.send",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "arg0.send",
+      "args": [
+       0
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/bare_return_void/parent.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/bare_return_void/candidate.ts",
+      "start": 23,
+      "end": 23,
+      "text": "return n;"
+     }
+    }
+   }
+  },
+  {
+   "input": 4,
+   "args": [
+    {
+     "$fake": "arg0"
+    },
+    0
+   ],
+   "parent": {
+    "outcome": {
+     "returned": {
+      "$undefined": true
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$fake": "arg0"
+      },
+      0
+     ],
+     "own": {},
+     "outcome": {
+      "$undefined": true
+     },
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [
+      {
+       "$fake": "arg0"
+      },
+      0
+     ],
+     "own": {},
+     "outcome": 0,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "arg0.send",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "arg0.send",
+      "args": [
+       0
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/bare_return_void/parent.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/bare_return_void/candidate.ts",
+      "start": 23,
+      "end": 23,
+      "text": "return n;"
+     }
+    }
+   }
+  },
+  {
+   "input": 14,
+   "args": [
+    {
+     "$fake": "arg0"
+    },
+    0
+   ],
+   "parent": {
+    "outcome": {
+     "returned": {
+      "$undefined": true
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$fake": "arg0"
+      },
+      0
+     ],
+     "own": {},
+     "outcome": {
+      "$undefined": true
+     },
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [
+      {
+       "$fake": "arg0"
+      },
+      0
+     ],
+     "own": {},
+     "outcome": 0,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "arg0.send",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "arg0.send",
+      "args": [
+       0
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/bare_return_void/parent.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/bare_return_void/candidate.ts",
+      "start": 23,
+      "end": 23,
+      "text": "return n;"
+     }
+    }
+   }
+  }
+ ],
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 15,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     0
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     1
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     -1
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     {
+      "$nan": true
+     }
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     0
+    ]
+   },
+   {
+    "input": 5,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     1
+    ]
+   },
+   {
+    "input": 6,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     262
+    ]
+   },
+   {
+    "input": 7,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     {
+      "$infinity": 1
+     }
+    ]
+   },
+   {
+    "input": 8,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     -1
+    ]
+   },
+   {
+    "input": 9,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     1
+    ]
+   },
+   {
+    "input": 10,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     -969
+    ]
+   },
+   {
+    "input": 11,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     {
+      "$infinity": -1
+     }
+    ]
+   },
+   {
+    "input": 12,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     -1
+    ]
+   },
+   {
+    "input": 13,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     2
+    ]
+   },
+   {
+    "input": 14,
+    "args": [
+     {
+      "$fake": "arg0"
+     },
+     0
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "out",
+    "optional": false,
+    "spec": {
+     "kind": "service",
+     "name": "Outbox",
+     "members": {
+      "send": {
+       "kind": "method",
+       "returns": {
+        "kind": "undefined"
+       }
+      }
+     }
+    }
+   },
+   {
+    "name": "n",
+    "optional": false,
+    "spec": {
+     "kind": "number",
+     "boundary": {
+      "cmp": [
+       0,
+       1,
+       -1
+      ],
+      "falsy": [],
+      "rank": 0,
+      "radix": 1
+     }
+    }
+   }
+  ],
+  "returns": {
+   "kind": "union",
+   "options": [
+    {
+     "kind": "undefined"
+    },
+    {
+     "kind": "number"
+    }
+   ]
+  },
+  "literals": [
+   0,
+   1,
+   -1
+  ],
+  "strings": []
+ },
+ "unitTextEqual": false
+}

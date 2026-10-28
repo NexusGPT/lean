@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1b2d"/><stop offset="1" stop-color="#1c2f4a"/></linearGradient>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="1"/></pattern>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fb3c8"/></marker>
+    <marker id="arrRed" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d98c8c"/></marker>
+    <marker id="arrGreen" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8fd1b0"/></marker>
+    <marker id="arrAmber" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d9c08c"/></marker>
+    <marker id="arrBlue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9fc7ea"/></marker>
+    <marker id="arrPale" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#c7d9ea"/></marker>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#grid)"/>
+  <text x="64" y="80" font-size="40" fill="#f3efe6" letter-spacing="-0.5">Five verdicts, each backed by something you can re-run</text>
+  <text x="66" y="120" font-size="22" fill="#9fb3c8">The verdict is the strongest statement the evidence supports. A bounded pass never becomes a proof.</text>
+  <rect x="64" y="160" width="278" height="636" fill="#0b1422" stroke="#8a4a4a" stroke-width="1.5"/>
+  <rect x="64" y="160" width="278" height="62" fill="#5a2a2a"/>
+  <text x="203" y="200" font-size="25" fill="#f3efe6" text-anchor="middle" font-weight="bold">WITNESS</text>
+  <text x="82" y="268" font-size="20" fill="#f3efe6">the two versions differ,</text>
+  <text x="82" y="296" font-size="20" fill="#f3efe6">and here is the input</text>
+  <text x="82" y="356" font-size="14" fill="#9fb3c8" letter-spacing="2">BACKED BY</text>
+  <text x="82" y="386" font-size="18" fill="#c9d4e0">the input or the clicks,</text>
+  <text x="82" y="412" font-size="18" fill="#c9d4e0">both observations side</text>
+  <text x="82" y="438" font-size="18" fill="#c9d4e0">by side, replayable</text>
+  <line x1="82" y1="610" x2="324" y2="610" stroke="#3c5272" stroke-width="1"/>
+  <text x="82" y="640" font-size="14" fill="#d98c8c" letter-spacing="2">A REAL RUN</text>
+  <text x="82" y="672" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">input 12: posted: 2</text>
+  <text x="82" y="698" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">against posted: 0</text>
+  <text x="82" y="776" font-size="17" fill="#8a9bb0" font-style="italic">from lane B</text>
+  <rect x="362" y="186" width="278" height="610" fill="#0b1422" stroke="#3d7a62" stroke-width="1.5"/>
+  <rect x="362" y="186" width="278" height="62" fill="#1f4a3a"/>
+  <text x="501" y="226" font-size="25" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-proved</text>
+  <text x="380" y="294" font-size="20" fill="#f3efe6">equal on every input,</text>
+  <text x="380" y="322" font-size="20" fill="#f3efe6">every world, every fuel</text>
+  <text x="380" y="382" font-size="14" fill="#9fb3c8" letter-spacing="2">BACKED BY</text>
+  <text x="380" y="412" font-size="18" fill="#c9d4e0">a theorem Dafny and Z3</text>
+  <text x="380" y="438" font-size="18" fill="#c9d4e0">checked: its hash, the</text>
+  <text x="380" y="464" font-size="18" fill="#c9d4e0">prover version, each lemma</text>
+  <line x1="380" y1="610" x2="622" y2="610" stroke="#3c5272" stroke-width="1"/>
+  <text x="380" y="640" font-size="14" fill="#8fd1b0" letter-spacing="2">A REAL RUN</text>
+  <text x="380" y="672" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">Equal_statement: true</text>
+  <text x="380" y="698" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">5 verified, 0 errors</text>
+  <text x="380" y="776" font-size="17" fill="#8a9bb0" font-style="italic">from lane A</text>
+  <rect x="660" y="212" width="278" height="584" fill="#0b1422" stroke="#4f7391" stroke-width="1.5"/>
+  <rect x="660" y="212" width="278" height="62" fill="#24445c"/>
+  <text x="799" y="252" font-size="25" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-decided</text>
+  <text x="678" y="320" font-size="20" fill="#f3efe6">a finite component: equal</text>
+  <text x="678" y="348" font-size="20" fill="#f3efe6">on every click order</text>
+  <text x="678" y="408" font-size="14" fill="#9fb3c8" letter-spacing="2">BACKED BY</text>
+  <text x="678" y="438" font-size="18" fill="#c9d4e0">the product of both state</text>
+  <text x="678" y="464" font-size="18" fill="#c9d4e0">spaces, explored to the</text>
+  <text x="678" y="490" font-size="18" fill="#c9d4e0">end: the pairs visited</text>
+  <line x1="678" y1="610" x2="920" y2="610" stroke="#3c5272" stroke-width="1"/>
+  <text x="678" y="640" font-size="14" fill="#9fc7ea" letter-spacing="2">A REAL RUN</text>
+  <text x="678" y="672" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">8 state pairs over</text>
+  <text x="678" y="698" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">2 prop assignments</text>
+  <text x="678" y="776" font-size="17" fill="#8a9bb0" font-style="italic">from the finite lane</text>
+  <rect x="958" y="238" width="278" height="558" fill="#0b1422" stroke="#4f7391" stroke-width="1.5"/>
+  <rect x="958" y="238" width="278" height="62" fill="#2a4256"/>
+  <text x="1097" y="278" font-size="25" fill="#f3efe6" text-anchor="middle" font-weight="bold">PASS-bounded</text>
+  <text x="976" y="346" font-size="20" fill="#f3efe6">no difference on n inputs</text>
+  <text x="976" y="374" font-size="20" fill="#f3efe6">under a frozen world</text>
+  <text x="976" y="434" font-size="14" fill="#9fb3c8" letter-spacing="2">BACKED BY</text>
+  <text x="976" y="464" font-size="18" fill="#c9d4e0">n, the seed, the fake</text>
+  <text x="976" y="490" font-size="18" fill="#c9d4e0">policy, the click depth,</text>
+  <text x="976" y="516" font-size="18" fill="#c9d4e0">the time limit</text>
+  <line x1="976" y1="610" x2="1218" y2="610" stroke="#3c5272" stroke-width="1"/>
+  <text x="976" y="640" font-size="14" fill="#c7d9ea" letter-spacing="2">A REAL RUN</text>
+  <text x="976" y="672" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">30 inputs, seed 1:</text>
+  <text x="976" y="698" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">no difference</text>
+  <text x="976" y="776" font-size="17" fill="#8a9bb0" font-style="italic">from lane B</text>
+  <rect x="1256" y="264" width="278" height="532" fill="#0b1422" stroke="#8a7540" stroke-width="1.5"/>
+  <rect x="1256" y="264" width="278" height="62" fill="#4a3f1f"/>
+  <text x="1395" y="304" font-size="25" fill="#f3efe6" text-anchor="middle" font-weight="bold">ASK</text>
+  <text x="1274" y="372" font-size="20" fill="#f3efe6">undecided, and</text>
+  <text x="1274" y="400" font-size="20" fill="#f3efe6">exactly why</text>
+  <text x="1274" y="460" font-size="14" fill="#9fb3c8" letter-spacing="2">BACKED BY</text>
+  <text x="1274" y="490" font-size="18" fill="#c9d4e0">the construct, the lemma</text>
+  <text x="1274" y="516" font-size="18" fill="#c9d4e0">that did not close, the</text>
+  <text x="1274" y="542" font-size="18" fill="#c9d4e0">timeout, the changed type</text>
+  <line x1="1274" y1="610" x2="1516" y2="610" stroke="#3c5272" stroke-width="1"/>
+  <text x="1274" y="640" font-size="14" fill="#d9c08c" letter-spacing="2">A REAL RUN</text>
+  <text x="1274" y="672" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">ASK:identity: the</text>
+  <text x="1274" y="698" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">result may share</text>
+  <text x="1274" y="724" font-size="18" fill="#f3efe6" font-family="Menlo, Consolas, monospace" xml:space="preserve">an input</text>
+  <text x="1274" y="776" font-size="17" fill="#8a9bb0" font-style="italic">from either lane</text>
+  <line x1="64" y1="836" x2="1536" y2="836" stroke="#3c5272" stroke-width="1"/>
+  <text x="64" y="868" font-size="18" fill="#8a9bb0">Outside the ordering: REFUSE, a construct with no faithful reading, named with its line; NEW, a function with no parent, run with no equality claim.</text>
+</svg>

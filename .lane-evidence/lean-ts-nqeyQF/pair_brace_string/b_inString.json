@@ -1,0 +1,252 @@
+{
+ "verdict": "PASS-bounded",
+ "unit": "inString",
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 30,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     "a"
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     "vftsi"
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 5,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 6,
+    "args": [
+     "vdiyf"
+    ]
+   },
+   {
+    "input": 7,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 8,
+    "args": [
+     "日本"
+    ]
+   },
+   {
+    "input": 9,
+    "args": [
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ]
+   },
+   {
+    "input": 10,
+    "args": [
+     "vc3h"
+    ]
+   },
+   {
+    "input": 11,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 12,
+    "args": [
+     "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+    ]
+   },
+   {
+    "input": 13,
+    "args": [
+     "line one\nline two"
+    ]
+   },
+   {
+    "input": 14,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 15,
+    "args": [
+     "vlera"
+    ]
+   },
+   {
+    "input": 16,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 17,
+    "args": [
+     "json"
+    ]
+   },
+   {
+    "input": 18,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 19,
+    "args": [
+     "text"
+    ]
+   },
+   {
+    "input": 20,
+    "args": [
+     ""
+    ]
+   },
+   {
+    "input": 21,
+    "args": [
+     "a"
+    ]
+   },
+   {
+    "input": 22,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 23,
+    "args": [
+     "vfu7b"
+    ]
+   },
+   {
+    "input": 24,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 25,
+    "args": [
+     "0"
+    ]
+   },
+   {
+    "input": 26,
+    "args": [
+     "{"
+    ]
+   },
+   {
+    "input": 27,
+    "args": [
+     "vk30w"
+    ]
+   },
+   {
+    "input": 28,
+    "args": [
+     "vjjv6"
+    ]
+   },
+   {
+    "input": 29,
+    "args": [
+     "{"
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  },
+  "environmentPrograms": {
+   "runs": 12,
+   "maxCommands": 6,
+   "seed": 1,
+   "commands": "call, invoke, fire, tick, settle, next, throw, return",
+   "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "reply",
+    "optional": false,
+    "spec": {
+     "kind": "string",
+     "boundary": {
+      "cmp": [
+       "{",
+       {
+        "t": "draw"
+       }
+      ],
+      "falsy": [],
+      "rank": 0,
+      "radix": 1
+     }
+    }
+   }
+  ],
+  "returns": {
+   "kind": "string"
+  },
+  "literals": [],
+  "strings": [
+   "{",
+   "json",
+   "text"
+  ]
+ }
+}

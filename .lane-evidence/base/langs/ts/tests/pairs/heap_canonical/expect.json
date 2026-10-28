@@ -1,0 +1,28 @@
+{
+ "scope": [
+  "attach",
+  "pair",
+  "unhook",
+  "tally"
+ ],
+ "equal": {
+  "attach": true,
+  "pair": true,
+  "unhook": false,
+  "tally": true
+ },
+ "canon": {
+  "attach": true,
+  "pair": true,
+  "unhook": false,
+  "tally": true
+ },
+ "why": "The canonical-heap certificate: equal up to a renaming of fresh cells and up to dropped allocations. attach allocates the two leaves in the other order and hooks them to the same fields: the whole-heap lemma fails (the cells sit at swapped addresses), the canonical parts prove. pair returns a fresh array of two fresh leaves allocated in the other order: proved the same way, the result among the roots. tally keeps a slice nobody uses on one side only: the dropped allocation is unreachable and unnamed, proved. unhook writes a different value into the leaf it then unhooks: the leaf is an initial cell and its content differs, the initial part fails, and lane B, which observes every object reachable before the call, witnesses it.",
+ "heap": true,
+ "b": {
+  "attach": "PASS-bounded",
+  "pair": "PASS-bounded",
+  "unhook": "WITNESS",
+  "tally": "PASS-bounded"
+ }
+}

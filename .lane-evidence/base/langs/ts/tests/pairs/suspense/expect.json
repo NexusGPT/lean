@@ -1,0 +1,17 @@
+{
+ "scope": [
+  "lazy",
+  "thrown",
+  "plain"
+ ],
+ "equal": {
+  "plain": true
+ },
+ "why": "Lazy and Thrown suspend during render (use(promise), a thrown thenable): React shows a fallback and retries, which lean does not model, so lane B answers ASK with the reason 'suspense' (checked by hand: 'suspense: use(promise)', 'suspense: a thenable thrown during render') instead of a verdict; the candidate's changed text is never reached. Plain is untouched and proved.",
+ "heap": false,
+ "b": {
+  "Lazy": "ASK",
+  "Thrown": "ASK",
+  "Plain": "PASS-bounded"
+ }
+}

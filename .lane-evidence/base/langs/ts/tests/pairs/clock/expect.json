@@ -1,0 +1,22 @@
+{
+ "scope": [
+  "same",
+  "always",
+  "store",
+  "pure_only"
+ ],
+ "equal": {
+  "same": false,
+  "always": true,
+  "store": true,
+  "pure_only": true
+ },
+ "why": "the parent reads the clock twice and compares; the candidate returns true. Under the world axiom two reads are two transitions, so they are not provably equal. The three untouched functions prove equal.",
+ "b": {
+  "same": "WITNESS",
+  "always": "PASS-bounded",
+  "store": "PASS-bounded",
+  "pureOnly": "PASS-bounded"
+ },
+ "why_b": "lane B records seeded Date.now calls in the imported helper; dropping both reads changes the trace."
+}

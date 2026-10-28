@@ -1,0 +1,297 @@
+{
+ "verdict": "PASS-bounded",
+ "unit": "Pricing.total",
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 30,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     420,
+     0
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     1,
+     -612
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     0,
+     0
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     {
+      "$nan": true
+     },
+     {
+      "$infinity": 1
+     }
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     385,
+     10
+    ]
+   },
+   {
+    "input": 5,
+    "args": [
+     100,
+     -100
+    ]
+   },
+   {
+    "input": 6,
+    "args": [
+     262,
+     -100
+    ]
+   },
+   {
+    "input": 7,
+    "args": [
+     {
+      "$infinity": 1
+     },
+     1000000000
+    ]
+   },
+   {
+    "input": 8,
+    "args": [
+     1000000000,
+     9007199254740991
+    ]
+   },
+   {
+    "input": 9,
+    "args": [
+     9007199254740991,
+     0
+    ]
+   },
+   {
+    "input": 10,
+    "args": [
+     -969,
+     548
+    ]
+   },
+   {
+    "input": 11,
+    "args": [
+     {
+      "$infinity": -1
+     },
+     {
+      "$negativeZero": true
+     }
+    ]
+   },
+   {
+    "input": 12,
+    "args": [
+     -1,
+     -1
+    ]
+   },
+   {
+    "input": 13,
+    "args": [
+     2,
+     1
+    ]
+   },
+   {
+    "input": 14,
+    "args": [
+     10,
+     10
+    ]
+   },
+   {
+    "input": 15,
+    "args": [
+     {
+      "$negativeZero": true
+     },
+     {
+      "$nan": true
+     }
+    ]
+   },
+   {
+    "input": 16,
+    "args": [
+     1,
+     -100
+    ]
+   },
+   {
+    "input": 17,
+    "args": [
+     100,
+     1000000000
+    ]
+   },
+   {
+    "input": 18,
+    "args": [
+     1,
+     1000000000
+    ]
+   },
+   {
+    "input": 19,
+    "args": [
+     {
+      "$nan": true
+     },
+     {
+      "$infinity": 1
+     }
+    ]
+   },
+   {
+    "input": 20,
+    "args": [
+     0,
+     1
+    ]
+   },
+   {
+    "input": 21,
+    "args": [
+     1,
+     -1
+    ]
+   },
+   {
+    "input": 22,
+    "args": [
+     -1,
+     -1
+    ]
+   },
+   {
+    "input": 23,
+    "args": [
+     {
+      "$infinity": 1
+     },
+     {
+      "$infinity": -1
+     }
+    ]
+   },
+   {
+    "input": 24,
+    "args": [
+     2,
+     10
+    ]
+   },
+   {
+    "input": 25,
+    "args": [
+     100,
+     -100
+    ]
+   },
+   {
+    "input": 26,
+    "args": [
+     9007199254740991,
+     -100
+    ]
+   },
+   {
+    "input": 27,
+    "args": [
+     {
+      "$infinity": -1
+     },
+     {
+      "$negativeZero": true
+     }
+    ]
+   },
+   {
+    "input": 28,
+    "args": [
+     824,
+     1000000000
+    ]
+   },
+   {
+    "input": 29,
+    "args": [
+     0,
+     23
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "n",
+    "optional": false,
+    "spec": {
+     "kind": "number"
+    }
+   },
+   {
+    "name": "extra",
+    "optional": false,
+    "spec": {
+     "kind": "number"
+    }
+   }
+  ],
+  "returns": {
+   "kind": "number"
+  },
+  "literals": [
+   3,
+   4,
+   2
+  ],
+  "strings": []
+ }
+}

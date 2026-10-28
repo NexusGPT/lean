@@ -1,0 +1,1 @@
+{"functions":{"pick":{"in_scope":"false"},"use_pick":{"in_scope":"false"},"pad":{"in_scope":"false"},"shift":{"in_scope":"false"},"twice":{"in_scope":"false"}},"summaries":true,"adapters":{"pad":{"from":["x"],"to":["x"],"map":["Some(x)"],"door":"comment"},"pick":{"from":["flag","x"],"to":["x","flag"],"map":["x","flag"]}}}

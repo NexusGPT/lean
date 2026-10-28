@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@external/alias": [
+        "./node_modules/lean-declared-fake"
+      ]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+ "scope": [
+  "limit_of",
+  "page_of",
+  "put_item",
+  "put_checked",
+  "accept_of"
+ ],
+ "equal": {
+  "limit_of": true,
+  "page_of": false,
+  "put_item": true,
+  "put_checked": false,
+  "accept_of": true
+ },
+ "why": "Dynamic keys (plan 2026-10-28 section 4). A literal key on a Record<string, T> dictionary is a map read: an owned key its value, a missing key undefined, an Object.prototype name a value of that name. limitOf rewrites `v === undefined ? 0 : v` as `?? 0` (proved). pageOf reads another key (unproved; lane B WITNESS when page and size differ). A computed string key written with a null value is read when a test against '__proto__' rules that name out before the write: putItem moves the guard from `if (k !== '__proto__')` to an early return on `k === '__proto__'` (proved); putChecked writes 0 where the parent wrote null (unproved; WITNESS). acceptOf reads a declared field of a record that also has an index signature, untouched (proved). An undeclared key of that record stays refused (escape dynamic_key_index_signature), an unguarded object or null write under a string key stays refused (escape proto_write_object, rule prototype), a computed key on a declared record holding a method stays refused (escape dynamic_key_record_member).",
+ "b": {
+  "limitOf": "PASS-bounded",
+  "pageOf": "WITNESS",
+  "putItem": "PASS-bounded",
+  "putChecked": "WITNESS",
+  "acceptOf": "PASS-bounded"
+ }
+}

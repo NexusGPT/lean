@@ -1,0 +1,26 @@
+{
+ "unit": "depth",
+ "dafny": "depth",
+ "laneA": true,
+ "inputs": 30,
+ "sides": {
+  "parent": {
+   "not executable: reaches ext_Any_of_int_int, a part with no body": 24,
+   "outside the model domain: NaN or an infinity, outside the finite number model": 4,
+   "Node did not answer: stack overflow": 2
+  },
+  "candidate": {
+   "not executable: reaches ext_Any_of_int_int, a part with no body": 24,
+   "outside the model domain: NaN or an infinity, outside the finite number model": 4,
+   "Node did not answer: stack overflow": 2
+  }
+ },
+ "disagreements": [],
+ "coupling": [],
+ "product": {
+  "inputs": 24,
+  "coupled": 0,
+  "agreedAllSeeds": 24
+ },
+ "unseen": 0
+}

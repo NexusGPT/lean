@@ -1,0 +1,24 @@
+{
+  "scope": [
+    "module_number",
+    "nullable_default",
+    "nullable_optional",
+    "null_branch",
+    "untouched"
+  ],
+  "equal": {
+    "module_number": false,
+    "nullable_default": true,
+    "nullable_optional": true,
+    "null_branch": false,
+    "untouched": true
+  },
+  "why": "Numeric opacity retains module-world state and nullable default/optional parameter tags after the module and Nullish merge.",
+  "b": {
+    "moduleNumber": "WITNESS",
+    "nullableDefault": "PASS-bounded",
+    "nullableOptional": "PASS-bounded",
+    "nullBranch": "WITNESS",
+    "untouched": "PASS-bounded"
+  }
+}

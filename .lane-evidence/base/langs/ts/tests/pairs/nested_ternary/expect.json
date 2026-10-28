@@ -1,0 +1,23 @@
+{
+  "scope": [
+    "choose",
+    "wrong"
+  ],
+  "equal": {
+    "choose": true,
+    "wrong": false
+  },
+  "why": "Nested if statements keep the conditions and selected result. The wrong rewrite returns 30 instead of 3 at zero.",
+  "b": {
+    "choose": "PASS-bounded",
+    "wrong": "WITNESS"
+  },
+  "check": {
+    "choose": {
+      "verdict": "PASS-proved"
+    },
+    "wrong": {
+      "verdict": "WITNESS"
+    }
+  }
+}

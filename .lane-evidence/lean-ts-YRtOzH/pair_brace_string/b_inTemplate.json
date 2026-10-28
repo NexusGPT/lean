@@ -1,0 +1,237 @@
+{
+ "verdict": "PASS-bounded",
+ "unit": "inTemplate",
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 30,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     "vd436"
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     "a"
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     "abc"
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     " "
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     "vhwnj"
+    ]
+   },
+   {
+    "input": 5,
+    "args": [
+     "v9v0r"
+    ]
+   },
+   {
+    "input": 6,
+    "args": [
+     "vgjg6"
+    ]
+   },
+   {
+    "input": 7,
+    "args": [
+     "va3yl"
+    ]
+   },
+   {
+    "input": 8,
+    "args": [
+     "日本"
+    ]
+   },
+   {
+    "input": 9,
+    "args": [
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ]
+   },
+   {
+    "input": 10,
+    "args": [
+     "twelve-chars"
+    ]
+   },
+   {
+    "input": 11,
+    "args": [
+     "vgh10"
+    ]
+   },
+   {
+    "input": 12,
+    "args": [
+     "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+    ]
+   },
+   {
+    "input": 13,
+    "args": [
+     "v3g31"
+    ]
+   },
+   {
+    "input": 14,
+    "args": [
+     "null"
+    ]
+   },
+   {
+    "input": 15,
+    "args": [
+     "vh6y1"
+    ]
+   },
+   {
+    "input": 16,
+    "args": [
+     "  padded  "
+    ]
+   },
+   {
+    "input": 17,
+    "args": [
+     "a,b,c"
+    ]
+   },
+   {
+    "input": 18,
+    "args": [
+     "/path/to/file.txt"
+    ]
+   },
+   {
+    "input": 19,
+    "args": [
+     "user@example.com"
+    ]
+   },
+   {
+    "input": 20,
+    "args": [
+     ""
+    ]
+   },
+   {
+    "input": 21,
+    "args": [
+     "a"
+    ]
+   },
+   {
+    "input": 22,
+    "args": [
+     "abc"
+    ]
+   },
+   {
+    "input": 23,
+    "args": [
+     "veke2"
+    ]
+   },
+   {
+    "input": 24,
+    "args": [
+     "x y"
+    ]
+   },
+   {
+    "input": 25,
+    "args": [
+     "v29xy"
+    ]
+   },
+   {
+    "input": 26,
+    "args": [
+     "-1"
+    ]
+   },
+   {
+    "input": 27,
+    "args": [
+     "vgbak"
+    ]
+   },
+   {
+    "input": 28,
+    "args": [
+     "vdxn0"
+    ]
+   },
+   {
+    "input": 29,
+    "args": [
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  },
+  "environmentPrograms": {
+   "runs": 12,
+   "maxCommands": 6,
+   "seed": 1,
+   "commands": "call, invoke, fire, tick, settle, next, throw, return",
+   "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "name",
+    "optional": false,
+    "spec": {
+     "kind": "string"
+    }
+   }
+  ],
+  "returns": {
+   "kind": "string"
+  },
+  "literals": [],
+  "strings": []
+ }
+}

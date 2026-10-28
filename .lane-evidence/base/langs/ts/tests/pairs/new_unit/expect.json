@@ -1,0 +1,235 @@
+{
+  "candidateOnly": [
+    {
+      "file": "candidate.ts",
+      "unit": "runs",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "faults",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 30
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "Added.value",
+      "parent": "old.ts",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0
+    },
+    {
+      "file": "named.ts",
+      "unit": "broken",
+      "verdict": "REFUSE",
+      "kind": "load",
+      "reason": "missing",
+      "phase": "link",
+      "linkKind": "missing named export"
+    },
+    {
+      "file": "dynamic.ts",
+      "unit": "late",
+      "verdict": "REFUSE",
+      "kind": "load",
+      "reason": "./missing-lazy-module",
+      "phase": "link",
+      "linkKind": "unresolved source"
+    },
+    {
+      "file": "throws.ts",
+      "unit": "never",
+      "verdict": "ASK",
+      "kind": "load",
+      "reason": "evaluation exploded",
+      "environmentClass": "module evaluation",
+      "phase": "evaluation"
+    },
+    {
+      "file": "unresolved.ts",
+      "unit": "broken",
+      "verdict": "REFUSE",
+      "kind": "load",
+      "reason": "./missing-static-module",
+      "phase": "link",
+      "linkKind": "unresolved source"
+    },
+    {
+      "file": "type-only.ts",
+      "unit": "typeOnly",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0
+    },
+    {
+      "file": "dynamic-ok.ts",
+      "unit": "dynamicOk",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0
+    },
+    {
+      "file": "fake.ts",
+      "unit": "calls",
+      "verdict": "NEW",
+      "inputs": 30
+    },
+    {
+      "file": "undeclared.ts",
+      "unit": "calls",
+      "verdict": "ASK",
+      "kind": "load",
+      "reason": "lean-undeclared-absent",
+      "environmentClass": "undeclared external package",
+      "phase": "link"
+    },
+    {
+      "file": "alias/app/main.ts",
+      "unit": "aliased",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0,
+      "project": true
+    },
+    {
+      "file": "throws-value.ts",
+      "unit": "never",
+      "verdict": "ASK",
+      "kind": "load",
+      "reason": "raw evaluation failure",
+      "environmentClass": "module evaluation",
+      "phase": "evaluation"
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "runs",
+      "parent": "absent-parent.ts",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0
+    },
+    {
+      "file": "ambient.ts",
+      "unit": "ambientSafe",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0
+    },
+    {
+      "file": "dynamic-fake.ts",
+      "unit": "dynamicFake",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0
+    },
+    {
+      "file": "excluded.spec.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "test module",
+      "phase": "scope",
+      "inputs": 0
+    },
+    {
+      "file": "excluded.test.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "test module",
+      "phase": "scope",
+      "inputs": 0
+    },
+    {
+      "file": "__tests__/excluded.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "test module",
+      "phase": "scope",
+      "inputs": 0
+    },
+    {
+      "file": "evaluation-link-text.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "module evaluation",
+      "phase": "evaluation",
+      "inputs": 0
+    },
+    {
+      "file": "commonjs.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "CommonJS wrapper",
+      "phase": "evaluation",
+      "inputs": 0
+    },
+    {
+      "file": "build-env.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "build-injected env",
+      "phase": "evaluation",
+      "inputs": 0
+    },
+    {
+      "file": "platform.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "platform global",
+      "phase": "evaluation",
+      "inputs": 0
+    },
+    {
+      "file": "runner-global.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "test-runner globals",
+      "phase": "evaluation",
+      "inputs": 0
+    },
+    {
+      "file": "fake-fs.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "fake answering at module evaluation",
+      "phase": "evaluation",
+      "inputs": 0
+    },
+    {
+      "file": "generated.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "missing generated output",
+      "phase": "link",
+      "inputs": 0
+    },
+    {
+      "file": "bundle.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "missing generated output",
+      "phase": "link",
+      "inputs": 0
+    },
+    {
+      "file": "external-alias/main.ts",
+      "unit": "aliasedExternal",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0,
+      "project": true
+    },
+    {
+      "file": "commonjs-import.ts",
+      "unit": "f",
+      "verdict": "ASK",
+      "environmentClass": "CommonJS wrapper",
+      "phase": "link",
+      "inputs": 0
+    }
+  ],
+  "why": "New units have no equality lemma. Only local link failures refuse; evaluation failures ask and input exceptions count as faults."
+}

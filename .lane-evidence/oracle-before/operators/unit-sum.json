@@ -1,0 +1,627 @@
+{
+ "unit": "sum",
+ "dafny": "sum",
+ "laneA": true,
+ "inputs": 30,
+ "sides": {
+  "parent": {
+   "disagree": 20,
+   "outside the model domain: NaN or an infinity, outside the finite number model": 7,
+   "outside the model domain: a fraction where the model reads number as int": 3
+  },
+  "candidate": {
+   "disagree": 20,
+   "outside the model domain: NaN or an infinity, outside the finite number model": 7,
+   "outside the model domain: a fraction where the model reads number as int": 3
+  }
+ },
+ "disagreements": [
+  {
+   "side": "parent",
+   "input": 0,
+   "args": [
+    [
+     0,
+     1,
+     -1
+    ]
+   ],
+   "node": {
+    "returned": "00,1,-1"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"00,1,-1\""
+  },
+  {
+   "side": "candidate",
+   "input": 0,
+   "args": [
+    [
+     0,
+     1,
+     -1
+    ]
+   ],
+   "node": {
+    "returned": "00,1,-1"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"00,1,-1\""
+  },
+  {
+   "side": "parent",
+   "input": 1,
+   "args": [
+    [
+     347
+    ]
+   ],
+   "node": {
+    "returned": "0347"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 347 against \"0347\""
+  },
+  {
+   "side": "candidate",
+   "input": 1,
+   "args": [
+    [
+     347
+    ]
+   ],
+   "node": {
+    "returned": "0347"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 347 against \"0347\""
+  },
+  {
+   "side": "parent",
+   "input": 2,
+   "args": [
+    [
+     1,
+     1
+    ]
+   ],
+   "node": {
+    "returned": "01,1"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against \"01,1\""
+  },
+  {
+   "side": "candidate",
+   "input": 2,
+   "args": [
+    [
+     1,
+     1
+    ]
+   ],
+   "node": {
+    "returned": "01,1"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 2 against \"01,1\""
+  },
+  {
+   "side": "parent",
+   "input": 5,
+   "args": [
+    [
+     100,
+     100
+    ]
+   ],
+   "node": {
+    "returned": "0100,100"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 200 against \"0100,100\""
+  },
+  {
+   "side": "candidate",
+   "input": 5,
+   "args": [
+    [
+     100,
+     100
+    ]
+   ],
+   "node": {
+    "returned": "0100,100"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 200 against \"0100,100\""
+  },
+  {
+   "side": "parent",
+   "input": 6,
+   "args": [
+    [
+     -100,
+     858,
+     436,
+     -100
+    ]
+   ],
+   "node": {
+    "returned": "0-100,858,436,-100"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 1094 against \"0-100,858,436,-100\""
+  },
+  {
+   "side": "candidate",
+   "input": 6,
+   "args": [
+    [
+     -100,
+     858,
+     436,
+     -100
+    ]
+   ],
+   "node": {
+    "returned": "0-100,858,436,-100"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 1094 against \"0-100,858,436,-100\""
+  },
+  {
+   "side": "parent",
+   "input": 8,
+   "args": [
+    [
+     1,
+     9007199254740991,
+     0
+    ]
+   ],
+   "node": {
+    "returned": "01,9007199254740991,0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 9007199254740992 against \"01,9007199254740991,0\""
+  },
+  {
+   "side": "candidate",
+   "input": 8,
+   "args": [
+    [
+     1,
+     9007199254740991,
+     0
+    ]
+   ],
+   "node": {
+    "returned": "01,9007199254740991,0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 9007199254740992 against \"01,9007199254740991,0\""
+  },
+  {
+   "side": "parent",
+   "input": 10,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": "0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"0\""
+  },
+  {
+   "side": "candidate",
+   "input": 10,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": "0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"0\""
+  },
+  {
+   "side": "parent",
+   "input": 12,
+   "args": [
+    [
+     -1,
+     -100
+    ]
+   ],
+   "node": {
+    "returned": "0-1,-100"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model -101 against \"0-1,-100\""
+  },
+  {
+   "side": "candidate",
+   "input": 12,
+   "args": [
+    [
+     -1,
+     -100
+    ]
+   ],
+   "node": {
+    "returned": "0-1,-100"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model -101 against \"0-1,-100\""
+  },
+  {
+   "side": "parent",
+   "input": 13,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": "0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"0\""
+  },
+  {
+   "side": "candidate",
+   "input": 13,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": "0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"0\""
+  },
+  {
+   "side": "parent",
+   "input": 14,
+   "args": [
+    [
+     -100,
+     10,
+     100,
+     -100,
+     -722
+    ]
+   ],
+   "node": {
+    "returned": "0-100,10,100,-100,-722"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model -812 against \"0-100,10,100,-100,-722\""
+  },
+  {
+   "side": "candidate",
+   "input": 14,
+   "args": [
+    [
+     -100,
+     10,
+     100,
+     -100,
+     -722
+    ]
+   ],
+   "node": {
+    "returned": "0-100,10,100,-100,-722"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model -812 against \"0-100,10,100,-100,-722\""
+  },
+  {
+   "side": "parent",
+   "input": 16,
+   "args": [
+    [
+     1000000000
+    ]
+   ],
+   "node": {
+    "returned": "01000000000"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 1000000000 against \"01000000000\""
+  },
+  {
+   "side": "candidate",
+   "input": 16,
+   "args": [
+    [
+     1000000000
+    ]
+   ],
+   "node": {
+    "returned": "01000000000"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 1000000000 against \"01000000000\""
+  },
+  {
+   "side": "parent",
+   "input": 17,
+   "args": [
+    [
+     1000000000,
+     9007199254740991
+    ]
+   ],
+   "node": {
+    "returned": "01000000000,9007199254740991"
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007200254740991 against \"01000000000,9007199254740991\""
+  },
+  {
+   "side": "candidate",
+   "input": 17,
+   "args": [
+    [
+     1000000000,
+     9007199254740991
+    ]
+   ],
+   "node": {
+    "returned": "01000000000,9007199254740991"
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007200254740991 against \"01000000000,9007199254740991\""
+  },
+  {
+   "side": "parent",
+   "input": 18,
+   "args": [
+    [
+     100,
+     1000000000,
+     440
+    ]
+   ],
+   "node": {
+    "returned": "0100,1000000000,440"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 1000000540 against \"0100,1000000000,440\""
+  },
+  {
+   "side": "candidate",
+   "input": 18,
+   "args": [
+    [
+     100,
+     1000000000,
+     440
+    ]
+   ],
+   "node": {
+    "returned": "0100,1000000000,440"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 1000000540 against \"0100,1000000000,440\""
+  },
+  {
+   "side": "parent",
+   "input": 20,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": "0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"0\""
+  },
+  {
+   "side": "candidate",
+   "input": 20,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": "0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"0\""
+  },
+  {
+   "side": "parent",
+   "input": 21,
+   "args": [
+    [
+     1
+    ]
+   ],
+   "node": {
+    "returned": "01"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 1 against \"01\""
+  },
+  {
+   "side": "candidate",
+   "input": 21,
+   "args": [
+    [
+     1
+    ]
+   ],
+   "node": {
+    "returned": "01"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 1 against \"01\""
+  },
+  {
+   "side": "parent",
+   "input": 22,
+   "args": [
+    [
+     -100,
+     2
+    ]
+   ],
+   "node": {
+    "returned": "0-100,2"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model -98 against \"0-100,2\""
+  },
+  {
+   "side": "candidate",
+   "input": 22,
+   "args": [
+    [
+     -100,
+     2
+    ]
+   ],
+   "node": {
+    "returned": "0-100,2"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model -98 against \"0-100,2\""
+  },
+  {
+   "side": "parent",
+   "input": 24,
+   "args": [
+    [
+     -1,
+     9007199254740991,
+     -484,
+     -483,
+     100
+    ]
+   ],
+   "node": {
+    "returned": "0-1,9007199254740991,-484,-483,100"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 9007199254740123 against \"0-1,9007199254740991,-484,-483,100\""
+  },
+  {
+   "side": "candidate",
+   "input": 24,
+   "args": [
+    [
+     -1,
+     9007199254740991,
+     -484,
+     -483,
+     100
+    ]
+   ],
+   "node": {
+    "returned": "0-1,9007199254740991,-484,-483,100"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 9007199254740123 against \"0-1,9007199254740991,-484,-483,100\""
+  },
+  {
+   "side": "parent",
+   "input": 25,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": "0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"0\""
+  },
+  {
+   "side": "candidate",
+   "input": 25,
+   "args": [
+    []
+   ],
+   "node": {
+    "returned": "0"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model 0 against \"0\""
+  },
+  {
+   "side": "parent",
+   "input": 28,
+   "args": [
+    [
+     1000000000,
+     1000000001,
+     9007199254740991
+    ]
+   ],
+   "node": {
+    "returned": "01000000000,1000000001,9007199254740991"
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007201254740992 against \"01000000000,1000000001,9007199254740991\""
+  },
+  {
+   "side": "candidate",
+   "input": 28,
+   "args": [
+    [
+     1000000000,
+     1000000001,
+     9007199254740991
+    ]
+   ],
+   "node": {
+    "returned": "01000000000,1000000001,9007199254740991"
+   },
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "diff": "result: model 9007201254740992 against \"01000000000,1000000001,9007199254740991\""
+  },
+  {
+   "side": "parent",
+   "input": 29,
+   "args": [
+    [
+     -100,
+     0,
+     1,
+     -1,
+     2
+    ]
+   ],
+   "node": {
+    "returned": "0-100,0,1,-1,2"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model -98 against \"0-100,0,1,-1,2\""
+  },
+  {
+   "side": "candidate",
+   "input": 29,
+   "args": [
+    [
+     -100,
+     0,
+     1,
+     -1,
+     2
+    ]
+   ],
+   "node": {
+    "returned": "0-100,0,1,-1,2"
+   },
+   "cause": "a rest parameter: lane B passes the drawn array as one argument",
+   "diff": "result: model -98 against \"0-100,0,1,-1,2\""
+  }
+ ],
+ "coupling": [],
+ "product": {
+  "inputs": 0,
+  "coupled": 0,
+  "agreedAllSeeds": 0
+ },
+ "unseen": 0
+}

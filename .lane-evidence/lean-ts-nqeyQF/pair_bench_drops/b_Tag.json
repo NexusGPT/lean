@@ -1,0 +1,719 @@
+{
+ "verdict": "WITNESS",
+ "unit": "Tag",
+ "witnesses": [
+  {
+   "input": 0,
+   "args": [
+    {
+     "code": 0.5,
+     "k0": "v7vgr"
+    }
+   ],
+   "parent": {
+    "outcome": {
+     "returned": {
+      "$el": "p",
+      "children": [
+       "low"
+      ],
+      "props": {}
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": {
+      "$ref": 1
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "code": 0.5,
+        "k0": "v7vgr"
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {
+        "$el": "p",
+        "props": {
+         "$ref": 2
+        },
+        "children": {
+         "$ref": 3
+        }
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {}
+      },
+      {
+       "kind": "array",
+       "edges": [
+        "low"
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "module:@/settings.notify",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "module:@/settings.notify",
+      "args": [
+       "1.5"
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": {
+      "$el": "p",
+      "children": [
+       "tag ",
+       "low"
+      ],
+      "props": {}
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": {
+      "$ref": 1
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "code": 0.5,
+        "k0": "v7vgr"
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {
+        "$el": "p",
+        "props": {
+         "$ref": 2
+        },
+        "children": {
+         "$ref": 3
+        }
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {}
+      },
+      {
+       "kind": "array",
+       "edges": [
+        "tag ",
+        "low"
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "module:@/settings.notify",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "module:@/settings.notify",
+      "args": [
+       "1.5"
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/bench_drops/status.ts",
+      "start": 4,
+      "end": 4,
+      "text": "c + 1"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/bench_drops/status.ts",
+      "start": 4,
+      "end": 4,
+      "text": "c + 1"
+     }
+    }
+   },
+   "patch": [
+    {
+     "kind": "text",
+     "path": "p[0]",
+     "before": "low",
+     "after": "tag "
+    },
+    {
+     "kind": "insert",
+     "path": "p[1]",
+     "before": null,
+     "after": "low"
+    }
+   ],
+   "patchSummary": "1 insert, 1 text"
+  },
+  {
+   "input": 1,
+   "args": [
+    {
+     "code": 1,
+     "k0": "v45z5"
+    }
+   ],
+   "parent": {
+    "outcome": {
+     "returned": {
+      "$el": "p",
+      "children": [
+       "low"
+      ],
+      "props": {}
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": {
+      "$ref": 1
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "code": 1,
+        "k0": "v45z5"
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {
+        "$el": "p",
+        "props": {
+         "$ref": 2
+        },
+        "children": {
+         "$ref": 3
+        }
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {}
+      },
+      {
+       "kind": "array",
+       "edges": [
+        "low"
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "module:@/settings.notify",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "module:@/settings.notify",
+      "args": [
+       "2"
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": {
+      "$el": "p",
+      "children": [
+       "tag ",
+       "low"
+      ],
+      "props": {}
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": {
+      "$ref": 1
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "code": 1,
+        "k0": "v45z5"
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {
+        "$el": "p",
+        "props": {
+         "$ref": 2
+        },
+        "children": {
+         "$ref": 3
+        }
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {}
+      },
+      {
+       "kind": "array",
+       "edges": [
+        "tag ",
+        "low"
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "module:@/settings.notify",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "module:@/settings.notify",
+      "args": [
+       "2"
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/bench_drops/status.ts",
+      "start": 4,
+      "end": 4,
+      "text": "c + 1"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/bench_drops/status.ts",
+      "start": 4,
+      "end": 4,
+      "text": "c + 1"
+     }
+    }
+   },
+   "patch": [
+    {
+     "kind": "text",
+     "path": "p[0]",
+     "before": "low",
+     "after": "tag "
+    },
+    {
+     "kind": "insert",
+     "path": "p[1]",
+     "before": null,
+     "after": "low"
+    }
+   ],
+   "patchSummary": "1 insert, 1 text"
+  },
+  {
+   "input": 2,
+   "args": [
+    {
+     "code": 0
+    }
+   ],
+   "parent": {
+    "outcome": {
+     "returned": {
+      "$el": "p",
+      "children": [
+       "low"
+      ],
+      "props": {}
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": {
+      "$ref": 1
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "code": 0
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {
+        "$el": "p",
+        "props": {
+         "$ref": 2
+        },
+        "children": {
+         "$ref": 3
+        }
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {}
+      },
+      {
+       "kind": "array",
+       "edges": [
+        "low"
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "module:@/settings.notify",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "module:@/settings.notify",
+      "args": [
+       "1"
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": {
+      "$el": "p",
+      "children": [
+       "tag ",
+       "low"
+      ],
+      "props": {}
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": {
+      "$ref": 1
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "code": 0
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {
+        "$el": "p",
+        "props": {
+         "$ref": 2
+        },
+        "children": {
+         "$ref": 3
+        }
+       }
+      },
+      {
+       "kind": "record",
+       "edges": {}
+      },
+      {
+       "kind": "array",
+       "edges": [
+        "tag ",
+        "low"
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "get",
+      "path": "module:@/settings.notify",
+      "args": []
+     },
+     {
+      "op": "call",
+      "path": "module:@/settings.notify",
+      "args": [
+       "1"
+      ]
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/bench_drops/status.ts",
+      "start": 4,
+      "end": 4,
+      "text": "c + 1"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/bench_drops/status.ts",
+      "start": 4,
+      "end": 4,
+      "text": "c + 1"
+     }
+    }
+   },
+   "patch": [
+    {
+     "kind": "text",
+     "path": "p[0]",
+     "before": "low",
+     "after": "tag "
+    },
+    {
+     "kind": "insert",
+     "path": "p[1]",
+     "before": null,
+     "after": "low"
+    }
+   ],
+   "patchSummary": "1 insert, 1 text"
+  }
+ ],
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 3,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     {
+      "code": 0.5,
+      "k0": "v7vgr"
+     }
+    ],
+    "tree": {
+     "$el": "p",
+     "children": [
+      "low"
+     ],
+     "props": {}
+    }
+   },
+   {
+    "input": 1,
+    "args": [
+     {
+      "code": 1,
+      "k0": "v45z5"
+     }
+    ],
+    "tree": {
+     "$el": "p",
+     "children": [
+      "low"
+     ],
+     "props": {}
+    }
+   },
+   {
+    "input": 2,
+    "args": [
+     {
+      "code": 0
+     }
+    ],
+    "tree": {
+     "$el": "p",
+     "children": [
+      "low"
+     ],
+     "props": {}
+    }
+   }
+  ],
+  "heaps": {
+   "enumerated": 1,
+   "assignments": 2,
+   "space": 2,
+   "pool": 2,
+   "shapes": {
+    "[[\"code\",\"number\"],[\"k0\",\"string\"]]": {
+     "slots": 0,
+     "prims": 2
+    }
+   }
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  },
+  "frontEnd": {
+   "layer": "element tree",
+   "renders": "one",
+   "handlers": {
+    "fired": 0,
+    "readable": 0,
+    "interpretable": 0,
+    "agreed": 0,
+    "defects": [],
+    "observed": "each invoked once on a fake event, its result and requests recorded"
+   },
+   "effects": "run once after the render, in registration order; cleanups recorded as pending",
+   "schedule": "synchronous; microtasks drained after the call; timers recorded as pending, never fired",
+   "components": "a tree of names: a component tag is its name and props",
+   "notObserved": "committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change",
+   "layers": {
+    "styles": {
+     "verdict": "PASS-bounded",
+     "inputs": 30,
+     "elementsCompared": 0,
+     "unsupported": [],
+     "config": {
+      "name": "tailwindcss v3.4 default theme",
+      "scope": "the utilities of exec/styles.mjs; every other class is unknown",
+      "project": "none found: no tailwind.config.* and no CSS file importing tailwindcss between the file and its project root /Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/bench_drops"
+     },
+     "assumptions": [
+      "a className string is read as the declarations of its classes under the configuration named in config; the order of classes in the attribute and a repeated class never count",
+      "only the pinned utilities style these classes: no project stylesheet, no project Tailwind config was found or read, no inline style (inline style stays in the tree layer)",
+      "equal is per compared element of the one-render tree on each input run, never over the inputs not run nor after a click",
+      "an unknown class, a variant outside the table, a stacked variant, an important mark, an opacity modifier, or two classes writing one property with different values: the element is unknown, never equal"
+     ]
+    },
+    "notObserved": "pixels, layout, the committed DOM, the accessibility tree; styles beyond the pinned utilities",
+    "tree": {
+     "verdict": "WITNESS",
+     "depth": 0,
+     "components": "a tree of names: a component tag is its name and props",
+     "rendered": [],
+     "handles": [],
+     "contexts": [],
+     "assumptions": [
+      "a component tag is its name and props; no child is rendered",
+      "useContext at the unit's root: a read of the nearest provider element of the context above the hook's frame in the rendered tree (--deep), its value prop; with no provider element of that context in the rendered tree, and always at a unit's root, the outside value: one per context, the same at every frame and every render"
+     ]
+    }
+   }
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "{ code }",
+    "optional": false,
+    "spec": {
+     "kind": "record",
+     "fields": {
+      "code": {
+       "spec": {
+        "kind": "number"
+       },
+       "optional": false
+      },
+      "k0": {
+       "spec": {
+        "kind": "string"
+       },
+       "optional": true,
+       "extra": true
+      }
+     }
+    }
+   }
+  ],
+  "returns": {
+   "kind": "opaque"
+  },
+  "literals": [],
+  "strings": []
+ },
+ "unitTextEqual": false
+}

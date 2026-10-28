@@ -1,0 +1,22 @@
+{
+ "unit": "withDefault",
+ "dafny": "with_default",
+ "laneA": false,
+ "inputs": 30,
+ "sides": {
+  "parent": {
+   "agree": 30
+  },
+  "candidate": {
+   "agree": 30
+  }
+ },
+ "disagreements": [],
+ "coupling": [],
+ "product": {
+  "inputs": 0,
+  "coupled": 0,
+  "agreedAllSeeds": 0
+ },
+ "unseen": 0
+}

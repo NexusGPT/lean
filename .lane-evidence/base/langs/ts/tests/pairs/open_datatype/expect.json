@@ -1,0 +1,45 @@
+{
+ "scope": [
+  "copy_rec",
+  "bump",
+  "assign_copy",
+  "rest_of",
+  "agent_of",
+  "key_of",
+  "trace_of",
+  "has_agent",
+  "with_trace",
+  "select_flags",
+  "select_all",
+  "untouched"
+ ],
+ "equal": {
+  "copy_rec": false,
+  "bump": true,
+  "rest_of": "withheld",
+  "agent_of": false,
+  "key_of": true,
+  "trace_of": true,
+  "has_agent": false,
+  "with_trace": true,
+  "select_flags": "withheld",
+  "select_all": "withheld",
+  "untouched": true,
+  "assign_copy": true
+ },
+ "why": "A record from the outside carries what its type does not name (design/open-datatype.md). copyRec: a spread keeps the source's rest, the fields by hand drop it: not proved (on base 41ba9b1 the heap core proved it; lane B now draws an extra key on a plain record and witnesses). assignCopy: Object.assign({}, s) against { ...s }: one copy of the source, its rest included: proved. bump: two spreads of one source with one field rewritten: proved. restOf: the remainder of a rest pattern keeps the source's rest; the identity guard withholds it (result may carry an input). agentOf and hasAgent: an undeclared key of Headers by bracket and by `in`, against a copy of the declared fields that holds no entry: not proved, lane B witnesses. keyOf: a computed key on the value and on its spread copy: proved. traceOf: the dot and the bracket form of one undeclared key: proved. withTrace: an undeclared key written in a literal of the open type and read back: proved. selectFlags and selectAll: a Record<string, true> accumulator now translates (an entry written in a value is DictPut); the identity guard withholds both (heap.mjs: nested write through an input, the accumulator the call builds read as an input), so the comma form against the statement form is not proved, and selectAll, the guard dropped, is witnessed by lane B.",
+ "b": {
+  "copyRec": "WITNESS",
+  "bump": "PASS-bounded",
+  "restOf": "WITNESS",
+  "agentOf": "WITNESS",
+  "keyOf": "PASS-bounded",
+  "traceOf": "PASS-bounded",
+  "hasAgent": "WITNESS",
+  "withTrace": "PASS-bounded",
+  "selectFlags": "PASS-bounded",
+  "selectAll": "WITNESS",
+  "untouched": "PASS-bounded",
+  "assignCopy": "PASS-bounded"
+ }
+}

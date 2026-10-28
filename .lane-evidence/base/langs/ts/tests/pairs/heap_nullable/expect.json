@@ -1,0 +1,16 @@
+{
+ "scope": [
+  "f",
+  "g"
+ ],
+ "equal": {
+  "f": false,
+  "g": false
+ },
+ "why": "Both units differ only when the reference is absent (a undefined, h.next null). The heap core reads no absent reference: both stay out of it (HEAP header empty) and the ordinary lane does not prove them; lane B witnesses both at the absent value.",
+ "b": {
+  "f": "WITNESS",
+  "g": "WITNESS"
+ },
+ "heap": true
+}

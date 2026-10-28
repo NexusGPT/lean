@@ -1,0 +1,6 @@
+{
+ "scope": ["average", "vat", "discounted", "pages"],
+ "equal": { "average": true, "vat": true, "discounted": false, "pages": false },
+ "why": "integer port of the TypeScript numbers pair: // is floor division on exact ints. vat is an algebraic rewrite that floor division keeps (net is an integer, so floor(net + q) == net + floor(q)); discounted rounds the other way (floor of the negative part); pages changes the rounding; average is untouched",
+ "b": { "average": "PASS-bounded", "vat": "PASS-bounded", "discounted": "WITNESS", "pages": "WITNESS" }
+}

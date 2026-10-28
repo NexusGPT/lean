@@ -1,0 +1,542 @@
+{
+ "verdict": "WITNESS",
+ "unit": "padded",
+ "witnesses": [
+  {
+   "input": 1,
+   "args": [
+    [
+     347,
+     7,
+     887,
+     -255,
+     -1,
+     83,
+     -50,
+     125,
+     834
+    ]
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 347
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": 347,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "array",
+       "edges": [
+        347,
+        7,
+        887,
+        -255,
+        -1,
+        83,
+        -50,
+        125,
+        834
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 348
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": 348,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "array",
+       "edges": [
+        347,
+        7,
+        887,
+        -255,
+        -1,
+        83,
+        -50,
+        125,
+        834
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/parent.ts",
+      "start": 10,
+      "end": 10,
+      "text": "return xs.length > 8 ? xs[0] : 0;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/candidate.ts",
+      "start": 10,
+      "end": 10,
+      "text": "return xs.length > 8 ? xs[0] + 1 : 0;"
+     }
+    }
+   }
+  },
+  {
+   "input": 5,
+   "args": [
+    [
+     100,
+     100,
+     -100,
+     0.5,
+     1000000000,
+     0.5,
+     -363,
+     9007199254740991,
+     1000000001
+    ]
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 100
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": 100,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "array",
+       "edges": [
+        100,
+        100,
+        -100,
+        0.5,
+        1000000000,
+        0.5,
+        -363,
+        9007199254740991,
+        1000000001
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 101
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": 101,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "array",
+       "edges": [
+        100,
+        100,
+        -100,
+        0.5,
+        1000000000,
+        0.5,
+        -363,
+        9007199254740991,
+        1000000001
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/parent.ts",
+      "start": 10,
+      "end": 10,
+      "text": "return xs.length > 8 ? xs[0] : 0;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/candidate.ts",
+      "start": 10,
+      "end": 10,
+      "text": "return xs.length > 8 ? xs[0] + 1 : 0;"
+     }
+    }
+   }
+  },
+  {
+   "input": 9,
+   "args": [
+    [
+     0,
+     -67,
+     1000000000,
+     1,
+     -1,
+     1,
+     937,
+     -322,
+     709
+    ]
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": 0,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "array",
+       "edges": [
+        0,
+        -67,
+        1000000000,
+        1,
+        -1,
+        1,
+        937,
+        -322,
+        709
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 1
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      }
+     ],
+     "own": {},
+     "outcome": 1,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "array",
+       "edges": [
+        0,
+        -67,
+        1000000000,
+        1,
+        -1,
+        1,
+        937,
+        -322,
+        709
+       ]
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/parent.ts",
+      "start": 10,
+      "end": 10,
+      "text": "return xs.length > 8 ? xs[0] : 0;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/candidate.ts",
+      "start": 10,
+      "end": 10,
+      "text": "return xs.length > 8 ? xs[0] + 1 : 0;"
+     }
+    }
+   }
+  }
+ ],
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 10,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     [
+      0,
+      1,
+      -1,
+      -138,
+      1,
+      2,
+      -630,
+      1
+     ]
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     [
+      347,
+      7,
+      887,
+      -255,
+      -1,
+      83,
+      -50,
+      125,
+      834
+     ]
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     [
+      -1,
+      1,
+      78,
+      -1,
+      2,
+      0,
+      0
+     ]
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     [
+      {
+       "$nan": true
+      },
+      {
+       "$infinity": 1
+      },
+      {
+       "$infinity": -1
+      }
+     ]
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     [
+      -222,
+      -732,
+      183,
+      1000000000,
+      711,
+      599,
+      -733,
+      10
+     ]
+    ]
+   },
+   {
+    "input": 5,
+    "args": [
+     [
+      100,
+      100,
+      -100,
+      0.5,
+      1000000000,
+      0.5,
+      -363,
+      9007199254740991,
+      1000000001
+     ]
+    ]
+   },
+   {
+    "input": 6,
+    "args": [
+     [
+      -100,
+      858,
+      436,
+      -1
+     ]
+    ]
+   },
+   {
+    "input": 7,
+    "args": [
+     [
+      {
+       "$infinity": 1
+      },
+      1000000000,
+      {
+       "$infinity": -1
+      },
+      9007199254740991,
+      {
+       "$negativeZero": true
+      },
+      0,
+      {
+       "$nan": true
+      },
+      {
+       "$infinity": 1
+      }
+     ]
+    ]
+   },
+   {
+    "input": 8,
+    "args": [
+     [
+      0,
+      9,
+      7,
+      9007199254740991,
+      0,
+      1,
+      -1
+     ]
+    ]
+   },
+   {
+    "input": 9,
+    "args": [
+     [
+      0,
+      -67,
+      1000000000,
+      1,
+      -1,
+      1,
+      937,
+      -322,
+      709
+     ]
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "xs",
+    "optional": false,
+    "spec": {
+     "kind": "array",
+     "of": {
+      "kind": "number"
+     },
+     "lengths": {
+      "cmp": [
+       8,
+       9,
+       7
+      ],
+      "falsy": [],
+      "radix": 1
+     }
+    }
+   }
+  ],
+  "returns": {
+   "kind": "number"
+  },
+  "literals": [
+   8,
+   9,
+   7,
+   0,
+   1,
+   -1
+  ],
+  "strings": [
+   "xxxxxxxx",
+   "xxxxxxxxx",
+   "xxxxxxx",
+   "",
+   "x"
+  ]
+ },
+ "unitTextEqual": false
+}

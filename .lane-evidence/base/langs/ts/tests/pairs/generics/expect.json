@@ -1,0 +1,6 @@
+{
+ "scope": ["first_or", "count_of", "labels"],
+ "equal": { "first_or": true, "count_of": false, "labels": false },
+ "why": "the candidate counts by two; labels calls countOf so it differs too",
+ "b": { "firstOr": "PASS-bounded", "countOf": "WITNESS", "labels": "WITNESS" }
+}

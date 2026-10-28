@@ -1,0 +1,609 @@
+{
+ "verdict": "PASS-bounded",
+ "unit": "payload",
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 30,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     {
+      "data": "vhcfs",
+      "extra": {
+       "$fake": "heap0.extra"
+      },
+      "message": "",
+      "response": null
+     }
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     {
+      "data": "vhcfs",
+      "extra": {
+       "$fake": "heap0.extra"
+      },
+      "message": "",
+      "response": {
+       "data": 9007199254740991,
+       "response": "v4gr8",
+       "status": -1
+      }
+     }
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "vazr4",
+      "response": {
+       "$undefined": true
+      }
+     }
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "x y",
+      "response": {
+       "data": 0,
+       "response": "v26ew",
+       "status": 9007199254740991
+      }
+     }
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "vcx5d",
+      "response": {
+       "$undefined": true
+      }
+     }
+    ]
+   },
+   {
+    "input": 5,
+    "args": [
+     {
+      "data": "ÄÖü",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "v52zq",
+      "response": {
+       "data": {
+        "$infinity": 1
+       },
+       "response": "-1",
+       "status": {
+        "$infinity": -1
+       }
+      }
+     }
+    ]
+   },
+   {
+    "input": 6,
+    "args": [
+     {
+      "data": "vj48t",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "ÄÖü",
+      "response": {
+       "$undefined": true
+      }
+     }
+    ]
+   },
+   {
+    "input": 7,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "response": {
+       "data": -1,
+       "status": 1000000000
+      }
+     }
+    ]
+   },
+   {
+    "input": 8,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "v3l7y",
+      "response": {
+       "data": -1,
+       "response": "vb60q",
+       "status": 9007199254740991
+      }
+     }
+    ]
+   },
+   {
+    "input": 9,
+    "args": [
+     {
+      "data": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "Hello, World! 2024-01-31 10:30",
+      "response": {
+       "data": {
+        "$infinity": 1
+       },
+       "response": "twelve-chars",
+       "status": {
+        "$infinity": -1
+       }
+      }
+     }
+    ]
+   },
+   {
+    "input": 10,
+    "args": [
+     {
+      "data": "Hello, World! 2024-01-31 10:30",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "twelve-chars",
+      "response": {
+       "$undefined": true
+      }
+     }
+    ]
+   },
+   {
+    "input": 11,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "vdu6b",
+      "response": {
+       "data": 0,
+       "status": -519
+      }
+     }
+    ]
+   },
+   {
+    "input": 12,
+    "args": [
+     {
+      "data": "v6z8n",
+      "message": "v3m48",
+      "response": {
+       "data": -1,
+       "response": "null",
+       "status": 2
+      }
+     }
+    ]
+   },
+   {
+    "input": 13,
+    "args": [
+     {
+      "data": "null",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "v104q",
+      "response": {
+       "data": {
+        "$infinity": -1
+       },
+       "response": "vg9o8",
+       "status": {
+        "$negativeZero": true
+       }
+      }
+     }
+    ]
+   },
+   {
+    "input": 14,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "null"
+     }
+    ]
+   },
+   {
+    "input": 15,
+    "args": [
+     {
+      "data": "/path/to/file.txt",
+      "message": "a,b,c",
+      "response": {
+       "data": {
+        "$fake": "arg0.response.data"
+       },
+       "response": "  padded  ",
+       "status": 100
+      }
+     }
+    ]
+   },
+   {
+    "input": 16,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "  padded  "
+     }
+    ]
+   },
+   {
+    "input": 17,
+    "args": [
+     {
+      "data": "/path/to/file.txt",
+      "message": "a,b,c"
+     }
+    ]
+   },
+   {
+    "input": 18,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "/path/to/file.txt"
+     }
+    ]
+   },
+   {
+    "input": 19,
+    "args": [
+     {
+      "data": "vkqgv",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "v7zck"
+     }
+    ]
+   },
+   {
+    "input": 20,
+    "args": [
+     {
+      "data": " ",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "v4hgg",
+      "response": {
+       "data": 0,
+       "response": "abc",
+       "status": 1
+      }
+     }
+    ]
+   },
+   {
+    "input": 21,
+    "args": [
+     {
+      "data": "v9c3y",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": " ",
+      "response": {
+       "data": {
+        "$nan": true
+       },
+       "status": {
+        "$infinity": 1
+       }
+      }
+     }
+    ]
+   },
+   {
+    "input": 22,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "abc"
+     }
+    ]
+   },
+   {
+    "input": 23,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "v53tt",
+      "response": {
+       "data": {
+        "$fake": "arg0.response.data"
+       },
+       "response": "vfbc5",
+       "status": 344
+      }
+     }
+    ]
+   },
+   {
+    "input": 24,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "x y"
+     }
+    ]
+   },
+   {
+    "input": 25,
+    "args": [
+     {
+      "data": "v6uvd",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "vjp8d",
+      "response": {
+       "data": {
+        "$infinity": 1
+       },
+       "response": "ve8b1",
+       "status": -100
+      }
+     }
+    ]
+   },
+   {
+    "input": 26,
+    "args": [
+     {
+      "data": "-1",
+      "message": "vadzd"
+     }
+    ]
+   },
+   {
+    "input": 27,
+    "args": [
+     {
+      "message": "v37ti",
+      "response": {
+       "data": {
+        "$fake": "arg0.response.data"
+       },
+       "status": 925
+      }
+     }
+    ]
+   },
+   {
+    "input": 28,
+    "args": [
+     {
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "response": {
+       "data": {
+        "$fake": "arg0.response.data"
+       },
+       "response": "vjx6j",
+       "status": 1000000000
+      }
+     }
+    ]
+   },
+   {
+    "input": 29,
+    "args": [
+     {
+      "data": "twelve-chars",
+      "extra": {
+       "$fake": "arg0.extra"
+      },
+      "message": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     }
+    ]
+   }
+  ],
+  "heaps": {
+   "enumerated": 2,
+   "assignments": 18,
+   "space": 18,
+   "pool": 2,
+   "shapes": {
+    "[[\"data\",\"string\"],[\"extra\",\"opaque\"],[\"message\",\"string\"],[\"response\",\"record\"]]": {
+     "slots": 1,
+     "prims": 3
+    },
+    "[[\"data\",null],[\"response\",\"string\"],[\"status\",\"number\"]]": {
+     "slots": 0,
+     "prims": 3
+    }
+   }
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  },
+  "environmentPrograms": {
+   "runs": 12,
+   "maxCommands": 6,
+   "seed": 1,
+   "commands": "call, invoke, fire, tick, settle, next, throw, return",
+   "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "e",
+    "optional": false,
+    "spec": {
+     "kind": "record",
+     "fields": {
+      "response": {
+       "spec": {
+        "kind": "union",
+        "options": [
+         {
+          "kind": "undefined"
+         },
+         {
+          "kind": "record",
+          "fields": {
+           "data": {
+            "spec": {
+             "kind": "union",
+             "options": [
+              {
+               "kind": "number"
+              },
+              {
+               "kind": "opaque"
+              }
+             ],
+             "prefer": 0,
+             "boundary": {
+              "cmp": [
+               0,
+               1,
+               -1
+              ],
+              "falsy": [],
+              "rank": 0,
+              "radix": 2
+             }
+            },
+            "optional": false,
+            "shaped": true
+           },
+           "status": {
+            "spec": {
+             "kind": "number"
+            },
+            "optional": false
+           },
+           "response": {
+            "spec": {
+             "kind": "string"
+            },
+            "optional": true,
+            "extra": true
+           }
+          }
+         }
+        ],
+        "boundary": {
+         "cmp": [
+          {
+           "t": "undefined"
+          },
+          {
+           "t": "draw"
+          }
+         ],
+         "falsy": [],
+         "rank": 0,
+         "radix": 1
+        },
+        "prefer": 1
+       },
+       "optional": true,
+       "shaped": true
+      },
+      "message": {
+       "spec": {
+        "kind": "string"
+       },
+       "optional": false
+      },
+      "extra": {
+       "spec": {
+        "kind": "opaque"
+       },
+       "optional": true
+      },
+      "data": {
+       "spec": {
+        "kind": "string"
+       },
+       "optional": true,
+       "extra": true
+      }
+     }
+    }
+   }
+  ],
+  "returns": {
+   "kind": "boolean"
+  },
+  "literals": [
+   0,
+   1,
+   -1
+  ],
+  "strings": []
+ }
+}

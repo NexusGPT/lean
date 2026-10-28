@@ -1,0 +1,22 @@
+{
+ "scope": [
+  "cost",
+  "persist",
+  "twice",
+  "order"
+ ],
+ "equal": {
+  "cost": true,
+  "persist": false,
+  "twice": false,
+  "order": false
+ },
+ "why": "a call of an imported function is a transition of the whole heap world, the same on both sides for the same import, world and arguments: cost names the call's result before reading the quantity, the same order (proved); persist saves before the increment (another order of a transition and a write: unproved, WITNESS); twice calls once for twice (unproved: the environment may answer the second call otherwise; lane B's fakes answer both calls alike, PASS-bounded); order moves the save before the price (unproved: the transition may change what the second one answers).",
+ "b": {
+  "cost": "PASS-bounded",
+  "persist": "WITNESS",
+  "twice": "PASS-bounded",
+  "order": "PASS-bounded"
+ },
+ "heap": true
+}

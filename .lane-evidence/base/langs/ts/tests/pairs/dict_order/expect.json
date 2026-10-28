@@ -1,0 +1,32 @@
+{
+ "scope": [
+  "key_list",
+  "lookup",
+  "pairs_text",
+  "index_first",
+  "reinsert",
+  "count_keys",
+  "names",
+  "via_record"
+ ],
+ "equal": {
+  "key_list": false,
+  "lookup": true,
+  "pairs_text": true,
+  "index_first": true,
+  "reinsert": false,
+  "count_keys": true,
+  "names": true,
+  "via_record": false
+ },
+ "why": "a dictionary is the ordered carrier OMap<string, V>, its keys in creation order, read through DictKeys (array indices first, ascending, then the other keys in creation order): keyList writes the same two keys in the other order and reads Object.keys (WITNESS, unproved); lookup does the same and reads only by key (proved); pairsText reads the pairs through Object.entries against for-in with an index read (proved); indexFirst writes 'b' then '2' against '2' then 'b' and both read 2,b (proved); reinsert deletes x and writes it again, which moves it last, against a plain overwrite that keeps its place (WITNESS, unproved); countKeys is untouched. viaRecord hands a record { a, b } to a dictionary parameter against { b, a }: the record value does not hold its field order, so its conversion to a dictionary is named by the source text in the ordinary lane and the heap core leaves a record read as a dictionary out (WITNESS, unproved; it was proved on the base); names is untouched.",
+ "b": {
+  "keyList": "WITNESS",
+  "lookup": "PASS-bounded",
+  "pairsText": "PASS-bounded",
+  "indexFirst": "PASS-bounded",
+  "reinsert": "WITNESS",
+  "countKeys": "PASS-bounded",
+  "viaRecord": "WITNESS"
+ }
+}

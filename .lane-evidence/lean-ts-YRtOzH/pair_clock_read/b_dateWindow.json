@@ -1,0 +1,264 @@
+{
+ "verdict": "WITNESS",
+ "unit": "dateWindow",
+ "witnesses": [
+  {
+   "input": 0,
+   "args": [],
+   "parent": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [],
+     "own": {},
+     "outcome": 0,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     }
+    ],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 8
+    },
+    "heap": {
+     "roots": [],
+     "own": {},
+     "outcome": 8,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     },
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/clock_read/parent.ts",
+      "start": 6,
+      "end": 6,
+      "text": "return now.getTime() - now.getTime();"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/clock_read/candidate.ts",
+      "start": 6,
+      "end": 6,
+      "text": "return end.getTime() - start.getTime();"
+     }
+    }
+   }
+  },
+  {
+   "input": 1,
+   "args": [],
+   "parent": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [],
+     "own": {},
+     "outcome": 0,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     }
+    ],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 16
+    },
+    "heap": {
+     "roots": [],
+     "own": {},
+     "outcome": 16,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     },
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/clock_read/parent.ts",
+      "start": 6,
+      "end": 6,
+      "text": "return now.getTime() - now.getTime();"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/clock_read/candidate.ts",
+      "start": 6,
+      "end": 6,
+      "text": "return end.getTime() - start.getTime();"
+     }
+    }
+   }
+  },
+  {
+   "input": 2,
+   "args": [],
+   "parent": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [],
+     "own": {},
+     "outcome": 0,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     }
+    ],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 13
+    },
+    "heap": {
+     "roots": [],
+     "own": {},
+     "outcome": 13,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     },
+     {
+      "op": "new",
+      "path": "Date",
+      "args": []
+     }
+    ],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/clock_read/parent.ts",
+      "start": 6,
+      "end": 6,
+      "text": "return now.getTime() - now.getTime();"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/clock_read/candidate.ts",
+      "start": 6,
+      "end": 6,
+      "text": "return end.getTime() - start.getTime();"
+     }
+    }
+   }
+  }
+ ],
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 3,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": []
+   },
+   {
+    "input": 1,
+    "args": []
+   },
+   {
+    "input": 2,
+    "args": []
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  }
+ },
+ "spec": {
+  "params": [],
+  "returns": {
+   "kind": "number"
+  },
+  "literals": [],
+  "strings": []
+ },
+ "unitTextEqual": false
+}

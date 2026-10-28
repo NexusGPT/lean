@@ -1,0 +1,249 @@
+{
+ "verdict": "WITNESS",
+ "unit": "helper",
+ "witnesses": [
+  {
+   "input": 0,
+   "args": [
+    420
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 421
+    },
+    "heap": {
+     "roots": [
+      420
+     ],
+     "own": {},
+     "outcome": 421,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 422
+    },
+    "heap": {
+     "roots": [
+      420
+     ],
+     "own": {},
+     "outcome": 422,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/parent.ts",
+      "start": 5,
+      "end": 5,
+      "text": "return x + 1;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/candidate.ts",
+      "start": 5,
+      "end": 5,
+      "text": "return x + 2;"
+     }
+    }
+   }
+  },
+  {
+   "input": 1,
+   "args": [
+    1
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 2
+    },
+    "heap": {
+     "roots": [
+      1
+     ],
+     "own": {},
+     "outcome": 2,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 3
+    },
+    "heap": {
+     "roots": [
+      1
+     ],
+     "own": {},
+     "outcome": 3,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/parent.ts",
+      "start": 5,
+      "end": 5,
+      "text": "return x + 1;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/candidate.ts",
+      "start": 5,
+      "end": 5,
+      "text": "return x + 2;"
+     }
+    }
+   }
+  },
+  {
+   "input": 2,
+   "args": [
+    0
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 1
+    },
+    "heap": {
+     "roots": [
+      0
+     ],
+     "own": {},
+     "outcome": 1,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": 2
+    },
+    "heap": {
+     "roots": [
+      0
+     ],
+     "own": {},
+     "outcome": 2,
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/parent.ts",
+      "start": 5,
+      "end": 5,
+      "text": "return x + 1;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/langs/ts/tests/pairs/callee_witness/candidate.ts",
+      "start": 5,
+      "end": 5,
+      "text": "return x + 2;"
+     }
+    }
+   }
+  }
+ ],
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 3,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     420
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     1
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     0
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "x",
+    "optional": false,
+    "spec": {
+     "kind": "number"
+    }
+   }
+  ],
+  "returns": {
+   "kind": "number"
+  },
+  "literals": [
+   2,
+   3,
+   1
+  ],
+  "strings": []
+ },
+ "unitTextEqual": false
+}

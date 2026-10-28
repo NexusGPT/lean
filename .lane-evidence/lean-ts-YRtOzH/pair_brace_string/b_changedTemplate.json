@@ -1,0 +1,245 @@
+{
+ "verdict": "WITNESS",
+ "unit": "changedTemplate",
+ "witnesses": [
+  {
+   "input": 0,
+   "args": [
+    "vd436"
+   ],
+   "parent": {
+    "outcome": {
+     "returned": "{vd436} closed"
+    },
+    "heap": {
+     "roots": [
+      "vd436"
+     ],
+     "own": {},
+     "outcome": "{vd436} closed",
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": "{vd436} open"
+    },
+    "heap": {
+     "roots": [
+      "vd436"
+     ],
+     "own": {},
+     "outcome": "{vd436} open",
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/brace_string/parent.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return `{${name}} closed`;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/brace_string/candidate.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return `{${name}} open`;"
+     }
+    }
+   }
+  },
+  {
+   "input": 1,
+   "args": [
+    "a"
+   ],
+   "parent": {
+    "outcome": {
+     "returned": "{a} closed"
+    },
+    "heap": {
+     "roots": [
+      "a"
+     ],
+     "own": {},
+     "outcome": "{a} closed",
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": "{a} open"
+    },
+    "heap": {
+     "roots": [
+      "a"
+     ],
+     "own": {},
+     "outcome": "{a} open",
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/brace_string/parent.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return `{${name}} closed`;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/brace_string/candidate.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return `{${name}} open`;"
+     }
+    }
+   }
+  },
+  {
+   "input": 2,
+   "args": [
+    "abc"
+   ],
+   "parent": {
+    "outcome": {
+     "returned": "{abc} closed"
+    },
+    "heap": {
+     "roots": [
+      "abc"
+     ],
+     "own": {},
+     "outcome": "{abc} closed",
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": "{abc} open"
+    },
+    "heap": {
+     "roots": [
+      "abc"
+     ],
+     "own": {},
+     "outcome": "{abc} open",
+     "anchors": 0,
+     "heap": []
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/brace_string/parent.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return `{${name}} closed`;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/brace_string/candidate.ts",
+      "start": 20,
+      "end": 20,
+      "text": "return `{${name}} open`;"
+     }
+    }
+   }
+  }
+ ],
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 3,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     "vd436"
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     "a"
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     "abc"
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "name",
+    "optional": false,
+    "spec": {
+     "kind": "string"
+    }
+   }
+  ],
+  "returns": {
+   "kind": "string"
+  },
+  "literals": [],
+  "strings": []
+ },
+ "unitTextEqual": false
+}

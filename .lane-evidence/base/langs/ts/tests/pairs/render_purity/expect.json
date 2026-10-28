@@ -1,0 +1,7 @@
+{
+ "scope": ["clocked", "stamped", "pure"],
+ "equal": { "pure": true },
+ "why": "Clocked and Stamped read the clock during render, so their two renders from the same state differ: lane B refuses both sides as render-impure (the candidate's extra '!' is never judged). Pure renders the same tree twice and is proved equal.",
+ "heap": false,
+ "b": { "Clocked": "REFUSE", "Stamped": "REFUSE", "Pure": "PASS-bounded" }
+}

@@ -1,0 +1,789 @@
+{
+ "verdict": "PASS-bounded",
+ "unit": "ids",
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 30,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     []
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     [
+      {
+       "id": "",
+       "map": "v5w2n",
+       "n": -266,
+       "tag": {
+        "$undefined": true
+       }
+      }
+     ]
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     [
+      {
+       "$ref": 0,
+       "value": {
+        "id": "",
+        "map": "v5w2n",
+        "n": -266,
+        "tag": {
+         "$undefined": true
+        }
+       }
+      },
+      {
+       "$ref": 0
+      }
+     ]
+    ]
+   },
+   {
+    "input": 3,
+    "args": [
+     [
+      {
+       "id": "",
+       "map": "v5w2n",
+       "n": -266,
+       "tag": {
+        "$undefined": true
+       }
+      },
+      {
+       "id": "",
+       "map": "v5w2n",
+       "n": -266,
+       "tag": {
+        "$undefined": true
+       }
+      }
+     ]
+    ]
+   },
+   {
+    "input": 4,
+    "args": [
+     [
+      {
+       "id": "vjs4m",
+       "map": "vcojn",
+       "n": 908
+      },
+      {
+       "id": "x y",
+       "map": "va2ye",
+       "n": -100,
+       "tag": "vfmcn"
+      },
+      {
+       "id": "v2vbd",
+       "n": 100,
+       "tag": "-1"
+      },
+      {
+       "id": "vkm21",
+       "map": "日本",
+       "n": 9007199254740991,
+       "tag": "ÄÖü"
+      },
+      {
+       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "n": 907,
+       "tag": "veea3"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 5,
+    "args": [
+     [
+      {
+       "id": "v38vq",
+       "map": "-1",
+       "n": 2,
+       "tag": "0"
+      },
+      {
+       "id": "v6owm",
+       "map": "ÄÖü",
+       "n": 1000000000,
+       "tag": "v6tsi"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 6,
+    "args": [
+     [
+      {
+       "id": "vb7g9",
+       "n": 858,
+       "tag": "vfe38"
+      },
+      {
+       "id": "vkqpg",
+       "map": "-1",
+       "n": -829
+      },
+      {
+       "id": "ÄÖü",
+       "n": 9007199254740991,
+       "tag": "日本"
+      },
+      {
+       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "map": "Hello, World! 2024-01-31 10:30",
+       "n": -829,
+       "tag": "twelve-chars"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 7,
+    "args": [
+     [
+      {
+       "id": "v7umz",
+       "map": "日本",
+       "n": {
+        "$nan": true
+       }
+      },
+      {
+       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "map": "Hello, World! 2024-01-31 10:30",
+       "n": {
+        "$infinity": 1
+       },
+       "tag": "twelve-chars"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 8,
+    "args": [
+     [
+      {
+       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "map": "vb60q",
+       "n": 0,
+       "tag": "Hello, World! 2024-01-31 10:30"
+      },
+      {
+       "id": "v3l7y",
+       "map": "vak4k",
+       "n": -1,
+       "tag": "line one\nline two"
+      },
+      {
+       "id": "va1sm",
+       "n": 818,
+       "tag": "vfm4u"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 9,
+    "args": [
+     [
+      {
+       "id": "twelve-chars",
+       "map": "line one\nline two",
+       "n": 1,
+       "tag": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+      },
+      {
+       "id": "v169d",
+       "map": "vki9o",
+       "n": 9007199254740991
+      },
+      {
+       "id": "vhrlj",
+       "map": "vhzkk",
+       "n": 10,
+       "tag": "vibj1"
+      },
+      {
+       "id": "undefined",
+       "map": "a,b,c",
+       "n": -100
+      },
+      {
+       "id": "/path/to/file.txt",
+       "map": "",
+       "n": 9007199254740991
+      }
+     ]
+    ]
+   },
+   {
+    "input": 10,
+    "args": [
+     []
+    ]
+   },
+   {
+    "input": 11,
+    "args": [
+     [
+      {
+       "id": "vgzrg",
+       "n": {
+        "$infinity": 1
+       },
+       "tag": "vce6u"
+      },
+      {
+       "id": "Hello, World! 2024-01-31 10:30",
+       "map": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+       "n": 0
+      },
+      {
+       "id": "vg7q2",
+       "map": "line one\nline two",
+       "n": {
+        "$infinity": -1
+       }
+      },
+      {
+       "id": "vecu8",
+       "map": "vglcy",
+       "n": 10,
+       "tag": "undefined"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 12,
+    "args": [
+     [
+      {
+       "id": "line one\nline two",
+       "map": "  padded  ",
+       "n": 10,
+       "tag": "undefined"
+      },
+      {
+       "id": "v3m48",
+       "map": "/path/to/file.txt",
+       "n": 10,
+       "tag": "a,b,c"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 13,
+    "args": [
+     []
+    ]
+   },
+   {
+    "input": 14,
+    "args": [
+     [
+      {
+       "id": "undefined",
+       "map": "a,b,c",
+       "n": -100,
+       "tag": "vbxkf"
+      },
+      {
+       "id": "vdy5z",
+       "map": "vgppq",
+       "n": 1000000000,
+       "tag": "vjl2k"
+      },
+      {
+       "id": "vj037",
+       "map": "user@example.com",
+       "n": 9007199254740991,
+       "tag": "/path/to/file.txt"
+      },
+      {
+       "id": "",
+       "n": 406
+      },
+      {
+       "id": "vf5ho",
+       "map": "abc",
+       "n": -109,
+       "tag": "a"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 15,
+    "args": [
+     [
+      {
+       "id": "v6nvk",
+       "n": {
+        "$infinity": -1
+       }
+      },
+      {
+       "id": "vcd85",
+       "map": "viblx",
+       "n": {
+        "$negativeZero": true
+       },
+       "tag": "  padded  "
+      },
+      {
+       "id": "v7j7l",
+       "map": "vksfx",
+       "n": {
+        "$nan": true
+       },
+       "tag": "va082"
+      },
+      {
+       "id": "a,b,c",
+       "map": "",
+       "n": {
+        "$infinity": 1
+       },
+       "tag": "user@example.com"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 16,
+    "args": [
+     [
+      {
+       "id": "a,b,c",
+       "map": "vjdry",
+       "n": 1000000000,
+       "tag": "v88wr"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 17,
+    "args": [
+     [
+      {
+       "id": "/path/to/file.txt",
+       "n": -100,
+       "tag": "v36sb"
+      },
+      {
+       "id": "user@example.com",
+       "map": "a",
+       "n": 203,
+       "tag": ""
+      }
+     ]
+    ]
+   },
+   {
+    "input": 18,
+    "args": [
+     [
+      {
+       "id": "user@example.com",
+       "map": "a",
+       "n": 0,
+       "tag": "vggsx"
+      },
+      {
+       "id": "v59an",
+       "map": " ",
+       "n": 100,
+       "tag": "abc"
+      },
+      {
+       "id": "v4yc4",
+       "map": "v8d5b",
+       "n": 1000000000,
+       "tag": "x y"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 19,
+    "args": [
+     [
+      {
+       "id": "v7zck",
+       "n": {
+        "$negativeZero": true
+       },
+       "tag": "v1hl1"
+      },
+      {
+       "id": "a",
+       "map": " ",
+       "n": -1,
+       "tag": "abc"
+      },
+      {
+       "id": "x y",
+       "map": "-1",
+       "n": {
+        "$nan": true
+       },
+       "tag": "0"
+      },
+      {
+       "id": "ÄÖü",
+       "map": "twelve-chars",
+       "n": 1000000000,
+       "tag": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+       "id": "vahe1",
+       "map": "vghie",
+       "n": {
+        "$infinity": 1
+       },
+       "tag": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 20,
+    "args": [
+     []
+    ]
+   },
+   {
+    "input": 21,
+    "args": [
+     [
+      {
+       "id": "abc",
+       "n": 2,
+       "tag": "x y"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 22,
+    "args": [
+     [
+      {
+       "id": " ",
+       "map": "0",
+       "n": 10
+      },
+      {
+       "id": "-1",
+       "map": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "n": 0.5,
+       "tag": "日本"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 23,
+    "args": [
+     [
+      {
+       "id": "vhlvm",
+       "n": {
+        "$nan": true
+       },
+       "tag": "vfixb"
+      },
+      {
+       "id": "x y",
+       "map": "0",
+       "n": {
+        "$infinity": 1
+       },
+       "tag": "vbxrg"
+      },
+      {
+       "id": "vakct",
+       "map": "-1",
+       "n": {
+        "$infinity": -1
+       }
+      },
+      {
+       "id": "vcqiu",
+       "n": {
+        "$negativeZero": true
+       },
+       "tag": "veoft"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 24,
+    "args": [
+     [
+      {
+       "id": "0",
+       "n": -100,
+       "tag": "vgy8u"
+      },
+      {
+       "id": "ÄÖü",
+       "n": 1000000000,
+       "tag": "vdpb3"
+      },
+      {
+       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "map": "vbnos",
+       "n": 0,
+       "tag": "Hello, World! 2024-01-31 10:30"
+      },
+      {
+       "id": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+       "map": "null",
+       "n": -101,
+       "tag": "line one\nline two"
+      },
+      {
+       "id": "undefined",
+       "map": "a,b,c",
+       "n": 706,
+       "tag": "  padded  "
+      }
+     ]
+    ]
+   },
+   {
+    "input": 25,
+    "args": [
+     []
+    ]
+   },
+   {
+    "input": 26,
+    "args": [
+     [
+      {
+       "id": "vadzd",
+       "map": "vc3w4",
+       "n": 10,
+       "tag": "ÄÖü"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 27,
+    "args": [
+     [
+      {
+       "id": "verz0",
+       "n": {
+        "$infinity": 1
+       },
+       "tag": "日本"
+      },
+      {
+       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "map": "v3r1k",
+       "n": {
+        "$infinity": -1
+       },
+       "tag": "Hello, World! 2024-01-31 10:30"
+      },
+      {
+       "id": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+       "map": "line one\nline two",
+       "n": {
+        "$negativeZero": true
+       }
+      },
+      {
+       "id": "v5isd",
+       "map": "v5kss",
+       "n": 300,
+       "tag": "null"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 28,
+    "args": [
+     [
+      {
+       "id": "vctgv",
+       "map": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+       "n": 1000000000,
+       "tag": "日本"
+      },
+      {
+       "id": "v6z8b",
+       "map": "viny1",
+       "n": -101
+      },
+      {
+       "id": "twelve-chars",
+       "map": "v4jzz",
+       "n": 1,
+       "tag": "vkb06"
+      }
+     ]
+    ]
+   },
+   {
+    "input": 29,
+    "args": [
+     [
+      {
+       "id": "twelve-chars",
+       "map": "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+       "n": 23,
+       "tag": "Hello, World! 2024-01-31 10:30"
+      },
+      {
+       "id": "vnwi",
+       "map": "undefined",
+       "n": 2,
+       "tag": "null"
+      },
+      {
+       "id": "  padded  ",
+       "map": "/path/to/file.txt",
+       "n": 2,
+       "tag": "a,b,c"
+      },
+      {
+       "id": "user@example.com",
+       "map": "abc",
+       "n": 0,
+       "tag": "a"
+      },
+      {
+       "id": "vcf0g",
+       "map": " ",
+       "n": 376
+      }
+     ]
+    ]
+   }
+  ],
+  "heaps": {
+   "enumerated": 4,
+   "assignments": 7,
+   "space": 7,
+   "pool": 2,
+   "shapes": {
+    "[[\"id\",\"string\"],[\"map\",\"string\"],[\"n\",\"number\"],[\"tag\",\"string\"]]": {
+     "slots": 0,
+     "prims": 4
+    }
+   }
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 70,
+   "ops": {
+    "Array.prototype.map": 70
+   },
+   "calls": {
+    "Array.prototype.map": 70
+   },
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  },
+  "environmentPrograms": {
+   "runs": 12,
+   "maxCommands": 6,
+   "seed": 1,
+   "commands": "call, invoke, fire, tick, settle, next, throw, return",
+   "observation": "the outcome, the requests since the previous command, the pending count; never the graph"
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "xs",
+    "optional": false,
+    "spec": {
+     "kind": "array",
+     "of": {
+      "kind": "record",
+      "fields": {
+       "id": {
+        "spec": {
+         "kind": "string"
+        },
+        "optional": false
+       },
+       "n": {
+        "spec": {
+         "kind": "number"
+        },
+        "optional": false
+       },
+       "tag": {
+        "spec": {
+         "kind": "union",
+         "options": [
+          {
+           "kind": "undefined"
+          },
+          {
+           "kind": "string"
+          }
+         ]
+        },
+        "optional": true
+       },
+       "map": {
+        "spec": {
+         "kind": "string"
+        },
+        "optional": true,
+        "extra": true
+       }
+      }
+     }
+    }
+   }
+  ],
+  "returns": {
+   "kind": "array",
+   "of": {
+    "kind": "string"
+   }
+  },
+  "literals": [],
+  "strings": []
+ }
+}

@@ -1,0 +1,6 @@
+{
+ "scope": ["ease", "to_step", "check_digest", "clamp_unit", "scale"],
+ "equal": { "ease": false, "to_step": false, "check_digest": false, "clamp_unit": true, "scale": true },
+ "why": "The boundary walk takes every combination of the compared values once (the product of the boundary sizes, at most 30 inputs), then free draws (exec/gen.mjs walkLength). ease: the switch point moves from 0.5 to 1.5; both thresholds give equal values on both sides, so a walk held on them shows nothing; the free draw 1 separates (1 against 4): WITNESS. toStep: Math.trunc against Math.round on x / 10; 0, 1 and -1 (the compared value and its neighbours) agree; a free integer such as 7 separates: WITNESS. checkDigest: the key and the algorithm swapped in createHmac behind four truthiness guards; the walk's declared-draw digit of a truthiness-only leaf is a truthy value, so the combination where every guard passes is drawn and the recorded createHmac call differs: WITNESS. Lane A: Math.pow, Math.trunc, Math.round and createHmac are not read exactly, so none of the three lemmas is proved. clampUnit: a nested conditional written as two guards, the same comparisons in the same order: proved, PASS-bounded. scale: untouched.",
+ "b": { "ease": "WITNESS", "toStep": "WITNESS", "checkDigest": "WITNESS", "clampUnit": "PASS-bounded", "scale": "PASS-bounded" }
+}

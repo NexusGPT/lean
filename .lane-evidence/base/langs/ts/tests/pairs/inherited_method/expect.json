@@ -1,0 +1,66 @@
+{
+ "scope": [
+  "item_render",
+  "item_tag",
+  "item_title",
+  "item_next",
+  "item_show",
+  "item_word",
+  "item_size",
+  "item_stamp",
+  "item_note",
+  "item_mark"
+ ],
+ "equal": {
+  "item_render": false,
+  "item_tag": true,
+  "item_title": true,
+  "item_word": false,
+  "item_size": true,
+  "item_next": false,
+  "item_show": false,
+  "item_stamp": false,
+  "item_note": true,
+  "item_mark": true
+ },
+ "why": "the candidate imports base_next.ts, where pad (reached by the inherited format), the count initializer (read by bump) and stamp changed: render reads format through a transition keyed by the code that decides it, a different key on each side, so it is not proved and lane B witnesses it; tag and title read label, whose code is the same text on both sides, so the unrelated base change still proves (title is a refactor through a local); stamp calls super.stamp, changed in the base: another key, not proved, lane B witnesses; note calls super.note, unchanged: proved; next reads bump, which writes this.count: keyed (the count declaration changed, so lane A does not prove it and check stays PASS-bounded) and not admitted (on same.ts it is ASK:obligation); show reads describe, which calls word that Item overrides: the override joins the key, Item.word changed, so not proved and lane B witnesses; word changed; size untouched. same.ts is the parent copied: check.mjs proves render, tag and note on it; mark overrides the base mark, calls super.mark (unchanged, writes nothing on this, so admitted) and then writes its own field last: the super call is the keyed transition, the field write is the world write today's rules read, and the two sides are equal: proved",
+ "b": {
+  "Item.render": "WITNESS",
+  "Item.tag": "PASS-bounded",
+  "Item.title": "PASS-bounded",
+  "Item.show": "WITNESS",
+  "Item.word": "WITNESS",
+  "Item.size": "PASS-bounded",
+  "Item.stamp": "WITNESS",
+  "Item.note": "PASS-bounded",
+  "Item.mark": "PASS-bounded"
+ },
+ "check": {
+  "Item.render": {
+   "verdict": "WITNESS"
+  },
+  "Item.tag": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "Item.title": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "Item.next": {
+   "verdict": "PASS-bounded",
+   "laneA": "ASK:unproved"
+  },
+  "Item.stamp": {
+   "verdict": "WITNESS"
+  },
+  "Item.note": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "Item.mark": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  }
+ }
+}

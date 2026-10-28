@@ -1,0 +1,341 @@
+{
+ "verdict": "WITNESS",
+ "unit": "entryKind",
+ "witnesses": [
+  {
+   "input": 0,
+   "args": [
+    {
+     "k0": -254,
+     "k1": 0
+    },
+    "a"
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      },
+      "a"
+     ],
+     "own": {},
+     "outcome": 0,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "k0": -254,
+        "k1": 0
+       }
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": {
+      "$undefined": true
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      },
+      "a"
+     ],
+     "own": {},
+     "outcome": {
+      "$undefined": true
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "k0": -254,
+        "k1": 0
+       }
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/absent_number/parent.ts",
+      "start": 89,
+      "end": 89,
+      "text": "return typeof p[k] === \"number\" ? p[k] : 0;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/absent_number/candidate.ts",
+      "start": 89,
+      "end": 89,
+      "text": "return p[k];"
+     }
+    }
+   }
+  },
+  {
+   "input": 1,
+   "args": [
+    {
+     "k0": 347
+    },
+    "a"
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      },
+      "a"
+     ],
+     "own": {},
+     "outcome": 0,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "k0": 347
+       }
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": {
+      "$undefined": true
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      },
+      "a"
+     ],
+     "own": {},
+     "outcome": {
+      "$undefined": true
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {
+        "k0": 347
+       }
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/absent_number/parent.ts",
+      "start": 89,
+      "end": 89,
+      "text": "return typeof p[k] === \"number\" ? p[k] : 0;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/absent_number/candidate.ts",
+      "start": 89,
+      "end": 89,
+      "text": "return p[k];"
+     }
+    }
+   }
+  },
+  {
+   "input": 2,
+   "args": [
+    {},
+    "abc"
+   ],
+   "parent": {
+    "outcome": {
+     "returned": 0
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      },
+      "abc"
+     ],
+     "own": {},
+     "outcome": 0,
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {}
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "candidate": {
+    "outcome": {
+     "returned": {
+      "$undefined": true
+     }
+    },
+    "heap": {
+     "roots": [
+      {
+       "$ref": 0
+      },
+      "abc"
+     ],
+     "own": {},
+     "outcome": {
+      "$undefined": true
+     },
+     "anchors": 1,
+     "heap": [
+      {
+       "kind": "record",
+       "edges": {}
+      }
+     ]
+    },
+    "receiver": {},
+    "trace": [],
+    "pending": []
+   },
+   "where": {
+    "field": "outcome",
+    "lines": {
+     "kind": "completion",
+     "parent": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/absent_number/parent.ts",
+      "start": 89,
+      "end": 89,
+      "text": "return typeof p[k] === \"number\" ? p[k] : 0;"
+     },
+     "candidate": {
+      "file": "/Users/assem/nexus/nexus-organisation/work/lean-lanes/rest-param/.lane-evidence/base/langs/ts/tests/pairs/absent_number/candidate.ts",
+      "start": 89,
+      "end": 89,
+      "text": "return p[k];"
+     }
+    }
+   }
+  }
+ ],
+ "bound": {
+  "n": 30,
+  "seed": 1,
+  "ms": 2000,
+  "reached": {
+   "body": 3,
+   "guard": 0
+  },
+  "states": [
+   {
+    "input": 0,
+    "args": [
+     {
+      "k0": -254,
+      "k1": 0
+     },
+     "a"
+    ]
+   },
+   {
+    "input": 1,
+    "args": [
+     {
+      "k0": 347
+     },
+     "a"
+    ]
+   },
+   {
+    "input": 2,
+    "args": [
+     {},
+     "abc"
+    ]
+   }
+  ],
+  "heaps": {
+   "assignments": 0,
+   "pool": 2,
+   "shapes": {}
+  },
+  "fakes": "demand-driven proxies, seeded primitives, seeded recorded clocks",
+  "inputs": "from parameter types with boundary values first; positions of one shape sometimes share one object",
+  "observation": "outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work",
+  "schedule": "after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired",
+  "library": {
+   "records": 0,
+   "ops": {},
+   "calls": {},
+   "sampled": [],
+   "outOfModel": 0,
+   "callbackEffects": 0,
+   "defectRecords": 0,
+   "defects": []
+  }
+ },
+ "spec": {
+  "params": [
+   {
+    "name": "p",
+    "optional": false,
+    "spec": {
+     "kind": "dict",
+     "value": {
+      "kind": "number"
+     }
+    }
+   },
+   {
+    "name": "k",
+    "optional": false,
+    "spec": {
+     "kind": "string"
+    }
+   }
+  ],
+  "returns": {
+   "kind": "number"
+  },
+  "literals": [],
+  "strings": []
+ },
+ "unitTextEqual": false
+}

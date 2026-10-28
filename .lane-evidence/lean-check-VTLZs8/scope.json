@@ -1,0 +1,1 @@
+{"functions":{"pick":{"in_scope":"false"}},"adapters":{"pick":{"from":["flag","x"],"to":["x","flag"],"map":["x","flag"]}},"summaries":true}

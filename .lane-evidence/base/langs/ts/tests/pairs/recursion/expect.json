@@ -1,0 +1,15 @@
+{
+ "scope": [
+  "total",
+  "depth"
+ ],
+ "equal": {
+  "total": false,
+  "depth": false
+ },
+ "b": {
+  "total": "PASS-bounded",
+  "depth": "WITNESS"
+ },
+ "why": "both functions recurse through a loop helper; the helper takes the unit's fuel as a const parameter and passes fuel - 1 to the recursive call, as the unit itself does (design/loop-fuel.md), so both sides resolve and verify in Dafny and each lemma reaches a verdict. The helper calls the changed sibling, so identity cannot alias it, and the proof needs an induction over the loop helper the theorem does not generate: not proved on both (honest ASK). total is behaviourally equal (n.v + 0): lane B says PASS-bounded; depth changes its step: lane B witnesses it."
+}

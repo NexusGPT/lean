@@ -1,0 +1,6 @@
+{
+ "scope": ["subscribe", "relay"],
+ "equal": { "subscribe": false, "relay": true },
+ "why": "the candidate swaps the arguments inside the handler handed to the bus: a different opaque value; relay is untouched",
+ "b": { "subscribe": "WITNESS", "relay": "PASS-bounded" }
+}

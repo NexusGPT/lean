@@ -1,0 +1,6 @@
+{
+ "scope": ["guard_constructor", "guard_read", "build", "ignored_new", "method_call", "ignored_method", "untouched"],
+ "equal": { "guard_constructor": false, "guard_read": true, "build": false, "ignored_new": false, "method_call": true, "ignored_method": false, "untouched": true },
+ "why": "the constructor raises on zero too in the candidate: the raise reaches build and ignored_new; ignored_method no longer calls read, whose raise was its outcome; method_call constructs with 1 and is unchanged",
+ "b": { "Guard.__init__": "WITNESS", "Guard.read": "PASS-bounded", "build": "WITNESS", "ignored_new": "WITNESS", "method_call": "PASS-bounded", "ignored_method": "WITNESS", "untouched": "PASS-bounded" }
+}
