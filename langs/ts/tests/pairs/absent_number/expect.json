@@ -1,0 +1,24 @@
+{
+  "scope": ["pick", "read_mechanic", "nth_of", "entry_or", "entry_kind", "entry_let"],
+  "equal": {
+    "pick": true,
+    "read_mechanic": true,
+    "nth_of": false,
+    "entry_or": true,
+    "entry_kind": false,
+    "entry_let": false
+  },
+  "why": "A number that may be absent (design/absent-number.md). readMechanic: a shorthand field of a local a guard narrowed reads the local's stored Option and unwraps it, and pick's loop requires the captured params present (the guard before the loop proves it); the refactor spells the fields out and turns one guard around (proved). nthOf changes the fallback of an absent nth (WITNESS, not proved). A dictionary read typed number is undefined on a missing key and a prototype function on an Object.prototype name: entryOr's `v === undefined ? 0 : v` through a const binding equals `p[k] ?? 0` (proved); entryKind drops the typeof test the type calls dead (WITNESS, not proved; the base proved it equal). entryLet tests a `let` copy of the read: no single read stands behind it, so the unit is one opaque function keyed by its source (absent_number_<hash>), never equal across a change (lane B PASS-bounded, lane A ASK:unproved).",
+  "b": {
+    "pick": "PASS-bounded",
+    "readMechanic": "PASS-bounded",
+    "nthOf": "WITNESS",
+    "entryOr": "PASS-bounded",
+    "entryKind": "WITNESS",
+    "entryLet": "PASS-bounded"
+  },
+  "check": {
+    "readMechanic": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
+    "entryLet": { "verdict": "PASS-bounded", "laneA": "ASK:unproved" }
+  }
+}

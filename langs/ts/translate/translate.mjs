@@ -1748,6 +1748,16 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     if (ts.isPrefixUnaryExpression(n) && n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
     const t = typeOf(n);
+    { // the truth of a dictionary read typed without absence: an owned key the truth of its value, a prototype name a
+      // function or the prototype object (true), any other key undefined (false)
+      const src = !isOptional(t) && !isNullish(t) && !isAny(t) ? dictSource(n) : null, dict = src ? dictRead(src) : null;
+      if (dict && !isOptional(dict.valueType) && !isNullish(dict.valueType) && !isAny(dict.valueType)) {
+        const vt = dict.valueType, v = `${dict.map}[${dict.key}]`, ms = sums.get(dtype(vt, n));
+        const present = ms ? sumTruth(v, ms) : vt.flags & TF.BooleanLike ? v : vt.flags & TF.StringLike ? `(|${v}| > 0)` : vt.flags & (TF.NumberLike | TF.BigIntLike) ? `(${v} != ${real ? '0.0' : '0'})` : 'true';
+        return `(if ${dict.key} in ${dict.map} then ${present} else ${missingKey(dict, n, () => 'true', 'false')})`;
+      }
+      if (!src && !isOptional(t) && !isNullish(t) && !isAny(t)) untracedDictValue(n, n, 'a truth test');
+    }
     if (isOptional(t)) {
       const inner = baseOf(t);
       const v = rawOperand(n);
@@ -1936,9 +1946,21 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     return false;
   }
+  // a shorthand property `{ x }` reads the local x: its storage is the local's declared type, not the property's type
+  // (the property takes the type a guard narrowed x to), so a narrowed read of a local that may be absent unwraps it
+  function readOrigin(n) {
+    const o = originOf(checker, n, sf, currentUnit?.node ?? null);
+    const p = n.parent;
+    if (!p || !ts.isShorthandPropertyAssignment(p) || p.name !== n) return o;
+    const vs = checker.getShorthandAssignmentValueSymbol(p);
+    if (!vs) return o;
+    const vc = Object.create(checker); vc.getSymbolAtLocation = () => vs;
+    const vo = originOf(vc, n, sf, currentUnit?.node ?? null);
+    return vo.kind === 'local' ? vo : o;
+  }
   function ident(n) {
     if (n.text === 'undefined') return absentValue(typeOf(n));
-    const o = originOf(checker, n, sf, currentUnit?.node ?? null);
+    const o = readOrigin(n);
     const state = moduleState(checker, n, sf);
     if (state) {
       const dt = checker.getTypeAtLocation(state.name), d = dtype(dt, n);
@@ -2041,6 +2063,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       case K.RegularExpressionLiteral: { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return `${external(`regex_${hash(n.text)}`, [], 'Ext_RegExp')}()`; }
       case K.TypeOfExpression: {
         { let g = n.expression; while (ts.isParenthesizedExpression(g)) g = g.expression; if (libGlobalRoot(checker, g, sf, currentUnit?.node ?? null)) { addPrelude('World', 'type World'); return hoist(`${external(`global_typeof_${g.text}`, ['World'], '(World, string)')}(${WORLD})`, 'string'); } } // whether a lib global exists is a fact of the world, never of its declaration
+        { const dt = dictTypeof(n.expression, n); if (dt) return dt; untracedDictValue(n.expression, n, 'typeof'); } // a dictionary read typed without its absence
         // represented alternatives decide the tag; assertion-derived values stay uninterpreted
         return staticTest(n.expression, (t) => { const tag = runtimeTag(t); return tag ? strEsc(tag) : null; }, (v, d) => `${external('typeof', [d], 'string')}(${v})`);
       }
@@ -2352,7 +2375,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const kind = typeOf(absent).flags & TF.Null ? 'Null' : 'Undef';
       const t = typeOf(other), dt = storedType(other);
       let test;
-      const dict = dictRead(other);
+      const dsrc = dictSource(other), dict = dsrc ? dictRead(dsrc) : null;
+      if (!dsrc) untracedDictValue(other, n, 'an absence test');
       if (dict) {
         const present = `${dict.key} in ${dict.map}`, value = `${dict.map}[${dict.key}]`;
         const vt = dict.valueType;
@@ -2380,6 +2404,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (op === K.QuestionQuestionToken && !bothAbsent(storedType(n.left)) && !isNullish(typeOf(n.left)) && !isNullish(typeOf(n.right)) && !containsEffect(n.right)) {
       const lt = typeOf(n.left);
       if (isAny(lt)) return anyNullishOr(n);
+      { // `d[k] ?? r` on a dictionary typed without absence: an owned key its value, a prototype name the value the
+        // prototype holds (read as the one absent value of V, as the read reads it), any other key r
+        const src = !isOptional(lt) ? dictSource(n.left) : null, dict = src ? dictRead(src) : null;
+        if (!src && !isOptional(lt)) untracedDictValue(n.left, n, 'a nullish default');
+        if (dict && !isOptional(dict.valueType) && !isNullish(dict.valueType) && !isAny(dict.valueType)) { const V = dtype(dict.valueType, n); const r = outerParens(expr(n.right, lt)); return `(if ${dict.key} in ${dict.map} then ${dict.map}[${dict.key}] else ${missingKey(dict, n, () => `${external(`absent_${V}`, [], V)}()`, r)})`; }
+      }
       if (!isOptional(lt)) return expr(n.left);
       const l = rawOperand(n.left);
       const t = typeOf(n); const td = isAny(t) ? anyType() : dtype(t, n); const inner = isAny(baseOf(lt)) ? anyType() : dtype(baseOf(lt), n); const rtp = typeOf(n.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, n);
@@ -2414,7 +2444,13 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       // the deciding operand is evaluated once, before either branch is translated
       const saved = valueName(), first = expr(n.left);
       const and = op === K.AmpersandAmpersandToken;
-      const cond = logicalTruth(saved, ld, n);
+      let cond = logicalTruth(saved, ld, n);
+      { // a dictionary read typed without absence decides by its key: an owned key by its value's truth, a prototype name
+        // truthy, any other key (undefined) falsy
+        const src = !isOptional(lt) && !isNullish(lt) && !isAny(lt) ? dictSource(n.left) : null, dict = src ? dictRead(src) : null;
+        if (dict && !isOptional(dict.valueType) && !isNullish(dict.valueType) && !isAny(dict.valueType)) cond = `(if ${dict.key} in ${dict.map} then ${cond} else ${missingKey(dict, n, () => 'true', 'false')})`;
+        else if (!src && !isOptional(lt) && !isNullish(lt) && !isAny(lt)) untracedDictValue(n.left, n, 'a logical operand');
+      }
       const left = !and && isOptional(lt) ? convertD(`${saved}.value`, innerOf(ld), td) : convert(saved, lt, t, n);
       const choose = (right) => and ? `if ${cond} then ${right} else ${left}` : `if ${cond} then ${left} else ${right}`;
       if (containsEffect(n.right)) {
@@ -3117,6 +3153,83 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     return `${recvCode}.${dn(name)}`;
   }
   // `m[k]` on a string-indexed object: {map, key} or null
+  // what a dictionary key yields when the dictionary does not own it: an Object.prototype name reads through the
+  // prototype (`__proto__` the prototype object, every other name a function), any other key reads undefined; a unit a
+  // made prototype reaches keeps the own-key reading (no prototype clause)
+  function missingKey(dict, n, proto, undef) {
+    if (inPrototypeReach(checker, sf, n)) return undef;
+    return `(if ${dict.key} == "__proto__" then ${proto('object')} else if ${dict.key} in ${helper('ObjectProtoNames', [])} then ${proto('function')} else ${undef})`;
+  }
+  // the dictionary read a value comes from: the read itself, or a const local it initialised whose names (the
+  // dictionary and the key) are consts or parameters the unit never assigns, so the read means the same at every use
+  function dictSource(e) {
+    while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (dictShape(e)) return e;
+    if (!ts.isIdentifier(e)) return null;
+    const o = originOf(checker, e, sf, currentUnit?.node ?? null);
+    const decl = o.kind === 'local' ? o.decl : null;
+    if (!decl || !ts.isVariableDeclaration(decl) || !ts.isIdentifier(decl.name) || !decl.initializer || !(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const)) return null;
+    const frame = (x) => { for (let p = x.parent; p; p = p.parent) if (ts.isIterationStatement(p, false) || ts.isFunctionLike(p)) return p; return null; };
+    if (frame(e) !== frame(decl)) return null; // the read is restated at the use: the use sits in the declaration's own loop step or body, where its names are in scope
+    let init = decl.initializer; while (ts.isParenthesizedExpression(init)) init = init.expression;
+    if (!dictShape(init)) return null;
+    let steady = true;
+    // a write rooted at the name anywhere in the unit (`x = `, `x[k] = `, `x.f++`, `delete x[k]`, a method call on x)
+    const rootSym = (x) => { while (ts.isParenthesizedExpression(x) || ts.isElementAccessExpression(x) || ts.isPropertyAccessExpression(x) || ts.isNonNullExpression(x)) x = x.expression; return ts.isIdentifier(x) ? checker.getSymbolAtLocation(x) : null; };
+    const written = (sym) => { let hit = false; const w = (x) => { if (hit) return; if ((ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && rootSym(x.left) === sym) || ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [K.PlusPlusToken, K.MinusMinusToken].includes(x.operator) && rootSym(x.operand) === sym) || (ts.isDeleteExpression(x) && rootSym(x.expression) === sym) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && rootSym(x.expression.expression) === sym)) hit = true; ts.forEachChild(x, w); }; w(currentUnit.node); return hit; };
+    const w = (x) => { if (!steady) return; if (ts.isIdentifier(x)) { const xo = originOf(checker, x, sf, currentUnit?.node ?? null); const xd = xo.decl; const ok = xo.kind === 'local' && xd && ((ts.isVariableDeclaration(xd) && (ts.getCombinedNodeFlags(xd) & ts.NodeFlags.Const)) || ts.isParameter(xd)) && !written(xo.sym); if (!ok) steady = false; return; } ts.forEachChild(x, w); };
+    w(init);
+    return steady ? init : null;
+  }
+  // a local typed without absence that holds a dictionary read (its type claims a value a missing key does not give)
+  // where no single read stands behind it (a `let`, a name assigned again, a key that may change): an absence test of it
+  // has no faithful reading, so the translator refuses it by name
+  function untracedDict(operand) {
+    let e = operand; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isIdentifier(e) || dictSource(e)) return false;
+    const t = typeOf(e); if (isOptional(t) || isNullish(t) || isAny(t)) return false;
+    const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (o.kind !== 'local' || !o.sym) return false;
+    const fromDict = (x) => { if (!x) return false; while (ts.isParenthesizedExpression(x)) x = x.expression; const vt = dictShape(x); return !!vt && !isOptional(vt) && !isNullish(vt) && !isAny(vt); };
+    let hit = (o.sym.declarations ?? []).some((d) => ts.isVariableDeclaration(d) && fromDict(d.initializer));
+    const w = (x) => { if (hit) return; if (ts.isBinaryExpression(x) && x.operatorToken.kind === K.EqualsToken && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === o.sym && fromDict(x.right)) hit = true; ts.forEachChild(x, w); };
+    if (currentUnit?.node) w(currentUnit.node);
+    return hit;
+  }
+  // the absence tests a value takes: `typeof v`, `v ?? r`, `v === undefined` and the other null/undefined comparisons
+  function absenceOperand(n) {
+    if (ts.isTypeOfExpression(n)) return n.expression;
+    if (ts.isPrefixUnaryExpression(n) && n.operator === K.ExclamationToken) return n.operand; // a truth test
+    if ((ts.isIfStatement(n) || ts.isWhileStatement(n) || ts.isDoStatement(n)) && n.expression) return n.expression;
+    if (ts.isConditionalExpression(n)) return n.condition;
+    if (ts.isForStatement(n) && n.condition) return n.condition;
+    if (ts.isBinaryExpression(n) && [K.QuestionQuestionToken, K.AmpersandAmpersandToken, K.BarBarToken].includes(n.operatorToken.kind)) return n.left;
+    if (ts.isBinaryExpression(n) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(n.operatorToken.kind)) {
+      const nul = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined'); };
+      return nul(n.left) ? n.right : nul(n.right) ? n.left : null;
+    }
+    return null;
+  }
+  function untracedDictValue(operand, n, what) { // the translation backstop: the unit scan reads such a unit as one opaque function
+    if (untracedDict(operand)) fail(n, `absent-number: ${what} of a local that holds a dictionary read typed without undefined and may change; bind the read with const or test the read itself`);
+  }
+  // `typeof` of a dictionary read whose value type excludes absence: the value's tag for an owned key, the prototype's
+  // tag or undefined for any other key (the type says the value is there; the read says whether it is)
+  function dictTypeof(operand, n) {
+    const src = dictSource(operand);
+    if (!src) return null;
+    const dict = dictRead(src), vt = dict.valueType;
+    if (isOptional(vt) || isNullish(vt) || isAny(vt)) return null;
+    const tag = runtimeTag(vt);
+    if (!tag || (vt.flags & TF.Union && !vt.types.every((x) => runtimeTag(x) === tag))) return null;
+    return `(if ${dict.key} in ${dict.map} then ${strEsc(tag)} else ${missingKey(dict, n, (t) => strEsc(t), strEsc('undefined'))})`;
+  }
+  // the value type of a dictionary read, read off the syntax and the types alone (no code made)
+  function dictShape(e) {
+    while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isElementAccessExpression(e)) return null;
+    const rt = baseOf(typeOf(e.expression)), ix = stringIndex(rt);
+    return ix && !checker.getPropertiesOfType(rt).length ? ix.type : null;
+  }
   function dictRead(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (!ts.isElementAccessExpression(e)) return null;
@@ -3154,7 +3267,14 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const base = baseOf(recvT);
     if (ts.isStringLiteral(n.argumentExpression) && isRecordish(base)) return fieldOf(expr(n.expression), base, n.argumentExpression.text, n);
     const d = dictRead(n);
-    if (d) { const V = dtype(stringIndex(base).type, n); return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`; }
+    if (d) {
+      const V = dtype(stringIndex(base).type, n), rd = isAny(typeOf(n)) ? V : dtype(typeOf(n), n);
+      // a read typed with the absence a missing key yields (noUncheckedIndexedAccess): a missing key reads undefined, a
+      // present key its value, so the read is exact; a null the value type holds stays Null beside the missing key's Undef
+      if (rd === `Option<${V}>`) { usesOption = true; return `(if ${d.key} in ${d.map} then Some(${d.map}[${d.key}]) else ${missingKey(d, n, () => `Some(${external(`absent_${V}`, [], V)}())`, 'None')})`; }
+      if (V.startsWith('Option<') && rd === `Nullish<${innerOf(V)}>` && hasAbsence(stringIndex(base).type, TF.Null) && !hasAbsence(stringIndex(base).type, TF.Undefined)) { const x = `dv${tempCount++}_`; return `(if ${d.key} in ${d.map} then (var ${x} := ${d.map}[${d.key}]; if ${x}.Some? then Nullish.Some(${x}.value) else Nullish.Null) else Nullish.Undef)`; }
+      return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`;
+    }
     if (isRecordish(base)) {
       // a finite key selects a declared field; receiver and key are evaluated once, in that order
       const keyParts = at.flags & TF.Union ? at.types : [at];
@@ -5206,6 +5326,13 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const stateParams = M.map((m) => `${dn(m.name)}: ${m.d}`);
     const constArgs = [...(fuelled ? [FUEL] : []), ...(loopUsesSelf && classOf(u) ? [SELF] : []), ...free.map((v) => dn(v.name))];
     const requiresL = fuelled ? [`${FUEL} > 0`] : [];
+    // a captured value that may be absent, read inside the loop only where a guard before the loop narrowed it present
+    // (every read of it in the loop has the narrowed type): the helper requires it present, the caller proves it
+    for (const v of free) {
+      if (!v.sym || !(v.d.startsWith('Option<') || v.d.startsWith('Nullish<'))) continue;
+      const refs = []; const w = (x) => { if (ts.isIdentifier(x) && (x.parent && ts.isShorthandPropertyAssignment(x.parent) && x.parent.name === x ? checker.getShorthandAssignmentValueSymbol(x.parent) : checker.getSymbolAtLocation(x)) === v.sym) refs.push(x); ts.forEachChild(x, w); }; w(s);
+      if (refs.length && refs.every((r) => { const t = typeOf(r); return !isOptional(t) && !isNullish(t) && !bothAbsent(t); })) requiresL.push(`${dn(v.name)}.Some?`);
+    }
     let lead = [], leadArgsNext = [], leadArgsFirst = [], exit, bind = '', decreases, factsIn = new Set();
     let conditionLines = [];
     let lp = null;
@@ -5298,7 +5425,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   }
 
   // special-producing arithmetic keeps its entire observer opaque, including same-file callers
-  const numericOpaque = new Set(), numericDeps = new Map(), numericSources = new Map();
+  const numericOpaque = new Set(), numericDeps = new Map(), numericSources = new Map(), absentOpaque = new Set();
   const unitByDecl = new Map([...fns.values()].flatMap((u) => [[u.fn, u], [u.node, u]]));
   const finiteLiteral = (n) => {
     while (ts.isParenthesizedExpression(n)) n = n.expression;
@@ -5334,6 +5461,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
         if (divisor === null || !Number.isFinite(divisor) || divisor === 0) numericOpaque.add(u.name);
       }
       if (ts.isNumericLiteral(n) && !Number.isFinite(Number(n.text))) numericOpaque.add(u.name);
+      { const op = absenceOperand(n); if (op) { const cu = currentUnit; currentUnit = u; try { if (untracedDict(op)) { numericOpaque.add(u.name); absentOpaque.add(u.name); } } finally { currentUnit = cu; } } } // an absence test of a dictionary value no single read stands behind: the whole unit is opaque, keyed by its source
       if (ts.isPrefixUnaryExpression(n) && n.operator === K.MinusToken && Object.is(finiteLiteral(n), -0)) numericOpaque.add(u.name);
       if (ts.isPrefixUnaryExpression(n) && n.operator === K.PlusToken && !(typeOf(n.operand).flags & (TF.NumberLike | TF.BooleanLike))) numericOpaque.add(u.name);
       if (ts.isPropertyAccessExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'Number' && originOf(checker, n.expression, sf, u.node).kind === 'global' && ['NaN', 'POSITIVE_INFINITY', 'NEGATIVE_INFINITY'].includes(n.name.text)) numericOpaque.add(u.name);
@@ -5357,6 +5485,30 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (moduleUnitShape(u).reads) return createHash('sha256').update(sf.text + '\n' + u.name).digest('hex');
     return createHash('sha256').update([...seen].sort().map((name) => `${name}:${fns.get(name).fn.getText(sf)}\n${[...(numericSources.get(name) ?? [])].sort().join('\n')}`).join('\n')).digest('hex');
   }
+  // the source a unit means: its own text and every same-file unit it reaches, or the whole file when it reads any other
+  // same-file declaration; two units with one key behave alike on every input, the inputs out of the model included
+  function sourceKey(u) {
+    const seen = new Set(); let whole = false;
+    const visit = (v) => {
+      if (seen.has(v) || whole) return; seen.add(v);
+      const w = (x) => {
+        if (whole) return;
+        if (ts.isIdentifier(x)) {
+          const sym = checker.getSymbolAtLocation(x), decl = sym?.valueDeclaration;
+          if (decl && decl.getSourceFile() === sf) {
+            const callee = unitByDecl.get(decl) ?? (decl.initializer ? unitByDecl.get(decl.initializer) : undefined);
+            if (callee) visit(callee);
+            else { let inside = false; for (let p = decl; p; p = p.parent) if (p === v.node || p === v.fn) { inside = true; break; } if (!inside && !ts.isParameter(decl) && !ts.isPropertySignature(decl) && !ts.isPropertyAssignment(decl) && !ts.isShorthandPropertyAssignment(decl)) whole = true; }
+          }
+        }
+        ts.forEachChild(x, w);
+      };
+      w(v.fn);
+    };
+    visit(u);
+    if (whole) return createHash('sha256').update(sf.text + '\n' + u.name).digest('hex').slice(0, 16);
+    return createHash('sha256').update([...seen].map((x) => `${x.name}:${x.fn.getText(sf)}`).sort().join('\n')).digest('hex').slice(0, 16);
+  }
   function opaqueNumericUnit(u, rt, specs) {
     const params = [], args = [];
     const add = (name, d) => { params.push(`${name}: ${d}`); args.push({ name, d }); };
@@ -5372,7 +5524,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     });
     const outs = [...(eff ? ['World'] : []), rt, ...(core ? mutatedOf(u).map((m) => dtype(typeOf(u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m).name), u.node)) : [])];
     const out = outs.length === 1 ? rt : `(${outs.join(', ')})`;
-    const ext = external(`number_special_${numericKey(u)}`, args.map((a) => a.d), out);
+    const ext = external(`${absentOpaque.has(u.name) ? 'absent_number' : 'number_special'}_${numericKey(u)}`, args.map((a) => a.d), out); // the reading names why the unit is opaque
     const tp = unitTParams().length ? `<${unitTParams().map((p) => `${p}(==)`).join(', ')}>` : '';
     return [`function ${fname(u.name)}${tp}(${params.join(', ')}): ${core ? out : `(result: ${out})`}`, ...specs, `{ ${ext}(${args.map((a) => a.name).join(', ')}) }`].join('\n');
   }
@@ -5443,13 +5595,13 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   for (const u of order) {
     if (tolerant) {
       const before = chunks.length; const savedPending = pending;
-      try { sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`); if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); if (heapT.needsInRange(u)) heapHyps.push(`// INRANGE ${fname(u.name)}`); } else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(promiseHandleGuard(u, heapT.guard(u)))}`); } cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`); fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`); report.translated.push(u.name); }
+      try { sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`); if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); if (heapT.needsInRange(u)) { heapHyps.push(`// INRANGE ${fname(u.name)}`); heapHyps.push(`// SOURCE ${fname(u.name)}: ${sourceKey(u)}`); } } else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(promiseHandleGuard(u, heapT.guard(u)))}`); } cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`); fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`); report.translated.push(u.name); }
       catch (e) { if (!(e instanceof Unsupported)) throw e; chunks.length = before; pending = savedPending; failedUnits.add(u.name); report.failed.push({ unit: u.name, message: String(e.message).split('\n')[0].slice(0, 160) }); currentUnit = null; yieldState = null; }
       continue;
     }
     sigLines.push(`// SIG ${fname(u.name)}: ${sigOf(u)}`);
     const before = chunks.length;
-    if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); if (heapT.needsInRange(u)) heapHyps.push(`// INRANGE ${fname(u.name)}`); }
+    if (heapT?.isCore(u)) { const h = heapT.emit(u); chunks.push(h.text); heapHyps.push(`// HYP ${fname(u.name)}: ${h.hyp}`); if (heapT.needsInRange(u)) { heapHyps.push(`// INRANGE ${fname(u.name)}`); heapHyps.push(`// SOURCE ${fname(u.name)}: ${sourceKey(u)}`); } }
     else { emitUnit(u); if (heapT) heapGuards.push(`// GUARD ${fname(u.name)}: ${JSON.stringify(promiseHandleGuard(u, heapT.guard(u)))}`); }
     cellLines.push(`// CELLS ${fname(u.name)}: ${JSON.stringify(cellsOf(u, chunks.slice(before).join('\n')))}`);
     fnLines.push(`// FN ${fname(u.name)}: ${JSON.stringify([...(fnIdsOf.get(u.name) ?? [])].sort())}`);
