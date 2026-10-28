@@ -8,7 +8,7 @@ export function finishUnitRecord(record) {
   if (!session || session.record !== record) return;
   record.auxiliaryEnvironments = session.environments.filter(env => !captures.get(env).claimed).map(env => {
     const c = captures.get(env);
-    return { seed: env.seed, events: c.events, imports: [...c.imports], invocation: { status: 'not recorded', reason: 'auxiliary program/sequence generator outside the single-draw output boundary' } };
+    return { seed: env.seed, ...answered(c.events, [...c.imports]), invocation: { status: 'not recorded', reason: 'auxiliary program/sequence generator outside the single-draw output boundary' } };
   });
 }
 const knownHandles = new WeakMap();
@@ -125,8 +125,33 @@ export function witnessRecord({ seed, leanHead, input, sides, invocation = { kin
         timeline: side.env.trace.filter(e => e.op === 'fire').map(e => ({ ...e })),
         unrecorded: c ? [] : [{ site: 'environment setup', reason: 'capture not installed' }] }];
     })) };
-  if (invocation.kind === 'program' && currentUnit) (currentUnit.record.programRuns ??= []).push(record);
+  if (invocation.kind === 'program' && currentUnit) (currentUnit.record.programRuns ??= []).push(drawSummary(record));
   return record;
+}
+
+// The unit certificate is accounting, not a second transcript: per side, how many answers each fake gave, by operation
+// and by path, and which answers were not recorded. A replayable transcript rides only in a witness record; carrying one
+// per draw made a bounded row up to 3.8 MB (eslint:105 resolve, 100 draws) for no reader that replays it.
+const unrecordedReasons = (x, out) => {
+  if (Array.isArray(x)) { for (const y of x) unrecordedReasons(y, out); return out; }
+  if (!x || typeof x !== 'object') return out;
+  if (x.t === 'unrecorded') { out[x.reason] = (out[x.reason] ?? 0) + 1; return out; }
+  for (const k of ['v', 'value']) if (k in x) unrecordedReasons(x[k], out);
+  return out;
+};
+function answered(events, imports) {
+  const ops = {}, fakes = {}, unrecorded = {};
+  for (const e of events) {
+    ops[e.op] = (ops[e.op] ?? 0) + 1;
+    fakes[e.path] = (fakes[e.path] ?? 0) + 1;
+    unrecordedReasons(e.outcome?.value, unrecorded);
+  }
+  return { events: events.length, ops, fakes, imports, unrecorded };
+}
+export function drawSummary(record) {
+  const sides = Object.fromEntries(Object.entries(record.sides).map(([name, s]) => [name, { ...answered(s.events, s.imports), ...(s.unrecorded.length ? { setup: s.unrecorded } : {}) }]));
+  const p = record.sides.parent, c = record.sides.candidate;
+  return { input: record.input, invocation: record.invocation, args: p.args, ...(JSON.stringify(p.args) !== JSON.stringify(c.args) ? { argsCandidate: c.args } : {}), ...(p.commands ? { commands: p.commands.length } : {}), sides };
 }
 
 // A worker can stop before it can return its local recorder. Preserve that absence as data.

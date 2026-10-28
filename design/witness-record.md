@@ -33,3 +33,26 @@ The lead also authorized output-only hooks in `exec/programs.mjs`: snapshot cons
 ## Capture purity and interrupted workers
 
 Snapshotting uses intrinsic brand checks and property descriptors. Real proxies, symbol-keyed properties, array accessors/holes, extended arrays, non-enumerable object fields, and promises without a settlement protocol are explicitly unrecorded. No user getter or proxy trap is invoked to discover a tag or an array item. The regression control observed getter/trap hits before the fix and zero afterward. A worker stopped by the existing wall-clock bound now returns a v2 unit certificate whose draw domain and reach say not recorded, with the stop reason; no in-worker history is reconstructed. That test first failed on the absent version. The fallback changes only additive record fields and never changes the bound.
+
+## One home for the unit certificate; summaries, not transcripts
+
+The unit certificate has exactly one home: `record` on lane B's result (`runPair`). `check.mjs` copies it into
+`certificate.lanes.B.record` (one additive line beside its existing projection), and the refused branch of `prReport`
+builds the same projection (`verdict`, `reason`, `bound`, `record`) instead of embedding the whole lane B result, whose
+witnesses already ride in the row. Before this, the record sat in both `res.record` and `res.bound.record`, so every
+checked row serialised it twice, and a checked row whose lane B result had no `bound` (an ASK before the draws) lost it.
+
+A certificate draw is accounting, not a replay transcript. Each draw keeps its input index, generator family,
+completion, drawn arguments, and per side: the number of answers, their counts by operation and by fake path, the import
+names, and the reasons of any answer that was not recorded. Program runs and auxiliary environments are summarised the
+same way. The replayable transcript (every event with its arguments and outcome) rides only in a witness record, the one
+artifact a replayer consumes. Measured cause: at aaa78b8, `bugsjs:eslint:105` `resolve` (PASS-bounded, 100 draws) carried
+a 3.8 MB unit record, written twice in its row (7.6 MB), of which 2.9 MB were per-draw event transcripts.
+
+The generator family is a property of the draw, so it is the same for every parameter; per parameter the certificate
+counts draws by family. In the listed-values phase a parameter without a listed value is still drawn: the family names
+the phase, not how that one parameter was produced.
+
+Red controls: the bounded test failed on `r.record` (undefined: the record was only in `bound`), the refused-row test
+counted the unit certificate twice, the program test found full records instead of summaries, and the new checked-row
+test found no `record` in `certificate.lanes.B`.

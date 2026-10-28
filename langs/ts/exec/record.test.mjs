@@ -75,11 +75,14 @@ test('PASS-bounded carries every draw, per-parameter generator counts and explic
     for (const side of ['parent', 'candidate']) fs.writeFileSync(path.join(d, side + '.ts'), 'export function f(x: number) { return x + Date.now(); }');
     const r = await runPair({ parent: path.join(d, 'parent.ts'), candidate: path.join(d, 'candidate.ts'), unit: 'f', project: false, n: 3 });
     assert.equal(r.verdict, 'PASS-bounded');
-    assert.equal(r.bound.record?.schema, 'witness-record/v2');
-    assert.equal(r.bound.record.draws.length, 3);
-    assert.equal(r.bound.record.drawDomain.parameters[0].count, 3);
-    assert.equal(r.bound.record.reach.status, 'not recorded');
-    assert.ok(r.bound.record.draws.every(d => d.sides.parent.clock.length === 1));
+    assert.equal(r.record?.schema, 'witness-record/v2');
+    assert.equal(r.record.draws.length, 3);
+    assert.equal(r.record.drawDomain.parameters[0].count, 3);
+    assert.equal(r.record.reach.status, 'not recorded');
+    // a certificate draw is accounting: which fakes answered how often, never a second transcript
+    assert.ok(r.record.draws.every(d => d.sides.parent.ops.clock === 1 && d.sides.parent.events === 1 && !('timeline' in d.sides.parent)));
+    assert.equal(r.bound.record, undefined);
+    assert.equal(JSON.stringify(r).split('"kind":"unit"').length - 1, 1);
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
 
@@ -96,6 +99,7 @@ test('lane-A-refused PR rows retain the bounded lane B certificate', async () =>
     assert.match(r.coverage, /^refused:/); assert.equal(r.laneB, 'PASS-bounded');
     assert.equal(r.certificate?.lanes.B.record.schema, 'witness-record/v2');
     assert.equal(r.certificate.lanes.B.record.drawDomain.parameters[0].count, 3);
+    assert.equal(JSON.stringify(r).split('"kind":"unit"').length - 1, 1);
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
 
@@ -110,7 +114,7 @@ test('method programs carry constructor inputs and every command snapshot', asyn
     assert.equal(w.record.invocation.kind, 'program');
     assert.equal(w.record.sides.parent.commands.length, w.program.length);
     assert.equal(w.record.sides.parent.args.t, 'array');
-    assert.ok(r.record.programRuns.some(p => JSON.stringify(p) === JSON.stringify(w.record)));
+    assert.ok(r.record.programRuns.some(p => p.commands === w.record.sides.parent.commands.length && p.sides.parent.events === w.record.sides.parent.events.length));
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
 
@@ -130,4 +134,19 @@ test('a worker stopped at its bound retains an explicit incomplete unit record',
     const r = await runPair({ parent: path.join(d,'parent.ts'), candidate: path.join(d,'candidate.ts'), unit: 'f', unitSeconds: 0.01, project: false });
     assert.equal(r.kind, 'spin-bound'); assert.equal(r.record?.version, 2); assert.equal(r.record.drawDomain.status, 'not recorded');
   } finally { fs.rmSync(d,{recursive:true,force:true}); }
+});
+
+test('checked rows carry the unit certificate once, bounded and asked alike', async () => {
+  const { prReport, reportJSON } = await import('../pr.mjs');
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path'); const { spawnSync } = await import('node:child_process');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'checked-record-test-'));
+  const git = (...args) => { const r = spawnSync('git', ['-C', d, ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr); };
+  try {
+    git('init'); git('config', 'user.name', 'test'); git('config', 'user.email', 'test@example.invalid');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { return x + Date.now(); }'); git('add', '.'); git('commit', '-m', 'before');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { return Date.now() + x; }');
+    const row = reportJSON(await prReport({ repo: d, base: 'HEAD', project: false, n: 3, dafnySeconds: 1, fresh: true })).rows.find(r => r.unit === 'f');
+    assert.equal(row.certificate.lanes.B.record?.invocation.kind, 'unit', JSON.stringify(row.certificate.lanes.B).slice(0, 300));
+    assert.equal(JSON.stringify(row).split('"kind":"unit"').length - 1, 1);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });

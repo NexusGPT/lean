@@ -21,7 +21,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork, spawnSync } from 'node:child_process';
-import { captureEnvironment, captureActive, snapshot, witnessRecord, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
+import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues } from './spec.mjs';
@@ -814,7 +814,7 @@ export async function runPair(opts) {
   return new Promise((resolve) => {
     let last = null, done = false;
     const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
-    const end = (res) => { if (done) return; done = true; clearTimeout(timer); if (!res.record) { res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); if (res.bound) res.bound.record = res.record; } resolve(res); };
+    const end = (res) => { if (done) return; done = true; clearTimeout(timer); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
     const timer = setTimeout(() => {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
       end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its wall-clock bound (timeout) of ${seconds} s per unit (--unit-seconds); the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
@@ -839,8 +839,7 @@ async function runPairInFlight(opts) {
   let res;
   try { res = annotateWitness(await runPairOnce({ ...opts, unitRecord }), opts.parent, opts.candidate, opts.unit); }
   finally { finishUnitRecord(unitRecord); }
-  res.record = unitRecord;
-  if (res.bound) res.bound.record = unitRecord;
+  res.record = unitRecord; // one home: lane B's result; check.mjs and pr.mjs pass it to the certificate
   for (const w of res.witnesses ?? []) if (!w.record) w.record = { schema: 'witness-record/v2', version: 2, seed: unitRecord.seed, leanHead: unitRecord.leanHead, invocation: { kind: 'unrecorded' }, unrecorded: [{ site: 'runPairInFlight: non-single-call witness', reason: 'program/sequence initialization and command arguments not captured at this output boundary' }] };
   const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
   for (const witness of res.witnesses ?? []) {
@@ -948,7 +947,7 @@ async function runPairOnce(opts) {
     }
     const family = i < heaps.builders.length ? 'enumerated heaps' : knownInput(spec, i) ? 'listed values' : spec.shaped && i - heaps.builders.length - knownLength(spec) < walkLength(spec) ? 'boundary walk' : 'seeded type-directed draw';
     const drawnRecord = witnessRecord({ seed, leanHead: opts.recordHead ?? 'unknown', input: i, sides, invocation: { kind: 'call', isMethod: spec.isMethod, isStatic: spec.isStatic, accessor: spec.accessor ?? null } });
-    unitRecord.draws.push({ ...drawnRecord, family, completion: { parent: oP.harness ?? (oP.impure ? 'impure' : 'observed'), candidate: oC.harness ?? (oC.impure ? 'impure' : 'observed') } });
+    unitRecord.draws.push({ ...drawSummary(drawnRecord), family, completion: { parent: oP.harness ?? (oP.impure ? 'impure' : 'observed'), candidate: oC.harness ?? (oC.impure ? 'impure' : 'observed') } });
     for (const p of unitRecord.drawDomain.parameters) { p.count++; p.families[family] = (p.families[family] ?? 0) + 1; }
     if (treeDone && (oP.harness || oC.harness || oP.impure || oC.impure)) break; // past the tree layer's witnesses the run only feeds the styles layer: a stop there ends it
     if ((sides.parent.sawJsx || sides.candidate.sawJsx) && oP.outcome && oC.outcome && Object.hasOwn(oP.outcome, 'returned') && Object.hasOwn(oC.outcome, 'returned')) styles.add(i, oP.outcome.returned, oC.outcome.returned);
