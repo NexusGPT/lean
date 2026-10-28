@@ -1,5 +1,5 @@
 import { useStatus } from '@/status';
-import { notify } from '@/settings';
+import { announce, notify } from '@/settings';
 
 // changed in the candidate: the threshold moves from > 3 to >= 3
 export function warn(code: number): void {
@@ -28,4 +28,15 @@ export function Badge({ code }: { code: number }) {
 export function Tag({ code }: { code: number }) {
   const status = useStatus(code);
   return <p>tag {status}</p>;
+}
+
+// inlines the module's helper: the same calls, written in the unit
+export function report(code: number): void {
+  notify(code > 3 ? 'high' : 'low');
+}
+
+// changes its outcome beside the module: the returned label moves its threshold, the module is called the same way
+export function level(code: number): string {
+  notify('level');
+  return code >= 3 ? 'high' : 'low';
 }

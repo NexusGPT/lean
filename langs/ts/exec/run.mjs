@@ -499,6 +499,7 @@ export function sandbox(env, root) {
         catch (e) {
           if (harnessStop(e)) throw e;
           for (const k of [...cache.keys()]) if (!before.has(k)) { cache.delete(k); delete env.siteState.files[k]; if (!seen.has(k)) loadedFiles.delete(k); }
+          (env.unloadable ??= new Map()).set(spec, { file: path.relative(root || path.dirname(alias), alias), failure: String(e && e.message).split('\n')[0].slice(0, 160) }); // the module lean could not load: a difference that passes only through it is no difference lean can show (unloadableOnly)
         }
       }
       return decoratedModule(env, spec) ?? env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment (a package of the decorator table answers its listed exports by their rows)
@@ -863,11 +864,14 @@ async function runPairOnce(opts) {
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
       const held = heldTextOnly(oP, oC); // the sides differ only in a held function lean cannot read: its text is no difference lean can show on a run
+      const via = held ? null : unloadableOnly(oP, oC, sides); // the sides differ only in requests to a module lean could not load: the inlined or changed call is no difference lean can show
       if (held) (diffs.heldText ??= []).push({ input: i, escapes: held });
+      else if (via) (diffs.unloadable ??= []).push({ input: i, ...via });
       else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
     }
   }
   const bound = { n, seed, ms, reached, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.heldText && !diffs.length) bound.heldText = { inputs: diffs.heldText.length, first: diffs.heldText[0] }; // runPair turns a PASS into ASK naming the escape
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing' };
@@ -891,7 +895,7 @@ async function runPairOnce(opts) {
   // promise the world answers held by the scheduler; the orders run are bounded by conflicts and by b preemptions
   const racesOf = async (load) => { step('races'); const { RACE_BOUND } = await import('./program.mjs'); let rr = null; try { rr = await recording(records, load); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') rr = { verdict: 'ASK', reason: `races: ${e instanceof BudgetError ? 'budget: ' + e.message : 'timeout'}`, stats: null }; else rr = { verdict: 'ASK', reason: `races: ${String(e && e.message).slice(0, 160)}`, stats: null }; } if (!rr) return null; const st = rr.stats; bound.races = { liveCalls: 2, preemptions: 2, programs: st?.programs ?? 0, orders: st?.orders ?? null, drawn: st?.drawn ?? 0, dependentPairs: st?.dependentPairs ?? 0, cut: st?.cut ?? null, complete: st?.complete ?? false, events: 'the first call\'s start, the second call\'s arrival, each release of a promise the world answers', bound: RACE_BOUND, ...(rr.skipped ? { skipped: rr.skipped } : {}) }; if (rr.verdict === 'ASK') bound.races.ask = rr.reason; return rr; };
   const raceWitness = (rr) => ({ verdict: 'WITNESS', unit, witnesses: [{ input: `race program ${rr.witness.program}`, race: true, program: [`call(${rr.witness.program})`, `call2(${rr.witness.program})`], side: rr.witness.side, orders: rr.witness.orders, dependentPair: rr.witness.dependentPair, otherSide: rr.witness.otherSide, replayed: rr.witness.replayed, where: { field: 'race', side: rr.witness.side, moved: rr.witness.dependentPair.moved, before: rr.witness.dependentPair.before } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } });
-  if (!diffs.length && !sawJsx && !harnessAsk && spec.isAsync && spec.isMethod) {
+  if (!diffs.length && !diffs.unloadable && !sawJsx && !harnessAsk && spec.isAsync && spec.isMethod) {
     const { runClassRaces } = await import('./programs.mjs');
     const rr = await racesOf(() => runClassRaces({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, guardedCall, awaitUnit } }));
     if (rr?.verdict === 'WITNESS') return raceWitness(rr);
@@ -899,6 +903,7 @@ async function runPairOnce(opts) {
   }
   if (diffs.length && sawJsx) for (const d of diffs) Object.assign(d, witnessPatch(d.parent, d.candidate)); // a rendered unit: each witness carries the patch from the parent's tree to the candidate's
   if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+  if (diffs.unloadable) { const u = diffs.unloadable[0]; return { verdict: 'ASK', kind: 'unloadable-module', reason: `unloadable module ${u.module}: ${u.failure}; the difference passes through it`, unit, unloadable: u, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; } // a difference elsewhere (outcome, another request, the heap) was a WITNESS above; here every difference ran through a module lean replaced by the environment's, so lean cannot say the inlined or changed call differs
   if (!spec.isMethod && !sawJsx && !harnessAsk && !diffs.length) { // environment programs with retained handles (program.mjs): what the environment may do later with what the unit handed it
     const { runEnvironmentPrograms } = await import('./program.mjs'); step('environment programs');
     let r = null;
@@ -946,6 +951,25 @@ async function runPairOnce(opts) {
   // check the types do not state), so the bounded run sampled the refusal only and says nothing about the body
   if (reached.body === 0 && reached.guard > 0) return { verdict: 'ASK', unreached: true, reason: `no input reached the body: every one of the ${reached.guard} inputs threw at a guard (first: ${thrownText(firstGuard)})`, unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
   return { verdict: 'PASS-bounded', unit, bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+}
+// the sides differ only in requests to a same-package module whose load failed (sandbox: the alias fallback): with those
+// requests removed from both traces everything else is equal (outcome, heap, receiver, pending, the other requests);
+// the module is named with its load failure. A request is a record whose path is the module's fake or a member or a result of it
+function unloadableOnly(oP, oC, sides) {
+  const mods = new Map();
+  for (const side of [sides.parent, sides.candidate]) for (const [spec, why] of side.env.unloadable ?? []) if (!mods.has(spec)) mods.set(spec, why);
+  if (!mods.size) return null;
+  const hit = new Set();
+  const through = (r) => { for (const spec of mods.keys()) { const base = `module:${spec}`; if (typeof r.path === 'string' && r.path.startsWith(base) && (r.path.length === base.length || '.(#['.includes(r.path[base.length]))) { hit.add(spec); return true; } } return false; };
+  const strip = (o) => ({ ...o, trace: (o.trace ?? []).filter((r) => !through(r)) });
+  // a call into the module may fault on a seeded draw that depends on the called member's path (fake.mjs faultDraw), so
+  // inlining a helper moves the draw: a side that threw such a fault stopped inside the module and shows nothing past it
+  const faulted = (o) => { const m = o.outcome?.threw?.message; return typeof m === 'string' && m.startsWith('fault: ') && through({ path: m.slice(7) }); };
+  const stopped = faulted(oP) || faulted(oC);
+  const same = JSON.stringify(strip(oP)) === JSON.stringify(strip(oC)); // strips first: it fills `hit`
+  if (!hit.size || (!stopped && !same)) return null;
+  const specs = [...hit], first = mods.get(specs[0]);
+  return { module: specs.length === 1 ? first.file : specs.map((x) => mods.get(x).file).join(', '), failure: first.failure, ...(specs.length > 1 ? { failures: specs.map((x) => mods.get(x).failure) } : {}), imports: specs };
 }
 // an input stopped at a guard: the call threw at a guard's throw (guardThrow) having done nothing the observation sees, no
 // request of the environment, no pending work, no field of the receiver touched, its arguments as drawn; a throw after any
