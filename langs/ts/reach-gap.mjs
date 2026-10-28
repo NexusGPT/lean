@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // lean reach-gap: every function-like node of a repository that lean does NOT list as a unit, counted by its syntactic
 // parent. A function outside the unit list is outside every census denominator, so this is the structural reach gap.
-//   node reach-gap.mjs <root>... [--js] [--out gap.json] [--report gap.md] [--examples N]
+//   node reach-gap.mjs <root>... [--roots manifest.json] [--js] [--lean <checkout>] [--out gap.json] [--report gap.md] [--examples N]
 // Files are the census's own walk (census.mjs `walk`, TypeScript extensions; `--js` also reads .js/.jsx/.mjs/.cjs and
 // reports them apart). Listed means listed by `topLevelFunctions` in common.mjs, the one listing function the census,
-// pr.mjs, the lint and the translator read; nothing here keeps a second list. Syntax only: no program, no checker.
+// pr.mjs, the lint and the translator read; nothing here keeps a second list. --lean <checkout> reads that checkout's
+// listing instead (a before and after over the same walk). Syntax only: no program, no checker.
 // Read-only: nothing is written into a repository.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ts, topLevelFunctions } from './common.mjs';
+import { ts, topLevelFunctions as ownListing } from './common.mjs';
+import { pathToFileURL } from 'node:url';
 import { walk, TS_EXT, JS_EXT } from './census.mjs';
 
 // The parent kinds, one per unlisted function, decided in this order by the function's own syntactic position.
@@ -71,8 +73,10 @@ export function kindOf(fn) {
   return 'other';
 }
 
-// the key of an object-literal member, when it is a static name a unit can carry (an identifier, or a string that is one)
-export const staticKey = (fn) => { const m = ts.isPropertyAssignment(upParens(fn).parent) ? upParens(fn).parent : fn; const n = m.name; return n && (ts.isIdentifier(n) || (ts.isStringLiteral(n) && /^[A-Za-z_$][\w$]*$/.test(n.text))) ? n.text : null; };
+// the key of an object-literal member a unit can carry: a method or a function-valued property (not a getter or setter,
+// whose key is read, not called) whose key is a static name (an identifier, or a string that is one)
+export const staticKey = (fn) => { if (ts.isGetAccessorDeclaration(fn) || ts.isSetAccessorDeclaration(fn)) return null; const m = ts.isPropertyAssignment(upParens(fn).parent) ? upParens(fn).parent : fn; const n = m.name; return n && (ts.isIdentifier(n) || (ts.isStringLiteral(n) && /^[A-Za-z_$][\w$]*$/.test(n.text))) ? n.text : null; };
+let topLevelFunctions = ownListing;
 
 /** Every function-like node with a body, of one parsed file, against the listed units. */
 export function gapOfFile(sf) {
@@ -126,13 +130,14 @@ export function gapReport(rows, lang) {
 if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) {
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
-  const valued = new Set(['--out', '--report', '--examples', '--roots']);
+  const valued = new Set(['--out', '--report', '--examples', '--roots', '--lean']);
   const roots = a.filter((x, i) => !x.startsWith('--') && !valued.has(a[i - 1]));
   // --roots <manifest.json>: the harness's census cohort ({roots:[{name, root}]})
   const manifest = opt('--roots', null);
   const named = manifest ? JSON.parse(fs.readFileSync(manifest, 'utf8')).roots.map((r) => ({ name: r.name, root: r.root })) : [];
   for (const r of roots) named.push({ name: path.basename(path.resolve(r)), root: path.resolve(r) });
   const js = a.includes('--js');
+  if (opt('--lean', null)) topLevelFunctions = (await import(pathToFileURL(path.join(path.resolve(opt('--lean', null)), 'langs/ts/common.mjs')).href)).topLevelFunctions; // that checkout's listing, this walk and these kinds
   const rows = [];
   for (const { name, root } of named) {
     if (!fs.existsSync(root)) { console.error(`! ${name}: ${root} missing`); rows.push({ name, root, missing: true }); continue; }
@@ -142,7 +147,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   }
   const ts_ = gapReport(rows, 'ts'), js_ = js ? gapReport(rows, 'js') : null;
   if (opt('--out', null)) fs.writeFileSync(opt('--out', null), JSON.stringify({ kinds: KINDS, rows, totals: { ts: ts_.total, ...(js_ ? { js: js_.total } : {}) } }, null, 1));
-  const md = ['## TypeScript files (the census walk)', '', ts_.table, '', ...(js_ ? ['## JavaScript files (the same walk, .js/.jsx/.mjs/.cjs)', '', js_.table, ''] : []), '## Kinds', '', ...KINDS.map(([k, d]) => `- \`${k}\`: ${d}.`), '- `objlit static key`: of `objlit-exported` and `objlit-module-const`, the members whose key is a static name (an identifier, or a string that is one): what the exported-units reading lists.', ''].join('\n');
+  const md = ['## TypeScript files (the census walk)', '', ts_.table, '', ...(js_ ? ['## JavaScript files (the same walk, .js/.jsx/.mjs/.cjs)', '', js_.table, ''] : []), '## Kinds', '', ...KINDS.map(([k, d]) => `- \`${k}\`: ${d}.`), '- `objlit static key`: of `objlit-exported` and `objlit-module-const`, the methods and function-valued properties whose key is a static name (an identifier, or a string that is one; getters and setters excluded): what the exported-units reading lists.', ''].join('\n');
   if (opt('--report', null)) fs.writeFileSync(opt('--report', null), md);
   process.stdout.write(md);
 }
