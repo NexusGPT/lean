@@ -125,9 +125,9 @@ $ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDisc
 The lint is the program that admits a function to the proof lane, so the editor underlines exactly what the proof will refuse, with the rewrite labelled `[proved]`, `[conditional: <precondition>]` or `[migration]`. The ESLint plugin ([`langs/ts/eslint`](langs/ts/eslint)) ships it as one rule, `lean/provable`. It also names every `any` with the type its uses need:
 
 ```
-$ node langs/ts/lint/lint.mjs quote.ts --any-type
-quote.ts:3:38  any-type  `plan` is any (written); its uses say { seats: number; tier: string }
-quote.ts:6:9  any-type  `seats` is any (inferred); its uses say number
+$ node langs/ts/lint/lint.mjs docs/examples/limits/quote.ts --any-type
+docs/examples/limits/quote.ts:2:23  any-type  `plan` is any (written); its uses say { seats: number; tier: string }
+docs/examples/limits/quote.ts:3:9  any-type  `seats` is any (inferred); its uses say number
 ```
 
 **Impact:** code written with the rule on is provable from its first line. More: [`docs/editor-and-agents.md`](docs/editor-and-agents.md).
