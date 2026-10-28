@@ -63,3 +63,21 @@ export function drop(b: Bus, name: string): void {
   names.splice(names.indexOf(name) >>> 0, 1);
   b.count -= 1;
 }
+
+// shape 5: `===` between two heap nodes is node identity, Ref equality: an alias keeps it, a copy breaks it
+export interface Tag { name: string }
+export interface Post { tag: Tag; pinned: Tag }
+
+export function isPinned(p: Post): boolean {
+  return p.tag === p.pinned;
+}
+
+export function pin(p: Post): boolean {
+  p.pinned = p.tag;
+  return p.pinned === p.tag;
+}
+
+export function share(p: Post): boolean {
+  p.pinned = p.tag;
+  return p.pinned === p.tag;
+}

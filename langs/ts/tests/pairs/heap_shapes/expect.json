@@ -10,7 +10,10 @@
   "cache_off",
   "tag",
   "off",
-  "drop"
+  "drop",
+  "is_pinned",
+  "pin",
+  "share"
  ],
  "equal": {
   "sign": false,
@@ -23,9 +26,12 @@
   "cache_off": true,
   "tag": false,
   "off": false,
-  "drop": true
+  "drop": true,
+  "is_pinned": true,
+  "pin": false,
+  "share": true
  },
- "why": "shape 1: sign drops a field the literal source wrote (WITNESS); stamp writes the literal's keys in the other order (the same field writes on the headers node: proved). shape 2: finish writes the status of the other node the call returns (WITNESS); close moves the count first and writes the status through the path the call returns (the same writes on the same node: proved); Desk.reset writes through this.current() (untouched). shape 3: cacheOff names the key before the dictionary write on the headers node (the same DictSet_: proved); tag writes its two keys in the other order (a new key goes last, the key order differs: WITNESS). shape 4: off splices at indexOf without `>>> 0`, so a missing name's -1 deletes the last name where the parent deletes nothing (WITNESS); drop splices through the parameter's own path where the parent names the node first (the same steps on the same node: proved).",
+ "why": "shape 1: sign drops a field the literal source wrote (WITNESS); stamp writes the literal's keys in the other order (the same field writes on the headers node: proved). shape 2: finish writes the status of the other node the call returns (WITNESS); close moves the count first and writes the status through the path the call returns (the same writes on the same node: proved); Desk.reset writes through this.current() (untouched). shape 3: cacheOff names the key before the dictionary write on the headers node (the same DictSet_: proved); tag writes its two keys in the other order (a new key goes last, the key order differs: WITNESS). shape 4: off splices at indexOf without `>>> 0`, so a missing name's -1 deletes the last name where the parent deletes nothing (WITNESS); drop splices through the parameter's own path where the parent names the node first (the same steps on the same node: proved). shape 5: === between two nodes is node identity (Ref equality): pin stores a copy of the tag, a new node, so its === is false where the parent's is true (WITNESS); share stores the tag through a const name for it and compares that name (the same node: proved); isPinned untouched.",
  "b": {
   "sign": "WITNESS",
   "stamp": "PASS-bounded",
@@ -36,7 +42,10 @@
   "cacheOff": "PASS-bounded",
   "tag": "WITNESS",
   "off": "WITNESS",
-  "drop": "PASS-bounded"
+  "drop": "PASS-bounded",
+  "isPinned": "PASS-bounded",
+  "pin": "WITNESS",
+  "share": "PASS-bounded"
  },
  "heap": true
 }

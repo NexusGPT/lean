@@ -1465,7 +1465,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       // against a literal (a negated number included) === is true only on the literal's primitive arm holding its value
       const eqLit = (x) => { x = unparenX(x); return litSide(x) || (ts.isPrefixUnaryExpression(x) && x.operator === K.MinusToken && ts.isNumericLiteral(x.operand)); };
       if (!nul(e.left) && !nul(e.right) && (mixed(lt) || mixed(rt)) && !eqLit(e.left) && !eqLit(e.right)) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal; narrow it before comparing it with another value');
-      else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt)) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
+      else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt) && !(plainNode(lt) && plainNode(rt))) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields'); // two plain data records or arrays: node identity, which the heap core reads as Ref equality (heap.mjs); outside the core the identity guard withholds the value reading's lemma
     }
   }
 

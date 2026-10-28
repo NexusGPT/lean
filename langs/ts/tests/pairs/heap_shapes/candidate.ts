@@ -63,3 +63,23 @@ export function drop(b: Bus, name: string): void {
   b.names.splice(b.names.indexOf(name) >>> 0, 1);
   b.count -= 1;
 }
+
+// shape 5: pin stores a copy of the tag (a new node: `===` is false where the parent's is true, WITNESS); share stores
+// the tag through a const name for it and compares that name (the same node: proved)
+export interface Tag { name: string }
+export interface Post { tag: Tag; pinned: Tag }
+
+export function isPinned(p: Post): boolean {
+  return p.tag === p.pinned;
+}
+
+export function pin(p: Post): boolean {
+  p.pinned = { name: p.tag.name };
+  return p.pinned === p.tag;
+}
+
+export function share(p: Post): boolean {
+  const t = p.tag;
+  p.pinned = t;
+  return t === p.pinned;
+}
