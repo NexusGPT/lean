@@ -70,3 +70,19 @@ for (const [name,source] of [
  const changed=source.replace("function f(){","function f(){/* trivia */");
  assert.equal(decide(source,changed).status,"undecided");
 });
+// A changed function reached through an export alias, the module namespace or a dynamic import is a value, not a direct callee.
+for (const [name,source] of [
+ ["export specifier alias", "import {inspect} from 'env'; function f(){return 1} export {f as g}; export function h(){return inspect(1)}"],
+ ["default export of the binding", "function f(){return 1} export default f;"],
+ ["self import namespace", "import * as me from './rung'; import {inspect} from 'env'; export function f(){return inspect(me)}"],
+ ["dynamic import", "import {inspect} from 'env'; export function f(){return inspect(import('./rung'))}"],
+]) test("source escape: "+name, () => {
+ const changed=source.replace("function f(){","function f(){/* trivia */");
+ assert.notEqual(changed,source);
+ assert.equal(decide(source,changed).status,"undecided");
+});
+// The container guard must not refuse a receiver that can only be a class instance: a class method's `this`.
+test("class-body receiver still decides", () => {
+ const source="class K { v = 1; get(){ return this.v } } export function f(x:number){return x}";
+ assert.equal(decide(source, source.replace("return x}","/* trivia */ return x}")).rung, "parsed-equal");
+});

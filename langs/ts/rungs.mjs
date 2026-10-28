@@ -41,24 +41,57 @@ function common(P, C, env) {
 
 // Source-changing functions may only be invoked directly. No returned callback, class method,
 // decorator, inferred function name or exported alias can smuggle their source to a world call.
+// Invariant: no expression of the module evaluates to a changed function object except a direct
+// callee reference. Besides naming it (checked per reference, shorthand and export specifiers
+// resolved to their local binding), a function object is reachable through a container that holds
+// it: the global object (script declarations), the CommonJS exports object, the module namespace
+// (a self import, a dynamic import) and a receiver that may be one of those (a `this` outside a
+// class body). Any such handle in the module refuses the rung while a function changed.
+const CONTAINER_NAMES = new Set(['globalThis', 'window', 'self', 'global', 'exports', 'module']);
+function containerHandle(S) {
+  let why = null;
+  walk(S.sf, n => {
+    if (why) return;
+    if (ts.isIdentifier(n) && CONTAINER_NAMES.has(n.text) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(ts.isPropertyAssignment(n.parent) && n.parent.name === n)) why = `container handle ${n.text}`;
+    else if (n.kind === K.ThisKeyword) {
+      const c = ts.getThisContainer(n, true, false);
+      const inClass = c && (ts.isClassLike(c.parent) && (ts.isMethodDeclaration(c) || ts.isConstructorDeclaration(c) || ts.isGetAccessor(c) || ts.isSetAccessor(c) || ts.isPropertyDeclaration(c) || ts.isClassStaticBlockDeclaration(c)));
+      if (!inClass) why = 'receiver outside a class body';
+    } else if (ts.isCallExpression(n) && n.expression.kind === K.ImportKeyword) why = 'dynamic import';
+    else if ((ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) && n.moduleSpecifier) {
+      const m = S.checker?.getSymbolAtLocation(n.moduleSpecifier);
+      if (m?.valueDeclaration === S.sf || (n.moduleSpecifier.text ?? '').replace(/\.[jt]sx?$/, '') === './' + moduleBase(S.sf.fileName)) why = 'self import';
+    }
+  });
+  return why;
+}
+const moduleBase = f => path.basename(f).replace(/\.[jt]sx?$/, '');
+function referencedSymbol(S, n) {
+  if (ts.isShorthandPropertyAssignment(n.parent) && n.parent.name === n) return S.checker.getShorthandAssignmentValueSymbol(n.parent);
+  if (ts.isExportSpecifier(n.parent)) return S.checker.getExportSpecifierLocalTargetSymbol(n.parent);
+  return S.checker.getSymbolAtLocation(n);
+}
 function sourceGuard(P, C) {
   const functions = S => { const out = []; walk(S.sf, n => { if (ts.isFunctionLike(n) && n.body) out.push(n); }); return out; };
   const ps = functions(P), cs = functions(C);
   if (ps.length !== cs.length) return 'function structure changed';
+  let changed = false;
   for (let i = 0; i < ps.length; i++) {
     if (ps[i].getText() === cs[i].getText()) continue;
+    changed = true;
     for (const [S, fn] of [[P, ps[i]], [C, cs[i]]]) {
       if (!ts.isFunctionDeclaration(fn) || !ts.isSourceFile(fn.parent) || !fn.name) return 'changed function source may escape (method, closure or function value)';
       const symbol = S.checker.getSymbolAtLocation(fn.name);
       if (!symbol) return 'function binding unresolved';
       let bad = false;
       walk(S.sf, n => {
-        if (!ts.isIdentifier(n) || n === fn.name || S.checker.getSymbolAtLocation(n) !== symbol) return;
+        if (!ts.isIdentifier(n) || n === fn.name || referencedSymbol(S, n) !== symbol) return;
         if (!ts.isCallExpression(n.parent) || n.parent.expression !== n) bad = true;
       });
       if (bad) return 'changed function used as a value or reflected';
     }
   }
+  if (changed) for (const S of [P, C]) { const why = containerHandle(S); if (why) return `changed function reachable through a container (${why})`; }
   return null;
 }
 
