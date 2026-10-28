@@ -1,0 +1,18 @@
+{
+  "why": "`e as T` checks nothing at run time (the emit drops it). The proof lane read a narrowing assertion as an uninterpreted conversion into T, then read T's operations exactly, so `x as number` on a string | number, `x as string` on unknown, `JSON.parse(s) as { a: number }`, an any parameter in a number slot and a Wide literal narrowed to Mode before an exhaustive switch were each proved equal to a candidate that differs on a value of another type (\"a\" + 0 is \"a0\"). Each is now refused as type-assertion by the lint and the translator through one predicate (common.mjs typeAssertion): lane B witnesses the other type, lane A says nothing (parent against itself PASS-bounded). An assertion to a supertype (widen) and from a literal into its union (rank) pass the value through with its real type and are proved, beside a unit without one (plain).",
+  "candidateOnly": [
+    { "file": "candidate.ts", "parent": "parent.ts", "unit": "anyAs", "verdict": "WITNESS" },
+    { "file": "candidate.ts", "parent": "parent.ts", "unit": "asCast", "verdict": "WITNESS" },
+    { "file": "candidate.ts", "parent": "parent.ts", "unit": "unknownAs", "verdict": "WITNESS" },
+    { "file": "candidate.ts", "parent": "parent.ts", "unit": "parsedA", "verdict": "WITNESS" },
+    { "file": "candidate.ts", "parent": "parent.ts", "unit": "modeCode", "verdict": "WITNESS" },
+    { "file": "parent.ts", "parent": "parent.ts", "unit": "anyAs", "verdict": "PASS-bounded" },
+    { "file": "parent.ts", "parent": "parent.ts", "unit": "asCast", "verdict": "PASS-bounded" },
+    { "file": "parent.ts", "parent": "parent.ts", "unit": "unknownAs", "verdict": "PASS-bounded" },
+    { "file": "parent.ts", "parent": "parent.ts", "unit": "parsedA", "verdict": "PASS-bounded" },
+    { "file": "parent.ts", "parent": "parent.ts", "unit": "modeCode", "verdict": "PASS-bounded" },
+    { "file": "candidate.ts", "parent": "parent.ts", "unit": "widen", "verdict": "PASS-proved" },
+    { "file": "candidate.ts", "parent": "parent.ts", "unit": "rank", "verdict": "PASS-proved" },
+    { "file": "candidate.ts", "parent": "parent.ts", "unit": "plain", "verdict": "PASS-proved" }
+  ]
+}

@@ -15,6 +15,7 @@ import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedu
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent } from '../common.mjs';
+import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -1291,6 +1292,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
 
   function expr(e) {
+    if (!ts.isAsExpression(e) && !ts.isTypeAssertionExpression(e)) { const why = typeAssertion(checker, e); if (why) v(e, 'type-assertion', why); } // an any or unknown value in a typed slot: an assertion without the keyword
     switch (e.kind) {
       case K.Identifier: return checkIdent(e);
       case K.NumericLiteral: case K.BigIntLiteral: case K.StringLiteral: case K.TrueKeyword: case K.FalseKeyword: case K.NullKeyword: return;
@@ -1308,6 +1310,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.AsExpression: case K.TypeAssertionExpression: case K.SatisfiesExpression: {
         // `as T` is identity at run time: the translator keeps the value when the types agree and otherwise
         // passes it through an uninterpreted conversion, the same on both sides
+        { const why = typeAssertion(checker, e); if (why) v(e, 'type-assertion', why); } // a narrowing assertion: the value keeps its run-time type
         return expr(e.expression);
       }
       case K.NonNullExpression: // on a type that admits absence, `x!` is refused: the absent value would flow on, or the read through it throw

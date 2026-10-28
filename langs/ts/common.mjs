@@ -1301,3 +1301,68 @@ export function nonNullOnAbsent(checker, n) {
   let t = null; try { t = checker.getTypeAtLocation(n.expression); } catch { return false; }
   return !!t && !!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => !!(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null)));
 }
+// a type assertion `e as T` (or `<T>e`) that narrows: JavaScript checks nothing there (ECMA-262 has no assertion; the
+// emit drops it), so the value flows on with its run-time type while the proof lane reads it as a T, and an operation
+// that is the identity on T (`+ 0` on a number, `+ ""` on a string) or a test T makes exhaustive (a switch over a
+// literal union) is not one on the real value. An assertion to a type its source is assignable to (a supertype, a
+// literal into its union, `as const`) passes the value through with its real type and stays read. A source typed any
+// or unknown, or holding one in an element, field or index (`any[]`, `{ a: any }`), is narrowed by any assertion to a
+// type that is not itself any or unknown. Shared by the lint (rule type-assertion) and the translator (its `as` case);
+// the text of the refusal, or null
+export function typeAssertion(checker, n) {
+  if (n && !ts.isAsExpression(n) && !ts.isTypeAssertionExpression(n)) return implicitAssertion(checker, n);
+  if (!n) return null;
+  if (ts.isTypeReferenceNode(n.type) && n.type.typeName.getText() === 'const') return null;
+  const TF = ts.TypeFlags;
+  let from = null, to = null;
+  try { from = checker.getTypeAtLocation(n.expression); to = checker.getTypeAtLocation(n); } catch { return null; }
+  if (!from || !to || from === to) return null;
+  const opaque = (t) => !!(t.flags & (TF.Any | TF.Unknown));
+  if (opaque(to)) return null; // a widening into the opaque value
+  const what = `\`${n.getText().slice(0, 60)}\``;
+  if (assertionHoldsOpaque(checker, from)) return `${what} asserts a value typed ${checker.typeToString(from).slice(0, 60)} to ${checker.typeToString(to).slice(0, 60)}; the assertion checks nothing at run time, so the value may be of another type; test it first (\`typeof x === "number"\`, a field test) or give its source that type`;
+  if (!checker.isTypeAssignableTo(from, to)) return `${what} narrows ${checker.typeToString(from).slice(0, 60)} to ${checker.typeToString(to).slice(0, 60)}; the assertion checks nothing at run time, so the value keeps its own type; narrow it with a test (\`typeof\`, \`in\`, a tag comparison) instead`;
+  return null;
+}
+// any or unknown at the top of a type or in a member, an element, a type argument or an index signature, a few levels
+// down (an assertion from such a type is a narrowing the assignability test does not see: any is assignable to all)
+function assertionHoldsOpaque(checker, t, depth = 0, seen = new Set()) {
+  const TF = ts.TypeFlags;
+  if (!t || depth > 3 || seen.has(t)) return false;
+  seen.add(t);
+  if (t.flags & (TF.Any | TF.Unknown)) return t.intrinsicName !== 'error'; // an unresolved type is the environment's
+  if (t.flags & (TF.Union | TF.Intersection)) return t.types.some((x) => assertionHoldsOpaque(checker, x, depth, seen));
+  if (!(t.flags & TF.Object)) return false;
+  const args = t.objectFlags & ts.ObjectFlags.Reference ? checker.getTypeArguments(t) : [];
+  if (args.some((x) => assertionHoldsOpaque(checker, x, depth + 1, seen))) return true;
+  for (const kind of [ts.IndexKind.String, ts.IndexKind.Number]) { const info = checker.getIndexInfoOfType(t, kind); if (info && assertionHoldsOpaque(checker, info.type, depth + 1, seen)) return true; }
+  const props = checker.getPropertiesOfType(t);
+  if (props.length > 40) return false;
+  for (const p of props) {
+    const d = p.valueDeclaration ?? p.declarations?.[0];
+    if (d && (ts.isMethodDeclaration(d) || ts.isMethodSignature(d))) continue; // a method's own any parameters are not a value the assertion narrows
+    let pt = null; try { pt = checker.getTypeOfSymbol(p); } catch { continue; }
+    if (assertionHoldsOpaque(checker, pt, depth + 1, seen)) return true;
+  }
+  return false;
+}
+// the same narrowing without the keyword: a value typed any or unknown in a slot of another type (`const n: number =
+// x`, `return x` from a function returning number, an argument to a number parameter), where TypeScript asserts it to the
+// slot's type. A value whose type the checkout cannot resolve (an unresolved import, read without its project: the
+// checker's error type) is the environment's and admitted, as implicit-any-policy.md admits it; a slot typed any,
+// unknown, a union holding one, or a type parameter is no narrowing. Reported on the outermost expression (parentheses
+// and an explicit assertion around it own the report).
+function implicitAssertion(checker, n) {
+  const TF = ts.TypeFlags;
+  if (!n || !ts.isExpression(n) || ts.isParenthesizedExpression(n.parent) || ts.isAsExpression(n.parent) || ts.isTypeAssertionExpression(n.parent) || ts.isSatisfiesExpression(n.parent)) return null;
+  if (ts.isSpreadElement(n.parent) || ts.isSpreadAssignment(n.parent)) return null;
+  let t = null, ct = null;
+  try { t = checker.getTypeAtLocation(n); } catch { return null; }
+  if (!t || !(t.flags & (TF.Any | TF.Unknown)) || t.intrinsicName === 'error') return null; // a type the checkout cannot resolve is the environment's
+  try { ct = checker.getContextualType(n); } catch { return null; }
+  if (!ct) return null;
+  const parts = ct.flags & TF.Union ? ct.types : [ct];
+  if (parts.some((x) => x.flags & (TF.Any | TF.Unknown | TF.TypeParameter | TF.Void))) return null;
+  if (ct.flags & (TF.Intersection | TF.Index | TF.IndexedAccess | TF.Conditional | TF.Substitution)) return null;
+  return `\`${n.getText().slice(0, 60)}\` is typed ${checker.typeToString(t)} and sits where a ${checker.typeToString(ct).slice(0, 60)} is expected, so TypeScript asserts it without a check and the value may be of another type; test it first (\`typeof x === "number"\`, a field test) or type its source`;
+}
