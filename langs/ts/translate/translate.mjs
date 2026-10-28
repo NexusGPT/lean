@@ -30,6 +30,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
@@ -67,7 +68,7 @@ const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCod
 export function translate(file, fnName, opts = {}) {
   const { real: realFlag = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null, heap = false, heapUnits = null } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
-  const loaded = loadProgram(file, { project });
+  const loaded = normaliseApplyCalls(loadProgram(file, { project })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
   const { sf, checker } = loaded;
   let real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
   const fns = topLevelFunctions(sf);
@@ -3756,6 +3757,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (!hasThis) { expr(argNodes[0]); argNodes = argNodes.slice(1); }
       return unitCall(f.expression, callee, n, argNodes, checker.getSignatureFromDeclaration(callee.fn), hasThis ? 1 : 0);
     }
+    { const a = applyCall(n, checker); if (a && !a.exact && isArrayLike(checker, typeOf(n.expression.expression.expression))) fail(n, `an array method called through ${a.via} is not the direct call here: ${a.why}`); } // an exact apply/call was rewritten to the direct call before reading (common.mjs normaliseApplyCalls); the rest changes a value the unit does not name
     { const h = libraryHook(checker, n); if (h) { // a listed library hook: a transition of the world returning the table's record (translate/hooks.json)
       const dt = hookDatatype(h.row, NUM); addPrelude(dt.name, dt.text); addPrelude('World', 'type World');
       if (!unitEffectful()) fail(n, `hook ${h.name} is a world transition in a unit not marked effectful`);

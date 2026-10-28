@@ -1,6 +1,8 @@
 // expect: unsupported-member
-// push used as a value: the function value is called with the array as its receiver; write a.push(...b)
+// push bound as a value: the function value is called later with the array as its receiver; write a.push(...b)
+// (a call through apply or call on the array itself is the direct call, design/push-apply.md)
 export function append(a: string[], b: string[]): number {
-  a.push.apply(a, b);
+  const add = a.push.bind(a);
+  add(...b);
   return a.length;
 }

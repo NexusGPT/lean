@@ -10,6 +10,7 @@
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
 import path from 'node:path';
+import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
@@ -198,7 +199,7 @@ function forInDelete(s, checker, sf) {
 
 export function lintFile(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
-  const { sf, checker, diagnostics } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
+  const { sf, checker, diagnostics } = normaliseApplyCalls(opts.loaded ?? loadProgram(file, { project: opts.project ?? true })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
   const out = [];
   const units = topLevelFunctions(sf);
   const exceptionUnits = exceptionUnitsOf(sf, checker, units);
@@ -2145,7 +2146,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)}: constrain the type parameter to one record declaring it`);
       }
       if (!isRecordish(t)) {
-        if (['push', 'unshift', 'pop', 'shift', 'splice'].includes(name) && isArrayLike(checker, t) && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.expression === e && ['apply', 'call', 'bind'].includes(e.parent.name.text)) return v(e, 'unsupported-member', memberRow('push-apply-value').message(name));
+        if (['push', 'unshift', 'pop', 'shift', 'splice'].includes(name) && isArrayLike(checker, t) && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.expression === e && ['apply', 'call', 'bind'].includes(e.parent.name.text)) { const a = e.parent.parent && ts.isCallExpression(e.parent.parent) && e.parent.parent.expression === e.parent ? applyCall(e.parent.parent, checker) : null; return v(e, 'unsupported-member', memberRow('push-apply-value').message(name, a?.why ?? null)); } // an exact apply/call was read as the direct call before the lint ran (common.mjs normaliseApplyCalls); what is left is a bound value, a borrowed method on another value, or a list that is not an array
         if ((name === 'index' || name === 'groups') && /^RegExp(Exec|Match)Array$/.test(t.symbol?.name ?? '')) return v(e, 'unsupported-member', memberRow(name === 'index' ? 'match-index' : 'match-groups').message());
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
       }
