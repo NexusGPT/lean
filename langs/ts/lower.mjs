@@ -23,7 +23,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { ts, loadProgram, normaliseApplyCalls, topLevelFunctions, lineOf, colOf, overlaps, isArrayLike } from './common.mjs';
-import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, readingOfFinding, readingOfRefusal, translatorText, withdrawnReason, currentVersion } from './readings.mjs';
+import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, readingOfFinding, readingOfRefusal, translatorText, withdrawnReason, withdrawalKey, currentVersion } from './readings.mjs';
 import { memberRow } from './library-rows.mjs';
 import { moduleState } from './module-forms.mjs';
 import { admissionFindings } from './lint/lint.mjs';
@@ -187,7 +187,7 @@ const MEMO_MAX = 64;
 export function lowerFile(file, ranges = null, opts = {}) {
   const abs = path.resolve(file);
   const given = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
-  const key = [abs, createHash('sha256').update(given.sf.text).digest('hex'), JSON.stringify(opts.project ?? true), JSON.stringify(ranges), !!opts.advisory, !!opts.anyType, process.env.LEAN_WITHDRAW ?? ''].join('\0');
+  const key = [abs, createHash('sha256').update(given.sf.text).digest('hex'), JSON.stringify(opts.project ?? true), JSON.stringify(ranges), !!opts.advisory, !!opts.anyType, opts.emission !== false, withdrawalKey()].join('\0');
   if (memo.has(key)) return memo.get(key);
   const L = normaliseApplyCalls(given);
   const findings = admitUnits(file, ranges, { ...opts, loaded: given }, L);

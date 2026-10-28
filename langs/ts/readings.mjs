@@ -526,6 +526,8 @@ export const readingById = (id) => byId.get(id) ?? null;
 // changes); withdraw() adds one in this process (the withdrawal test)
 const extra = new Map();
 export function withdraw(id, reason) { if (!byId.has(id)) throw new Error(`no reading named ${id}`); extra.set(id, reason); return () => extra.delete(id); }
+// the withdrawals in force as one string: a record made under other withdrawals is another record (lower.mjs memo)
+export const withdrawalKey = () => `${[...extra].map(([k, v]) => `${k}=${v}`).join(';')}|${process.env.LEAN_WITHDRAW ?? ''}`;
 export function withdrawnReason(id) {
   if (extra.has(id)) return extra.get(id);
   for (const part of String(process.env.LEAN_WITHDRAW ?? '').split(';')) { const i = part.indexOf('='); if (i > 0 && part.slice(0, i).trim() === id) return part.slice(i + 1).trim() || 'withdrawn by LEAN_WITHDRAW'; }
