@@ -57,6 +57,15 @@ export function anyAs(x: any): number { const n: number = x; return n + 0; }
 export function asCast(x: string | number): number { return (x as number) + 0; }
 export function unknownAs(x: unknown): string { return (x as string) + ""; }
 
+// class 11: a tagged template whose same-file tag function changed (the tag is named by its text)
+function tag(s: TemplateStringsArray, ...v: number[]): string { return s.join("+"); }
+export function tagged(x: number): string { return tag`a${x}b`; }
+
+// class 12: instanceof against a same-file class whose declaration changed (the class is named by its name)
+class Base { }
+class Child { }
+export function isBase(n: number): boolean { const b: object = n > 0 ? new Child() : {}; return b instanceof Base; }
+
 // closed on this base: kept so they stay closed
 export function thrower(x: number): number { if (x > 0) throw new Error("b"); return x; }
 export function dictTruth(d: Record<string, number>, k: string): number { return d[k] !== 0 ? 1 : 2; }
