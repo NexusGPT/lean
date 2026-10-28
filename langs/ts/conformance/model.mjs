@@ -15,7 +15,7 @@ import { compilable, declarations, signature, jsName } from './dafny-text.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
-export const BigNumber = require(path.join(here, 'vendor/bignumber.js/bignumber.js'));
+export const BigNumber = require(path.join(here, 'vendor/bignumber.js/bignumber.cjs'));
 
 export class OpaqueHit extends Error { constructor(symbol, args) { super(`opaque: ${symbol}`); this.symbol = symbol; this.args = args; } }
 
