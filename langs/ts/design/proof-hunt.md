@@ -73,7 +73,7 @@ type the runtime value lacks (an absent value read as a T: `+ 0`, `typeof`, `===
 | 606 no_fault_value, 2164 throw_R, 4788 fault_result_R | the result beside a fault | no (thrower: a changed message is not proved) |
 | 5578 absent_number_/number_special_<numericKey> | an opaque unit keyed by its source | no |
 | 5710 Module_file_block_<hash(reach)>, 5765 accessor_<text> | an opaque block keyed by its reach or text | no |
-| 5796 to 5802 pipe_, guard_, route_denied_ | a decorator named by its key | yes in principle when a same-file guard's body changes under one key; unprobed |
+| 5796 to 5802 pipe_, guard_, route_denied_ | a decorator named by its key | no by reading: the key is decorators.mjs closureKey (the guard or pipe expression with its same-file closure; a pipe adds the parameter type); unprobed |
 | heap.mjs:386, 396 Call_/HCall_<import>_<hash(types, code)> | an outside call of the heap world | no (the world) |
 
 ## Measured (base 1e55e21)
