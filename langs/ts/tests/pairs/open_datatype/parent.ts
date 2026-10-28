@@ -8,6 +8,8 @@ export interface Headers { accept?: string; [name: string]: string | undefined }
 export function copyRec(s: Rec): Rec { return { ...s }; }
 // two spreads of one source, one field rewritten: the same value
 export function bump(s: Rec): Rec { return { ...s, a: s.a + 1 }; }
+// Object.assign onto an empty literal copies the source as a spread does
+export function assignCopy(s: Rec): Rec { return Object.assign({}, s); }
 // a rest pattern keeps the source's undeclared keys
 export function restOf(s: Wide): Rec { const { c, ...r } = s; return r; }
 // an undeclared key by bracket, dot and `in` reads the dictionary the value carries

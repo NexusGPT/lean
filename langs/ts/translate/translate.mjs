@@ -3838,6 +3838,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); return externalCall(`super_init_${mangle(Tn)}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition
     if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
+    // `Object.assign({}, x)` with one record source: a fresh object holding x's own keys in x's order (ECMA-262 20.1.2.1,
+    // CopyDataProperties), the value `{ ...x }` reads: x itself, its rest included (design/open-datatype.md)
+    if (ts.isIdentifier(f.expression) && f.expression.text === 'Object' && f.name.text === 'assign' && originOf(checker, f.expression, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 2 && ts.isObjectLiteralExpression(n.arguments[0]) && !n.arguments[0].properties.length && !ts.isSpreadElement(n.arguments[1])) {
+      const sd = (() => { try { return dtype(typeOf(n.arguments[1]), n.arguments[1]); } catch { return null; } })();
+      if (sd && openSlots(sd).length) return convertD(expr(n.arguments[1]), sd, dtype(typeOf(n), n));
+    }
     const recv = f.expression, name = f.name.text;
     if (ts.isIdentifier(recv) && recv.text === 'Array' && name === 'isArray' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 1) {
       return staticTest(n.arguments[0], (t) => arrayBrand(t) ? 'true' : t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined) ? 'false' : null, (v, d) => `${external('Array_isArray', [d], 'bool')}(${v})`);
