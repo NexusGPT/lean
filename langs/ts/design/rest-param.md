@@ -24,6 +24,7 @@ Line numbers are the pre-change source at `fea80f8`.
 | `exec/finite.mjs:85` finite component render | pickUnit boundary (props assignment, not a parameter-type draw) |
 | `exec/new-unit.mjs:234–240` candidate-only inputsFor → observe | pickUnit boundary |
 | `conformance/node-side.mjs:32–40` model oracle's Node side | pickUnit → observe → the same boundary |
+| `exec/react-trace.mjs:25` component trace | pickUnit boundary |
 | `exec/programs.mjs:45` retained-program construction | Reflect.construct directly |
 | `exec/programs.mjs:58` retained-program method command | method.apply directly (observe receives its wrapper) |
 | `exec/programs.mjs:98` class-race construction | Reflect.construct directly |
@@ -45,6 +46,15 @@ consult it. Callers of pickUnit keep passing the draw so replay, graph roots,
 states and witness arguments preserve their existing format, and no caller can
 accidentally expand twice. Guards/pipes keep their parameter-slot reading; the final
 method application expands their resulting tuple.
+
+A rest slot is always a list. ECMA-262 builds the rest parameter with CreateArrayFromList
+over the remaining arguments, whatever type the declaration names. `specOf` therefore gives
+every rest parameter a list-shaped spec: an array or tuple type (also through an alias, a
+generic constraint or a union of tuples) is kept; any other declared type, such as `any` or
+`unknown`, becomes the element type of an array. Without this, `...a: any` drew one fake, and
+the spread turned the fake's own iteration into harness-made arguments that no record shows.
+The same spec makes `knownOf` reject a listed value that is not a list, as it rejects any
+value of the wrong type, so no listed value can reach the spread either.
 
 This restores one interpretation shared by the input plan and the caller (research
 brief 20, section 2: two deciders disagreeing). It does not infer restness from an
