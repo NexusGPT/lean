@@ -1,5 +1,6 @@
 // The version-control frame exists before parsing or unit admission. No source text is persisted.
 import fs from 'node:fs';
+import { ts, topLevelFunctions } from '../common.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -97,4 +98,89 @@ export function reconcileEdits(manifest) {
   }
   const missing = expected.filter(x => !actual.includes(x)), unexpected = actual.filter(x => !expected.includes(x));
   return { expected, ...buckets, classes, missing, unexpected, complete: !missing.length && !unexpected.length };
+}
+
+// Syntax is evidence attached to an existing edit, never the condition for registering it.
+export function routeChanges(manifest) {
+  for (const file of manifest.files) {
+    file.units = { old: [], new: [] };
+    const readings = {};
+    for (const side of ['old', 'new']) {
+      const text = manifest.sources.get(file.id)?.[side];
+      if (text == null || !/\.[cm]?[jt]sx?$/.test(file.file)) continue;
+      const sf = ts.createSourceFile((side === 'old' ? file.oldPath : file.newPath) ?? file.file, text, ts.ScriptTarget.Latest, true);
+      readings[side] = sf;
+      file.units[side] = [...topLevelFunctions(sf).values()].map(u => ({ name: u.name, side, file: file.file,
+        start: sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1,
+        end: sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1,
+        offset: u.node.getStart(sf), stop: u.node.getEnd(), id: id([file.id, side, u.name, u.node.pos, u.node.end]) }));
+      const diagnostics = sf.parseDiagnostics.map(d => ({ code: d.code, start: d.start, length: d.length }));
+      if (diagnostics.length) (file.parseFailures ??= {})[side] = diagnostics;
+    }
+    for (const edit of manifest.edits.filter(e => e.fileId === file.id)) {
+      edit.links = [];
+      if (edit.kind !== 'text') {
+        edit.primary = edit.kind === 'failure' ? { kind: 'unassigned', reason: edit.reason } : { kind: 'artifact', reason: edit.kind === 'redacted' ? 'secret-path' : edit.kind, class: file.class };
+        continue;
+      }
+      const side = edit.side, span = edit[side], sf = readings[side];
+      const touched = file.units[side].filter(u => u.start <= span.start && span.start <= u.end);
+      edit.links = touched.map(u => ({ id: u.id, file: file.file, unit: u.name, side, start: u.start, end: u.end }));
+      const syntax = sf ? syntaxContext(sf, span.start) : { reason: 'non-source', parent: null };
+      edit.context = syntax;
+      const untyped = /\.[cm]?jsx?$/.test(file.file) && !/@(?:type|param|returns?|typedef)\s*\{/.test(sf?.text ?? '');
+      if (file.parseFailures?.[side]) edit.primary = { kind: 'unassigned', reason: 'parse-failure', side };
+      else if (file.class !== 'source') edit.primary = { kind: 'artifact', reason: file.class, class: file.class };
+      else if (untyped) edit.primary = { kind: 'unassigned', reason: 'untyped JavaScript file', context: syntax.reason, side };
+      else if (touched.length) {
+        // Stable smallest-containing-unit choice; secondary links retain every touched unit.
+        const primary = touched.slice().sort((a, b) => (a.stop - a.offset) - (b.stop - b.offset) || a.id.localeCompare(b.id))[0];
+        edit.primary = { kind: 'unit', id: primary.id, file: file.file, unit: primary.name, side, start: primary.start, end: primary.end };
+      } else edit.primary = { kind: 'unassigned', reason: syntax.reason, parent: syntax.parent, side };
+    }
+  }
+  manifest.reconciliation = reconcileEdits(manifest);
+  return manifest;
+}
+
+function syntaxContext(sf, line) {
+  const starts = sf.getLineStarts(), start = starts[line - 1] ?? sf.text.length, end = starts[line] ?? sf.text.length;
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, sf.languageVariant, sf.text, undefined, start, end - start);
+  let token, meaningful = false, comments = false;
+  while ((token = scanner.scan()) !== ts.SyntaxKind.EndOfFileToken) {
+    if (token === ts.SyntaxKind.SingleLineCommentTrivia || token === ts.SyntaxKind.MultiLineCommentTrivia) comments = true;
+    else if (token > ts.SyntaxKind.LastTriviaToken) meaningful = true;
+  }
+  if (!meaningful) return { reason: comments ? 'comment' : 'whitespace', parent: 'SourceFile' };
+  const candidates = [];
+  const visit = n => {
+    if (n.end <= start || n.getStart(sf) >= end) return;
+    if (n.parent && ts.isObjectLiteralExpression(n.parent) && (ts.isMethodDeclaration(n) || ts.isPropertyAssignment(n) || ts.isShorthandPropertyAssignment(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n))) candidates.push({ reason: 'object-literal member', node: n, priority: 0 });
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && /^(?:module\.exports|exports)(?:\.|\[|$)/.test(n.left.getText(sf))) candidates.push({ reason: 'exported property assignment', node: n, priority: 1 });
+    if (ts.isPropertyDeclaration(n)) candidates.push({ reason: 'class field', node: n, priority: 0 });
+    if (ts.isTypeAliasDeclaration(n) || ts.isInterfaceDeclaration(n) || (ts.isImportDeclaration(n) && n.importClause?.isTypeOnly) || (ts.isExportDeclaration(n) && n.isTypeOnly)) candidates.push({ reason: 'type-only', node: n, priority: 0 });
+    if (n.parent === sf) candidates.push({ reason: 'module-level statement', node: n, priority: 2 });
+    ts.forEachChild(n, visit);
+  };
+  ts.forEachChild(sf, visit);
+  const c = candidates.sort((a, b) => a.priority - b.priority || (a.node.end - a.node.pos) - (b.node.end - b.node.pos))[0];
+  return { reason: c?.reason ?? 'module-level statement', parent: c ? ts.SyntaxKind[c.node.parent.kind] : 'SourceFile', node: c ? ts.SyntaxKind[c.node.kind] : 'SourceFile' };
+}
+
+export function ledgerRows(manifest) {
+  return manifest.edits.filter(e => e.primary.kind !== 'unit').map(e => ({
+    file: e.file, unit: `(edit ${e.id.slice(0, 12)})`, editIds: [e.id], lines: [Math.max(1, e[e.side ?? 'new']?.start ?? 1), Math.max(1, e[e.side ?? 'new']?.start ?? 1)],
+    verdict: 'ASK', decision: e.primary.kind, coverage: `${e.primary.kind}:${e.primary.reason}`,
+    reason: e.primary.reason + (e.primary.context ? ` (${e.primary.context})` : ''), context: e.context, advice: [],
+  }));
+}
+
+export function ledgerMarkdown(manifest) {
+  if (!manifest) return '';
+  const escape = v => String(v ?? '').replace(/[|\r\n`]/g, ' ');
+  const r = reconcileEdits(manifest);
+  const lines = ['## Change ledger', '', `Edit reconciliation: ${r.expected.length} = ${r.unit.length} unit + ${r.artifact.length} artifact + ${r.unassigned.length} unassigned; identities ${r.complete ? 'complete' : 'INCOMPLETE'}.`, '', '| edit | file | kind | old span | new span | primary | secondary units |', '|---|---|---|---|---|---|---|'];
+  for (const e of manifest.edits) lines.push(`| ${e.id} | ${escape(e.file)} | ${e.kind} | ${e.old ? `${e.old.start}+${e.old.count}` : ''} | ${e.new ? `${e.new.start}+${e.new.count}` : ''} | ${escape(e.primary.kind + ': ' + (e.primary.unit ?? e.primary.reason))} | ${e.links.map(u => escape(u.side + ':' + u.unit)).join(', ')} |`);
+  for (const [cls, sets] of Object.entries(r.classes)) lines.push('', `${cls}: ${JSON.stringify(sets)}`);
+  return lines.join('\n');
 }

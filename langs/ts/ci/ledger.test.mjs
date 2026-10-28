@@ -29,18 +29,19 @@ try {
   assert(rows.some(r => r.file === 'asset.bin' && r.coverage === 'artifact:binary'), 'binary artifact row');
   assert(rows.some(r => r.file === 'package-lock.json' && r.coverage === 'artifact:lockfile'), 'lockfile artifact row');
   }
-  const { buildChangeManifest, reconcileEdits } = await import('./ledger.mjs');
+  const { buildChangeManifest, routeChanges, reconcileEdits } = await import('./ledger.mjs');
   const m = buildChangeManifest({ repo: tmp, base, head });
   assert.equal(m.files.length, 8);
   assert(m.files.some(f => f.kind === 'mode-only'));
   assert(m.files.some(f => f.kind === 'rename/move' && f.oldPath === 'move.ts' && f.newPath === 'moved.ts'));
   if (!process.argv.includes('--frame-only')) {
+  routeChanges(m);
   assert(m.edits.some(e => e.primary.reason === 'parse-failure'));
   assert(m.edits.some(e => e.primary.kind === 'unit' && e.primary.unit === 'gone' && e.primary.side === 'old'));
   const r = reconcileEdits(m);
   assert.equal(r.complete, true); assert.deepEqual([...r.unit, ...r.artifact, ...r.unassigned].sort(), r.expected.slice().sort());
   assert.throws(() => reconcileEdits({ ...m, edits: [...m.edits, m.edits[0]] }), /duplicate/);
-  assert.deepEqual(buildChangeManifest({ repo: tmp, base, head }).edits, m.edits, 'identities are reproducible');
+  assert.deepEqual(routeChanges(buildChangeManifest({ repo: tmp, base, head })).edits, m.edits, 'identities are reproducible');
   }
   console.log('ledger.test: all assertions pass');
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

@@ -22,6 +22,7 @@
 // Lane B draws its values first on every unit; the report names the file and its hash, each certificate carries the
 // hash, and the cache keys on it. Without a root file, each unit reads the nearest `.lean/values.json` above its file.
 import fs from 'node:fs';
+import { buildChangeManifest, routeChanges, ledgerRows, ledgerMarkdown, sensitivePath } from './ci/ledger.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -169,7 +170,7 @@ function writeCache(file, record) {
 
 // Only names are inspected. Secret contents never enter the change set.
 export function secretPath(file) {
-  return file.split(/[\\/]/).some((part) => /^(?:\.env(?:\..*)?|id_rsa.*)$|\.(?:pem|key|p12|pfx|jks)$/i.test(part));
+  return sensitivePath(file);
 }
 
 // The caller supplies file metadata, units and lint findings.
@@ -225,15 +226,17 @@ function removedUnits(rel, parentText, headText) {
 }
 
 // Read the change set before selection. Files outside code and secret names need no contents.
-function changedFiles(opts, temps) {
+function changedFiles(opts, temps, ledger) {
   const { repo, base, head = 'WORKTREE', filesRoot, project = true } = opts;
   const refs = [base, ...(head === 'WORKTREE' ? [] : [head])];
-  const names = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--name-only', '-z', ...refs, '--']).split('\0').filter(Boolean);
+  const names = ledger.files.map(f => f.file);
   const stats = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--numstat', '-z', ...refs, '--']);
   const binary = new Set(stats.split('\0').filter((x) => x.startsWith('-\t-\t')).map((x) => x.slice(4)));
   const pending = [];
   const entries = names.map((rel) => {
-    const entry = { file: rel, binary: binary.has(rel) };
+    const frame = ledger.files.find(f => f.file === rel);
+    const entry = { file: rel, binary: frame.kind === 'binary' || binary.has(rel) };
+    if (['submodule', 'symlink'].includes(frame.kind)) return entry;
     if (secretPath(rel) || entry.binary || (!CODE.test(rel) && !JS.test(rel))) return entry;
     const abs = path.join(filesRoot ?? repo, rel);
     const readRef = (ref) => {
@@ -244,7 +247,8 @@ function changedFiles(opts, temps) {
       return r.stdout;
     };
     try {
-      const original = readRef(base);
+      const originalText = ledger.sources.get(frame.id)?.old;
+      const original = originalText == null ? null : Buffer.from(originalText);
       const current = head === 'WORKTREE' ? (fs.existsSync(abs) ? fs.readFileSync(abs) : null) : readRef(head);
       entry.deleted = current === null;
       const bytes = current ?? original;
@@ -277,7 +281,8 @@ function changedFiles(opts, temps) {
       if (shared?.error) throw new Error(shared.error);
       const reading = shared ?? loadProgram(entry.headFile, { project }); // a file read alone is let go after its units
       if (shared) entry.keyReading = shared;
-      entry.units = changedUnits(reading, ranges, entry.headFile);
+      const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
+      entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile).filter(u => routed.has(u.name));
     } catch (e) {
       entry.error = String(e.message).slice(0, 300);
       try { entry.units = changedUnits({ sf: ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true) }, ranges, entry.headFile); } catch (f) { entry.error = String(f.message).slice(0, 300); }
@@ -309,7 +314,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop };
+  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation };
 }
 
 export function stopNote(stop) {
@@ -385,8 +390,11 @@ export async function prReport(opts) {
   const toolVersions = opts.preview ? null : runTools();
   const context = toolVersions ? hash(JSON.stringify({ schema: 1, ...toolVersions })) : null;
   try {
-    const files = changedFiles(opts, temps);
-    const selected = selectUnits(files, opts);
+    rows.ledger = routeChanges(buildChangeManifest(opts));
+    const files = changedFiles(opts, temps, rows.ledger);
+    const unitRoutes = rows.ledger.edits.filter(e => e.primary.kind === 'unit');
+    const selected = selectUnits(files, opts).filter(x => unitRoutes.some(e => e.file === x.unit.file && e.links.some(u => u.unit === x.unit.name)));
+    rows.push(...ledgerRows(rows.ledger));
     // the project's values file, as the head has it (a temporary copy for a head ref, removed with the others)
     let valuesFile;
     if (opts.values !== undefined) valuesFile = opts.values;
@@ -401,7 +409,7 @@ export async function prReport(opts) {
       for (const item of intake) {
         const u = item.unit;
         const index = rows.length;
-        rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
+        rows.push({ editIds: unitRoutes.filter(e => e.file === rel && e.links.some(link => link.unit === u.name)).map(e => e.id), file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
         if (!opts.preview && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });
       }
       if (opts.preview || !units.length || !entry.baseFile || entry.deleted) continue;
@@ -438,7 +446,7 @@ export async function prReport(opts) {
       const save = (row) => {
         if (row.certificate) row.certificate = { ...row.certificate, verdict: row.verdict };
         if (row.certificate?.values && rows.values) row.certificate.values = { ...row.certificate.values, file: rows.values.file, from: rows.values.from }; // the project's file by its name in the checkout, never the temporary copy of a head ref
-        if (caller) rows.push(row); else rows[index] = row;
+        if (caller) rows.push(row); else rows[index] = { ...row, editIds: rows[index].editIds };
         if (key && row.coverage === 'checked' && row.certificate) writeCache(cacheFile, { key, context, row });
       };
       if (rows.stop.reason === 'none') {
@@ -565,6 +573,7 @@ export function markdown(rows, base, head) {
     for (const r of asks) { lines.push(`### ${r.file} · \`${r.unit}\``, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
   }
   lines.push('', 'A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny; PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.');
+  if (rows.ledger) lines.push('', ledgerMarkdown(rows.ledger));
   return lines.join('\n');
 }
 
