@@ -15,11 +15,11 @@ const exists = fs.existsSync;
 fs.existsSync = (p) => { try { return exists(p); } catch (e) { if (e && e.code === 'ERR_ACCESS_DENIED') return false; throw e; } };
 
 let sent = false;
-const reply = (result) => { if (sent) return; sent = true; process.send({ result }, () => process.exit(0)); };
+const reply = (result, drained = false) => { if (sent) return; sent = true; process.send({ result, drained }, () => process.exit(0)); };
 process.once('message', async (m) => {
   process.channel?.unref(); // the channel never keeps the run alive: a drained loop is the guard's case below
   onCrumb((c) => { if (!sent) process.send({ crumb: c }); });
   const result = await runPairInProcess(m.opts).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash
   reply(result);
 });
-process.on('beforeExit', () => { if (!sent) { process.channel?.ref(); reply({ verdict: 'ASK', reason: `harness: the run ended before a verdict; ${crumbText()}` }); } });
+process.on('beforeExit', () => { if (!sent) { process.channel?.ref(); reply({ verdict: 'ASK', reason: `harness: the run ended before a verdict; ${crumbText()}` }, true); } });

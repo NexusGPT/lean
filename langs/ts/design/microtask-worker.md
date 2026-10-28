@@ -23,7 +23,9 @@ lane B verdict is ASK with `kind: "spin-bound"`, the reason naming the bound and
 
 The child sends its breadcrumb (the step, the input, the side) before each step and each side's observation, so the
 kill names them; it sends the result as JSON over the IPC channel, the same text `--out` writes. A child that exits
-without a result, or whose event loop drains first, is ASK naming what was pending, as the command line's guard is.
+without a result is ASK naming what was pending. A child whose event loop drains before a verdict drains a caller that
+armed the verdict guard (`check.mjs`, `run.mjs`), whose guard then answers ASK:harness exactly as before; a caller
+without the guard (`pr.mjs`) gets that ASK as the unit's lane B result and goes on.
 `check.mjs` then runs lane A as before; `pr.mjs` reports the row `failed:timeout` and goes on to the next unit.
 
 Why a child process and not `worker_threads`: SIGKILL ends a process whatever it runs, where `Worker.terminate` relies on

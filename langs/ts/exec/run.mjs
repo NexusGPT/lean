@@ -291,8 +291,9 @@ const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input
 export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
 // a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
 // will settle, no timer or handle left), the run reports ASK naming what was pending, writes it to --out, and exits 2
+let guarded = false; // a caller armed the guard: a run drained in the child drains it too (runPair), so its guard answers as before
 export function verdictGuard(out, shape = (r) => r) {
-  let owed = true;
+  let owed = true; guarded = true;
   const drained = () => {
     if (!owed) return; owed = false;
     const res = shape({ verdict: 'ASK', reason: `harness: the run ended before a verdict; ${crumbText()}` });
@@ -809,7 +810,12 @@ export async function runPair(opts) {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
       end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its wall-clock bound (timeout) of ${seconds} s per unit (--unit-seconds); the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
     }, seconds * 1000);
-    child.on('message', (m) => { if (m && m.crumb) last = m.crumb; else if (m && Object.hasOwn(m, 'result')) end(m.result); });
+    child.on('message', (m) => {
+      if (m && m.crumb) { last = m.crumb; return; }
+      if (!m || !Object.hasOwn(m, 'result')) return;
+      if (m.drained && guarded) { done = true; clearTimeout(timer); Object.assign(crumb, { phase: last?.phase ?? crumb.phase, input: last?.input ?? null, loading: last?.loading ?? null }); return; } // the child's event loop drained before a verdict: the caller's loop drains as the in-process run's did, and its guard names what was pending
+      end(m.result);
+    });
     child.on('error', (e) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker failed to start: ${String(e && e.message).slice(0, 200)}` }));
     child.on('exit', (code, signal) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker exited (${signal ?? `code ${code}`}) before a verdict; pending: ${crumbOf(last)}` }));
     child.send({ opts: rest });
