@@ -39,3 +39,5 @@ export class RestMethod {
     return typeof label === "string" && items.every(x => typeof x === "string");
   }
 }
+export function anyRest(...items: any) { return [Array.isArray(items), items.length]; }
+export function unknownRest(...items: unknown) { return [Array.isArray(items), items.length]; }

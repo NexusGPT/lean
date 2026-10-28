@@ -94,3 +94,20 @@ test('new pair detects the changed rest-length threshold and its draw replays', 
     assert.deepEqual(JSON.parse(JSON.stringify(o)), w.parent);
   }
 });
+for (const unit of ['anyRest', 'unknownRest']) test(`${unit}: a rest slot declared without an array type is drawn as the list of remaining arguments`, () => {
+  const spec = signature(unit);
+  assert.equal(spec.params[0].spec.kind, 'array');
+  for (let i = 0; i < 20; i++) {
+    const env = new Environment(1); env.shapes = spec;
+    const drawn = inputPlan(file, file, unit, { project: false }).draw(i, env);
+    assert.ok(Array.isArray(drawn[0]), `input ${i}: the rest slot holds the remaining arguments`);
+    const unitOut = pickUnit(sandbox(env, root).load(file), spec, env).call(drawn);
+    assert.deepEqual(plain(unitOut), [true, drawn[0].length]);
+  }
+});
+test('a listed value that is not a list is not a value of a rest parameter', () => {
+  const values = { data: { functions: { anyRest: { items: [['a', 'b'], 'one'] } } } };
+  const spec = specs.specOf(file, 'anyRest', { project: false, values });
+  assert.deepEqual(spec.params[0].known, [['a', 'b']]);
+  assert.deepEqual(spec.known.rejected.map((r) => [r.at, r.value]), [['items', 'one']]);
+});

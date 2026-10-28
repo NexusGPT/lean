@@ -139,7 +139,12 @@ export function specOf(file, unitName, opts = {}) {
     }
     return out;
   }
-  const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, ...(p.dotDotDotToken ? { rest: true } : {}), spec: spec(checker.getTypeAtLocation(p.name)) }));
+  // a rest parameter always receives the list of the remaining arguments (ECMA-262 10.2.11 step 26: CreateArrayFromList),
+  // whatever type it declares: a declared type that is not a list (any, unknown) is the type of each element, so the
+  // plan draws a list and argsFor spreads it; a listed value that is not a list then fails `fits` like any ill-typed one
+  const listShaped = (s, d = 0) => !!s && d < 8 && (s.kind === 'array' || s.kind === 'tuple' || (s.kind === 'ref' && listShaped(defs[s.key], d + 1)) || (s.kind === 'union' && s.options.every((o) => listShaped(o, d + 1))));
+  const restSpec = (s) => (listShaped(s) ? s : { kind: 'array', of: s });
+  const params = u.params.map((p) => { const s = spec(checker.getTypeAtLocation(p.name)); return { name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, ...(p.dotDotDotToken ? { rest: true } : {}), spec: p.dotDotDotToken ? restSpec(s) : s }; });
   // the known values of each parameter: the values file's entry for this unit and parameter, else for its declared type's name
   const vfn = opts.values ? unitValues(opts.values.data, file, unitName) : null;
   if (vfn || byType) params.forEach((p, i) => { const list = vfn && Object.hasOwn(vfn.params, p.name) && Array.isArray(vfn.params[p.name]) ? { from: `functions.${vfn.key}.${p.name}`, values: vfn.params[p.name] } : byType ? byType(u.params[i].type, checker.getTypeAtLocation(u.params[i].name)) : null; if (list) p.known = list; });
