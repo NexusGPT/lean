@@ -26,6 +26,31 @@ export function walkLength(spec) {
   walkLengths.set(spec, n);
   return n;
 }
+// the known phase: a spec whose parameters or record fields carry listed values (spec.mjs, the project's values file)
+// draws them on its first generated inputs, before the walk. Input k of the phase gives every listed leaf its value
+// k (each list cycles on its own), and the walk's digit k divided by the longest list, so every listed value meets every
+// combination of the compared boundaries; the phase lasts the longest list times the walk length (at least one), never
+// more than KNOWN inputs. After it, the walk and the free draws run as they would without the file. A spec without
+// listed values has no phase, so its inputs are the ones it always drew
+export const KNOWN = 30;
+const knownWidths = new WeakMap();
+export function knownWidth(spec) { // the longest list of listed values
+  if (!spec || typeof spec !== 'object') return 0;
+  if (knownWidths.has(spec)) return knownWidths.get(spec);
+  let w = 0; const seen = new Set();
+  const visit = (x, d = 0) => {
+    if (!x || typeof x !== 'object' || d > 60 || seen.has(x)) return; seen.add(x);
+    if (Array.isArray(x)) { x.forEach((y) => visit(y, d + 1)); return; }
+    if (x.known && Array.isArray(x.known)) w = Math.max(w, x.known.length);
+    for (const [k, v] of Object.entries(x)) if (k !== 'known') visit(v, d + 1);
+  };
+  visit([spec.params, spec.defs]);
+  knownWidths.set(spec, w);
+  return w;
+}
+export function knownLength(spec) { const w = knownWidth(spec); return w ? Math.min(w * Math.max(1, spec.shaped ? walkLength(spec) : 0), KNOWN) : 0; }
+// whether generated input i of a spec is in its known phase (the inputs before `walkFrom` are enumerated heaps)
+export const knownInput = (spec, i) => { const g = i - (spec.walkFrom ?? 0); return g >= 0 && g < knownLength(spec); };
 // NaN and the two infinities are numbers (ECMA-262 6.1.6.1): a declared number admits them, and lane A's finite model
 // leaves them out, so lane B draws them. Every SPECIAL-th generated input is a special-number input (the first one
 // after the inputs that lean on 0, 1 and -1): in it the first number leaf, walked or drawn, is replaced by a special
@@ -37,8 +62,12 @@ const NUM_SPECIAL = [NaN, Infinity, -Infinity];
 // whether a spec admits a number of any value: a number, or a union with a number option (a literal type does not)
 const admitsNumber = (spec) => !!spec && (spec.kind === 'number' || (spec.kind === 'union' && spec.options.some((o) => o && o.kind === 'number')));
 
-export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null, special = null, walkLen = WALK) {
+export function generator(seed, defs = {}, literals = [], startEdge = 0, strings = [], regexes = [], walk = null, special = null, walkLen = WALK, known = null) {
   const rng = makeRng(seed);
+  // a listed value of a leaf in the known phase (`known` the phase index, inputsFor): a fresh copy, so neither side's call
+  // writes into the other's input; undefined outside the phase or for a leaf with no list
+  const listed = (holder) => (known != null && holder && Array.isArray(holder.known) && holder.known.length ? structuredClone(holder.known[known % holder.known.length]) : undefined);
+  const isListed = (holder) => known != null && !!holder && Array.isArray(holder.known) && holder.known.length > 0;
   // a special-number input (`special` its turn: 0 for the first one, 1 for the next, ...): its own stream decides
   const srng = special != null ? makeRng((seed ^ 0x2545f491) >>> 0) : null;
   let replaced = 0; // number leaves of this input made special so far
@@ -121,7 +150,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'map': return new Map(Array.from({ length: Math.floor(rng() * 4) }, (_, i) => [gen(spec.key, depth + 1, env, `${path}<k${i}>`), gen(spec.value, depth + 1, env, `${path}<v${i}>`)]));
       case 'dict': { const o = {}; for (let i = 0, n = Math.floor(rng() * 4); i < n; i++) o[`k${i}`] = gen(spec.value, depth + 1, env, `${path}.k${i}`); return o; }
       // a record: a field leading to a compared leaf stays present while walking, unless the unit tests its key with `in`
-      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3 && !((spec.refined || f.shaped) && walking && !f.presence)) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); } return o; }
+      case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3 && !((spec.refined || f.shaped) && walking && !f.presence) && !isListed(f)) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); if (isListed(f)) o[k] = listed(f); } return o; } // a listed field holds its listed value in the known phase (its declared draw made first)
       case 'union': { const j = Math.floor(rng() * spec.options.length); return gen(spec.options[spec.prefer != null && walking && brng() >= 1 / 3 ? spec.prefer : j], depth + 1, env, path); } // while walking, the option leading to a compared leaf two times in three; the declared draw stays reachable
       case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
@@ -141,17 +170,20 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
     if (rng() < 0.6) return edges[(edge + leafIx++) % edges.length];
     return random();
   }
-  return { gen, rng };
+  return { gen, rng, listed, isListed };
 }
 
 // the i-th input set for a unit: a list of argument values; each call gets a fresh generator seeded by (seed, i)
 export function inputsFor(spec, seed, i, env) {
   // a shaped spec walks its boundaries from its first generated input (`walkFrom`: the inputs before it are enumerated
   // heaps) for walkLength(spec) inputs, every combination of its boundaries once; the inputs after it are free draws
-  const walk = spec.shaped && i >= (spec.walkFrom ?? 0) && i - (spec.walkFrom ?? 0) < walkLength(spec) ? i - (spec.walkFrom ?? 0) : null;
+  // with listed values (knownLength) the known phase comes first and the walk after it (knownWidth: the walk's digit under
+  // the listed values' digit); without them the phase is empty and nothing moves
   const generated = i - (spec.walkFrom ?? 0); // the index among the generated inputs (the enumerated heaps come first)
-  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec));
-  return spec.params.map((p, k) => (p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`)));
+  const K = knownLength(spec), known = generated >= 0 && generated < K ? generated : null;
+  const walk = known != null ? (spec.shaped && walkLength(spec) ? Math.floor(known / knownWidth(spec)) : null) : spec.shaped && generated >= K && generated - K < walkLength(spec) ? generated - K : null;
+  const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec), known);
+  return spec.params.map((p, k) => { const v = p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`); return g.isListed(p) ? g.listed(p) : v; }); // a listed parameter takes its listed value in the known phase, its declared draw made first
 }
 
 // Heap layer, stage 1: the i-th input set may alias. Positions of one declared shape (an argument, a record field, an

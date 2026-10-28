@@ -1,0 +1,7 @@
+{
+ "functions": {
+  "quote": { "plan": ["basic", "pro", "team"] },
+  "perSeat": { "seats": [2, "two"] }
+ },
+ "types": { "PlanId": ["basic", "pro", "team"] }
+}

@@ -22,8 +22,8 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
-import { specOf } from './spec.mjs';
-import { inputsFor, aliasInputs } from './gen.mjs';
+import { specOf, findValues, readValues } from './spec.mjs';
+import { inputsFor, aliasInputs, knownInput, knownLength } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
 import { Graph } from './graph.mjs';
@@ -768,6 +768,8 @@ export async function runPair(opts) {
   const fe = res?.bound?.frontEnd; if (fe && fe.layers) fe.layers = { ...fe.layers, tree: { verdict: res.verdict, ...fe.layers.tree } }; // the tree layer's verdict is lane B's; the styles layer keeps its own
   return res;
 }
+// the --values flag: a path, `none` for no values file, absent for the nearest `.lean/values.json` above the candidate
+export const valuesOpt = (v) => (v === undefined ? undefined : v === 'none' ? null : v);
 // the depth --deep states: true or a bare flag is one level; a number k is k levels; anything else is a tree of names
 export const deepDepth = (deep) => (deep === true ? 1 : Number.isInteger(Number(deep)) && Number(deep) > 0 ? Number(deep) : 0);
 const componentsText = (k) => (k > 0 ? `same-package function components rendered ${k === 1 ? 'one level down' : `${k} levels down`} on their own hook frames, top down where their elements are placed, each useContext read from the nearest provider element above it (--deep${k === 1 ? '' : '=' + k})` : 'a tree of names: a component tag is its name and props');
@@ -788,8 +790,10 @@ function layersOf(styles) {
 // the inputs of a unit: its spec (shaped by what both versions read), the enumerated small heaps, and the i-th draw on
 // one side's environment (a heap builder first, then the seeded generator with its sharing); each side draws its own
 // copy, so a replay draws input i on a fresh environment seeded as that side's was and gets the input both runs started from
-export function inputPlan(parent, candidate, unit, { project = true, seed = 1 } = {}) {
-  const spec = specOf(candidate, unit, { project, usageFrom: parent }); // the inputs are shaped by what both versions read and compare against (usage.mjs)
+// `values`: the project's values file (a path; null for none; undefined: the nearest `.lean/values.json` above the candidate)
+export function inputPlan(parent, candidate, unit, { project = true, seed = 1, values = undefined } = {}) {
+  const vfile = values === undefined ? findValues(candidate) : values;
+  const spec = specOf(candidate, unit, { project, usageFrom: parent, values: vfile ? readValues(vfile) : null }); // the inputs are shaped by what both versions read and compare against (usage.mjs), and the values the project lists come first
   const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
   spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
   return { spec, heaps, draw: (i, env) => (i < heaps.builders.length ? heaps.builders[i](env) : aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i)) };
@@ -803,13 +807,14 @@ async function runPairOnce(opts) {
     return runNew(opts);
   }
   let plan; step('inputs');
-  try { plan = inputPlan(parent, candidate, unit, { project, seed }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
+  try { plan = inputPlan(parent, candidate, unit, { project, seed, values: opts.values }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const { spec, heaps } = plan;
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   setRoots(sideLocations(parent, candidate, roots)); // the directories lean loaded the two copies from render as one token (fake.mjs setRoots)
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
+  const knownRun = spec.known ? { inputs: 0, body: 0 } : null; // the inputs of the known phase (the project's listed values) and how many of them reached the body
   let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
   const mountSides = async (i) => { // a fresh environment per side for input i, the unit picked, the inputs drawn
     const sides = {};
@@ -860,7 +865,9 @@ async function runPairOnce(opts) {
       continue;
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
-    if (atGuard(oP, sides.parent) && atGuard(oC, sides.candidate)) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
+    const stopped = atGuard(oP, sides.parent) && atGuard(oC, sides.candidate);
+    if (stopped) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
+    if (knownRun && knownInput(spec, i)) { knownRun.inputs++; if (!stopped) knownRun.body++; }
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
       const held = heldTextOnly(oP, oC); // the sides differ only in a held function lean cannot read: its text is no difference lean can show on a run
@@ -870,7 +877,7 @@ async function runPairOnce(opts) {
       else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
     }
   }
-  const bound = { n, seed, ms, reached, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  const bound = { n, seed, ms, reached, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.heldText && !diffs.length) bound.heldText = { inputs: diffs.heldText.length, first: diffs.heldText[0] }; // runPair turns a PASS into ASK naming the escape
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
@@ -1075,7 +1082,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const guard = verdictGuard(opt('--out', null));
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)), values: valuesOpt(opt('--values', undefined)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
   const out = opt('--out', null);
   guard.settle();
   const text = JSON.stringify(res, null, 1);
