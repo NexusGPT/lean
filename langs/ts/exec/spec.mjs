@@ -181,7 +181,7 @@ export function specOf(file, unitName, opts = {}) {
       ts.forEachChild(n, walkInputKey);
     };
     walkInputKey(u.body);
-    for (const i of inputKeys) if (params[i]) params[i].inputKey = true;
+    for (const i of inputKeys) if (params[i] && (params[i].spec.kind === 'string' || (params[i].spec.kind === 'union' && params[i].spec.options.some((o) => o && o.kind === 'string')))) params[i].inputKey = true; // a key of a literal type is none of its members' prototype names
   }
   let rt = checker.getSignatureFromDeclaration(u.fn).getReturnType();
   if (rt.symbol?.name === 'Promise') rt = checker.getTypeArguments(rt)[0];

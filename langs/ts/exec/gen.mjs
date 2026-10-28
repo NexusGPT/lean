@@ -107,6 +107,8 @@ function reachChanged(args, targets, t, defs = {}) {
   const admitted = (tg, v) => tg.at.length || !tg.leaf || fits(tg.leaf, v, defs); // a copied value only where the target's declared type admits it
   for (const tg of targets) if (tg.from) { const v = read(tg.from), d = tg.deltas[t % tg.deltas.length]; const x = typeof v === 'number' ? v + d : d === 0 ? v : undefined; if (x !== undefined && admitted(tg, x)) write(tg.at, x); }
 }
+// a spec that admits any string: a string, or a union with a string option (a literal type admits its members only)
+const admitsAnyString = (s) => !!s && (s.kind === 'string' || (s.kind === 'union' && s.options.some((o) => o && o.kind === 'string')));
 // the families of input i: null outside the tier, else the families its turn holds among those switched on and admitted
 export function reachFamilies(spec, i) {
   const j = reachTurn(spec, i); if (j === null) return null;
@@ -243,7 +245,7 @@ export function inputsFor(spec, seed, i, env) {
   if (shaper && env && shaper.on.has('timer-order')) env.timerPerm = 1 + (reachTurn(spec, i) % 5); // the timers due at one instant fire in a legal order other than arm order (run.mjs observe and runTimers)
   const g = generator(seed * 1000003 + i, spec.defs ?? {}, spec.literals ?? [], i, spec.strings ?? [], spec.regexes ?? [], walk, generated >= 0 && generated % SPECIAL === SPECIAL - 1 ? Math.floor(generated / SPECIAL) : null, walkLength(spec), known, shaper);
   const args = spec.params.map((p, k) => { const v = p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`); return g.isListed(p) ? g.listed(p) : v; }); // a listed parameter takes its listed value in the known phase, its declared draw made first
-  if (shaper && shaper.on.has('proto-name-key')) spec.params.forEach((p, k) => { if (p.inputKey && typeof args[k] === 'string') args[k] = shaper.keyString(args[k]); }); // a key into an object the caller passes names an Object.prototype member, its declared draw made first
+  if (shaper && shaper.on.has('proto-name-key')) spec.params.forEach((p, k) => { if (p.inputKey && typeof args[k] === 'string' && admitsAnyString(p.spec)) args[k] = shaper.keyString(args[k]); }); // a key into an object the caller passes names an Object.prototype member, its declared draw made first; a key of a literal type keeps its member
   const t = changedTurn(spec, i); if (t !== null) reachChanged(args, spec.changed, t, spec.defs ?? {}); // a changed-path input: the changed comparisons' targets after the declared draw
   return args;
 }
