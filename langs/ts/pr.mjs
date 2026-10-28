@@ -28,6 +28,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ts, loadProgram, loadProgramOptions, topLevelFunctions } from './common.mjs';
 import { check } from './check.mjs';
+import { certifyCorrespondence } from './rungs.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
 import { runPair, setUnitSeconds, UNIT_SECONDS } from './exec/run.mjs';
@@ -485,11 +486,13 @@ export async function prReport(opts) {
         save({ file: rel, unit: u.name, verdict: 'ASK', coverage: u.findings?.length ? `refused:${u.findings[0].rule}` : 'checked', certificate: basicCertificate(), reason: entry.deleted ? 'deleted unit: no candidate to compare with' : 'new file: no parent to compare with', lines: [u.start, u.end] });
         continue;
       }
+      const correspondence = u.findings?.length ? certifyCorrespondence({ parent: baseFile, candidate: headFile, unit: u.name, project, adapters }) : null;
       if (u.findings?.length) {
         let b;
         try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project }); }
         catch (e) { b = { verdict: 'ASK', reason: `harness: ${String(e.message).slice(0, 300)}` }; }
-        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : b.verdict, laneB: b.verdict, laneA: null, witness: b.witnesses?.[0] ?? null, reason: b.reason ?? u.findings[0].msg, advice: u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
+        const proof = correspondence?.status === 'decided-equal' && !['WITNESS', 'NEW', 'REFUSE'].includes(b.verdict) && !b.bound?.library?.defects?.length && !b.bound?.frontEnd?.handlers?.defects?.length;
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: proof ? 'checked' : `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : proof ? 'PASS-proved' : b.verdict, ...(proof ? { certificate: { ...correspondence.certificate, identity: rows.identity, lanes: { ...correspondence.certificate.lanes, B: b } } } : {}), laneB: b.verdict, laneA: proof ? 'PASS-proved' : null, witness: b.witnesses?.[0] ?? null, reason: proof ? null : b.reason ?? u.findings[0].msg, advice: proof ? [] : u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
         continue;
       }
       if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
