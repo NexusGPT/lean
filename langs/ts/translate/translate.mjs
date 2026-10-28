@@ -3274,14 +3274,19 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return `${external('Any_index', [anyType(), anyType()], rd)}(${expr(n.expression, anyTarget())}, ${expr(n.argumentExpression, anyTarget())})`;
     }
     const base = baseOf(recvT);
-    if (ts.isStringLiteral(n.argumentExpression) && isRecordish(base)) return fieldOf(expr(n.expression), base, n.argumentExpression.text, n);
-    const d = dictRead(n);
+    const d = dictRead(n); // a dictionary takes every key through its map, a literal key included (the key need not be declared)
+    if (!d && ts.isStringLiteral(n.argumentExpression) && isRecordish(base)) return fieldOf(expr(n.expression), base, n.argumentExpression.text, n);
     if (d) {
-      const V = dtype(stringIndex(base).type, n), rd = isAny(typeOf(n)) ? V : dtype(typeOf(n), n);
+      const ixT = stringIndex(base).type, V = dtype(ixT, n), rd = isAny(typeOf(n)) ? V : dtype(typeOf(n), n);
+      // a name of Object.prototype the dictionary does not own reads that member, a value per name: a function of the key
+      // (the other dictionary readings, `??` and the entries loop, still read one absent value for every such name)
+      const protoMember = () => `${external(`proto_member_${V}`, ['string'], V)}(${d.key})`;
       // a read typed with the absence a missing key yields (noUncheckedIndexedAccess): a missing key reads undefined, a
       // present key its value, so the read is exact; a null the value type holds stays Null beside the missing key's Undef
       if (rd === `Option<${V}>`) { usesOption = true; return `(if ${d.key} in ${d.map} then Some(${d.map}[${d.key}]) else ${missingKey(d, n, () => `Some(${external(`absent_${V}`, [], V)}())`, 'None')})`; }
-      if (V.startsWith('Option<') && rd === `Nullish<${innerOf(V)}>` && hasAbsence(stringIndex(base).type, TF.Null) && !hasAbsence(stringIndex(base).type, TF.Undefined)) { const x = `dv${tempCount++}_`; return `(if ${d.key} in ${d.map} then (var ${x} := ${d.map}[${d.key}]; if ${x}.Some? then Nullish.Some(${x}.value) else Nullish.Null) else Nullish.Undef)`; }
+      // values typed `T | undefined`: a stored undefined and a missing key both read None, an owned key its value
+      if (V.startsWith('Option<') && rd === V && hasAbsence(ixT, TF.Undefined) && !hasAbsence(ixT, TF.Null)) return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${missingKey(d, n, protoMember, 'None')})`;
+      if (V.startsWith('Option<') && rd === `Nullish<${innerOf(V)}>` && hasAbsence(ixT, TF.Null) && !hasAbsence(ixT, TF.Undefined)) { const x = `dv${tempCount++}_`; return `(if ${d.key} in ${d.map} then (var ${x} := ${d.map}[${d.key}]; if ${x}.Some? then Nullish.Some(${x}.value) else Nullish.Null) else Nullish.Undef)`; }
       return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`;
     }
     if (isRecordish(base)) {

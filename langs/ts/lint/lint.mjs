@@ -2111,9 +2111,20 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (keys?.some((k) => ['constructor', 'prototype', '__proto__'].includes(k))) return v(e, 'prototype', 'this bracket key reaches the prototype chain; read a declared data field');
     if (parts.some(isAny)) return; // opaque: uninterpreted
     const dict = parts.every((t) => hasStringIndex(t) && !checker.getPropertiesOfType(t).length);
+    // a literal key naming a member of Object.prototype (`d["toString"]`): a dictionary that does not own it reads that
+    // member, which no dictionary reading holds (each such name would read one absent value)
+    if (dict && keys?.some((k) => Object.getOwnPropertyNames(Object.prototype).includes(k))) return v(e, 'prototype', `key ${keys.filter((k) => Object.getOwnPropertyNames(Object.prototype).includes(k)).map((k) => JSON.stringify(k)).join(', ')} names a member of Object.prototype, which a dictionary that does not own it reads; test \`Object.prototype.hasOwnProperty.call(d, k)\` first, or use a Map`);
     if (dict && (isStr(at) || isAny(at))) return;
     if (parts.every(isRecordish)) {
       if (parts.length !== 1 || parts.length !== (rt.flags & TF.Union ? rt.types.length : 1)) return v(e, 'dynamic-key', 'narrow the record receiver before indexing it');
+      // a record that declares fields and an index signature: its value reading holds the declared fields alone, so a key
+      // the type does not declare reads an entry the reading dropped (a copy of the declared fields would read alike)
+      // (a read rooted at an outside or lib global, `process.env[k]`, is a read of the world, which holds every key)
+      let wroot = e.expression; while (ts.isPropertyAccessExpression(wroot) || ts.isElementAccessExpression(wroot) || ts.isParenthesizedExpression(wroot) || ts.isAsExpression(wroot) || ts.isNonNullExpression(wroot)) wroot = wroot.expression;
+      const worldRooted = ts.isIdentifier(wroot) && ((outsideRoot(checker, wroot, sf, current) && wroot.text !== 'require') || libGlobalRoot(checker, wroot, sf, current));
+      const openIndex = !worldRooted && checker.getPropertiesOfType(parts[0]).length && (checker.getIndexInfoOfType(parts[0], ts.IndexKind.String) || checker.getIndexInfoOfType(parts[0], ts.IndexKind.Number));
+      const INDEX_WHY = `${checker.typeToString(rt)} declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own`;
+      if (!keys && openIndex) return v(e, 'dynamic-key', INDEX_WHY);
       if (!keys) { const why = openKeyRefusal(e, parts[0], at); return why ? v(e, 'dynamic-key', why) : undefined; } // an open key: an uninterpreted lookup of the record value and the key
       let keyCall = false;
       const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); };
@@ -2121,6 +2132,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (keyCall) return v(e, 'dynamic-key', 'bind the computed key before reading the record; a key call may mutate its receiver');
       if (localMethodLiteral(parts[0]) && keys.some((k) => checker.getPropertyOfType(parts[0], k)?.declarations?.some(ts.isGetAccessorDeclaration))) return v(e, 'dynamic-key', 'read a literal getter by its declared property name');
       const missing = keys.filter((k) => !checker.getPropertyOfType(parts[0], k));
+      if (missing.length && openIndex) return v(e, 'dynamic-key', INDEX_WHY);
       if (missing.length) return v(e, 'dynamic-key', `key ${missing.map((k) => JSON.stringify(k)).join(', ')} is not declared on ${checker.typeToString(rt)}`);
       if (keys.some((k) => nonNull(checker.getTypeOfSymbolAtLocation(checker.getPropertyOfType(parts[0], k), e)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length))) return v(e, 'dynamic-key', 'call a method by its declared name; computed record reads select data fields');
       return;

@@ -856,10 +856,53 @@ export function protoKeyWrite(checker, key, value) {
   const free = (ts.isTemplateExpression(k) && (!PROTO_KEY.startsWith(k.head.text) || !PROTO_KEY.endsWith(k.templateSpans[k.templateSpans.length - 1].literal.text)))
     || (ts.isStringLiteralLike(k) && k.text !== PROTO_KEY)
     || (kt.flags & TF.Union ? kt.types : [kt]).every(partFree);
-  if (free) return 'free';
+  if (free || protoKeyGuarded(checker, k)) return 'free';
   const vt = checker.getTypeAtLocation(value);
   const primitive = (t) => !!(t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.EnumLike | TF.ESSymbolLike | TF.Undefined | TF.Void | TF.Never));
   return (vt.flags & TF.Union ? vt.types : [vt]).every(primitive) ? 'primitive' : 'prototype';
+}
+
+// A key the code tests against '__proto__' before the write is never that name at the write: the key is one name
+// (a const, or a parameter the function never assigns) and the write sits in the branch of `k !== '__proto__'` (or
+// `!=`, either order, alone or one conjunct of `&&`), in the else branch of `k === '__proto__'` (or one disjunct of
+// `||`), or after `if (k === '__proto__') <return | throw | break | continue>` in the same block. The write then
+// makes or replaces an own key as for any other name. No other test counts (TypeScript does not narrow a string
+// by `!==`, so the guard is read off the syntax).
+function protoKeyGuarded(checker, key) {
+  const K = ts.SyntaxKind;
+  const un = (x) => { while (x && ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  if (!ts.isIdentifier(key)) return false;
+  const sym = checker.getSymbolAtLocation(key);
+  const decl = sym?.valueDeclaration;
+  if (!decl) return false;
+  const fn = (x) => { for (let p = x.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; };
+  const home = fn(decl);
+  if (!home || home !== fn(key)) return false; // the guard and the write are in the function that binds the key
+  const constant = ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !!(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const);
+  const param = ts.isParameter(decl) && ts.isIdentifier(decl.name) && decl.parent === home;
+  if (!constant && !param) return false;
+  if (param) { // a parameter assigned anywhere in its function may hold another key at the write
+    let hit = false;
+    const w = (x) => { if (hit) return; if (ts.isIdentifier(x) && x !== decl.name && checker.getSymbolAtLocation(x) === sym) { const p = x.parent; if ((ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator)) || ts.isArrayLiteralExpression(p) || ts.isShorthandPropertyAssignment(p)) hit = true; } ts.forEachChild(x, w); };
+    if (home.body) w(home.body);
+    if (hit) return false;
+  }
+  const isKey = (x) => { x = un(x); return !!x && ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym; };
+  const isProto = (x) => { x = un(x); return !!x && ts.isStringLiteralLike(x) && x.text === PROTO_KEY; };
+  const compare = (c, ops) => { c = un(c); return ts.isBinaryExpression(c) && ops.includes(c.operatorToken.kind) && ((isKey(c.left) && isProto(c.right)) || (isProto(c.left) && isKey(c.right))); };
+  const notProto = (c) => { c = un(c); if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.AmpersandAmpersandToken) return notProto(c.left) || notProto(c.right); return compare(c, [K.ExclamationEqualsEqualsToken, K.ExclamationEqualsToken]); };
+  const isProtoTest = (c) => { c = un(c); if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.BarBarToken) return isProtoTest(c.left) || isProtoTest(c.right); return compare(c, [K.EqualsEqualsEqualsToken, K.EqualsEqualsToken]); };
+  const exits = (st) => { if (!st) return false; if (ts.isBlock(st)) return exits(st.statements[st.statements.length - 1]); return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
+  for (let c = key, p = key.parent; p && p !== home; c = p, p = p.parent) {
+    if (ts.isIfStatement(p) && c === p.thenStatement && notProto(p.expression)) return true;
+    if (ts.isIfStatement(p) && c === p.elseStatement && isProtoTest(p.expression)) return true;
+    if (ts.isBlock(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) {
+      const i = p.statements.indexOf(c);
+      for (let j = 0; j < i; j++) { const s = p.statements[j]; if (ts.isIfStatement(s) && !s.elseStatement && isProtoTest(s.expression) && exits(s.thenStatement)) return true; }
+    }
+    if (ts.isFunctionLike(p)) return false;
+  }
+  return false;
 }
 
 // The reach of a made prototype (design/narrow-in.md). An object whose prototype is not Object.prototype can be the right
