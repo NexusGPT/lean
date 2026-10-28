@@ -133,7 +133,9 @@ export function routeChanges(manifest) {
       }
       readings[side] = sf;
       const diagnostics = sf.parseDiagnostics.map(d => ({ code: d.code, start: d.start, length: d.length }));
-      if (diagnostics.length) (file.parseFailures ??= {})[side] = diagnostics;
+      // Recoverable diagnostics leave a complete tree (TypeScript always builds one); they are evidence, never a route
+      // on their own: a diagnostic elsewhere in the file must not hide a changed function the checker can still read.
+      if (diagnostics.length) (file.parseDiagnostics ??= {})[side] = diagnostics;
     }
     // Split an edited line at unit and top-level statement boundaries. A line containing both
     // a function and a module-level mutation must retain both obligations.
@@ -168,10 +170,16 @@ export function routeChanges(manifest) {
       catch (e) { syntax = { reason: 'syntax-context-failure', parent: null, exception: e.name }; }
       edit.context = syntax;
       const untyped = /\.[cm]?jsx?$/.test(file.file) && !/@(?:type|param|returns?|typedef)\s*\{/.test(sf?.text ?? '');
-      // Order: a parse failure first (no listing on that side is trustworthy), then a listed unit (the checker can read it,
-      // whatever the path's class), then the artifact class of a file with no touched unit, then a named unassigned reason.
+      // Order: a parser exception (no tree on that side), untyped JavaScript, a diagnostic inside the edit (its own syntax
+      // is not trustworthy, nor a unit listed over it), a listed unit (the checker reads it, whatever the path's class or a
+      // diagnostic elsewhere in the file), the artifact class of a file with no touched unit, the named syntactic context.
+      // A diagnostic inside the edited span: this edit's own syntax is not trustworthy.
+      const starts = sf?.getLineStarts(), from = edit.offsets?.start ?? starts?.[span.start - 1], to = edit.offsets?.end ?? starts?.[span.start] ?? sf?.text.length;
+      const local = (file.parseDiagnostics?.[side] ?? []).filter(d => d.start < to && from < d.start + Math.max(1, d.length));
+      if (local.length) edit.diagnostics = local.map(d => d.code);
       if (file.parseFailures?.[side]) edit.primary = { kind: 'unassigned', reason: 'parse-failure', side };
       else if (untyped) edit.primary = { kind: 'unassigned', reason: 'untyped JavaScript file', context: syntax.reason, side };
+      else if (local.length) edit.primary = { kind: 'unassigned', reason: 'parse-failure', codes: edit.diagnostics, side };
       else if (touched.length) {
         // Stable smallest-containing-unit choice; secondary links retain every touched unit.
         const primary = touched.slice().sort((a, b) => (a.stop - a.offset) - (b.stop - b.offset) || a.id.localeCompare(b.id))[0];
@@ -212,7 +220,8 @@ function syntaxContext(sf, line, offsets) {
 }
 
 // One ASK row per (file, hunk, route): a 3,000-line lockfile hunk is one row naming 3,000 edit identities, not 3,000 rows.
-// Every edit identity stays on exactly one row, so the rows still reconcile to the ledger edit by edit.
+// Every edit identity stays on exactly one row, so the rows still reconcile to the ledger edit by edit. A row is named by
+// its first edit identity: two groups of one hunk (same route, different context) never share a task identity.
 export function ledgerRows(manifest) {
   const groups = new Map();
   for (const e of manifest.edits) {
@@ -221,7 +230,7 @@ export function ledgerRows(manifest) {
     const line = Math.max(1, e[e.side ?? 'new']?.start ?? 1);
     const g = groups.get(key);
     if (g) { g.editIds.push(e.id); g.lines = [Math.min(g.lines[0], line), Math.max(g.lines[1], line)]; continue; }
-    groups.set(key, { file: e.file, unit: `(${e.hunkId ? 'hunk ' + e.hunkId.slice(0, 12) : 'edit ' + e.id.slice(0, 12)} ${e.primary.kind}:${e.primary.reason})`, editIds: [e.id], lines: [line, line],
+    groups.set(key, { file: e.file, unit: `(edits from ${e.id.slice(0, 12)} ${e.primary.kind}:${e.primary.reason})`, editIds: [e.id], lines: [line, line],
       verdict: 'ASK', decision: e.primary.kind, coverage: `${e.primary.kind}:${e.primary.reason}`,
       reason: e.primary.reason + (e.primary.context ? ` (${e.primary.context})` : ''), context: e.context, advice: [] });
   }

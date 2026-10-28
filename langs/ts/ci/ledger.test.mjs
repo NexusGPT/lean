@@ -105,5 +105,19 @@ try {
   assert.equal(lockRows.length, 1, 'one hunk of one route is one ASK row, not one row per line');
   assert.equal(lockRows[0].coverage, 'artifact:lockfile');
   assert.deepEqual(lockRows.flatMap(r => r.editIds).sort(), locked.edits.filter(e => e.primary.kind !== 'unit').map(e => e.id).sort(), 'every non-unit edit identity is on exactly one row');
+  // One hunk, one route (untyped JavaScript), two syntactic contexts: two rows that must not share a task identity.
+  write('plain.js', '// one\nvar a = 1;\n');
+  git('add', '-A'); git('commit', '-qm', 'js base'); const jsBase = git('rev-parse', 'HEAD');
+  write('plain.js', '// two\nvar a = 2;\n');
+  const jsRows = ledgerRows(routeChanges(buildChangeManifest({ repo: tmp, base: jsBase, head: 'WORKTREE' })));
+  assert(jsRows.length >= 2, 'a comment and a statement in one hunk keep their own contexts');
+  assert.equal(new Set(jsRows.map(r => r.file + '\0' + r.unit)).size, jsRows.length, 'row identities are unique within a change');
+  // A recoverable diagnostic far from the edit (a legacy octal) must not hide the changed function from the checker.
+  write('octal.ts', 'const mode = 0777;\nexport function g(x: number) { return x + 1; }\n');
+  git('add', '-A'); git('commit', '-qm', 'octal base'); const octalBase = git('rev-parse', 'HEAD');
+  write('octal.ts', 'const mode = 0777;\nexport function g(x: number) { return x + 2; }\n');
+  const octal = routeChanges(buildChangeManifest({ repo: tmp, base: octalBase, head: 'WORKTREE' }));
+  assert(octal.files[0].parseDiagnostics ?? octal.files[0].parseFailures, 'the fixture carries a diagnostic');
+  assert(octal.edits.every(e => e.primary.kind === 'unit' && e.primary.unit === 'g'), 'a diagnostic outside the edit leaves the unit route');
   console.log('ledger.test: all assertions pass');
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
