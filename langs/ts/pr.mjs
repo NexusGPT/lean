@@ -278,6 +278,7 @@ export function coverageOf(result) {
   if (['WITNESS', 'PASS-proved', 'PASS-decided', 'PASS-bounded', 'NEW', 'IN-SCOPE'].includes(result.verdict)) return 'checked';
   const reason = lanes.B?.reason ?? result.reason ?? '';
   if (lanes.B?.kind === 'load' || /load failed:/.test(reason)) return 'failed:loader';
+  if (lanes.B?.kind === 'spin-bound' || /^spin-bound:/.test(reason)) return 'failed:spin-bound'; // lane B killed at its per-unit wall-clock bound (exec/run.mjs runPair): never cached, a larger bound may finish
   if (/\btimeout\b|__timeout__/.test(reason)) return 'failed:timeout';
   if (lanes.B?.verdict === 'ASK:harness' || /^harness:/.test(reason)) return 'failed:harness';
   if (lanes.A?.verdict === 'ASK:timeout') return 'failed:timeout';
