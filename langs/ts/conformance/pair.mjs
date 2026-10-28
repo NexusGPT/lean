@@ -135,7 +135,7 @@ function compare(m, prep, p, node, paramNames) {
     let d = prep.hw ? m.heap.agreeResult(p.hw, p.result, p.resultType, o.returned) : m.bridge.agree(p.result, p.resultType, o.returned);
     if (!d) for (const mu of p.mutated) { const k = paramNames.indexOf(mu.name); if (k < 0) { d = null; continue; } m.bridge.state.none = absenceIn(tsSig?.params?.[k]?.type); d = m.bridge.agree(mu.value, mu.type, node.after[k], `argument ${mu.name} after the call`); if (d) break; }
     if (!d && prep.hw) d = m.heap.agreeArgs(p.hw, prep.args, node.after);
-    if (d) return { status: 'disagree', cause: causeOf(d, tsSig), diff: d };
+    if (d) return { status: 'disagree', cause: causeOf(d, tsSig, node.drawn), diff: d };
   } catch (e) { if (e instanceof Opaque) return { status: 'not executable', why: `the result holds a part with no body: ${e.why}` }; return { status: 'model error', why: `compare: ${String(e.message).slice(0, 160)}` }; }
   const requests = (node.trace ?? []).filter((r) => r && r.op !== 'get');
   if (requests.length) return { status: 'disagree', cause: 'Node asks the outside, the model reaches no transition', diff: `Node made ${requests.length} request(s), first ${show(requests[0])}; the model none` };
@@ -144,7 +144,8 @@ function compare(m, prep, p, node, paramNames) {
 }
 const safeCanon = (x) => { try { return canon(x).slice(0, 120); } catch { return '?'; } };
 // a disagreement's cause: the kind of value that differs, read off the difference itself
-function causeOf(d, tsSig) {
+function causeOf(d, tsSig, drawn) {
+  if (/"\$ref":\d+\}/.test(JSON.stringify(drawn ?? null))) return 'aliased arguments: one object at two places of the input';
   if (/\$negativeZero/.test(d)) return 'signed zero: Node -0, the model 0';
   if (/\$bigint/.test(d) || [...d.matchAll(/-?\d{16,}/g)].some((m) => (BigInt(m[0]) < 0n ? -BigInt(m[0]) : BigInt(m[0])) > 2n ** 53n)) return 'an integer past 2^53: the model is exact, Node rounds to binary64';
   if (tsSig?.params?.some((p) => p.rest)) return 'a rest parameter: lane B passes the drawn array as one argument';

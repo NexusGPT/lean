@@ -49,7 +49,14 @@ export function makeBridge(model) {
   const ftype = (f, env) => resolve(f.type, env);
 
   // ----- into the model -----
+  // a value model holds no cycle: an object met again inside itself is outside its domain
+  const visiting = new Set();
   function into(v, t0) {
+    if (v === null || typeof v !== 'object' || v.__isFake) return into1(v, t0);
+    if (visiting.has(v)) throw new OutOfDomain('a cycle where the model reads a value');
+    visiting.add(v); try { return into1(v, t0); } finally { visiting.delete(v); }
+  }
+  function into1(v, t0) {
     const t = resolve(t0);
     if (t.k === 'tuple') {
       if (!t.items.length) { if (v !== undefined) throw new OutOfDomain('a value where the model reads ()'); return D.Tuple.of(); }

@@ -79,7 +79,7 @@ export function domainOf(text, name) {
 // the compilable copy: the prelude inlined at its include, every bodiless function or predicate and every opaque type
 // marked `{:extern "LeanOpaque", "<name>"}`, and one predicate per unit holding its stated domain (LeanDomain_<unit>)
 export function compilable(mainText, preludeText, units) {
-  const text = preludeText != null ? mainText.replace(/^include "[^"]*"\s*$/m, preludeText) : mainText;
+  const text = preludeText != null ? mainText.replace(/^include "[^"]*"\s*$/m, () => preludeText) : mainText; // a function: the prelude's text holds `$'` and `$&` that a replacement string would expand
   const lines = text.split('\n'); const externs = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
