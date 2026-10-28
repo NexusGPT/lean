@@ -705,24 +705,6 @@
   },
   {
    "kind": "disagree",
-   "pair": "library_more",
-   "unit": "cloned",
-   "cause": "record keys",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 1, parent: result: .k0: the model has no key, Node \"vdow5\""
-  },
-  {
-   "kind": "disagree",
-   "pair": "library_more",
-   "unit": "clonedAlias",
-   "cause": "record keys",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 1, parent: result: .k0: the model has no key, Node \"vdow5\""
-  },
-  {
-   "kind": "disagree",
    "pair": "adapters",
    "unit": "pick",
    "cause": "signed zero: Node -0, the model 0",

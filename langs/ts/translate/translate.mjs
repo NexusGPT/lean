@@ -1361,6 +1361,15 @@ export function translate(file, fnName, opts = {}) {
     if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || isPromiseT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined | TF.Void | TF.TypeParameter | TF.IndexedAccess | TF.Conditional | TF.Index | TF.NonPrimitive | TF.Never)))) return anyType();
     return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
   }
+  // the one copy reading (design/conformance-readings.md): a copy of a record the unit did not build (common.mjs copySource
+  // 'copy'; a spread first in its literal, Object.assign onto an empty literal, structuredClone) is its source's value
+  // whole, the rest slot included, inside Copy_T, whose body is the identity: every field and the rest read through it as
+  // the source's, so a copy never equals the declared fields by hand. Its text says a new object was made, so a copy and
+  // its source are two texts and the identity guard, not the text, decides when the result is compared as a graph
+  function copyOf(src, code, d, site = null) {
+    if (copySource(checker, src, site).kind !== 'copy') return code;
+    return `${helper('Copy', [d])}(${outerParens(code)})`;
+  }
   // the open record's two slots and the rest's carrier: MoreBuilt for a value a literal made (no key beyond the declared
   // ones), MoreFrom for a value from the outside, its source a name standing for the keys and values its type does not name
   const OPEN_REST = 'open_rest_', OPEN_INDEX = 'open_index_';
@@ -1763,6 +1772,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       case 'Abs': text = `function ${name}(a: ${A}): ${A} { if a < ${A === 'real' ? '0.0' : '0'} then -a else a }`; break;
       case 'Repeat': text = `function ${name}(s: string, n: int): string decreases n { if n <= 0 then "" else s + ${name}(s, n - 1) }`; break;
       case 'Reverse': text = `function ${name}(s: seq<${A}>): seq<${A}> decreases |s| { if |s| == 0 then [] else ${name}(s[1..]) + [s[0]] }`; break;
+      case 'Copy': text = `function ${name}(x: ${A}): ${A} { x }`; break; // a new object holding what its source holds (copyOf)
       case 'ObjectProtoNames': text = `const ${name}: set<string> := {${OBJECT_PROTO_NAMES.map((x) => JSON.stringify(x)).join(', ')}}`; break; // Object.getOwnPropertyNames(Object.prototype): the names \`in\` finds on every plain object
       default: fail(sf, `no helper ${kind}`);
     }
@@ -2922,7 +2932,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       else if (ts.isPropertyAssignment(p)) fields.push(fieldCode(keyOf(p), p.initializer));
     }
-    const base = merged !== null ? merged : first && ts.isSpreadAssignment(first) ? expr(first.expression) : null; // `{ ...x, ... }` starts from x itself: every record datatype carries an opaque rest slot (open-datatype), so x's undeclared keys travel with it and a hand copy of the declared fields never equals it; heap-3's uninterpreted copy is subsumed // a source the unit did not build: an uninterpreted copy, Spread_T(x), which carries what x carries beyond its declared fields
+    const base = merged !== null ? merged : first && ts.isSpreadAssignment(first) ? copyOf(first.expression, expr(first.expression), rname, first) : null; // `{ ...x, ... }` starts from x itself: every record datatype carries an opaque rest slot (open-datatype), so x's undeclared keys travel with it and a hand copy of the declared fields never equals it; heap-3's uninterpreted copy is subsumed // a source the unit did not build: an uninterpreted copy, Spread_T(x), which carries what x carries beyond its declared fields
     const render = (fs) => { // the fields in source order, a later key winning over an earlier one (a computed key may repeat a named one)
       const seen = new Map(); for (const [k, v] of fs) seen.set(k, v); let list = [...seen];
       // a key the open record's type does not declare is an entry of its dictionary of undeclared keys, in source order
@@ -4002,7 +4012,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       if (o.kind === 'global' && f.text === 'String' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike)) return stringOf(n.arguments[0]);
       if (o.kind === 'global' && f.text === 'Number' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.NumberLike | TF.BooleanLike)) return numberOf(n.arguments[0]);
-      if (o.kind === 'global' && f.text === 'structuredClone' && n.arguments.length === 1) return expr(n.arguments[0]); // HTML 2.7.4: a copy of a value is the value in the value reading (the heap core allocates a fresh cell)
+      if (o.kind === 'global' && f.text === 'structuredClone' && n.arguments.length === 1) { // HTML 2.7.4: a copy of a value is the value in the value reading, through the one copy reading (copyOf); the heap core allocates a fresh cell when the unit built the source
+        const a0 = n.arguments[0], code = expr(a0); let d = null; try { d = dtype(typeOf(a0), a0); } catch { d = null; }
+        return d ? copyOf(a0, code, d) : code;
+      }
       return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
     }
     if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); const key = currentUnit.cls ? reachOf.superInitKeyText(currentUnit.cls) : ''; return externalCall(`super_init_${mangle(Tn)}${key ? '_' + createHash('sha256').update(key).digest('hex').slice(0, 16) : ''}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition named by the code of the classes above (design/inherited-method.md)
@@ -4011,7 +4024,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     // CopyDataProperties), the value `{ ...x }` reads: x itself, its rest included (design/open-datatype.md)
     if (ts.isIdentifier(f.expression) && f.expression.text === 'Object' && f.name.text === 'assign' && originOf(checker, f.expression, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 2 && ts.isObjectLiteralExpression(n.arguments[0]) && !n.arguments[0].properties.length && !ts.isSpreadElement(n.arguments[1])) {
       const sd = (() => { try { return dtype(typeOf(n.arguments[1]), n.arguments[1]); } catch { return null; } })();
-      if (sd && openSlots(sd).length) return convertD(expr(n.arguments[1]), sd, dtype(typeOf(n), n));
+      if (sd && openSlots(sd).length) return convertD(copyOf(n.arguments[1], expr(n.arguments[1]), sd), sd, dtype(typeOf(n), n));
     }
     const recv = f.expression, name = f.name.text;
     if (ts.isIdentifier(recv) && recv.text === 'Array' && name === 'isArray' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 1) {
