@@ -11,6 +11,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 
+// A draw has one slot per declared parameter. Only a rest slot holds the remaining
+// call arguments: spread it once at the invocation boundary, leaving defaults,
+// optional values and ordinary arrays alone. Preserve element identity and the draw
+// itself (witnesses and replay retain the parameter tuple).
+export function argsFor(signature, drawn) {
+  const rest = signature.params.findIndex((p) => p.rest);
+  return rest < 0 || rest >= drawn.length ? drawn : [...drawn.slice(0, rest), ...drawn[rest]];
+}
+
 export function specOf(file, unitName, opts = {}) {
   const { sf, checker } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
   const fns = topLevelFunctions(sf);
@@ -130,7 +139,7 @@ export function specOf(file, unitName, opts = {}) {
     }
     return out;
   }
-  const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, spec: spec(checker.getTypeAtLocation(p.name)) }));
+  const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, ...(p.dotDotDotToken ? { rest: true } : {}), spec: spec(checker.getTypeAtLocation(p.name)) }));
   // the known values of each parameter: the values file's entry for this unit and parameter, else for its declared type's name
   const vfn = opts.values ? unitValues(opts.values.data, file, unitName) : null;
   if (vfn || byType) params.forEach((p, i) => { const list = vfn && Object.hasOwn(vfn.params, p.name) && Array.isArray(vfn.params[p.name]) ? { from: `functions.${vfn.key}.${p.name}`, values: vfn.params[p.name] } : byType ? byType(u.params[i].type, checker.getTypeAtLocation(u.params[i].name)) : null; if (list) p.known = list; });

@@ -1,0 +1,7 @@
+{
+ "scope": ["count", "changed", "spread"],
+ "equal": {"count": true, "changed": false, "spread": true},
+ "b": {"count": "PASS-bounded", "changed": "WITNESS", "spread": "PASS-bounded"},
+ "witnessArgs": {"changed": "pure"},
+ "why": "Default followed by rest and an ordinary spread call. The changed rest-length threshold needs multiple actual arguments; passing the whole drawn list as one argument hides the difference. count and spread preserve defaults and arity. paths.test.mjs exercises all direct and delegated invocation boundaries."
+}
