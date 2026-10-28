@@ -1,0 +1,103 @@
+#!/usr/bin/env node
+// The model conformance step (design/model-conformance.md): every pair lane A translates, each unit's two Dafny models
+// run on every input lane B draws and compared with Node's result under SameValue, plus the product check for shared
+// parts with no body.
+//
+//   node run.mjs [--pairs <dir>] [--work <dir>] [--known <json>] [--n 30] [--jobs 3] [--pair-seconds 900] [--json <out>]
+//
+// LEAN_PAIRS=a,b limits the pairs, as in tests/run.mjs. Prints one row per unit, the totals, every disagreement and
+// coupling finding grouped by cause; exits 1 when a disagreement or a coupling finding is not listed in the known
+// findings file (each listed one names its board row), 0 otherwise. The last line is the TOTAL line.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const a = process.argv.slice(2);
+const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
+const pairsDir = path.resolve(opt('--pairs', path.join(here, '../tests/pairs')));
+const work = path.resolve(opt('--work', fs.mkdtempSync(path.join(os.tmpdir(), 'lean-conformance-'))));
+const knownFile = path.resolve(opt('--known', path.join(here, 'known-findings.json')));
+const N = Number(opt('--n', 30)), JOBS = Number(opt('--jobs', 3)), PAIR_SECONDS = Number(opt('--pair-seconds', 900));
+const jsonOut = opt('--json', null);
+const only = process.env.LEAN_PAIRS ? new Set(process.env.LEAN_PAIRS.split(',').map((x) => x.trim()).filter(Boolean)) : null;
+const known = fs.existsSync(knownFile) ? JSON.parse(fs.readFileSync(knownFile, 'utf8')).findings ?? [] : [];
+
+const pairs = fs.readdirSync(pairsDir).filter((n) => fs.existsSync(path.join(pairsDir, n, 'expect.json')) && (!only || only.has(n))).sort();
+fs.mkdirSync(work, { recursive: true });
+
+// one pair in its own process under a wall-clock bound
+const runPair = (name) => new Promise((resolve) => {
+  const out = path.join(work, name); fs.rmSync(path.join(out, 'result.json'), { force: true });
+  const child = spawn(process.execPath, [path.join(here, 'pair.mjs'), path.join(pairsDir, name), out, '--n', String(N)], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let text = ''; child.stdout.on('data', (d) => { text += d; }); child.stderr.on('data', (d) => { text += d; });
+  const timer = setTimeout(() => child.kill('SIGKILL'), PAIR_SECONDS * 1000);
+  child.on('close', (code, signal) => {
+    clearTimeout(timer);
+    let r = null; try { r = JSON.parse(fs.readFileSync(path.join(out, 'result.json'), 'utf8')); } catch { /* none: below */ }
+    if (!r) r = { pair: name, units: [], notes: [], skipped: null };
+    if (code !== 0 || signal) r.harness = signal ? `killed (${signal}) after ${PAIR_SECONDS} s` : `exit ${code}: ${text.trim().split('\n').slice(-2).join(' ').slice(0, 300)}`;
+    resolve(r);
+  });
+});
+const results = new Array(pairs.length);
+{ let next = 0; await Promise.all(Array.from({ length: Math.min(JOBS, pairs.length) }, async () => { while (next < pairs.length) { const i = next++; results[i] = await runPair(pairs[i]); } })); }
+
+// ----- per unit: one status -----
+const sum = (o, re) => Object.entries(o ?? {}).filter(([k]) => re.test(k)).reduce((n, [, v]) => n + v, 0);
+const rows = [], findings = [], couplings = [];
+const totals = { pairs: pairs.length, pairsSkipped: 0, pairsFailed: 0, units: 0, executable: 0, agree: 0, disagree: 0, notExecutable: 0, outsideDomain: 0, notBridged: 0, modelError: 0, unitsSkipped: 0, inputs: 0, coupled: 0, productInputs: 0 };
+const inputTally = {};
+for (const r of results) {
+  if (r.harness) { totals.pairsFailed++; rows.push({ pair: r.pair, unit: '-', status: 'HARNESS', detail: r.harness }); }
+  if (r.skipped) { totals.pairsSkipped++; rows.push({ pair: r.pair, unit: '-', status: 'skipped', detail: r.skipped }); continue; }
+  for (const u of r.units) {
+    totals.units++;
+    if (u.skipped) { totals.unitsSkipped++; rows.push({ pair: r.pair, unit: u.unit, status: 'skipped', detail: u.skipped }); continue; }
+    totals.inputs += u.inputs; totals.productInputs += u.product.inputs;
+    const both = {}; for (const side of ['parent', 'candidate']) for (const [k, v] of Object.entries(u.sides[side])) { both[k] = (both[k] ?? 0) + v; inputTally[k.split(':')[0]] = (inputTally[k.split(':')[0]] ?? 0) + v; }
+    const ag = sum(both, /^agree/), dis = sum(both, /^disagree/), ne = sum(both, /^not executable/), od = sum(both, /^outside/), nb = sum(both, /^not bridged/), me = sum(both, /^model error/), nn = sum(both, /^Node did not/);
+    let status;
+    if (dis) { status = 'DISAGREE'; totals.disagree++; totals.executable++; }
+    else if (ag) { status = 'agree'; totals.agree++; totals.executable++; }
+    else if (me) { status = 'model error'; totals.modelError++; }
+    else if (ne) { status = 'not executable'; totals.notExecutable++; }
+    else if (od) { status = 'outside domain'; totals.outsideDomain++; }
+    else { status = 'not bridged'; totals.notBridged++; }
+    const top = Object.entries(both).filter(([k]) => !/^agree$|^disagree$/.test(k)).sort((x, y) => y[1] - x[1])[0];
+    rows.push({ pair: r.pair, unit: u.unit, status, detail: `${ag} agree, ${dis} disagree, ${ne} not executable, ${od} outside, ${nb} not bridged${me ? `, ${me} model error` : ''}${nn ? `, ${nn} Node did not answer` : ''} of ${u.inputs * 2}${top ? `; most: ${top[0].slice(0, 90)}` : ''}` });
+    for (const d of u.disagreements) findings.push({ pair: r.pair, unit: u.unit, ...d });
+    for (const c of u.coupling) { totals.coupled++; couplings.push({ pair: r.pair, unit: u.unit, ...c }); }
+  }
+}
+const isKnown = (f, kind) => known.find((k) => k.kind === kind && k.pair === f.pair && k.unit === f.unit && (!k.cause || k.cause === f.cause) && (!k.side || k.side === f.side));
+
+// ----- the table -----
+const w = (k) => Math.max(k.length, ...rows.map((x) => String(x[k]).length));
+const W = { pair: w('pair'), unit: w('unit'), status: w('status') };
+console.log(`| ${'pair'.padEnd(W.pair)} | ${'unit'.padEnd(W.unit)} | ${'status'.padEnd(W.status)} | detail`);
+for (const x of rows) console.log(`| ${x.pair.padEnd(W.pair)} | ${x.unit.padEnd(W.unit)} | ${x.status.padEnd(W.status)} | ${x.detail}`);
+
+// ----- findings, grouped by cause -----
+const groups = new Map();
+for (const f of findings) { const g = groups.get(f.cause) ?? []; g.push(f); groups.set(f.cause, g); }
+console.log(`\n## Disagreements: ${findings.length} (input, side), ${new Set(findings.map((f) => `${f.pair}/${f.unit}`)).size} units, ${groups.size} causes`);
+let unknown = 0;
+for (const [cause, fs_] of [...groups].sort((x, y) => y[1].length - x[1].length)) {
+  console.log(`\n### ${cause}: ${fs_.length}`);
+  const byUnit = new Map(); for (const f of fs_) { const k = `${f.pair}/${f.unit}`; if (!byUnit.has(k)) byUnit.set(k, []); byUnit.get(k).push(f); }
+  for (const [k, list] of byUnit) {
+    const f = list[0]; const kn = isKnown(f, 'disagree');
+    if (!kn) unknown += 1;
+    console.log(`- ${k} (${list.length}: ${[...new Set(list.map((x) => x.side))].join(', ')})${kn ? ` [known: ${kn.row}]` : ' [NEW]'}: input ${f.input} ${JSON.stringify(f.args).slice(0, 140)}; Node ${JSON.stringify(f.node).slice(0, 100)}; ${f.diff.slice(0, 200)}`);
+  }
+}
+console.log(`\n## Coupling findings (the product check): ${couplings.length} on ${totals.productInputs} inputs that reached a part with no body`);
+for (const c of couplings) { const kn = isKnown(c, 'coupling'); if (!kn) unknown++; console.log(`- ${c.pair}/${c.unit}${kn ? ` [known: ${kn.row}]` : ' [NEW]'}: input ${c.input} ${JSON.stringify(c.args).slice(0, 120)}; ${c.why}; Node parent ${JSON.stringify(c.node.parent).slice(0, 80)}, candidate ${JSON.stringify(c.node.candidate).slice(0, 80)}`); }
+console.log(`\n## Inputs by status (both sides): ${Object.entries(inputTally).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+if (jsonOut) fs.writeFileSync(jsonOut, JSON.stringify({ totals, inputTally, rows, findings, couplings, work }, null, 1));
+const t = totals;
+console.log(`| MODEL-CONFORMANCE TOTAL | ${t.units} units in ${t.pairs - t.pairsSkipped} pairs (${t.pairsSkipped} skipped${t.pairsFailed ? `, ${t.pairsFailed} HARNESS` : ''}) | ${t.executable} executable: ${t.agree} agree, ${t.disagree} disagree | ${t.notExecutable} not executable, ${t.outsideDomain} outside domain, ${t.notBridged} not bridged, ${t.modelError} model error, ${t.unitsSkipped} skipped | ${t.coupled} coupling | ${unknown === 0 && !t.pairsFailed ? 'NO NEW FINDING' : `${unknown} NEW FINDING(S)${t.pairsFailed ? `, ${t.pairsFailed} pair(s) failed` : ''}`} |`);
+process.exit(unknown === 0 && !t.pairsFailed ? 0 : 1);
