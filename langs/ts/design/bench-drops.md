@@ -1,4 +1,4 @@
-# Concept-bench drops on e0eceda: each cause, and two lane B readings that close the regressions
+# Concept-bench drops on e0eceda: each cause, and three lane B readings that close the regressions
 
 The concept bench on e0eceda (`results/concept-compare-e0eceda.md`) lists 42 concepts below a11fb78 or master on some
 count (38 below a11fb78, 41 below master). Every row below was read instance by instance: the bench JSON keeps, per
@@ -17,10 +17,10 @@ was then ASK (`parent: load failed`), every mutant of every unit of the file mis
 The reading: when loading an aliased same-package module throws, the import is the environment's module (a recording
 fake, the same on both sides), as every alias was before 533c941 and as a package is; the files its failed load
 cached are dropped with it. A budget stop or a timeout still ends the run.
-Soundness: lane A is untouched. Lane B treats that module as outside the unit, so a call into it is a request: a
-refactor that inlines one of its helpers is a WITNESS on the request, as inlining a package function is; a module
-that loads keeps the real reading. Pair `bench_drops`: `warn` WITNESS, `label` and `twice` PASS-bounded; before,
-all three ASK (parent: load failed).
+Soundness: lane A is untouched. Lane B treats that module as outside the unit, so a call into it is a request; a
+difference that passes only through such a request is Reading 3; a module that loads keeps the real reading. Pair
+`bench_drops`: `label` and `twice` PASS-bounded; before, all three of `warn`, `label` and `twice` were ASK (parent:
+load failed).
 
 ## Reading 2: a render's own continuations settle before its requests are read (exec/run.mjs, observe)
 A component renders twice from the same slots (design of 724c7f1, render purity). Real aliased hook code (a
@@ -30,6 +30,23 @@ render now drains its pending continuations (two host `setImmediate` turns, as `
 call) before its trace is cut, so each render's trace holds its own work. Soundness: the two renders are drained the
 same way, so a render that reads or writes something different on its second run still differs. Pair `bench_drops`:
 `Badge` PASS-bounded, `Tag` WITNESS; before, both REFUSE render-impure.
+
+## Reading 3: a difference through an unloadable module is ASK (exec/run.mjs, unloadableOnly)
+Reading 1 makes a module that failed to load the environment's module. A request to it is then a record of the fake
+(`module:<import>.<member>`), and an inlined helper of that module shows as a request one side makes and the other does
+not, a WITNESS lean cannot stand behind: it never ran the module's code, so it cannot say that the helper differs from
+its inlined body, or that two arguments differ to a callee that may normalise them. When the two sides differ on an
+input only in the records of such a module (everything else equal with those records removed from both traces:
+outcome, heap, receiver, pending work and every other request), the input is not a witness; a run with no witness
+elsewhere is ASK, `unloadable module <path>: <load failure>; the difference passes through it` (`bound.unloadable`
+holds the first input). A call into the module may fault on a seeded draw that depends on the called member's path, so
+a side that threw a fault of the module stopped inside it and shows nothing past it: that input is counted the same
+way. A difference elsewhere (the returned value, a thrown error of the unit, a request to a package or to a module
+that loaded, the heap) stays a WITNESS, and the later rungs (environment programs, races, the finite explorer) are
+not run once the run is ASK for this reason. Soundness: the reading only turns a WITNESS into an ASK, never a
+verdict into a PASS. Pair `bench_drops`: `report` calls the module's helper `announce` in the parent and inlines its
+body in the candidate, ASK (a WITNESS before); `warn` changes the argument of its one call to the module, ASK (a
+WITNESS before); `level` moves the threshold of the label it returns while it calls the module the same way, WITNESS.
 
 ## Stopped: the boundary walk in exec/gen.mjs (not this lane's file)
 3324374 walks a shaped spec's boundaries over the first `WALK = 48` generated inputs; a leaf with three compared

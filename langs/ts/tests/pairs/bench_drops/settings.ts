@@ -5,3 +5,7 @@ export const prefix: string = host.localStorage.getItem('prefix') ?? '';
 export function notify(message: string): void {
   host.localStorage.getItem(message);
 }
+// a helper of this module that wraps notify: a unit may call it, or inline its body
+export function announce(code: number): void {
+  notify(code > 3 ? 'high' : 'low');
+}

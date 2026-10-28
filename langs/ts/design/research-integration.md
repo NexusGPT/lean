@@ -176,7 +176,12 @@ one of the two on some count (`results/concept-compare-e0eceda.md`; Object.freez
 investigation, among them clearInterval 10 to 3, the JSX handler attribute 20 to 14, Math.pow 20 to 16, the comma
 operator 3 to 0). The corpus bench on the same head: design 14 of 43 caught for the right reason (previous dev head 11,
 master 12), held-out 18 of 101 (unchanged), the union with DA 30 of 43 (27, 28), with the pick 32 of 43 (29, 30)
-(`results-e0eceda.md`).
+(`results-e0eceda.md`). Second admission (dev 334a962 from 6589b7d, 2026-10-28, twenty-one lanes since e0eceda): the full suite
+3,138 checks ALL PASS; on the 42 concepts the earlier comparison listed below, 229 inside, 211 translated, 449 of 565
+witnessed (a11fb78 on the same concepts: 227, 213, 460; the bench-drops branch 443; the gen-walk branch 374); 19 of the
+20 concepts still below are disclosed readings (`design/bench-drops.md`), one (the comma operator, 1/1/0 against
+2/2/3) is an undisclosed drop under investigation; the soundness battery on the pinned dcbc61c read 119 of 143
+witnessed with 0 false PASS, the admitted head's battery runs (`results/concept-compare-6589b7d-42.md`).
 
 **Boundary.** Getters, setters, proxies, species constructors, effectful comparators, Date string parsing and time
 zones: obligations unmet; `structuredClone` of unsupported values: refused by name. `Object.freeze` needs a
