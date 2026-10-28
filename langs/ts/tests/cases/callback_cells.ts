@@ -18,5 +18,5 @@ export function tally(xs: string[]): number {
 export function firstBig(xs: number[]): number {
   let seen = 0;
   const hit = xs.find((x) => { seen = seen + 1; return x > 10; });
-  return hit === undefined ? -seen : hit + seen;
+  return hit === undefined ? 0 - seen : hit + seen; // `0 - seen`, never -0: a -0 result an operation makes is read opaque (design/signed-zero.md), and an opaque unit has no body to run
 }
