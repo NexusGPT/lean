@@ -22,7 +22,7 @@
 // Lane B draws its values first on every unit; the report names the file and its hash, each certificate carries the
 // hash, and the cache keys on it. Without a root file, each unit reads the nearest `.lean/values.json` above its file.
 import fs from 'node:fs';
-import { createRun, registerTask, startTask, commitArtifact, atomicJSON, supervise, taskId, materializeSources } from './ci/supervise.mjs';
+import { createRun, registerTask, startTask, commitArtifact, atomicJSON, supervise, reconcileTasks, taskId, materializeSources } from './ci/supervise.mjs';
 import { buildChangeManifest, routeChanges, ledgerRows, ledgerMarkdown, sensitivePath } from './ci/ledger.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -404,11 +404,11 @@ export async function prReport(opts) {
   atomicJSON(path.join(dir, 'options.json'), workerOpts);
   const unitSeconds = Number(opts.unitSeconds ?? UNIT_SECONDS), dafnySeconds = Number(opts.dafnySeconds ?? 30);
   const timeoutMs = Math.max(1000, 1000 * (opts.timeBudget == null ? taskMap.size * (unitSeconds + dafnySeconds + 30) + 60 : Number(opts.timeBudget) + unitSeconds + dafnySeconds + 60));
-  const terminal = await supervise(dir, { command: process.execPath, args: [fileURLToPath(import.meta.url), '--ledger-worker', path.join(dir, 'options.json')], timeoutMs });
+  const terminal = [...taskMap.values()].every(t => !t.lanes.length) ? reconcileTasks(dir) : await supervise(dir, { command: process.execPath, args: [fileURLToPath(import.meta.url), '--ledger-worker', path.join(dir, 'options.json')], timeoutMs });
   let metadata = {};
   try { metadata = JSON.parse(fs.readFileSync(path.join(dir, 'worker-report.json'), 'utf8')); }
   catch (e) { if (e.code !== 'ENOENT') console.error('Worker metadata unreadable: ' + e.name); }
-  const rows = Object.assign(terminal.rows, { identity: metadata.identity ?? ledger.id, leanVersion: metadata.leanVersion,
+  const rows = Object.assign(terminal.rows, { identity: metadata.identity ?? ledger.id, leanVersion: metadata.leanVersion ?? leanVersion(),
     values: metadata.values, order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked,
     ledger, reconciliation: terminal.reconciliation, terminalFile: path.join(dir, 'terminal.json'), runDir: dir });
   rows.refusalsFile = writeRefusals(rows, dir, { repo: path.resolve(opts.repo) });
@@ -598,6 +598,11 @@ export function intakeMarkdown(rows) {
   return lines.join('\n');
 }
 
+function displayOp(op) {
+  try { return formatOp(op); }
+  catch (e) { return `patch display unavailable (${e.name}); raw operation retained in JSON`; }
+}
+
 export function markdown(rows, base, head) {
   if (process.env.LEAN_LEDGER_TEST_FAULT === 'report-crash') throw new Error('injected report writer crash');
   const count = (v) => rows.filter((r) => r.verdict === v).length;
@@ -608,19 +613,19 @@ export function markdown(rows, base, head) {
     if (r.verdict === 'WITNESS' && r.coverage !== 'reused') { // a reused row keeps its reuse note; the site rides on a fresh witness
       const site = r.witness?.where?.lines?.candidate;
       if (site) {
-        const source = site.file.replace(/(^|\/)\.lean_head_\d+_/, '$1');
+        const source = String(site.file ?? r.file).replace(/(^|\/)\.lean_head_\d+_/, '$1');
         const file = source === r.file || source.endsWith('/' + r.file) ? r.file : source;
         const label = r.witness.where.advice?.label ?? r.advice?.find((a) => a.line === site.start)?.do?.match(/^\[(proved|conditional|migration|flag-only)(?::[^\]]*)?\]/)?.[1];
         note += `; ${file}:${site.start}${label ? ' [' + label + ']' : ''}`;
       }
     }
-    if (r.verdict === 'WITNESS' && r.witness?.args) r.note = note;
+    // Rendering never mutates the durable result.
     lines.push(`| ${r.file} | \`${r.unit}\` (${r.lines[0]}-${r.lines[1]}) | **${r.verdict ?? ''}** | ${r.coverage ?? ''} | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);
   }
   const patched = rows.filter((r) => r.verdict === 'WITNESS' && r.witness?.patch?.length); // a front-end WITNESS: the first three ops of its patch, one per line
   if (patched.length) {
     lines.push('', '## What changed on the page', '');
-    for (const r of patched) { lines.push(`### ${r.file} · \`${r.unit}\`: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${formatOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }
+    for (const r of patched) { lines.push(`### ${r.file} · \`${r.unit}\`: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${displayOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }
   }
   const asks = rows.filter((r) => r.advice && r.advice.length);
   if (asks.length) {
@@ -648,8 +653,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]'); process.exit(2); }
   const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
   const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), unitSeconds: opt('--unit-seconds', null) ?? undefined, reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
+  if (opt('--json')) atomicJSON(opt('--json'), a.includes('--preview') ? rows : reportJSON(rows));
   const md = a.includes('--preview') ? intakeMarkdown(rows) : markdown(rows, base, head);
-  if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(a.includes('--preview') ? rows : reportJSON(rows), null, 1));
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);
 }
 

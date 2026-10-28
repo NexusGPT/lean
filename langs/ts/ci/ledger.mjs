@@ -96,7 +96,8 @@ export function reconcileEdits(manifest) {
     buckets[e.primary.kind].push(e.id);
     (classes[e.class] ??= { unit: [], artifact: [], unassigned: [] })[e.primary.kind].push(e.id);
   }
-  const missing = expected.filter(x => !actual.includes(x)), unexpected = actual.filter(x => !expected.includes(x));
+  const expectedSet = new Set(expected), actualSet = new Set(actual);
+  const missing = expected.filter(x => !actualSet.has(x)), unexpected = actual.filter(x => !expectedSet.has(x));
   return { expected, ...buckets, classes, missing, unexpected, complete: !missing.length && !unexpected.length };
 }
 
@@ -117,16 +118,35 @@ export function routeChanges(manifest) {
       const diagnostics = sf.parseDiagnostics.map(d => ({ code: d.code, start: d.start, length: d.length }));
       if (diagnostics.length) (file.parseFailures ??= {})[side] = diagnostics;
     }
+    // Split an edited line at unit and top-level statement boundaries. A line containing both
+    // a function and a module-level mutation must retain both obligations.
+    const expanded = [];
     for (const edit of manifest.edits.filter(e => e.fileId === file.id)) {
+      const sf = readings[edit.side];
+      if (edit.kind !== 'text' || !sf) { expanded.push(edit); continue; }
+      const starts = sf.getLineStarts(), begin = starts[edit[edit.side].start - 1], end = starts[edit[edit.side].start] ?? sf.text.length;
+      const boundaries = [...new Set([begin, end, ...file.units[edit.side].flatMap(u => [u.offset, u.stop]), ...sf.statements.flatMap(n => [n.getStart(sf), n.end])].filter(p => p >= begin && p <= end))].sort((a, b) => a - b);
+      const spans = [];
+      for (let i = 0; i < boundaries.length - 1; i++) {
+        const a = boundaries[i], b = boundaries[i + 1];
+        if (!sf.text.slice(a, b).trim() && spans.length) spans[spans.length - 1][1] = b;
+        else if (!sf.text.slice(a, b).trim() && i < boundaries.length - 2) boundaries[i + 1] = a;
+        else spans.push([a, b]);
+      }
+      for (const [start, stop] of spans) expanded.push({ ...edit, id: spans.length === 1 ? edit.id : id([edit.id, start, stop]), offsets: { start, end: stop } });
+    }
+    manifest.edits = manifest.edits.filter(e => e.fileId !== file.id).concat(expanded);
+    file.edits = expanded.map(e => e.id);
+    for (const edit of expanded) {
       edit.links = [];
       if (edit.kind !== 'text') {
         edit.primary = edit.kind === 'failure' ? { kind: 'unassigned', reason: edit.reason } : { kind: 'artifact', reason: edit.kind === 'redacted' ? 'secret-path' : edit.kind, class: file.class };
         continue;
       }
       const side = edit.side, span = edit[side], sf = readings[side];
-      const touched = file.units[side].filter(u => u.start <= span.start && span.start <= u.end);
+      const touched = file.units[side].filter(u => edit.offsets ? u.offset < edit.offsets.end && edit.offsets.start < u.stop : u.start <= span.start && span.start <= u.end);
       edit.links = touched.map(u => ({ id: u.id, file: file.file, unit: u.name, side, start: u.start, end: u.end }));
-      const syntax = sf ? syntaxContext(sf, span.start) : { reason: 'non-source', parent: null };
+      const syntax = sf ? syntaxContext(sf, span.start, edit.offsets) : { reason: 'non-source', parent: null };
       edit.context = syntax;
       const untyped = /\.[cm]?jsx?$/.test(file.file) && !/@(?:type|param|returns?|typedef)\s*\{/.test(sf?.text ?? '');
       if (file.parseFailures?.[side]) edit.primary = { kind: 'unassigned', reason: 'parse-failure', side };
@@ -143,8 +163,8 @@ export function routeChanges(manifest) {
   return manifest;
 }
 
-function syntaxContext(sf, line) {
-  const starts = sf.getLineStarts(), start = starts[line - 1] ?? sf.text.length, end = starts[line] ?? sf.text.length;
+function syntaxContext(sf, line, offsets) {
+  const starts = sf.getLineStarts(), start = offsets?.start ?? starts[line - 1] ?? sf.text.length, end = offsets?.end ?? starts[line] ?? sf.text.length;
   const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, sf.languageVariant, sf.text, undefined, start, end - start);
   let token, meaningful = false, comments = false;
   while ((token = scanner.scan()) !== ts.SyntaxKind.EndOfFileToken) {

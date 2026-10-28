@@ -43,5 +43,12 @@ try {
   assert.throws(() => reconcileEdits({ ...m, edits: [...m.edits, m.edits[0]] }), /duplicate/);
   assert.deepEqual(routeChanges(buildChangeManifest({ repo: tmp, base, head })).edits, m.edits, 'identities are reproducible');
   }
+  write('mixed.ts', 'export function f() { return 1; } module.exports.x = 1;\n');
+  git('add', '-A'); git('commit', '-qm', 'mixed base'); const mixedBase = git('rev-parse', 'HEAD');
+  write('mixed.ts', 'export function f() { return 2; } module.exports.x = 2;\n');
+  const mixed = routeChanges(buildChangeManifest({ repo: tmp, base: mixedBase, head: 'WORKTREE' }));
+  assert(mixed.edits.some(e => e.primary.kind === 'unit' && e.primary.unit === 'f'));
+  assert(mixed.edits.some(e => e.primary.reason === 'exported property assignment'), 'a same-line unit must not swallow a module-level edit');
+  assert.equal(reconcileEdits(mixed).complete, true);
   console.log('ledger.test: all assertions pass');
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

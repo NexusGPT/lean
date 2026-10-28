@@ -28,3 +28,11 @@ The supervisor commits `terminal.json` before generating Markdown, JSON projecti
 `materializeSources` reads Git blobs into the private run, preserving relative source/configuration paths. It excludes secret paths and symlinks; existing dependency installations are read through node_modules links. Nothing is installed. For WORKTREE the tracked files are copied; the checker rejects a change frame that moves between registration and dispatch.
 
 `node langs/ts/ci/supervise.test.mjs`: red before implementation (no private run directory, exit 1); green after implementation (exit 0). The fixture injects worker/report crashes, deadline expiry, absent output, abandoned work and a corrupted artifact. The worker-crash fixture retains a named ASK and exact reconciliation; the report-crash fixture retains its WITNESS and artifact hash while the CLI exits 1.
+
+## Additional adversarial checks
+
+- A line containing a listed function and an exported property mutation must preserve both obligations. The test was red (`a same-line unit must not swallow a module-level edit`, exit 1), then green after splitting line intervals at unit/top-level syntax boundaries. Offset spans identify the resulting pieces; their common hunk retains both original line spans.
+- `node langs/ts/ci/report.test.mjs` reproduced the benchmark report exception `(v.children ?? []).map is not a function` (exit 1). The report boundary now names an unavailable patch display and retains the raw operation. The test passes (exit 0); rendering does not mutate its input. `patch.mjs` is unchanged.
+- `node langs/ts/ci/comment.test.mjs --intake-only` was red at the old intake cardinality/status expectations (16 of 18 passed, exit 1). The vocabulary now includes artifact/unassigned rows and crash, timeout, lost-worker, incomplete-artifact ASK statuses. A whole-file language skip has become separate old/new edit records.
+
+Commands for focused verification: `node langs/ts/ci/ledger.test.mjs && node langs/ts/ci/supervise.test.mjs && node langs/ts/ci/report.test.mjs`. All exit 0. Baseline full-suite comparison uses the detached source tree `/Users/assem/nexus/nexus-organisation/work/lean-lanes/change-ledger/.baseline-fea80f8`; the earlier mutable-tree baseline was terminated and is not a measurement.
