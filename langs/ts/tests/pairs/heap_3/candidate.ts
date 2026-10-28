@@ -13,6 +13,11 @@ export interface Bag { a: number; b: string; [k: string]: unknown }
 export function copyBag(s: Bag): Bag { return { a: s.a, b: s.b }; }
 export function bumpBag(s: Bag): Bag { return { a: s.a + 1, b: s.b }; }
 export function copyRec(s: Rec): Rec { return { a: s.a, b: s.b }; }
+// the spread dropped: an own key a holding undefined in s no longer overwrites a
+export interface Opt { a?: number; b: string }
+export function late(s: Opt): Rec { return { a: 1, b: s.b }; }
+export function lateSame(s: Opt, n: number): Rec { return { a: n, ...s, b: s.b }; }
+
 export function setA(s: Bag, n: number): Bag { return { ...s, a: n }; }
 
 // the guard turned into a branch around the write

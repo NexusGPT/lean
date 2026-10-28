@@ -26,10 +26,11 @@ holds declared fields alone).
 ext_spread_copy_Bag_Bag(s).(a := n)
 ```
 
-Refused, where the term cannot be formed (escape spread_source): a record spread after other members, a built copy
-holding a key its literal's type does not declare, and `Object.assign` onto a literal from a source the unit did not
-build (the call is read as a function of its arguments' values, which hold declared fields alone; two sources are a
-later spread).
+A record spread after other members writes over them (an own key holding undefined too): the members up to the last
+spread are one uninterpreted merge of their values in source order, `spread_merge_T_<names>(..)`, and the members after
+it update the merge. Refused where no term is formed (escape spread_source): a spread after a computed or method member,
+a built copy holding a key its literal's type does not declare, and `Object.assign` onto a literal from a source the
+unit did not build (read as a function of its arguments' values, which hold declared fields alone).
 
 Lane B: `exec/spec.mjs` draws undeclared keys only on a record with an index signature, so copy_bag witnesses and
 copy_rec is PASS-bounded. The open-record row needs the same draw for a plain record parameter (zero to one extra key).

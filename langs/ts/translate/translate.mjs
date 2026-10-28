@@ -2743,9 +2743,22 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (!parts.length || !parts.every((t) => t.flags & (TF.StringLiteral | TF.NumberLiteral))) fail(p, 'a computed key on a record with declared keys is a literal or a union of literals');
       return parts.map((t) => ({ name: String(t.value), lit: (t.flags & TF.StringLiteral) ? strEsc(String(t.value)) : String(t.value) }));
     };
+    // a record spread after other members: JavaScript writes the members in order, a later spread over the earlier ones
+    // (an own key holding undefined too), so the members up to the last spread are one uninterpreted merge of their
+    // values in source order, named by the members' names and the record type; the members after it update the merge
+    const lastSpread = n.properties.reduce((k, p, i) => (ts.isSpreadAssignment(p) ? i : k), -1);
+    let merged = null;
+    if (lastSpread > 0) {
+      const vals = [], types = [], names = [];
+      for (const p of n.properties.slice(0, lastSpread + 1)) {
+        const e = ts.isSpreadAssignment(p) ? p.expression : ts.isShorthandPropertyAssignment(p) ? p.name : p.initializer;
+        names.push(ts.isSpreadAssignment(p) ? '...' : keyOf(p)); types.push(dtype(typeOf(e), e)); vals.push(expr(e));
+      }
+      merged = `${external(`spread_merge_${mangle(rname)}_${hash(names.join(','))}`, types, rname)}(${vals.join(', ')})`;
+    }
     const fields = []; const splits = []; // a field is [key, code]; a split stands at a field slot, one branch per member
     for (const p of n.properties) {
-      if (ts.isSpreadAssignment(p)) continue;
+      if (ts.isSpreadAssignment(p) || n.properties.indexOf(p) <= lastSpread && merged !== null) continue;
       if (ts.isShorthandPropertyAssignment(p)) fields.push(fieldCode(p.name.text, p.name));
       else if (ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name)) {
         const ms = keyMembers(p);
@@ -2759,7 +2772,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       else if (ts.isPropertyAssignment(p)) fields.push(fieldCode(keyOf(p), p.initializer));
     }
-    const base = first && ts.isSpreadAssignment(first) ? (copySource(checker, first.expression, first).kind === 'copy' ? `${external(`spread_copy_${mangle(rname)}`, [rname], rname)}(${expr(first.expression)})` : expr(first.expression)) : null; // a source the unit did not build: an uninterpreted copy, Spread_T(x), which carries what x carries beyond its declared fields
+    const base = merged !== null ? merged : first && ts.isSpreadAssignment(first) ? (copySource(checker, first.expression, first).kind === 'copy' ? `${external(`spread_copy_${mangle(rname)}`, [rname], rname)}(${expr(first.expression)})` : expr(first.expression)) : null; // a source the unit did not build: an uninterpreted copy, Spread_T(x), which carries what x carries beyond its declared fields
     const render = (fs) => { // the fields in source order, a later key winning over an earlier one (a computed key may repeat a named one)
       const seen = new Map(); for (const [k, v] of fs) seen.set(k, v); const list = [...seen];
       if (base !== null) return list.length ? `${base}.(${list.map(([k, v]) => `${dn(k)} := ${outerParens(v)}`).join(', ')})` : base;

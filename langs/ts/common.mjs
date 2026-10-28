@@ -1316,7 +1316,7 @@ export function copySourceWhy(checker, src, site = null) {
   const record = (y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0;
   let t = null; try { t = checker.getTypeAtLocation(bare(src)); } catch { return 'the copied value has no type'; }
   if (!t || !(t.flags & TF.Union ? t.types : [t]).some(record)) return null; // a dictionary, an array, a primitive: not a record copy
-  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent) && site.parent.properties[0] !== site) return 'a spread of a record after other members writes over them (an own key holding undefined too); write the spread first';
+  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent) && site.parent.properties.slice(0, site.parent.properties.indexOf(site)).some((q) => !(ts.isSpreadAssignment(q) || ts.isShorthandPropertyAssignment(q) || (ts.isPropertyAssignment(q) && (ts.isIdentifier(q.name) || ts.isStringLiteral(q.name)))))) return 'a spread after a computed or method member: the merge of the members before it is formed from named members and spreads only; write the spread before that member';
   const keys = new Set();
   const built = (x, depth) => {
     x = bare(x); if (depth > 8) return false;
