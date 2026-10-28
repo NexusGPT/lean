@@ -1430,7 +1430,8 @@ function carried(checker, n) {
   if (ts.isVariableDeclaration(p) && p.initializer === n) return ts.isIdentifier(p.name) && !!writesOf(checker, checker.getSymbolAtLocation(p.name));
   if (ts.isBinaryExpression(p)) {
     const k = p.operatorToken.kind;
-    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return false; // a write reads the target's declared type
+    if (k === ts.SyntaxKind.EqualsToken && p.right === n) { const s = ts.isIdentifier(p.left) ? checker.getSymbolAtLocation(p.left) : null; return !!writesOf(checker, s); } // a write to a local: the local is held in turn
+    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return false; // a compound write reads the target's declared type
     return true; // an operand: an operation on the real value
   }
   if (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p) || ts.isTypeOfExpression(p) || ts.isExpressionStatement(p) || ts.isTemplateSpan(p)) return true;
