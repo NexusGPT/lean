@@ -1,0 +1,24 @@
+{
+ "scope": [
+  "bang",
+  "bang_s",
+  "bang_type",
+  "find_bang",
+  "map_get"
+ ],
+ "equal": {
+  "bang": false,
+  "bang_s": false,
+  "bang_type": false,
+  "map_get": false,
+  "find_bang": false
+ },
+ "why": "class 2, an absent value asserted present (x!, m.get(k)!, find()!) read as one absent T: x! + 0 is NaN where x! is undefined. Failing on 1e55e21: Equal_bang, Equal_bang_s, Equal_bang_type, Equal_map_get, Equal_find_bang proved and the proof-hunt rows for bang, bangS, bangType, mapGet, findBang (lane B WITNESS).",
+ "b": {
+  "bang": "WITNESS",
+  "bangS": "WITNESS",
+  "bangType": "WITNESS",
+  "mapGet": "WITNESS",
+  "findBang": "WITNESS"
+ }
+}
