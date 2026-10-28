@@ -7,7 +7,10 @@
   "ordered",
   "guarded",
   "times",
-  "via_call"
+  "via_call",
+  "call_one",
+  "call_ordered",
+  "both"
  ],
  "equal": {
   "check": true,
@@ -17,9 +20,12 @@
   "ordered": true,
   "guarded": true,
   "times": true,
-  "via_call": true
+  "via_call": true,
+  "call_one": false,
+  "call_ordered": true,
+  "both": false
  },
- "why": "Plan section 3, callbacks that throw. A throwing callee inside an array callback ends the loop at the first throwing element, the loop's partial state kept, and the fault takes the statement's route; inside a then handler it rejects the promise the link returns. check is untouched. scaled maps a negative element to zero instead of throwing (unproved; lane B WITNESS on an array holding a negative). total moves a pure value after the forEach loop (proved: the loop helper is the same, the fault exit unchanged). later resolves a negative value instead of rejecting (unproved; WITNESS). ordered moves a pure value after the throwing call inside the handler (proved). guarded drops a check the second one implies (proved: the handler leaves at the first fault, so both reject on the same values with the same error). times is untouched; viaCall calls a throwing unit with its receiver through call, the candidate through apply with an array literal (proved: the same call, its fault routed as a direct call's). A callback handed to an outside function whose body throws stays refused: fixtures/escapes/ts/exception_callback_outside.ts.",
+ "why": "Plan section 3, callbacks that throw. A throwing callee inside an array callback ends the loop at the first throwing element, the loop's partial state kept, and the fault takes the statement's route; inside a then handler it rejects the promise the link returns. check is untouched. scaled maps a negative element to zero instead of throwing (unproved; lane B WITNESS on an array holding a negative). total moves a pure value after the forEach loop (proved: the loop helper is the same, the fault exit unchanged). later resolves a negative value instead of rejecting (unproved; WITNESS). ordered moves a pure value after the throwing call inside the handler (proved). guarded drops a check the second one implies (proved: the handler leaves at the first fault, so both reject on the same values with the same error). times is untouched; viaCall calls a throwing unit with its receiver through call, the candidate through apply with an array literal (proved: the same call, its fault routed as a direct call's). callOne swallows the throw of a unit called through call (unproved; WITNESS); callOrdered moves a pure value after such a call (proved). both: the parent throws when a is negative, the candidate checks 0 in its place (must not prove; WITNESS): a loop that ran on after a fault, the next call clearing it, would read both sides alike. A call of a stored throwing function value stays refused: fixtures/escapes/ts/exception_callback_call_stored.ts. A callback handed to an outside function whose body throws stays refused: fixtures/escapes/ts/exception_callback_outside.ts.",
  "b": {
   "check": "PASS-bounded",
   "scaled": "WITNESS",
@@ -28,7 +34,10 @@
   "ordered": "PASS-bounded",
   "guarded": "PASS-bounded",
   "times": "PASS-bounded",
-  "viaCall": "PASS-bounded"
+  "viaCall": "PASS-bounded",
+  "callOne": "WITNESS",
+  "callOrdered": "PASS-bounded",
+  "both": "WITNESS"
  },
  "check": {
   "scaled": {
@@ -48,6 +57,15 @@
   },
   "viaCall": {
    "verdict": "PASS-proved"
+  },
+  "callOne": {
+   "verdict": "WITNESS"
+  },
+  "callOrdered": {
+   "verdict": "PASS-proved"
+  },
+  "both": {
+   "verdict": "WITNESS"
   }
  }
 }

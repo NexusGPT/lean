@@ -45,3 +45,22 @@ export function times(this: Box, n: number): number {
 export function viaCall(this: Box, a: number, b: number): number {
   return times.apply(this, [a]) + times.call(this, b);
 }
+
+// changed behaviour: a negative a gives 1 instead of throwing (WITNESS)
+export function callOne(this: Box, a: number): number {
+  return (a < 0 ? 0 : times.call(this, a)) + 1;
+}
+
+// a refactor: the pure value moved after the call; the call throws on the same values
+export function callOrdered(this: Box, a: number, b: number): number {
+  const t = times.call(this, b);
+  const d = a * 2;
+  return d + t;
+}
+
+// changed behaviour: a negative a no longer throws (WITNESS); a loop that ran on after a fault and let the next call
+// clear it would read both sides as "throws when b is negative" and could prove them equal
+export function both(a: number, b: number): number {
+  [0, b].forEach((x) => { check(x); });
+  return 0;
+}

@@ -44,3 +44,21 @@ export function times(this: Box, n: number): number {
 export function viaCall(this: Box, a: number, b: number): number {
   return times.call(this, a) + times.call(this, b);
 }
+
+// a throwing unit called through call, its result used
+export function callOne(this: Box, a: number): number {
+  return times.call(this, a) + 1;
+}
+
+// a throwing unit called through call beside a pure value
+export function callOrdered(this: Box, a: number, b: number): number {
+  const d = a * 2;
+  const t = times.call(this, b);
+  return d + t;
+}
+
+// the loop stops at the first throwing element: a negative a throws before b is checked
+export function both(a: number, b: number): number {
+  [a, b].forEach((x) => { check(x); });
+  return 0;
+}
