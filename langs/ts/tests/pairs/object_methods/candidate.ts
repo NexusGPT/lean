@@ -24,7 +24,7 @@ export class Counter {
   value(): number { return ++this.stats.deep.n; }
   valueRefactor(): number { return (this.stats.n += 1) + 0; }
   bump(): number { this.stats.n += 2; return this.stats.n; }
-  refactor(): number { const stats = this.stats; this.stats = { n: stats.n, deep: { n: stats.deep.n + 1 } }; return this.stats.deep.n; }
+  refactor(): number { const stats = this.stats; this.stats = { ...stats, deep: { ...stats.deep, n: stats.deep.n + 1 } }; return this.stats.deep.n; }
 }
 export function recordRefactor(): number { const c = new Counter(); return c.refactor(); }
 export class Writable {

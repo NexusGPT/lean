@@ -3,6 +3,5 @@
 type Row = { a: number; b: number };
 interface Picker { next(): "a" | "b"; }
 export function setNext(row: Row, p: Picker, v: number): Row {
-  const r = { a: row.a, b: row.b };
-  return { ...r, [p.next()]: v };
+  return { ...row, [p.next()]: v };
 }

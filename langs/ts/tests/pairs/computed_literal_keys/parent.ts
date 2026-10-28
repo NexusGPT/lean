@@ -16,8 +16,7 @@ export function counts(n: number): Record<Status, number> {
 
 // a field update by key: a case split over "a" | "b"
 export function setField(row: Row, k: "a" | "b", v: number): Row {
-  const r: Row = { a: row.a, b: row.b, c: row.c };
-  return { ...r, [k]: v };
+  return { ...row, [k]: v };
 }
 
 // a partial row with one field chosen by key
