@@ -4502,6 +4502,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       fail(e, 'delete target is not translated');
     }
     if (ts.isBinaryExpression(e)) {
+      if (!ts.isIdentifier(e.left)) fail(e, 'element write through a path: the heap core reads it, the value reading does not');
       const name = dn(e.left.text);
       const op = e.operatorToken.kind;
       if (op === K.EqualsToken) { const LT = letTypeOf(checker.getSymbolAtLocation(e.left)); return [e.left.text, outerParens(LT ? expr(e.right) : expr(e.right, typeOf(e.left)))]; } // an untyped let takes the value as it is; the var line lifts it
