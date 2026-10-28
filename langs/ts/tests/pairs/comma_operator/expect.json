@@ -1,0 +1,13 @@
+{
+ "scope": ["comma_drop", "comma_swap", "comma_last", "comma_split", "untouched", "alias_tag"],
+ "equal": { "comma_drop": false, "comma_swap": false, "comma_last": false, "comma_split": true, "untouched": true, "alias_tag": false },
+ "why": "A comma expression in a value context (design/comma-operator.md): its operands run left to right and the last one is the value. The three planted changes of a sequence each change the value: the left operand dropped, the operands swapped, the last operand changed; each is a WITNESS and its lemma is not proved. The sequence written as two statements makes the same steps in the same order and is proved; untouched is the same text. aliasTag sits in a file that imports `@/where` through the pair's own tsconfig paths; that module's top level calls require.resolve, which lane B's sandbox cannot run, so the alias is the environment's module on both sides and the changed literal beside the call is a WITNESS (at 533c941 the failed load made every unit of such a file ASK: parent: load failed).",
+ "b": {
+  "commaDrop": "WITNESS",
+  "commaSwap": "WITNESS",
+  "commaLast": "WITNESS",
+  "commaSplit": "PASS-bounded",
+  "untouched": "PASS-bounded",
+  "aliasTag": "WITNESS"
+ }
+}
