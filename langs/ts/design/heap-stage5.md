@@ -507,3 +507,20 @@ exactly what the core carries; the measured reach waits on those shapes, not on 
 outside the core, exposed 32,906 -> 32,945 and determinate 16,593 -> 16,554 (the guard's new classes: identity
 comparison 42, in a callee 38, write through a call's result 31; nested write through an input 1,246 -> 1,260, since
 Object.assign onto a node below an input now counts as one).
+Round 2 (same day). (a) A false proof on the base, closed: the same-shape Object.assign row read only the source's
+declared fields, so `Object.assign(t, s)` proved equal to `t.a = s.a; t.b = s.b` (Equal_copy_into proved, canonical
+heap), while a source of the declared type may carry more keys (structural typing) and Object.assign copies them.
+Object.assign is now read only from a literal source (shape 1); a record-typed source is assign-target by name (escape
+`assign_record_source`). A literal target, `Object.assign({}, a)`, copies the same extra keys as `{ ...a }` does: the
+spread readings share that assumption, left as it was.
+(b) Shape 6, a dictionary of records (`Record<string, T>`, T a plain data record) a parameter's node holds: the value
+under a key is a node, `DictGet_` then a field step (`s.chats[id].unread = 0`, `const chat = s.chats[id]; chat.title =
+t`), and a record stored under a key is `DictSet_` of its reference; the cell's values are `Is<T>` (WF), the canonical
+walk follows them in key order as a Map's. A key the unit has not written may be missing (JavaScript throws a
+TypeError) or a name of Object.prototype (it reads a function): the read marks the world, so a proof holds only where
+the unit wrote the key. A record stored under a key that may be `__proto__` would replace the prototype: the lint
+names it `prototype` (escape `heap_shapes_dict_proto_key`) and the core marks it. Pair `heap_shapes`: `seed` (the
+nested write dropped: WITNESS), `later` (a read through the key moved across a write of another cell: proved),
+`named` (proved), `retitle` (two writes through an unwritten key swapped: not proved, and lane B witnesses the
+TypeError thrown by the other statement). The real instances (`state.chats[id]` in reducers) test `if (!chat)`, a
+truthiness of a reference, which the core does not read.

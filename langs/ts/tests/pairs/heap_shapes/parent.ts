@@ -81,3 +81,32 @@ export function share(p: Post): boolean {
   p.pinned = p.tag;
   return p.pinned === p.tag;
 }
+
+// shape 6: a dictionary of records a parameter's node holds: the value under a key is a node, DictGet_ then a field
+// step; a key the unit has not written may be missing (a TypeError) or a name of Object.prototype, and a read of it
+// marks the world, so a proof holds only where the unit wrote the key
+export interface Chat { title: string; unread: number }
+export interface Inbox { chats: Record<string, Chat>; active: string }
+
+export function seed(b: Inbox, t: string): void {
+  b.chats["draft"] = { title: t, unread: 0 };
+  b.chats["draft"].unread = 5;
+}
+
+export function later(b: Inbox, t: string): number {
+  b.chats["draft"] = { title: t, unread: 0 };
+  const n = b.chats["draft"].unread;
+  b.active = t;
+  return n;
+}
+
+export function named(b: Inbox, t: string): void {
+  b.chats["draft"] = { title: t, unread: 0 };
+  b.chats["draft"].unread = 1;
+}
+
+export function retitle(b: Inbox, id: string, t: string): void {
+  const chat = b.chats[id];
+  chat.title = t;
+  chat.unread += 1;
+}
