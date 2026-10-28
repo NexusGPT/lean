@@ -1,5 +1,5 @@
-// reads lane A refuses by design: an undeclared key of a record that declares fields and an index signature (dot and
-// bracket), and a literal key naming an Object.prototype member on a dictionary; lane B draws index entries
+// reads lane A refuses by design: an undeclared key of a record that declares fields and an index signature (dot,
+// bracket and in), and a literal key naming an Object.prototype member on a dictionary; lane B draws index entries
 export interface Headers { accept?: string; [name: string]: string | undefined }
 
 export function agentOf(h: Headers): string | undefined {
@@ -13,4 +13,8 @@ export function traceOf(h: Headers): string | undefined {
 export function protoText(): string {
   const d: Record<string, number> = {};
   return String(d["toString"] ?? 0);
+}
+
+export function hasAgent(h: Headers): boolean {
+  return "x-agent-id" in h;
 }

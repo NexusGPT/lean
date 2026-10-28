@@ -14,7 +14,7 @@ import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, i
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
-import { openRecordType, OPEN_RECORD_WHY } from '../common.mjs';
+import { openRecordType, OPEN_RECORD_WHY, openRecordIn } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -1402,6 +1402,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (op === K.InKeyword) { // required properties and dictionaries are exact (an own key or a name of Object.prototype); open-record absence stays uninterpreted
       const pr = inPrototypeReach(checker, sf, e); // the made object reaches this unit (common.mjs prototypeReach); other units keep the reading
       if (pr) return v(e, 'prototype', `this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pr.maker.getStart(sf))}), and ${pr.why}; \`in\` reads the prototype; test an own key with \`Object.prototype.hasOwnProperty.call(o, k)\``);
+      { const why = openRecordIn(checker, e.left, tOf(e.right)); if (why) return v(e, 'dynamic-key', why); } // an open record (common.mjs openRecordIn)
       expr(e.left); expr(e.right); return;
     }
     if (op === K.CommaToken) return commaValue(e);
