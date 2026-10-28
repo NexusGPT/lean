@@ -26,7 +26,7 @@ export function compileSide({ dfy, prelude, units, dir, label }) {
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${label}.dfy`);
   fs.writeFileSync(file, c.text);
-  const r = spawnSync('dafny', ['translate', 'js', '--no-verify', '--include-runtime', '--allow-warnings', file], { cwd: dir, encoding: 'utf8', maxBuffer: 1 << 26 });
+  const r = spawnSync('dafny', ['translate', 'js', '--no-verify', '--include-runtime', '--allow-warnings', '--optimize-erasable-datatype-wrapper:false', file], { cwd: dir, encoding: 'utf8', maxBuffer: 1 << 26 });
   const js = path.join(dir, `${label}.js`);
   if (r.status !== 0 || !fs.existsSync(js)) return { ok: false, error: ((r.stdout ?? '') + (r.stderr ?? '')).split('\n').filter((l) => /Error|error/.test(l)).slice(0, 3).join(' | ').slice(0, 400) || `dafny exit ${r.status}`, text: c.text };
   return { ok: true, js, text: c.text, externs: c.externs };
@@ -46,8 +46,9 @@ export function loadSide({ js, text, externs }) {
   const req = (m) => { if (m === 'bignumber.js') return BigNumber; throw new Error(`the model requires ${m}`); };
   const factory = new Function('require', ...names.map((n) => `LeanOpaque_${n}`), `${src}\n;return { _module, _dafny };`);
   const { _module: M, _dafny: D } = factory(req, ...stubs);
+  const apply = (label, args, ret) => { if (!state.handler) throw new OpaqueHit(label, args); return state.handler(label, args, ret); }; // a part with no body handed in as a value (an input function)
   return {
-    M, D, decls, text, state,
+    M, D, decls, text, state, apply,
     fn: (name) => M.__default?.[jsName(name)] ?? null,
     signature: (name) => signature(text, name),
     sigOfExtern: (name) => signature(text, name),

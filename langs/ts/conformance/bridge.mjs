@@ -3,7 +3,7 @@
 // rendering of Node's result (fake.mjs render), SameValue at every number. The bridge never guesses: a value the
 // declared type cannot hold is outside the model's domain (OutOfDomain, counted with its reason), a type the bridge
 // has no reading for is not bridged (NoBridge, counted with its reason).
-import { BigNumber, canon } from './model.mjs';
+import { BigNumber, canon, opaqueValue } from './model.mjs';
 import { dn } from '../common.mjs';
 import { render } from '../exec/fake.mjs';
 
@@ -26,6 +26,9 @@ const toNumber = (b) => Number(b.toFixed()); // a BigNumber integer, rounded to 
 
 export function makeBridge(model) {
   const { M, D, decls } = model;
+  // the absence a None stands for: Option<T> reads a single-absence union, T | null or T | undefined; the unit's TypeScript
+  // signature (// SIG) says which, and a signature naming both or neither leaves either
+  const state = { none: 'either' };
   const rest = new Map(); // MoreFrom src -> the undeclared keys and values of the object it was read from (rendered)
   const restIds = new Map();
   const dt = (name) => decls.datatypes.get(name);
@@ -53,10 +56,15 @@ export function makeBridge(model) {
       if (!Array.isArray(v) || v.length !== t.items.length) throw new OutOfDomain(`not a tuple of ${t.items.length}`);
       return D.Tuple.of(...v.map((x, i) => into(x, t.items[i])));
     }
-    if (t.k === 'arrow') throw new NoBridge('a function value');
+    if (t.k === 'arrow') { if (typeof v !== 'function') throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads a function`); const label = `input function ${JSON.stringify(render(v))}`; return (...args) => model.apply(label, args, t.to); } // an input function's body is not the model's: applying it is applying a part with no body
     if (t.k !== 'name') throw new NoBridge(`type ${t.text}`);
+    // a value of a type the model has no body for (Ext_, Any) is a term to it: named by the input as lane B renders it,
+    // so the same input is the same term on both sides; the model can only pass it on or apply a bodiless part to it
+    if (decls.opaque.has(t.name)) { const r = render(v); return Object.assign(opaqueValue(`input ${JSON.stringify(r)}`), { rendered: r }); }
     if (v && typeof v === 'object' && v.__isFake) throw new NoBridge('an opaque input (a fake of lane B)');
-    if (typeof v === 'function') throw new NoBridge('a function value');
+    if (t.name === 'Fn' && dt('Fn')) { if (typeof v !== 'function') throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads a function`); return make('Fn', 0, [D.Seq.UnicodeFromString(`input function ${JSON.stringify(render(v))}`), D.Seq.of()]); } // a function value is its code and its captures, compared only: an input function is named by lane B's rendering of it
+    if (typeof v === 'function') throw new NoBridge('a function value where the model reads a data type');
+    if (t.name === 'Error' && dt('Error') && v instanceof Error === false && Object.prototype.toString.call(v) === '[object Error]') v = Object.assign(Object.create(null), { message: v.message, name: v.name }, v); // an error from another realm
     switch (t.name) {
       case 'int': case 'nat': {
         if (typeof v === 'bigint') return big(v);
@@ -81,7 +89,7 @@ export function makeBridge(model) {
       case 'seq': if (!Array.isArray(v)) throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads a sequence`); return D.Seq.of(...Array.from(v, (x) => into(x, t.args[0])));
       case 'set': { const xs = v instanceof Set ? [...v] : null; if (!xs) throw new OutOfDomain('not a Set'); return D.Set.fromElements(...xs.map((x) => into(x, t.args[0]))); }
       case 'map': { let m = D.Map.Empty; for (const [k, x] of entriesOf(v)) m = m.update(into(k, t.args[0]), into(x, t.args[1])); return m; }
-      case 'Option': return v === undefined ? make('Option', 0, []) : make('Option', 1, [into(v, t.args[0])]);
+      case 'Option': return v === undefined || v === null ? make('Option', 0, []) : make('Option', 1, [into(v, t.args[0])]); // a single-absence union: None is its one absence, null or undefined as the type declares
       case 'Nullish': return v === null ? make('Nullish', 0, []) : v === undefined ? make('Nullish', 1, []) : make('Nullish', 2, [into(v, t.args[0])]);
       case 'Absent': if (v === null) return make('Absent', 0, []); if (v === undefined) return make('Absent', 1, []); throw new OutOfDomain('a value where the model reads null or undefined');
       case 'Unit': if (v !== undefined) throw new OutOfDomain('a value where the model reads Unit'); return make('Unit', 0, []);
@@ -100,6 +108,10 @@ export function makeBridge(model) {
   }
   function intoDatatype(v, d, t) {
     const env = argEnv(d, t);
+    if (d.name === 'Error' && v !== null && typeof v === 'object' && (v instanceof Error || Object.prototype.toString.call(v) === '[object Error]')) { // an error: its message and name (own or from its class), its own keys beside them
+      const own = Object.fromEntries(Object.keys(v).map((k) => [k, v[k]]));
+      v = { ...own, message: v.message, name: v.name, ...(v.cause !== undefined ? { cause: v.cause } : {}), ...(typeof v.stack === 'string' ? { stack: v.stack } : {}) };
+    }
     // a record: one constructor of named fields (the open slots last)
     if (d.ctors.length === 1 && d.ctors[0].fields.length && !/^item\d+$/.test(d.ctors[0].fields[0].name)) {
       if (!isPlain(v)) throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads the record ${d.name}`);
@@ -141,7 +153,7 @@ export function makeBridge(model) {
   function agree(x, t0, r, at = 'result') {
     const t = resolve(t0);
     const no = (why) => `${at}: ${why}`;
-    if (x && x.__leanOpaque) throw new Opaque(`${at} is an opaque value (${x.__leanOpaque})`);
+    if (x && x.__leanOpaque) { if (x.rendered !== undefined) return JSON.stringify(x.rendered) === JSON.stringify(r) ? null : no(`model passes on the input ${show(x.rendered)}, Node ${show(r)}`); throw new Opaque(`${at} is an opaque value (${x.__leanOpaque})`); }
     if (t.k === 'tuple') {
       if (!t.items.length) return isUndef(r) ? null : no(`model () against ${show(r)}`);
       if (!Array.isArray(r) || r.length !== t.items.length) return no(`model tuple against ${show(r)}`);
@@ -173,7 +185,7 @@ export function makeBridge(model) {
         return unordered(es, isRecordRendering(r) ? Object.entries(r) : null, [t.args[0], t.args[1]], at, 'dictionary');
       }
       case 'OSet': { const items = fieldsOf(x)[0]; if (!r || !r.$set) return no(`model set against ${show(r)}`); if (r.$set.length !== items.length) return no(`model set of ${items.length} against ${r.$set.length}`); for (let i = 0; i < items.length; i++) { const d = agree(items[i], t.args[0], r.$set[i], `${at}{${i}}`); if (d) return d; } return null; }
-      case 'Option': return x.$tag === 0 ? (isUndef(r) ? null : no(`model None against ${show(r)}`)) : agree(fieldsOf(x)[0], t.args[0], r, at);
+      case 'Option': return x.$tag === 0 ? ((state.none !== 'null' && isUndef(r)) || (state.none !== 'undefined' && r === null) ? null : no(`model None (${state.none === 'either' ? 'null or undefined' : state.none}) against ${show(r)}`)) : agree(fieldsOf(x)[0], t.args[0], r, at);
       case 'Nullish': return x.$tag === 0 ? (r === null ? null : no(`model null against ${show(r)}`)) : x.$tag === 1 ? (isUndef(r) ? null : no(`model undefined against ${show(r)}`)) : agree(fieldsOf(x)[0], t.args[0], r, at);
       case 'Absent': return x.$tag === 0 ? (r === null ? null : no(`model null against ${show(r)}`)) : (isUndef(r) ? null : no(`model undefined against ${show(r)}`));
       case 'Unit': return isUndef(r) ? null : no(`model Unit against ${show(r)}`);
@@ -220,7 +232,7 @@ export function makeBridge(model) {
     for (const e of xs) { const j = left.findIndex((re) => e.every((part, i) => { try { return !agree(part, types[i], re[i], at); } catch (err) { if (err instanceof Opaque) return false; throw err; } })); if (j < 0) return `${at}: model ${what} entry ${canon(e[0])} has no match`; left.splice(j, 1); }
     return null;
   }
-  return { into, agree, resolve, rest };
+  return { into, agree, resolve, rest, state };
 }
 
 const isUndef = (r) => r && typeof r === 'object' && r.$undefined === true;

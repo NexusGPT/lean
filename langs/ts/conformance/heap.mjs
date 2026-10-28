@@ -59,7 +59,7 @@ export function heapBridge(model) {
       else if (s.kind === 'set') { if (!(v instanceof Set)) throw new OutOfDomain(`not a Set (${key})`); parts = [D.Seq.of(...[...v].map((x) => elem(x, s.elem)))]; }
       else if (s.kind === 'dict') { if (Array.isArray(v) || v instanceof Map || v instanceof Set) throw new OutOfDomain(`not a dictionary (${key})`); const ks = Object.keys(v); parts = [D.Seq.of(...ks.map((k) => prim(k, 'string'))), ks.reduce((m, k) => m.update(prim(k, 'string'), elem(v[k], s.v)), D.Map.Empty), Object.getPrototypeOf(v) !== null]; }
       else if (s.kind === 'map') { if (!(v instanceof Map)) throw new OutOfDomain(`not a Map (${key})`); const es = [...v.entries()]; parts = [D.Seq.of(...es.map(([k]) => elem(k, s.k))), es.reduce((m, [k, x]) => m.update(elem(k, s.k), elem(x, s.v)), D.Map.Empty)]; }
-      else if (s.kind === 'date') { if (!(v instanceof Date) || Number.isNaN(v.getTime())) throw new OutOfDomain(`not a valid Date (${key})`); parts = [prim(v.getTime(), 'int')]; }
+      else if (s.kind === 'date') { if (!(v instanceof Date) || Number.isNaN(v.getTime())) throw new OutOfDomain(`not a valid Date (${key})`); const tvT = obj.ctors[ci].fields[0].type.text; parts = [prim(v.getTime(), tvT === 'real' ? 'real' : 'int')]; }
       else { // a record: its declared fields; a key it does not declare stays as it was (the core never reads it)
         if (Array.isArray(v) || v instanceof Map || v instanceof Set) throw new OutOfDomain(`not a record (${key})`);
         parts = s.fields.map((f) => field(v, f));
@@ -96,7 +96,7 @@ export function heapBridge(model) {
     else if (s.kind === 'set') { v = new Set(); memo.set(ref, v); for (const x of parts[0]) v.add(el(x, s.elem)); }
     else if (s.kind === 'dict') { v = parts[2] ? {} : Object.create(null); memo.set(ref, v); for (const k of parts[0]) v[k.toVerbatimString(false)] = el(parts[1].get(k), s.v); }
     else if (s.kind === 'map') { v = new Map(); memo.set(ref, v); for (const k of parts[0]) v.set(el(k, s.k), el(parts[1].get(k), s.v)); }
-    else if (s.kind === 'date') { v = new Date(Number(parts[0].toFixed())); memo.set(ref, v); }
+    else if (s.kind === 'date') { v = new Date(parts[0].num !== undefined ? jsPrim(parts[0], 'real') : Number(parts[0].toFixed())); memo.set(ref, v); } // a date's time value: int, or real in a real file
     else { v = {}; memo.set(ref, v); s.fields.forEach((f, i) => { const x = parts[i], op = optOf(f.key); if (op && op.absent === 'u') { if (x.$tag === 1) v[f.name] = undefined; else if (x.$tag === 2) v[f.name] = jsPrim(fields(x)[0], op.inner); return; } v[f.name] = el(x, f.key); }); Object.assign(v, extras.get(ref) ?? {}); }
     return v;
   }

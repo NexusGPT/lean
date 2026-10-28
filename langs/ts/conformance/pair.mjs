@@ -70,7 +70,7 @@ function prepare(m, fname, live, side) {
     const t = m.bridge.resolve(p.type);
     if (t.k === 'name' && t.name === 'World') { world = m.bridge.into ? makeWorld(m) : null; args.push(world); continue; }
     if (t.k === 'name' && t.name === 'HWorld') { hw = { index: args.length }; args.push(null); continue; }
-    if (p.name === 'self' || p.name === 'this_') throw new NoBridge('a class receiver (lane B gives a receiver of fakes)');
+    if (p.name === 'self' || p.name === 'this_') { if (t.k === 'name' && m.decls.opaque.has(t.name)) { args.push(opaqueValue(`receiver ${fname.replace(/_(parent|candidate)$/, '')}`)); continue; } throw new NoBridge('a class receiver the heap reads (lane B gives a receiver of fakes)'); } // an opaque receiver is a term: the model reads it only through bodiless accessors
     if (p.name === 'fuel' && t.k === 'name' && t.name === 'nat') { args.push(new (m.heap.BigNumber)(FUEL)); continue; }
     if (p.name === 'slots') throw new NoBridge('callback slots');
     if (k >= live.length) { if (t.k === 'name' && (t.name === 'Option' || t.name === 'Nullish')) { args.push(m.bridge.into(undefined, p.type)); k++; continue; } throw new NoBridge('more model parameters than arguments'); }
@@ -106,12 +106,16 @@ function unary(m, fname, live, node, paramNames) {
     if (dom && !dom(...prep.args)) return { status: 'outside the model domain', why: 'the unit\'s stated hypothesis (requires, HYP) is false on this input' };
   } catch (e) { if (e instanceof OpaqueHit) return { status: 'not executable', why: `domain predicate reaches ${e.symbol}`, symbol: e.symbol }; return { status: 'model error', why: `domain: ${String(e.message).slice(0, 160)}` }; }
   let out;
-  try { out = m.fn(fname)(...prep.args); } catch (e) { if (e instanceof OpaqueHit) return { status: 'not executable', why: `reaches ${e.symbol}, a part with no body`, symbol: e.symbol }; return { status: 'model error', why: String(e && e.message).slice(0, 160) }; }
-  return compare(m, prep, parts(prep, out), node, paramNames);
+  try { out = m.fn(fname)(...prep.args); } catch (e) { if (e instanceof OpaqueHit) return { status: 'not executable', why: `reaches ${e.symbol}, a part with no body`, symbol: e.symbol }; return { status: 'model error', why: String(e && e.message).slice(0, 160), ...(process.env.LEAN_CONFORMANCE_DEBUG ? { stack: String(e.stack).split('\n').slice(0, 6).join(' | ') } : {}) }; }
+  try { return compare(m, prep, parts(prep, out), node, paramNames); } catch (e) { return { status: 'model error', why: `compare: ${String(e && e.message).slice(0, 160)}`, ...(process.env.LEAN_CONFORMANCE_DEBUG ? { stack: String(e.stack).split('\n').slice(0, 6).join(' | ') } : {}) }; }
 }
 
+// the absence a None of this unit stands for, from its TypeScript signature (translate.mjs writes `// SIG <fn>: {...}`)
+const absenceIn = (tsType) => { if (typeof tsType !== 'string') return 'either'; const n = /\bnull\b/.test(tsType), u = /\bundefined\b|\bvoid\b/.test(tsType); return n && !u ? 'null' : u && !n ? 'undefined' : 'either'; };
+const sigOf = (m, fname) => { try { return JSON.parse((m.text.match(new RegExp(`^// SIG ${fname}: (.+)$`, 'm')) ?? [])[1] ?? 'null'); } catch { return null; } };
 // the model's answer against Node's observation of the same input
 function compare(m, prep, p, node, paramNames) {
+  const tsSig = sigOf(m, prep.sig.name);
   if (prep.hw && p.hw && m.heap.oob(p.hw) && prep.domain.inrange) return { status: 'outside the model domain', why: 'an access out of range set the oob flag (INRANGE: not modelled from there)' };
   const faulted = p.world && m.M.World && p.world.fault && p.world.fault.$tag === 1;
   const o = node.outcome; const nodeThrew = Object.hasOwn(o, 'threw');
@@ -121,8 +125,9 @@ function compare(m, prep, p, node, paramNames) {
     return { status: 'disagree', cause: 'the model faults, Node returns', diff: `the model's world holds a fault; Node returned ${show(o.returned)}` };
   }
   try {
+    m.bridge.state.none = absenceIn(tsSig?.ret);
     let d = prep.hw ? m.heap.agreeResult(p.hw, p.result, p.resultType, o.returned) : m.bridge.agree(p.result, p.resultType, o.returned);
-    if (!d) for (const mu of p.mutated) { const k = paramNames.indexOf(mu.name); if (k < 0) { d = null; continue; } d = m.bridge.agree(mu.value, mu.type, node.after[k], `argument ${mu.name} after the call`); if (d) break; }
+    if (!d) for (const mu of p.mutated) { const k = paramNames.indexOf(mu.name); if (k < 0) { d = null; continue; } m.bridge.state.none = absenceIn(tsSig?.params?.[k]?.type); d = m.bridge.agree(mu.value, mu.type, node.after[k], `argument ${mu.name} after the call`); if (d) break; }
     if (!d && prep.hw) d = m.heap.agreeArgs(p.hw, prep.args, node.after);
     if (d) return { status: 'disagree', cause: causeOf(d), diff: d };
   } catch (e) { if (e instanceof Opaque) return { status: 'not executable', why: `the result holds a part with no body: ${e.why}` }; return { status: 'model error', why: `compare: ${String(e.message).slice(0, 160)}` }; }
@@ -151,10 +156,10 @@ function product(fnames, lives, seed) {
   for (const side of ['parent', 'candidate']) {
     const m = models[side];
     let prep; try { prep = prepare(m, fnames[side], lives[side]); } catch { return null; }
-    m.state.handler = (sym, args) => {
+    m.state.handler = (sym, args, ret) => {
       const key = `${sym}|${args.map(canon).join(',')}`; used.add(sym); applied[side].push(key);
       if (table.has(key)) return table.get(key);
-      const sig = m.sigOfExtern(sym); const v = sig ? gen(m, sig.ret, `${key}#${seed}`, () => draws++) : opaqueValue(key);
+      const sig = ret ? { ret } : m.sigOfExtern(sym); const v = sig ? gen(m, sig.ret, `${key}#${seed}`, () => draws++) : opaqueValue(key);
       table.set(key, v); return v;
     };
     try { outs[side] = canon(m.fn(fnames[side])(...prep.args)); } catch (e) { m.state.handler = null; return { error: String(e.message).slice(0, 120) }; }
@@ -214,6 +219,7 @@ for (const unit of units) {
       const tally = rec.sides[side];
       const key = r.status + (r.why ? `: ${r.why.replace(/[0-9]+/g, 'N').slice(0, 90)}` : '');
       tally[key] = (tally[key] ?? 0) + 1;
+      if (r.stack) (rec.errors ??= []).push({ side, input: i, why: r.why, stack: r.stack });
       if (r.status === 'disagree') rec.disagreements.push({ side, input: i, args: node[side].drawn, node: node[side].outcome, cause: r.cause, diff: r.diff });
       if (r.status === 'not executable' && r.symbol) opaqueSides.push(side);
     }
