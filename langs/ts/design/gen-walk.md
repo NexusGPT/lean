@@ -50,12 +50,17 @@ Math.round (`toStep`), a digest compare behind four truthiness guards with creat
 (`checkDigest`), a refactor (`clampUnit`) and an untouched unit (`scale`). On cdbd48d the three changed units are
 PASS-bounded at n 30 (every input walked or special); after, each is WITNESS (inputs 18, 10, 1).
 
+The 42-concept bench (`concept_bench.py --concepts`, the 42 of the bench-drops finding, K 10): 374 of 562 planted
+mutants witnessed against 364 on dcbc61c, with inside 228 and translated 210 on both; 8 witnesses up (the three units,
+repeatsForFloor, assertWebVoiceOriginAllowed), 1 down (mde, below).
+
 ## What it costs
 
 A difference that needs a compared combination together with a coincidence on a leaf the walk does not reach (the
 pair `readme_ledger`, applyAll: an amount equal to a free `floor`) met the combination on every wrap of the old walk.
 Over seeds 1 to 22 at n 30 applyAll is WITNESS on 21 seeds on cdbd48d, 20 with the product walk alone, 21 with
-item 5 (the miss moves from seed 1 to seed 6). A second pass of the walk alternating with free draws also gave 20.
+item 5 (the miss moves from seed 1 to seed 6). A second pass of the walk alternating with free draws also gave 20. On the bench, mde (`alpha ?? 1.05`) had one input
+of 60 past its guards on cdbd48d and none after: a pool pick moved with item 5.
 
 ## What stays out
 
