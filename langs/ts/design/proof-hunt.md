@@ -37,7 +37,7 @@ type the runtime value lacks (an absent value read as a T: `+ 0`, `typeof`, `===
 | 6 | a let read before any write | definite, definiteS, lateInit | open, hidden | :4856, :4911, :2223 uninit_T | refuse the read TypeScript does not vouch for (`let v!:`, a write only a closure makes), or read it as undefined |
 | 7 | a module constant holding a function value | scaled, applied | open, hidden | :551 call_args_<name>, :1408 external <name> | key it by its declaration and reach (as :1985 should), or refuse a non-unit callable constant |
 | 8 | the number envelope: exact int and real, no signed zero | negZero, bigInt; scratch `a + b - b + 0.5` (real file) | open; the envelope is documented (numbers-bitwise-nan.md); real rounding is witnessed | int and real readings | owner decision: claim the envelope in the certificate, or refuse results that can leave it |
-| 9 | a module constant whose initializer calls a changed same-file function | cfgX | open, hidden | :1985 `<name>_<hash(iteratorProgram(decl))>` | hash the initializer's reach (the bodies it calls), as Module_file_block does at :5710 |
+| 9 | a module constant whose initializer calls a changed same-file function | cfgX | open, hidden | :712 `Module_file_get_<name>_<hash(decl text)>`, a module cell of the world named by its declaration's own text | name it by `iteratorProgram(decl)` (the same-file declarations it reaches), as Static_ does at :861 |
 | 10 | a value of another runtime type asserted to T | anyAs, asCast, unknownAs | open, hidden | :1719 to :1744 Any_as_T, cast_* | keep the source representation until a guard decides it, or refuse a narrowing `as` |
 | 11 | a tagged template whose same-file tag function changed | tagged | open, hidden | :2069 `tag_<tag text>_<n>` | call the same-file tag as the unit it is (its lemma then required), or key by its declaration and reach |
 | 12 | instanceof against a same-file class whose declaration changed | isBase | open, hidden | :2476 `instanceof_<right text>` (and the class named by its name) | key the test by the class declaration and its heritage, or decide it from both sides' declarations |
@@ -54,8 +54,8 @@ type the runtime value lacks (an absent value read as a T: `+ 0`, `typeof`, `===
 | 5354 Object_keys(D), 5357 `<T>_to_seq` | the keys of a record value | yes: class 5 (`_to_seq` same shape, unprobed) |
 | 551, 2262 call_args_<name>; 1408, 1409, 1416 external <calleeName> | a named callee outside the units | yes for a module constant (class 7); no for an import or a lib global (the world) |
 | 549 call_args_invoke | a local function value, passed as its Dafny value | no |
-| 1985 `<name>_<hash(iteratorProgram)>` | a module constant | yes when its initializer calls a changed function: class 9; a changed literal is another name (modConst not proved) |
-| 712 Module_file_<kind>_<name>_<hash(text)> | a module let | no: an initializer that is not a literal is refused (toplevel-effect) |
+| 1985 `<name>_<hash(iteratorProgram)>` | a module constant read as a value | no: iteratorProgram holds the same-file declarations it reaches (modConst not proved) |
+| 712 Module_file_<kind>_<name>_<hash(decl text)> | a module cell of the world (a let, a constant whose initializer calls) | yes: class 9, the declaration's text leaves out the bodies its initializer calls |
 | 846, 861 Module_file and Static_<class>_<field>_<hash> | a static field | no on the probe (staticBase not proved) |
 | 1719, 1739, 1740, 1744, 2053 Any_as_T, Any_of_T, cast_* | a narrowing or widening conversion | yes for a narrowing assertion: class 10 |
 | 1743 cast record to dictionary, 3489 Object_<name>_source | keyed by the whole file text | no (conservative) |
