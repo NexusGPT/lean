@@ -1,10 +1,14 @@
 {
  "scope": [
+  "any_as",
+  "applied",
+  "as_cast",
   "bang",
   "bang_len",
   "bang_s",
   "bang_type",
   "big_int",
+  "cfg_x",
   "check",
   "definite",
   "definite_s",
@@ -12,13 +16,16 @@
   "dict_undef",
   "dot_key",
   "entries_order",
+  "find_bang",
   "in_key",
   "key_order",
   "keys_h",
   "keys_of_param",
   "last_ok",
   "late_init",
+  "make",
   "make_scale",
+  "map_get",
   "neg_zero",
   "open_key",
   "opt_keys",
@@ -26,7 +33,8 @@
   "proto_read",
   "same",
   "scaled",
-  "thrower"
+  "thrower",
+  "unknown_as"
  ],
  "equal": {
   "open_key": false,
@@ -55,7 +63,15 @@
   "bang_len": false,
   "check": true,
   "make_scale": true,
-  "same": true
+  "same": true,
+  "map_get": false,
+  "find_bang": false,
+  "applied": false,
+  "cfg_x": false,
+  "make": false,
+  "any_as": false,
+  "as_cast": false,
+  "unknown_as": false
  },
  "why": "must-not-prove units (design/proof-hunt.md): each unit differs only through one place where lane A reads both sides as one shared unknown or one exact reading JavaScript does not keep. equal false on every one: a proof is a false proof. Lane B witnesses where its typed inputs reach the difference; the index-signature extras, a negative zero and a number past 2^53 are never drawn, so those units are PASS-bounded and a proof there is a false proof no lane shows.",
  "b": {
@@ -83,6 +99,13 @@
   "keysH": "PASS-bounded",
   "negZero": "PASS-bounded",
   "bigInt": "PASS-bounded",
-  "same": "PASS-bounded"
+  "same": "PASS-bounded",
+  "mapGet": "WITNESS",
+  "findBang": "WITNESS",
+  "applied": "WITNESS",
+  "cfgX": "WITNESS",
+  "anyAs": "WITNESS",
+  "asCast": "WITNESS",
+  "unknownAs": "WITNESS"
  }
 }

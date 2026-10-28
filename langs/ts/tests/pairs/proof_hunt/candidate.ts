@@ -40,6 +40,23 @@ export function scaled(xs: number[]): number[] { return xs.map(scale); }
 export function negZero(x: number): number { return x === 0 ? 0 : x; }
 export function bigInt(x: number): number { return x; }
 
+// class 2, more positions: the absent value of a Map read and of a find, asserted present
+export function mapGet(m: Map<string, number>, k: string): number { return m.get(k)! + 0; }
+export function findBang(xs: number[]): number { return xs.find((x) => x > 5)! + 0; }
+
+// class 7, called: the module constant's function value called directly
+export function applied(x: number): number { return scale(x); }
+
+// class 9: a module constant whose initializer calls a same-file function whose body changed
+function make(k: number): { x: number } { return { x: k + 2 }; }
+const CFG = make(1);
+export function cfgX(y: number): number { return CFG.x + y; }
+
+// class 10: a value of another runtime type asserted to T (an any narrowed, an `as` cast)
+export function anyAs(x: any): number { const n: number = x; return n + 0; }
+export function asCast(x: string | number): number { return (x as number) + 0; }
+export function unknownAs(x: unknown): string { return (x as string) + ""; }
+
 // closed on this base: kept so they stay closed
 export function thrower(x: number): number { if (x > 0) throw new Error("b"); return x; }
 export function dictTruth(d: Record<string, number>, k: string): number { return d[k] !== 0 ? 1 : 2; }
