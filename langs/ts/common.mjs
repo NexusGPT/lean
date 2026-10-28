@@ -1641,14 +1641,11 @@ export function typeAssertion(checker, n) {
 }
 // the sign of zero (ECMA-262 6.1.6.1, design/signed-zero.md): -0 and 0 are one value to ===, String, a template and
 // JSON, and two to Object.is (SameValue, 7.2.10), to a division (1 / -0 is -Infinity), to Math.atan2 and to
-// toLocaleString. The exact reading holds a number as its value, so it cannot tell them apart: a unit whose number
-// result may be -0, or which observes the sign of a number that may be -0, is outside it. The answer is the refusal
-// text for the first such place, or null. A number "may be -0" (mayNegZero) when it is an input (a parameter, a field, an
-// element, an outside answer) not guarded nonzero, or made by an operation that yields -0 from a -0 or from a zero and
-// a negative (6.1.6.1.5-6.1.6.1.8: `-x`, `a * b`, `a / b`, `a % b`, `a - b` of a -0, Math.round, ceil, trunc, sign,
-// min, max, a parse); a sum is -0 only when both terms are, `a || b` never answers a -0 from `a`, a bitwise operator, a
-// length, Math.abs never answer -0. A number result is checked through the literal it is built in (an object or array
-// literal, a conditional); a value passed through whole (a record or an array) is the stated gap of row 3181675e
+// toLocaleString. The exact reading holds a number as its value; its model holds no -0 input (lane B draws them), so
+// inside it a -0 only comes from an operation (6.1.6.1.1-6.1.6.1.8: `-x`, `a * b`, `a / b`, `a % b`, `a - b` of a -0,
+// Math.round, ceil, trunc, a parse). The answer is the first place where a unit's number result may be such a -0, or
+// where the unit tells -0 from 0 of one, with the text that says why; null otherwise. A number result is followed
+// through the literal it is built in (an object or array literal, a conditional)
 export function signedZero(checker, fn) {
   const sf = fn.getSourceFile();
   const typeAt = (n) => { try { return checker.getTypeAtLocation(n); } catch { return null; } };

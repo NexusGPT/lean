@@ -1,80 +1,68 @@
-# The sign of zero: a unit that may answer -0 is read as itself
+# The sign of zero: a -0 an operation makes is read as itself, a -0 handed in is lane B's
 
 ## The construct
 
-A number that may be negative zero. JavaScript keeps the sign of a zero (ECMA-262 6.1.6.1): `-x` of a zero is -0,
-`a * b` of a zero and a negative is -0, `0 / -5` and `-0 / 5` are -0, `-0 - 0` is -0 while `-0 + 0` is 0,
-`Math.round(-0.3)`, `Math.ceil(-0.5)`, `Math.trunc(-0.5)`, `Math.sign(-0)`, `Math.min(0, -0)`, `Number("-0")`,
-`parseFloat("-0")` are -0. It is observed by a division (`1 / -0` is -Infinity, 6.1.6.1.5), by `Object.is`
-(SameValue, 7.2.10), by `Math.atan2` and by `toLocaleString`; it is not observed by `===`, `<`, String, a template or
-JSON (each gives 0 or "0").
+JavaScript keeps the sign of a zero (ECMA-262 6.1.6.1): `-x` of a zero, `a * b` of a zero and a negative, `0 / -5`,
+`-0 / 5`, `-4 % 2`, `-0 - 0`, `Math.round(-0.3)`, `Math.ceil(-0.5)`, `Math.trunc(-0.5)`, `Math.min(0, -0)`,
+`parseFloat("-0")` are -0, and `-0 + 0` is 0. The sign is observed by a division (`1 / -0` is -Infinity, 6.1.6.1.5),
+`Object.is` (SameValue, 7.2.10), `Math.atan2` (21.3.2.8) and `toLocaleString`; `===`, `<`, String, a template and
+JSON do not see it. Lane A reads a number as an exact int or real, where -0 and 0 are one value (proof-hunt class 8).
 
-## The defect
+## The model, as for NaN
 
-Lane A reads a number as an exact int or real, where -0 and 0 are one value. `x` against `x === 0 ? 0 : x`,
-`Math.abs(x)` against `x < 0 ? -x : x` and `x + 0` against `x` were proved, and differ at x = -0 (proof-hunt class 8,
-the signed-zero half). The heap core already marks a negative zero an operation makes (`NegZeroMark`,
-heap-stage5.md section 13); a -0 handed in, or a zero whose sign one side keeps and the other drops, was its gap.
+Lane A's model holds no -0 input, as it holds no NaN or infinity (special-numbers.md): a parameter, a field, an
+element, an outside answer is a finite value of the reals. Lane B draws -0 (the fourth special value, `exec/gen.mjs`
+NUM_SPECIAL, generated input 15 first), and compares two runs by SameValue already (`render` writes -0 as
+`{"$negativeZero": true}`, outcomes compare by their rendering). So `x` against `x === 0 ? 0 : x` is proved on the
+model and witnessed at -0; check.mjs runs lane B first, the verdict is WITNESS.
 
-## The reading (interim reading B, opaque; row 3181675e holds the structural one)
+## The reading (interim reading B; the doubles lane is the structural one)
 
-One shared predicate, `signedZero(checker, fn)` at the end of `common.mjs`, finds the first place where a unit's
-number result may be -0 (a `return`, or a number in the object, array or conditional it returns), or where the unit
-tells -0 from 0 (`Object.is`, `Math.atan2`, `toLocaleString` of a number that may be -0). Such a unit is read as ONE
-opaque unit keyed by its source and the same-file units it reaches (`opaqueNumericUnit`, the path an explicit `-0`
-literal already took), and it is planned out of the heap core. The same source on both sides is the same function on
-every input, -0 included; a changed unit is not proved.
+Inside the model a -0 only arises from an operation. `common.mjs signedZero(checker, fn)` finds the first number the
+unit returns (a `return`, a number in the object, array or conditional it returns) that may be such a -0, or a read
+that tells -0 from 0 (`Object.is`, `Math.atan2`, `toLocaleString` of such a number). In the ordinary lane that unit is
+one opaque unit keyed by its source (`opaqueNumericUnit`, the path an explicit `-0` already took); the heap core marks
+its world where such a -0 may escape (`NegZeroMark`, heap-stage5.md 13), so its lemma does not close.
 
-    function normalized_parent(x: int): int { ext_signed_zero_448c775d...51f6_int(x) }
-
-"May be -0" over-approximates by construction: an input (a parameter, a field, an element, an outside answer, a
-for-of item) of a type that admits zero may be -0 unless a test proved it nonzero (`x > 0 ? x : 1`, `if (x === 0)
-return 0;` before, `x && ...`, a literal union without 0); `-e`, `a * b` (a positive literal factor keeps the other's
-answer), `a / b` (a positive literal divisor of a value that is never -0 is never -0), `%`, `**`, Math.round, ceil,
-trunc, cbrt and the other Math functions not named below, parseInt, parseFloat, Number of a string may be -0;
-`a - b` may when `a` may; `a + b` only when both may; `a || b` when `b` may (a -0 on the left is falsy);
-`a ?? b`, `a && b`, a conditional when either may; Math.floor, sqrt, fround, sign and Number(n) pass their argument's
-answer on; Math.min and max when any argument may; a call of a same-file function when one of its number results
-may; a local's value is the least fixpoint over its initialiser and every write of it. A literal, a bitwise operator,
-a `++`/`--`, a length or size, indexOf and the other index answers, getTime and Date fields, Math.abs, random, hypot,
-exp, log, cos never answer -0.
+"May be -0": `-e` unless e is a nonzero literal or a name a test proved nonzero (`n > 0 ? -n : 1`); `a * b` unless one
+side is a positive literal and the other may not; `a / b` unless b is a positive literal and a may not; `%`, `**`,
+Math.round, ceil, trunc, cbrt, sin and the Math functions not named below, parseInt, parseFloat, Number of a string;
+`a - b` when a may and b is not a nonzero literal; `a + b` when both may; `a || b` when b may; `a ?? b`, `a && b`, a
+conditional when either may; floor, sqrt, fround, sign and Number(n) pass their argument on; min and max when any
+argument may; a same-file call when one of its number results may; a local by the least fixpoint over its writes.
 
 ## Soundness
 
-When neither side's number result may be -0, two results equal as reals are equal as JavaScript numbers (the reals
-model every finite double but -0, and the result is never -0), so a proof means what it says. When either side's may,
-that side is opaque: a pair proves only if both sides are the same source, which behave alike on -0 too. The cases
-considered: a pass-through against a normaliser (`x` / `x === 0 ? 0 : x`: the parent is opaque), two pass-throughs a
-zero test makes real-equal (`x + y` / `y === 0 ? x : x + y`, both opaque), an operation against its algebraic twin
-(`-x` / `0 - x`: the first is opaque). The guard rule reads only names never written after their declaration.
+On the model, two results equal as reals are equal doubles unless one is a -0 made by an operation; that unit is
+opaque (or marked), so it proves only against the same source. Cases: `-x` / `0 - x` (the parent opaque), `x * 0` /
+`0`, `Math.round(x)` / `Math.floor(x + 0.5)` (round may be -0: opaque). A -0 input is out of the model by statement
+and witnessed by lane B; lane B is bounded (it draws -0 into the first number leaf of generated inputs 15, 27, ...).
 
-## What stays unproved, and what stays the gap
+## The named refusal, measured and not landed
 
-- A changed unit whose number result may be -0, even when the two sides agree on every -0: `x * 2` against `x + x`
-  (pair `signed_zero`, doubled), `a + b` against `b + a`. The structural reading (`Num = Real | NegZero`, row
-  3181675e) proves them.
-- The gap that stays: a -0 inside a value passed through whole (`return p` of a record with a number field, `return
-  xs` of a number array), a number handed to the outside as an argument, a field or world write. A unit whose result
-  is a record literal is checked field by field; a record or array passed through is not. Rounding (IEEE
-  underflow to -0, `-1e-320 / 1e10`) is the other half of class 8, the owner's decision 3181675e.
-- Division is not refused here: a divisor that is not a nonzero literal already makes the ordinary unit opaque
-  (numbers-bitwise-nan.md) and marks the heap core's world (heap-stage5.md section 13).
+The same predicate as a lint rule `signed-zero` (commit 25f79ca): langchainjs 3,101 inside to 3,093; and the suite's
+translation sweep fails 24 pairs whole (a pair file with one refused unit does not translate): absent_number,
+array_callback_cells, class_statics, clock_read, exception_callback, gen_walk, heap5_arith, heap5_reach,
+known_values, lib_globals, lint_misfires, lint_small, module_const_deps, mutual_summaries, numbers, numbers_bits,
+numbers_bits_rebase, operands_receiver, operators, param_rebind, reach_keys, spread_outside, this_receiver,
+unreached_body. The opaque form keeps every one; the lint is unchanged.
 
-## Lint
+## What the doubles reading must carry for the sign of zero
 
-Unchanged: nothing is refused by a new rule, so the census subset is unchanged; the translator alone calls the predicate.
-
-## Lane B
-
-The comparison of two runs is already SameValue on numbers: `render` writes -0 as `{"$negativeZero": true}` and NaN
-as `{"$nan": true}`, and two outcomes are compared by their rendering (`exec/run.mjs` outcome comparison). Lane B now
-draws -0: it is the fourth special value (`exec/gen.mjs` NUM_SPECIAL), so generated input 15 starts from it. The pair's
-five differing units are witnessed at x = -0 or x = 0.
+- Inputs: a number input is any double, -0 included; the model's "no -0 input" statement goes (6.1.6.1).
+- Unary minus (13.5.5, Number::unaryMinus 6.1.6.1.1); `*` (Number::multiply 6.1.6.1.4); `/` (Number::divide
+  6.1.6.1.5, a signed infinity for a signed zero divisor); `%` (Number::remainder 6.1.6.1.6, the dividend's sign);
+  `+` (Number::add 6.1.6.1.7, -0 + -0 alone is -0); `-` (Number::subtract 6.1.6.1.8); `**` (6.1.6.1.3).
+- Math.round, ceil, trunc, floor, sign, sqrt, fround, cbrt, min, max, abs, atan2 (21.3.2): each one's zero cases.
+- Parsing: Number, parseInt, parseFloat of "-0" (7.1.4.1.1, 19.2.4, 19.2.5).
+- Observers: Object.is (SameValue 7.2.10), division, Math.atan2, toLocaleString; and the absorbers that do not see it:
+  `===` (IsStrictlyEqual 7.2.15), relational comparison, ToString (Number::toString 6.1.6.1.20), JSON.
+- The heap core's NegZeroMark and this predicate's opaque path both go when the reading carries the sign.
 
 ## Instances (census repos, read in place)
-- apps-ui/src/blocks/fx/gooMath.ts:39 `gooIntercept` (`Math.round(...) / 100` of a value in (-0.5, 0) is -0), :54
-  `gooPad` (`Math.ceil`), :135 `normalizeRadius` (a parameter returned through): opaque, were exact.
-- apps-ui/src/lib/formulaMath.ts `runFormula`: `total = v === 0 ? 0 : total / v` keeps total's own -0; opaque.
-- langchainjs/libs/langchain-core/src/utils/ml-distance/similarities.ts:7 `cosine`: a division by a sum, already
-  opaque (possibly-zero divisor); `p += a[i] * b[i]` from `let p = 0` alone would not be -0.
+
+- apps-ui/src/blocks/fx/gooMath.ts:39 `gooIntercept` (`Math.round(...) / 100`), :54 `gooPad` (`Math.ceil`): opaque.
+- apps-ui/src/blocks/fx/gooMath.ts:135 `normalizeRadius` (a parameter returned through): exact, on the model.
+- langchainjs/libs/langchain-core/src/utils/ml-distance/similarities.ts:7 `cosine`: a division, already opaque.
+- apps-ui/src/lib/formulaMath.ts `runFormula`: `total / v` under `v === 0 ? 0 :`, already opaque (the divisor).
 - apps-ui/src/blocks/fx/gooMath.ts:44 `gooMatrix`, `parseShadow`: no number result; unchanged.
