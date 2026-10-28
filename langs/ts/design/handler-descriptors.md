@@ -96,10 +96,11 @@ block skips a capture with an entry; `readHandler` attaches the entry of every c
   (`({ item: { id } })`), never written through. The interpreter follows the binding chain from its root.
 - ref cell: `const r = useRef(...)` from React, used only as `r.current`, as a `ref` attribute or as a dependency;
   every write through it lies inside a function React holds (a JSX attribute value, an effect or `useCallback`
-  argument, a const every reference of which is held so), never in the render itself or in `useMemo`; the closure only
-  reads it. A write in the render stays refused: the lint admits `r.current = v` there as an update of a local record,
-  so a closure keyed by its captured record would miss it. A write inside a held function is named `closure-mutation`
-  at its own site. Lane B finds the box by a static slot numbering of the unit's statement-level hooks, confirmed
+  argument, a const every reference of which is held so), the closure's own writes included, never in the render
+  itself or in `useMemo`. A write in the render stays refused: the lint admits `r.current = v` there as an update of a local record,
+  so a closure keyed by its captured record would miss it. A write inside a held function is carried by the table and named
+  `closure-mutation` at its own site, the reading still missing (a cell step of the component machine, lane A's
+  translator and that rule's block). Lane B finds the box by a static slot numbering of the unit's statement-level hooks, confirmed
   against the slots the run placed for `useState`; the key carries the cell's ordinal and what it holds at the key's
   moment, and `.current` stays a read when the handler runs. A fired handler that hands the cell to a call is not
   interpreted.
@@ -118,8 +119,8 @@ value's `push` in a callback, and a hook result handed on as a value, both named
 `handler_capture_unknown` shows lane B on the first: ASK naming the escape, never a WITNESS or a pass.
 
 Measured with `node langs/ts/census.mjs` on the two bench trees, base 6661006 against this reading: on nexus,
-`react-handler-capture` stops 259 units before and 185 after, and the units inside the subset go from 23753 to 23805
-of 26520 (the other 22 now stop at the next rule: `ts-strict` 487 to 494, `closure-mutation` 99 to 103,
-`opaque-mutation` 53 to 57, five more rules one or two each); n8n has no unit under this rule and is unchanged (4314 of
-6337 inside). The 52 units that entered carry a hook result (`router.push`, a form hook's `add`); the reader closures
-of a ref cell are carried too, but each of those units still has a writer closure the lint refuses.
+`react-handler-capture` stops 259 units before and 60 after, `closure-mutation` 99 before and 218 after (the ref cell
+writes inside held functions, now named at the write), and the units inside the subset go from 23753 to 23808 of 26520;
+the rest move one or two units each to their next rule (`ts-strict` 487 to 494, `opaque-mutation` 53 to 60). The units
+that entered carry a hook result (`router.push`, a form hook's `add`). n8n has no unit under this rule and is unchanged
+(4314 of 6337 inside).

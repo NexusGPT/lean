@@ -1,5 +1,5 @@
 // expect: react-handler-capture
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { makeApi } from "api";
 import { useRouter, useList } from "next/router";
 import { keep } from "service";
@@ -19,4 +19,10 @@ export function arrayResult(n: number) {
   const list: number[] = useList();
   list.push(n);
   return useCallback(() => list.length, [list]);
+}
+// a ref cell written during the render: a closure keyed by the captured value would read a stale cell
+export function renderWrite(n: number) {
+  const seen = useRef(0);
+  seen.current = n;
+  return useCallback(() => keep(seen.current), [n]);
 }
