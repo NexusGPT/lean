@@ -46,7 +46,7 @@ const SLOT_HOOKS = new Set(['useState', 'useEffect', 'useRef', 'useId', 'useCont
 // the slot of the `at`-th useRef call of the unit, numbered statically: every slot-taking React hook of the unit is a
 // statement of its body, in order, and no same-file `use*` function is called; the numbering is confirmed against the
 // positions the run placed for useState (statePos) and the box found must be a ref box
-function refSlot(model, at, statePos, slots) {
+function refSlot(model, at, statePos, slots, index = false) {
   const { checker, unit } = model;
   const calls = [];
   const walk = (n, top) => {
@@ -71,7 +71,7 @@ function refSlot(model, at, statePos, slots) {
   if (slot === null) no('no useRef call at that place');
   const box = slots?.[slot];
   if (!box || typeof box !== 'object' || Object.keys(box).length !== 1 || !Object.hasOwn(box, 'current')) no('the slot holds no ref box');
-  return box;
+  return index ? slot : box;
 }
 
 // the readable descriptors of a unit's handler attributes, keyed by the attribute value's position in the file
@@ -81,7 +81,7 @@ export function descriptorsOf(file, unit, { project = false } = {}) {
   try { ({ checker, sf } = loadProgram(file, { project })); } catch { return { file: abs, map }; }
   const u = topLevelFunctions(sf).get(unit);
   if (!u || !u.body) return { file: abs, map };
-  const ctx = { isSetter: (s) => { const call = useStateOf(checker, s.valueDeclaration ?? s.declarations?.[0], 1); return call ? call.pos : null; }, unitBody: u.body, unitNode: u.node };
+  const ctx = { isSetter: (s) => { const call = useStateOf(checker, s.valueDeclaration ?? s.declarations?.[0], 1); return call ? call.pos : null; }, unitBody: u.body, unitNode: u.node, cellSteps: true };
   const walk = (n) => {
     if (ts.isJsxAttribute(n) && ts.isIdentifier(n.name) && /^on[A-Z]/.test(n.name.text) && n.initializer && ts.isJsxExpression(n.initializer) && n.initializer.expression) {
       const cb = arrowOf(checker, n.initializer.expression);
@@ -122,7 +122,7 @@ function evaluator(model, fire) {
       const d = s.valueDeclaration ?? s.declarations?.[0];
       const kind = h.captures?.get(s);
       if (kind?.kind === 'hook-result') no('a hook result: the outside answers its reads');
-      if (kind?.kind === 'ref-cell') return refSlot(model, kind.at, statePos, slotsBefore); // the box itself: `.current` is read now, the cell's value at the fire
+      if (kind?.kind === 'ref-cell') { if (fire.written?.has(s)) no('a read of a ref cell the handler writes (the box shows the value after the handler)'); return refSlot(model, kind.at, statePos, slotsBefore); } // the box itself: `.current` is read now, the cell's value at the fire
       if (kind?.kind === 'record-read') return bindingValue(checker, d, (root) => { // a binding element at any depth of the props, of a state value, or of a pure const
         if (ts.isParameter(root)) { if (root !== p0) no('a parameter other than the props'); return props; }
         const sc = ts.isVariableDeclaration(root) && root.initializer && ts.isCallExpression(root.initializer) && reactHook(checker, root.initializer) === 'useState' ? root.initializer : null;
@@ -172,7 +172,7 @@ function handedCells(model, h) {
   const cells = [...(h.captures ?? new Map())].filter(([, k]) => k.kind === 'ref-cell').map(([s]) => s);
   if (!cells.length) return;
   const bare = (n) => { if (ts.isIdentifier(n) && cells.includes(model.checker.getSymbolAtLocation(n)) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.expression === n)) no('a ref cell handed to a call'); ts.forEachChild(n, bare); };
-  for (const st of h.steps) if (st.kind !== 'return') [...(st.recv ?? []), ...st.args].forEach(bare);
+  for (const st of h.steps) if (st.kind !== 'return' && st.kind !== 'cell') [...(st.recv ?? []), ...st.args].forEach(bare);
 }
 
 // the slots the descriptor predicts: the slots before the handler, each set step applied in order (an updater to the
@@ -182,7 +182,15 @@ function predict(model, fire) {
   const ev = evaluator(model, fire);
   const running = slotsBefore.slice();
   handedCells(model, h);
+  fire.written = new Set(h.steps.filter((st) => st.kind === 'cell').map((st) => st.cell));
   for (const st of h.steps) {
+    if (st.kind === 'cell') { // a ref cell step: the box holds the next value, no re-render
+      const kind = h.captures?.get(st.cell); if (kind?.kind !== 'ref-cell') no('a cell step on no ref cell');
+      const i = refSlot(model, kind.at, statePos, slotsBefore, true);
+      const v = ev(st.value, new Map());
+      running[i] = { current: v };
+      continue;
+    }
     if (st.kind === 'call') { if (st.name === 'value') no('a call of a local function value, which may set slots'); continue; }
     if (st.kind !== 'set') continue;
     const i = statePos?.get(`${model.file}:${st.slot}`); if (i === undefined) no('a setter whose slot the run never placed');
@@ -254,7 +262,7 @@ function keyModel(file, unit) {
       const walk = (n) => {
         if (ts.isJsxAttribute(n) && ts.isIdentifier(n.name) && n.initializer && ts.isJsxExpression(n.initializer) && n.initializer.expression) {
           const cb = arrowOf(checker, n.initializer.expression);
-          const ctx = { isSetter: (s) => { const call = useStateOf(checker, s.valueDeclaration ?? s.declarations?.[0], 1); return call ? call.pos : null; }, unitBody: u.body, unitNode: u.node };
+          const ctx = { isSetter: (s) => { const call = useStateOf(checker, s.valueDeclaration ?? s.declarations?.[0], 1); return call ? call.pos : null; }, unitBody: u.body, unitNode: u.node, cellSteps: true };
           const h = cb ? readHandler(checker, sf, cb, ctx) : null;
           map.set(n.initializer.expression.pos, h ? { h } : { escape: cb ? ctx.escape : 'handler-not-an-arrow' });
         }
@@ -353,6 +361,12 @@ function descriptorKey(model, h, scope) {
       continue;
     }
     flush();
+    if (st.kind === 'cell') { // a ref cell step: the cell, what it holds before the handler, the next value
+      const kind = h.captures?.get(st.cell); if (kind?.kind !== 'ref-cell') no('a cell step on no ref cell');
+      const box = refSlot(model, kind.at, statePos, scope.env.hookSlots ?? []);
+      steps.push({ cell: kind.at, before: render(box.current), next: term(st.value) });
+      continue;
+    }
     if (st.kind === 'call') {
       if (st.name === 'value') no('a call of a local function value, which may set slots');
       steps.push({ call: st.name, recv: st.recv.map((r) => term(r)), args: st.args.map((a) => term(a)), returns: st.returns });
@@ -402,7 +416,7 @@ export function handlerKey(fn, { env, props, unit }) {
 // descriptors disagree on (a set present on one side only names its slot), or the escape that kept a text key
 const termText = (t) => (!t || typeof t !== 'object' ? JSON.stringify(t) : Object.hasOwn(t, 'v') ? (t.v && typeof t.v === 'object' && !t.v.$undefined && !t.v.$nan ? 'a captured object' : JSON.stringify(t.v)) : Object.hasOwn(t, 'param') ? `event${t.param ? `#${t.param}` : ''}` : Object.hasOwn(t, 'prev') ? 'prev' : Object.hasOwn(t, 'hook') ? `${t.hook}()#${t.at}` : Object.hasOwn(t, 'cell') ? `ref#${t.cell}(holding ${termText({ v: t.now })})` : Object.hasOwn(t, 'get') ? `${termText(t.of)}.${t.get}` : Object.hasOwn(t, 'op') ? `${t.op}(${t.args.map(termText).join(', ')})` : JSON.stringify(t));
 const entryText = (slot, e) => `slot ${slot} ${Object.hasOwn(e, 'updater') ? `by updater ${termText(e.updater)}` : `to ${termText(e.next)}`}`;
-const stepText = (s) => (!s ? 'nothing' : s.sets ? `sets ${s.sets.map(([slot, es]) => es.map((e) => entryText(slot, e)).join(', ')).join(', ')}` : s.call ? `calls ${s.call}(${s.args.map(termText).join(', ')})${s.recv.length ? ` on ${s.recv.map(termText).join(', ')}` : ''}` : `returns ${termText(s.return)}`);
+const stepText = (s) => (!s ? 'nothing' : Object.hasOwn(s, 'cell') && Object.hasOwn(s, 'before') ? `writes ref#${s.cell} (holding ${termText({ v: s.before })}) to ${termText(s.next)}` : s.sets ? `sets ${s.sets.map(([slot, es]) => es.map((e) => entryText(slot, e)).join(', ')).join(', ')}` : s.call ? `calls ${s.call}(${s.args.map(termText).join(', ')})${s.recv.length ? ` on ${s.recv.map(termText).join(', ')}` : ''}` : `returns ${termText(s.return)}`);
 function stepDifference(P, C) {
   for (let i = 0; i < Math.max(P.length, C.length); i++) {
     const a = P[i], b = C[i];

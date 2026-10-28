@@ -168,6 +168,33 @@ function recordBinding(checker, d, unitBody) {
   if (ts.isCallExpression(p.initializer) && reactHook(checker, p.initializer) === 'useState') return ts.isArrayBindingPattern(p.name) && p.name.elements[0] === top; // the state value, never the setter
   return renderPure(checker, p.initializer);
 }
+// a useRef cell of the unit: used only as `r.current`, a `ref` attribute or a dependency, every write through it inside
+// a function React holds (the closure's own writes included); a write during the render, or in useMemo, is no entry
+function refCell(checker, d, refs, writes, unitBody) {
+  const used = refs.every((r) => isDependency(checker, r) || (ts.isPropertyAccessExpression(r.parent) && r.parent.expression === r && r.parent.name.text === 'current' && !r.parent.questionDotToken) || (ts.isJsxExpression(r.parent) && ts.isJsxAttribute(r.parent.parent) && r.parent.parent.name.getText() === 'ref'));
+  if (!used || writes.some((w) => !deferredByReact(checker, w.node, unitBody))) return null;
+  const calls = []; const walk = (n) => { if (reactHook(checker, n) === 'useRef') calls.push(n); ts.forEachChild(n, walk); }; walk(unitBody);
+  return { kind: 'ref-cell', at: calls.indexOf(d.initializer) };
+}
+// the write `r.current = v` is a cell step of the component machine (no re-render) when `r` is a ref cell of the unit
+// and the write lies inside a function React holds: the lint admits it there, lane B's interpreter steps it
+export function cellWrite(checker, target, unitBody) {
+  if (!unitBody || !ts.isPropertyAccessExpression(target) || target.questionDotToken || target.name.text !== 'current' || !ts.isIdentifier(target.expression)) return null;
+  const sym = checker.getSymbolAtLocation(target.expression), d = sym?.valueDeclaration;
+  if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) || !d.initializer || !ts.isCallExpression(d.initializer) || reactHook(checker, d.initializer) !== 'useRef') return null;
+  if (!(d.pos >= unitBody.pos && d.end <= unitBody.end) || !deferredByReact(checker, target, unitBody)) return null;
+  // a useCallback argument is read by the translator as a lambda over values, which holds no write: the lint keeps
+  // closure-mutation there, so the lint admits exactly what the translator reads (a JSX handler or an effect body is an
+  // opaque function value keyed by its text and captures)
+  for (let p = target.parent; p && p !== unitBody; p = p.parent) {
+    if (!ts.isFunctionLike(p)) continue;
+    let x = p; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent;
+    const lambdaAt = (e) => ts.isCallExpression(e.parent) && e.parent.arguments[0] === e && reactHook(checker, e.parent) === 'useCallback';
+    if (lambdaAt(x)) return null;
+    if (ts.isVariableDeclaration(x.parent) && x.parent.initializer === x && ts.isIdentifier(x.parent.name) && referencesOf(checker, unitBody, checker.getSymbolAtLocation(x.parent.name)).some(lambdaAt)) return null;
+  }
+  return refCell(checker, d, referencesOf(checker, unitBody, sym), writesThrough(checker, unitBody, sym), unitBody);
+}
 // captureKind(checker, id, cb, unitBody) -> null | { kind: 'hook-result', hook, at } | { kind: 'record-read' } | { kind: 'ref-cell', at }
 export function captureKind(checker, id, cb, unitBody) {
   const sym = checker.getSymbolAtLocation(id), d = sym?.valueDeclaration;
@@ -189,13 +216,7 @@ export function captureKind(checker, id, cb, unitBody) {
     const calls = []; const walk = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && checker.getSymbolAtLocation(n.expression) === hookSym) calls.push(n); ts.forEachChild(n, walk); }; walk(unitBody);
     return { kind: 'hook-result', hook: `import:${imp.moduleSpecifier.text}:${(hd.propertyName ?? hd.name).text}`, at: calls.indexOf(constCall) };
   }
-  if (constCall && reactHook(checker, constCall) === 'useRef') {
-    const used = refs.every((r) => isDependency(checker, r) || (ts.isPropertyAccessExpression(r.parent) && r.parent.expression === r && r.parent.name.text === 'current' && !r.parent.questionDotToken) || (ts.isJsxExpression(r.parent) && ts.isJsxAttribute(r.parent.parent) && r.parent.parent.name.getText() === 'ref'));
-    if (!used) return null;
-    if (writes.some((w) => !deferredByReact(checker, w.node, unitBody))) return null; // a write during the render stays refused: a closure keyed by the captured value would miss it; a write in a held function is named at its own site (closure-mutation)
-    const calls = []; const walk = (n) => { if (reactHook(checker, n) === 'useRef') calls.push(n); ts.forEachChild(n, walk); }; walk(unitBody);
-    return { kind: 'ref-cell', at: calls.indexOf(constCall) };
-  }
+  if (constCall && reactHook(checker, constCall) === 'useRef') return refCell(checker, d, refs, writes, unitBody);
   if (ts.isBindingElement(d) && ts.isIdentifier(d.name) && recordBinding(checker, d, unitBody) && !writes.length) return { kind: 'record-read' };
   return null;
 }

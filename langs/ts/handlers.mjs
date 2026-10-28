@@ -3,7 +3,7 @@
 // a list of steps over TypeScript nodes. The reader knows TypeScript only: the Dafny rendering lives in translate.mjs,
 // the application to the hook slots in exec/handlers-interp.mjs.
 import { ts, originOf } from './common.mjs';
-import { reactHook, arrowOf, renderPure, closureReads, captureKind } from './react.mjs';
+import { reactHook, arrowOf, renderPure, closureReads, captureKind, cellWrite } from './react.mjs';
 const K = ts.SyntaxKind;
 
 // a deferred call's callee named outside the file: the import it comes from, or the global
@@ -31,6 +31,7 @@ function usedByReact(checker, cb, unitBody) {
 //   ctx.unitBody                              (where the arrow must be used as a handler)
 //   ctx.unitNode                              (the unit, for originOf)
 // steps: { kind: 'set', setter, slot, next | updater, callee, args, returns }
+//      | { kind: 'cell', cell: symbol, value: node }   (only when ctx.cellSteps: a ref cell write)
 //      | { kind: 'call', name, recv: [node], args: [node], returns }
 //      | { kind: 'return', value: node | null }
 // a parameter is an atom of its own (its index in params); a `const` local with a pure initializer stands for that
@@ -60,6 +61,13 @@ export function readHandler(checker, sf, cb, ctx) {
       const s = checker.getSymbolAtLocation(d.name); if (!s) return no('handler-local-not-pure');
       if (readsMovedPastCall([d.initializer])) return no('handler-read-moved-past-call');
       locals.set(s, d.initializer); declaredAt.set(s, steps.length);
+      continue;
+    }
+    // `r.current = v` on a ref cell of the unit (react.mjs, cellWrite), v pure: a cell step, which writes without a
+    // re-render; only a reader that steps cells asks for it (lane B's interpreter), so lane A keeps such a handler opaque
+    if (ctx.cellSteps && ts.isExpressionStatement(st) && ts.isBinaryExpression(st.expression) && st.expression.operatorToken.kind === K.EqualsToken && cellWrite(checker, st.expression.left, ctx.unitBody) && renderPure(checker, st.expression.right)) {
+      if (readsMovedPastCall([st.expression.right])) return no('handler-read-moved-past-call');
+      steps.push({ kind: 'cell', cell: checker.getSymbolAtLocation(st.expression.left.expression), value: st.expression.right, returns: false });
       continue;
     }
     if (!ts.isExpressionStatement(st) && !ts.isReturnStatement(st)) return no(`handler-statement:${ts.SyntaxKind[st.kind]}`);
