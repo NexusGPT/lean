@@ -37,6 +37,7 @@ import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTabl
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
+import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
@@ -3507,6 +3508,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         const walk = (x) => {
           if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym) {
             const c = x.parent;
+            if (ts.isForInStatement(c) && c.expression === x) return; // a for-in reads the keys, as Object.keys does (forInKeyOrder)
             if (!(ts.isCallExpression(c) && c.arguments.length === 1 && c.arguments[0] === x && ts.isPropertyAccessExpression(c.expression) && ts.isIdentifier(c.expression.expression) && c.expression.expression.text === 'Object' && originOf(checker, c.expression.expression, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(c.expression.name.text))) safe = false;
           }
           ts.forEachChild(x, walk);
@@ -5443,6 +5445,12 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       let T, src;
       if (entriesLoop) { T = 'string'; src = member(expr(entriesLoop.X), 'keys'); } // the for-in's keys
       else if (isIn && dictCarrier(s.expression)) { T = 'string'; src = member(expr(s.expression), 'keys'); } // 14.7.5.9 EnumerateObjectProperties on a dictionary: its own keys in property order (a plain object's prototype has no enumerable key)
+      else if (isIn && !forInKeyOrder(checker, s.expression, u.fn)) fail(s.expression, 'key-order: a for-in over an object whose key order the function does not fix (a parameter, a spread, a class instance, an any value)'); // the record datatype forgets creation order: two orders would read alike
+      else if (isIn && forInKeyOrder(checker, s.expression, u.fn).keys) { // 14.7.5.9 over a literal the function makes: its keys in property order (10.1.11), array indexes ascending, then creation order
+        const { keys } = forInKeyOrder(checker, s.expression, u.fn); T = 'string';
+        const list = `[${keys.map(strEsc).join(', ')}]`;
+        src = ts.isIdentifier(unparen(s.expression)) ? list : `(var lit${id}_ := ${expr(s.expression)}; ${list})`; // a literal in the header is still evaluated
+      }
       else if (isIn) { const D = isAny(itT) ? anyType() : dtype(itT, s); T = 'string'; src = `${external('Object_keys', [D], 'seq<string>')}(${expr(s.expression)})`; } // the keys of the object, an uninterpreted sequence of the value (JavaScript's insertion order is a fact of the value)
       else if (isAny(itT)) { T = anyType(); src = seqOf(s.expression); }
       else if (collectionIterator(s.expression)) { T = collectionIterator(s.expression).elem(s); src = seqOf(s.expression); } // `for (const k of m.keys())`: the carrier's sequence
