@@ -57,5 +57,5 @@ function and parameter) is WITNESS at input 4, `["pro", 6]`, `reached { body: 8,
 inputs: 8, reachedBody: 8 }` (the same unit with `--values none`: ASK, 30 of 30 at the guard); orderTotal (untouched,
 `order.plan` listed by the type name PlanId) is PASS-bounded, `reached { body: 3, guard: 27 }` (with `--values none`:
 ASK); perSeat (a refactored guard, `"two"` listed for a number and rejected) PASS-bounded and PASS-proved; freeSeats
-untouched, PASS-proved. orderTotal stays unproved in lane A: a unit reading a module cell is named by its file's whole
-text (`translate.mjs numericKey`), and quote changed in the same file.
+untouched, PASS-proved. orderTotal's lemma is proved (its module-cell read keyed by the code it reaches), and check.mjs
+withholds it as ASK:obligation: the unit reads the module cell PRICES without a transition.
