@@ -1301,3 +1301,57 @@ export function nonNullOnAbsent(checker, n) {
   let t = null; try { t = checker.getTypeAtLocation(n.expression); } catch { return false; }
   return !!t && !!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => !!(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null)));
 }
+// A copy of every own key: `{ ...x }` (CopyDataProperties, ECMA-262 13.2.5.5 and 7.3.25) and `Object.assign({}, x)`
+// (20.1.2.1) copy every own enumerable key x holds, and a value of a record type may hold keys its type does not name (a
+// value of a wider type passes for it). The readings hold a record's declared fields alone, so such a copy is read only
+// when the unit built x's keys itself: x is an object literal of named members (its keys are its text), or a const of
+// the same function whose initializer is one and which the function uses only to read or write a declared field
+// (`o.f`, `o.f = v`) or to spread again. The spread of a record comes first in its literal (a later one writes over the
+// members before it, an own key holding undefined included), and a built copy holds no key the literal's record type
+// does not declare. A dictionary (no declared field, a string index) carries every key it holds and is no record here.
+// One test for the lint (spread-source), the value reading (objectLit) and the heap core: the reason, or null.
+export function copySourceWhy(checker, src, site = null) {
+  const TF = ts.TypeFlags;
+  const bare = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const record = (y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0;
+  let t = null; try { t = checker.getTypeAtLocation(bare(src)); } catch { return 'the copied value has no type'; }
+  if (!t || !(t.flags & TF.Union ? t.types : [t]).some(record)) return null; // a dictionary, an array, a primitive: not a record copy
+  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent) && site.parent.properties[0] !== site) return 'a spread of a record after other members writes over them (an own key holding undefined too); write the spread first';
+  const keys = new Set();
+  const built = (x, depth) => {
+    x = bare(x); if (depth > 8) return false;
+    if (ts.isObjectLiteralExpression(x)) return x.properties.every((p, i) => {
+      if (ts.isShorthandPropertyAssignment(p)) { keys.add(p.name.text); return true; }
+      if (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) && p.name.text !== '__proto__') { keys.add(p.name.text); return true; }
+      return ts.isSpreadAssignment(p) && i === 0 && built(p.expression, depth + 1);
+    });
+    if (!ts.isIdentifier(x)) return false;
+    const sym = checker.getSymbolAtLocation(x); const d = sym?.valueDeclaration;
+    if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !d.initializer || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) return false;
+    let fn = d.parent; while (fn && !ts.isFunctionLike(fn)) fn = fn.parent; if (!fn) return false; // a module constant: other code may add keys to it
+    let q = x; while (q && q !== fn) q = q.parent; if (!q) return false; // read in another function than the one that built it
+    if (!built(d.initializer, depth + 1)) return false;
+    let only = true;
+    const w = (n) => {
+      if (!only) return;
+      if (ts.isShorthandPropertyAssignment(n) && checker.getShorthandAssignmentValueSymbol(n) === sym) { only = false; return; } // `{ o }` hands the object on
+      if (ts.isIdentifier(n) && n !== d.name && checker.getSymbolAtLocation(n) === sym) {
+        const p = n.parent;
+        const field = ts.isPropertyAccessExpression(p) && p.expression === n && !(ts.isCallExpression(p.parent) && p.parent.expression === p) && !ts.isDeleteExpression(p.parent);
+        if (!field && !(ts.isSpreadAssignment(p) && p.expression === n)) only = false;
+      }
+      ts.forEachChild(n, w);
+    };
+    w(fn);
+    return only;
+  };
+  if (!built(src, 0)) return 'a value of a record type may carry keys its type does not name, and the copy takes them all; spread a literal, or a const this function builds from a literal, or copy the fields by name (`{ a: x.a, b: x.b }`)';
+  const lit = site && ts.isSpreadAssignment(site) ? site.parent : null;
+  const ctx = lit ? checker.getContextualType(lit) : null;
+  const target = ctx && (ctx.flags & TF.Union ? ctx.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [ctx]);
+  if (target && target.length === 1 && record(target[0]) && !checker.getIndexInfoOfType(target[0], ts.IndexKind.String)) {
+    const extra = [...keys].find((k) => !checker.getPropertyOfType(target[0], k));
+    if (extra) return `the copy holds the key \`${extra}\`, which ${checker.typeToString(target[0])} does not declare`;
+  }
+  return null;
+}

@@ -29,6 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { originOf } from '../common.mjs';
 import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
+import { copySourceWhy } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
 // the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
 // design/library-ops.dfy and against the engine by exec/transitions.mjs on Test262); the prelude instantiates a row's
@@ -575,7 +576,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         for (const p of e.properties) {
           if (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) { given.add(p.name.text); checkExpr(p.initializer); }
           else if (ts.isShorthandPropertyAssignment(p)) { given.add(p.name.text); checkExpr(p.name); }
-          else if (ts.isSpreadAssignment(p)) { spread = true; const ss = shapeOf(typeOf(p.expression)); if (!ss || ss.kind !== 'rec') return no('spread of a non-record'); if (s.fields.some((f) => { const g = fieldOf(ss, f.name); return g && fieldD(g.shape) !== fieldD(f.shape); })) return no('spread of a field another way'); checkExpr(p.expression); }
+          else if (ts.isSpreadAssignment(p)) { spread = true; { const why = copySourceWhy(checker, p.expression, p); if (why) return no(`spread-source: ${why}`); } const ss = shapeOf(typeOf(p.expression)); if (!ss || ss.kind !== 'rec') return no('spread of a non-record'); if (s.fields.some((f) => { const g = fieldOf(ss, f.name); return g && fieldD(g.shape) !== fieldD(f.shape); })) return no('spread of a field another way'); checkExpr(p.expression); }
           else return no('object member form');
         }
         if (!spread && s.fields.some((f) => !given.has(f.name) && !(f.shape.kind === 'opt' && f.shape.absent === 'u'))) return no('object literal misses a field'); // an optional field may be missing
