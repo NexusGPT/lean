@@ -13,6 +13,7 @@ import path from 'node:path';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord } from '../common.mjs';
+import { infinitySign } from '../common.mjs';
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -440,6 +441,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       return;
     }
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
+    if (o.kind === 'global' && infinitySign(checker, id, sf, current) > 0) return; // the global Infinity is the value Number.POSITIVE_INFINITY is: a unit naming either is one opaque unit in the translator
     if (o.kind === 'global' && ['NaN', 'Infinity'].includes(name)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
     if ((Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined)) return v(id, (Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined), `\`${name}\` is outside the subset`);
     if (PURE_GLOBALS.has(name)) return;
@@ -2017,15 +2019,20 @@ export function lintFile(file, ranges = null, opts = {}) {
       w(node);
       return hit;
     };
-    const exits = (st) => { st = ts.isBlock(st) && st.statements.length === 1 ? st.statements[0] : st; return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
+    // a statement that never completes normally: a jump, or a block ending in one (the statements before it cannot reach the end)
+    const exits = (st) => { if (ts.isBlock(st)) return st.statements.length > 0 && exits(st.statements[st.statements.length - 1]); return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
+    // a loop around the call runs it again after the statements that follow it: a write of the list anywhere in the loop can empty it for the next pass
+    let loopEnd = 0;
     for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
-      if (ts.isConditionalExpression(p) && child !== p.condition && implies(p.condition, p.whenTrue === child) && !writes(p, p.condition.end, e.pos)) return true;
-      if (ts.isIfStatement(p) && child !== p.expression && implies(p.expression, p.thenStatement === child) && !writes(p, p.expression.end, e.pos)) return true;
-      if (ts.isBinaryExpression(p) && child === p.right && ((p.operatorToken.kind === K.AmpersandAmpersandToken && implies(p.left, true)) || (p.operatorToken.kind === K.BarBarToken && implies(p.left, false))) && !writes(p, p.left.end, e.pos)) return true;
+      const upto = Math.max(e.pos, loopEnd);
+      if (ts.isConditionalExpression(p) && child !== p.condition && implies(p.condition, p.whenTrue === child) && !writes(p, p.condition.end, upto)) return true;
+      if (ts.isIfStatement(p) && child !== p.expression && implies(p.expression, p.thenStatement === child) && !writes(p, p.expression.end, upto)) return true;
+      if (ts.isBinaryExpression(p) && child === p.right && ((p.operatorToken.kind === K.AmpersandAmpersandToken && implies(p.left, true)) || (p.operatorToken.kind === K.BarBarToken && implies(p.left, false))) && !writes(p, p.left.end, upto)) return true;
       if ((ts.isBlock(p) || ts.isSourceFile(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) && p.statements) {
         const k = p.statements.indexOf(child);
-        for (let i = k - 1; i >= 0; i--) { const g = p.statements[i]; if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement) && implies(g.expression, false) && !writes(p, g.end, e.pos)) return true; }
+        for (let i = k - 1; i >= 0; i--) { const g = p.statements[i]; if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement) && implies(g.expression, false) && !writes(p, g.end, upto)) return true; }
       }
+      if (ts.isIterationStatement(p, false)) loopEnd = Math.max(loopEnd, p.end);
     }
     return false;
   }

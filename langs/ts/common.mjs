@@ -365,6 +365,23 @@ export function originOf(checker, id, sf, current) {
   return { kind: 'module-mutable', sym: s, decl };
 }
 
+/** The value of an infinity spelling: +1 for the global `Infinity` and `Number.POSITIVE_INFINITY`, -1 for
+ * `Number.NEGATIVE_INFINITY`, a prefix minus flips the sign and parentheses are looked through; 0 for anything else (a
+ * local or an import named Infinity included). The three spellings of one value are one reading (ECMA-262 21.1.2.6 and
+ * 21.1.2.7, and the global property Infinity of 19.1.1): the lint admits them alike and the translator keys a unit that
+ * names one by the canonical spelling, so `Infinity` and `Number.POSITIVE_INFINITY` units of equal text are one function. */
+export function infinitySign(checker, n, sf, current) {
+  while (n && ts.isParenthesizedExpression(n)) n = n.expression;
+  if (!n) return 0;
+  if (ts.isPrefixUnaryExpression(n) && n.operator === ts.SyntaxKind.MinusToken) return -infinitySign(checker, n.operand, sf, current) || 0;
+  if (ts.isIdentifier(n)) return n.text === 'Infinity' && originOf(checker, n, sf, current).kind === 'global' ? 1 : 0;
+  if (ts.isPropertyAccessExpression(n) && !n.questionDotToken && ts.isIdentifier(n.expression) && n.expression.text === 'Number' && originOf(checker, n.expression, sf, current).kind === 'global') {
+    if (n.name.text === 'POSITIVE_INFINITY') return 1;
+    if (n.name.text === 'NEGATIVE_INFINITY') return -1;
+  }
+  return 0;
+}
+
 /** a file is REAL when a unit of it has a float literal or a bare `/` (not under Math.floor/Math.trunc): its numbers are
  * Dafny reals (exact decimals, not IEEE 754); every other file is an integer file. The lint and the translator both
  * decide by this, so the editor's rule and the proof lane agree. */
