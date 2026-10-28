@@ -80,7 +80,7 @@ export function reachTurn(spec, i) {
 // parameter path it is compared with, plus 0, 1 or -1; a `.length` target cuts or extends its string or array to that
 // length. Every other leaf keeps its declared draw
 export function changedTurn(spec, i) {
-  if (!spec.changed || !spec.changed.length) return null;
+  if (!spec.changed || !spec.changed.length || process.env.LEAN_CHANGED === 'off') return null; // LEAN_CHANGED=off switches the tier off
   const g = i - (spec.walkFrom ?? 0);
   if (g < 2 || g % REACH !== 2 || knownInput(spec, i)) return null;
   return (g - 2) / REACH;
