@@ -1361,7 +1361,8 @@ const COPY_NOT_BUILT = 'a value of a record type may carry keys its type does no
 // members written after it ('copy'): two sides copying the same value prove, and a copy of the declared fields by hand
 // never does, since nothing says what the copy holds beyond its source (a field of the copy equal to the source's would
 // make the copy equal to the hand copy: a record value holds its declared fields alone). The term needs the spread first
-// in its literal, and a built copy holds no key the literal's record type does not declare ('refuse', with the reason).
+// in its literal after named members and spreads only ('refuse', with the reason); a built copy holding a key the target
+// type does not declare is a copy too.
 // A source that is no record (a dictionary, an array, a primitive) is 'plain'. One test for the lint, objectLit, the core.
 export function copySource(checker, src, site = null) {
   const TF = ts.TypeFlags; let x = src; while (ts.isParenthesizedExpression(x)) x = x.expression;
@@ -1369,5 +1370,5 @@ export function copySource(checker, src, site = null) {
   const record = !!t && (t.flags & TF.Union ? t.types : [t]).some((y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0);
   if (!record) return { kind: 'plain' };
   const why = copySourceWhy(checker, src, site);
-  return why === null ? { kind: 'built' } : why === COPY_NOT_BUILT ? { kind: 'copy' } : { kind: 'refuse', why };
+  return why === null ? { kind: 'built' } : why === COPY_NOT_BUILT || why.startsWith('the copy holds the key') ? { kind: 'copy' } : { kind: 'refuse', why }; // a built copy holding a key the target does not declare carries it, as any copy carries what its source carries
 }
