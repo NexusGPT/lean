@@ -143,7 +143,7 @@ export function makeReach(checker, sf) {
   const textOf = (o) => (isClassLike(o) ? `${headerOf(o)} class ${o.name?.text ?? ''}` : (classOfMember(o) ? `${classOfMember(o).name?.text ?? ''}[${headerOf(classOfMember(o))}].` : '') + o.getText(sf));
   const cache = new Map();
   // the reach of a unit's node (a top-level statement or a class member)
-  return function reachOf(root) {
+  function reachOf(root) {
     if (cache.has(root)) return cache.get(root);
     const own = close([root]);
     // the code the carried values bring, closed until no new class or function value appears
@@ -161,5 +161,13 @@ export function makeReach(checker, sf) {
     const r = { decls: declTexts, code: codeTexts, classes: [...codeRoots].filter(isClassLike).map((c) => c.name?.text ?? '?') };
     cache.set(root, r);
     return r;
-  };
+  }
+  // whether evaluating `root` (an expression of a unit) can run a declaration of this file (a module binding with its
+  // initializer, a function, a class or a member) or meet an instance of a class of this file; a name lane A gives such a
+  // reference then carries its reach (design/reach-keys.md), never its text alone. An import, a global and a local of
+  // the unit run no code of this file.
+  reachOf.reachesFile = (root) => { const own = close([root]); return own.dynamic || own.carried.size > 0 || own.valueFns.size > 0 || [...own.owners].some((o) => o !== root && !ts.isImportDeclaration(o) && !ts.isImportEqualsDeclaration(o)); };
+  // the key text of a reference: the code its evaluation can execute and the code its values may carry out
+  reachOf.keyText = (root) => reachOf(root).decls.join('\n\u0000');
+  return reachOf;
 }
