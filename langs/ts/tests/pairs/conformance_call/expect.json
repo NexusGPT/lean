@@ -1,0 +1,6 @@
+{
+  "scope": ["reader_read", "read_local", "read_used", "built_read"],
+  "equal": { "reader_read": true, "read_local": false, "read_used": false, "built_read": true },
+  "why": "readLocal and readUsed: g typed Reader may be any object of Reader's shape (lane B passes a fake), so g.read(x) is a request to the outside, not Reader.prototype.read: the parent makes it, the candidate does not, or returns x + 1 where the request's answer comes back; must not prove. builtRead: g is made by new Reader in the unit, so g.read is Reader.prototype.read: proved.",
+  "b": { "readLocal": "WITNESS", "readUsed": "WITNESS", "builtRead": "PASS-bounded" }
+}

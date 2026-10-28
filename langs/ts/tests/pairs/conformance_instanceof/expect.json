@@ -1,0 +1,6 @@
+{
+  "scope": ["is_base", "built_is_base"],
+  "equal": { "is_base": false, "built_is_base": true },
+  "why": "isBase: x typed Base may be any object of Base's shape (lane B draws a plain record), so x instanceof Base is not true by its type; must not prove. builtIsBase: b is made by new Derived or new Base in the unit, so its prototype chain holds Base.prototype: proved.",
+  "b": { "isBase": "WITNESS", "builtIsBase": "PASS-bounded" }
+}
