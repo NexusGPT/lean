@@ -60,6 +60,29 @@ certainty, not reach: the pair unit sharedReference is WITNESS on the base too.
 Known limit of the observation, not the draw: render and the heap graph read Object.keys, so a symbol key or a
 non-enumerable key that reaches the outcome is seen only through a derived value (a count, a read).
 
+## The contract the certificate states (lead's decision, 28 Oct; the owner's row stays open)
+
+Lane A reads a value by its declared shape. A value the declared type admits only through reflection (a hole, a
+getter, a key on the prototype, no prototype, a non-enumerable or symbol key, a key beside an array's indices, a
+thenable where a Promise is declared) is outside the domain lane A proves over. The certificate carries the sentence:
+"proved over values that are what their declared type says; reflection forms are outside this contract". The
+reflection families stay off by default and run as a named adversarial tier (`LEAN_REACH=reflection`, or `all`, or a
+list of names). Their witnesses are reported apart, never as false proofs.
+
+Worked examples of that envelope: the 19 pair rows that moved from PASS-bounded to WITNESS when every family was on
+(run `after` at 3dc8c71, the first 673 of 1334 rows; every unit is one its pair wants PASS-bounded and lane A proves):
+
+| rows | cause |
+|---|---|
+| array_callback_cells collect, callback_patterns noteKeys, computed_literal_keys setField, effectful_callbacks mapped, element_writes settle, heap5_arrays bump, heap_shapes stamp and close, heap_unions toggle and mark, in_prototype hasConstructor, loop_chain labels and doubled | reflection forms (a hole, a getter-only field written, a key moved to the prototype, no prototype): outside the contract |
+| dynamic_reads optional and mixed, heap5_unions isRound and describe | a changed-path value outside the leaf's type (`"ax"` for `"a" \| "b"`, a discriminant written on another option's record): a generator defect, fixed (values filtered by the leaf's type, no target through a union) |
+| fake_throw labels and total | a coercion object for an `any` the unit reads as an array: a generator defect, fixed (a value whose members the unit reads keeps its fake) |
+
+Groups two and three were read from their witnesses. In the first group, collect (a hole), stamp (a getter-only
+field written), settle (a hole read through) and hasConstructor (no prototype) were read from their witnesses; the
+other nine are placed there because none of them moves under the default (contract families, c3 at 21a4d5c), and they
+were not each minimised to one family.
+
 ## Tier 2: changed paths (spec.mjs changedTargets, gen.mjs changedTurn)
 
 For a unit whose two versions differ, spec.mjs reads the comparisons (<, <=, >, >=, ===, !==, ==, !=) that one
@@ -87,8 +110,9 @@ sides (see the measurement: the misses that remain are listed with their changed
 - timer-order (run.mjs runTimers, `legal`): the timers due at one instant fire in another order, but only one that
   the event loop allows. A timer may run before an earlier-armed one of a different kind, for example an immediate
   before a timeout. Two timeouts or intervals keep their arm order: Node fires equal delays in arm order, and the
-  queue does not keep the delay, so lean cannot tell when a swap would be legal. The JSX schedule explorer passes no
-  flag and keeps every order of the ties, as before.
+  queue does not keep the delay, so lean cannot tell when a swap would be legal. The JSX schedule explorer follows
+  the same rule: it varies only orders Node can produce. Its pair unit Order (schedule_explorer) was a WITNESS only
+  through two equal-delay timeouts fired out of arm order, an order Node never runs; it is PASS-bounded now.
 - The promises the world answers are the race explorer's (design/schedules.md), not this tier's.
 
 run.mjs lines touched: the observe call of runTimers (the timer-order permutation and the legal flag) and runTimers

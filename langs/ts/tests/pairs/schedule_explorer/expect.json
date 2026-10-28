@@ -9,19 +9,17 @@
   "order": false,
   "twin": true
  },
- "why": "SearchBox debounces by 300 ms in the parent and 0 ms in the candidate: the virtual clock's fire record carries the instant, so the first render's trace differs (a fire at 300 against 0): WITNESS with the clock. Order arms two timers due at one instant; the parent sets the same value from both, the candidate keeps whichever fired first (an updater), so the arm order agrees (x on both sides) and the other order differs (y): only the schedule explorer, which fires the timers due at one instant in every order, finds it (sequence tick@1). Twin arms two equal timers the same way on both sides: every order agrees, PASS-bounded with the bound in the certificate (two timers, every order), and lane A proves the identical text.",
+ "why": "SearchBox debounces by 300 ms in the parent and 0 ms in the candidate: the virtual clock's fire record carries the instant, so the first render's trace differs (a fire at 300 against 0): WITNESS with the clock. Order arms two timers due at one instant; the parent sets the same value from both, the candidate keeps whichever fired first (an updater), so the arm order agrees (x on both sides) and the other order differs (y): the other order is one Node never runs (two equal-delay timeouts fire in arm order), so the schedule explorer, which runs only orders Node can produce, finds no difference: PASS-bounded with the bound in the certificate (lane lane-b-reach, 28 Oct; it was a WITNESS through that illegal order before). Lane A does not prove it, which stays safe. Twin arms two equal timers the same way on both sides: every order agrees, PASS-bounded with the bound in the certificate (two timers, every order), and lane A proves the identical text.",
  "heap": false,
  "b": {
   "SearchBox": "WITNESS",
-  "Order": "WITNESS",
+  "Order": "PASS-bounded",
   "Twin": "PASS-bounded"
  },
  "schedules": {
   "Order": {
-   "verdict": "WITNESS",
-   "sequence": [
-    "tick@1"
-   ]
+   "verdict": "PASS-bounded",
+   "timers": 2
   },
   "Twin": {
    "verdict": "PASS-bounded",
