@@ -2776,11 +2776,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       // literals of one layout over equal values are equal and any other pair is never proved equal (open-datatype.md)
       const vals = [], types = [];
       for (const p of n.properties) {
-        const v = ts.isSpreadAssignment(p) ? p.expression : ts.isShorthandPropertyAssignment(p) ? p.name : ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name) ? p.initializer : null;
-        if (!v || (ts.isPropertyAssignment(p) && (ts.isArrowFunction(p.initializer) || ts.isFunctionExpression(p.initializer)))) fail(p, 'spread-source: a computed key, a method or a function beside a later spread is not read');
+        const v = ts.isSpreadAssignment(p) ? p.expression : ts.isShorthandPropertyAssignment(p) ? p.name : ts.isPropertyAssignment(p) ? p.initializer : null;
+        if (!v || (ts.isPropertyAssignment(p) && (ts.isArrowFunction(p.initializer) || ts.isFunctionExpression(p.initializer)))) fail(p, 'spread-source: a method or a function value beside a later spread is not read');
+        if (ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name)) { vals.push(expr(p.name.expression)); types.push(dtype(typeOf(p.name.expression), p)); } // a computed key: its value, then the member's
         vals.push(expr(v)); types.push(dtype(typeOf(v), v));
       }
-      const layout = n.properties.map((p) => (ts.isSpreadAssignment(p) ? '...' : keyOf(p))).join(',');
+      const layout = n.properties.map((p) => (ts.isSpreadAssignment(p) ? '...' : ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name) ? '[]' : keyOf(p))).join(',');
       let litT = expected ?? checker.getContextualType(n) ?? typeOf(n); if (isOptional(litT)) litT = baseOf(litT); if (!isRecordish(litT)) litT = typeOf(n); // the literal's own record type, not its first source's
       const ld = dtype(litT, n);
       return `${external(`lit_spread_${mangle(ld)}_${hash(layout)}`, types, ld)}(${vals.join(', ')})`;

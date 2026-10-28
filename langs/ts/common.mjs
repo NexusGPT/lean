@@ -1423,30 +1423,28 @@ export function builtRecord(checker, e, unitNode, seen = new Set()) {
 // The spreads of a record literal the value reading carries (design/open-datatype.md), shared by the lint (rule
 // spread-source) and the translator (objectLit). One spread first is the source updated by the later members, its rest
 // included; any other layout is one uninterpreted construction of the member values in order, keyed by the layout,
-// which holds each source whole, rest included. Both are functions of the values, except where a key given before a
-// spread survives only if that source lacks it and the source's type lets it lack the key or hold undefined there (an
-// optional field, a union member without it, an index signature, an any value): a missing key and an undefined one
-// are one value in the reading. Returns the text of that refusal, or null. A dictionary literal is not judged here.
+// which holds each source whole, rest included. Both are functions of the values (an any value is opaque, a union
+// holds its member, an index entry is a key of its dictionary), except where a key given before a spread names an
+// optional field of the source's type: the member survives only if the source lacks the key, and a missing optional
+// field and one holding undefined are one value in the reading (None). Returns the text of that refusal, or null. A dictionary literal is not judged here.
 export function spreadReadWhy(checker, lit) {
   const TF = ts.TypeFlags;
   const spreads = lit.properties.filter(ts.isSpreadAssignment);
   if (!spreads.length || (spreads.length === 1 && lit.properties[0] === spreads[0])) return null;
   const t = checker.getTypeAtLocation(lit);
   if (t && t.flags & TF.Object && checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getPropertiesOfType(t).length) return null;
-  if (lit.properties.some((p) => !(ts.isSpreadAssignment(p) || ts.isShorthandPropertyAssignment(p) || (ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name) && !ts.isArrowFunction(p.initializer) && !ts.isFunctionExpression(p.initializer))))) return 'a computed key, a method or a function value beside a later spread is not read; spread first, or build the record in steps';
+  if (lit.properties.some((p) => !(ts.isSpreadAssignment(p) || ts.isShorthandPropertyAssignment(p) || (ts.isPropertyAssignment(p) && !ts.isArrowFunction(p.initializer) && !ts.isFunctionExpression(p.initializer))))) return 'a method or a function value beside a later spread is not read; spread first, or build the record in steps';
   const parts = (x) => (x.flags & TF.Union ? x.types : [x]).filter((y) => !(y.flags & (TF.Undefined | TF.Null | TF.Void | TF.BooleanLiteral | TF.Boolean)));
-  const open = (x) => parts(x).some((y) => y.flags & (TF.Any | TF.Unknown | TF.TypeParameter) || !(y.flags & (TF.Object | TF.Intersection)) || !!checker.getIndexInfoOfType(y, ts.IndexKind.String));
   const keysOf = (x) => new Set(parts(x).flatMap((y) => (y.flags & (TF.Object | TF.Intersection) ? checker.getPropertiesOfType(y).map((q) => q.name) : [])));
-  const mayLack = (x, k) => parts(x).some((y) => { const q = y.flags & (TF.Object | TF.Intersection) ? checker.getPropertyOfType(y, k) : null; return !q || !!(q.flags & ts.SymbolFlags.Optional); });
+  const optional = (x, k) => parts(x).some((y) => { const q = y.flags & (TF.Object | TF.Intersection) ? checker.getPropertyOfType(y, k) : null; return !!q && !!(q.flags & ts.SymbolFlags.Optional); });
   const before = new Set(); let unknownBefore = false;
   for (const p of lit.properties) {
     if (ts.isSpreadAssignment(p)) {
       const st = checker.getTypeAtLocation(p.expression);
-      if ((before.size || unknownBefore) && open(st)) return 'a key given before this spread survives only where the source lacks it, and this source may hold any key (an index signature, an any value); spread it first or name its fields';
-      const hit = [...before].find((k) => keysOf(st).has(k) && mayLack(st, k));
-      if (!hit && unknownBefore && [...keysOf(st)].some((k) => mayLack(st, k))) return 'a computed key given before this spread may name a key the source lets be missing or undefined, which the reading tells apart nowhere; spread first and write the members after it';
+      const hit = [...before].find((k) => optional(st, k));
+      if (!hit && unknownBefore && [...keysOf(st)].some((k) => optional(st, k))) return 'a computed key given before this spread may name a key the source lets be missing or undefined, which the reading tells apart nowhere; spread first and write the members after it';
       if (hit) return `the key ${JSON.stringify(hit)} given before this spread survives only where the source lacks it, and the source's type lets it be missing or undefined there, which the reading tells apart nowhere; spread first and write the members after it`;
-      for (const k of keysOf(st)) before.add(k); if (open(st)) unknownBefore = true;
+      for (const k of keysOf(st)) before.add(k);
       continue;
     }
     const name = p.name && (ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) || ts.isNumericLiteral(p.name)) ? p.name.text : null;

@@ -39,10 +39,9 @@ closed, so the text of every literal site is unchanged:
   builtRecord) leaves the core for this reading.
 
 ## What stays refused
-- `spread-source` (common.mjs spreadReadWhy): a key given before a spread that the source's type lets be missing or
-  undefined (an optional field, a union member without it, an index signature, an any value): the member survives
-  only where the source lacks the key, and missing and undefined are one value in the reading; a computed key, a
-  method or a function value beside a later spread.
+- `spread-source` (common.mjs spreadReadWhy): a key given before a spread that names an optional field of the
+  source's type (the member survives only where the source lacks the key, and a missing optional field and one
+  holding undefined are one value, None); a method or a function value beside a later spread.
 - `key-order`: for-in over a value lean did not build. The datatype holds no key order: a literal's order is not in
   its value (two literals built in two orders are one value), so an order read from the value would equate them.
 - `dynamic-key`: a write of an undeclared key; a number index alone; a computed `in` where a declared field is
