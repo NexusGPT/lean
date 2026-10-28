@@ -52,6 +52,7 @@ class Unsupported extends Error {}
 
 import { dn } from '../common.mjs';
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
+import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const indentBlock = (s, n = 1) => s.split('\n').map((l) => '  '.repeat(n) + l).join('\n');
@@ -4351,7 +4352,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     function loopElement(id) {
       const d = checker.getSymbolAtLocation(id)?.valueDeclaration;
       if (!d) return false;
-      if (ts.isParameter(d)) return !!d.parent && (isLoopCallback(d.parent) || syncLoopCallback(d.parent, checker));
+      if (ts.isParameter(d)) return !!d.parent && !reduceAccumulator(d, checker) && (isLoopCallback(d.parent) || syncLoopCallback(d.parent, checker));
       return ts.isVariableDeclaration(d) && !!d.parent && ts.isVariableDeclarationList(d.parent) && !!d.parent.parent && ts.isForOfStatement(d.parent.parent);
     }
     function elementPathUpdate(target, ew, leaf) {
@@ -5713,7 +5714,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // drop the write; the heap core reads it as the step on the element (design/element-writes.md). A unit outside the
   // core that holds one is refused by name, never translated without its write
   function loopElementWriteOf(u) {
-    const elementBinding = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; if (!d) return false; if (ts.isParameter(d)) return !!d.parent && (isLoopCallback(d.parent) || syncLoopCallback(d.parent, checker)); return ts.isVariableDeclaration(d) && !!d.parent && ts.isVariableDeclarationList(d.parent) && !!d.parent.parent && ts.isForOfStatement(d.parent.parent); };
+    const elementBinding = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; if (!d) return false; if (ts.isParameter(d)) return !!d.parent && !reduceAccumulator(d, checker) && (isLoopCallback(d.parent) || syncLoopCallback(d.parent, checker)); return ts.isVariableDeclaration(d) && !!d.parent && ts.isVariableDeclarationList(d.parent) && !!d.parent.parent && ts.isForOfStatement(d.parent.parent); };
     let hit = null;
     const w = (n) => {
       if (hit) return;
