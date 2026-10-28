@@ -12,7 +12,8 @@ rest.
 lemma of the pair, listed in `expect.equal` or not) is read beside lane B's verdict. A unit lane A proved and lane B
 witnessed fails the step, except through two doors: the pair declares an adapter for it (the adapted claim
 `f_candidate(A(x)) == f_parent(x)` is not the raw same-input comparison lane B ran), or every witness input holds NaN
-or an infinity (lane A's number model is finite: `design/special-numbers.md`). Its own line:
+or an infinity (lane A's number model is finite: `design/special-numbers.md`; lane B keeps at most three witnesses, so
+the door trusts that a finite difference shows among them). Its own line:
 `| PROOF-HUNT TOTAL | N units read by both lanes | NO HIDDEN FALSE PROOF | E exempt by a door (adapter, special numbers) |`.
 The harness row R11 (`harness/proof_hunt.py`, floor zero) reads that line, runs lane A the way check.mjs runs it (the
 heap core agreed, the theorem, Dafny, no WITNESS cut-off) on every planted mutant of the fixed soundness cohort that
