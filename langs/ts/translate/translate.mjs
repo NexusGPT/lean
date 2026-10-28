@@ -37,6 +37,7 @@ import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTabl
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
+import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the lint
 import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
@@ -1380,6 +1381,7 @@ export function translate(file, fnName, opts = {}) {
   }
   function externalValue(id) {
     const t = typeOf(id);
+    { const form = id.parent && promiseForm(id.parent, checker, sf); if (form?.handler === id && isCallable(t)) { const named = namedPromiseHandler(checker, id, sf, currentUnit?.node ?? null, form.kind === 'finally' ? 0 : 1); if (!named.admit) fail(id, `${named.rule}: ${named.message}`); } } // a named handler the shared decision refuses is refused by its name, as the lint names it
     if (isCallable(t)) fail(id, `${id.text} is a function value; call it`);
     const rt = dtype(t, id);
     return `${external(id.text, [], rt)}()`;
@@ -2286,14 +2288,16 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const savedRet = opaqueRet; opaqueRet = isPromiseT(ownT) ? R : dtype(ownT, cb); // a return is the handler's value
     try { return faultTr(list, done, currentUnit, ctx); } finally { opaqueRet = savedRet; }
   }
-  function promiseHandlerBody(cb, argument, argumentD, outputT, argumentT = null) {
+  function promiseHandlerBody(cb, argument, argumentD, outputT, argumentT = null, arity = 1) {
     const R = dtype(outputT, cb);
     const argumentAs = (D) => argumentT ? convertToD(argument, argumentT, D, cb) : convertD(argument, argumentD, D);
-    if (ts.isIdentifier(cb)) {
-      const sg = checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call)[0];
+    if (!ts.isArrowFunction(cb)) { // a named handler: the decision the lint took (common.mjs namedPromiseHandler)
+      const named = namedPromiseHandler(checker, cb, sf, currentUnit?.node ?? null, arity);
+      if (!named.admit) fail(cb, `${named.rule}: ${named.message}`);
+      const sg = named.sig;
       const params = sg.getParameters();
       const args = params.map((p) => argumentAs(dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb)));
-      const u = fns.get(cb.text), origin = originOf(checker, cb, sf, currentUnit?.node ?? null);
+      const u = fns.get(cb.text), origin = { kind: named.origin };
       const ownR = dtype(checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType(), cb);
       return capture(() => {
         let value;
@@ -2367,7 +2371,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const old = `pw${tempCount++}_`, was = `pf${tempCount++}_`, error = `pe${tempCount++}_`;
     const sg = checker.getSignaturesOfType(typeOf(cb), ts.SignatureKind.Call)[0];
     const ownT = checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType();
-    const body = promiseHandlerBody(cb, 'Unit', 'Unit', ownT);
+    const body = promiseHandlerBody(cb, 'Unit', 'Unit', ownT, null, 0);
     return hoist(`(var ${old} := ${WORLD}; var ${was} := ${P.faulted}(${old}); var ${error} := ${P.value}(${old});\nvar ${WORLD} := if ${was} then ${P.clear}(${WORLD}) else ${WORLD};\nvar (${WORLD}, ignored${tempCount++}_) := (${body});\nif ${P.faulted}(${WORLD}) then ${promisePair(promiseFailure(R))} else (var ${WORLD} := if ${was} then ${P.raise}(${WORLD}, ${error}) else ${WORLD}; ${promisePair(convert(source, sourceT, rt, n))}))`, R);
   }
   // an async await exits on a fault before its following statements, just like a promise reaction

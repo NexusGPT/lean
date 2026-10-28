@@ -1639,3 +1639,27 @@ export function typeAssertion(checker, n) {
   if (carried(checker, n)) return null;
   return `\`${n.getText().slice(0, 60)}\` holds a value whose type nothing checked (an \`as\` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (\`typeof x === "number"\`, a field test), or keep it in a local, an operation or the result`;
 }
+
+/** A named promise handler (`p.then(h)`, `p.catch(h)`, `p.finally(h)`, `h` a name or a member path): one decision the lint
+ * and the translator take (design/named-then.md). Admitted, the handler is called with the settled argument: a unit of
+ * this file by its own function (`origin: 'unit'`), an import or another file's function as one transition named by its
+ * name (`'outside'`), a module constant holding a function value as one transition named by the code its initializer
+ * reaches (`'binding'`, design/reach-keys.md), so a changed maker is another transition. Refused, `rule` and `message`
+ * name it. `value` says whether the name has a reading as a passed value at all: a binding outside the unit (a module
+ * constant, an import, another file, a global, or a member of one) that holds a function has none (the translator reads
+ * such a name as a bodiless constant, which a function is not), so its only reading is the exact one. */
+export function namedPromiseHandler(checker, a, sf, current, arity) {
+  const sigs = checker.getSignaturesOfType(checker.getTypeAtLocation(a), ts.SignatureKind.Call);
+  const root = ts.isIdentifier(a) ? a : ts.isPropertyAccessExpression(a) && ts.isIdentifier(a.expression) ? a.expression : null;
+  const o = root ? originOf(checker, root, sf, current) : { kind: null };
+  const value = !(sigs.length > 0 && ['module', 'import', 'other', 'global'].includes(o.kind));
+  const refused = (rule, message) => ({ admit: false, value, rule, message });
+  if (!ts.isIdentifier(a)) return refused('promise-handler', 'call the member inside an arrow, `(v) => obj.m(v)`: a member named as a handler is called without its receiver');
+  const sg = sigs[0];
+  const plain = (p) => !(p.valueDeclaration && ts.isParameter(p.valueDeclaration) && (p.valueDeclaration.dotDotDotToken || p.valueDeclaration.initializer || p.valueDeclaration.questionToken));
+  if (!sg || sg.typeParameters?.length || sigs.length !== 1 || !sg.parameters.every(plain) || sg.parameters.length > arity || !['unit', 'import', 'other', 'module'].includes(o.kind)) return refused('promise-handler', 'use an arrow or a named same-file, module constant or imported function with at most one plain parameter');
+  const rt = sg.getReturnType();
+  const nativePromise = !!rt.symbol && rt.symbol === checker.resolveName('Promise', undefined, ts.SymbolFlags.Type, false);
+  if ((rt.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) || (!nativePromise && checker.getPropertyOfType(rt, 'then'))) return refused('promise-thenable', 'give a named handler a plain or native Promise return type');
+  return { admit: true, value, origin: o.kind === 'unit' ? 'unit' : o.kind === 'module' ? 'binding' : 'outside', sig: sg };
+}

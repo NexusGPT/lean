@@ -14,6 +14,7 @@ import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, i
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
+import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the translator
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
 import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
@@ -1125,7 +1126,12 @@ export function lintFile(file, ranges = null, opts = {}) {
   const promiseReadings = opts.promiseReadings ?? new Set();
   let opaquePromiseDepth = 0;
   function opaquePromise(read) { opaquePromiseDepth++; try { return read(); } finally { opaquePromiseDepth--; } }
+  // a named handler whose value no outside call can take (a function held outside the unit) has one reading, the exact
+  // one: its findings stand instead of the outside-call fallback, which the translator cannot read (design/named-then.md)
+  const handlerArity = (form) => (form.kind === 'finally' ? 0 : 1);
+  const valuelessHandler = (form) => ['then', 'catch', 'finally'].includes(form.kind) && !!form.handler && !namedPromiseHandler(checker, form.handler, sf, current, handlerArity(form)).value;
   function readPromise(e, form) {
+    if (valuelessHandler(form)) { const start = out.length; readExactPromise(e, form); if (out.length === start) promiseReadings.add(`${e.pos}:${e.end}`); return true; }
     if (form.kind !== 'executor' && (['race', 'allSettled', 'any'].includes(form.kind) || !promiseConsumed(e, checker, sf))) return false;
     const start = out.length, aliases = new Set(aliasLocals), types = new Set(seenTypes), selected = new Set(promiseReadings);
     readExactPromise(e, form);
@@ -1150,15 +1156,12 @@ export function lintFile(file, ranges = null, opts = {}) {
     try { return callback(cb, null); } finally { promiseCallbacks.delete(cb); }
   }
   function promiseHandler(a, arity) {
-    if (ts.isIdentifier(a)) {
-      const o = declOf(a), u = units.get(a.text);
-      const sg = checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call)[0];
-      if (!sg || sg.typeParameters?.length || checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call).length !== 1 || sg.parameters.some((p) => p.valueDeclaration && ts.isParameter(p.valueDeclaration) && (p.valueDeclaration.dotDotDotToken || p.valueDeclaration.initializer || p.valueDeclaration.questionToken)) || sg.parameters.length > arity || (o.kind !== 'unit' && o.kind !== 'import' && o.kind !== 'other')) return v(a, 'promise-handler', 'use an arrow or a named same-file or imported function with at most one plain parameter');
+    if (ts.isIdentifier(a) || !namedPromiseHandler(checker, a, sf, current, arity).value) { // a name, or a member path holding an outside function
+      const named = namedPromiseHandler(checker, a, sf, current, arity), u = named.origin === 'unit' ? units.get(a.text) : null;
+      if (!named.admit) return v(a, named.rule, named.message);
       if (u) {
         if (unsafePromiseCallee(u, new Set(), false) || u.params.some((p) => p.initializer || p.dotDotDotToken || p.questionToken || !ts.isIdentifier(p.name))) return v(a, 'promise-handler', 'inline a handler that mutates so its state is visible');
       }
-      const rt = sg.getReturnType();
-      if (isAny(rt) || (!isNativePromise(rt, checker) && checker.getPropertyOfType(rt, 'then'))) return v(a, 'promise-thenable', 'give a named handler a plain or native Promise return type');
       return checkIdent(a, true);
     }
     if (!ts.isArrowFunction(a) || a.typeParameters?.length || a.parameters.length > arity || a.parameters.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken)) return v(a, 'promise-handler', 'use an arrow with plain parameters');
