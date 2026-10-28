@@ -43,6 +43,13 @@ around the whole run is the gate's, not lean's.
 
 A unit whose parent does not hold it (a new unit) runs as before: `new-unit.mjs` starts its own bounded process.
 
+## Defaults
+
+`--unit-seconds` defaults to 120 s in `run.mjs` and `check.mjs`. `pr.mjs` uses the flag when given, else the smaller of
+`--time-budget` and 120 s, else 120 s. The run budget is checked before each unit (A4), so a run ends within its budget
+plus one unit's bound and that unit's lane A. A killed unit's certificate names the side that was running
+(`lanes.B.bound.killedAt.side`), and `check.mjs` carries the spin-bound reason into its verdict.
+
 ## Soundness
 
 The bound only ever turns a run into ASK; it never turns one into a WITNESS or a PASS. A WITNESS found before the kill
