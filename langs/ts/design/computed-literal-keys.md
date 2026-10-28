@@ -82,13 +82,15 @@ else
   (-1)
 ```
 
-A record with declared fields and an index signature is a Dafny datatype of the declared fields; the entries of the
-index are not in it. On the base the lint admitted an open key on such a record as an uninterpreted lookup of that
-datatype, and `h[k]` against `({ accept: h.accept })[k]` was PASS-proved (Node: "v" against undefined). A key the type
-does not declare is now refused on such a record (`dynamic-key`, escape dynamic_key_index_signature); a declared field
-keeps its field reading (pair unit acceptOf). The same read through dot syntax (`h.other`) is the unsupported-member
-block's and stays as it was; the fix that would read these records faithfully is a datatype with the index map beside
-the fields.
+A record with declared fields and an index signature is OPEN (`openRecordType`, common.mjs): its Dafny datatype holds
+the declared fields, not the entries of the index. On the base the lint admitted an open or undeclared key on it, by
+bracket (an uninterpreted lookup of the datatype) and by dot, and `h[k]` against `({ accept: h.accept })[k]`, like
+`h.trace` against the copy's `.trace`, was PASS-proved (Node: "v" against undefined). Both forms are now refused
+(`dynamic-key`, escapes dynamic_key_index_signature and dynamic_key_index_signature_dot), in the lint's dictionary key
+rule and member read, with the translator failing the same read in fieldOf and before openKeyRead; a declared field
+keeps its field reading (pair unit acceptOf), and a read rooted at an outside or lib global (`process.env[k]`) is a
+read of the world. Lane B now draws such a record with up to two entries of the index type, keyed by the names the unit
+reads (exec/spec.mjs recordSpec), so pair dynamic_key_open (agentOf, traceOf) witnesses what lane A refuses.
 
 Stays refused: a guard on a key assigned after the test (escape dynamic_key_proto_guard_rebound, rule prototype); a
 plain string key on a declared record that holds a method (escape dynamic_key_record_member); `Object.hasOwn(d, k)` is
@@ -97,8 +99,9 @@ and rarely draw `'__proto__'`, so lane A carries these cases. Pair dynamic_key: 
 putItem proved, putChecked WITNESS, acceptOf proved. A read rooted at an outside or lib global (`process.env[k]`)
 is a world read and keeps its reading.
 
-Measured (`node langs/ts/census.mjs <root>`, base 6661006 against this change): nexus 23,753 to 23,747 of 26,520
-inside, dynamic-key units stopped 167 to 173; n8n 4,314 to 4,312 of 6,337, dynamic-key 50 to 58. Every unit newly
-refused (6 and 2) reads an undeclared key of a record with an index signature held as a parameter or a value (the
+Measured (`node langs/ts/census.mjs <root>`, base 6661006 against this change): nexus 23,753 to 23,728 of 26,520
+inside, dynamic-key units stopped 167 to 193; n8n 4,314 to 4,312 of 6,337, dynamic-key 50 to 65. Every unit newly
+refused (25 and 2) reads an undeclared key of a record with an index signature held as a parameter or a value (the
 false-proof shape), the rest of each rise is units already refused whose first finding is now this one; none was freed: the census's literal header reads (`request.headers["x-agent-id"]`) are on such
-records, and a faithful reading of them needs the index map in the datatype.
+records, so plan item (a) stands for dictionaries and records without an index signature; the datatype stays closed,
+right once no undeclared read reaches it.

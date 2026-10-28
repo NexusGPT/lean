@@ -1279,11 +1279,4 @@ export function openRecordType(checker, t) {
   if (!checker.getPropertiesOfType(t).length) return false;
   return !!(checker.getIndexInfoOfType(t, ts.IndexKind.String) || checker.getIndexInfoOfType(t, ts.IndexKind.Number));
 }
-// a read of `name` (a declared key or not) on a type that may be a union: true when some open member lacks that key;
-// `name` null for a key the reading does not fix (a string, a number), which no open type declares
-export function undeclaredOpenRead(checker, t, name) {
-  const TF = ts.TypeFlags;
-  const parts = t && t.flags & TF.Union ? t.types : t ? [t] : [];
-  return parts.some((p) => openRecordType(checker, p) && (name === null || !checker.getPropertyOfType(p, name)));
-}
 export const OPEN_RECORD_WHY = (typeText) => `${typeText} declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own`;
