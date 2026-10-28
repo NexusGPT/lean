@@ -61,13 +61,13 @@ function encode(value, seen = new Map()) {
 }
 export function snapshot(env, value) {
   const c = captures.get(env); if (c) c.silent++;
-  try { return encode(value); } catch (e) { return { t: 'unrecorded', reason: `capture: ${e.name}` }; }
+  try { return encode(value, c?.references ?? new Map()); } catch (e) { return { t: 'unrecorded', reason: `capture: ${e.name}` }; }
   finally { if (c) c.silent--; }
 }
 
 export function captureEnvironment(env) {
   if (captures.has(env)) return;
-  const c = { events: [], imports: new Set(), silent: 0, stack: [], active: true };
+  const c = { events: [], imports: new Set(), silent: 0, stack: [], active: true, references: new Map() };
   captures.set(env, c);
   currentUnit?.environments.push(env);
   const event = (op, path, args, fn) => {
@@ -120,7 +120,7 @@ export function witnessRecord({ seed, leanHead, input, sides, invocation = { kin
       const c = captures.get(side.env);
       const events = c?.events ?? [];
       if (c) c.claimed = true;
-      return [name, { seed: side.env.seed, ...(side.commands ? { commands: side.commands } : {}), args: side.args ?? snapshot(side.env, side.inputs), events, imports: [...(c?.imports ?? [])],
+      return [name, { graphScope: 'environment', seed: side.env.seed, ...(side.commands ? { commands: side.commands } : {}), args: side.args ?? snapshot(side.env, side.inputs), events, imports: [...(c?.imports ?? [])],
         clock: events.filter(e => e.op === 'clock'), random: events.filter(e => e.op === 'rng'),
         timeline: side.env.trace.filter(e => e.op === 'fire').map(e => ({ ...e })),
         unrecorded: c ? [] : [{ site: 'environment setup', reason: 'capture not installed' }] }];
