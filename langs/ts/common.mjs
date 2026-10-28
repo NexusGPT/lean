@@ -1959,6 +1959,8 @@ export function signedZero(checker, fn) {
     memoFn.set(decl, r);
     return r;
   };
+  // the elements of a spread: an input's are never -0 (the model); an array literal's are its own; any other array may hold a -0 it was built with
+  const spreadMay = (x) => { x = strip(x); if (ts.isArrayLiteralExpression(x)) return x.elements.some((y) => ts.isSpreadElement(y) ? spreadMay(y.expression) : mayNegZero(y)); if (ts.isIdentifier(x)) { const s = symOf(x), d = s?.valueDeclaration; return !(d && (ts.isParameter(d) || ts.isBindingElement(d))); } return !ts.isPropertyAccessExpression(x); };
   function mayNegZero(e) {
     e = strip(e);
     if (!e) return false;
@@ -1980,7 +1982,8 @@ export function signedZero(checker, fn) {
       if (k === K.MinusToken) return mayNegZero(e.left) && !nonzero(e.right); // -0 - 0 alone is -0 (a - b is a + -b)
       if (k === K.AsteriskToken) { const a = litNum(e.left), b = litNum(e.right); if (a !== null && a > 0) return mayNegZero(e.right); if (b !== null && b > 0) return mayNegZero(e.left); return true; } // 0 * -1, -0 * 2
       if (k === K.SlashToken) { const b = litNum(e.right); return !(b !== null && b > 0 && !mayNegZero(e.left)); } // 0 / -5, -0 / 5
-      if (k === K.PercentToken || k === K.AsteriskAsteriskToken) return true; // -4 % 2 is -0; (-0) ** 3 is -0
+      if (k === K.PercentToken) return true; // -4 % 2 is -0 (6.1.6.1.6: the dividend's sign)
+      if (k === K.AsteriskAsteriskToken) return mayNegZero(e.left); // (-0) ** 3 is -0; a base that is never -0 gives none (6.1.6.1.3, rounding aside)
       if (k === K.BarBarToken) return mayNegZero(e.right); // -0 is falsy: `a || b` answers b then
       if (k === K.AmpersandAmpersandToken || k === K.QuestionQuestionToken) return mayNegZero(e.left) || mayNegZero(e.right);
       return false; // bitwise and shifts (ToInt32), comparisons
@@ -2001,9 +2004,10 @@ export function signedZero(checker, fn) {
         if (m.startsWith('Math.') && a.length > 0 && lits.every((x) => x !== null) && typeof Math[m.slice(5)] === 'function') return Object.is(Math[m.slice(5)](...lits), -0); // of literals: its value
         if (['Math.abs', 'Math.random', 'Math.hypot', 'Math.clz32', 'Math.imul', 'Math.exp', 'Math.log', 'Math.log2', 'Math.log10', 'Math.cosh', 'Math.cos', 'Math.acos', 'Date.now', 'Date.UTC', 'Date.parse'].includes(m)) return false;
         if (['Math.floor', 'Math.sqrt', 'Math.fround', 'Math.sign'].includes(m)) return a.length > 0 && mayNegZero(a[0]); // floor(-0) is -0, floor(-0.5) is -1
-        if (['Math.min', 'Math.max'].includes(m)) return a.some((x) => ts.isSpreadElement(x) || mayNegZero(x)); // min(0, -0) is -0
+        if (['Math.min', 'Math.max'].includes(m)) return a.some((x) => ts.isSpreadElement(x) ? spreadMay(x.expression) : mayNegZero(x)); // min(0, -0) is -0: only an argument's own -0
         if (m === 'Number') return a.length > 0 && (numberish(typeAt(a[0])) ? mayNegZero(a[0]) : !booleanish(typeAt(a[0]))); // Number("-0") is -0, Number(true) is 1
-        return true; // round, ceil, trunc, cbrt, sin, tan, parseInt, parseFloat, ...
+        if (['Math.round', 'Math.ceil', 'Math.trunc', 'Number.parseFloat', 'Number.parseInt'].includes(m)) return true; // a value in (-1, 0) rounds to -0 (21.3.2.28, 21.3.2.10, 21.3.2.35); a parse of "-0"
+        return a.length > 0 && !ts.isSpreadElement(a[0]) && mayNegZero(a[0]); // sin, tan, cbrt, atan, atan2 (its y), pow (its base), ...: -0 only from a -0 argument (21.3.2)
       }
       const callee = strip(e.expression);
       if (ts.isIdentifier(callee) && ['parseInt', 'parseFloat'].includes(callee.text) && !sf.locals?.has?.(callee.text)) return true; // parseFloat("-0") is -0

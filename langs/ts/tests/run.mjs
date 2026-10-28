@@ -379,15 +379,16 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
       if (!b || a === null) continue;
       both++;
       if (!(a && b === 'WITNESS')) continue;
-      // two doors only: a declared adapter, and a witness whose every input holds NaN or an infinity (lane A's number
-      // model is finite, so its hypothesis excludes them: design/special-numbers.md); any other witness is hidden
-      const door = A.adapters.includes(f) ? 'the pair declares an adapter door for this unit' : (B.witnesses ?? []).length && B.witnesses.every((w) => /"\$(nan|infinity)"/.test(JSON.stringify(w.args ?? w.input ?? null))) ? 'every witness input holds NaN or an infinity, outside the finite number model' : null;
+      // two doors only: a declared adapter, and a witness whose every input holds NaN, an infinity or a negative zero
+      // (lane A's number model is finite and holds no -0 input, so its hypothesis excludes them: design/special-numbers.md,
+      // design/signed-zero.md; the doubles reading, row 0d8976c3, closes this door); any other witness is hidden
+      const door = A.adapters.includes(f) ? 'the pair declares an adapter door for this unit' : (B.witnesses ?? []).length && B.witnesses.every((w) => /"\$(nan|infinity|negativeZero)"/.test(JSON.stringify(w.args ?? w.input ?? null))) ? 'every witness input holds NaN, an infinity or -0, outside the finite number model (-0: row 0d8976c3)' : null;
       if (door) exempt++; else hidden++;
       add('proof-hunt', name, `${unit}: lane A proved, lane B WITNESS`, !!door, door ? `exempt: ${door}` : `HIDDEN FALSE PROOF: lane A proved a unit lane B witnessed at ${JSON.stringify(B.witnesses?.[0]?.args ?? null).slice(0, 120)}`);
     }
   }
-  add('proof-hunt', 'all pairs', `${both} units read by both lanes`, hidden === 0, `${hidden} hidden false proofs, ${exempt} exempt by a door (adapter, special numbers)`);
-  console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, special numbers) |`);
+  add('proof-hunt', 'all pairs', `${both} units read by both lanes`, hidden === 0, `${hidden} hidden false proofs, ${exempt} exempt by a door (adapter, special numbers incl. -0)`);
+  console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, special numbers incl. -0) |`);
 }
 
 // ----- escapes -----
