@@ -35,7 +35,7 @@
   "default_counter": true,
   "conditional_environment": false
  },
- "why": "module state is shared across units; a cache snapshot has one world read on both sides; loaders and environment members retain their identity syncHandler and dynamicRequire are the same text on both sides and prove by identity: until the translator numbered temporaries per unit, a changed earlier unit shifted theirs, the texts differed, and the identity guard withheld them (the old expectation recorded that defect). defaultCounter is the same text on both sides and reads only the unchanged `counter`: its opaque identity is the code it reaches (design/hash-keys.md), not the whole file, so it proves.",
+ "why": "module state is shared across units; a cache snapshot has one world read on both sides; loaders and environment members retain their identity syncHandler and dynamicRequire are the same text on both sides and prove by identity: until the translator numbered temporaries per unit, a changed earlier unit shifted theirs, the texts differed, and the identity guard withheld them (the old expectation recorded that defect). defaultCounter proves through the reach key (design/hash-keys.md): the unit is text-identical and reads only the identical `let counter = 0;`, the same reading that proves `untouched`.",
  "b": {
   "bump": "WITNESS",
   "twice": "WITNESS",
