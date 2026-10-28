@@ -1,0 +1,52 @@
+{
+  "scope": [
+    "applied",
+    "build",
+    "cfg_x",
+    "is_base",
+    "is_shape",
+    "make",
+    "make_scale",
+    "make_shift",
+    "mark",
+    "marked",
+    "moved",
+    "opts_y",
+    "ratio",
+    "scaled",
+    "shifted",
+    "tag",
+    "tagged"
+  ],
+  "equal": {
+    "scaled": false,
+    "applied": false,
+    "cfg_x": false,
+    "tagged": false,
+    "is_base": false,
+    "shifted": true,
+    "moved": true,
+    "opts_y": true,
+    "marked": true,
+    "is_shape": true,
+    "make_scale": true,
+    "make_shift": true,
+    "build": true,
+    "mark": true,
+    "ratio": true
+  },
+  "why": "design/reach-keys.md: a same-file reference (a function-value constant called or passed by name, a module constant read as a cell, a tag function, the classes an instanceof test can meet) is keyed by the code it reaches. The changed initializer argument, callee body, tag body and class heritage are reached by scaled, applied, cfgX, tagged and isBase (must not prove); shifted, moved, optsY, marked and isShape reach none of the changed code (proved). ratio is an opaque numeric unit reading the cell count, keyed by its reach, so the edits elsewhere leave it proved.",
+  "b": {
+    "scaled": "WITNESS",
+    "applied": "WITNESS",
+    "cfgX": "WITNESS",
+    "tagged": "WITNESS",
+    "isBase": "WITNESS",
+    "shifted": "PASS-bounded",
+    "moved": "PASS-bounded",
+    "optsY": "PASS-bounded",
+    "marked": "PASS-bounded",
+    "isShape": "PASS-bounded",
+    "ratio": "PASS-bounded"
+  }
+}

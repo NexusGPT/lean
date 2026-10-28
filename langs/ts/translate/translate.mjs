@@ -553,7 +553,8 @@ export function translate(file, fnName, opts = {}) {
       const FD = dtype(typeOf(cb), cb);
       return { code: hoist(`${external('call_args_invoke', ['World', FD, ...argDs], `(World, ${rd})`)}(${[WORLD, ident(cb), ...passed.map(([code]) => code)].join(', ')})`, rd), type: ret };
     }
-    return { code: hoist(`${external(`call_args_${cb.text}`, ['World', ...argDs], `(World, ${rd})`)}(${[WORLD, ...passed.map(([code]) => code)].join(', ')})`, rd), type: ret };
+    const reach = reachOf.reachesFile(cb) ? `_${hash(reachOf.keyText(cb))}` : ''; // a binding of this file (a constant holding a function value) is named by the code it reaches, never by its name alone (design/reach-keys.md)
+    return { code: hoist(`${external(`call_args_${cb.text}${reach}`, ['World', ...argDs], `(World, ${rd})`)}(${[WORLD, ...passed.map(([code]) => code)].join(', ')})`, rd), type: ret };
   }
   // a pure named global as a callback: the reading its direct call has, of the element (and the index for parseInt)
   function namedGlobalLambda(cb, arity, paramTypes) {
@@ -731,7 +732,7 @@ export function translate(file, fnName, opts = {}) {
   function moduleAccessor(n, kind, d) {
     const decl = moduleState(checker, n, sf);
     addPrelude('World', 'type World');
-    const tag = hash(decl.getText(sf));
+    const tag = hash(reachOf.keyText(decl.parent.parent)); // the declaration and the code its initializer reaches (design/reach-keys.md): `const CFG = make(1)` is another cell when `make` changes
     return external(`Module_file_${kind}_${n.text}_${tag}`, kind === 'get' ? ['World'] : ['World', d], `(World, ${kind === 'get' ? d : 'Unit'})`);
   }
   function globalRead(n) {
@@ -1424,6 +1425,7 @@ export function translate(file, fnName, opts = {}) {
     let rd = dtype(rt, n);
     const chainedType = cond ? typeOf(n) : null; // the signature result excludes absence introduced by the call chain
     calleeName = `${spread ? 'call_seq' : 'call_args'}_${calleeName}`; // disjoint call forms: f(...xs) never collides with a function named f_seq(xs)
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && calleeName.endsWith(`_${n.expression.text}`) && reachOf.reachesFile(n.expression)) calleeName += `_${hash(reachOf.keyText(n.expression))}`; // a binding of this file called by name (a constant holding a function value) is named by the code it reaches (design/reach-keys.md)
     const throwingUnitValue = (a) => ts.isIdentifier(a) && originOf(checker, a, sf, currentUnit?.node ?? null).kind === 'unit' && (exceptionUnits.has(a.text) || effectfulUnits.has(a.text)); // stage 5 rank 20: handed to an outside call, an opaque value named by its text
     const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
     if (!isEff) {
@@ -2089,7 +2091,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         const strs = ts.isNoSubstitutionTemplateLiteral(tpl) ? [tpl.text] : [tpl.head.text, ...tpl.templateSpans.map((sp) => sp.literal.text)];
         const holes = ts.isNoSubstitutionTemplateLiteral(tpl) ? [] : tpl.templateSpans.map((sp) => sp.expression);
         const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
-        const id = external(`tag_${mangle(n.tag.getText(sf))}_${holes.length}`, ['seq<string>', ...holes.map(() => anyType())], rd);
+        const reach = reachOf.reachesFile(n.tag) ? `_${hash(reachOf.keyText(n.tag))}` : ''; // a tag of this file is named by the code it reaches (design/reach-keys.md)
+        const id = external(`tag_${mangle(n.tag.getText(sf))}${reach}_${holes.length}`, ['seq<string>', ...holes.map(() => anyType())], rd);
         return `${id}(${[`[${strs.map(strEsc).join(', ')}]`, ...holes.map((h) => expr(h, anyTarget()))].join(', ')})`;
       }
       case K.RegularExpressionLiteral: { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return `${external(`regex_${hash(n.text)}`, [], 'Ext_RegExp')}()`; }
@@ -2295,7 +2298,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
           const eff = effectfulUnits.has(u.name);
           const callCode = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...args].join(', ')})`;
           value = eff ? hoist(callCode, ownR) : callCode;
-        } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${cb.text}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
+        } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${cb.text}${reachOf.reachesFile(cb) ? `_${hash(reachOf.keyText(cb))}` : ''}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
         return promiseGuard(promisePair(convert(value, checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType(), outputT, cb)), R);
       });
     }
@@ -2509,7 +2512,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (op === K.InstanceOfKeyword) {
       const decl = checker.getSymbolAtLocation(n.right)?.valueDeclaration;
       const target = decl && ts.isClassDeclaration(decl) ? checker.getTypeAtLocation(decl.name) : null;
-      return staticTest(n.left, (t) => target ? instanceDecision(t, target, n) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}`, [d], 'bool')}(${v})`);
+      const reach = reachOf.reachesFile(n) ? `_${hash(reachOf.keyText(n))}` : ''; // the classes of this file the test can meet, the right's and every class the left may be an instance of, with their heritage (design/reach-keys.md)
+      return staticTest(n.left, (t) => target ? instanceDecision(t, target, n) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}${reach}`, [d], 'bool')}(${v})`);
     }
     if (op === K.InKeyword) {
       { const pr = inPrototypeReach(checker, sf, n); if (pr) fail(n, `prototype: this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pr.maker.getStart(sf))}), and ${pr.why}; \`in\` reads the prototype; test an own key with Object.prototype.hasOwnProperty.call(o, k)`); }
@@ -5615,7 +5619,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const seen = new Set();
     const visit = (name) => { if (seen.has(name)) return; seen.add(name); for (const dep of numericDeps.get(name) ?? []) visit(dep); };
     visit(u.name);
-    if (moduleUnitShape(u).reads) return createHash('sha256').update(sf.text + '\n' + u.name).digest('hex');
+    if (moduleUnitShape(u).reads) return createHash('sha256').update(reachOf.keyText(u.node) + '\n' + u.name).digest('hex'); // a unit reading module state: the code it reaches, its cells' declarations among them (design/reach-keys.md), not the whole file
     return createHash('sha256').update([...seen].sort().map((name) => `${name}:${infinityText(fns.get(name).fn, fns.get(name).node)}\n${[...(numericSources.get(name) ?? [])].sort().join('\n')}`).join('\n')).digest('hex');
   }
   // the source a unit means: its own text and every same-file unit it reaches, or the whole file when it reads any other
