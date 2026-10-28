@@ -1,0 +1,33 @@
+{
+  "grammar": "block | function-body | arrow-block-body; all wrapper words length 0..3 per feasible seed; parse acceptance only, not semantic validity",
+  "paths": 40,
+  "attempts": 53920,
+  "accepted": 53920,
+  "rejected": 0,
+  "listedOccurrences": 35280,
+  "unlistedOccurrences": 113672,
+  "byDepth": {
+    "0": {
+      "attempts": 1348,
+      "accepted": 1348,
+      "rejected": 0
+    },
+    "1": {
+      "attempts": 4044,
+      "accepted": 4044,
+      "rejected": 0
+    },
+    "2": {
+      "attempts": 12132,
+      "accepted": 12132,
+      "rejected": 0
+    },
+    "3": {
+      "attempts": 36396,
+      "accepted": 36396,
+      "rejected": 0
+    }
+  },
+  "sha256": "60c5e205e2c48b04f0e5903f93e4418cd0063f38d295f339f38fe5f698739ece",
+  "babelChallenges": []
+}

@@ -1,0 +1,16 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const dir=new URL('.',import.meta.url);
+const s=JSON.parse(fs.readFileSync(new URL('schema.json',dir)));
+const r=JSON.parse(fs.readFileSync(new URL('cells.json',dir)));
+assert.deepEqual(new Set(r.map(x=>x.id)),new Set(s.candidates.map(x=>x.id)));
+assert(r.every(x=>typeof x.feasible==='boolean' && x.reason));
+const feasible=r.filter(x=>x.feasible);
+assert(feasible.every(x=>Number.isInteger(x.fixture) && ['listed','not listed','crashed','parse-failed'].includes(x.verdict)));
+const fixtures=JSON.parse(fs.readFileSync(new URL('fixtures.json',dir)));
+if(process.argv.includes('--drop-fixture'))fixtures.pop();
+assert.equal(fixtures.length,feasible.length);
+assert.deepEqual(new Set(fixtures.filter(x=>x.cell).map(x=>x.cell)),new Set(feasible.map(x=>x.id)));
+assert(!r.some(x=>x.feasible&&x.verdict==='parse-failed'));
+assert(r.some(x=>x.parent==='ObjectLiteralExpression'&&x.kind==='MethodDeclaration'&&x.verdict==='not listed'));
+console.log(JSON.stringify({cells:r.length,feasible:feasible.length,infeasible:r.length-feasible.length,fixtures:fixtures.length,verdicts:feasible.reduce((a,x)=>(a[x.verdict]=(a[x.verdict]??0)+1,a),{})}));
