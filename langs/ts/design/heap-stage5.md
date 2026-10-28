@@ -487,7 +487,8 @@ parameter's node: those writes keep alias-mutation, assign-target, index-assign 
 `heap_shapes_outside_node`). The core's record cell holds no key order, so a literal source's key order is not
 observed when the target lacks an optional key (the stage 4 field write's own gap).
 Out: a dictionary behind a const name, a compound dictionary write, a mutator through a call's result, `===` against
-an optional or any other object type. Open: outside the core the ordinary translator throws on (3) (`newValue`,
+an optional or any other object type, a const name for the parameter itself (`const a = values`: alias-mutation, as
+the census-report fixture keeps it), a name for an element (escape `parameter_mutation`). Open: outside the core the ordinary translator throws on (3) (`newValue`,
 translate.mjs, a TypeError, so the whole file loses lane A; never a proof), a guard line there is the lead's.
 Pair `heap_shapes`: `sign` (WITNESS), `stamp` (proved, canonical heap), `finish` (WITNESS), `close` (proved), `cacheOff`
 (proved), `tag` (WITNESS: the key order), `off` (WITNESS: no `>>> 0`), `drop` (proved), `pin` (copy, WITNESS), `share`
@@ -501,4 +502,8 @@ n8n    alias-mutation 93 -> 93,   assign-target 120 -> 120, index-assign 86 -> 8
 The real instances sit on shapes the core holds no cell for: a dictionary of records (`state.chats[id]`, 62 of nexus's
 alias-mutation findings), receiver state (`this.state.turns`), index signatures of any (`IDataObject`), Map values, a
 call result that is an element (`this.activeExecutions[id]`), a non-literal Object.assign source. Each reading admits
-exactly what the core carries; the measured reach waits on those shapes, not on these readings.
+exactly what the core carries; the measured reach waits on those shapes, not on these readings. Heap core census
+(`design/heap-core-census.mjs`, 39 roots, modules unresolved), base against this lane: core 579 -> 579, units 53,918;
+outside the core, exposed 32,906 -> 32,945 and determinate 16,593 -> 16,554 (the guard's new classes: identity
+comparison 42, in a callee 38, write through a call's result 31; nested write through an input 1,246 -> 1,260, since
+Object.assign onto a node below an input now counts as one).
