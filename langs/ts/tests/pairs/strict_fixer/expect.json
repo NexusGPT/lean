@@ -1,0 +1,65 @@
+{
+  "why": "parent.ts holds five type errors under strict mode: two possibly absent receivers (TS18048), an implicit-any parameter, a local written any, and a cast the compiler rejects (TS2352). candidate.ts is exactly what lean convert makes of it: the strict family writes `!` at the two receivers and the proposed type at the two declarations, and lists the cast as a migration. Each edit is erased from the emitted JavaScript, so the converter proves the file by erasure (its rows are PASS-proved, reading erasure). Lane A cannot prove the edits against parent.ts: the parent's own strict error keeps nameLength, cityOf and asCount outside the subset (PASS-bounded, lane B finds no difference), and scaled's parameter changes from any to number (ASK:interface); label reads a boxed any against a number (lane A unproved, PASS-bounded). Once converted, every converted unit is inside the subset and proved (candidate against itself). wrong.ts is the near rewrite the plan named, `u.name?.length ?? 0`: it returns 0 where the parent throws, and lane B witnesses it.",
+  "candidateOnly": [
+    {
+      "file": "candidate.ts",
+      "parent": "candidate.ts",
+      "unit": "nameLength",
+      "verdict": "PASS-proved"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "candidate.ts",
+      "unit": "cityOf",
+      "verdict": "PASS-proved"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "candidate.ts",
+      "unit": "scaled",
+      "verdict": "PASS-proved"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "candidate.ts",
+      "unit": "label",
+      "verdict": "PASS-proved"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "nameLength",
+      "verdict": "PASS-bounded"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "cityOf",
+      "verdict": "PASS-bounded"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "scaled",
+      "verdict": "ASK"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "label",
+      "verdict": "PASS-bounded"
+    },
+    {
+      "file": "candidate.ts",
+      "parent": "parent.ts",
+      "unit": "asCount",
+      "verdict": "PASS-bounded"
+    },
+    {
+      "file": "wrong.ts",
+      "parent": "parent.ts",
+      "unit": "nameLength",
+      "verdict": "WITNESS"
+    }
+  ]
+}
