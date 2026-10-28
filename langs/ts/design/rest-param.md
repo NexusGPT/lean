@@ -16,7 +16,7 @@ Line numbers are the pre-change source at `fea80f8`.
 
 | Draw-to-call path | Actual application boundary |
 | --- | --- |
-| `exec/run.mjs:885` inputPlan, mountSides, observe at `:596` | pickUnit: free function/explicit this `:529`, constructor `:536`, static method `:543`, instance method after route guards/pipes `:559` |
+| `exec/run.mjs:870` inputPlan, mountSides, observe at `:596` | pickUnit: free function/explicit this `:529`, constructor `:536`, static method `:543`, instance method after route guards/pipes `:559` |
 | `exec/replay-args.mjs:45–52` witness replay | pickUnit → observe → the same boundary |
 | `exec/program.mjs:36` environment command Call | pickUnit free-function boundary |
 | `exec/program.mjs:212` both free race starts | pickUnit free-function boundary |
