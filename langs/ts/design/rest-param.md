@@ -38,10 +38,10 @@ Accessors cannot declare rest parameters.
 
 ## Shared reading
 
-`specOf` will retain the declaration's dotDotDotToken as a boolean `rest` on the
-parameter spec. `argsFor(signature, drawn)` in `exec/spec.mjs` will be the only
+`specOf` retains the declaration's dotDotDotToken as a boolean `rest` on the
+parameter spec. `argsFor(signature, drawn)` in `exec/spec.mjs` is the only
 conversion. The pickUnit boundaries and the direct retained-program/race boundaries
-will consult it. Callers of pickUnit keep passing the draw so replay, graph roots,
+consult it. Callers of pickUnit keep passing the draw so replay, graph roots,
 states and witness arguments preserve their existing format, and no caller can
 accidentally expand twice. Guards/pipes keep their parameter-slot reading; the final
 method application expands their resulting tuple.

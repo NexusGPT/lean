@@ -3,24 +3,6 @@
  "findings": [
   {
    "kind": "disagree",
-   "pair": "implicit_any_policy",
-   "unit": "arity",
-   "cause": "a rest parameter: lane B passes the drawn array as one argument",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 0, parent: result: model 3 against 1"
-  },
-  {
-   "kind": "disagree",
-   "pair": "operators",
-   "unit": "sum",
-   "cause": "a rest parameter: lane B passes the drawn array as one argument",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 0, parent: result: model 0 against \"00,1,-1\""
-  },
-  {
-   "kind": "disagree",
    "pair": "element_writes",
    "unit": "bump",
    "cause": "aliased arguments: one object at two places of the input",
