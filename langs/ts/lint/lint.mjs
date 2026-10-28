@@ -2200,9 +2200,9 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (keys?.some((k) => ['constructor', 'prototype', '__proto__'].includes(k))) return v(e, 'prototype', 'this bracket key reaches the prototype chain; read a declared data field');
     if (parts.some(isAny)) return; // opaque: uninterpreted
     const dict = parts.every((t) => hasStringIndex(t) && !checker.getPropertiesOfType(t).length);
-    // a literal key naming a member of Object.prototype (`d["toString"]`): a dictionary that does not own it reads that
-    // member, which no dictionary reading holds (each such name would read one absent value)
-    if (dict && keys?.some((k) => Object.getOwnPropertyNames(Object.prototype).includes(k))) return v(e, 'prototype', `key ${keys.filter((k) => Object.getOwnPropertyNames(Object.prototype).includes(k)).map((k) => JSON.stringify(k)).join(', ')} names a member of Object.prototype, which a dictionary that does not own it reads; test \`Object.prototype.hasOwnProperty.call(d, k)\` first, or use a Map`);
+    // a literal key naming a member of Object.prototype (`d["toString"]`) reads that member on a dictionary that does not
+    // own it: the translator reads it as a value per name, a function of the key (translate.mjs protoValue), so it is a
+    // dictionary key like any other (`constructor` and `__proto__` stay refused above)
     if (dict && (isStr(at) || isAny(at))) return;
     if (parts.every(isRecordish)) {
       if (parts.length !== 1 || parts.length !== (rt.flags & TF.Union ? rt.types.length : 1)) return v(e, 'dynamic-key', 'narrow the record receiver before indexing it');

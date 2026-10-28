@@ -2462,11 +2462,11 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (op === K.QuestionQuestionToken && !bothAbsent(storedType(n.left)) && !isNullish(typeOf(n.left)) && !isNullish(typeOf(n.right)) && !containsEffect(n.right)) {
       const lt = typeOf(n.left);
       if (isAny(lt)) return anyNullishOr(n);
-      { // `d[k] ?? r` on a dictionary typed without absence: an owned key its value, a prototype name the value the
-        // prototype holds (read as the one absent value of V, as the read reads it), any other key r
+      { // `d[k] ?? r` on a dictionary typed without absence: an owned key its value, a prototype name the member the
+        // prototype holds (protoValue, as the read reads it), any other key r
         const src = !isOptional(lt) ? dictSource(n.left) : null, dict = src ? dictRead(src) : null;
         if (!src && !isOptional(lt)) untracedDictValue(n.left, n, 'a nullish default');
-        if (dict && !isOptional(dict.valueType) && !isNullish(dict.valueType) && !isAny(dict.valueType)) { const V = dtype(dict.valueType, n); const r = outerParens(expr(n.right, lt)); return `(if ${dict.key} in ${dict.map} then ${dict.map}[${dict.key}] else ${missingKey(dict, n, () => `${external(`absent_${V}`, [], V)}()`, r)})`; }
+        if (dict && !isOptional(dict.valueType) && !isNullish(dict.valueType) && !isAny(dict.valueType)) { const V = dtype(dict.valueType, n); const r = outerParens(expr(n.right, lt)); return `(if ${dict.key} in ${dict.map} then ${dict.map}[${dict.key}] else ${unownedRead(dict.key, V, n, r)})`; }
       }
       if (!isOptional(lt)) return expr(n.left);
       const l = rawOperand(n.left);
@@ -3197,7 +3197,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if ((hasMethods && !literalRecord(recvT)) || T.startsWith('Ext_') || !props.length || !checker.getPropertyOfType(recvT, name)) {
         // an opaque type, or a field reached through an index signature: an uninterpreted accessor of the DECLARED field
         // type (one declaration per accessor); a read narrowed by a guard takes `.value`
-        if (isDictD(T) && !isAny(ft) && !isOptional(ft) && !isNullish(ft)) { const M = member(recvCode, 'm'), V = dtype(ft, n); return `(if ${strEsc(name)} in ${M} then ${M}[${strEsc(name)}] else ${external(`absent_${V}`, [], V)}())`; } // a dictionary read typed without absence: a missing key reads the one absent value of V, as an index read does
+        if (isDictD(T) && !isAny(ft) && !isOptional(ft) && !isNullish(ft)) { const M = member(recvCode, 'm'), V = dtype(ft, n); return `(if ${strEsc(name)} in ${M} then ${M}[${strEsc(name)}] else ${unownedRead(strEsc(name), V, n)})`; } // a dictionary read typed without absence: a missing key reads as an index read does (unownedRead)
         if (T.startsWith('map<') || isDictD(T)) { const M = isDictD(T) ? member(recvCode, 'm') : recvCode; const found = `(if ${strEsc(name)} in ${M} then Some(${M}[${strEsc(name)}]) else None)`; return isAny(ft) && T.endsWith(', Any>') ? lowerOptionAny(found) : found; } // a missing key of an any-valued dictionary reads undefined, in Any
         const pr = checker.getPropertyOfType(recvT, name);
         const declared = pr ? checker.getTypeOfSymbolAtLocation(pr, pr.valueDeclaration ?? n) : ft;
@@ -3236,6 +3236,13 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (inPrototypeReach(checker, sf, n)) return undef;
     return `(if ${dict.key} == "__proto__" then ${proto('object')} else if ${dict.key} in ${helper('ObjectProtoNames', [])} then ${proto('function')} else ${undef})`;
   }
+  // the member an Object.prototype name reads on a dictionary that does not own it: a value per name, one uninterpreted
+  // function of the key of the value type V, so two names are two values and one name is one value on both sides
+  function protoValue(key, V) { return `${external(`proto_member_${V}`, ['string'], V)}(${key})`; }
+  // what a dictionary read typed V without absence yields for a key the dictionary does not own: a prototype name its
+  // member (protoValue), any other key `undef` (the read's undefined: the one absent value of V, `??` its default); one
+  // text at every such read (the index read, the field read, `??`, the entries loop), so the readings agree on every key
+  function unownedRead(key, V, n, undef = `${external(`absent_${V}`, [], V)}()`) { return missingKey({ key }, n, () => protoValue(key, V), undef); }
   // the dictionary read a value comes from: the read itself, or a const local it initialised whose names (the
   // dictionary and the key) are consts or parameters the unit never assigns, so the read means the same at every use
   function dictSource(e) {
@@ -3346,15 +3353,15 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (d) {
       const ixT = stringIndex(base).type, V = dtype(ixT, n), rd = isAny(typeOf(n)) ? V : dtype(typeOf(n), n);
       // a name of Object.prototype the dictionary does not own reads that member, a value per name: a function of the key
-      // (the other dictionary readings, `??` and the entries loop, still read one absent value for every such name)
-      const protoMember = () => `${external(`proto_member_${V}`, ['string'], V)}(${d.key})`;
+      // (protoValue, the text every dictionary reading gives such a name)
+      const protoMember = () => protoValue(d.key, V);
       // a read typed with the absence a missing key yields (noUncheckedIndexedAccess): a missing key reads undefined, a
       // present key its value, so the read is exact; a null the value type holds stays Null beside the missing key's Undef
-      if (rd === `Option<${V}>`) { usesOption = true; return `(if ${d.key} in ${d.map} then Some(${d.map}[${d.key}]) else ${missingKey(d, n, () => `Some(${external(`absent_${V}`, [], V)}())`, 'None')})`; }
+      if (rd === `Option<${V}>`) { usesOption = true; return `(if ${d.key} in ${d.map} then Some(${d.map}[${d.key}]) else ${missingKey(d, n, () => `Some(${protoValue(d.key, V)})`, 'None')})`; }
       // values typed `T | undefined`: a stored undefined and a missing key both read None, an owned key its value
       if (V.startsWith('Option<') && rd === V && hasAbsence(ixT, TF.Undefined) && !hasAbsence(ixT, TF.Null)) return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${missingKey(d, n, protoMember, 'None')})`;
       if (V.startsWith('Option<') && rd === `Nullish<${innerOf(V)}>` && hasAbsence(ixT, TF.Null) && !hasAbsence(ixT, TF.Undefined)) { const x = `dv${tempCount++}_`; return `(if ${d.key} in ${d.map} then (var ${x} := ${d.map}[${d.key}]; if ${x}.Some? then Nullish.Some(${x}.value) else Nullish.Null) else Nullish.Undef)`; }
-      return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`;
+      return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${unownedRead(d.key, V, n)})`;
     }
     if (isRecordish(base)) {
       // a finite key selects a declared field; receiver and key are evaluated once, in that order
@@ -5502,7 +5509,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       if (cb) requiresL.push(`forall k :: 0 <= k < |${sq}| ==> ${lambda(cb, 1)}(${sq}[k])`);
       exit = `${ix} >= |${sq}|`;
       bind = ts.isIdentifier(x) ? `var ${dn(x.text)}: ${T} := ${sq}[${ix}];\n` : destructure(x, `${sq}[${ix}]`, typeOf(x)).join('\n') + '\n';
-      if (entriesLoop) { const K = dn(entriesLoop.k.text), M = `${dn(entriesLoop.X.text)}.m`; bind = `var ${K}: string := ${sq}[${ix}];\nvar ${dn(entriesLoop.v.text)}: ${entriesLoop.V} := if ${K} in ${M} then ${M}[${K}] else ${external(`absent_${entriesLoop.V}`, [], entriesLoop.V)}();\n`; } // the binding a for-in body writes as \`const v = d[k]\`
+      if (entriesLoop) { const K = dn(entriesLoop.k.text), M = `${dn(entriesLoop.X.text)}.m`; bind = `var ${K}: string := ${sq}[${ix}];\nvar ${dn(entriesLoop.v.text)}: ${entriesLoop.V} := if ${K} in ${M} then ${M}[${K}] else ${unownedRead(K, entriesLoop.V, s)};\n`; } // the binding a for-in body writes as \`const v = d[k]\`
       decreases = `|${sq}| - ${ix}`;
       if (s.__callback?.method === 'reduce') bind += `var ${dn(s.__callback.cb.parameters[0].name.text)} := ${dn(s.__collect.name)};\n`;
       else if (s.__callback?.cb.parameters.length === 2) bind += `var ${dn(s.__callback.cb.parameters[1].name.text)} := ${real ? `(${ix} as real)` : ix};\n`;

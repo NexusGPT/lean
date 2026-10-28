@@ -1,0 +1,27 @@
+{
+ "scope": [
+  "proto_text",
+  "same_name",
+  "entry_or",
+  "entry_in",
+  "proto_plus",
+  "same_value"
+ ],
+ "equal": {
+  "proto_text": false,
+  "same_name": true,
+  "entry_or": false,
+  "entry_in": true,
+  "proto_plus": true,
+  "same_value": false
+ },
+ "why": "An Object.prototype name read on a dictionary that does not own it reads that member (ECMA-262 10.1.8 OrdinaryGet), read as a value per name: one uninterpreted function of the key (proto_member_<V>), the same text at every dictionary reading (the index read, `??`, the field read, the entries loop; translate.mjs unownedRead). protoText reads toString against valueOf (two names, two values: not proved; lane B WITNESS; on the base lane A proved them equal, one absent value for every name). sameName reads one name through `??` and through a const binding tested against undefined (proved). entryOr changes the default of a missing key that is no prototype name, by cases on the key (not proved; WITNESS). entryIn: `??` against the `in` test, which a prototype name passes and whose read then gives the member (proved). protoPlus is untouched (proved). sameValue compares two keys the unit does not know and the candidate takes two inherited prototype names as one value: on the base lane A proved it (12 verified, 0 errors; Node: false against true for toString and valueOf on {}); now not proved. Lane B draws no prototype name as a key, so it stays PASS-bounded there: lane A carries this case.",
+ "b": {
+  "protoText": "WITNESS",
+  "sameName": "PASS-bounded",
+  "entryOr": "WITNESS",
+  "entryIn": "PASS-bounded",
+  "protoPlus": "PASS-bounded",
+  "sameValue": "PASS-bounded"
+ }
+}
