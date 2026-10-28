@@ -9,7 +9,9 @@ shared unknown, check the pair of executions under the product model.
 ## The step
 
 `conformance/run.mjs` (one line in `tests/run.mjs`; `LEAN_PAIRS` limits it as it limits the pairs) runs every pair in
-its own process (`conformance/pair.mjs`, three at a time, a wall-clock bound per pair):
+its own process (`conformance/pair.mjs`, three at a time), and each unit in a process of its own under lane B's bound
+of 120 s per unit: a unit whose awaits spin in microtasks holds its process, which is killed, and the unit is counted
+skipped with that reason, as lane B's spin-bound:
 
 1. Translate both sides exactly as the suite's pair step (`--core --suffix --heap --prelude`, check.mjs `agreeCore`).
 2. Compile each side's model to JavaScript (`dafny translate js --include-runtime`, wrapper erasure off so a value keeps
@@ -30,10 +32,14 @@ its own process (`conformance/pair.mjs`, three at a time, a wall-clock bound per
    - not bridged: the bridge has no reading for the input's type (a generic unit, callback slots, a data type with no
      input reading). Counted apart, never merged with the others.
 5. The product check: on an input where a model reached a part with no body, both models run again with one table for
-   those parts, keyed by the symbol and the canonical text of its arguments, under three seeds (a concrete return type
-   drawn from the seed, an opaque one a term of the symbol and its arguments). When both models make the same
-   applications, agree under every seed, and Node's two observations differ, the shared symbols coupled two different
-   behaviours: a coupling finding.
+   those parts, keyed by the symbol and the canonical text of its arguments (a function value by its code), under eight
+   seeds. A concrete return type is drawn from the seed (every constructor; small integers and strings, and the
+   integer and string constants of the two models' own text); an opaque one is a term of the symbol and its arguments.
+   When both models make the same applications, agree under every seed, and Node's two observations differ, the shared
+   symbols may have coupled two different behaviours. The seeds only sample the theorem's "every reading of the shared
+   symbols": under a lemma lane A proves (the pair's `expect.equal`, which the suite holds), the case is a coupling
+   finding; under a lemma lane A does not prove or withholds, Dafny already found the reading the seeds missed, and the
+   case is listed as sampled agreement, no finding.
 
 A unit's status: disagree if any input disagrees on either side; agree if one input ran to the end and none disagreed;
 else not executable, outside the domain, or not bridged, in that order. A disagreement is a finding even when the
@@ -61,6 +67,11 @@ pair's verdict is right. The step exits 1 on a disagreement or a coupling findin
   disagreement shows only where Node returns `-0` and the model 0.
 - Lane B's rendering sorts a plain object's keys: key order is compared for a Map and a Set, not for a plain object.
 - A thrown value is compared only as thrown: the model's fault holds an opaque value.
+- Arguments after the call are compared with their sharing expanded (two positions holding one object show its contents
+  twice); a second sight of one object inside Node's result renders as a cycle in lane B's observation and is not
+  compared past it (counted).
+- A generator's result (lane B renders the iterator object, not what it yields) and a constructor's result (the
+  instance built on a receiver of fakes) are not bridged.
 - Units that are not executable or not bridged are counted, never run through an invented body.
 
 ## Measurement
