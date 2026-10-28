@@ -1,0 +1,29 @@
+{
+ "scope": [
+  "row",
+  "nav",
+  "nav_reorder",
+  "cell_init",
+  "tally"
+ ],
+ "equal": {
+  "row": true,
+  "nav": false,
+  "nav_reorder": true,
+  "cell_init": false,
+  "tally": true
+ },
+ "why": "the capture table carries three kinds alike in the lint and the interpreter: a hook result whose method is a request (another path at the click is a WITNESS; two pure render consts in another order prove, the held handler keyed by the hook and the method), a ref cell read as a cell (another initial value is another content, a WITNESS through the held handler's key), and a prop read through a nested binding (a fired setter over a ref cell and a nested prop is interpreted, every fire agreeing)",
+ "b": {
+  "Row": "PASS-bounded",
+  "Nav": "WITNESS",
+  "NavReorder": "PASS-bounded",
+  "CellInit": "WITNESS",
+  "Tally": "PASS-bounded"
+ },
+ "handlers": {
+  "Tally": {
+   "interpretable": 1
+  }
+ }
+}

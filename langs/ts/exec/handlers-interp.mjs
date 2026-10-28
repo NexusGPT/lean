@@ -24,6 +24,56 @@ function useStateOf(checker, decl, at) {
   return vd.initializer;
 }
 
+// ----- the capture kinds (react.mjs, captureKind; design/handler-descriptors.md, "Capture kinds") -----
+// the value of a record-read binding element at any depth: the chain of binding elements from its root pattern, the
+// root read (the props, the state value before the handler, or a pure `const` initializer), then each key in order
+function bindingValue(checker, d, root) {
+  const chain = [];
+  let p = d;
+  while (p && ts.isBindingElement(p)) { chain.unshift(p); p = p.parent.parent; }
+  let v = root(p);
+  for (const b of chain) {
+    if (b.dotDotDotToken || b.initializer) no('a rest or defaulted binding element');
+    if (v === null || v === undefined) no('a read of a missing value');
+    if (ts.isArrayBindingPattern(b.parent)) { v = v[b.parent.elements.indexOf(b)]; continue; }
+    const key = b.propertyName ? (ts.isIdentifier(b.propertyName) || ts.isStringLiteral(b.propertyName) ? b.propertyName.text : no('a computed binding name')) : ts.isIdentifier(b.name) ? b.name.text : no('a nested pattern without a name');
+    v = v[key];
+  }
+  return v;
+}
+// the hook slots React numbers in the unit's render (exec/run.mjs makeReact: one per call of these, in call order)
+const SLOT_HOOKS = new Set(['useState', 'useEffect', 'useRef', 'useId', 'useContext', 'useReducer', 'useLayoutEffect']);
+// the slot of the `at`-th useRef call of the unit, numbered statically: every slot-taking React hook of the unit is a
+// statement of its body, in order, and no same-file `use*` function is called; the numbering is confirmed against the
+// positions the run placed for useState (statePos) and the box found must be a ref box
+function refSlot(model, at, statePos, slots) {
+  const { checker, unit } = model;
+  const calls = [];
+  const walk = (n, top) => {
+    if (ts.isCallExpression(n)) {
+      const kind = reactHook(checker, n);
+      if (kind && !SLOT_HOOKS.has(kind) && !['useMemo', 'useCallback'].includes(kind)) no(`a React hook the slot numbering does not know (${kind})`);
+      if (SLOT_HOOKS.has(kind)) { if (!top) no('a React hook outside a statement of the render'); calls.push({ n, kind }); }
+      else if (ts.isIdentifier(n.expression) && /^use[A-Z0-9]/.test(n.expression.text)) { const d = checker.getSymbolAtLocation(n.expression)?.declarations?.[0]; if (d && d.getSourceFile() === n.getSourceFile()) no('a same-file hook takes slots of its own'); }
+    }
+    ts.forEachChild(n, (c) => walk(c, false));
+  };
+  for (const st of unit.body.statements) {
+    const call = ts.isVariableStatement(st) && st.declarationList.declarations.length === 1 ? st.declarationList.declarations[0].initializer : ts.isExpressionStatement(st) ? st.expression : null;
+    if (call && ts.isCallExpression(call) && SLOT_HOOKS.has(reactHook(checker, call))) { calls.push({ n: call, kind: reactHook(checker, call) }); call.arguments.forEach((a) => walk(a, false)); continue; }
+    walk(st, false);
+  }
+  let refs = 0, slot = null;
+  for (const [i, c] of calls.entries()) {
+    if (c.kind === 'useState') { const placed = statePos?.get(`${model.file}:${c.n.pos}`); if (placed !== i) no('the slot numbering disagrees with the run'); }
+    if (c.kind === 'useRef' && refs++ === at) slot = i;
+  }
+  if (slot === null) no('no useRef call at that place');
+  const box = slots?.[slot];
+  if (!box || typeof box !== 'object' || Object.keys(box).length !== 1 || !Object.hasOwn(box, 'current')) no('the slot holds no ref box');
+  return box;
+}
+
 // the readable descriptors of a unit's handler attributes, keyed by the attribute value's position in the file
 export function descriptorsOf(file, unit, { project = false } = {}) {
   const map = new Map(), abs = path.resolve(file);
@@ -70,6 +120,15 @@ function evaluator(model, fire) {
       const k = h.params.indexOf(s); if (k >= 0) return args[k];
       if (h.locals.has(s)) return ev(h.locals.get(s), bind, depth + 1);
       const d = s.valueDeclaration ?? s.declarations?.[0];
+      const kind = h.captures?.get(s);
+      if (kind?.kind === 'hook-result') no('a hook result: the outside answers its reads');
+      if (kind?.kind === 'ref-cell') return refSlot(model, kind.at, statePos, slotsBefore); // the box itself: `.current` is read now, the cell's value at the fire
+      if (kind?.kind === 'record-read') return bindingValue(checker, d, (root) => { // a binding element at any depth of the props, of a state value, or of a pure const
+        if (ts.isParameter(root)) { if (root !== p0) no('a parameter other than the props'); return props; }
+        const sc = ts.isVariableDeclaration(root) && root.initializer && ts.isCallExpression(root.initializer) && reactHook(checker, root.initializer) === 'useState' ? root.initializer : null;
+        if (sc) return [slotsBefore[slotOf(sc)]];
+        return ev(root.initializer, bind, depth + 1);
+      });
       const call = useStateOf(checker, d, 0); if (call) return slotsBefore[slotOf(call)];
       if (p0 && d === p0 && ts.isIdentifier(p0.name)) return props;
       if (p0 && d && ts.isBindingElement(d) && d.parent === p0.name && ts.isObjectBindingPattern(p0.name) && !d.dotDotDotToken && !d.initializer && ts.isIdentifier(d.name)) {
@@ -77,7 +136,7 @@ function evaluator(model, fire) {
         return props == null ? no('no props') : props[key];
       }
       if (d && ts.isVariableDeclaration(d) && (ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && ts.isIdentifier(d.name) && d.initializer && renderPure(checker, d.initializer)) return ev(d.initializer, bind, depth + 1);
-      return no(`${n.text} is not an atom the interpreter reads`);
+      return no(`${n.text} is no capture kind and no atom the interpreter reads`); // react.mjs captureKind: a value handed on, written through, or from a call that is no hook
     }
     if (ts.isPropertyAccessExpression(n) && !n.questionDotToken) { const o = ev(n.expression, bind, depth + 1); if (o === null || o === undefined) no('a read of a missing value'); return o[n.name.text]; }
     if (ts.isPrefixUnaryExpression(n)) { const v = ev(n.operand, bind, depth + 1); if (n.operator === K.MinusToken) return -v; if (n.operator === K.ExclamationToken) return !v; return no('an operator outside the pure set'); }
@@ -107,12 +166,22 @@ function evaluator(model, fire) {
   return ev;
 }
 
+// a ref cell the handler hands to a call (`save(r)`, not `save(r.current)`) may be written by that call before the box is
+// read: such a handler is not interpretable
+function handedCells(model, h) {
+  const cells = [...(h.captures ?? new Map())].filter(([, k]) => k.kind === 'ref-cell').map(([s]) => s);
+  if (!cells.length) return;
+  const bare = (n) => { if (ts.isIdentifier(n) && cells.includes(model.checker.getSymbolAtLocation(n)) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.expression === n)) no('a ref cell handed to a call'); ts.forEachChild(n, bare); };
+  for (const st of h.steps) if (st.kind !== 'return') [...(st.recv ?? []), ...st.args].forEach(bare);
+}
+
 // the slots the descriptor predicts: the slots before the handler, each set step applied in order (an updater to the
 // running value, so chained updaters compose); call steps are the world's, not the slots'
 function predict(model, fire) {
   const { h, slotsBefore, statePos } = fire;
   const ev = evaluator(model, fire);
   const running = slotsBefore.slice();
+  handedCells(model, h);
   for (const st of h.steps) {
     if (st.kind === 'call') { if (st.name === 'value') no('a call of a local function value, which may set slots'); continue; }
     if (st.kind !== 'set') continue;
@@ -216,6 +285,9 @@ function keyTerms(model, h, { env, props }) {
       if (bind.has(s)) return { term: { prev: true } }; // an updater's parameter: the slot's running value
       const k = h.params.indexOf(s); if (k >= 0) return { term: { param: k } }; // the event, read when the handler runs
       if (h.locals.has(s)) return term(h.locals.get(s), bind, depth + 1); // a handler const stands for its initializer (handlers.mjs keeps no call between them)
+      const kind = h.captures?.get(s);
+      if (kind?.kind === 'hook-result') return { term: { hook: kind.hook, at: kind.at } }; // the k-th call of the hook in the unit: its methods are requests named by the hook and the method
+      if (kind?.kind === 'ref-cell') { const box = refSlot(model, kind.at, env.statePos, env.hookSlots ?? []); return { term: { cell: kind.at, now: render(box.current) } }; } // the cell, with what it holds now; `.current` stays a read when the handler runs
       return { known: true, value: capture(n, new Map()) }; // a capture: the value the closure holds now
     }
     if (ts.isPropertyAccessExpression(n) && !n.questionDotToken) {
@@ -328,7 +400,7 @@ export function handlerKey(fn, { env, props, unit }) {
 
 // the first difference between two rendered trees' handler keys, in words: the prop, then the first step the two
 // descriptors disagree on (a set present on one side only names its slot), or the escape that kept a text key
-const termText = (t) => (!t || typeof t !== 'object' ? JSON.stringify(t) : Object.hasOwn(t, 'v') ? (t.v && typeof t.v === 'object' && !t.v.$undefined && !t.v.$nan ? 'a captured object' : JSON.stringify(t.v)) : Object.hasOwn(t, 'param') ? `event${t.param ? `#${t.param}` : ''}` : Object.hasOwn(t, 'prev') ? 'prev' : Object.hasOwn(t, 'get') ? `${termText(t.of)}.${t.get}` : Object.hasOwn(t, 'op') ? `${t.op}(${t.args.map(termText).join(', ')})` : JSON.stringify(t));
+const termText = (t) => (!t || typeof t !== 'object' ? JSON.stringify(t) : Object.hasOwn(t, 'v') ? (t.v && typeof t.v === 'object' && !t.v.$undefined && !t.v.$nan ? 'a captured object' : JSON.stringify(t.v)) : Object.hasOwn(t, 'param') ? `event${t.param ? `#${t.param}` : ''}` : Object.hasOwn(t, 'prev') ? 'prev' : Object.hasOwn(t, 'hook') ? `${t.hook}()#${t.at}` : Object.hasOwn(t, 'cell') ? `ref#${t.cell}(holding ${termText({ v: t.now })})` : Object.hasOwn(t, 'get') ? `${termText(t.of)}.${t.get}` : Object.hasOwn(t, 'op') ? `${t.op}(${t.args.map(termText).join(', ')})` : JSON.stringify(t));
 const entryText = (slot, e) => `slot ${slot} ${Object.hasOwn(e, 'updater') ? `by updater ${termText(e.updater)}` : `to ${termText(e.next)}`}`;
 const stepText = (s) => (!s ? 'nothing' : s.sets ? `sets ${s.sets.map(([slot, es]) => es.map((e) => entryText(slot, e)).join(', ')).join(', ')}` : s.call ? `calls ${s.call}(${s.args.map(termText).join(', ')})${s.recv.length ? ` on ${s.recv.map(termText).join(', ')}` : ''}` : `returns ${termText(s.return)}`);
 function stepDifference(P, C) {

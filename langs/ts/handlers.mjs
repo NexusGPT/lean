@@ -3,7 +3,7 @@
 // a list of steps over TypeScript nodes. The reader knows TypeScript only: the Dafny rendering lives in translate.mjs,
 // the application to the hook slots in exec/handlers-interp.mjs.
 import { ts, originOf } from './common.mjs';
-import { reactHook, arrowOf, renderPure } from './react.mjs';
+import { reactHook, arrowOf, renderPure, closureReads, captureKind } from './react.mjs';
 const K = ts.SyntaxKind;
 
 // a deferred call's callee named outside the file: the import it comes from, or the global
@@ -26,7 +26,7 @@ function usedByReact(checker, cb, unitBody) {
   return used;
 }
 
-// readHandler(checker, sf, cb, ctx) -> null | { params: [symbol], locals: Map<symbol, initializer>, steps }
+// readHandler(checker, sf, cb, ctx) -> null | { params: [symbol], locals: Map<symbol, initializer>, steps, captures: Map<symbol, capture kind> }
 //   ctx.isSetter(symbol) -> slot key | null   (a slot setter of the unit: the step is a set, not a call)
 //   ctx.unitBody                              (where the arrow must be used as a handler)
 //   ctx.unitNode                              (the unit, for originOf)
@@ -89,7 +89,21 @@ export function readHandler(checker, sf, cb, ctx) {
     } else if (returns && (!e || renderPure(checker, e))) steps.push({ kind: 'return', value: e ?? null });
     else return no(e && ts.isCallExpression(e) ? 'handler-argument-not-pure' : `handler-expression:${e ? ts.SyntaxKind[e.kind] : 'none'}`);
   }
-  return { params, locals, steps };
+  // the capture table entry of every value the handler captures (react.mjs, captureKind): the lint carries the same kinds
+  // kinds, also the captures a render `const` the handler reads stands for (its pure initializer is read in its place)
+  const captures = new Map(), seen = new Set(), work = closureReads(checker, cb);
+  while (work.length) {
+    const id = work.shift(), sym = checker.getSymbolAtLocation(id);
+    if (!sym || seen.has(sym)) continue;
+    seen.add(sym);
+    const k = captureKind(checker, id, cb, ctx.unitBody); if (k) { captures.set(sym, k); continue; }
+    const d = sym.valueDeclaration;
+    if (d && ts.isVariableDeclaration(d) && (ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && d.initializer && renderPure(checker, d.initializer) && d.getSourceFile() === sf) {
+      const walk = (n) => { if (ts.isIdentifier(n) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n)) work.push(n); ts.forEachChild(n, walk); };
+      walk(d.initializer);
+    }
+  }
+  return { params, locals, steps, captures };
 }
 
 // the symbols a node mentions, a local followed into its initializer

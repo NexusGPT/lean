@@ -29,7 +29,7 @@ const LIBRARY_RESULT_MORE = {
   'Array.prototype.find': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
 };
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText } from '../library-rows.mjs';
-import { reactHook, arrowOf, closureReads } from '../react.mjs';
+import { reactHook, arrowOf, closureReads, captureKind } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 
@@ -1906,11 +1906,13 @@ export function lintFile(file, ranges = null, opts = {}) {
   // JSX: an element is a value (a tag, a record of attributes, a list of children). A tag names a component or an
   // intrinsic element; a handler attribute is a callback value keyed by its text; every other attribute and every child
   // expression is an ordinary expression
-  // a deferred handler captures values; a mutable render binding would need a shared cell
+  // a deferred handler captures values; a mutable render binding would need a shared cell. The capture table (react.mjs,
+  // captureKind) names the kinds carried as they are: a hook result whose methods are requests, a record read, a ref cell
   function reactCapture(e) {
     const cb = arrowOf(checker, e);
     if (!cb) return;
     for (const id of closureReads(checker, cb)) {
+      if (captureKind(checker, id, cb, currentFn?.body)) continue; // a carried capture kind: a hook result's requests, a record read, a ref cell read (react.mjs, the capture table)
       const sym = checker.getSymbolAtLocation(id), d = sym?.valueDeclaration;
       let unsafe = d && (d.pos > cb.pos || (ts.isVariableDeclaration(d) && !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)));
       const root = (n) => { while (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isParenthesizedExpression(n)) n = n.expression; return n; };
