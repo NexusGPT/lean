@@ -247,6 +247,14 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);
   }
+  // the states lane B reached (bound.states, for the gate's rendering check): one per input that ran on both sides, each
+  // with its index and its arguments as drawn; `states` in expect.json names the unit and the count of inputs it ran
+  for (const [unit, want] of Object.entries(exp.states ?? {})) {
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    const st = got?.bound?.states;
+    const ok = Array.isArray(st) && st.length === want && st.every((x, i) => x.input === i && Array.isArray(x.args));
+    add('pair', name, `states ${unit} ${want}`, ok, Array.isArray(st) ? `${st.length} states, first ${JSON.stringify(st[0] ?? null).slice(0, 80)}` : `no states (${got?.verdict ?? 'no result'})`);
+  }
   // the retained-state programs lane B ran for a class unit (programs.mjs): the verdict, the shrunk program's length, whether the divergence names this unit
   for (const [unit, want] of Object.entries(exp.programs ?? {})) {
     let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
