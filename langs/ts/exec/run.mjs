@@ -2,7 +2,7 @@
 // Lane B: bounded differential execution of one unit, parent against candidate.
 //
 //   node run.mjs --parent <file.ts> --candidate <file.ts> --unit <name|Class.method> [--n 200] [--seed 1]
-//                [--out result.json] [--project <tsconfig>|--no-project] [--ms 2000]
+//                [--out result.json] [--project <tsconfig>|--no-project] [--ms 2000] [--unit-seconds 120]
 //
 // Both files are compiled with the vendored TypeScript compiler and loaded in their own sandbox (node:vm) with the
 // same fakes (fake.mjs): relative imports inside the same package are compiled and loaded too; every other import,
@@ -20,6 +20,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
+import { fork } from 'node:child_process';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues } from './spec.mjs';
@@ -281,8 +282,12 @@ async function observeJsx(v, env) {
 
 // the breadcrumb: the phase the harness is in, the input, and the file being loaded, so that a run whose event loop
 // drains before a verdict names what was pending
-export const crumb = { phase: 'start', input: null, loading: null };
-const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; };
+export const crumb = { phase: 'start', input: null, loading: null, side: null };
+// a listener of the breadcrumb (worker.mjs sends each step to the process that holds the bound, so a killed run names where it was)
+let crumbListener = null;
+export const onCrumb = (f) => { crumbListener = f; };
+const tellCrumb = () => { if (crumbListener) crumbListener({ phase: crumb.phase, input: crumb.input, side: crumb.side, loading: crumb.loading }); };
+const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; crumb.side = null; tellCrumb(); };
 export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
 // a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
 // will settle, no timer or handle left), the run reports ASK naming what was pending, writes it to --out, and exits 2
@@ -748,9 +753,71 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
 
 export const traceWithSites = (records) => records.map((r) => withSite(render(r), r.site));
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
+// ----- the bound of a unit: lane B runs in a child process, killed when the bound passes (design/microtask-worker.md) -----
+// The vm watchdog (guardedCall) interrupts only the synchronous call; a unit whose awaits settle in microtasks keeps
+// the host in one microtask drain, where no timer fires and no signal handler runs. So lane B runs each unit in a child
+// process (worker.mjs) under a wall-clock bound: when the bound passes, the child is killed with SIGKILL and the unit's
+// verdict is ASK naming the bound (spin-bound), with the step, the input and the side that was running. The child reads
+// only the lean sources and the trees it is given (Node's permission model: --permission with --allow-fs-read), writes
+// nothing (LEAN_LIBRARY_CASES excepted), and starts no process, worker or addon; the network is the sandbox's fakes
+// only, since this Node's permission model has no network switch: a network deny is the gate's profile, not lean's.
+export const UNIT_SECONDS = 120; // the bound of one unit when no flag and no run budget names one
+let unitSecondsDefault = UNIT_SECONDS;
+export const setUnitSeconds = (s) => { unitSecondsDefault = unitSecondsValue(s); }; // pr.mjs: the run's per-unit bound
+export function unitSecondsValue(s) {
+  if (s === undefined || s === null) return unitSecondsDefault;
+  const n = Number(s);
+  if (String(s).trim() === '' || !Number.isFinite(n) || n <= 0) throw new Error('--unit-seconds must be a positive number');
+  return n;
+}
+const workerFile = path.join(path.dirname(new URL(import.meta.url).pathname), 'worker.mjs');
+const leanSources = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'); // langs/ts: the code, the vendored compiler, the tables
+// the tree a unit's file is given: the nearest folder above it holding .git (the checkout), else its package root
+export function treeOf(file) {
+  let d = path.dirname(path.resolve(file));
+  for (;;) { if (fs.existsSync(path.join(d, '.git'))) return d; const up = path.dirname(d); if (up === d) break; d = up; }
+  return findRoot(file);
+}
+function workerReads(opts) {
+  const read = new Set([leanSources]);
+  for (const f of [opts.parent, opts.candidate]) if (f) read.add(treeOf(f));
+  if (typeof opts.values === 'string') read.add(path.resolve(opts.values));
+  if (typeof opts.project === 'string') read.add(path.dirname(path.resolve(opts.project)));
+  if (process.env.LEAN_LIBRARY_TABLE) read.add(path.resolve(process.env.LEAN_LIBRARY_TABLE));
+  const out = new Set();
+  for (const p of read) { out.add(p); try { out.add(fs.realpathSync(p)); } catch { /* a path that does not exist reads nothing */ } }
+  return [...out];
+}
+function workerFlags(opts) {
+  const flags = ['--permission', ...workerReads(opts).map((p) => `--allow-fs-read=${p}`)];
+  if (process.env.LEAN_LIBRARY_CASES) { const d = path.resolve(process.env.LEAN_LIBRARY_CASES); fs.mkdirSync(d, { recursive: true }); flags.push(`--allow-fs-write=${d}`, `--allow-fs-read=${d}`); }
+  return [...process.execArgv.filter((x) => !/^--(permission|allow-)/.test(x)), ...flags];
+}
+const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefined ? ` (input ${c.input})` : ''}${c.side ? `, the ${c.side} side running` : ''}${c.loading ? `, loading ${c.loading}` : ''}` : 'start');
+// a unit whose parent does not hold it runs as today (new-unit.mjs starts its own bounded process); every other unit runs
+// in the child under the bound
+const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit);
+export async function runPair(opts) {
+  if (opts.inProcess || !parentHolds(opts.parent, opts.unit)) return runPairInProcess(opts);
+  const seconds = unitSecondsValue(opts.unitSeconds);
+  const { unitSeconds, inProcess, ...rest } = opts;
+  return new Promise((resolve) => {
+    let last = null, done = false;
+    const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
+    const end = (res) => { if (done) return; done = true; clearTimeout(timer); resolve(res); };
+    const timer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch { /* already gone */ }
+      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its wall-clock bound (timeout) of ${seconds} s per unit (--unit-seconds); the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
+    }, seconds * 1000);
+    child.on('message', (m) => { if (m && m.crumb) last = m.crumb; else if (m && Object.hasOwn(m, 'result')) end(m.result); });
+    child.on('error', (e) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker failed to start: ${String(e && e.message).slice(0, 200)}` }));
+    child.on('exit', (code, signal) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker exited (${signal ?? `code ${code}`}) before a verdict; pending: ${crumbOf(last)}` }));
+    child.send({ opts: rest });
+  });
+}
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
-export async function runPair(opts) {
+export async function runPairInProcess(opts) {
   const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
   const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
   for (const witness of res.witnesses ?? []) {
@@ -837,7 +904,8 @@ async function runPairOnce(opts) {
   // a witness's args: the input as drawn, before either call; `parent` and `candidate` keep what each call left. The two
   // sides draw their own copies from one seed, so their drawn renderings are equal; one that differs is named beside it
   const drawnOf = (sides) => ({ args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
-  const observeBoth = (sides, record) => (record ? recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]) : (async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)])());
+  const observeSide = (sides, name) => { crumb.side = name; tellCrumb(); return observe(sides[name], spec, sides[name].inputs, ms); }; // the side being observed joins the breadcrumb
+  const observeBoth = (sides, record) => (record ? recording(records, async () => [await observeSide(sides, 'parent'), await observeSide(sides, 'candidate')]) : (async () => [await observeSide(sides, 'parent'), await observeSide(sides, 'candidate')])());
   // retained state: for a class unit, programs of method calls on one constructed instance per side run first (programs.mjs); a divergence in a program that calls this unit is its WITNESS, one elsewhere rides in the certificate for the unit it names
   let programRun = null;
   if (spec.isMethod && !spec.isStatic && !spec.accessor && spec.unit.split('.')[1] !== 'constructor') {
@@ -1082,7 +1150,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const guard = verdictGuard(opt('--out', null));
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)), values: valuesOpt(opt('--values', undefined)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
   const out = opt('--out', null);
   guard.settle();
   const text = JSON.stringify(res, null, 1);

@@ -5,7 +5,7 @@
 // An unchanged caller of a changed function gets a row too when lane B finds a WITNESS through that callee.
 //
 //   node pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--preview] [--out report.md] [--json report.json]
-//               [--time-budget seconds] [--unit-budget n] [--reuse] [--fresh] [--cache-dir <dir>] [--runs-dir <dir>]
+//               [--time-budget seconds] [--unit-budget n] [--unit-seconds s] [--reuse] [--fresh] [--cache-dir <dir>] [--runs-dir <dir>]
 //               [--n 100] [--dafny-seconds 30] [--project <tsconfig>|--no-project] [--adapters scope.json]
 //
 // A changed signature proves only through an adapter the developer declares: the scope door (`--adapters`, a scope
@@ -30,7 +30,7 @@ import { ts, loadProgram, loadProgramOptions, topLevelFunctions } from './common
 import { check } from './check.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
-import { runPair } from './exec/run.mjs';
+import { runPair, setUnitSeconds, UNIT_SECONDS } from './exec/run.mjs';
 import { callersOf, calleesOf } from './exec/callees.mjs';
 import { findValues, readValues, VALUES_FILE } from './exec/spec.mjs';
 
@@ -361,6 +361,7 @@ export async function prReport(opts) {
   const { repo, base, head = 'WORKTREE', n = 100, seed = 1, deep = false, dafnySeconds = 30, project = true, scope = new Set(), adapters = null } = opts;
   const timeBudget = budgetValue(opts.timeBudget === undefined ? null : opts.timeBudget, '--time-budget');
   const unitBudget = budgetValue(opts.unitBudget === undefined ? null : opts.unitBudget, '--unit-budget', true);
+  setUnitSeconds(opts.unitSeconds ?? (timeBudget ? Math.min(timeBudget, UNIT_SECONDS) : UNIT_SECONDS)); // the per-unit bound (exec/run.mjs runPair): lane B of one unit ends there as ASK spin-bound; the run budget is checked before each unit, so a run ends within its budget plus one unit's bound and lane A
   const started = performance.now();
   const rows = [], temps = [];
   const changed = [], callers = [], heap = [];
@@ -558,7 +559,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
   if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]'); process.exit(2); }
   const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
-  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
+  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), unitSeconds: opt('--unit-seconds', null) ?? undefined, reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
   const md = a.includes('--preview') ? intakeMarkdown(rows) : markdown(rows, base, head);
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(a.includes('--preview') ? rows : reportJSON(rows), null, 1));
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);
