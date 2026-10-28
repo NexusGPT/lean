@@ -6,4 +6,3 @@ export type H = { accept: string; [k: string]: string | undefined };
 export function openKey(h: H, k: string): string | undefined { const c: H = { accept: h.accept }; return c[k]; }
 export function dotKey(h: H): string | undefined { const c: H = { accept: h.accept }; return c.other; }
 export function inKey(h: H, k: string): boolean { const c: H = { accept: h.accept }; return k in c; }
-export function keysH(h: H): number { const c: H = { accept: h.accept }; let n = 0; for (const k in c) n = n + 1; return n; }

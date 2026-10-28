@@ -1722,8 +1722,8 @@ export function spreadReadWhy(checker, lit) {
     if (ts.isSpreadAssignment(p)) {
       const st = checker.getTypeAtLocation(p.expression);
       const hit = [...before].find((k) => optional(st, k));
-      if (!hit && unknownBefore && [...keysOf(st)].some((k) => optional(st, k))) return 'a computed key given before this spread may name a key the source lets be missing or undefined, which the reading tells apart nowhere; spread first and write the members after it';
-      if (hit) return `the key ${JSON.stringify(hit)} given before this spread survives only where the source lacks it, and the source's type lets it be missing or undefined there, which the reading tells apart nowhere; spread first and write the members after it`;
+      // a key given before a spread (named or computed) is carried by the uninterpreted merge of the values up to the last spread (heap-3's reading, translate.mjs objectLit): a function of the sources whole, so no field of it is proved and a missing optional field against one holding undefined is never told apart wrongly; the earlier refusal here is lifted (28 Oct)
+      void hit;
       for (const k of keysOf(st)) before.add(k);
       continue;
     }
