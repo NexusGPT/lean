@@ -22,7 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, normaliseApplyCalls, topLevelFunctions, lineOf, colOf, overlaps, isArrayLike } from './common.mjs';
+import { ts, loadProgram, normaliseApplyCalls, topLevelFunctions, lineOf, colOf, overlaps, isArrayLike, originOf } from './common.mjs';
 import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, readingOfFinding, readingOfRefusal, translatorText, withdrawnReason, withdrawalKey, currentVersion } from './readings.mjs';
 import { memberRow } from './library-rows.mjs';
 import { moduleState } from './module-forms.mjs';
@@ -52,15 +52,58 @@ function templateOf(n, sf) {
   const row = /^memberRow\('([a-z-]+)'\)\.message\(/.exec(n.getText(sf));
   if (row && memberRow(row[1])?.message) return memberRow(row[1]).message('${}', '${}');
   if (ts.isConditionalExpression(n)) return templateOf(n.whenTrue, sf);
+  if (ts.isIdentifier(n)) { // a name bound to one of the decisions below: its text
+    let fn = n.parent; while (fn && !ts.isFunctionLike(fn) && !ts.isSourceFile(fn)) fn = fn.parent;
+    let init = null; const w = (x) => { if (init) return; if (ts.isVariableDeclaration(x) && ts.isIdentifier(x.name) && x.name.text === n.text && x.initializer && x.pos < n.pos) init = x.initializer; ts.forEachChild(x, w); }; if (fn) w(fn);
+    if (init && ts.isConditionalExpression(init)) init = ts.isCallExpression(init.whenTrue) ? init.whenTrue : init.whenFalse;
+    const callee = init && ts.isCallExpression(init) && ts.isIdentifier(init.expression) ? init.expression.text : null;
+    if (callee && Object.hasOwn(SHARED_TEXTS, callee)) return SHARED_TEXTS[callee];
+  }
   return null;
 }
+// the texts of the decisions lower.mjs takes for both deciders, for the audit of the sites that hand them on
+const SHARED_TEXTS = { valueAssignmentWhy: 'write this assignment as a statement' };
 
+// the names both deciders import from a shared module (common.mjs and its kin), and the decisions lower.mjs takes for
+// both: a site whose statement calls one is decided once (the named-then pattern); any other is one decider's, which the
+// other reads through the record
+const LOWER_DECISIONS = new Set(['installsFunction', 'loneSurrogate', 'nullPrototypeCreate', 'valueAssignmentWhy']);
+function importedNames(sf) {
+  const out = new Set();
+  for (const st of sf.statements) if (ts.isImportDeclaration(st) && st.importClause?.namedBindings && ts.isNamedImports(st.importClause.namedBindings) && !/lint\.mjs|translate\.mjs/.test(st.moduleSpecifier.text)) for (const e of st.importClause.namedBindings.elements) out.add(e.name.text);
+  return out;
+}
 export function auditSites(root = here) {
   const sites = [];
   const files = [['lint/lint.mjs', 'lint'], ['translate/translate.mjs', 'translate']];
-  for (const [rel, who] of files) {
-    const text = fs.readFileSync(path.join(root, rel), 'utf8');
-    const sf = ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const parsed = files.map(([rel]) => ts.createSourceFile(rel, fs.readFileSync(path.join(root, rel), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS));
+  const [li, tr] = parsed.map(importedNames);
+  const sharedNames = new Set([...li].filter((x) => tr.has(x) && !['ts', 'lineOf', 'colOf', 'loadProgram', 'normaliseApplyCalls', 'originOf', 'isArrayLike', 'topLevelFunctions', 'unitOf', 'hintsOf', 'dn', 'fileUsesReals', 'admitUnits', 'lintFindings', 'unparen', 'applyCall'].includes(x))); // applyCall: normaliseApplyCalls reads it before both deciders, so a call it rewrote is no decision of theirs // the helpers every reading uses are no decision
+  // the decision a site takes: the shared names called in its statement, in the tests that guard it (the if conditions and
+  // conditional tests around it), and in the initializers of the locals those name (`const why = shared(...)`, `cs.why`)
+  const isShared = (name) => sharedNames.has(name) || LOWER_DECISIONS.has(name);
+  const deciders = (n, sf) => {
+    let st = n; while (st && !ts.isStatement(st)) st = st.parent;
+    const scope = [st];
+    for (let c = st, p = st?.parent; p && !ts.isFunctionLike(p); c = p, p = p.parent) { if (ts.isIfStatement(p) && c !== p.expression) scope.push(p.expression); if (ts.isBlock(p) && p.parent && ts.isIfStatement(p.parent)) continue; if (!ts.isIfStatement(p) && !ts.isBlock(p)) break; }
+    for (let c = n; c && c !== st; c = c.parent) if (c.parent && ts.isConditionalExpression(c.parent) && c.parent.condition !== c) scope.push(c.parent.condition);
+    let fn = n.parent; while (fn && !ts.isFunctionLike(fn) && !ts.isSourceFile(fn)) fn = fn.parent;
+    // the locals in scope at the site: declared before it in a block (or a function body) that holds it
+    const holds = (b) => b.pos <= n.pos && n.end <= b.end;
+    const scopeOf = (y) => { let b = y.parent; while (b && !(ts.isBlock(b) || ts.isSourceFile(b) || ts.isCaseClause(b) || ts.isDefaultClause(b) || ts.isFunctionLike(b) || ts.isIterationStatement(b, false))) b = b.parent; return b; };
+    const locals = new Map(); { const w = (y) => { if (ts.isVariableDeclaration(y) && ts.isIdentifier(y.name) && y.initializer && y.pos < n.pos && scopeOf(y) && holds(scopeOf(y))) locals.set(y.name.text, y.initializer); if (holds(y) || y.end < n.pos) ts.forEachChild(y, w); }; w(sf); } // every scope that holds the site, the file's own included
+    const out = new Set(), seen = new Set();
+    const scan = (x) => { const w = (y) => { if (ts.isCallExpression(y)) { const f = y.expression; if (ts.isIdentifier(f) && isShared(f.text)) out.add(f.text); if (ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && isShared(f.expression.text)) out.add(f.expression.text); } if (ts.isIdentifier(y) && isShared(y.text) && y.parent && ts.isCallExpression(y.parent) && y.parent.arguments.includes(y)) out.add(y.text); // a decision handed as a callback (`find(literalProtoMember)`)
+      if (ts.isIdentifier(y) && locals.has(y.text) && !seen.has(y.text)) { // a local the site reads: a value it was bound to, or a wrapper whose body is one call (`const isNullCreate = (n) => nullPrototypeCreate(...)`); never a helper's whole body
+        seen.add(y.text); const init = locals.get(y.text);
+        if (!ts.isFunctionLike(init)) scan(init); else if (init.body && !ts.isBlock(init.body) && ts.isCallExpression(init.body)) scan(init.body);
+      } if (!ts.isFunctionLike(y) || y === x) ts.forEachChild(y, w); }; w(x); };
+    for (const x of scope) if (x) scan(x);
+    return [...out].sort();
+  };
+  const statusOf = (names) => (names.some((x) => LOWER_DECISIONS.has(x)) ? 'lowering' : names.length ? 'shared' : 'one-decider');
+  for (const [i, [rel, who]] of files.entries()) {
+    const sf = parsed[i];
     const line = (n) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
     const add = (n, kind, rules, msgNode) => {
       const template = templateOf(msgNode, sf);
@@ -71,7 +114,8 @@ export function auditSites(root = here) {
         else if (who === 'lint') reading = rule ? readingOfFinding(rule, template ?? '') : null;
         else if (template !== null && !template.startsWith('${}')) reading = readingOfRefusal(template); // the translator's own table: a rule prefix through the lint's, else its patterns
         else reading = rule ? readingOfFinding(rule, '') : template !== null ? readingOfRefusal(template) : null;
-        sites.push({ file: `langs/ts/${rel}`, line: line(n), who, kind, rule, message: msgText, reading });
+        const by = deciders(n, sf);
+        sites.push({ file: `langs/ts/${rel}`, line: line(n), who, kind, rule, message: msgText, reading, decided: kind === 'lint-advice' ? 'advice' : statusOf(by), by });
       }
     };
     const walk = (n) => {
@@ -107,6 +151,31 @@ export function auditSites(root = here) {
   return sites;
 }
 
+// ---------- decisions both deciders take, each one predicate and one text (the named-then pattern) ----------
+// Each replaces a test the lint and the translator each wrote for one construct: the lint refuses by it, the translator
+// reads (or refuses) by the same call, so the two can no longer answer one construct two ways.
+// a function value stored into an outside root (`process.onExit = () => ...`): the outside calls it later, no transition
+// reads that call (lint property-assign, translator globalWrite)
+export function installsFunction(checker, value) {
+  const t = checker.getTypeAtLocation(value);
+  const parts = t.flags & ts.TypeFlags.Union ? t.types.filter((x) => !(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null))) : [t];
+  return parts.some((x) => checker.getSignaturesOfType(x, ts.SignatureKind.Call).length > 0);
+}
+export const INSTALLS_FUNCTION_WHY = (root) => `a function installed into \`${root}\` is called by the outside later; no transition reads that call`;
+// a string holding a UTF-16 surrogate code unit (an astral character or a lone surrogate): the string model is a
+// sequence of BMP scalar values (lint string-code-unit on literals, translator strEsc on every string it writes)
+export const loneSurrogate = (text) => /[\uD800-\uDFFF]/.test(text);
+export const LONE_SURROGATE_WHY = 'use BMP scalar literals within the string model; astral and surrogate strings need lane B';
+// `Object.create(null)` of the global Object: an object without a prototype, which no plain-object reading holds (lint
+// prototype, translator isNullCreate, which also types it as a dictionary where the context does)
+export function nullPrototypeCreate(checker, n, sf, current = null) {
+  return ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'create' && n.arguments.length === 1 && n.arguments[0].kind === ts.SyntaxKind.NullKeyword && originOf(checker, n.expression.expression, sf, current).kind === 'global';
+}
+export const NULL_PROTOTYPE_WHY = '`Object.create(null)` makes an object without a prototype; a plain object\'s reads and `in` go through Object.prototype and the ordinary lane has one dictionary for both; write `{}` and test own keys with `Object.prototype.hasOwnProperty.call(d, k)`';
+// an assignment used as a value (`(x += 1)`): `=`, `+=`, `-=` and `*=` have a value reading; any other operator is
+// refused (lint assignment-expression, translator operatorValue). The text, or null
+export const valueAssignmentWhy = (op) => ([ts.SyntaxKind.EqualsToken, ts.SyntaxKind.PlusEqualsToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken].includes(op) ? null : 'write this assignment as a statement');
+
 // ---------- the lowering ----------
 const K = ts.SyntaxKind;
 // a syntax kind's name: several names share one value (FirstStatement is VariableStatement); the one not First/Last
@@ -136,6 +205,7 @@ export function unitReadings(u, sf, checker) {
     const kind = kindName(n), owner = readingOfKind(kind);
     if (owner) used.add(owner);
     else if (!isToken(n) && !STRUCTURAL_KINDS.has(kind)) unread.push({ kind, node: n });
+    if (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) return; // a type the unit declares: erased, read through the checker, its members never walked
     for (const r of USES) if (!used.has(r.id) && r.uses(n, ts, ctx)) used.add(r.id);
     ts.forEachChild(n, visit);
   };
@@ -196,33 +266,30 @@ export function lowerFile(file, ranges = null, opts = {}) {
     const f = findings.find((x) => refusing(x) && x.line >= a && x.line <= b);
     return { ...r, refusal: f ? { id: f.reading?.id ?? 'uncatalogued', version: f.reading?.version ?? null, rule: f.rule, reason: f.msg, line: f.line, by: ['no-reading', 'withdrawn'].includes(f.rule) ? 'catalogue' : 'lint' } : null };
   });
-  // phase 4: the translator reads the units phases 1-3 admitted, as the proof lane runs it
+  // phase 4: the translator reads each unit phases 1-3 admitted exactly as the proof lane runs it (check.mjs: --core --heap
+  // --only <unit>, not tolerant): the unit with the same-file units it calls, behind the translator's gate over all of
+  // them. A refusal there is the record's, named by the reading its site belongs to; a callee refused refuses the unit,
+  // since the gate and the emission take the callees with it. A translation that crashes refuses the unit by that, named
   const open = units.filter((u) => !u.refusal);
   if (open.length && opts.emission !== false) {
-    const report = {};
     const refuse = (u, id, rule, reason, line, by, site = null) => { u.refusal = { id, version: readingById(id) ? currentVersion(readingById(id)) : null, rule, reason, line, by, ...(site ? { site } : {}) }; };
-    try {
-      translate(file, null, { core: true, heap: true, tolerant: true, project: opts.project ?? true, only: open.map((u) => u.unit), report, loaded: given });
-      for (const u of open) {
-        const out = report.lintedOut?.find((x) => x.unit === u.unit), bad = report.failed?.find((x) => x.unit === u.unit);
-        if (out) { const id = readingOfFinding(out.rule, out.msg) ?? 'uncatalogued'; refuse(u, id, out.rule, out.msg, u.lines[0], 'lint'); }
-        else if (bad) {
-          const text = translatorText(bad.text ?? bad.message), id = readingOfRefusal(text) ?? 'uncatalogued';
-          const m = /^([a-z][a-z0-9-]*): /.exec(text), line = Number(/:(\d+): /.exec(bad.text ?? bad.message)?.[1] ?? u.lines[0]);
-          refuse(u, id, m && !/^internal$/.test(m[1]) ? m[1] : id, text, line, 'translate', translatorSite(bad.stack));
-        } else if (!report.translated?.includes(u.unit)) refuse(u, 'translator-internal', 'translator-internal', 'the translation did not read this unit', u.lines[0], 'translate');
+    for (const u of open) {
+      try { translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given }); }
+      catch (e) {
+        const message = String(e?.message ?? e);
+        if (e?.constructor?.name !== 'Unsupported') { refuse(u, 'translator-internal', 'translator-crash', `the translator stopped: ${message.split('\n')[0]}`, u.lines[0], 'translate', translatorSite(e?.stack)); continue; }
+        const gate = /^outside the subset:\n\s+\S+?:(\d+):\d+\s+(\S+)\s+(.*)$/m.exec(message); // the gate over the unit and its callees: its first finding
+        if (gate) { const [, line, rule, msg] = gate; refuse(u, readingOfFinding(rule, msg) ?? (rule === 'withdrawn' || rule === 'no-reading' ? rule : 'uncatalogued'), rule, msg, Number(line), 'gate'); continue; }
+        const text = translatorText(message.split('\n')[0]), id = readingOfRefusal(text) ?? 'uncatalogued';
+        const m = /^([a-z][a-z0-9-]*): /.exec(text), line = Number(/:(\d+): /.exec(message)?.[1] ?? u.lines[0]);
+        refuse(u, id, m && m[1] !== 'internal' ? m[1] : id, text, line, 'translate', translatorSite(e.stack));
       }
-    } catch (e) {
-      // the translator stopped on the file (a crash, or a refusal outside its per-unit reading): every unit it was to read
-      // is refused by that, named; never read
-      const text = translatorText(String(e?.message ?? e).split('\n')[0]);
-      for (const u of open) refuse(u, e?.constructor?.name === 'Error' || !(e instanceof Error) ? 'translator-internal' : (readingOfRefusal(text) ?? 'translator-internal'), 'translator-crash', `the translator stopped: ${text}`, u.lines[0], 'translate', translatorSite(e?.stack));
     }
     const { sf } = L;
     for (const u of open) if (u.refusal) {
       const node = topLevelFunctions(sf).get(u.unit)?.node;
       const f = node ? finding(sf, file, node, u.refusal.rule, u.refusal.reason, { unit: u.unit, label: 'migration', labelDecided: false, advice: null, reading: { id: u.refusal.id, version: u.refusal.version }, by: 'translate' }) : null;
-      if (f) { f.line = u.refusal.line; findings.push(f); }
+      if (f) { if (u.refusal.line >= u.lines[0] && u.refusal.line <= u.lines[1]) f.line = u.refusal.line; else f.msg = `${f.msg} (raised at line ${u.refusal.line}, outside this unit: a unit it calls or a field it initialises)`; findings.push(f); } // the finding stays inside the unit it refuses
     }
     findings.sort((x, y) => x.line - y.line || x.col - y.col);
   }
@@ -235,8 +302,8 @@ export function lowerFile(file, ranges = null, opts = {}) {
 export const lintFindings = (file, ranges = null, opts = {}) => lowerFile(file, ranges, opts).findings.map((f) => ({ ...f }));
 
 export function auditTable(sites) {
-  const rows = sites.map((s) => `| ${s.file.replace('langs/ts/', '')}:${s.line} | ${s.kind} | ${s.rule ?? ''} | ${s.reading ?? '**uncatalogued**'} | ${String(s.message ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ').slice(0, 110)} |`);
-  return ['| site | kind | rule | reading | message |', '| --- | --- | --- | --- | --- |', ...rows].join('\n');
+  const rows = sites.map((s) => `| ${s.file.replace('langs/ts/', '')}:${s.line} | ${s.kind} | ${s.rule ?? ''} | ${s.reading ?? '**uncatalogued**'} | ${s.decided}${s.by?.length ? ` (${s.by.join(', ')})` : ''} | ${String(s.message ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ').slice(0, 100)} |`);
+  return ['| site | kind | rule | reading | decided | message |', '| --- | --- | --- | --- | --- | --- |', ...rows].join('\n');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
