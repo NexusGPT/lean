@@ -13,4 +13,5 @@ assert.equal(fixtures.length,feasible.length);
 assert.deepEqual(new Set(fixtures.filter(x=>x.cell).map(x=>x.cell)),new Set(feasible.map(x=>x.id)));
 assert(!r.some(x=>x.feasible&&x.verdict==='parse-failed'));
 assert(r.some(x=>x.parent==='ObjectLiteralExpression'&&x.kind==='MethodDeclaration'&&x.verdict==='not listed'));
+assert(r.some(x=>x.kind==='FunctionExpression'&&x.parent==='Decorator'&&x.language==='JS'&&x.feasible),'legacy decorators are accepted by the pinned parser in JavaScript mode');
 console.log(JSON.stringify({cells:r.length,feasible:feasible.length,infeasible:r.length-feasible.length,fixtures:fixtures.length,verdicts:feasible.reduce((a,x)=>(a[x.verdict]=(a[x.verdict]??0)+1,a),{})}));

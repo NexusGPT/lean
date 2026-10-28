@@ -3168,6 +3168,42 @@
     "verdict": "not listed"
   },
   {
+    "cell": "FunctionExpression|Decorator|expression|JS|script",
+    "source": "@function target(){} class C {}",
+    "language": "JS",
+    "goal": "script",
+    "start": 1,
+    "end": 20,
+    "verdict": "not listed"
+  },
+  {
+    "cell": "FunctionExpression|Decorator|expression|JS|module",
+    "source": "export {};\n@function target(){} class C {}",
+    "language": "JS",
+    "goal": "module",
+    "start": 12,
+    "end": 31,
+    "verdict": "not listed"
+  },
+  {
+    "cell": "FunctionExpression|Decorator|expression|JSX|script",
+    "source": "@function target(){} class C {}",
+    "language": "JSX",
+    "goal": "script",
+    "start": 1,
+    "end": 20,
+    "verdict": "not listed"
+  },
+  {
+    "cell": "FunctionExpression|Decorator|expression|JSX|module",
+    "source": "export {};\n@function target(){} class C {}",
+    "language": "JSX",
+    "goal": "module",
+    "start": 12,
+    "end": 31,
+    "verdict": "not listed"
+  },
+  {
     "cell": "FunctionDeclaration|DefaultClause|statements|TS|script",
     "source": "switch(0){default: function target(){}}",
     "language": "TS",

@@ -1,33 +1,33 @@
 {
   "grammar": "block | function-body | arrow-block-body; all wrapper words length 0..3 per feasible seed; parse acceptance only, not semantic validity",
   "paths": 40,
-  "attempts": 53920,
-  "accepted": 53920,
+  "attempts": 54080,
+  "accepted": 54080,
   "rejected": 0,
-  "listedOccurrences": 35280,
-  "unlistedOccurrences": 113672,
+  "listedOccurrences": 35384,
+  "unlistedOccurrences": 114000,
   "byDepth": {
     "0": {
-      "attempts": 1348,
-      "accepted": 1348,
+      "attempts": 1352,
+      "accepted": 1352,
       "rejected": 0
     },
     "1": {
-      "attempts": 4044,
-      "accepted": 4044,
+      "attempts": 4056,
+      "accepted": 4056,
       "rejected": 0
     },
     "2": {
-      "attempts": 12132,
-      "accepted": 12132,
+      "attempts": 12168,
+      "accepted": 12168,
       "rejected": 0
     },
     "3": {
-      "attempts": 36396,
-      "accepted": 36396,
+      "attempts": 36504,
+      "accepted": 36504,
       "rejected": 0
     }
   },
-  "sha256": "60c5e205e2c48b04f0e5903f93e4418cd0063f38d295f339f38fe5f698739ece",
+  "sha256": "0117cf6917fbb7f62bd3b2a041d769dc8c5ae72bcc54fa1a3b4bc2c2b3237e26",
   "babelChallenges": []
 }

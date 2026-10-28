@@ -1,0 +1,46 @@
+[
+  {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-core/src/language_models/base.ts",
+    "tsKind": "GetAccessor",
+    "babelKind": "TSMethodSignature",
+    "babelMemberKind": "get",
+    "start": 10979,
+    "end": 11004,
+    "category": "parser dialect difference",
+    "reason": "interface getter signature is GetAccessor in TypeScript, TSMethodSignature in Babel; already in separate Babel type-only count"
+  },
+  {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/langchain-core/src/load/serializable.ts",
+    "tsKind": "GetAccessor",
+    "babelKind": "TSMethodSignature",
+    "babelMemberKind": "get",
+    "start": 2707,
+    "end": 2729,
+    "category": "parser dialect difference",
+    "reason": "interface getter signature is GetAccessor in TypeScript, TSMethodSignature in Babel; already in separate Babel type-only count"
+  },
+  {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/providers/langchain-google-common/src/auth.ts",
+    "tsKind": "GetAccessor",
+    "babelKind": "TSMethodSignature",
+    "babelMemberKind": "get",
+    "start": 641,
+    "end": 666,
+    "category": "parser dialect difference",
+    "reason": "interface getter signature is GetAccessor in TypeScript, TSMethodSignature in Babel; already in separate Babel type-only count"
+  },
+  {
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "file": "libs/providers/langchain-google-common/src/utils/stream.ts",
+    "tsKind": "GetAccessor",
+    "babelKind": "TSMethodSignature",
+    "babelMemberKind": "get",
+    "start": 843,
+    "end": 869,
+    "category": "parser dialect difference",
+    "reason": "interface getter signature is GetAccessor in TypeScript, TSMethodSignature in Babel; already in separate Babel type-only count"
+  }
+]

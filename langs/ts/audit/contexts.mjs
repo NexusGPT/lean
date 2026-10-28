@@ -100,7 +100,7 @@ export function exclusion(c){
  if(c.parent.startsWith('Jsx')&&!jsx)return 'JSX parent requires JSX/TSX parse mode';
  if(c.parent==='TypeAssertionExpression'&&jsx)return 'angle-bracket assertion is unavailable in JSX parse mode';
  const typedParent=['AsExpression','SatisfiesExpression','NonNullExpression','EnumMember','ModuleBlock','InterfaceDeclaration','TypeLiteral','TypeAssertionExpression'].includes(c.parent);
- if(js&&!c.parent.startsWith('JSDoc')&&(typedParent||c.typeOnly||c.field==='type'||c.field==='typeArguments'||c.parent==='Decorator'))return 'TypeScript-only syntax outside JSDoc is not valid JavaScript';
+ if(js&&!c.parent.startsWith('JSDoc')&&(typedParent||c.typeOnly||c.field==='type'||c.field==='typeArguments'))return 'TypeScript-only syntax outside JSDoc is not valid JavaScript';
  if(key==='ExpressionStatement.expression'&&c.kind==='FunctionExpression')return 'statement-leading function is parsed as a declaration; parentheses introduce a parent node';
  if(['ForInStatement.initializer','ForOfStatement.initializer','PostfixUnaryExpression.operand'].includes(key))return 'function value is not an assignment target (early error)';
  if(c.kind==='FunctionDeclaration'&&['DoStatement','WhileStatement','ForStatement','ForInStatement','ForOfStatement','WithStatement'].includes(c.parent))return 'function declaration is not a loop/with Statement production (early error)';

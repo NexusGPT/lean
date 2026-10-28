@@ -19,7 +19,7 @@ for(const c of schema.candidates){
  }
  if(!chosen){unresolved.push(c);cells.push({...c,feasible:null,reason:'UNRESOLVED: generator lacks a witnessed source or impossibility argument'});continue;}
  const {source,sf,n}=chosen;let verdict;try{verdict=listing(sf).has(n)?'listed':'not listed';}catch(e){verdict='crashed';}
- const fixture=fixtures.length;fixtures.push({cell:c.id,source:sf.text,language:c.language,goal:c.goal,start:n.getStart(sf),end:n.end,verdict});cells.push({...c,feasible:true,reason:'parser-accepted source witnesses exact parent field; excludes separately named early-error constraints',fixture,verdict});
+ const fixture=fixtures.length;fixtures.push({cell:c.id,source:sf.text,language:c.language,goal:c.goal,start:n.getStart(sf),end:n.end,verdict});cells.push({...c,feasible:true,reason:'parser-accepted source witnesses exact parent field; excludes separately named early-error constraints',fixture,verdict,occurrenceTypeOnly:c.typeOnly||!n.body});
 }
 fs.writeFileSync(auditDir+'cells.json',JSON.stringify(cells,null,2)+'\n');fs.writeFileSync(auditDir+'fixtures.json',JSON.stringify(fixtures,null,2)+'\n');
 console.log(JSON.stringify({cells:cells.length,feasible:fixtures.length,unresolved:unresolved.length}));

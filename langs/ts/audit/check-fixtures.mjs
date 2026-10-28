@@ -11,6 +11,10 @@ export function rawOccurrences(sf){const out=[],seen=new Set();function walk(n){
 const challenge=[];
 for(const f of fixtures){
  const c=byId.get(f.cell),sf=ts.createSourceFile('x.'+f.language.toLowerCase(),f.source,ts.ScriptTarget.Latest,true,ts.ScriptKind[f.language]);
+ const options={allowJs:true,noLib:true,noResolve:true,experimentalDecorators:true,jsx:ts.JsxEmit.Preserve};
+ const host=ts.createCompilerHost(options);host.getSourceFile=(file)=>file===sf.fileName?sf:undefined;
+ const program=ts.createProgram([sf.fileName],options,host);
+ assert.equal(program.getSyntacticDiagnostics(sf).length,0,'compiler syntactic diagnostic for '+f.cell);
  const raw=rawOccurrences(sf),visited=occurrences(sf);assert.deepEqual(new Set(visited),new Set(raw));
  assert(raw.some(n=>n.kind===ts.SyntaxKind[c.kind]&&n.parent?.kind===ts.SyntaxKind[c.parent]&&fieldOf(n)===c.field&&n.getStart(sf)===f.start&&n.end===f.end));
  try{babelParse(f.source,{sourceType:f.goal,plugins:[...(['TS','TSX'].includes(f.language)?['typescript']:[]),...(['TSX','JSX'].includes(f.language)?['jsx']:[]),'decorators-legacy']});}catch(e){challenge.push({cell:f.cell,reason:e.reasonCode,message:e.message});}
@@ -35,3 +39,5 @@ assert.equal(attempts,fixtures.length*paths.length);assert.equal(attempts,accept
 const result={grammar:'block | function-body | arrow-block-body; all wrapper words length 0..3 per feasible seed; parse acceptance only, not semantic validity',paths:paths.length,attempts,accepted,rejected,listedOccurrences:listed,unlistedOccurrences:unlisted,byDepth,sha256:digest.digest('hex'),babelChallenges:challenge};
 fs.writeFileSync(auditDir+'bounded.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify({...result,babelChallenges:challenge.length}));
 for(const c of challenge)console.log(JSON.stringify(c));
+
+assert.equal(challenge.length,0,'Babel challenged positive fixture syntax; review feasibility before certifying');

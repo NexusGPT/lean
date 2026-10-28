@@ -1,0 +1,204 @@
+{
+  "version": "5.9.3",
+  "kinds": 15,
+  "fields": 148,
+  "tableCells": 17760,
+  "candidates": 3224,
+  "structurallyInfeasible": 14536,
+  "grammarInfeasible": 1872,
+  "feasible": 1352,
+  "executableFeasible": 828,
+  "typeOnlyFeasible": 524,
+  "executableNotListed": 772,
+  "byKind": {
+    "FunctionExpression": {
+      "feasible": 400,
+      "listed": 8,
+      "notListed": 392,
+      "infeasible": 136
+    },
+    "ArrowFunction": {
+      "feasible": 292,
+      "listed": 8,
+      "notListed": 284,
+      "infeasible": 132
+    },
+    "FunctionType": {
+      "feasible": 202,
+      "listed": 0,
+      "notListed": 202,
+      "infeasible": 270
+    },
+    "ConstructorType": {
+      "feasible": 202,
+      "listed": 0,
+      "notListed": 202,
+      "infeasible": 270
+    },
+    "JSDocFunctionType": {
+      "feasible": 48,
+      "listed": 0,
+      "notListed": 48,
+      "infeasible": 424
+    },
+    "JSDocSignature": {
+      "feasible": 16,
+      "listed": 0,
+      "notListed": 16,
+      "infeasible": 472
+    },
+    "FunctionDeclaration": {
+      "feasible": 48,
+      "listed": 8,
+      "notListed": 40,
+      "infeasible": 64
+    },
+    "MethodDeclaration": {
+      "feasible": 24,
+      "listed": 8,
+      "notListed": 16,
+      "infeasible": 0
+    },
+    "GetAccessor": {
+      "feasible": 32,
+      "listed": 8,
+      "notListed": 24,
+      "infeasible": 16
+    },
+    "SetAccessor": {
+      "feasible": 32,
+      "listed": 8,
+      "notListed": 24,
+      "infeasible": 16
+    },
+    "Constructor": {
+      "feasible": 16,
+      "listed": 8,
+      "notListed": 8,
+      "infeasible": 0
+    },
+    "IndexSignature": {
+      "feasible": 16,
+      "listed": 0,
+      "notListed": 16,
+      "infeasible": 24
+    },
+    "CallSignature": {
+      "feasible": 8,
+      "listed": 0,
+      "notListed": 8,
+      "infeasible": 16
+    },
+    "ConstructSignature": {
+      "feasible": 8,
+      "listed": 0,
+      "notListed": 8,
+      "infeasible": 16
+    },
+    "MethodSignature": {
+      "feasible": 8,
+      "listed": 0,
+      "notListed": 8,
+      "infeasible": 16
+    }
+  },
+  "roots": [
+    {
+      "name": "nexus",
+      "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/work/bench/nexus/tree",
+      "files": 12733,
+      "lean": 26520,
+      "babel": 54649,
+      "common": 22020,
+      "leanOnly": 4500,
+      "babelOnly": 32629,
+      "normalizedCommon": 26520,
+      "normalizedBabelOnly": 28129,
+      "tsAllRuntime": 54649,
+      "babelTypeOnly": 6510,
+      "tsParseFailedFiles": 0,
+      "babelFailedFiles": 0,
+      "babelRecoveredFiles": 0
+    },
+    {
+      "name": "langchainjs",
+      "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+      "files": 1486,
+      "lean": 4871,
+      "babel": 8272,
+      "common": 4073,
+      "leanOnly": 798,
+      "babelOnly": 4199,
+      "normalizedCommon": 4871,
+      "normalizedBabelOnly": 3401,
+      "tsAllRuntime": 8276,
+      "babelTypeOnly": 629,
+      "tsParseFailedFiles": 0,
+      "babelFailedFiles": 0,
+      "babelRecoveredFiles": 0
+    },
+    {
+      "name": "agent-nexus",
+      "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+      "files": 2074,
+      "lean": 2911,
+      "babel": 4563,
+      "common": 945,
+      "leanOnly": 1966,
+      "babelOnly": 3618,
+      "normalizedCommon": 2911,
+      "normalizedBabelOnly": 1652,
+      "tsAllRuntime": 4563,
+      "babelTypeOnly": 176,
+      "tsParseFailedFiles": 0,
+      "babelFailedFiles": 0,
+      "babelRecoveredFiles": 0
+    }
+  ],
+  "totals": {
+    "files": 16293,
+    "lean": 34302,
+    "babel": 67484,
+    "common": 27038,
+    "leanOnly": 7264,
+    "babelOnly": 40446,
+    "normalizedCommon": 34302,
+    "normalizedBabelOnly": 33182,
+    "tsAllRuntime": 67488,
+    "babelTypeOnly": 7315,
+    "tsParseFailedFiles": 0,
+    "babelFailedFiles": 0,
+    "babelRecoveredFiles": 0
+  },
+  "samples": {
+    "lean-only": {
+      "sample": 50,
+      "realOmission": 0,
+      "parserDialectDifference": 0,
+      "identityMismatch": 50,
+      "intentionalTypeOnly": 0,
+      "executableOmission": 0
+    },
+    "babel-only": {
+      "sample": 50,
+      "realOmission": 38,
+      "parserDialectDifference": 0,
+      "identityMismatch": 12,
+      "intentionalTypeOnly": 2,
+      "executableOmission": 36
+    }
+  },
+  "bounded": {
+    "attempts": 54080,
+    "paths": 40,
+    "accepted": 54080,
+    "rejected": 0,
+    "babelChallenges": 0
+  },
+  "negative": {
+    "fixtures": 64,
+    "parseFailed": 24,
+    "babelRejected": 48,
+    "listedDespiteParseErrors": 16
+  }
+}
