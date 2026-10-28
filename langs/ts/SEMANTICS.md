@@ -6,7 +6,7 @@ The checker compares a parent and a candidate version of a function. It says PAS
 
 One call of a function on one input observes:
 
-1. **outcome**: the returned value or the thrown value;
+1. **outcome**: the returned value or the thrown value, where an Error is its class and message and never its stack text, a stack string reads as its header without the frame lines, and the directories lean loaded the two copies from read as one token (`design/stack-text.md`);
 2. **reachable mutation**: every object reachable from the arguments and the receiver before the call, field by field after the call;
 3. **effect trace**: the ordered list of effect requests (operation, arguments) and the environment's responses;
 4. **pending work**: promises returned unsettled, timers armed, jobs queued.

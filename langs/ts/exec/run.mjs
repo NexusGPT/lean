@@ -21,7 +21,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
-import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource } from './fake.mjs';
+import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor, aliasInputs } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
@@ -805,6 +805,7 @@ async function runPairOnce(opts) {
   try { plan = inputPlan(parent, candidate, unit, { project, seed }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const { spec, heaps } = plan;
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
+  setRoots(sideLocations(parent, candidate, roots)); // the directories lean loaded the two copies from render as one token (fake.mjs setRoots)
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
@@ -1003,6 +1004,23 @@ function differenceField(a, b) {
     }
   }
   return null;
+}
+
+// the directories each side was loaded from: its package root, and the prefix of its unit file that the other side's path
+// does not share (the temporary folder a copy sits in; found as the segments left when the common tail of the two unit
+// file paths is cut, when both files bear one name); each in its real-path spelling too. When the two files bear different
+// names the files themselves are listed, so a unit that reads its own file name sees one name.
+export function sideLocations(parent, candidate, roots) {
+  const real = (x) => { try { return fs.realpathSync(x); } catch { return x; } };
+  const abs = { parent: path.resolve(parent), candidate: path.resolve(candidate) };
+  const seg = { parent: abs.parent.split(path.sep), candidate: abs.candidate.split(path.sep) };
+  const dirs = [roots.parent, roots.candidate], files = [];
+  if (seg.parent.at(-1) === seg.candidate.at(-1)) {
+    let k = 0; while (k < seg.parent.length - 1 && k < seg.candidate.length - 1 && seg.parent.at(-1 - k) === seg.candidate.at(-1 - k)) k++;
+    for (const side of ['parent', 'candidate']) dirs.push(seg[side].slice(0, seg[side].length - k).join(path.sep));
+  } else files.push(abs.parent, abs.candidate);
+  const withReal = (list) => [...list, ...list.map(real)];
+  return { dirs: withReal(dirs.map((d) => path.resolve(d))), files: withReal(files) };
 }
 
 // the package root: the nearest package.json above the file (relative imports inside it are compiled, others faked)
