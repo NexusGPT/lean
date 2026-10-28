@@ -1321,7 +1321,7 @@ export function forInKeyOrder(checker, e, unitNode) {
     if (!(ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p))) return null; // a spread, a method, an accessor
     let key;
     if (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) || ts.isNoSubstitutionTemplateLiteral(p.name)) key = p.name.text;
-    else if (ts.isNumericLiteral(p.name)) key = String(Number(p.name.text)); // ToPropertyKey of a number is its ToString
+    else if (ts.isNumericLiteral(p.name) && !Number.isNaN(Number(p.name.text))) key = String(Number(p.name.text)); // ToPropertyKey of a number is its ToString
     else return null; // a computed or private name
     if (key === '__proto__' && ts.isPropertyAssignment(p)) return null; // sets the prototype, no own key
     if (!created.includes(key)) created.push(key); // a repeated key keeps its first place (10.1.9)
