@@ -59,6 +59,7 @@ import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits a
 import { definiteAssignmentRead } from '../common.mjs'; // `let v!: T` read before its first assignment: one test with the lint
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { typeAssertion, assertionHeld } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
+import { signedZero } from '../common.mjs'; // the sign of zero: one test with the lint
 import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -1364,7 +1365,11 @@ export function translate(file, fnName, opts = {}) {
     return null;
   };
   const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
-  if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
+  // the sign of zero (design/signed-zero.md, common.mjs signedZero, the lint's own test): a unit whose number result
+  // may be -0, or which tells -0 from 0, is read as one opaque unit keyed by its source and stays out of the heap core,
+  // whose numbers are values too; the same source on both sides is the same function, a changed one is not proved
+  const signedZeroUnits = new Set(order.filter((u) => signedZero(checker, u.fn)).map((u) => u.name));
+  if (heapT && heap) heapT.plan(order, signedZeroUnits.size ? (heapUnits ?? order.map((u) => u.name)).filter((n) => !signedZeroUnits.has(n)) : heapUnits); // after the type reading it relies on exists
   const anyTarget = () => checker.getAnyType();
   const symType = (sym, n) => (checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n));
 
@@ -5694,7 +5699,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     });
     const outs = [...(eff ? ['World'] : []), rt, ...(core ? mutatedOf(u).map((m) => dtype(typeOf(u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m).name), u.node)) : [])];
     const out = outs.length === 1 ? rt : `(${outs.join(', ')})`;
-    const ext = external(`${absentOpaque.has(u.name) ? 'absent_number' : 'number_special'}_${numericKey(u)}`, args.map((a) => a.d), out); // the reading names why the unit is opaque
+    const ext = external(`${absentOpaque.has(u.name) ? 'absent_number' : numericOpaque.has(u.name) ? 'number_special' : 'signed_zero'}_${numericKey(u)}`, args.map((a) => a.d), out); // the reading names why the unit is opaque
     const tp = unitTParams().length ? `<${unitTParams().map((p) => `${p}(==)`).join(', ')}>` : '';
     return [`function ${fname(u.name)}${tp}(${params.join(', ')}): ${core ? out : `(result: ${out})`}`, ...specs, `{ ${ext}(${args.map((a) => a.name).join(', ')}) }`].join('\n');
   }
@@ -5865,7 +5870,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       for (const r of requires) specs.push(`  requires ${sub(r)}`);
       for (const e of ensures) specs.push(`  ensures ${sub(e)}`);
     }
-    if (numericOpaque.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
+    if (numericOpaque.has(u.name) || signedZeroUnits.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
     const sp = sigParams(u);
     const bodyList = ts.isBlock(u.body) ? [...u.body.statements] : null;
     reassignedParams(u); // refuses a parameter both rebound and changed in place

@@ -1639,3 +1639,207 @@ export function typeAssertion(checker, n) {
   if (carried(checker, n)) return null;
   return `\`${n.getText().slice(0, 60)}\` holds a value whose type nothing checked (an \`as\` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (\`typeof x === "number"\`, a field test), or keep it in a local, an operation or the result`;
 }
+// the sign of zero (ECMA-262 6.1.6.1, design/signed-zero.md): -0 and 0 are one value to ===, String, a template and
+// JSON, and two to Object.is (SameValue, 7.2.10), to a division (1 / -0 is -Infinity), to Math.atan2 and to
+// toLocaleString. The exact reading holds a number as its value, so it cannot tell them apart: a unit whose number
+// result may be -0, or which observes the sign of a number that may be -0, is outside it. The answer is the refusal
+// text for the first such place, or null. A number "may be -0" (mayNegZero) when it is an input (a parameter, a field, an
+// element, an outside answer) not guarded nonzero, or made by an operation that yields -0 from a -0 or from a zero and
+// a negative (6.1.6.1.5-6.1.6.1.8: `-x`, `a * b`, `a / b`, `a % b`, `a - b` of a -0, Math.round, ceil, trunc, sign,
+// min, max, a parse); a sum is -0 only when both terms are, `a || b` never answers a -0 from `a`, a bitwise operator, a
+// length, Math.abs never answer -0. A number result is checked through the literal it is built in (an object or array
+// literal, a conditional); a value passed through whole (a record or an array) is the stated gap of row 3181675e
+export function signedZero(checker, fn) {
+  const sf = fn.getSourceFile();
+  const typeAt = (n) => { try { return checker.getTypeAtLocation(n); } catch { return null; } };
+  const strip = (n) => { while (n && (ts.isParenthesizedExpression(n) || ts.isAsExpression(n) || ts.isNonNullExpression(n) || ts.isSatisfiesExpression(n) || ts.isTypeAssertionExpression(n))) n = n.expression; return n; };
+  const litNum = (n) => { n = strip(n); if (ts.isNumericLiteral(n)) return Number(n.text.replace(/_/g, '')); if (ts.isPrefixUnaryExpression(n) && [ts.SyntaxKind.MinusToken, ts.SyntaxKind.PlusToken].includes(n.operator)) { const v = litNum(n.operand); return v === null ? null : n.operator === ts.SyntaxKind.MinusToken ? -v : v; } return null; };
+  // a type holding a number that may be zero: a number, or a union with one; a literal union without 0 excludes zero
+  const zeroNumber = (t) => { if (!t) return false; const parts = t.flags & TF.Union ? t.types : [t]; return parts.some((p) => (p.flags & (TF.Number | TF.Any | TF.Unknown | TF.TypeParameter)) || ((p.flags & TF.NumberLiteral) && p.value === 0) || ((p.flags & TF.Enum) && !(p.flags & TF.Union))); };
+  const numberish = (t) => !!t && (t.flags & TF.Union ? t.types : [t]).some((p) => p.flags & (TF.NumberLike));
+  const symOf = (n) => { try { const s = checker.getSymbolAtLocation(n); return s && (s.flags & ts.SymbolFlags.Alias) ? checker.getAliasedSymbol(s) : s; } catch { return null; } };
+  const K = ts.SyntaxKind;
+  const ASSIGN = new Set([K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken, K.SlashEqualsToken, K.PercentEqualsToken, K.AsteriskAsteriskEqualsToken, K.AmpersandEqualsToken, K.BarEqualsToken, K.CaretEqualsToken, K.LessThanLessThanEqualsToken, K.GreaterThanGreaterThanEqualsToken, K.GreaterThanGreaterThanGreaterThanEqualsToken, K.BarBarEqualsToken, K.AmpersandAmpersandEqualsToken, K.QuestionQuestionEqualsToken]);
+  // every write of a name in the file's functions: its assignments (operator, right side) and whether an update writes it
+  const writes = new Map();
+  const noteWrite = (target, op, rhs) => { target = strip(target); if (!ts.isIdentifier(target)) return; const s = symOf(target); if (!s) return; if (!writes.has(s)) writes.set(s, []); writes.get(s).push({ op, rhs }); };
+  const scanWrites = (n) => {
+    if (ts.isBinaryExpression(n) && ASSIGN.has(n.operatorToken.kind)) {
+      const l = strip(n.left);
+      if (ts.isObjectLiteralExpression(l) || ts.isArrayLiteralExpression(l)) { const names = []; const w = (x) => { if (ts.isIdentifier(x)) names.push(x); ts.forEachChild(x, w); }; w(l); for (const x of names) noteWrite(x, null, null); } // a destructuring write: its value is not followed
+      else noteWrite(l, n.operatorToken.kind, n.right);
+    }
+    if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) noteWrite(n.operand, 'update', null);
+    ts.forEachChild(n, scanWrites);
+  };
+  scanWrites(sf);
+  const neverWritten = (s) => !writes.has(s);
+  // cond, true when `positive` (false otherwise), implies that the number named by s is not zero
+  const implies = (cond, s, positive) => {
+    cond = strip(cond);
+    if (ts.isPrefixUnaryExpression(cond) && cond.operator === K.ExclamationToken) return implies(cond.operand, s, !positive);
+    if (ts.isBinaryExpression(cond) && cond.operatorToken.kind === (positive ? K.AmpersandAmpersandToken : K.BarBarToken)) return implies(cond.left, s, positive) || implies(cond.right, s, positive);
+    if (ts.isIdentifier(cond)) return positive && symOf(cond) === s; // a truthy number is not zero
+    if (!ts.isBinaryExpression(cond)) return false;
+    let op = cond.operatorToken.kind, c = null;
+    const same = (x) => { x = strip(x); return ts.isIdentifier(x) && symOf(x) === s; };
+    const FLIP = { [K.GreaterThanToken]: K.LessThanToken, [K.GreaterThanEqualsToken]: K.LessThanEqualsToken, [K.LessThanToken]: K.GreaterThanToken, [K.LessThanEqualsToken]: K.GreaterThanEqualsToken };
+    if (same(cond.left)) c = litNum(cond.right);
+    else if (same(cond.right)) { c = litNum(cond.left); op = FLIP[op] ?? op; }
+    if (c === null || Number.isNaN(c)) return false;
+    if (!positive) op = { [K.GreaterThanToken]: K.LessThanEqualsToken, [K.GreaterThanEqualsToken]: K.LessThanToken, [K.LessThanToken]: K.GreaterThanEqualsToken, [K.LessThanEqualsToken]: K.GreaterThanToken, [K.EqualsEqualsEqualsToken]: K.ExclamationEqualsEqualsToken, [K.EqualsEqualsToken]: K.ExclamationEqualsToken, [K.ExclamationEqualsEqualsToken]: K.EqualsEqualsEqualsToken, [K.ExclamationEqualsToken]: K.EqualsEqualsToken }[op];
+    switch (op) {
+      case K.GreaterThanToken: return c >= 0;
+      case K.GreaterThanEqualsToken: return c > 0;
+      case K.LessThanToken: return c <= 0;
+      case K.LessThanEqualsToken: return c < 0;
+      case K.ExclamationEqualsEqualsToken: case K.ExclamationEqualsToken: return c === 0;
+      case K.EqualsEqualsEqualsToken: case K.EqualsEqualsToken: return c !== 0;
+      default: return false;
+    }
+  };
+  const exits = (st) => { if (!st) return false; if (ts.isReturnStatement(st) || ts.isThrowStatement(st)) return true; if (ts.isBlock(st)) return st.statements.length > 0 && exits(st.statements[st.statements.length - 1]); return false; };
+  // the occurrence n of a name never written stands where a test proved it nonzero: a branch, a right operand of && or ||, or after an exiting if
+  const guarded = (n, s) => {
+    if (!neverWritten(s)) return false;
+    for (let c = n, p = n.parent; p && !ts.isSourceFile(p); c = p, p = p.parent) {
+      if (ts.isConditionalExpression(p)) { if (c === p.whenTrue && implies(p.condition, s, true)) return true; if (c === p.whenFalse && implies(p.condition, s, false)) return true; }
+      if (ts.isIfStatement(p)) { if (c === p.thenStatement && implies(p.expression, s, true)) return true; if (c === p.elseStatement && implies(p.expression, s, false)) return true; }
+      if (ts.isBinaryExpression(p) && c === p.right) { if (p.operatorToken.kind === K.AmpersandAmpersandToken && implies(p.left, s, true)) return true; if (p.operatorToken.kind === K.BarBarToken && implies(p.left, s, false)) return true; }
+      if (ts.isBlock(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) for (const st of p.statements) { if (st === c) break; if (ts.isIfStatement(st) && !st.elseStatement && exits(st.thenStatement) && implies(st.expression, s, false)) return true; }
+    }
+    return false;
+  };
+  const nonzero = (e) => { const v = litNum(e); if (v !== null) return v !== 0 && !Number.isNaN(v); e = strip(e); if (ts.isIdentifier(e)) { const s = symOf(e); return !!s && guarded(e, s); } return false; };
+  const NEVER_NEG_ZERO_MEMBERS = new Set(['length', 'size', 'byteLength', 'byteOffset']);
+  const NEVER_NEG_ZERO_METHODS = new Set(['indexOf', 'lastIndexOf', 'findIndex', 'findLastIndex', 'search', 'localeCompare', 'charCodeAt', 'codePointAt', 'getTime', 'getFullYear', 'getMonth', 'getDate', 'getDay', 'getHours', 'getMinutes', 'getSeconds', 'getMilliseconds', 'getTimezoneOffset', 'getUTCFullYear', 'getUTCMonth', 'getUTCDate', 'getUTCDay', 'getUTCHours', 'getUTCMinutes', 'getUTCSeconds', 'getUTCMilliseconds', 'push', 'unshift']);
+  const mathName = (callee) => { callee = strip(callee); return ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && ['Math', 'Number', 'Date'].includes(callee.expression.text) && !sf.locals?.has?.(callee.expression.text) ? `${callee.expression.text}.${callee.name.text}` : null; };
+  const memoDecl = new Map(), memoFn = new Map(), busy = new Set();
+  let changed = false;
+  const declMay = (s, d) => { // a name's value, from its declaration and every write of it (a least fixpoint over the file's writes)
+    if (ts.isParameter(d) || ts.isBindingElement(d)) return zeroNumber(typeAt(d.name ?? d));
+    if (ts.isVariableDeclaration(d)) {
+      if (d.parent && ts.isVariableDeclarationList(d.parent) && d.parent.parent && (ts.isForOfStatement(d.parent.parent) || ts.isForInStatement(d.parent.parent))) return zeroNumber(typeAt(d.name));
+      if (!ts.isIdentifier(d.name)) return zeroNumber(typeAt(d.name));
+      if (!memoDecl.has(s)) memoDecl.set(s, false);
+      if (busy.has(s)) return memoDecl.get(s); // a write reading the name itself: the value found so far
+      busy.add(s);
+      let v = d.initializer ? mayNegZero(d.initializer) : false;
+      for (const w of writes.get(s) ?? []) {
+        if (v) break;
+        if (w.op === 'update' || w.op === K.AmpersandEqualsToken || w.op === K.BarEqualsToken || w.op === K.CaretEqualsToken || w.op === K.LessThanLessThanEqualsToken || w.op === K.GreaterThanGreaterThanEqualsToken || w.op === K.GreaterThanGreaterThanGreaterThanEqualsToken) continue; // an update or a bitwise write never yields -0
+        if (w.op === null) { v = zeroNumber(typeAt(d.name)); continue; }
+        if (w.op === K.EqualsToken || w.op === K.BarBarEqualsToken) v = mayNegZero(w.rhs);
+        else if (w.op === K.PlusEqualsToken) v = memoDecl.get(s) && mayNegZero(w.rhs);
+        else if (w.op === K.MinusEqualsToken) v = memoDecl.get(s);
+        else if (w.op === K.QuestionQuestionEqualsToken || w.op === K.AmpersandAmpersandEqualsToken) v = memoDecl.get(s) || mayNegZero(w.rhs);
+        else v = true; // *=, /=, %=, **=
+      }
+      busy.delete(s);
+      if (v && !memoDecl.get(s)) { memoDecl.set(s, true); changed = true; }
+      return memoDecl.get(s);
+    }
+    return zeroNumber(typeAt(d)); // a field, a class member, an import: an input
+  };
+  const callMay = (n) => { // a call of a function of this file: whether any number it returns may be -0
+    let decl = null; try { decl = checker.getResolvedSignature(n)?.declaration ?? null; } catch { decl = null; }
+    if (!decl || decl.getSourceFile() !== sf || !ts.isFunctionLike(decl) || !decl.body) return null;
+    if (memoFn.has(decl)) return memoFn.get(decl);
+    memoFn.set(decl, true); // a recursive call: assumed to may
+    const r = resultMay(decl) !== null;
+    memoFn.set(decl, r);
+    return r;
+  };
+  function mayNegZero(e) {
+    e = strip(e);
+    if (!e) return false;
+    if (!numberish(typeAt(e)) && !ts.isPrefixUnaryExpression(e)) return false;
+    if (ts.isNumericLiteral(e)) return false;
+    if (ts.isPrefixUnaryExpression(e)) {
+      if (e.operator === K.MinusToken) return !nonzero(e.operand) && numberish(typeAt(e.operand)); // -x of a zero is -0 (6.1.6.1.1)
+      if (e.operator === K.PlusToken) return numberish(typeAt(e.operand)) ? mayNegZero(e.operand) : true; // +"-0" is -0
+      return false; // ~, !, ++x, --x
+    }
+    if (ts.isPostfixUnaryExpression(e)) return mayNegZero(e.operand); // x++ answers the old value
+    if (ts.isConditionalExpression(e)) return mayNegZero(e.whenTrue) || mayNegZero(e.whenFalse);
+    if (ts.isAwaitExpression(e)) return mayNegZero(e.expression);
+    if (ts.isBinaryExpression(e)) {
+      const k = e.operatorToken.kind;
+      if (k === K.CommaToken) return mayNegZero(e.right);
+      if (ASSIGN.has(k)) return k === K.EqualsToken ? mayNegZero(e.right) : mayNegZero(e.left) || mayNegZero(e.right);
+      if (k === K.PlusToken) return mayNegZero(e.left) && mayNegZero(e.right); // -0 + -0 alone is -0
+      if (k === K.MinusToken) return mayNegZero(e.left) && !nonzero(e.right); // -0 - 0 alone is -0 (a - b is a + -b)
+      if (k === K.AsteriskToken) { const a = litNum(e.left), b = litNum(e.right); if (a !== null && a > 0) return mayNegZero(e.right); if (b !== null && b > 0) return mayNegZero(e.left); return true; } // 0 * -1, -0 * 2
+      if (k === K.SlashToken) { const b = litNum(e.right); return !(b !== null && b > 0 && !mayNegZero(e.left)); } // 0 / -5, -0 / 5
+      if (k === K.PercentToken || k === K.AsteriskAsteriskToken) return true; // -4 % 2 is -0; (-0) ** 3 is -0
+      if (k === K.BarBarToken) return mayNegZero(e.right); // -0 is falsy: `a || b` answers b then
+      if (k === K.AmpersandAmpersandToken || k === K.QuestionQuestionToken) return mayNegZero(e.left) || mayNegZero(e.right);
+      return false; // bitwise and shifts (ToInt32), comparisons
+    }
+    if (ts.isIdentifier(e)) {
+      const s = symOf(e); if (!s) return true;
+      if (guarded(e, s)) return false;
+      const d = s.valueDeclaration ?? s.declarations?.[0];
+      if (!d) return zeroNumber(typeAt(e));
+      if (d.getSourceFile() !== sf) return zeroNumber(typeAt(e));
+      return declMay(s, d);
+    }
+    if (ts.isPropertyAccessExpression(e)) return !NEVER_NEG_ZERO_MEMBERS.has(e.name.text) && zeroNumber(typeAt(e));
+    if (ts.isCallExpression(e)) {
+      const m = mathName(e.expression), a = e.arguments;
+      if (m) {
+        if (['Math.abs', 'Math.random', 'Math.hypot', 'Math.clz32', 'Math.imul', 'Math.exp', 'Math.log', 'Math.log2', 'Math.log10', 'Math.cosh', 'Math.cos', 'Math.acos', 'Date.now', 'Date.UTC', 'Date.parse'].includes(m)) return false;
+        if (['Math.floor', 'Math.sqrt', 'Math.fround', 'Math.sign'].includes(m)) return a.length > 0 && mayNegZero(a[0]); // floor(-0) is -0, floor(-0.5) is -1
+        if (['Math.min', 'Math.max'].includes(m)) return a.some((x) => ts.isSpreadElement(x) || mayNegZero(x)); // min(0, -0) is -0
+        if (m === 'Number') return a.length > 0 && (numberish(typeAt(a[0])) ? mayNegZero(a[0]) : true); // Number("-0") is -0
+        return true; // round, ceil, trunc, cbrt, sin, tan, parseInt, parseFloat, ...
+      }
+      const callee = strip(e.expression);
+      if (ts.isPropertyAccessExpression(callee) && NEVER_NEG_ZERO_METHODS.has(callee.name.text)) return false;
+      const own = callMay(e);
+      if (own !== null) return own;
+      return zeroNumber(typeAt(e)); // an outside answer, a parse
+    }
+    return zeroNumber(typeAt(e)); // an element, a tagged value: an input
+  }
+  // the first place a function's number result may be -0: a returned number, or a number in the literal it returns
+  function resultMay(f) {
+    let hit = null;
+    const leaf = (e) => {
+      if (hit) return; e = strip(e); if (!e) return;
+      if (ts.isObjectLiteralExpression(e)) { for (const p of e.properties) { if (ts.isPropertyAssignment(p)) leaf(p.initializer); else if (ts.isShorthandPropertyAssignment(p)) leaf(p.name); } return; }
+      if (ts.isArrayLiteralExpression(e)) { for (const x of e.elements) if (!ts.isSpreadElement(x)) leaf(x); return; }
+      if (ts.isConditionalExpression(e)) { leaf(e.whenTrue); leaf(e.whenFalse); return; }
+      if (numberish(typeAt(e)) && mayNegZero(e)) hit = e;
+    };
+    if (!f.body) return null;
+    if (!ts.isBlock(f.body)) { leaf(f.body); return hit; }
+    const w = (n) => { if (hit || (n !== f.body && ts.isFunctionLike(n))) return; if (ts.isReturnStatement(n) && n.expression) leaf(n.expression); ts.forEachChild(n, w); };
+    w(f.body);
+    return hit;
+  }
+  // a read that tells -0 from 0: Object.is, Math.atan2, toLocaleString of a number that may be -0
+  function observer() {
+    let hit = null;
+    const w = (n) => {
+      if (hit) return;
+      if (ts.isCallExpression(n)) {
+        const c = strip(n.expression);
+        if (ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.expression) && ((c.expression.text === 'Object' && c.name.text === 'is') || (c.expression.text === 'Math' && c.name.text === 'atan2')) && !sf.locals?.has?.(c.expression.text)) { const x = n.arguments.find((a) => numberish(typeAt(a)) && mayNegZero(a)); if (x) { hit = { node: x, why: `${c.getText()} tells -0 from 0` }; return; } }
+        if (ts.isPropertyAccessExpression(c) && c.name.text === 'toLocaleString' && numberish(typeAt(c.expression)) && mayNegZero(c.expression)) { hit = { node: c.expression, why: 'toLocaleString writes -0 as "-0"' }; return; }
+      }
+      ts.forEachChild(n, w);
+    };
+    if (fn.body) w(fn.body);
+    return hit;
+  }
+  let res = null;
+  for (let round = 0; round < 8; round++) { // the local fixpoint: a name found to may turns its readers
+    changed = false; memoFn.clear();
+    const r = resultMay(fn), o = observer();
+    res = o ?? (r ? { node: r, why: 'the result may be -0' } : null);
+    if (!changed) break;
+  }
+  if (!res) return null;
+  return { node: res.node, why: `\`${res.node.getText().slice(0, 60)}\` may be a negative zero and ${res.why}; the exact reading holds -0 and 0 as one value, so two versions that differ only in the sign of a zero would read alike. Return a value that is never -0 (\`x + 0\` and Math.abs turn -0 into 0), or test it nonzero first (\`x > 0 ? x : 1\`)` };
+}

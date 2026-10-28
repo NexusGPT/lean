@@ -1,0 +1,6 @@
+{
+ "scope": ["normalized", "negated", "times_zero", "magnitude", "plus_zero", "doubled", "positive", "untouched"],
+ "equal": {"normalized": false, "negated": false, "times_zero": false, "magnitude": false, "plus_zero": false, "doubled": false, "positive": true, "untouched": true},
+ "why": "the sign of zero (design/signed-zero.md): a unit whose number result may be -0 is read as one opaque unit keyed by its source (common.mjs signedZero), out of the heap core. normalized (x against x === 0 ? 0 : x), negated (-x against 0 - x), times_zero (x * 0 against 0), magnitude (Math.abs(x) against x < 0 ? -x : x) and plus_zero (x + 0 against x) differ at x = -0 or x = 0 and are not proved; lane B witnesses each (-0 is drawn as the fourth special value). doubled (x * 2 against x + x) is equal on every double and stays unproved: both sides may answer -0, so both are opaque and their sources differ; the structural reading (row 3181675e) proves it. positive (n > 0 ? n : 1 against n >= 1 ? n : 1, an int file): neither result may be -0 (n is tested nonzero), proved. untouched (a + b on both sides): the same source, proved.",
+ "b": {"normalized": "WITNESS", "negated": "WITNESS", "timesZero": "WITNESS", "magnitude": "WITNESS", "plusZero": "WITNESS", "doubled": "PASS-bounded", "positive": "PASS-bounded", "untouched": "PASS-bounded"}
+}
