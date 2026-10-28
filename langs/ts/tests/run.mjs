@@ -631,7 +631,11 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
     add('convert', name, 'before converts to after.ts', got === want, got === want ? 'same text' : `differs at line ${at + 1}: ${JSON.stringify(got.split('\n')[at] ?? '')}`);
     let rep = null; try { rep = JSON.parse(fs.readFileSync(json, 'utf8'))[0]; } catch { /* no report fails below */ }
     const file = rep?.files?.[0], rs = (rep?.rows ?? []).filter((r) => !r.caller);
-    const ok = c.status === 0 && (file?.applied?.length ?? 0) > 0 && !file?.reverted && rs.length > 0 && rs.every((r) => r.verdict === 'PASS-proved' || r.verdict === 'PASS-bounded');
+    // an optional expect.json per fixture holds the counts ({"applied": N, "listed": M}): 0 applied is a pass when the lint admits every site
+    const want_ = fs.existsSync(path.join(d, 'expect.json')) ? JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')) : null;
+    const nApplied = file?.applied?.length ?? 0;
+    const counted = want_ ? nApplied === want_.applied && (file?.listed?.length ?? 0) === want_.listed && (nApplied === 0 || rs.length > 0) : nApplied > 0 && rs.length > 0;
+    const ok = c.status === 0 && counted && !file?.reverted && rs.every((r) => r.verdict === 'PASS-proved' || r.verdict === 'PASS-bounded');
     add('convert', name, 'applied and proved, no WITNESS', ok, rep ? `${file?.applied?.length ?? 0} applied, ${file?.listed?.length ?? 0} listed; ${count(rs)}${file?.reverted ? '; reverted: ' + file.reverted : ''}` : (c.stderr || c.stdout).trim().slice(-160));
     fs.writeFileSync(unit, fs.readFileSync(path.join(d, 'wrong.ts'), 'utf8'));
     const wj = path.join(tmp, `convert-${name}-wrong.json`);
