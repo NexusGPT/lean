@@ -432,6 +432,8 @@ add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clo
 // a run never ends without a verdict: a drained loop and a budget stop are ASK, exit 2; a wide record, a deep nesting and an `@/` alias get verdicts
 const silent = run('node', [path.join(here, 'no-silent-exit.mjs')]);
 add('runtime', 'no-silent-exit', 'ASK on a drained loop or a budget stop; verdicts on wide, nested and aliased inputs', silent.status === 0, (silent.stdout + silent.stderr).trim().split('\n').pop());
+const importers = run('node', [path.join(here, 'no-silent-exit-importers.mjs')]); // an importer's error outside a unit run exits 1; pr.mjs without git history names lean unknown
+add('runtime', 'no-silent-exit-importers', 'exit 1 outside a unit run; late error recorded inside; pr.mjs lean unknown', importers.status === 0, (importers.stdout + importers.stderr).trim().split('\n').pop());
 
 // a self-pair never witnesses: a file compared against itself through lane B is PASS-bounded (a module that starts
 // asynchronous work while it loads is the case that broke it: that work is the starting state of both sides)
