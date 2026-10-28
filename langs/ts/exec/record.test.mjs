@@ -50,3 +50,20 @@ test('runPair emits a separate v2 record including the head and drawn input', as
     assert.equal(r.witnesses[0].record.sides.parent.random.length, 1);
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
+
+test('pr report passes the same v2 record through the checked row', async () => {
+  const { prReport, reportJSON } = await import('../pr.mjs');
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path'); const { spawnSync } = await import('node:child_process');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'witness-report-test-'));
+  const git = (...args) => { const r = spawnSync('git', ['-C', d, ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr); return r.stdout.trim(); };
+  try {
+    git('init'); git('config', 'user.name', 'record test'); git('config', 'user.email', 'test@example.invalid');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { return x; }'); git('add', 'a.ts'); git('commit', '-m', 'before');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { return x + 1; }');
+    const rows = await prReport({ repo: d, base: 'HEAD', project: false, n: 1, dafnySeconds: 1, fresh: true });
+    const row = reportJSON(rows).rows.find(r => r.unit === 'f');
+    assert.equal(row.verdict, 'WITNESS');
+    assert.equal(row.witness.record?.schema, 'witness-record/v2');
+    assert.deepEqual(JSON.parse(JSON.stringify(reportJSON(rows))).rows.find(r => r.unit === 'f').witness.record, row.witness.record);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
