@@ -15,6 +15,7 @@ import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedu
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
+import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -245,6 +246,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (OBJECT_PROTOTYPE_FUNCTIONS.has(name)) return v(e, 'prototype', `\`Object.${name}\` reaches the prototype chain or the property descriptors; no transition models it`);
     if (name === 'freeze' || name === 'seal' || name === 'preventExtensions') return v(e, 'freeze', `\`Object.${name}\` makes a later write throw in strict code; the value reading has no fault for that write, so no transition models it yet`);
     if (name === 'assign' && !(e.arguments[0] && ts.isObjectLiteralExpression(unparenX(e.arguments[0])))) return v(e, 'assign-target', '`Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources into a new object');
+    if (name === 'assign') for (const s of e.arguments.slice(1)) { const why = copySourceWhy(checker, s); if (why) return v(e, 'spread-source', `\`Object.assign\` onto a literal copies every own key of \`${s.getText(sf).slice(0, 40)}\`: ${why}; the call is read as a function of its arguments' values, which hold declared fields alone, so write the copy as a spread \`{ ...x }\` (escape spread_source)`); } // the spread's twin: one test (common.mjs copySourceWhy)
     return null;
   };
   // site: the label of the advised rewrite as decided at this site ({ label, precondition }), for the rules that decide it
@@ -1372,7 +1374,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ObjectLiteralExpression:
         if (e.properties.some(ts.isGetAccessorDeclaration) && !e.properties.every((p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p) || ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p)) && p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)))) return v(e, 'unsupported-syntax', 'literal getters need fixed named fields; use a class for spread or computed accessors');
         e.properties.forEach((p) => {
-          if (ts.isSpreadAssignment(p)) { if (localMethodLiteral(tOf(p.expression))) return v(p, 'object-method-mutation', 'spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly'); return expr(p.expression); }
+          if (ts.isSpreadAssignment(p)) { if (localMethodLiteral(tOf(p.expression))) return v(p, 'object-method-mutation', 'spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly'); const cs = copySource(checker, p.expression, p); if (cs.kind === 'refuse') return v(p, 'spread-source', `\`{ ...${p.expression.getText(sf).slice(0, 40)} }\` copies every own key: ${cs.why} (escape spread_source)`); return expr(p.expression); } // a copy carries everything its source carries: built keys, or an uninterpreted copy of the source (common.mjs copySource)
           if (ts.isShorthandPropertyAssignment(p)) return checkIdent(p.name);
           if (ts.isPropertyAssignment(p)) {
             if (literalProtoMember(p)) return v(p, 'prototype', '`__proto__:` in a literal sets the object\'s prototype, not a key; the value reading has only plain objects (prototype Object.prototype); write the key computed as `[\'__proto__\']` for an own key, or leave it out');

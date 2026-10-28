@@ -1,0 +1,8 @@
+{
+ "laneBOnly": true,
+ "why": "heap-3 (design/heap-3.md section 1). The record copies whose term cannot be formed, refused by spread-source (escape spread_source): a spread after other members (late: an own key holding undefined overwrites a), and Object.assign onto a literal from a value the function did not build (the call is read as a function of the values of its arguments, which hold declared fields alone). Both were proved on the base 9d6229a against the fields copied by hand. Lane B: assignBag WITNESS (an undeclared entry drawn), late WITNESS (a: undefined).",
+ "b": {
+  "assignBag": "WITNESS",
+  "late": "WITNESS"
+ }
+}
