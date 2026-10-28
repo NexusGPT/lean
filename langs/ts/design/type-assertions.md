@@ -33,10 +33,16 @@ The checker's error type (an import the checkout cannot resolve) is the environm
 `typeAssertion(checker, node)`, the same file, used by the lint (rule `type-assertion`, every expression) and by the
 translator (`convertToD`, before it converts): a held value, or an any or unknown value in a slot of another type, is
 admitted where its reading carries it: an operand, a receiver, a test (`typeof`, `instanceof`, `in`,
-`Array.isArray`, a condition, a switch), a held local, the unit's own result, an argument to an outside call
-(imported, or a lib call taking `e as any` of a typed value). Elsewhere the unit is refused: a same-file callee's
-parameter, a field of a literal, an array element, a callback's result, an index, a hook setter. A call of a same-file
-unit whose result is held is refused too: the caller would read it with the asserted type.
+`Array.isArray`, a condition, a switch), a local (declared or written by `=`: the translator's `symType` reads its
+real type too), the unit's own result, an argument to an outside call (imported, or a lib call taking `e as any` of
+a typed value). Refused where the opaque value cannot be carried, each with its structural follow-up:
+- a same-file callee's parameter: the callee's lemma ranges over its declared type (follow-up: read the callee once
+  more at Any for such a call);
+- a field of a literal, an array element (`push`), a callback's result, an index: the datatype or sequence holds the
+  declared Dafny type (follow-up: a held field or element typed Any in its datatype);
+- a call of a same-file unit whose result is held: the callee's signature returns the asserted type (follow-up: such a
+  unit returns Any);
+- a compound write (`+=`): it reads the target's declared operator.
 
 ## Soundness
 
@@ -62,8 +68,12 @@ Each is refused at the slot named; the unit reads its held value faithfully up t
 
 ## Measured
 
-`node langs/ts/census.mjs <root>`, inside the subset (base 9d6229a, then be3045d):
+`node langs/ts/census.mjs <root>`, inside the subset (base 9d6229a, then dd9c58d):
 | tree | before | after | type-assertion the only rule |
 |---|---:|---:|---:|
-| nexus | 23,850 of 26,520 | 22,393 | 1,279 units (1,121 a slot, 158 a call of a held-result unit) |
-| langchainjs | 3,441 of 4,871 | 3,162 | |
+| nexus | 23,850 of 26,520 | 22,411 | 1,263 units (1,104 a slot, 159 a call of a held-result unit) |
+| langchainjs | 3,441 of 4,871 | 3,167 | |
+
+The invariant: no value is given a Dafny type its run-time value has not been shown to have; a value whose type was
+asserted rather than checked is read at the type its source proves, and converted to the asserted type only as the
+unit's own result, where both sides apply the same uninterpreted conversion.
