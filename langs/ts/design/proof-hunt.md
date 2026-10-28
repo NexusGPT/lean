@@ -35,7 +35,7 @@ type the runtime value lacks (an absent value read as a T: `+ 0`, `typeof`, `===
 | 4 | a loop helper running on after a callee faults in a callback | lastOk | closed on this base | loop helpers | kept as must-not-prove |
 | 5 | for-in over a record: creation order and key presence | keyOrder, keysOfParam, optKeys | open, hidden | :5354 `Object_keys(D)` of a datatype value | name the key list by the source (as `Object_<name>_source_<hash>` at :3489), or refuse for-in over a record type |
 | 6 | a let read before any write | definite, definiteS, lateInit | open, hidden | :4856, :4911, :2223 uninit_T | refuse the read TypeScript does not vouch for (`let v!:`, a write only a closure makes), or read it as undefined |
-| 7 | a module constant holding a function value | scaled, applied | open, hidden | :551 call_args_<name>, :1408 external <name> | key it by its declaration and reach (as :1985 should), or refuse a non-unit callable constant |
+| 7 | a module constant holding a function value | scaled, applied | open, hidden | :551 call_args_<name> (a callback), :1403 to :1416 call_args_<name> (a direct call) | key it by its declaration and reach (as :1985 should), or refuse a non-unit callable constant |
 | 8 | the number envelope: exact int and real, no signed zero | negZero, bigInt; scratch `a + b - b + 0.5` (real file) | open; the envelope is documented (numbers-bitwise-nan.md); real rounding is witnessed | int and real readings | owner decision: claim the envelope in the certificate, or refuse results that can leave it |
 | 9 | a module constant whose initializer calls a changed same-file function | cfgX | open, hidden | :712 `Module_file_get_<name>_<hash(decl text)>`, a module cell of the world named by its declaration's own text | name it by `iteratorProgram(decl)` (the same-file declarations it reaches), as Static_ does at :861 |
 | 10 | a value of another runtime type asserted to T | anyAs, asCast, unknownAs | open, hidden | :1719 to :1744 Any_as_T, cast_* | keep the source representation until a guard decides it, or refuse a narrowing `as` |
@@ -49,7 +49,8 @@ type the runtime value lacks (an absent value read as a T: `+ 0`, `typeof`, `===
 | 2083 absent_T (`x!`) | the absent value as a T | yes: class 2 |
 | 2420, 3133, 3283, 3285, 5371 absent_V (dictionary typed without absence) | a missing key as a V | guarded (untracedDictValue, missingKey); dictTruth, dictUndef, protoLit, protoRead not proved |
 | 3260 open_key_read_to_T, 3140 `<T>_<name>`, 2491 in_record | a read of a declared-fields datatype | yes: class 1 |
-| 2223, 3677 (useState()), 4856, 4911 uninit_T | a let before its write | yes: class 6 (useState() unprobed, same shape) |
+| 2223, 4856, 4911 uninit_T | a let before its write | yes: class 6 |
+| 3677 uninit_T (useState() without an argument) | the first state | no by reading: its state type holds undefined, so the shared value is an Option the lemma never decides (unprobed) |
 | 4909 uninit_Any | undefined as Any | no: Any claims no type |
 | 5354 Object_keys(D), 5357 `<T>_to_seq` | the keys of a record value | yes: class 5 (`_to_seq` same shape, unprobed) |
 | 551, 2262 call_args_<name>; 1408, 1409, 1416 external <calleeName> | a named callee outside the units | yes for a module constant (class 7); no for an import or a lib global (the world) |
