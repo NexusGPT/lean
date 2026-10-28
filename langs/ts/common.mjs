@@ -1648,6 +1648,6 @@ export function untypedThisParam(checker, fn) {
   if (!p || !ts.isIdentifier(p.name) || p.name.text !== 'this') return null;
   if (!p.type) return '`this` is declared without a type; declare the receiver type (`this: Ctx`)';
   const t = checker.getTypeFromTypeNode(p.type);
-  if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return `\`this: ${p.type.getText()}\` names no receiver type; declare the receiver type the function reads (\`this: Ctx\`)`;
+  if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return /^(any|unknown)$/.test(p.type.getText()) ? `\`this: ${p.type.getText()}\` names no receiver type; declare the receiver type the function reads (\`this: Ctx\`)` : `\`this: ${p.type.getText()}\` reads as any (the type does not resolve here); make its declaration visible to the file or declare a receiver type that resolves`;
   return null;
 }
