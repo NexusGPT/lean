@@ -450,6 +450,15 @@ export function sandbox(env, root) {
   const ctx = vm.createContext(g);
   env.realm = vm.runInContext('({ Array: [].constructor, Object: ({}).constructor })', ctx); // the context's own intrinsics: an array literal in the unit uses them, not the host's Array; patched while a recording window is open
   env.ctx = ctx; // a unit call runs under this context's watchdog (guardedCall): a synchronous loop that never ends is a timeout, never a hang or a native crash
+  // a module is inside the package root only when its real path is the root's real path or starts with it and a separator:
+  // a sibling folder that shares the root's name prefix, a link inside the root to a file outside it and a .json outside
+  // are outside; no root given, nothing is outside
+  const realRoot = root ? (() => { try { return fs.realpathSync(root); } catch { return path.resolve(root); } })() : null;
+  const insideRoot = (file) => {
+    if (!realRoot) return true;
+    let real; try { real = fs.realpathSync(file); } catch { return false; }
+    return real === realRoot || real.startsWith(realRoot + path.sep);
+  };
   function load(file) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
@@ -474,14 +483,14 @@ export function sandbox(env, root) {
       if (spec.startsWith('.') ) {
         if (/\.(css|scss|sass|less|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|md|txt|html|wasm)(\?.*)?$/i.test(spec)) return env.module(spec); // an asset, not code: a fake module
         const r = resolveRelative(abs, spec);
-        if (r && /\.json$/i.test(r)) { try { return JSON.parse(fs.readFileSync(r, 'utf8')); } catch { return env.module(spec); } }
-        if (r && (!root || r.startsWith(root))) return load(r);
+        if (r && /\.json$/i.test(r) && insideRoot(r)) { try { return JSON.parse(fs.readFileSync(r, 'utf8')); } catch { return env.module(spec); } } // a .json outside the root falls through to the fake below
+        if (r && !/\.json$/i.test(r) && insideRoot(r)) return load(r);
         return env.module(spec);
       }
       if (spec === 'react') return react;
       if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
       const alias = aliasTarget(abs, spec); // the project's own `paths` alias to a file of this package is code, loaded like a relative import
-      if (alias && (!root || alias.startsWith(root + path.sep))) {
+      if (alias && insideRoot(alias)) {
         // an aliased module whose top level cannot run in the sandbox (a bundler's import.meta.env, a host global, a
         // require.resolve, a file TypeScript cannot emit alone) is the environment's module, as every alias was before
         // aliases were loaded: the same fake on both sides; the files its failed load cached are dropped with it

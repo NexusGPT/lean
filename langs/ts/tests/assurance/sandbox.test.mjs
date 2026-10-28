@@ -114,6 +114,56 @@ test('loader: a paths alias that resolves outside the package root is a recordin
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('loader: a sibling folder that shares the root\'s name prefix is outside the root and is a recording fake', () => {
+  const dir = tree({
+    'pkg-evil/y.ts': "export const loaded = 'outside';",
+    'pkg/in.ts': "export const loaded = 'inside';",
+    'pkg/a.ts': "import * as o from '../pkg-evil/y';\nimport * as i from './in';\nexport function f() { return [o.loaded, i.loaded]; }",
+  });
+  try {
+    const env = new Environment(1);
+    const exp = sandbox(env, path.join(dir, 'pkg')).load(path.join(dir, 'pkg/a.ts'));
+    const [out, inside] = exp.__lean_units.f();
+    assert.notEqual(out, 'outside', 'the sibling folder pkg-evil was loaded as if it were inside pkg');
+    assert.ok(isFake(out), 'the import is a fake');
+    assert.equal(inside, 'inside', 'a file inside the root still loads');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('loader: a symbolic link inside the root that points outside it is a recording fake', () => {
+  const dir = tree({
+    'out/y.ts': "export const loaded = 'outside';",
+    'pkg/in.ts': "export const loaded = 'inside';",
+    'pkg/a.ts': "import * as o from './link';\nimport * as i from './alias';\nexport function f() { return [o.loaded, i.loaded]; }",
+  });
+  try {
+    fs.symlinkSync(path.join(dir, 'out/y.ts'), path.join(dir, 'pkg/link.ts'));
+    fs.symlinkSync(path.join(dir, 'pkg/in.ts'), path.join(dir, 'pkg/alias.ts'));
+    const env = new Environment(1);
+    const exp = sandbox(env, path.join(dir, 'pkg')).load(path.join(dir, 'pkg/a.ts'));
+    const [out, inside] = exp.__lean_units.f();
+    assert.notEqual(out, 'outside', 'the file behind the link was loaded');
+    assert.ok(isFake(out), 'the import is a fake');
+    assert.equal(inside, 'inside', 'a link that stays inside the root still loads');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('loader: a relative .json file outside the package root is a recording fake, never read', () => {
+  const dir = tree({
+    'out/data.json': JSON.stringify({ secret: 'outside' }),
+    'pkg/data.json': JSON.stringify({ secret: 'inside' }),
+    'pkg/a.ts': "import * as o from '../out/data.json';\nimport * as i from './data.json';\nexport function f() { return [o.secret, i.secret]; }",
+  });
+  try {
+    const env = new Environment(1);
+    const exp = sandbox(env, path.join(dir, 'pkg')).load(path.join(dir, 'pkg/a.ts'));
+    const [out, inside] = exp.__lean_units.f();
+    assert.notEqual(out, 'outside', 'the .json outside the root was read');
+    assert.ok(isFake(out), 'the import is a fake');
+    assert.equal(inside, 'inside', 'a .json inside the root is still read');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('loader: an asset import is a fake module, never read', () => {
   const dir = tree({
     'pkg/style.css': '.a { color: red }',

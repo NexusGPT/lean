@@ -274,6 +274,8 @@ Lane B's bound is real: a frozen world, generated inputs, click sequences to a s
 
 What the code under test can reach, what the certificate holds and never holds, and the check behind each line: [`docs/ASSURANCE.md`](docs/ASSURANCE.md) (`node scripts/assurance-check.mjs`).
 
+lean's execution sandbox records and fakes the world; it does not contain hostile unit code, which can reach the host process, and containment is the gate's kernel profile and proxy.
+
 ## Repository layout
 
 ```

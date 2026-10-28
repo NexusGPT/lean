@@ -12,7 +12,7 @@ recording fakes (`langs/ts/exec/fake.mjs`).
 - The network: `fetch` is a fake (run.mjs line 438); a call is recorded with its arguments and sends nothing.
   `check: sandbox: fetch is a recording fake and sends nothing`
 - Imports: every package and every Node built-in (`fs`, `child_process`, `http`), so every import but a file of the
-  package, is a fake module (run.mjs line 485); `react` and its JSX runtime are lean's models (lines 481, 482). A call
+  package, is a fake module (run.mjs line 504); `react` and its JSX runtime are lean's models (lines 490, 491). A call
   on a fake is recorded; no file is written, no process starts.
   `check: sandbox: a package or built-in import is a recording fake, never the real module`
 - The host's environment: `process` is a fake (run.mjs line 434), so `process.env` answers fakes, never the host's
@@ -22,42 +22,48 @@ recording fakes (`langs/ts/exec/fake.mjs`).
   `check: sandbox: random draws are seeded, the same for the same seed`
 - Answers: a fake answers from the seed and the request's path, so both versions see the same answers; a call into the
   world faults on a seeded draw of about one in twelve (fake.mjs line 71); more than 20000 requests stop the run as a
-  budget (fake.mjs line 94); a synchronous call runs under the vm's timeout (run.mjs line 543).
+  budget (fake.mjs line 94); a synchronous call runs under the vm's timeout (run.mjs line 562).
   `check: fakes: one seed and one path give one answer, faults are seeded, and past 20000 requests the run stops`
 - A run never ends without a verdict: a drained event loop or a budget stop is ASK with exit 2.
   `check: runtime no-silent-exit`
 - Limit, no check: `node:vm` is not a security boundary. The globals hand the context the host's `Object`, and
   `Object.constructor('return process')()` reaches the host's real `process` (probe of 2026-10-28, `typeof ... .pid`
-  answered `number`). It makes honest code deterministic and recorded; it does not contain hostile code. In the
-  gate, containment is the kernel profile and the effect proxy (sections 5 and 6).
+  answered `number`). lean's vm context records and fakes the world; it does not contain hostile unit code, which can
+  reach the host process; containment is the gate's kernel profile and proxy (sections 5 and 6).
 
 ## 2. The loader's path validation
 
-The package root is the nearest folder above the file holding a `package.json` (`findRoot`, run.mjs line 952).
+The package root is the nearest folder above the file holding a `package.json` (`findRoot`, run.mjs line 1009).
 
-- A relative import is compiled and loaded only when it resolves inside the root (run.mjs line 478); one that leaves
-  the root is a fake. `check: loader: a relative import that leaves the package root is a recording fake`
-- An alias from the project's `paths` is loaded only when it resolves under `root + path.sep` (run.mjs line 484).
+- A module is inside the root only when its real path (`fs.realpathSync`) equals the root's real path or starts with it
+  followed by a path separator (`insideRoot`, run.mjs line 457). One that is not inside is the environment's fake module
+  (`env.module`, the same fake as a package); lean has no separate refusal verdict for an outside module.
+- A relative import is compiled and loaded only when it is inside the root (run.mjs line 487); one that leaves the
+  root is a fake. `check: loader: a relative import that leaves the package root is a recording fake`
+- A sibling folder whose name starts with the root's name (`pkg-evil` beside `pkg`) is outside the root.
+  `check: loader: a sibling folder that shares the root's name prefix is outside the root and is a recording fake`
+- A symbolic link inside the root that points to a file outside it is outside the root, since its real path is tested;
+  a link that stays inside the root loads.
+  `check: loader: a symbolic link inside the root that points outside it is a recording fake`
+- A relative `.json` import is read only when it is inside the root (run.mjs line 486); outside, it is a fake and the
+  file is never read. `check: loader: a relative .json file outside the package root is a recording fake, never read`
+- An alias from the project's `paths` is loaded only when it is inside the root (run.mjs line 493).
   `check: loader: a paths alias that resolves outside the package root is a recording fake`
 - A relative asset import (`.css`, images, fonts, `.md`, `.html`, `.wasm`) is a fake module and is never read (run.mjs
-  line 475). `check: loader: an asset import is a fake module, never read`
-- Limits, no check (probe of 2026-10-28, each loaded for real): the root test at line 478 is a string prefix without a
-  separator, so a sibling folder `pkg-x` beside a root `pkg` passes it; a symbolic link inside the root to a file outside
-  it passes it (the path is not resolved to its real path); a relative `.json` file is read wherever it resolves (line
-  477 has no root test). Fix: compare with `root + path.sep`, test `fs.realpathSync(r)`, test `.json` too.
+  line 484). `check: loader: an asset import is a fake module, never read`
 
 ## 3. What lean records, and what it never records
 
-The certificate of `langs/ts/check.mjs` (line 47 onward) holds: the tool name; each input file's path and the first 16
-hex digits of its SHA-256 (line 29); the unit; lane B's verdict, reason and bound (inputs run, seed, time limit, fake
-policy) with each witness's input, its drawn arguments and the source lines on each side (line 60); lane A's lemma
+The certificate of `langs/ts/check.mjs` (line 66 onward) holds: the tool name; each input file's path and the first 16
+hex digits of its SHA-256 (line 32); the unit; lane B's verdict, reason and bound (inputs run, seed, time limit, fake
+policy) with each witness's input, its drawn arguments and the source lines on each side (line 79); lane A's lemma
 results, the Dafny summary line, the SHA-256 prefixes of the theorem and the prelude, the output of `dafny --version`,
-the time limit and the temporary folder (line 130).
+the time limit and the temporary folder (line 150).
 `check: certificate: the input files by SHA-256, the bound with its seed, the theorem hash and the Dafny version`
 
 - Never held: the producer's words. `check.mjs` reads only the two files, the unit, the scope file, `--project` and
-  its numeric options (line 229); any other text given beside them reaches neither the verdict nor the certificate.
-  The one text it reads from the candidate besides code is a `// lean-adapter` comment (line 207): an input map the
+  its numeric options (line 246); any other text given beside them reaches neither the verdict nor the certificate.
+  The one text it reads from the candidate besides code is a `// lean-adapter` comment (line 226): an input map the
   proof then states as its claim, named in the certificate.
   `check: certificate: words given beside the files never reach the verdict or the certificate`
 - Never held: the host's environment variables and real network answers (section 1). Held when the unit hands them to
@@ -76,9 +82,12 @@ the time limit and the temporary folder (line 130).
 - The run identity hashes lean's commit, the hashes of the library and advice tables and the Dafny version string
   (`runIdentity` and `runTools`, pr.mjs lines 43 and 51); a change to any of them is a new identity.
   `check: run identity: lean's commit, its tables and the Dafny version each change the identity`
-- Limits, no check: lean records the Dafny version as text and does not hash the `dafny`, Z3 or `node` binaries; the
-  certificate records no Node version and no separate Z3 version (check.mjs line 14 says Z3; line 130 records
-  `dafny --version` only).
+- The certificate's `tools` record (check.mjs line 151) holds `node` (`process.version`), `dafny` (the text of
+  `dafny --version`) and `z3` (the text of `z3 --version`, run on the Z3 bundled in a `z3/bin` folder beside the dafny
+  executable, else on the `z3` on PATH that Dafny falls back to; `z3Source` names which, and `z3` is null with the
+  reason in `z3Source` when neither answers). `node` is recorded on every certificate; `dafny` and `z3` once lane A has
+  run Dafny. `check: certificate: the tools record holds the Node version, the Dafny version text and the version Z3 reports`
+- Limits, no check: lean records these versions as text and does not hash the `dafny`, Z3 or `node` binaries.
 - In the gate, outside lean: the release instrument of experiment M35 (version 4) calls `node` and the database
   tools by absolute path, holds the SHA-256 of each binary and its library closure in a signed reference, and checks
   them again before each spawn. No check here.
