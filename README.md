@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#how-it-works">How it works</a> · <a href="#the-verdicts">Verdicts</a> · <a href="#what-it-reads">What it reads</a> · <a href="#use-cases">Use cases</a> · <a href="#writing-code-lean-can-prove">Writing provable code</a> · <a href="#using-it">Using it</a> · <a href="#what-is-built-and-what-is-planned">Built and planned</a> · <a href="#limits">Limits</a>
+  <a href="#how-it-works">How it works</a> · <a href="#the-verdicts">Verdicts</a> · <a href="#what-it-reads">What it reads</a> · <a href="#use-cases">Use cases</a> · <a href="#writing-code-lean-can-prove">Writing provable code</a> · <a href="#using-it">Using it</a> · <a href="#what-is-built-and-what-is-planned">Built and planned</a> · <a href="#limits">Limits</a> · <a href="#what-lean-is-not">What lean is not</a>
 </p>
 
 ---
@@ -46,9 +46,41 @@ That is a ledger function whose candidate rejects an event that lands exactly on
 
 `check.mjs` reports the strongest verdict the evidence supports: `WITNESS`, then `PASS-proved`, `PASS-decided`, `PASS-bounded`, `ASK`. A bounded pass never becomes a proof. Two more sit outside the order: `REFUSE` (a construct with no faithful reading, or a local import that cannot load) and `NEW` (a function with no parent, run with no equality claim).
 
+### Outside the proof subset, you still get an answer
+
+The proof lane reads a subset of TypeScript ([listed below](#what-it-reads)). A function outside it is not skipped. The lint names the construct, lane A says `ASK`, and lane B still runs both versions on drawn inputs. You get a `WITNESS` or a `PASS-bounded`, never silence.
+
+An example from [`alias_result`](langs/ts/tests/pairs/alias_result/). `bump` returns the first row with a positive count. The candidate adds one to that row, which belongs to the caller, and takes it off the result. The returned number is the same on every input, so a test of the return value passes.
+
+```ts
+// parent                                     // candidate
+const t = rs.find((r) => r.n > 0);            const t = rs.find((r) => r.n > 0);
+return t ? t.n : 0;                           if (t) t.n = t.n + 1;
+                                              return t ? t.n - 1 : 0;
+```
+```
+$ node langs/ts/lint/lint.mjs langs/ts/tests/pairs/alias_result/candidate.ts --advice | grep ':59:'
+langs/ts/tests/pairs/alias_result/candidate.ts:59:10  alias-mutation  `t` holds the result of `Array.prototype.find`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name
+$ node langs/ts/check.mjs --parent langs/ts/tests/pairs/alias_result/parent.ts --candidate langs/ts/tests/pairs/alias_result/candidate.ts --unit bump
+WITNESS -> bump.json                 # input 5: both return 1; the first row is { n: 1 } in the parent, { n: 2 } in the candidate
+$ node langs/ts/check.mjs --parent langs/ts/tests/pairs/alias_result/parent.ts --candidate langs/ts/tests/pairs/alias_result/candidate.ts --unit Box.tag
+PASS-bounded -> box-tag.json         # lanes.A: ASK, translate: outside the subset (alias-mutation)
+```
+Both ran with `--no-project --n 30 --dafny-seconds 30`; the `#` lines are read from the certificate. `Box.tag` is a harmless refactor with the same refusal: lane B finds no difference in 30 inputs and says `PASS-bounded`, not proved.
+
+**Impact:** a refused function is not an unchecked one. The row the return value hides is found, and a refactor lean cannot prove says so.
+
 ## What it reads
 
-TypeScript as written: records, arrays, tuples, strings, Map and Set, optionals and unions, generics; loops, `switch`, labelled `break`, recursion, generators; `try`/`catch`/`finally` and throws across calls; `async`/`await`, `.then` chains, `Promise.all`; classes with fields, getters, statics and decorators; callbacks and functions as values; parameters a function changes, read as outputs; timers on a virtual clock; dynamic `import()`; React components with hooks, effects, context and Tailwind classes. Each construct is read **exact** (a Dafny value of the same meaning), as a **transition** (a step of the world), **uninterpreted** (the same unknown on both sides), **opaque** (one step named by its text), or **refused** by name. What stays refused, because no value model keeps the meaning: `eval` and `new Function`, the prototype chain, `super` as a value, `===` on two objects, a change through an alias of a parameter. The area table is in [`docs/how-it-works.md`](docs/how-it-works.md#what-it-reads); every construct, with its reading and an example, is in [`langs/ts/subset.md`](langs/ts/subset.md).
+This is the proof subset today, the code the lint admits to the proof lane. TypeScript as written: records, arrays, tuples, strings, Map and Set, optionals and unions, generics; loops, `switch`, labelled `break`, recursion, generators; `try`/`catch`/`finally` and throws across calls; `async`/`await`, `.then` chains, `Promise.all`; classes with fields, getters, statics and decorators; callbacks and functions as values; parameters a function changes, read as outputs; timers on a virtual clock; dynamic `import()`; React components with hooks, effects, context and Tailwind classes. Each construct is read **exact** (a Dafny value of the same meaning), as a **transition** (a step of the world), **uninterpreted** (the same unknown on both sides), **opaque** (one step named by its text), or **refused** by name. The area table is in [`docs/how-it-works.md`](docs/how-it-works.md#what-it-reads); every construct, with its reading and an example, is in [`langs/ts/subset.md`](langs/ts/subset.md).
+
+**What lean refuses or leaves unproved by design.** Every refusal the lint makes has a rule name, and the lint prints `file:line rule message` with what to write instead. Each family of refusal has a fixture under [`fixtures/escapes/ts/`](fixtures/escapes/ts/), and the suite fails if the lint accepts it or names another rule. A refused function still gets lane B's verdict. Three refusals matter most:
+
+- **A prototype write** (`d[k] = v` with `k` possibly `"__proto__"`, `Object.create`): refused, rule `prototype`. Such a write can change the behaviour of any object, so a proof would need the whole prototype chain as state. Write a `Map`, or `{ ...d, [k]: v }`, which makes an own key.
+- **A loop with no measure lean can derive:** read as one opaque step. The same loop on both sides is the same step; a changed loop is `ASK:unproved`, because a proof that cannot show a loop ends is a false proof. Write a counted `for`, or add a `// @decreases` hint.
+- **A changed signature:** `ASK:interface`. A different signature is a different function until you state the mapping. Declare it as a `// lean-adapter` comment on the candidate, and lean proves the adapted candidate equal to the parent.
+
+**Code outside the repository.** A call into code lean does not read is one unknown, the same on both sides: a step of the world, equal for equal arguments. A proof therefore holds *modulo* the outside. Moving, adding or dropping such a call changes the sequence of steps, so it is never proved equal. `ASK` is for one case only: the two versions differ, and the only trace of the difference passes through a module lean could not load. Lean never ran that module, so it cannot say a call differs from its inlined body. A difference anywhere else stays a `WITNESS`. Runs for all four, each from a pair in this checkout: [`docs/limits.md`](docs/limits.md).
 
 ## Use cases
 
@@ -270,13 +302,29 @@ Every row lands only with the suite green and the regression table at or above i
 
 ## Limits
 
-lean says `ASK` rather than guess. Today it asks on: a `while` loop with no measure it can derive, a loop reshaped into a different loop when its body does more than guard and push, a result that may share an input (`ASK:identity`), a suspended render, two asynchronous schedules racing beyond the explored bound, a changed signature without a declared adapter (`ASK:interface`), and code the repository does not contain.
+lean says `ASK` rather than guess. Today it asks on:
 
-Lane B's bound is real: a frozen world, generated inputs, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. Pixels, layout and the accessibility tree are never judged, and the certificate says so. Measured figures live under [`langs/ts/design/`](langs/ts/design/), each with its date and the commit it was measured at.
+- a changed loop with no measure it can derive, or reshaped into a different loop when its body does more than guard and push;
+- a result that may share an input (`ASK:identity`);
+- a suspended render;
+- two asynchronous schedules racing beyond the explored bound: a race lean did not explore stays a stated bound, never a pass;
+- a changed signature without a declared adapter (`ASK:interface`);
+- a difference whose only trace passes through a module lean cannot load.
 
-What the code under test can reach, what the certificate holds and never holds, and the check behind each line: [`docs/ASSURANCE.md`](docs/ASSURANCE.md) (`node scripts/assurance-check.mjs`).
+Lane B's bound is real: a frozen world, generated inputs, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. The certificate states each bound. Measured figures live under [`langs/ts/design/`](langs/ts/design/), each with its date and the commit it was measured at. What the code under test can reach, what the certificate holds and never holds, and the check behind each line: [`docs/ASSURANCE.md`](docs/ASSURANCE.md) (`node scripts/assurance-check.mjs`).
 
-lean's execution sandbox records and fakes the world; it does not contain hostile unit code, which can reach the host process, and containment is the gate's kernel profile and proxy.
+## What lean is not
+
+- **Not a jail for hostile code.** The sandbox records and fakes the world: the network, imports, the clock, the environment. It runs in a Node `vm` context, which is not a security boundary, so a unit written to escape can reach the host process ([`docs/ASSURANCE.md`](docs/ASSURANCE.md), section 1). Containment is the job of the gate's kernel profile and proxy ([planned](docs/around-lean.md)).
+- **Not a judge of pixels, layout or accessibility.** lean names the state where two renders differ: the props, the click order, the timers, the tree that changes. Rendering those states in a browser and judging them is the gate's job.
+- **Not a judge of what a model says.** The code around a model call is lean's object: retries, routing, parsing the reply, error handling, timers. The reply is an outside call. Both versions must make the same call with the same arguments, or lean witnesses the difference. What the text means is for a check that compares runs, in the gate.
+
+In [`retry`](docs/examples/limits/), the candidate loops `i <= tries` where the parent looped `i < tries`: one call to the model more than the caller allowed. The function that parses the reply (`label`) is untouched, and proved.
+
+```
+$ node langs/ts/check.mjs --parent docs/examples/limits/retry.ts --candidate docs/examples/limits/retry.next.ts --unit askUntilOk --no-project --n 30 --dafny-seconds 30
+WITNESS -> retry.json             # input 0, tries is 0: the parent never calls model.complete, the candidate calls it once
+```
 
 ## Repository layout
 
