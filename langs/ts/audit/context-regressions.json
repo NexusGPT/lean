@@ -1,0 +1,121 @@
+[
+  {
+    "name": "object-method",
+    "source": "const o={f(){return 0;}};",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "object-accessors",
+    "source": "const o={get x(){return 0;},set x(v){}};",
+    "occurrences": 2,
+    "listed": 0,
+    "unlisted": 2
+  },
+  {
+    "name": "object-properties",
+    "source": "const o={f:()=>0,g:function(){}};",
+    "occurrences": 2,
+    "listed": 0,
+    "unlisted": 2
+  },
+  {
+    "name": "class-expression",
+    "source": "const C=class {f(){}};",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "class-field",
+    "source": "class C { f=()=>0; }",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "computed-class-method",
+    "source": "class C {[\"f\"](){}}",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "string-class-method",
+    "source": "class C {\"f\"(){}}",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "nested-function",
+    "source": "function f(){function g(){}}",
+    "occurrences": 2,
+    "listed": 1,
+    "unlisted": 1
+  },
+  {
+    "name": "namespace-function",
+    "source": "namespace N {export function f(){}}",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "multiple-declarators",
+    "source": "const f=()=>0,g=()=>1;",
+    "occurrences": 2,
+    "listed": 0,
+    "unlisted": 2
+  },
+  {
+    "name": "mutable-binding",
+    "source": "let f=()=>0;",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "parenthesized-binding",
+    "source": "const f=(()=>0);",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "anonymous-default",
+    "source": "export default function(){}",
+    "occurrences": 1,
+    "listed": 0,
+    "unlisted": 1
+  },
+  {
+    "name": "duplicate-method",
+    "source": "class C {f(){} f(){}}",
+    "occurrences": 2,
+    "listed": 1,
+    "unlisted": 1
+  },
+  {
+    "name": "getter-name-collision",
+    "source": "class C {get x(){return 0;} get_x(){}}",
+    "occurrences": 2,
+    "listed": 1,
+    "unlisted": 1
+  },
+  {
+    "name": "overload",
+    "source": "function f(x:number):number; function f(x:number){return x;}",
+    "occurrences": 2,
+    "listed": 1,
+    "unlisted": 1
+  },
+  {
+    "name": "bodyless-function",
+    "source": "declare function f():void;",
+    "occurrences": 1,
+    "listed": 1,
+    "unlisted": 0
+  }
+]

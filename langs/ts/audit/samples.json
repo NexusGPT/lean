@@ -1,0 +1,3488 @@
+[
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/EmbedChat/services/embedSessionHistory.ts",
+    "start": 416,
+    "end": 833,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 18,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 416,
+      "end": 833,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "addSession",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 423,
+        "end": 833,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:1"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Profiles/ProfilePromptInfo/PromptEditor/utils/section-protection.ts",
+    "start": 7324,
+    "end": 8453,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 238,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 7324,
+      "end": 8453,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "validateProtectedSections",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 7331,
+        "end": 8453,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:2"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Profiles/CodeInterpreterSkillsEditor/SkillsEditorContext.tsx",
+    "start": 2002,
+    "end": 2269,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 59,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2002,
+      "end": 2269,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "useSkillsEditorTreeState",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2009,
+        "end": 2269,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:3"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/vibe-provisioner/stacks/_shared/repo-root.ts",
+    "start": 827,
+    "end": 1243,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 19,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 827,
+      "end": 1243,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "repoRoot",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 834,
+        "end": 1243,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:4"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Workflow/store/hooks.ts",
+    "start": 2255,
+    "end": 2352,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 85,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2255,
+      "end": 2352,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "useWorkflowNodeStructureKey",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2262,
+        "end": 2352,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:5"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/deployment/folder/delete.command.ts",
+    "start": 300,
+    "end": 1636,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 9,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 300,
+      "end": 1636,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "registerDeploymentFolderDeleteCommand",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 307,
+        "end": 1636,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:6"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/apps/deploy/deploy-state.command.ts",
+    "start": 4233,
+    "end": 6157,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 82,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 4233,
+      "end": 6157,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "registerAppsDeployStateCommand",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 4240,
+        "end": 6157,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:7"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Admin/pages/twilio-console/components/compliance/bundle-status.ts",
+    "start": 1090,
+    "end": 1225,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 38,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1090,
+      "end": 1225,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "bundleStatusColor",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1097,
+        "end": 1225,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:8"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/_common/utils/replace-special-characters.ts",
+    "start": 0,
+    "end": 129,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 1,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 0,
+      "end": 129,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "replaceSpecialCharacters",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 7,
+        "end": 129,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:9"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/mcp-server/src/config.ts",
+    "start": 3396,
+    "end": 4362,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 81,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3396,
+      "end": 4362,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "loadConfig",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 3403,
+        "end": 4362,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:10"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/types/src/shared/websocket/type-guards.ts",
+    "start": 1630,
+    "end": 1856,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 70,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1630,
+      "end": 1856,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "isLeaveChatPayload",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1637,
+        "end": 1856,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:11"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/UltimateCue/features/mention-picker/marker.ts",
+    "start": 4279,
+    "end": 4494,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 122,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 4279,
+      "end": 4494,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "toDisplayString",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 4286,
+        "end": 4494,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:12"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/types/src/shared/file-upload/ai-task-document.config.ts",
+    "start": 1919,
+    "end": 2067,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 67,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1919,
+      "end": 2067,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "getDocumentIcon",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1926,
+        "end": 2067,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:13"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/workflow/utils/validate-plugin-action.ts",
+    "start": 514,
+    "end": 1931,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 15,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 514,
+      "end": 1931,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "validatePluginNodeActions",
+      "modifiers": [
+        "ExportKeyword",
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 521,
+        "end": 1931,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:14"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/langchain-classic/src/chains/openai_functions/openapi.ts",
+    "start": 7732,
+    "end": 13779,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 244,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 7732,
+      "end": 13779,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "convertOpenAPISpecToOpenAIFunctions",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 7739,
+        "end": 13779,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:15"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/providers/langchain-redis/src/filters.ts",
+    "start": 29081,
+    "end": 29165,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 895,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 29081,
+      "end": 29165,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "Timestamp",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 29088,
+        "end": 29165,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:16"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/deprecation-cycle.changelog.ts",
+    "start": 2143,
+    "end": 2442,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 43,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2143,
+      "end": 2442,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "changelogAnnounces",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2150,
+        "end": 2442,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:17"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Admin/components/AdminSecondarySidebar.tsx",
+    "start": 2514,
+    "end": 4217,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 70,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2514,
+      "end": 4217,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "AdminSecondarySidebar",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2521,
+        "end": 4217,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:18"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/langchain-core/src/utils/uuid/stringify.ts",
+    "start": 278,
+    "end": 1265,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 13,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 278,
+      "end": 1265,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "unsafeStringify",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 285,
+        "end": 1265,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:19"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/langchain-core/src/output_parsers/openai_tools/json_output_tools_parsers.ts",
+    "start": 2731,
+    "end": 3070,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 92,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2731,
+      "end": 3070,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "convertLangChainToolCallToOpenAI",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2738,
+        "end": 3070,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:20"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/apps/logs/run-app-logs-read.ts",
+    "start": 1063,
+    "end": 2533,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 21,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1063,
+      "end": 2533,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "runAppLogsRead",
+      "modifiers": [
+        "ExportKeyword",
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1070,
+        "end": 2533,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:21"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Analytics/cue-quote.ts",
+    "start": 2563,
+    "end": 4123,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 58,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2563,
+      "end": 4123,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "buildCueQuote",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2570,
+        "end": 4123,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:22"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Profiles/ProfilePromptInfo/PromptEditor/extensions/plugins/paste-handler.ts",
+    "start": 2349,
+    "end": 3068,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 62,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2349,
+      "end": 3068,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "extractInlineFromBlocks",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2356,
+        "end": 3068,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:23"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/util/fetch-tarball.ts",
+    "start": 1467,
+    "end": 2014,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 26,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1467,
+      "end": 2014,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "fetchTarball",
+      "modifiers": [
+        "ExportKeyword",
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1474,
+        "end": 2014,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:24"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Settings/ApiKeySection/PersonalTokenSection.tsx",
+    "start": 1515,
+    "end": 8278,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 45,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1515,
+      "end": 8278,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "PersonalTokenSection",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1522,
+        "end": 8278,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:25"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/cli/src/util/body.ts",
+    "start": 2909,
+    "end": 3208,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 91,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2909,
+      "end": 3208,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "mergeBodyWithFlags",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2916,
+        "end": 3208,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:26"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/UltimateCue/hooks/use-ultimate-cue-attachments.ts",
+    "start": 1340,
+    "end": 2167,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 36,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1340,
+      "end": 2167,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "useUltimateCueAttachments",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1347,
+        "end": 2167,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:27"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/workspace-mount/win32/win32-powershell.ts",
+    "start": 3077,
+    "end": 3604,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 81,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3077,
+      "end": 3604,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "runForAnswer",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 3084,
+        "end": 3604,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:28"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/tools/ai-tasks/executor/providers/image-source.util.ts",
+    "start": 784,
+    "end": 872,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 31,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 784,
+      "end": 872,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "isDataUri",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 791,
+        "end": 872,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:29"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Payment/PaymentSuccessView.tsx",
+    "start": 357,
+    "end": 1132,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 16,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 357,
+      "end": 1132,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "PaymentSuccessView",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 364,
+        "end": 1132,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:30"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/common/config/deployment-types/index.ts",
+    "start": 13187,
+    "end": 13301,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 456,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 13187,
+      "end": 13301,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "getDeploymentTypeIcon",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 13194,
+        "end": 13301,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:31"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Docs/components/mdx/Card.tsx",
+    "start": 1748,
+    "end": 2062,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 56,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1748,
+      "end": 2062,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "CardGroup",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1755,
+        "end": 2062,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:32"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/agents/core/utils/prompt/variables.ts",
+    "start": 1056,
+    "end": 1294,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 28,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1056,
+      "end": 1294,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "extractVariableNamesFromJson",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1063,
+        "end": 1294,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:33"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/types/src/shared/streaming/provider-reasoning-config.ts",
+    "start": 1381,
+    "end": 1960,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 38,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1381,
+      "end": 1960,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "getAnthropicThinkingValue",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1388,
+        "end": 1960,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:34"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/admin-panel/domain/permission.types.ts",
+    "start": 599,
+    "end": 838,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 29,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 599,
+      "end": 838,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "permissionActionToAuditAction",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 606,
+        "end": 838,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:35"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/cli/src/util/follow-diagnose.ts",
+    "start": 7334,
+    "end": 7457,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 204,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 7334,
+      "end": 7457,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "shortTag",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 7341,
+        "end": 7457,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:36"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/role/_shared/describe-role.ts",
+    "start": 2317,
+    "end": 2497,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 47,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2317,
+      "end": 2497,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "describeRole",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2324,
+        "end": 2497,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:37"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/_common/domain/result.ts",
+    "start": 1846,
+    "end": 2031,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 74,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1846,
+      "end": 2031,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "flatMap",
+      "modifiers": [
+        "ExportKeyword",
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1853,
+        "end": 2031,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:38"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/types/src/shared/domain/oauth/oauth-service.types.ts",
+    "start": 6143,
+    "end": 6301,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 155,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 6143,
+      "end": 6301,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "isSpreadsheetService",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 6150,
+        "end": 6301,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:39"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/contract-binding.registry.ts",
+    "start": 959,
+    "end": 1067,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 21,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 959,
+      "end": 1067,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "boundOption",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 966,
+        "end": 1067,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:40"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Deployments/views/slack/components/BotSetupTabs/hooks/useSlackWorkspaces.ts",
+    "start": 183,
+    "end": 889,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 11,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 183,
+      "end": 889,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "useSlackWorkspaces",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 190,
+        "end": 889,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:41"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/providers/langchain-google-common/src/utils/common.ts",
+    "start": 8991,
+    "end": 9519,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 280,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 8991,
+      "end": 9519,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "validateModelParams",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 8998,
+        "end": 9519,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:42"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Profiles/ProfilePromptInfo/PromptEditor/components/version-history/utils/group-autosaves.ts",
+    "start": 716,
+    "end": 1549,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 25,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 716,
+      "end": 1549,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "groupAutoSaves",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 723,
+        "end": 1549,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:43"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Admin/pages/system-config/sections/models/ModelsList.tsx",
+    "start": 559,
+    "end": 1354,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 22,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 559,
+      "end": 1354,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "ModelsList",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 566,
+        "end": 1354,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:44"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/providers/langchain-typesafe/src/utils/client.ts",
+    "start": 927,
+    "end": 1338,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 28,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 927,
+      "end": 1338,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "buildHeaders",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 934,
+        "end": 1338,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:45"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Vibe/utils/vibe-authorize-failure.ts",
+    "start": 791,
+    "end": 1410,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 18,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 791,
+      "end": 1410,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "toVibeAuthorizeFailure",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 798,
+        "end": 1410,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:46"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/contract-help/generated-namespaces.ts",
+    "start": 1351,
+    "end": 1733,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 38,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1351,
+      "end": 1733,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "buildNamespace",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1358,
+        "end": 1733,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:47"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/cli/src/commands/vibe-deploy-state.ts",
+    "start": 3103,
+    "end": 4811,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 70,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3103,
+      "end": 4811,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "describeOutcome",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 3110,
+        "end": 4811,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:48"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/providers/langchain-groq/src/utils/groq-schema.ts",
+    "start": 3690,
+    "end": 7008,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 102,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3690,
+      "end": 7008,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "groqStrictifySchema",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 3697,
+        "end": 7008,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:49"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/prompt/save.command.ts",
+    "start": 415,
+    "end": 2833,
+    "kind": "FunctionDeclaration",
+    "stratum": "lean-only",
+    "line": 11,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 415,
+      "end": 2833,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "registerPromptSaveCommand",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 422,
+        "end": 2833,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "lean-only:50"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/probe-barrier-help.ts",
+    "start": 3564,
+    "end": 3590,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 90,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3564,
+      "end": 3590,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "ArrowFunction"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:1"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Workflow/Nodes/components/ErrorDisplay.tsx",
+    "start": 2900,
+    "end": 3341,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 102,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2900,
+      "end": 3341,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "ArrowFunction"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:2"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/pages/app/deployments/[id]/index.tsx",
+    "start": 296,
+    "end": 371,
+    "kind": "FunctionExpression",
+    "stratum": "babel-only",
+    "line": 10,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 296,
+      "end": 371,
+      "kind": "FunctionExpression",
+      "parent": "BinaryExpression",
+      "field": "right",
+      "ancestors": [
+        "BinaryExpression",
+        "ExpressionStatement",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": "getLayout",
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:3"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/workspace-direct-mount/mount-access.ts",
+    "start": 629,
+    "end": 762,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 15,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 622,
+      "end": 762,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "accessIsLower",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 622,
+        "end": 762,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:4"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/chats/code-interpreter/application/services/resolve-code-interpreter-urls.service.ts",
+    "start": 5774,
+    "end": 6526,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 182,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 5774,
+      "end": 6526,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "CallExpression",
+        "AwaitExpression",
+        "ExpressionStatement",
+        "Block",
+        "MethodDeclaration"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": [
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:5"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Roles/features/my-roles/MyRolesView.tsx",
+    "start": 2329,
+    "end": 2617,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 63,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2329,
+      "end": 2617,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "BinaryExpression",
+        "JsxExpression",
+        "JsxElement",
+        "JsxElement",
+        "ParenthesizedExpression"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:6"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/langchain-core/src/runnables/iter.ts",
+    "start": 1968,
+    "end": 2446,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 76,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1961,
+      "end": 2446,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "consumeAsyncIterableInContext",
+      "modifiers": [
+        "ExportKeyword",
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1961,
+        "end": 2446,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:7"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/cli/src/commands/agent-eval.ts",
+    "start": 11821,
+    "end": 12065,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 360,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 11821,
+      "end": 12065,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "ExpressionStatement",
+        "Block",
+        "FunctionDeclaration",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": [
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:8"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/agent-collection.ts",
+    "start": 3041,
+    "end": 3113,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 72,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3041,
+      "end": 3113,
+      "kind": "ArrowFunction",
+      "parent": "PropertyAssignment",
+      "field": "initializer",
+      "ancestors": [
+        "PropertyAssignment",
+        "ObjectLiteralExpression",
+        "CallExpression",
+        "ExpressionStatement",
+        "Block",
+        "FunctionDeclaration"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:9"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/UltimateCue/api/ultimate-cue-api.ts",
+    "start": 10888,
+    "end": 11291,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 296,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 10881,
+      "end": 11291,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "uploadConversationImage",
+      "modifiers": [
+        "ExportKeyword",
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 10881,
+        "end": 11291,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:10"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/DocumentTemplates/PowerPointTemplateSplitView.tsx",
+    "start": 7620,
+    "end": 7717,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 217,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 7620,
+      "end": 7717,
+      "kind": "ArrowFunction",
+      "parent": "VariableDeclaration",
+      "field": "initializer",
+      "ancestors": [
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "FunctionDeclaration",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:11"
+  },
+  {
+    "root": "agent-nexus",
+    "file": "packages/cli/src/commands/tracks/task/edge.command.ts",
+    "start": 1994,
+    "end": 2445,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 40,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1994,
+      "end": 2445,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "FunctionDeclaration"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": [
+        "AsyncKeyword"
+      ]
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:12"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/providers/langchain-openai/src/converters/completions.ts",
+    "start": 24218,
+    "end": 24250,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 712,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 24218,
+      "end": 24250,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "PropertyAccessExpression",
+        "CallExpression",
+        "PropertyAssignment",
+        "ObjectLiteralExpression",
+        "ReturnStatement"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:13"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/deployments/office-addin/office-addin.module.ts",
+    "start": 1585,
+    "end": 1601,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 46,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1585,
+      "end": 1601,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "ArrayLiteralExpression",
+        "PropertyAssignment",
+        "ObjectLiteralExpression",
+        "CallExpression",
+        "Decorator"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:14"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Model/UnifiedModelCard.tsx",
+    "start": 864,
+    "end": 1955,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 45,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 864,
+      "end": 1955,
+      "kind": "ArrowFunction",
+      "parent": "VariableDeclaration",
+      "field": "initializer",
+      "ancestors": [
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "FunctionDeclaration",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:15"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Workflow/Nodes/Main/InternalTools/BrowserbaseNode/CodeEditorModal.tsx",
+    "start": 9865,
+    "end": 9895,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 329,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 9865,
+      "end": 9895,
+      "kind": "ArrowFunction",
+      "parent": "JsxExpression",
+      "field": "expression",
+      "ancestors": [
+        "JsxExpression",
+        "JsxAttribute",
+        "JsxAttributes",
+        "JsxOpeningElement",
+        "JsxElement",
+        "ParenthesizedExpression"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:16"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Profiles/ProfilePromptInfo/PromptEditor/extensions/markdown-manager/markdown-editor.ts",
+    "start": 51603,
+    "end": 51665,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 1352,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 51603,
+      "end": 51665,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "PropertyAccessExpression",
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:17"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Inbox/ControlSidebar/index.tsx",
+    "start": 12205,
+    "end": 12320,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 322,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 12205,
+      "end": 12320,
+      "kind": "ArrowFunction",
+      "parent": "VariableDeclaration",
+      "field": "initializer",
+      "ancestors": [
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "ArrowFunction",
+        "VariableDeclaration"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:18"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/langchain-core/src/prompt_values.ts",
+    "start": 1984,
+    "end": 2027,
+    "kind": "Constructor",
+    "stratum": "babel-only",
+    "line": 91,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1984,
+      "end": 2027,
+      "kind": "Constructor",
+      "parent": "ClassDeclaration",
+      "field": "members",
+      "ancestors": [
+        "ClassDeclaration",
+        "SourceFile"
+      ],
+      "body": false,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:19"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/providers/langchain-google-genai/src/utils/common.ts",
+    "start": 24894,
+    "end": 24912,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 875,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 24894,
+      "end": 24912,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "AsExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:20"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/public/v1/infrastructure/adapters/skills.repository.ts",
+    "start": 8667,
+    "end": 8802,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 214,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 8667,
+      "end": 8802,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "PropertyAssignment",
+        "ObjectLiteralExpression",
+        "NewExpression",
+        "ThrowStatement",
+        "Block"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:21"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Admin/pages/organizations/components/BillingSection.tsx",
+    "start": 2506,
+    "end": 2541,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 63,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2506,
+      "end": 2541,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "FunctionExpression"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:22"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/documents/processors/base/integration-based.processor.ts",
+    "start": 2125,
+    "end": 2239,
+    "kind": "MethodDeclaration",
+    "stratum": "babel-only",
+    "line": 78,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2125,
+      "end": 2239,
+      "kind": "MethodDeclaration",
+      "parent": "ClassDeclaration",
+      "field": "members",
+      "ancestors": [
+        "ClassDeclaration",
+        "SourceFile"
+      ],
+      "body": false,
+      "listed": false,
+      "name": "fetchFromIntegration",
+      "modifiers": [
+        "ProtectedKeyword",
+        "AbstractKeyword"
+      ]
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:23"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Workflow/store/selectors.ts",
+    "start": 6407,
+    "end": 7105,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 174,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 6407,
+      "end": 7105,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "ArrowFunction",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:24"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/langchain/src/agents/middleware/toolError.ts",
+    "start": 2235,
+    "end": 3220,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 72,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2228,
+      "end": 3220,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "toolErrorMiddleware",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 2228,
+        "end": 3220,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:25"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/common/shortcuts/useInboxShortcuts.ts",
+    "start": 5574,
+    "end": 5634,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 174,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 5574,
+      "end": 5634,
+      "kind": "ArrowFunction",
+      "parent": "ReturnStatement",
+      "field": "expression",
+      "ancestors": [
+        "ReturnStatement",
+        "Block",
+        "ArrowFunction",
+        "CallExpression",
+        "ExpressionStatement",
+        "Block"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:26"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/deployments/core/application/ports/connection-type-guards.ts",
+    "start": 5565,
+    "end": 5876,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 180,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 5558,
+      "end": 5876,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "isInstagramConnection",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 5558,
+        "end": 5876,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:27"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/UltimateCue/features/page-context/PageContextProvider.tsx",
+    "start": 3327,
+    "end": 3667,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 102,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3327,
+      "end": 3667,
+      "kind": "ArrowFunction",
+      "parent": "ArrowFunction",
+      "field": "body",
+      "ancestors": [
+        "ArrowFunction",
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:28"
+  },
+  {
+    "root": "nexus",
+    "file": "packages/types/src/shared/websocket/type-guards.ts",
+    "start": 3488,
+    "end": 3863,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 136,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3481,
+      "end": 3863,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "isMessageUserPayload",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 3481,
+        "end": 3863,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:29"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Workflow/Core/node-config-panel/content/scratch-pad-panel-content.tsx",
+    "start": 13995,
+    "end": 14049,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 385,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 13995,
+      "end": 14049,
+      "kind": "ArrowFunction",
+      "parent": "JsxExpression",
+      "field": "expression",
+      "ancestors": [
+        "JsxExpression",
+        "JsxAttribute",
+        "JsxAttributes",
+        "JsxSelfClosingElement",
+        "JsxElement",
+        "JsxFragment"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:30"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/echo/infrastructure/services/echo-redactor.service.ts",
+    "start": 6819,
+    "end": 7256,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 188,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 6819,
+      "end": 7256,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "ReturnStatement",
+        "Block",
+        "MethodDeclaration",
+        "ClassDeclaration",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:31"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/common/config/oauth-services/index.ts",
+    "start": 3171,
+    "end": 3383,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 98,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3164,
+      "end": 3383,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "getServiceShortName",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 3164,
+        "end": 3383,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:32"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Deployments/views/google-sheets/GoogleSheetsSettingsView.tsx",
+    "start": 2987,
+    "end": 3017,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 81,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2987,
+      "end": 3017,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "ConditionalExpression",
+        "ArrowFunction",
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:33"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/langchain/src/agents/nodes/ToolNode.ts",
+    "start": 16189,
+    "end": 16231,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 519,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 16189,
+      "end": 16231,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "NewExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:34"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Workflow/hooks/useLoopNestingConfirmation.ts",
+    "start": 1099,
+    "end": 1529,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 36,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1099,
+      "end": 1529,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "FunctionDeclaration"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:35"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/langchain-classic/src/sql_db.ts",
+    "start": 2656,
+    "end": 2777,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 79,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 2656,
+      "end": 2777,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "CallExpression",
+        "BinaryExpression",
+        "ExpressionStatement",
+        "Block",
+        "MethodDeclaration"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:36"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Settings/components/VaultCredentials/CredentialsCardView.tsx",
+    "start": 3233,
+    "end": 3264,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 103,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3233,
+      "end": 3264,
+      "kind": "ArrowFunction",
+      "parent": "JsxExpression",
+      "field": "expression",
+      "ancestors": [
+        "JsxExpression",
+        "JsxAttribute",
+        "JsxAttributes",
+        "JsxOpeningElement",
+        "JsxElement",
+        "JsxElement"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:37"
+  },
+  {
+    "root": "nexus",
+    "file": "tools/mission-control/web/src/components/env/EnvVarReadOnly.tsx",
+    "start": 1232,
+    "end": 14296,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 29,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1225,
+      "end": 14296,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "EnvVarReadOnly",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1225,
+        "end": 14296,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:38"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Profiles/ProfilePromptInfo/PromptEditor/extensions/nodes/section/section-dropdown.tsx",
+    "start": 3005,
+    "end": 3134,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 85,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3005,
+      "end": 3134,
+      "kind": "ArrowFunction",
+      "parent": "PropertyAssignment",
+      "field": "initializer",
+      "ancestors": [
+        "PropertyAssignment",
+        "ObjectLiteralExpression",
+        "ArrayLiteralExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:39"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Settings/PhoneNumber/PhoneNumberSection.tsx",
+    "start": 6473,
+    "end": 6502,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 145,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 6473,
+      "end": 6502,
+      "kind": "ArrowFunction",
+      "parent": "CallExpression",
+      "field": "arguments",
+      "ancestors": [
+        "CallExpression",
+        "ArrowFunction",
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:40"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Evaluation/components/ResultsTable.tsx",
+    "start": 757,
+    "end": 938,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 21,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 757,
+      "end": 938,
+      "kind": "ArrowFunction",
+      "parent": "VariableDeclaration",
+      "field": "initializer",
+      "ancestors": [
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "FunctionDeclaration",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:41"
+  },
+  {
+    "root": "langchainjs",
+    "file": "libs/providers/langchain-anthropic/src/utils/message_inputs.ts",
+    "start": 22969,
+    "end": 23604,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 674,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 22962,
+      "end": 23604,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "_getToolChangeKind",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 22962,
+        "end": 23604,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:42"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Workflow/Nodes/Triggers/PluginTriggerNode/StepPanels/SetupPanel.tsx",
+    "start": 4834,
+    "end": 4912,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 105,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 4834,
+      "end": 4912,
+      "kind": "ArrowFunction",
+      "parent": "JsxExpression",
+      "field": "expression",
+      "ancestors": [
+        "JsxExpression",
+        "JsxAttribute",
+        "JsxAttributes",
+        "JsxOpeningElement",
+        "JsxElement",
+        "JsxElement"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:43"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/deployments/adapters/format.registry.ts",
+    "start": 3645,
+    "end": 3746,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 87,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 3638,
+      "end": 3746,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "getFormatConfig",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 3638,
+        "end": 3746,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:44"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/pages/app/deployments/add-telegram-deployment.tsx",
+    "start": 664,
+    "end": 739,
+    "kind": "FunctionExpression",
+    "stratum": "babel-only",
+    "line": 22,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 664,
+      "end": 739,
+      "kind": "FunctionExpression",
+      "parent": "BinaryExpression",
+      "field": "right",
+      "ancestors": [
+        "BinaryExpression",
+        "ExpressionStatement",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": "getLayout",
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:45"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Workflow/Core/workflow-execution-panel/execution-history-content.tsx",
+    "start": 4096,
+    "end": 4515,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 106,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 4096,
+      "end": 4515,
+      "kind": "ArrowFunction",
+      "parent": "VariableDeclaration",
+      "field": "initializer",
+      "ancestors": [
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "Block",
+        "ArrowFunction",
+        "VariableDeclaration"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:46"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/Credentials/components/access-cards/PendingAccessTab.tsx",
+    "start": 1099,
+    "end": 7275,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 36,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1092,
+      "end": 7275,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "PendingAccessTab",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1092,
+        "end": 7275,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:47"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/common/components/Chat/ChatInput/TipTapChatInput/tiptap-chat-extensions.ts",
+    "start": 1087,
+    "end": 1435,
+    "kind": "MethodDeclaration",
+    "stratum": "babel-only",
+    "line": 34,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1087,
+      "end": 1435,
+      "kind": "MethodDeclaration",
+      "parent": "ObjectLiteralExpression",
+      "field": "properties",
+      "ancestors": [
+        "ObjectLiteralExpression",
+        "CallExpression",
+        "VariableDeclaration",
+        "VariableDeclarationList",
+        "VariableStatement",
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": false,
+      "name": "addKeyboardShortcuts",
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:48"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/frontend/src/modules/DocumentTemplates/AddPowerPointTemplateContent.tsx",
+    "start": 4096,
+    "end": 4115,
+    "kind": "ArrowFunction",
+    "stratum": "babel-only",
+    "line": 105,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 4096,
+      "end": 4115,
+      "kind": "ArrowFunction",
+      "parent": "JsxExpression",
+      "field": "expression",
+      "ancestors": [
+        "JsxExpression",
+        "JsxAttribute",
+        "JsxAttributes",
+        "JsxOpeningElement",
+        "JsxElement",
+        "JsxElement"
+      ],
+      "body": true,
+      "listed": false,
+      "name": null,
+      "modifiers": []
+    },
+    "nearbyOther": [],
+    "sampleId": "babel-only:49"
+  },
+  {
+    "root": "nexus",
+    "file": "apps/backend/src/workspaces/infrastructure/storage/folder-stats.ts",
+    "start": 1668,
+    "end": 2769,
+    "kind": "FunctionDeclaration",
+    "stratum": "babel-only",
+    "line": 40,
+    "babelStatus": "parsed",
+    "babelErrors": [],
+    "tsStatus": "parsed",
+    "tsMatch": {
+      "start": 1661,
+      "end": 2769,
+      "kind": "FunctionDeclaration",
+      "parent": "SourceFile",
+      "field": "statements",
+      "ancestors": [
+        "SourceFile"
+      ],
+      "body": true,
+      "listed": true,
+      "name": "folderStats",
+      "modifiers": [
+        "ExportKeyword"
+      ]
+    },
+    "nearbyOther": [
+      {
+        "start": 1661,
+        "end": 2769,
+        "kind": "FunctionDeclaration"
+      }
+    ],
+    "sampleId": "babel-only:50"
+  }
+]
