@@ -120,6 +120,14 @@ export function specOf(file, unitName, opts = {}) {
       const keys = openKeys().filter((k) => !props.some((p) => p.name === k)).slice(0, 2);
       for (const k of keys.length ? keys : ['k0']) out.fields[k] = { spec: spec(ix.type, depth + 1), optional: true };
     }
+    // a plain record may carry a key its type does not name (structural typing: a caller passes a wider object), which a
+    // spread, Object.assign, `in` and a key enumeration see (design/open-datatype.md): zero or one such entry, a string
+    // keyed by a name the unit mentions and the type does not declare (a generic key when it names none), never an
+    // Object.prototype name; a literal type of the unit itself is no outside value and draws none
+    else if (!props.some((p) => p.valueDeclaration && ts.isObjectLiteralExpression(p.valueDeclaration.parent))) {
+      const k = openKeys().find((x) => !props.some((p) => p.name === x)) ?? 'k0';
+      out.fields[k] = { spec: { kind: 'string' }, optional: true, extra: true };
+    }
     return out;
   }
   const params = u.params.map((p) => ({ name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, spec: spec(checker.getTypeAtLocation(p.name)) }));

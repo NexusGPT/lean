@@ -37,7 +37,8 @@ import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTabl
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
-import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
+import { forInKeyOrder } from '../common.mjs';
+import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype) // the key order of a for-in: one test with the lint
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
@@ -1267,7 +1268,12 @@ export function translate(file, fnName, opts = {}) {
     if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || isPromiseT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined | TF.Void | TF.TypeParameter | TF.IndexedAccess | TF.Conditional | TF.Index | TF.NonPrimitive | TF.Never)))) return anyType();
     return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
   }
-  const typeNameOf = (t) => t.aliasSymbol?.name ?? (t.symbol && t.symbol.name !== '__type' && t.symbol.name !== '__object' ? t.symbol.name : null);
+  // the open record's two slots and the rest's carrier: MoreBuilt for a value a literal made (no key beyond the declared
+  // ones), MoreFrom for a value from the outside, an opaque source standing for the keys and values its type does not name
+  const OPEN_REST = 'open_rest_', OPEN_INDEX = 'open_index_';
+  const openSlots = (d) => { const text = d ? prelude.get(`datatype ${recordAlias.get(d) ?? d}`) ?? '' : ''; return [OPEN_INDEX, OPEN_REST].filter((x) => text.includes(`${x}: `)); }; // the open slots a record datatype declares
+  const moreType = () => { addPrelude('MoreSrc', 'type MoreSrc(==)'); addPrelude('More', 'datatype More = MoreBuilt | MoreFrom(src: MoreSrc)'); return 'More'; };
+  const typeNameOf = (t) => t.aliasSymbol?.name ??(t.symbol && t.symbol.name !== '__type' && t.symbol.name !== '__object' ? t.symbol.name : null);
   function recordType(t, n, depth) {
     const props = checker.getPropertiesOfType(t);
     const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
@@ -1295,12 +1301,20 @@ export function translate(file, fnName, opts = {}) {
         if (f.optional && !optionalD(d)) { usesOption = true; d = `Option<${d}>`; }
         return `${dn(f.name)}: ${d}`;
       });
+      // a record value may carry what its type does not name (open-datatype.md): an index signature beside the fields
+      // holds the undeclared keys of the index type as a dictionary, and every record ends with its rest, the keys its
+      // type does not name; a literal builds the empty dictionary and MoreBuilt (constructor defaults), a value from the
+      // outside holds them as it came, so a copy of the declared fields by hand never equals the value it copies
+      if (fields.some((f) => dn(f.name) === OPEN_REST || dn(f.name) === OPEN_INDEX)) fail(n, `a field named ${OPEN_REST} or ${OPEN_INDEX} is the open record's own slot`);
+      const ix = checker.getIndexInfoOfType(t, ts.IndexKind.String);
+      const open = [...(ix ? [`${OPEN_INDEX}: ${dictT(dtype(ix.type, n, depth + 1))} := OMap([], map[])`] : []), `${OPEN_REST}: ${moreType()} := MoreBuilt`];
       // two types with the same fields are one datatype: a structural literal is an Account when Account has its fields
       const shape = fs_.join(', ');
-      const canon = recordByShape.get(shape);
+      const canonKey = ix ? `${shape} | ${open[0]}` : shape;
+      const canon = recordByShape.get(canonKey);
       if (canon && canon !== name && prelude.get(key) === '') { prelude.delete(key); recordAlias.set(name, canon); return canon; }
-      recordByShape.set(shape, name);
-      prelude.set(key, `datatype ${name} = ${name}(${shape})`);
+      recordByShape.set(canonKey, name);
+      prelude.set(key, `datatype ${name} = ${name}(${[shape, ...open].filter(Boolean).join(', ')})`);
     }
     return name;
   }
@@ -2729,7 +2743,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (pieces.length) { if (entries.length) pieces.push(`map[${entries.join(', ')}]`); const ps = pieces.filter(Boolean); return ps.length === 1 ? ps[0] : ps.map((x) => `(${x})`).join(' + '); }
       return entries.length ? `map[${entries.join(', ')}]` : `map[]`;
     }
-    const propT = (name) => { const p = checker.getPropertyOfType(recT, name); return p ? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n) : undefined; };
+    const propT = (name) => { const p = checker.getPropertyOfType(recT, name); return p ? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n) : (checker.getIndexInfoOfType(recT, ts.IndexKind.String)?.type ?? undefined); }; // an undeclared key of an open record takes the index type
     const propOpt = (name) => { const p = checker.getPropertyOfType(recT, name); return !!p && !!(p.flags & ts.SymbolFlags.Optional); };
     const keyOf = (p) => (ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf).replace(/^["']|["']$/g, ''));
     const fieldCode = (key, valueNode) => {
@@ -2748,8 +2762,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return parts.map((t) => ({ name: String(t.value), lit: (t.flags & TF.StringLiteral) ? strEsc(String(t.value)) : String(t.value) }));
     };
     const fields = []; const splits = []; // a field is [key, code]; a split stands at a field slot, one branch per member
+    { const why = spreadReadWhy(checker, n); if (why) fail(n, `spread-source: ${why}`); } // common.mjs spreadReadWhy: one spread, carried with its rest
+    let lateBase = null; // a spread after members: the source overwrites each of them (each a required field of its type)
     for (const p of n.properties) {
-      if (ts.isSpreadAssignment(p)) continue;
+      if (ts.isSpreadAssignment(p)) { if (p !== first) { if (dtype(typeOf(p.expression), p) !== rname) fail(p, 'spread-source: a spread after members copies a record of another type'); lateBase = expr(p.expression); fields.length = 0; } continue; }
       if (ts.isShorthandPropertyAssignment(p)) fields.push(fieldCode(p.name.text, p.name));
       else if (ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name)) {
         const ms = keyMembers(p);
@@ -2763,14 +2779,19 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       else if (ts.isPropertyAssignment(p)) fields.push(fieldCode(keyOf(p), p.initializer));
     }
-    const base = first && ts.isSpreadAssignment(first) ? expr(first.expression) : null;
+    const base = first && ts.isSpreadAssignment(first) ? expr(first.expression) : lateBase;
     const render = (fs) => { // the fields in source order, a later key winning over an earlier one (a computed key may repeat a named one)
-      const seen = new Map(); for (const [k, v] of fs) seen.set(k, v); const list = [...seen];
-      if (base !== null) return list.length ? `${base}.(${list.map(([k, v]) => `${dn(k)} := ${outerParens(v)}`).join(', ')})` : base;
+      const seen = new Map(); for (const [k, v] of fs) seen.set(k, v); let list = [...seen];
+      // a key the open record's type does not declare is an entry of its dictionary of undeclared keys, in source order
+      const extra = openSlots(rname).includes(OPEN_INDEX) ? list.filter(([k]) => !checker.getPropertyOfType(recT, k)) : [];
+      if (extra.length) list = list.filter((x) => !extra.includes(x));
+      const entries = (start) => extra.reduce((acc, [k, v]) => `DictPut(${acc}, ${strEsc(k)}, ${outerParens(v)})`, start);
+      if (extra.length) { dictOrder(); list.push([OPEN_INDEX, entries(base !== null ? member(base, OPEN_INDEX) : 'OMap([], map[])')]); }
+      if (base !== null) return list.length ? `${base}.(${list.map(([k, v]) => `${k === OPEN_INDEX ? k : dn(k)} := ${outerParens(v)}`).join(', ')})` : base;
       // missing optional fields are None
       const given = new Set(list.map(([k]) => k));
       for (const q of checker.getPropertiesOfType(recT)) if (!given.has(q.name) && (q.flags & ts.SymbolFlags.Optional)) { usesOption = true; list.push([q.name, missingD(dtype(checker.getTypeOfSymbolAtLocation(q, q.valueDeclaration ?? n), n))]); }
-      return `${rname}(${list.map(([k, v]) => `${dn(k)} := ${outerParens(v)}`).join(', ')})`;
+      return `${rname}(${list.map(([k, v]) => `${k === OPEN_INDEX ? k : dn(k)} := ${outerParens(v)}`).join(', ')})`;
     };
     const leaf = (i, fs) => {
       if (i === splits.length) return render(fs);
@@ -3020,7 +3041,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
             out.push(`var ${dn(el.name.text)} := ${external(`rest_${keys.map(mangle).join('_')}_${hash(JSON.stringify(keys))}_to_${mangle(rd)}`, [sd], rd)}(${sourceCode});`);
             continue;
           }
-          out.push(`var ${dn(el.name.text)} := ${rd}(${props.map((p) => `${sourceCode}.${dn(p.name)}`).join(', ')});`);
+          const carried = srcType ? openSlots(rd).filter((x) => openSlots((() => { try { return dtype(baseOf(srcType), el); } catch { return null; } })()).includes(x)) : []; // the remainder holds the source's undeclared keys as they came
+          out.push(`var ${dn(el.name.text)} := ${rd}(${[...props.map((p) => `${sourceCode}.${dn(p.name)}`), ...carried.map((x) => `${x} := ${sourceCode}.${x}`)].join(', ')});`);
           continue;
         }
         const prop = el.propertyName ? (ts.isStringLiteral(el.propertyName) ? el.propertyName.text : el.propertyName.getText(sf)) : el.name.text;
@@ -3164,7 +3186,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     { let e = n.expression; while (e && ts.isParenthesizedExpression(e)) e = e.expression;
       if (e && ts.isIdentifier(e)) { const o = originOf(checker, e, sf, currentUnit?.node ?? null); if (o.kind === 'local' && o.sym) { const dt = symType(o.sym, e); const bd = isOptional(dt) ? baseOf(dt) : dt; if (isRecordish(bd) && dtype(bd, n) !== dtype(recvT, n)) recvT = bd; } } }
     if (isRecordish(recvT)) {
-      if (!checker.getPropertyOfType(recvT, name) && openRecordType(checker, recvT)) fail(n, `dynamic-key: ${OPEN_RECORD_WHY(checker.typeToString(recvT))}`); // common.mjs openRecordType: the datatype holds no undeclared key
+      if (!checker.getPropertyOfType(recvT, name) && openRecordType(checker, recvT)) return openIndexRead(n, recvT, recvCode, strEsc(name), name); // common.mjs openRecordType: an undeclared key reads the open record's dictionary of undeclared keys
       const props = checker.getPropertiesOfType(recvT);
       const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
       const T = dtype(recvT, n);
@@ -3301,6 +3323,34 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const key = anyKey ? expr(n.argumentExpression, anyTarget()) : expr(n.argumentExpression);
     return `${external(`open_key_read_to_${rd}`, [D, K], rd)}(${receiver}, ${key})`;
   }
+  // a read of a dictionary entry: the map, the key and the value type the read meets (dictRead), read by the type the
+  // read has; shared by a dictionary and the dictionary of undeclared keys an open record carries
+  function dictValueRead(d, n) {
+    const ixT = d.valueType, V = dtype(ixT, n), rd = isAny(typeOf(n)) ? V : dtype(typeOf(n), n);
+    // a name of Object.prototype the dictionary does not own reads that member, a value per name: a function of the key
+    // (the other dictionary readings, `??` and the entries loop, still read one absent value for every such name)
+    const protoMember = () => `${external(`proto_member_${V}`, ['string'], V)}(${d.key})`;
+    // a read typed with the absence a missing key yields (noUncheckedIndexedAccess): a missing key reads undefined, a
+    // present key its value, so the read is exact; a null the value type holds stays Null beside the missing key's Undef
+    if (rd === `Option<${V}>`) { usesOption = true; return `(if ${d.key} in ${d.map} then Some(${d.map}[${d.key}]) else ${missingKey(d, n, () => `Some(${external(`absent_${V}`, [], V)}())`, 'None')})`; }
+    // values typed `T | undefined`: a stored undefined and a missing key both read None, an owned key its value
+    if (V.startsWith('Option<') && rd === V && hasAbsence(ixT, TF.Undefined) && !hasAbsence(ixT, TF.Null)) return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${missingKey(d, n, protoMember, 'None')})`;
+    if (V.startsWith('Option<') && rd === `Nullish<${innerOf(V)}>` && hasAbsence(ixT, TF.Null) && !hasAbsence(ixT, TF.Undefined)) { const x = `dv${tempCount++}_`; return `(if ${d.key} in ${d.map} then (var ${x} := ${d.map}[${d.key}]; if ${x}.Some? then Nullish.Some(${x}.value) else Nullish.Null) else Nullish.Undef)`; }
+    return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`;
+  }
+  // a key an open record's type does not declare (a type with fields and a string index signature), by dot, by bracket or
+  // computed: a declared name reads its field, any other key the dictionary of undeclared keys the value carries in its
+  // open_index_ slot (open-datatype.md); receiver and key are evaluated once, in that order. A literal key names no
+  // declared field here (fieldOf reads those); a name of Object.prototype is refused (prototype), as on a dictionary
+  function openIndexRead(n, recvT, recvCode, keyCode, keyName) {
+    if (keyName !== null && (OBJECT_PROTO_NAMES.includes(keyName) || keyName === '__proto__')) fail(n, `prototype: ${keyName} names a member of Object.prototype, which an open record reads through its prototype, not its own keys`);
+    const ix = checker.getIndexInfoOfType(recvT, ts.IndexKind.String);
+    if (!ix || !openSlots(dtype(recvT, n)).includes(OPEN_INDEX)) fail(n, `dynamic-key: ${OPEN_RECORD_WHY(checker.typeToString(recvT))}`);
+    const R = `or${tempCount++}_`, Kc = `ok${tempCount++}_`;
+    let out = dictValueRead({ map: `${R}.${OPEN_INDEX}.m`, key: Kc, valueType: ix.type }, n);
+    if (keyName === null) for (const p of [...checker.getPropertiesOfType(recvT)].reverse()) out = `if ${Kc} == ${strEsc(p.name)} then ${convert(`${R}.${dn(p.name)}`, checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), typeOf(n), n)} else ${out}`;
+    return `(var ${R} := ${recvCode}; var ${Kc} := ${keyCode}; ${outerParens(out)})`;
+  }
   function elemAccess(n) {
     const q = argumentsParam(n); if (q) return dn(q.name.text); // `arguments[k]`: the k-th parameter itself
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
@@ -3318,23 +3368,11 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const base = baseOf(recvT);
     const d = dictRead(n); // a dictionary takes every key through its map, a literal key included (the key need not be declared)
     if (!d && ts.isStringLiteral(n.argumentExpression) && isRecordish(base)) return fieldOf(expr(n.expression), base, n.argumentExpression.text, n);
-    if (d) {
-      const ixT = stringIndex(base).type, V = dtype(ixT, n), rd = isAny(typeOf(n)) ? V : dtype(typeOf(n), n);
-      // a name of Object.prototype the dictionary does not own reads that member, a value per name: a function of the key
-      // (the other dictionary readings, `??` and the entries loop, still read one absent value for every such name)
-      const protoMember = () => `${external(`proto_member_${V}`, ['string'], V)}(${d.key})`;
-      // a read typed with the absence a missing key yields (noUncheckedIndexedAccess): a missing key reads undefined, a
-      // present key its value, so the read is exact; a null the value type holds stays Null beside the missing key's Undef
-      if (rd === `Option<${V}>`) { usesOption = true; return `(if ${d.key} in ${d.map} then Some(${d.map}[${d.key}]) else ${missingKey(d, n, () => `Some(${external(`absent_${V}`, [], V)}())`, 'None')})`; }
-      // values typed `T | undefined`: a stored undefined and a missing key both read None, an owned key its value
-      if (V.startsWith('Option<') && rd === V && hasAbsence(ixT, TF.Undefined) && !hasAbsence(ixT, TF.Null)) return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${missingKey(d, n, protoMember, 'None')})`;
-      if (V.startsWith('Option<') && rd === `Nullish<${innerOf(V)}>` && hasAbsence(ixT, TF.Null) && !hasAbsence(ixT, TF.Undefined)) { const x = `dv${tempCount++}_`; return `(if ${d.key} in ${d.map} then (var ${x} := ${d.map}[${d.key}]; if ${x}.Some? then Nullish.Some(${x}.value) else Nullish.Null) else Nullish.Undef)`; }
-      return `(if ${d.key} in ${d.map} then ${d.map}[${d.key}] else ${external(`absent_${V}`, [], V)}())`;
-    }
+    if (d) return dictValueRead(d, n);
     if (isRecordish(base)) {
       // a finite key selects a declared field; receiver and key are evaluated once, in that order
       const keyParts = at.flags & TF.Union ? at.types : [at];
-      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) { if (openRecordType(checker, base)) fail(n, `dynamic-key: ${OPEN_RECORD_WHY(checker.typeToString(base))}`); return openKeyRead(n, base, at); }
+      if (!keyParts.every((x) => x.flags & TF.StringLiteral)) { if (openRecordType(checker, base)) return openIndexRead(n, base, expr(n.expression), expr(n.argumentExpression), null); return openKeyRead(n, base, at); }
       const keys = keyParts.map((x) => x.value);
       const R = `rr${tempCount++}_`, Kc = `rk${tempCount++}_`;
       const receiver = expr(n.expression);

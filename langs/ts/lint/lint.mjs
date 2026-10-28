@@ -15,6 +15,7 @@ import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedu
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
+import { spreadReadWhy, openRecordReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries (open-datatype)
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -1371,6 +1372,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         return;
       case K.ObjectLiteralExpression:
         if (e.properties.some(ts.isGetAccessorDeclaration) && !e.properties.every((p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p) || ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p)) && p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)))) return v(e, 'unsupported-syntax', 'literal getters need fixed named fields; use a class for spread or computed accessors');
+        { const why = spreadReadWhy(checker, e); if (why) v(e, 'spread-source', why); } // common.mjs spreadReadWhy: one spread, carried with its rest (open-datatype)
         e.properties.forEach((p) => {
           if (ts.isSpreadAssignment(p)) { if (localMethodLiteral(tOf(p.expression))) return v(p, 'object-method-mutation', 'spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly'); return expr(p.expression); }
           if (ts.isShorthandPropertyAssignment(p)) return checkIdent(p.name);
@@ -2149,7 +2151,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if ((name === 'index' || name === 'groups') && /^RegExp(Exec|Match)Array$/.test(t.symbol?.name ?? '')) return v(e, 'unsupported-member', memberRow(name === 'index' ? 'match-index' : 'match-groups').message());
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
       }
-      if (!checker.getPropertyOfType(t, name) && openRecordType(checker, t) && !worldRootedRead(e)) return v(e, 'dynamic-key', OPEN_RECORD_WHY(checker.typeToString(t))); // an undeclared name on an open record (common.mjs openRecordType)
+      if (!checker.getPropertyOfType(t, name) && openRecordType(checker, t) && !worldRootedRead(e)) { const w = onWritePath(e) ? { rule: 'dynamic-key', why: OPEN_RECORD_WHY(checker.typeToString(t)) } : openRecordReadWhy(checker, t, name); if (w) return v(e, w.rule, w.why); return; } // an undeclared name on an open record: a read of its dictionary of undeclared keys (common.mjs openRecordReadWhy); a write stays refused
       if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length && !(incompleteType(checker, t) && !onWritePath(e) && !writesThroughIncomplete(checker, currentFn))) return v(e, 'unsupported-member', memberRow('incomplete-type-member').message(name, checker.typeToString(t))); // a type that reaches an unresolved module has unknown members (library-rows.mjs, incompleteType)
     }
   }
@@ -2204,7 +2206,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       // (a read rooted at an outside or lib global, `process.env[k]`, is a read of the world, which holds every key)
       const openIndex = !worldRootedRead(e) && openRecordType(checker, parts[0]);
       const INDEX_WHY = OPEN_RECORD_WHY(checker.typeToString(rt));
-      if (!keys && openIndex) return v(e, 'dynamic-key', INDEX_WHY);
+      if (!keys && openIndex) { const w = onWritePath(e) ? { rule: 'dynamic-key', why: INDEX_WHY } : openRecordReadWhy(checker, parts[0], null) ?? (parts.length !== 1 ? { rule: 'dynamic-key', why: INDEX_WHY } : null); if (w) return v(e, w.rule, w.why); let keyCall = false; const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); }; visitKey(e.argumentExpression); if (keyCall) return v(e, 'dynamic-key', 'bind the computed key before reading the record; a key call may mutate its receiver'); return; } // a computed key on an open record: its field by name, else its dictionary of undeclared keys (common.mjs openRecordReadWhy)
       if (!keys) { const why = openKeyRefusal(e, parts[0], at); return why ? v(e, 'dynamic-key', why) : undefined; } // an open key: an uninterpreted lookup of the record value and the key
       let keyCall = false;
       const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); };
@@ -2212,6 +2214,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (keyCall) return v(e, 'dynamic-key', 'bind the computed key before reading the record; a key call may mutate its receiver');
       if (localMethodLiteral(parts[0]) && keys.some((k) => checker.getPropertyOfType(parts[0], k)?.declarations?.some(ts.isGetAccessorDeclaration))) return v(e, 'dynamic-key', 'read a literal getter by its declared property name');
       const missing = keys.filter((k) => !checker.getPropertyOfType(parts[0], k));
+      if (missing.length && openIndex && keys.length === 1 && !onWritePath(e)) { const w = openRecordReadWhy(checker, parts[0], keys[0]); return w ? v(e, w.rule, w.why) : undefined; } // one undeclared literal key on an open record: its dictionary of undeclared keys (common.mjs openRecordReadWhy)
       if (missing.length && openIndex) return v(e, 'dynamic-key', INDEX_WHY);
       if (missing.length) return v(e, 'dynamic-key', `key ${missing.map((k) => JSON.stringify(k)).join(', ')} is not declared on ${checker.typeToString(rt)}`);
       if (keys.some((k) => nonNull(checker.getTypeOfSymbolAtLocation(checker.getPropertyOfType(parts[0], k), e)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length))) return v(e, 'dynamic-key', 'call a method by its declared name; computed record reads select data fields');
