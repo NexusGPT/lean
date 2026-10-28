@@ -15,6 +15,11 @@ export function copyBag(s: Bag): Bag { return { ...s }; }
 export function bumpBag(s: Bag): Bag { return { ...s, a: s.a + 1 }; }
 // a plain record copied by a spread
 export function copyRec(s: Rec): Rec { return { ...s }; }
+// a record spread after other members: the members up to it are one merge of their values in order
+export interface Opt { a?: number; b: string }
+export function late(s: Opt): Rec { return { a: 1, ...s, b: s.b }; }
+export function lateSame(s: Opt, n: number): Rec { return { a: n, ...s, b: s.b }; }
+
 // the same copy on both sides
 export function setA(s: Bag, n: number): Bag { return { ...s, a: n }; }
 

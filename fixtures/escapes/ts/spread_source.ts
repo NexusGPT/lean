@@ -1,10 +1,9 @@
 // expect: spread-source
-// A record copy carries everything its source carries. Written after other members, a spread writes over them, an own
-// key holding undefined included: with `s = { b: "x", a: undefined }` the literal below holds `a: undefined`, which
-// `{ a: 1, b: s.b }` does not. The copy term (an uninterpreted copy of s, then the members written after it) needs the
-// spread first in its literal, so a record spread after other members is refused.
-export interface Opt { a?: number; b: string }
-export interface Rec { a: number; b: string }
-export function late(s: Opt): Rec {
-  return { a: 1, ...s, b: s.b };
+// A record copy carries everything its source carries. `Object.assign({}, s)` is read as a function of its arguments'
+// values, and a record value holds its declared fields alone, so with `s = { a: 1, b: "x", k0: true }` it would read
+// alike with `Object.assign({}, { a: s.a, b: s.b })`, which drops `k0`. Write the copy as a spread `{ ...s }`, read as an
+// uninterpreted copy of s.
+export interface Bag { a: number; b: string; [k: string]: unknown }
+export function assignBag(s: Bag): Bag {
+  return Object.assign({}, s);
 }

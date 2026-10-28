@@ -1404,7 +1404,7 @@ export function copySourceWhy(checker, src, site = null) {
   const record = (y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0;
   let t = null; try { t = checker.getTypeAtLocation(bare(src)); } catch { return 'the copied value has no type'; }
   if (!t || !(t.flags & TF.Union ? t.types : [t]).some(record)) return null; // a dictionary, an array, a primitive: not a record copy
-  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent) && site.parent.properties[0] !== site) return 'a spread of a record after other members writes over them (an own key holding undefined too); write the spread first';
+  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent) && site.parent.properties.slice(0, site.parent.properties.indexOf(site)).some((q) => !(ts.isSpreadAssignment(q) || ts.isShorthandPropertyAssignment(q) || (ts.isPropertyAssignment(q) && (ts.isIdentifier(q.name) || ts.isStringLiteral(q.name) || ts.isComputedPropertyName(q.name)))))) return 'a spread after a method or accessor member: the merge of the members before it takes values, and a method is a function the reading does not hold as a value; write the spread before that member';
   const keys = new Set();
   const built = (x, depth) => {
     x = bare(x); if (depth > 8) return false;
@@ -1449,15 +1449,21 @@ const COPY_NOT_BUILT = 'a value of a record type may carry keys its type does no
 // members written after it ('copy'): two sides copying the same value prove, and a copy of the declared fields by hand
 // never does, since nothing says what the copy holds beyond its source (a field of the copy equal to the source's would
 // make the copy equal to the hand copy: a record value holds its declared fields alone). The term needs the spread first
-// in its literal, and a built copy holds no key the literal's record type does not declare ('refuse', with the reason).
+// in its literal after named members and spreads only ('refuse', with the reason); a built copy holding a key the target
+// type does not declare is a copy too.
 // A source that is no record (a dictionary, an array, a primitive) is 'plain'. One test for the lint, objectLit, the core.
 export function copySource(checker, src, site = null) {
   const TF = ts.TypeFlags; let x = src; while (ts.isParenthesizedExpression(x)) x = x.expression;
   let t = null; try { t = checker.getTypeAtLocation(x); } catch { return { kind: 'refuse', why: 'the copied value has no type' }; }
   const record = !!t && (t.flags & TF.Union ? t.types : [t]).some((y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0);
   if (!record) return { kind: 'plain' };
+  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent)) { // a dictionary literal (Record<string, T>): its reading holds every key a spread copies (a map merge)
+    let ctx = null; try { ctx = checker.getContextualType(site.parent); } catch { ctx = null; }
+    const parts = ctx ? (ctx.flags & TF.Union ? ctx.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [ctx]) : [];
+    if (parts.length === 1 && (parts[0].flags & TF.Object) && checker.getIndexInfoOfType(parts[0], ts.IndexKind.String) && !checker.getPropertiesOfType(parts[0]).length) return { kind: 'plain' };
+  }
   const why = copySourceWhy(checker, src, site);
-  return why === null ? { kind: 'built' } : why === COPY_NOT_BUILT ? { kind: 'copy' } : { kind: 'refuse', why };
+  return why === null ? { kind: 'built' } : why === COPY_NOT_BUILT || why.startsWith('the copy holds the key') ? { kind: 'copy' } : { kind: 'refuse', why }; // a built copy holding a key the target does not declare carries it, as any copy carries what its source carries
 }
 // A type assertion checks nothing at run time (ECMA-262 has none; the emit drops `e as T`, `<T>e`, and the assertion
 // TypeScript makes when a value typed any or unknown fills a slot of another type, `const n: number = x`). The value

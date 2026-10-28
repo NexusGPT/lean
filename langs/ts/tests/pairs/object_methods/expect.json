@@ -36,7 +36,7 @@
   "counter_constructor": true,
   "counter_bump": false,
   "counter_refactor": false,
-  "record_refactor": true,
+  "record_refactor": false,
   "writable_get_total": true,
   "writable_set_total": true,
   "writable_assign": true,
@@ -53,7 +53,7 @@
   "writable_post": false,
   "writable_value_refactor": true
  },
- "why": "literal method bodies and getter dependencies are visible; nested receiver records rebuild once through the world 2026-10-27, the heap core: counter_refactor is unproved instead of withheld. The refactor replaces stats with a fresh record where the parent writes deep.n in place; the reachable graphs differ, so the core does not prove it (layer 1 withheld the same lemma through its identity guard): the same safety by another route.",
+ "why": "literal method bodies and getter dependencies are visible; nested receiver records rebuild once through the world 2026-10-27, the heap core: counter_refactor is unproved instead of withheld. The refactor replaces stats with a fresh record where the parent writes deep.n in place; the reachable graphs differ, so the core does not prove it (layer 1 withheld the same lemma through its identity guard): the same safety by another route. record_refactor (heap-3): a field read through a copy of a record the unit did not build is unproved until the datatype carries the rest (row 38f91b09); the earlier proof went through the general hole.",
  "b": {
   "strategy": "WITNESS",
   "strategyRefactor": "PASS-bounded",
