@@ -2769,10 +2769,24 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return parts.map((t) => ({ name: String(t.value), lit: (t.flags & TF.StringLiteral) ? strEsc(String(t.value)) : String(t.value) }));
     };
     const fields = []; const splits = []; // a field is [key, code]; a split stands at a field slot, one branch per member
-    { const why = spreadReadWhy(checker, n); if (why) fail(n, `spread-source: ${why}`); } // common.mjs spreadReadWhy: one spread, carried with its rest
-    let lateBase = null; // a spread after members: the source overwrites each of them (each a required field of its type)
+    { const why = spreadReadWhy(checker, n); if (why) fail(n, `spread-source: ${why}`); } // common.mjs spreadReadWhy
+    if (n.properties.some((p, i) => ts.isSpreadAssignment(p) && i > 0)) {
+      // a spread after other members, or two spreads: one uninterpreted construction of the member values in source
+      // order, keyed by the layout (the names, `...` for a spread); each source enters whole, its rest included, so two
+      // literals of one layout over equal values are equal and any other pair is never proved equal (open-datatype.md)
+      const vals = [], types = [];
+      for (const p of n.properties) {
+        const v = ts.isSpreadAssignment(p) ? p.expression : ts.isShorthandPropertyAssignment(p) ? p.name : ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name) ? p.initializer : null;
+        if (!v || (ts.isPropertyAssignment(p) && (ts.isArrowFunction(p.initializer) || ts.isFunctionExpression(p.initializer)))) fail(p, 'spread-source: a computed key, a method or a function beside a later spread is not read');
+        vals.push(expr(v)); types.push(dtype(typeOf(v), v));
+      }
+      const layout = n.properties.map((p) => (ts.isSpreadAssignment(p) ? '...' : keyOf(p))).join(',');
+      let litT = expected ?? checker.getContextualType(n) ?? typeOf(n); if (isOptional(litT)) litT = baseOf(litT); if (!isRecordish(litT)) litT = typeOf(n); // the literal's own record type, not its first source's
+      const ld = dtype(litT, n);
+      return `${external(`lit_spread_${mangle(ld)}_${hash(layout)}`, types, ld)}(${vals.join(', ')})`;
+    }
     for (const p of n.properties) {
-      if (ts.isSpreadAssignment(p)) { if (p !== first) { if (dtype(typeOf(p.expression), p) !== rname) fail(p, 'spread-source: a spread after members copies a record of another type'); lateBase = expr(p.expression); fields.length = 0; } continue; }
+      if (ts.isSpreadAssignment(p)) continue;
       if (ts.isShorthandPropertyAssignment(p)) fields.push(fieldCode(p.name.text, p.name));
       else if (ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name)) {
         const ms = keyMembers(p);
@@ -2786,7 +2800,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       else if (ts.isPropertyAssignment(p)) fields.push(fieldCode(keyOf(p), p.initializer));
     }
-    const base = first && ts.isSpreadAssignment(first) ? expr(first.expression) : lateBase;
+    const base = first && ts.isSpreadAssignment(first) ? expr(first.expression) : null;
     const render = (fs) => { // the fields in source order, a later key winning over an earlier one (a computed key may repeat a named one)
       const seen = new Map(); for (const [k, v] of fs) seen.set(k, v); let list = [...seen];
       // a key the open record's type does not declare is an entry of its dictionary of undeclared keys, in source order

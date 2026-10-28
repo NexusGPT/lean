@@ -26,8 +26,9 @@ closed, so the text of every literal site is unchanged:
     (var or0_ := h; var ok1_ := k; if ok1_ == "accept" then or0_.accept else
        (if ok1_ in or0_.open_index_.m then or0_.open_index_.m[ok1_] else ...missing key...))   // h[k]
 
-- A spread is the source value updated by the members after it (one spread per literal, members before it only
-  when each is a required field of the source: the source then overwrites it). `Object.assign({}, x)` is x.
+- One spread first is the source value updated by the members after it; `Object.assign({}, x)` is x. Any other
+  layout (a spread after members, two spreads) is one uninterpreted construction of the member values in order,
+  keyed by the layout, each source whole: `lit_spread_<R>_<layout>(x, y)`.
 - A rest pattern's remainder takes the source's open slots. A conversion between record types, `in` with a literal
   key and every outside call are functions of the whole value, rest included.
 - An undeclared key by dot, by literal bracket or by computed key reads the dictionary (a declared name, by a
@@ -38,8 +39,10 @@ closed, so the text of every literal site is unchanged:
   builtRecord) leaves the core for this reading.
 
 ## What stays refused
-- `spread-source` (common.mjs spreadReadWhy): two spreads in one literal (the first source's keys the second lacks
-  survive), a member before a spread that the source may lack (an optional field: missing and undefined read alike).
+- `spread-source` (common.mjs spreadReadWhy): a key given before a spread that the source's type lets be missing or
+  undefined (an optional field, a union member without it, an index signature, an any value): the member survives
+  only where the source lacks the key, and missing and undefined are one value in the reading; a computed key, a
+  method or a function value beside a later spread.
 - `key-order`: for-in over a value lean did not build. The datatype holds no key order: a literal's order is not in
   its value (two literals built in two orders are one value), so an order read from the value would equate them.
 - `dynamic-key`: a write of an undeclared key; a number index alone; a computed `in` where a declared field is
@@ -51,7 +54,7 @@ The rest is equality only: no reading looks inside it. Two JavaScript objects wi
 declared fields, the same undeclared keys and values (MoreBuilt: none; MoreFrom: one name per set), so every reading
 that sees the rest (equality, an uninterpreted call, the dictionary) sees them alike. Cases considered: `{ ...s }`
 against the fields by hand (not equal: MoreBuilt against s's rest); `{ a: 1, ...s }` on an optional `a` (refused);
-`{ ...x, ...y }` (refused); `h[k]` against the same read of a declared-fields copy (the copy's dictionary is empty);
+`{ ...x, ...y }` (one construction of x and y, rest included); `h[k]` against the same read of a declared-fields copy (the copy's dictionary is empty);
 a literal reordered (for-in stays refused off a literal; the value carries no order, so nothing reads one); `__proto__`
 as an accumulator key (ignored for a primitive, as Object.prototype's setter does).
 
