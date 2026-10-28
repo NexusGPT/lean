@@ -63,13 +63,14 @@ and a fill or reverse that changes nothing would need the `noopAllowed` case pus
 
 **Construct.** The census at 6661006 names the library members the lint stops on: `unsupported-member` 209 findings on the
 nexus tree and 576 on the n8n tree, `unsupported-call` 162 and 162. `LIBRARY_MEMBER_ROWS` in `langs/ts/library-rows.mjs` is the
-table of the ten members with the most findings that no other lane owns. Each row has its census count, its ECMA-262
-section, `status` (`admitted` with its reading, or `refused` with the rule) and the message the lint prints; the lint takes
-the messages of these members from the table, so a refusal and its row cannot drift apart.
+table of the eleven members with the most findings that no other lane owns. Each row has its census count, its ECMA-262
+section (or the TypeScript fact), `status` (`admitted` with its reading, or `refused` with the rule) and the message the
+lint prints; the lint takes the messages of these members from the table, so a refusal and its row cannot drift apart.
 
 | row | members | status | findings (nexus, n8n) |
 |---|---|---|---|
 | push-apply-value | `a.push.apply(a, b)`, `a.push.call(a, x)` | refused, `unsupported-member`; write `a.push(...b)` | 0, 234 |
+| incomplete-type-member | `req.params`, `req.body`, `message.id` on a type that reaches an unresolved module | admitted, an accessor of the value, reads only | 138, 174 |
 | tostring-object | `v.toString()` on a value that may be an object | refused, `unsupported-call`; narrow with `typeof` | 4, 55 |
 | locale-in-callback | `toLocaleLowerCase`, `toLocaleUpperCase`, `toLocaleString` in a map, filter, find, findIndex, some, every, flatMap or reduce callback | admitted, a transition per element | 8, 29 |
 | match-index | `m.index` of a global, exec-loop or matchAll match | refused, `unsupported-member`; the non-global literal match stays read | 24, 4 |
@@ -95,16 +96,24 @@ the messages of these members from the table, so a refusal and its row cannot dr
   file does not export, and whose every mention in the file is the first argument of one of those six String methods keeps
   `lastIndex` 0, so the matches are one function of the pattern and the string, read through the same uninterpreted
   `matchAll` the literal form uses. `regexNeverAdvanced` decides it.
+- A type whose declaration reaches a module the program cannot resolve (`AuthenticatedRequest<...> = Omit<express.Request,
+  "user"> & {...}` with `express` missing) has members that are unknown, not absent. A read of a member its visible part does
+  not declare is the accessor the translator already emits for a value of type any, `ext_<Type>_<member>_<Type>(value)`, one
+  function of the value, the same on both sides. `incompleteType` finds the error type in an alias argument, a union or
+  intersection part, or an `extends` clause. The reading serves reads only: `onWritePath` keeps a member on the path of a
+  write refused, and `writesThroughIncomplete` keeps every read refused in a function that writes through such a value
+  (the translator does not write an undeclared field). The missing module stays a finding of its own rule.
 
 ```
 var (wld, t0_) := ext_Module_file_get_TOKEN_84vwit_World(wld);
 var (wld, out) := tokens_loop0(ext_Ext_RegExpStringIterator_to_seq_..(ext_call_args_str_matchAll_string_Ext_RegExp(html, t0_)), 0, wld, out);
+var providerName: Any := ext_Any_provider_Any(ext_SetProviderSettings_params_SetProviderSettings(req));
 ```
 
 **What stays refused, and why.**
 - A pattern that is a parameter, an imported name, an exported const, or any name that `exec`, `test` or a `lastIndex`
   write touches: its `lastIndex` is state the unit does not own (`library_matchall_named`, `library_members_matchall_exec`,
-  `library_members_matchall_exported`).
+  `library_members_matchall_exported`). A member a complete type does not declare (`library_members_undeclared_member`).
 - `c?.pop()`: the translator reads it as an uninterpreted call on the present value and does not rebind `c` (probe: a
   reduced unit whose lint was relaxed translated, and its Dafny kept the old `c`), so a later read of `c` would see the old
   array. `this.items.shift()` as a value: the array lives in the world and the translator rebinds a local only.
@@ -119,40 +128,46 @@ var (wld, out) := tokens_loop0(ext_Ext_RegExpStringIterator_to_seq_..(ext_call_a
 - Match fields: `m.index` is a function of the pattern and the string for a non-global literal only; `m.groups` is an
   object the match builds, which the sequence reading of a match does not carry.
 
-**Soundness.** An admitted row never makes two different behaviours equal: the locale read is a transition keyed by the
-value, so two runs under two locales are never equal; the `matchAll` reading is sound exactly when `lastIndex` stays 0,
-which the predicate checks over the whole file and the export list. The cases considered: a pattern advanced by `exec`
+**Soundness.** An admitted row never makes two different behaviours equal. The locale read is a transition keyed by the
+value, so two runs under two locales are never equal. The `matchAll` reading is sound exactly when `lastIndex` stays 0,
+which the predicate checks over the whole file and the export list; the cases considered: a pattern advanced by `exec`
 in another unit of the file, an `export { RE }` and an `export const`, a script file whose top-level const is a global,
-a `y` flag, a pattern passed on as an argument or stored (all refused, fixtures above).
+a `y` flag, a pattern passed on or stored (all refused, fixtures above). The unknown-member accessor has the soundness of
+the any-typed read it copies: it assumes the member is a plain property, as every opaque read does; a getter with a side
+effect would break that for any opaque value alike. Two types of the same name with different declarations read through
+the same accessor name, as for every opaque type.
 
 **What lane B sees.** Real code on generated inputs: the locale read runs under the host's locale, so a change from lower
 case to upper case is a WITNESS (pair `library_members`, `lowerAll`); a change of what a match contributes
-(`wordLetters`) is a WITNESS. The refused rows are judged by lane B alone in `library_members_refused`: each changed use
-a WITNESS, each untouched use PASS-bounded.
+(`wordLetters`) and a change of a fallback value read from `req.params` (`providerOf`) are WITNESSes. The refused rows are
+judged by lane B alone in `library_members_refused`: each changed use a WITNESS, each untouched use PASS-bounded.
 
 **Validation by run.** `tests/pairs/library_members/validate.mjs` runs each row on three inputs or more on the engine
 (`node validate.mjs --log <dir>`; the logs of this lane are in `results-library-members/validation/`).
 
 **Measure** (census at 6661006 against this lane; `node langs/ts/census.mjs <tree> --out <json> --report <md>`, runs in `results-library-members/`).
 
-| tree | inside the subset before | after | `unsupported-call` findings (units) before | after | `unsupported-member` findings (units) |
-|---|---|---|---|---|---|
-| nexus (26,520 units) | 23,753 | 23,758 | 162 (120) | 146 (109) | 209 (66), unchanged |
-| n8n (6,337 units) | 4,314 | 4,315 | 162 (101) | 161 (100) | 576 (351), unchanged |
+| tree | inside the subset before | after | `unsupported-call` findings (units) before | after | `unsupported-member` findings (units) before | after |
+|---|---|---|---|---|---|---|
+| nexus (26,520 units) | 23,753 | 23,784 | 162 (120) | 146 (109) | 209 (66) | 71 (35) |
+| n8n (6,337 units) | 4,314 | 4,378 | 162 (101) | 161 (100) | 576 (351) | 402 (257) |
 
-The `unsupported-member` findings are all refused rows (their messages now name the escape) or members of types that extend
-an unresolved module (express, typeorm, `@nexus/*`: `req.body`, `req.params`, `message.id`, about 330 of the 785); those
-units also carry TS2339, so the first rule that names them would only change.
+95 units enter on the two trees (31 and 64). Translated with `--core --tolerant` in project mode, 84 of the 95 translate; the
+11 that do not stop on `type nesting too deep` (9) or on a callee that did not translate (2), a limit of the translator
+on large unions that the unsupported-member finding hid before. The `reads the host's locale` findings that remain (29 on n8n, 2 on nexus,
+from 29 and 8) are sort comparators and a call outside a callback loop.
 
-**Six real instances (W/work/bench, units that enter now and translate with `--core --fn`).**
+**Real instances (W/work/bench, units that enter now and translate with `--core --tolerant`).**
 | file:line | unit | construct | now |
 |---|---|---|---|
-| nexus apps/backend/src/notification-preferences/infrastructure/templates/notification-template.service.ts:312 | NotificationTemplateService.renderWeeklyAgentPerformanceReport | `a.conversations.toLocaleString()` in a `.map` callback | enters, translates |
-| nexus apps/frontend/src/common/components/Pickers/PluginPicker/CategoryChips.tsx:62 | CategoryChips | `facet.count.toLocaleString()` in a `.map` callback of the JSX | enters, translates |
-| nexus apps/frontend/src/modules/AgentCreation/utils/documentExtractor.ts:34 | extractDocuments | `content.matchAll(uploadedDocumentsRegex)` | enters, translates |
-| nexus apps/frontend/src/modules/Analytics/export/inline-css-variables.ts:107 | collectCssVariableNames | `markup.matchAll(VAR_CALL)` | enters, translates |
-| nexus apps/frontend/src/modules/Playground/components/ChatMessage/DocumentPreviewCard.tsx:37 | extractDocumentLinks | `markdown.matchAll(DOCUMENT_URL_REGEX)` | enters, translates |
-| n8n packages/cli/src/services/curl.service.ts:224 | lowerCaseContentTypeKey | `key.matchAll(regex)`, a local `new RegExp(KEY, 'gi')` | enters, translates |
+| nexus apps/backend/src/notification-preferences/infrastructure/templates/notification-template.service.ts:299 | NotificationTemplateService.renderWeeklyAgentPerformanceReport | `a.conversations.toLocaleString()` in a `.map` callback | enters, translates |
+| nexus apps/frontend/src/common/components/Pickers/PluginPicker/CategoryChips.tsx:15 | CategoryChips | `facet.count.toLocaleString()` in a `.map` callback of the JSX | enters, translates |
+| nexus apps/frontend/src/modules/AgentCreation/utils/documentExtractor.ts:27 | extractDocuments | `content.matchAll(uploadedDocumentsRegex)` | enters, translates |
+| nexus apps/frontend/src/modules/Analytics/export/inline-css-variables.ts:105 | collectCssVariableNames | `markup.matchAll(VAR_CALL)` | enters, translates |
+| n8n packages/cli/src/services/curl.service.ts:220 | lowerCaseContentTypeKey | `key.matchAll(regex)`, a local `new RegExp(KEY, 'gi')` | enters, translates |
+| n8n packages/cli/src/ExternalSecrets/ExternalSecrets.controller.ee.ts:55 | ExternalSecretsController.setProviderSettings | `req.params.provider`, `req.body` on `AuthenticatedRequest<...>` | enters, translates |
+| n8n packages/cli/src/controllers/mfa.controller.ts:52 | MFAController.activateMFA | `req.body` on `AuthenticatedRequest<...>` | enters, translates |
+| nexus packages/shared/src/modules/chat/utils/authorType.ts:39 | getAuthorType | `message.type` on `Message & {...}`, with `Message` from an unresolved module | enters, translates |
 
 Four stay out by the bound: n8n `packages/nodes-base/nodes/Jira/GenericFunctions.ts:220` (a locale read in a sort comparator),
 `ParameterPolicyRow.tsx:39` (its pattern is also run with `test`), `resolve-template.ts:17` (the pattern is exported) and

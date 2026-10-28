@@ -28,7 +28,7 @@ const LIBRARY_RESULT_MORE = {
   'Array.from': 'fresh', 'Array.of': 'fresh', 'Object.keys': 'fresh', 'Object.values': 'fresh', 'Object.entries': 'fresh', 'Object.fromEntries': 'fresh', 'Object.create': 'fresh', 'JSON.parse': 'fresh', 'Promise.all': 'fresh', 'Promise.allSettled': 'fresh',
   'Array.prototype.find': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
 };
-import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText, memberRow, freshRegexFlags, regexNeverAdvanced } from '../library-rows.mjs';
+import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText, memberRow, freshRegexFlags, regexNeverAdvanced, incompleteType, onWritePath, writesThroughIncomplete } from '../library-rows.mjs';
 import { reactHook, arrowOf, closureReads } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
@@ -2083,7 +2083,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if ((name === 'index' || name === 'groups') && /^RegExp(Exec|Match)Array$/.test(t.symbol?.name ?? '')) return v(e, 'unsupported-member', memberRow(name === 'index' ? 'match-index' : 'match-groups').message());
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
       }
-      if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length) return v(e, 'unsupported-member', `property .${name} is not declared on ${checker.typeToString(t)}`);
+      if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length && !(incompleteType(checker, t) && !onWritePath(e) && !writesThroughIncomplete(checker, currentFn))) return v(e, 'unsupported-member', memberRow('incomplete-type-member').message(name, checker.typeToString(t))); // a type that reaches an unresolved module has unknown members (library-rows.mjs, incompleteType)
     }
   }
   // an open key (a string, a number, an unknown) on a plain record of data fields, or a number-keyed dictionary, reads as one

@@ -74,6 +74,9 @@ export const primitiveText = (t) => nonNull(t).length > 0 && !(t.flags & (ts.Typ
 // tests/pairs/library_members/validate.mjs runs each row against the engine on three inputs or more before it lands.
 // `census` counts the findings of the census at 6661006 (nexus tree, n8n tree).
 export const LIBRARY_MEMBER_ROWS = [
+  { id: 'incomplete-type-member', member: 'a member the visible part of a type does not declare, on a type that reaches an unresolved module (req.params, req.body, message.id)', status: 'admitted', reading: 'uninterpreted', rule: 'unsupported-member', section: 'TypeScript: an import that does not resolve is the error type', census: { nexus: 138, n8n: 174 },
+    why: 'the members of such a type are unknown, not absent: the read is an accessor of the value, one function of the value the same on both sides, as for a value of type any; the unresolved module is reported by its own rule, and with the module installed the member is declared and read as any declared member',
+    message: (name, type) => `property .${name} is not declared on ${type}` },
   { id: 'push-apply-value', member: 'Array.prototype.push used as a value (a.push.apply(a, b), a.push.call(a, x))', status: 'refused', rule: 'unsupported-member', section: 'push 23.1.3.23; Function.prototype.apply', census: { nexus: 0, n8n: 234 },
     why: 'the call goes through the function value `a.push`, so the array it changes is the first operand and not the receiver of a method call; nine analyses key on the mutator\'s name as the callee (the lint\'s MUT_NAMES and PARAM_MUTATORS, the translator\'s MUTATOR_NAMES, MUTATORS and MUT, the heap core\'s MUTATORS, common.mjs BUCKET_MUTATORS, CHANGERS and RECEIVER_WRITERS), and one that misses the form would treat a changed parameter as unchanged',
     message: (what) => `\`.${what}\` used as a value (\`a.${what}.apply(a, b)\`, \`a.${what}.call(a, x)\`) is not read; call it on the array: \`a.${what}(...b)\` or \`a.${what}(x)\`` },
@@ -149,4 +152,79 @@ export function regexNeverAdvanced(checker, id, sf, isGlobal) {
   };
   walk(sf);
   return ok ? flags : null;
+}
+
+// A type whose declaration reaches a module the program cannot resolve: an alias argument or a heritage clause that is
+// the error type (`Omit<express.Request, "user">`, `class R extends Repository<T>` with the import missing). Its members
+// are unknown, not absent, so a member the visible part does not declare is read as an accessor of the value, as for a
+// value of type any; the missing module is the finding (rule unresolved-module).
+const isErrorType = (t) => !!(t.flags & ts.TypeFlags.Any) && t.intrinsicName === 'error';
+export function incompleteType(checker, t, depth = 0, seen = new Set()) {
+  if (!t || depth > 6 || seen.has(t)) return false;
+  seen.add(t);
+  if (isErrorType(t)) return true;
+  if (t.aliasTypeArguments?.some((a) => incompleteType(checker, a, depth + 1, seen))) return true;
+  if (t.flags & ts.TypeFlags.UnionOrIntersection) return t.types.some((x) => incompleteType(checker, x, depth + 1, seen));
+  if (t.flags & ts.TypeFlags.Object) {
+    for (const d of t.symbol?.declarations ?? []) {
+      if (!(ts.isClassLike(d) || ts.isInterfaceDeclaration(d)) || !d.heritageClauses) continue;
+      for (const h of d.heritageClauses) {
+        if (h.token !== ts.SyntaxKind.ExtendsKeyword) continue;
+        for (const base of h.types) { const bt = checker.getTypeAtLocation(base); if (isErrorType(bt) || incompleteType(checker, bt, depth + 1, seen)) return true; }
+      }
+    }
+  }
+  return false;
+}
+
+// A property access that lies on the path of a write: the target of an assignment, an update or a delete, or the receiver
+// path of a mutator call (`res.statusCode = 200`, `req.query.offset = 1`, `delete v.id`, `req.body.items.push(x)`). The
+// accessor reading of an unknown member serves reads only; a write needs the field declared.
+const WRITER_CALLS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
+export function onWritePath(e) {
+  let n = e;
+  for (;;) {
+    const p = n.parent;
+    if (!p) return false;
+    if (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p)) { n = p; continue; }
+    if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === n) {
+      const q = p.parent;
+      if (ts.isPropertyAccessExpression(p) && q && ts.isCallExpression(q) && q.expression === p && WRITER_CALLS.has(p.name.text)) return true;
+      n = p; continue;
+    }
+    if (ts.isBinaryExpression(p)) return p.left === n && p.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && p.operatorToken.kind <= ts.SyntaxKind.LastAssignment;
+    if (ts.isDeleteExpression(p)) return true;
+    if (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) return p.operator === ts.SyntaxKind.PlusPlusToken || p.operator === ts.SyntaxKind.MinusMinusToken;
+    return false;
+  }
+}
+
+// Does the function write through a value of an incomplete type: an assignment, an update or a delete whose target path
+// has an incomplete type anywhere along it, or a mutator call on such a path. The accessor reading of an unknown member
+// serves a function that only reads through such values; a write needs the field declared, so a function that writes keeps
+// its reads refused too (the translator does not write an undeclared field).
+const writesIncompleteCache = new WeakMap();
+export function writesThroughIncomplete(checker, fn) {
+  if (!fn) return false;
+  if (writesIncompleteCache.has(fn)) return writesIncompleteCache.get(fn);
+  let found = false;
+  const chainIncomplete = (t) => {
+    let x = t;
+    while (x && (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x))) {
+      x = x.expression;
+      if (incompleteType(checker, checker.getTypeAtLocation(x))) return true;
+    }
+    return false;
+  };
+  const walk = (n) => {
+    if (found) return;
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment && chainIncomplete(n.left)) { found = true; return; }
+    if (ts.isDeleteExpression(n) && chainIncomplete(n.expression)) { found = true; return; }
+    if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === ts.SyntaxKind.PlusPlusToken || n.operator === ts.SyntaxKind.MinusMinusToken) && chainIncomplete(ts.isPrefixUnaryExpression(n) ? n.operand : n.operand)) { found = true; return; }
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && WRITER_CALLS.has(n.expression.name.text) && (incompleteType(checker, checker.getTypeAtLocation(n.expression.expression)) || chainIncomplete(n.expression.expression))) { found = true; return; }
+    ts.forEachChild(n, walk);
+  };
+  walk(fn);
+  writesIncompleteCache.set(fn, found);
+  return found;
 }

@@ -11,6 +11,14 @@ const same = (a, b) => show(a) === show(b);
 const keep = (obj, name, fn) => { const d = Object.getOwnPropertyDescriptor(obj, name); Object.defineProperty(obj, name, { ...d, value: fn(d.value) }); return () => Object.defineProperty(obj, name, d); };
 const cases = {};
 
+// the claim: a member of a value of unknown type is read from the value itself, so an accessor keyed by the member and the value
+// is the same function on both sides; an absent member reads undefined, an inherited one reads the inherited value
+cases['incomplete-type-member'] = [
+  ['an own member', () => { const req = { params: { provider: 'vault' }, body: { a: 1 } }; return [[req.params.provider, req.body.a], ['vault', 1]]; }],
+  ['an absent member reads undefined', () => { const req = { params: {} }; return [req.body, undefined]; }],
+  ['an inherited member', () => { const base = { baseUrl: '/rest' }; const req = Object.create(base); return [req.baseUrl, '/rest']; }],
+  ['two reads of a plain member agree', () => { const req = { query: { page: '2' } }; return [[req.query.page, req.query.page], ['2', '2']]; }],
+];
 // the claim: a.push.apply(a, b) is a.push(...b), and the receiver of a call through the function value is its first operand
 cases['push-apply-value'] = [
   ['apply of two arrays', () => { const a = [1, 2], b = [3, 4], x = [1, 2]; a.push.apply(a, b); x.push(...b); return [a, x]; }],
