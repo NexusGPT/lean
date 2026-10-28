@@ -1269,11 +1269,84 @@ export function translate(file, fnName, opts = {}) {
     const nominal = checker.getPropertiesOfType(t).some((p) => p.declarations?.some((v) => (v.name && ts.isPrivateIdentifier(v.name)) || v.modifiers?.some((m) => m.kind === K.PrivateKeyword || m.kind === K.ProtectedKeyword)));
     return nominal ? d : null;
   }
-  function instanceDecision(t, target, n) {
+  // ----- provenance (design/conformance-readings.md): the same-file classes whose `new` made every value an expression
+  // can hold, or null when a value may come from anywhere else (a parameter, a field, `this`, an outside call, an
+  // assertion). `instanceof` walks the value's prototype chain (ECMA-262 13.10.2, 7.3.22) and a method call runs what
+  // the lookup along that chain finds (10.1.8.1); the chain is fixed by the constructor that made the object. A static
+  // type is a claim about shape only: TypeScript's assignability is structural, so any object of that shape passes for
+  // it (lane B draws a plain record). Followed: parentheses, a conditional's two arms, a variable of this file through
+  // its initializer and every plain `=` that writes it (any other write is unknown), the returns of a same-file
+  // function it calls (the reached code). Anything else is unknown.
+  // a name of one of this file's top-level classes, by the symbol it resolves to (a local of that name is not the class)
+  function fileClass(e) { while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e) || !classDecls.has(e.text)) return null; const c = classDecls.get(e.text); return checker.getSymbolAtLocation(e)?.valueDeclaration === c ? c : null; }
+  function madeBy(e, seen = new Set()) {
+    while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (ts.isNewExpression(e)) { const c = fileClass(e.expression); return c ? [c] : null; }
+    if (ts.isConditionalExpression(e)) { const a = madeBy(e.whenTrue, seen), b = a && madeBy(e.whenFalse, seen); return a && b ? [...new Set([...a, ...b])] : null; }
+    if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && !e.questionDotToken) {
+      const f = checker.getSymbolAtLocation(e.expression)?.valueDeclaration;
+      if (!f || !ts.isFunctionDeclaration(f) || !f.body || f.asteriskToken || f.modifiers?.some((m) => m.kind === K.AsyncKeyword) || f.getSourceFile() !== sf || seen.has(f)) return null;
+      seen.add(f);
+      const rets = []; let bare = false;
+      const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x)) { if (x.expression) rets.push(x.expression); else bare = true; } ts.forEachChild(x, w); };
+      ts.forEachChild(f.body, w);
+      if (bare || !rets.length) return null;
+      const all = []; for (const r of rets) { const m = madeBy(r, seen); if (!m) return null; all.push(...m); }
+      return [...new Set(all)];
+    }
+    if (!ts.isIdentifier(e)) return null;
+    const sym = checker.getSymbolAtLocation(e), d = sym?.valueDeclaration;
+    if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !d.initializer || d.getSourceFile() !== sf || seen.has(d)) return null;
+    seen.add(d);
+    const sources = [d.initializer]; let ok = true;
+    const w = (x) => {
+      if (!ok) return;
+      if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym) {
+        let c = x, p = x.parent; // climb a destructuring target to its assignment
+        while (p && (ts.isParenthesizedExpression(p) || ts.isArrayLiteralExpression(p) || ts.isObjectLiteralExpression(p) || ts.isShorthandPropertyAssignment(p) || (ts.isPropertyAssignment(p) && p.initializer === c) || ts.isSpreadElement(p) || ts.isSpreadAssignment(p))) { c = p; p = p.parent; }
+        if (p && ts.isBinaryExpression(p) && p.left === c && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) { if (c === x && p.operatorToken.kind === K.EqualsToken) sources.push(p.right); else ok = false; }
+        else if (p && (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && p.operand === c && (p.operator === K.PlusPlusToken || p.operator === K.MinusMinusToken)) ok = false;
+        else if (p && (ts.isForOfStatement(p) || ts.isForInStatement(p)) && p.initializer === c) ok = false;
+      }
+      ts.forEachChild(x, w);
+    };
+    w(sf);
+    if (!ok) return null;
+    const all = []; for (const s0 of sources) { const m = madeBy(s0, seen); if (!m) return null; all.push(...m); }
+    return [...new Set(all)];
+  }
+  // a same-file class and the same-file classes above it, nearest first; `complete` when the chain ends in this file
+  // (no extends), so a class outside it is known not to be on it
+  function chainOf(c) {
+    const out = []; let cur = c;
+    while (cur && !out.includes(cur)) {
+      out.push(cur);
+      const ext = cur.heritageClauses?.find((h) => h.token === K.ExtendsKeyword)?.types[0]?.expression;
+      if (!ext) return { classes: out, complete: true };
+      cur = fileClass(ext);
+    }
+    return { classes: out, complete: false };
+  }
+  // `v instanceof T` for v made by `new C`: true when T is on C's chain, false when the chain is complete without it, else
+  // unknown; a class declaring `static [Symbol.hasInstance]` answers the test itself (13.10.2 step 2), never decided here
+  const hasInstanceHook = (c) => c.members.some((m) => m.name && ts.isComputedPropertyName(m.name) && /^Symbol\.hasInstance$/.test(m.name.expression.getText(sf)));
+  function madeInstanceOf(made, target) {
+    if (!made || !target || hasInstanceHook(target)) return null;
+    const vs = made.map((c) => { const ch = chainOf(c); return ch.classes.includes(target) ? true : ch.complete ? false : null; });
+    return vs.every((v) => v === true) ? 'true' : vs.every((v) => v === false) ? 'false' : null;
+  }
+  // a method call `r.m(args)` runs the class's own unit only when every value r can hold was made by `new` of a class
+  // whose lookup of m finds that class's member: the nearest class on its chain declaring an instance member named m
+  function madeDispatch(recv, cls, name) {
+    const made = madeBy(recv);
+    if (!made) return false;
+    return made.every((c) => { const ch = chainOf(c); const owner = ch.classes.find((k) => k.members.some((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === K.StaticKeyword))); return owner === cls; });
+  }
+  function instanceDecision(t, target, n, made = false) {
     if (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined)) return 'false';
     if (!nominalClass(t)) return null;
     const ancestry = (a, b) => a.symbol === b.symbol || (a.getBaseTypes?.() ?? []).some((v) => ancestry(v, b));
-    if (ancestry(t, target)) return 'true';
+    if (ancestry(t, target)) return made ? 'true' : null; // the type says the shape; only a value made by `new` here has the chain
     if (ancestry(target, t)) return null;
     return disjointTags(t, target, n) ? 'false' : null;
   }
@@ -2564,7 +2637,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const decl = checker.getSymbolAtLocation(n.right)?.valueDeclaration;
       const target = decl && ts.isClassDeclaration(decl) ? checker.getTypeAtLocation(decl.name) : null;
       const reach = reachOf.reachesFile(n) ? `_${hash(reachOf.keyText(n))}` : ''; // the classes of this file the test can meet, the right's and every class the left may be an instance of, with their heritage (design/reach-keys.md)
-      return staticTest(n.left, (t) => target ? instanceDecision(t, target, n) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}${reach}`, [d], 'bool')}(${v})`);
+      // decided only for a value this file made by `new` (design/conformance-readings.md); any other value is the opaque test of the value
+      const made = assertionDerived(n.left) ? null : madeBy(n.left), madeVerdict = madeInstanceOf(made, decl && ts.isClassDeclaration(decl) && decl.getSourceFile() === sf ? decl : null);
+      if (madeVerdict !== null) { expr(n.left); return madeVerdict; }
+      return staticTest(n.left, (t) => target && !hasInstanceHook(decl) ? instanceDecision(t, target, n, !!made) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}${reach}`, [d], 'bool')}(${v})`);
     }
     if (op === K.InKeyword) {
       { const pr = inPrototypeReach(checker, sf, n); if (pr) fail(n, `prototype: this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pr.maker.getStart(sf))}), and ${pr.why}; \`in\` reads the prototype; test an own key with Object.prototype.hasOwnProperty.call(o, k)`); }

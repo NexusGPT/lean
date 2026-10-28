@@ -1665,15 +1665,6 @@
    "row": "d7e54baf",
    "laneA": "proved",
    "first": "input 15, parent: result: model dictionary entry \"vh6y1\" has no match"
-  },
-  {
-   "kind": "disagree",
-   "pair": "type_tests",
-   "unit": "baseTest",
-   "cause": "value",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 1, parent: result: model true against false"
   }
  ]
 }
