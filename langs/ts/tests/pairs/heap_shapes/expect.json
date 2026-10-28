@@ -8,7 +8,9 @@
   "desk_current",
   "desk_reset",
   "cache_off",
-  "tag"
+  "tag",
+  "off",
+  "drop"
  ],
  "equal": {
   "sign": false,
@@ -19,9 +21,11 @@
   "desk_current": true,
   "desk_reset": true,
   "cache_off": true,
-  "tag": false
+  "tag": false,
+  "off": false,
+  "drop": true
  },
- "why": "shape 1: sign drops a field the literal source wrote (WITNESS); stamp writes the literal's keys in the other order (the same field writes on the headers node: proved). shape 2: finish writes the status of the other node the call returns (WITNESS); close moves the count first and writes the status through the path the call returns (the same writes on the same node: proved); Desk.reset writes through this.current() (untouched). shape 3: cacheOff names the key before the dictionary write on the headers node (the same DictSet_: proved); tag writes its two keys in the other order (a new key goes last, the key order differs: WITNESS).",
+ "why": "shape 1: sign drops a field the literal source wrote (WITNESS); stamp writes the literal's keys in the other order (the same field writes on the headers node: proved). shape 2: finish writes the status of the other node the call returns (WITNESS); close moves the count first and writes the status through the path the call returns (the same writes on the same node: proved); Desk.reset writes through this.current() (untouched). shape 3: cacheOff names the key before the dictionary write on the headers node (the same DictSet_: proved); tag writes its two keys in the other order (a new key goes last, the key order differs: WITNESS). shape 4: off splices at indexOf without `>>> 0`, so a missing name's -1 deletes the last name where the parent deletes nothing (WITNESS); drop splices through the parameter's own path where the parent names the node first (the same steps on the same node: proved).",
  "b": {
   "sign": "WITNESS",
   "stamp": "PASS-bounded",
@@ -30,7 +34,9 @@
   "close": "PASS-bounded",
   "Desk.reset": "PASS-bounded",
   "cacheOff": "PASS-bounded",
-  "tag": "WITNESS"
+  "tag": "WITNESS",
+  "off": "WITNESS",
+  "drop": "PASS-bounded"
  },
  "heap": true
 }

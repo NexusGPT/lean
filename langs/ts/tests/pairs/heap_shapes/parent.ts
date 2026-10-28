@@ -48,3 +48,18 @@ export function tag(c: Call, k: string, v: string): void {
   c.headers[k] = v;
   c.headers["X-Seen"] = "1";
 }
+
+// shape 4: a const name for a node a parameter holds; splice on it as the library row says, its index read exactly
+// (`>>> 0` makes the -1 of a missing item 4294967295, which deletes nothing)
+export interface Bus { names: string[]; count: number }
+
+export function off(b: Bus, name: string): void {
+  const names = b.names;
+  names.splice(names.indexOf(name) >>> 0, 1);
+}
+
+export function drop(b: Bus, name: string): void {
+  const names = b.names;
+  names.splice(names.indexOf(name) >>> 0, 1);
+  b.count -= 1;
+}

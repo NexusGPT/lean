@@ -1527,7 +1527,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     };
     // a write the heap core reads as a step on a held node and the value reading would copy: a node below an input (one
     // field step or more), a const name bound to an input path, a call's result (heap shapes, lint heldNodePath)
-    const heldShape = (x) => { const r = rootOf(x); if (ts.isCallExpression(r)) return true; if (ts.isIdentifier(r) && bound.has(r.text) && String(bound.get(r.text)).startsWith('@')) return true; return paramsOrThis(x) && depth(x) >= 1; };
+    const heldShape = (x) => { const r = rootOf(x); if (ts.isCallExpression(r)) return true; if (ts.isIdentifier(r) && inputAlias.has(r.text)) return true; return paramsOrThis(x) && depth(x) >= 1; };
     const canon = (s) => { if (s === null) return null; const ids = new Map(); return s.replace(/#(\d+)/g, (m, d) => { if (!ids.has(d)) ids.set(d, ids.size); return `#${ids.get(d)}`; }); };
     const sites = [], writes = []; let nestedWrite = false; // nestedWrite: a write through an input whose target path could not be read
     const elementOf = new Set(); // names bound to the elements of a loop over an input: a write through one has no readable path
@@ -1542,6 +1542,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       ts.forEachChild(n, scan);
     };
     scan(u.body);
+    // const names bound to a path below an input (`const names = b.names`, `const h = this.cfg.headers`) or to another
+    // such name: a write through one is a write of that node, which the value reading copies (heap shapes)
+    const inputAlias = new Set();
+    { const w = (n) => { if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && (ts.getCombinedNodeFlags(n) & ts.NodeFlags.Const)) { const x = unparen(n.initializer); const r = rootOf(x); if ((ts.isIdentifier(r) && ((params.has(r.text) && depth(x) >= 1) || inputAlias.has(r.text))) || (r.kind === K.ThisKeyword && depth(x) >= 1)) inputAlias.add(n.name.text); } ts.forEachChild(n, w); }; w(u.body); }
     for (const [name, tm] of destructured) if (!written.has(name)) bound.set(name, tm); // a binding the unit writes again has no fixed skeleton
     const walk = (n) => {
       for (const nm of elementNames(n, paramsOrThis)) elementOf.add(nm);
@@ -1562,7 +1566,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         else { const args = n.arguments.map((a) => (isRefType(typeOf(a)) ? term(a) : '.')); if (args.some((a) => a === null)) nestedWrite = true; else writes.push(`@${pth}.${n.expression.name.text}(${args.join(',')})`); }
       }
       if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && paramsOrThis(L)) { const pth = ts.isPropertyAccessExpression(L) ? path(L) : null; if (typeof pth !== 'string') nestedWrite = true; else writes.push(`@${pth}:=.`); } }
-      { const t = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? unparen(n.left) : (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) ? unparen(n.operand) : ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) ? n.expression.expression : null; if (t && t !== rootOf(t) && ts.isCallExpression(rootOf(t))) nestedWrite = true; } // a write through the node a call returns: no readable path (heap shapes)
+      { const t = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? unparen(n.left) : (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) ? unparen(n.operand) : ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) ? n.expression.expression : null; if (t && t !== rootOf(t) && ts.isCallExpression(rootOf(t))) nestedWrite = true; if (t && ts.isIdentifier(rootOf(t)) && inputAlias.has(rootOf(t).text) && (t !== rootOf(t) || ts.isCallExpression(n))) nestedWrite = true; } // a write through the node a call returns, or through a const name for a node below an input: no readable path (heap shapes)
       if (isAssignCall(n) && n.arguments[0] && heldShape(n.arguments[0])) nestedWrite = true; // Object.assign onto a node below an input or behind another name: the value reading copies that node (heap shapes)
       if (ts.isReturnStatement(n) && n.expression && !inFn) sites.push(term(n.expression));
       if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) { inFn++; ts.forEachChild(n, walk); inFn--; return; } // a nested function's returns are its own; its writes through an input are the unit's

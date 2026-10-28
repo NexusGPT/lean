@@ -978,7 +978,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           if (!throughElement && heldCall(root)) { if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field'); expr(l.expression); return expr(e.right); } // a field of the node a same-file call returns (`pick(b, true).status = v`, `this.current().n = 0`): a heap step on that node
           if (throughElement) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`: a field of an element is written when the path from a parameter takes field and array-element steps only, each index a number that calls nothing (name it first: \`const k = ...\`), and \`!\` or \`as T\` stand only on an element, T its own type`);
           else if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
-          else if (aliasHere(o.decl, l)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl));
+          else if (aliasHere(o.decl, l) && !heldAlias(o.decl)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl)); // a const name for a node a parameter holds: the write is a step on that node (heap shapes)
           else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
         }
@@ -999,7 +999,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
       if (ts.isPropertyAccessExpression(e.operand) && elementWritePath(checker, e.operand)) { const ep = elementWritePath(checker, e.operand); const po = declOf(ep.root); if (po.kind === 'local' && isParam(po.decl) && po.decl.parent === currentFn && !aliasLocals.has(po.decl) && ownedHere(po.decl)) return expr(e.operand.expression); } // a field of a parameter's element: a heap step on that element
-      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasHere(o.decl, e) && ownedHere(o.decl)) return; if (heldCall(r)) return expr(r); return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
+      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && (!aliasHere(o.decl, e) || heldAlias(o.decl)) && ownedHere(o.decl)) return; if (heldCall(r)) return expr(r); return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
       if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
@@ -1030,8 +1030,9 @@ export function lintFile(file, ranges = null, opts = {}) {
       // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
       // a Date setter is a method call like any other: a world transition (the Date's state lives in the world since the clock-read lane), so no refusal and no rebinding
       if (moduleState(checker, r, sf) && MUT_NAMES.has(name)) { checkIdent(r); return argsOf(e); }
-      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasHere(declOf(r).decl, e);
-      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
+      const heldRow = ts.isIdentifier(r) && declOf(r).kind === 'local' && heldAlias(declOf(r).decl) && ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'].includes(name) && isArrayExpr(r); // an in-place row of the library table on a const name for an array a parameter's node holds: a step on that node (heap shapes)
+      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && (!aliasHere(declOf(r).decl, e) || heldRow);
+      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name) && !heldRow) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
       if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
       if (nonNull(rt).some(isAny)) {
         // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later

@@ -49,3 +49,17 @@ export function tag(c: Call, k: string, v: string): void {
   c.headers["X-Seen"] = "1";
   c.headers[k] = v;
 }
+
+// shape 4: off drops the `>>> 0` (a missing item's -1 now deletes the last name: WITNESS); drop splices through the
+// parameter's own path where the parent names the node first (the same steps on the same node: proved)
+export interface Bus { names: string[]; count: number }
+
+export function off(b: Bus, name: string): void {
+  const names = b.names;
+  names.splice(names.indexOf(name), 1);
+}
+
+export function drop(b: Bus, name: string): void {
+  b.names.splice(b.names.indexOf(name) >>> 0, 1);
+  b.count -= 1;
+}
