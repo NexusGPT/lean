@@ -1,0 +1,15 @@
+{
+ "scope": [
+  "big_int",
+  "neg_zero"
+ ],
+ "equal": {
+  "neg_zero": false,
+  "big_int": false
+ },
+ "why": "class 8, the number envelope (exact int and real, no signed zero, no 2^53 bound): lane B never draws -0 or numbers past 2^53. Failing on 1e55e21: Equal_neg_zero, Equal_big_int proved (lane B PASS-bounded). Owner question open (design/proof-hunt.md).",
+ "b": {
+  "negZero": "PASS-bounded",
+  "bigInt": "PASS-bounded"
+ }
+}
