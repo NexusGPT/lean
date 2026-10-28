@@ -28,8 +28,8 @@ recording fakes (`langs/ts/exec/fake.mjs`).
   `check: runtime no-silent-exit`
 - Limit, no check: `node:vm` is not a security boundary. The globals hand the context the host's `Object`, and
   `Object.constructor('return process')()` reaches the host's real `process` (probe of 2026-10-28, `typeof ... .pid`
-  answered `number`). It makes honest code deterministic and recorded; it does not contain hostile code. In the
-  gate, containment is the kernel profile and the effect proxy (sections 5 and 6).
+  answered `number`). lean's vm context records and fakes the world; it does not contain hostile unit code, which can
+  reach the host process; containment is the gate's kernel profile and proxy (sections 5 and 6).
 
 ## 2. The loader's path validation
 
