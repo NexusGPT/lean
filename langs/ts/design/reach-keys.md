@@ -31,7 +31,12 @@ reference reaches any code of this file; `reachOf.keyText(node)`, the reach text
 - `namedStepCall` (a named callback) and `externalCall` (a direct call): `call_args_scale_<reach of scale>`;
 - `moduleAccessor`: `Module_file_get_CFG_<reach of the declaration statement>`, one key for its get and its set;
 - the tagged template: `tag_tag_<reach of the tag expression>_1`;
-- `instanceof`: `instanceof_Base_<reach of the whole test>`, so the right's class and every class the left may be.
+- `instanceof`: `instanceof_Base_<reach of the whole test>`, so the right's class and every class the left may be;
+- `promiseHandlerBody` (a named `.then` handler): `call_args_<name>_<reach>`; the lint routes only a unit, an import or
+  another file's function there, so a module constant (`.then(scale)`) never reaches it: the translator refuses it
+  ("scale is a function value; call it", translate.mjs:1379), so it cannot prove;
+- `numericKey` (an opaque numeric unit that reads module state) was the whole file's text: now the unit's reach, so an
+  edit elsewhere in the file keeps its proof.
 
 An import, a global or a local reaches no file code, so its name is unchanged (`sql\`...\``, `e instanceof Error` in a
 file without classes): an edit to the import line does not cost a proof.
@@ -52,10 +57,8 @@ class the left of `instanceof` may be an instance of drops its `extends` (the le
 each with its heritage clause in its text, `headerOf`); `static [Symbol.hasInstance]` changes (a member of the reached
 class). A `let` binding keeps the module-forms reading: its start state is the quantified world, the key adds the
 initializer's reach. What stays coarse: an `instanceof` whose left is `unknown` or `object` keys on every class of the
-file, so a member edit of any class costs that proof (sound, wider than the prototype chain alone). Outside this lane:
-translate.mjs `promiseHandlerBody` (a module constant passed by name to `.then`) keeps `call_args_<name>`, and the
-module-forms note's `<name>_<iteratorProgram>` constant key already covers its initializer's reach (probed: a changed
-`Counter.next` in `const N = new Counter().next()` gives two keys).
+file, so a member edit of any class costs that proof (sound, wider than the prototype chain alone). The constant key
+`<name>_<iteratorProgram>` already covers its initializer (probed: a changed `Counter.next` gives two keys).
 
 ## Lint and lane B
 
@@ -64,12 +67,11 @@ The lint is unchanged: nothing new is admitted or refused, so no escape fixture.
 
 ## Measurement
 
-Pair `reach_keys` (16 units): on 9d6229a lane A proved all five must-not-prove units; with the reading `scaled`,
-`applied`, `cfgX`, `tagged`, `isBase` are not proved, and `shifted`, `moved` (a function-value constant whose maker is
-unchanged), `optsY` (a cell whose initializer's callee is unchanged), `marked` (an unchanged tag), `isShape` (a left
-typed `Square | Date` that no changed class can be) are proved. The lane report holds the pair step's TOTAL line.
+Pair `reach_keys` (17 units): on 9d6229a lane A proved the five must-not-prove units `scaled`, `applied`, `cfgX`,
+`tagged`, `isBase`; now none is proved, and `shifted`, `moved`, `optsY`, `marked`, `isShape` (no changed code reached)
+and `ratio` (`x / count`, numeric opaque: two keys on 9d6229a, one now) are proved. TOTAL line: the lane report.
 
-Instances (census repos, read in place): `nexus-automations/scripts/seed-changelog.ts:56` `const rand = rng(...)`,
+Instances (census repos): `nexus-automations/scripts/seed-changelog.ts:56` `const rand = rng(...)`,
 called by `chance` and `between` (enters: `call_args_rand_<reach>`); `langchainjs/libs/langchain-core/src/testing/
 matchers.ts:118` `toBeHumanMessage = makeMessageTypeMatcher(...)` (enters the same way); `nexus-linkedin-dashboard/lib/
 landing/postgres.ts:35` `e instanceof LandingWriteRefused`, a same-file class (enters: keyed by its reach);

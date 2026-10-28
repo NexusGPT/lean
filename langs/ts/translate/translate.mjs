@@ -2296,7 +2296,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
           const eff = effectfulUnits.has(u.name);
           const callCode = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...args].join(', ')})`;
           value = eff ? hoist(callCode, ownR) : callCode;
-        } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${cb.text}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
+        } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${cb.text}${reachOf.reachesFile(cb) ? `_${hash(reachOf.keyText(cb))}` : ''}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
         return promiseGuard(promisePair(convert(value, checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType(), outputT, cb)), R);
       });
     }
@@ -5608,7 +5608,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const seen = new Set();
     const visit = (name) => { if (seen.has(name)) return; seen.add(name); for (const dep of numericDeps.get(name) ?? []) visit(dep); };
     visit(u.name);
-    if (moduleUnitShape(u).reads) return createHash('sha256').update(sf.text + '\n' + u.name).digest('hex');
+    if (moduleUnitShape(u).reads) return createHash('sha256').update(reachOf.keyText(u.node) + '\n' + u.name).digest('hex'); // a unit reading module state: the code it reaches, its cells' declarations among them (design/reach-keys.md), not the whole file
     return createHash('sha256').update([...seen].sort().map((name) => `${name}:${infinityText(fns.get(name).fn, fns.get(name).node)}\n${[...(numericSources.get(name) ?? [])].sort().join('\n')}`).join('\n')).digest('hex');
   }
   // the source a unit means: its own text and every same-file unit it reaches, or the whole file when it reads any other

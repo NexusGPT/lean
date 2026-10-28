@@ -33,3 +33,8 @@ export function isBase(n: number): boolean { const b: object = n > 0 ? new Child
 class Shape { s = 0; }
 class Square extends Shape { q = 2; }
 export function isShape(v: Square | Date): boolean { return v instanceof Shape; }
+
+// a unit read as one opaque numeric function (a divisor that is not a literal) that reads a module cell: keyed by the
+// code it reaches, so an edit elsewhere in the file leaves it proved
+let count = 4;
+export function ratio(x: number): number { return x / count; }
