@@ -1186,3 +1186,41 @@ function reachOf(checker, sf, makers) {
   if (changed && !wide) goWide('the reach did not settle');
   return { makers, wide, reached, unitOf: unitOfNode };
 }
+
+// The accumulator of a reduce (ECMA-262 23.1.3.24 Array.prototype.reduce: the callback's first parameter holds
+// initialValue, then each step's return value), when it names an object of the unit's own and never an element of the
+// array: the call passes an initial value it builds out of primitives (`{}`, `[]`, `{ n: 0 }`, `new Map()`), the callback
+// never rebinds the parameter, holds no nested function, and every value it returns is the parameter itself (the last
+// operand of a comma included). Without an initial value the accumulator starts as the array's first element, a handed
+// start is the caller's object, and a step that returns an element hands that element on: each is no accumulator here.
+// The lint and the translator read the same test. Given the write (`write`, the assigned or mutated expression), it
+// must also be one step deep (`acc.f = v`, `acc[k] = v`, `acc.push(x)`): a deeper path may pass through an object stored in it
+export function reduceAccumulator(param, checker, write = null) {
+  const cb = param && param.parent;
+  if (!cb || !ts.isParameter(param) || !ts.isArrowFunction(cb) || cb.parameters[0] !== param || !ts.isIdentifier(param.name)) return false;
+  const call = cb.parent;
+  if (!call || !ts.isCallExpression(call) || call.arguments[0] !== cb || call.arguments.length < 2 || !ts.isPropertyAccessExpression(call.expression) || call.expression.name.text !== 'reduce') return false;
+  const K = ts.SyntaxKind, TF = ts.TypeFlags;
+  const bare = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isNonNullExpression(x) || ts.isSatisfiesExpression(x) || ts.isTypeAssertionExpression(x)) x = x.expression; return x; };
+  const primitive = (x) => { const t = checker.getTypeAtLocation(x); return (t.flags & TF.Union ? t.types : [t]).every((y) => y.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.Undefined | TF.Null | TF.EnumLike)); };
+  const init = bare(call.arguments[1]);
+  const built = (ts.isObjectLiteralExpression(init) && init.properties.every((q) => ts.isPropertyAssignment(q) && primitive(q.initializer)))
+    || (ts.isArrayLiteralExpression(init) && init.elements.every((x) => !ts.isSpreadElement(x) && primitive(x)))
+    || (ts.isNewExpression(init) && ts.isIdentifier(init.expression) && ['Map', 'Set', 'Array', 'Object'].includes(init.expression.text) && (init.arguments ?? []).length === 0);
+  if (!built) return false;
+  const name = param.name.text;
+  const isAcc = (x) => { x = bare(x); while (ts.isBinaryExpression(x) && x.operatorToken.kind === K.CommaToken) x = bare(x.right); return ts.isIdentifier(x) && x.text === name; };
+  let ok = true;
+  const walk = (x) => {
+    if (!ok) return;
+    if (ts.isFunctionLike(x)) { ok = false; return; } // a nested function may capture and hand on the accumulator
+    if (ts.isReturnStatement(x) && (!x.expression || !isAcc(x.expression))) { ok = false; return; }
+    if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(bare(x.left)) && bare(x.left).text === name) { ok = false; return; }
+    ts.forEachChild(x, walk);
+  };
+  if (ts.isBlock(cb.body)) ts.forEachChild(cb.body, walk); else { if (!isAcc(cb.body)) return false; walk(cb.body); }
+  if (!ok || !write) return ok;
+  const target = bare(write);
+  if (ts.isIdentifier(target)) return target.text === name;
+  return (ts.isPropertyAccessExpression(target) || ts.isElementAccessExpression(target)) && ts.isIdentifier(bare(target.expression)) && bare(target.expression).text === name;
+}

@@ -63,3 +63,17 @@ export function rootMessage(e: Error): string {
   }
   return cur.message;
 }
+
+// the guard dropped: every field is counted
+export function countAllowed(fields: string[], allowed: string[]): { n: number } {
+  return fields.reduce((acc, field) => {
+    return (acc.n = acc.n + 1), acc;
+  }, { n: 0 });
+}
+
+export function countKept(fields: string[], allowed: string[]): { n: number } {
+  return fields.reduce((acc, field) => {
+    if (!allowed.includes(field)) return acc;
+    return (acc.n = acc.n + 1), acc;
+  }, { n: 0 });
+}

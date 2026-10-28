@@ -58,3 +58,19 @@ export function rootMessage(e: Error): string {
   }
   return cur.message;
 }
+
+// reduce's accumulator, built by the call and returned by every step: a write through it is a write of the unit's own
+// object (the n8n select shape with a record accumulator, the comma included)
+export function countAllowed(fields: string[], allowed: string[]): { n: number } {
+  return fields.reduce((acc, field) => {
+    if (!allowed.includes(field)) return acc;
+    return (acc.n = acc.n + 1), acc;
+  }, { n: 0 });
+}
+
+export function countKept(fields: string[], allowed: string[]): { n: number } {
+  return fields.reduce((acc, field) => {
+    if (!allowed.includes(field)) return acc;
+    return (acc.n = acc.n + 1), acc;
+  }, { n: 0 });
+}
