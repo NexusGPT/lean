@@ -91,6 +91,7 @@ export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
       if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
         const callee = byDecl.get(checker.getResolvedSignature(n)?.declaration);
         if (callee) edges.get(callee).add(u.name);
+        { const f = n.expression; if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(f) && (f.name.text === 'call' || f.name.text === 'apply') && ts.isIdentifier(f.expression)) { const d = checker.getSymbolAtLocation(f.expression)?.valueDeclaration; const named = d && byDecl.get(d); if (named) edges.get(named).add(u.name); } } // `h.call(o, a)` / `h.apply(o, [a])` calls h here: its throw is this unit's
         if (syncLoopCall(n, checker)) for (const a of n.arguments) if (ts.isIdentifier(a)) { const d = checker.getSymbolAtLocation(a)?.valueDeclaration; const named = d && byDecl.get(d); if (named) edges.get(named).add(u.name); } // stage 5 rank 20: a throwing unit handed to an array method runs here, so its throw is this unit's
       }
       if (ts.isPropertyAccessExpression(n)) {
@@ -432,7 +433,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (name === 'undefined') return;
     if (name === 'arguments' && originOf(checker, id, sf, current).kind === 'global') return v(id, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter', restParamsSite(id));
     const o = originOf(checker, id, sf, current);
-    if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id))) return v(id, 'exception-callback', 'call the throwing unit directly, or pass it to a call; a stored function value has no fault channel'); // stage 5 rank 20: as a call argument it is an opaque value (outside) or a loop body (array method)
+    const viaCall = id.parent && ts.isPropertyAccessExpression(id.parent) && id.parent.expression === id && (id.parent.name.text === 'call' || id.parent.name.text === 'apply') && ts.isCallExpression(id.parent.parent) && id.parent.parent.expression === id.parent; // `h.call(o, a)` / `h.apply(o, [a])` calls h here (ECMA-262 20.2.3.1 and 20.2.3.3): the call of the unit, its fault routed as a direct call's
+    if (!asCallee && !viaCall && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id))) return v(id, 'exception-callback', 'call the throwing unit directly, or pass it to a call; a stored function value has no fault channel'); // stage 5 rank 20: as a call argument it is an opaque value (outside) or a loop body (array method)
     if (o.kind === 'unit' && units.get(name)?.fn.asteriskToken && !asyncGenerator(units.get(name)) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.expression === id)) return v(id, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
     if (o.kind === 'local' && localMethodLiteral(tOf(id)) && id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id)) return v(id, 'object-method-mutation', 'pass a fresh literal handler or keep calls on the local object; sharing a named method object needs a heap');
     if (o.kind === 'local' || o.kind === 'unit') return;
@@ -1115,12 +1117,12 @@ export function lintFile(file, ranges = null, opts = {}) {
     for (const [target, saved] of [[aliasLocals, aliases], [seenTypes, types], [promiseReadings, selected]]) { target.clear(); for (const value of saved) target.add(value); }
     return false;
   }
-  function unsafePromiseCallee(u, seen = new Set()) {
+  function unsafePromiseCallee(u, seen = new Set(), throws = true) { // throws false: a then, catch or finally handler's throw rejects the derived promise (the translator's faultHandlerBody), so only a mutation is unsafe
     if (!u || !u.body || seen.has(u.name)) return false; // a declared function without a body is refused on its own (unsupported-syntax)
     seen.add(u.name); let unsafe = false;
     const w = (x) => {
-      if (ts.isThrowStatement(x) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;
-      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), seen)) unsafe = true;
+      if ((throws && ts.isThrowStatement(x)) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), seen, throws)) unsafe = true;
       ts.forEachChild(x, w);
     };
     w(u.body); return unsafe;
@@ -1135,22 +1137,22 @@ export function lintFile(file, ranges = null, opts = {}) {
       const sg = checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call)[0];
       if (!sg || sg.typeParameters?.length || checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call).length !== 1 || sg.parameters.some((p) => p.valueDeclaration && ts.isParameter(p.valueDeclaration) && (p.valueDeclaration.dotDotDotToken || p.valueDeclaration.initializer || p.valueDeclaration.questionToken)) || sg.parameters.length > arity || (o.kind !== 'unit' && o.kind !== 'import' && o.kind !== 'other')) return v(a, 'promise-handler', 'use an arrow or a named same-file or imported function with at most one plain parameter');
       if (u) {
-        if (unsafePromiseCallee(u) || u.params.some((p) => p.initializer || p.dotDotDotToken || p.questionToken || !ts.isIdentifier(p.name))) return v(a, 'promise-handler', 'inline a handler that throws or mutates so its fault and state are visible');
+        if (unsafePromiseCallee(u, new Set(), false) || u.params.some((p) => p.initializer || p.dotDotDotToken || p.questionToken || !ts.isIdentifier(p.name))) return v(a, 'promise-handler', 'inline a handler that mutates so its state is visible');
       }
       const rt = sg.getReturnType();
       if (isAny(rt) || (!isNativePromise(rt, checker) && checker.getPropertyOfType(rt, 'then'))) return v(a, 'promise-thenable', 'give a named handler a plain or native Promise return type');
       return checkIdent(a, true);
     }
     if (!ts.isArrowFunction(a) || a.typeParameters?.length || a.parameters.length > arity || a.parameters.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken)) return v(a, 'promise-handler', 'use an arrow with plain parameters');
-    promiseBody(a.body);
+    promiseBody(a.body, true);
     const values = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) promiseValueType(x.expression); ts.forEachChild(x, values); };
     if (ts.isBlock(a.body)) values(a.body); else promiseValueType(a.body);
     promiseCallback(a);
   }
-  function promiseBody(body) {
+  function promiseBody(body, handler = false) { // handler: a then, catch or finally handler, whose throw rejects the derived promise
     const w = (x) => {
       if (ts.isFunctionLike(x)) return;
-      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text))) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), new Set(), !handler)) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
       if (ts.isStatement(x) && ![K.Block, K.VariableStatement, K.ExpressionStatement, K.IfStatement, K.ReturnStatement, K.ThrowStatement, K.EmptyStatement].includes(x.kind)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
       ts.forEachChild(x, w);
     };
