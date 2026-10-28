@@ -164,12 +164,14 @@ export function selectUnits(changedFiles, opts = {}) {
     if (file.binary) return skipped('binary');
     if (JS.test(file.file) && !file.hasTypes) return skipped('not-typescript');
     if (!CODE.test(file.file) && !(JS.test(file.file) && file.hasTypes)) return [];
-    if (file.error) return (file.units?.length ? file.units.map((u) => ({ ...u, file: file.file })) : [stub]).map((unit) => ({ unit, decision: 'failed', reason: 'loader' }));
-    return (file.units ?? []).map((u) => ({
+    // a unit present at the parent and absent at the head is a row of its own, whatever else the file's reading does
+    const removed = (file.removed ?? []).map((u) => ({ unit: { ...u, file: file.file }, decision: 'removed', reason: 'present at the parent, absent at the head' }));
+    if (file.error) return [...(file.units?.length ? file.units.map((u) => ({ ...u, file: file.file })) : file.removed?.length ? [] : [stub]).map((unit) => ({ unit, decision: 'failed', reason: 'loader' })), ...removed];
+    return [...(file.units ?? []).map((u) => ({
       unit: { ...u, file: file.file },
       decision: u.error ? 'failed' : u.findings?.length ? 'refused' : 'check',
       reason: u.error ? 'harness' : u.findings?.[0]?.rule ?? 'selected for checking',
-    }));
+    })), ...removed];
   });
 }
 
@@ -177,7 +179,9 @@ function changedRanges(repo, base, head, rel, deleted) {
   const out = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--unified=0', '--no-color', '--no-renames', base, ...(head === 'WORKTREE' ? [] : [head]), '--', rel]);
   return [...out.matchAll(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/gm)].map((m) => {
     const start = Number(m[deleted ? 1 : 3]), count = Number(m[deleted ? 2 : 4] ?? 1);
-    return [start, Math.max(start, start + count - 1)];
+    // a hunk of zero lines on this side (lines removed, none added) is the gap after line `start`: it changes a unit only when
+    // the gap lies inside it, never the unit that ends at `start` or the one that begins just after
+    return count === 0 ? [start + 0.5, start + 0.5] : [start, start + count - 1];
   });
 }
 
@@ -190,6 +194,15 @@ function changedUnits(loaded, ranges, file) {
     try { return [{ name: u.name, start, end, findings: loaded.checker ? lintFile(file, [[start, end]], { loaded }) : [] }]; }
     catch (e) { return [{ name: u.name, start, end, error: String(e.message).slice(0, 300) }]; }
   });
+}
+
+// the units of the parent text that the head text no longer has, by name, with the parent's own lines; the two texts are
+// read for their syntax only, so a head that fails to load in the program still shows which units it kept
+function removedUnits(rel, parentText, headText) {
+  const read = (text) => ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true);
+  const parent = read(parentText), kept = headText === null ? new Map() : topLevelFunctions(read(headText));
+  return [...topLevelFunctions(parent).values()].filter((u) => !kept.has(u.name)).map((u) => ({
+    name: u.name, start: parent.getLineAndCharacterOfPosition(u.node.getStart(parent)).line + 1, end: parent.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1 }));
 }
 
 // Read the change set before selection. Files outside code and secret names need no contents.
@@ -221,6 +234,8 @@ function changedFiles(opts, temps) {
       const text = bytes.toString('utf8');
       entry.hasTypes = JS.test(rel) && /@(?:type|param|returns?|typedef)\s*\{/.test(text);
       if (JS.test(rel) && !entry.hasTypes) return entry;
+      if (original && !original.includes(0)) entry.removed = removedUnits(rel, original.toString('utf8'), entry.deleted ? null : text);
+      if (entry.deleted) { entry.units = []; return entry; } // a deleted file has no head side to read: its units are removed rows
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       // A unique folder would change relative import resolution. Keep temporary siblings.
       const temporary = (side, content) => {
@@ -358,7 +373,7 @@ export async function prReport(opts) {
       for (const item of intake) {
         const u = item.unit;
         const index = rows.length;
-        rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: entry.error ?? u.error ?? item.reason, advice: [] });
+        rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
         if (!opts.preview && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });
       }
       if (opts.preview || !units.length || !entry.baseFile || entry.deleted) continue;

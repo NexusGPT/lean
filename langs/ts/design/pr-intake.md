@@ -18,6 +18,13 @@ The earlier reader kept one program per changed file for the whole run. On a 68-
 Of that, the program holds 8,169 source files (4,026 declaration files) and 1.29 GB of heap once created, and typing the changed files adds 0.45 GB; one program per side still holds that much on the largest change.
 JavaScript with declared JSDoc types can enter the same reader.
 
+A unit present at the parent and absent at the head has a row of its own, with coverage and decision removed.
+It covers a function deleted from a file that stays and every unit of a deleted file.
+The row carries the parent's unit name, file and lines, a null verdict and no lane output.
+No lane runs on it and it spends no unit of a budget; the gate judges it against the declared scope.
+The two sides are compared by unit name, read for syntax only, so a head that fails to load still shows which units it kept.
+A unit renamed at the head is a removed row for the old name and an ordinary row for the new one.
+
 selectUnits(changedFiles, opts) returns [{unit, decision, reason}].
 Each input holds file, binary, hasTypes, units and optional error.
 Each unit holds name, start, end and findings in lint order.
@@ -42,7 +49,7 @@ The test rejects lane processes, sandbox execution and secret reads.
 The sticky comment places intake before verdicts and respects its cap.
 The fixture uses a module level JSON.parse failure for failed:loader.
 Missing imports cannot provide this fixture: the harness fakes them.
-The test requires six distinct coverage values and six preview rows.
+The test requires seven distinct coverage values and seven preview rows.
 Removing secretPath classification makes the fixture test fail.
 
 
@@ -70,7 +77,7 @@ The run JSON is {rows, order, stop}.
 The stop is {reason, reached, total}.
 Its reason is time-budget, unit-budget or none.
 Reached counts processed units, including refusals and failed checks.
-A new or deleted unit counts when its ASK row is produced.
+A new unit counts when its ASK row is produced.
 Files excluded by intake spend no units.
 A run that processes the full list reports none and reached equals total.
 Each remaining unit gets skipped:budget and reason stop at unit k of N.
