@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
-import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
+import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
@@ -21,6 +21,7 @@ import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record
 import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
 import { spreadReadWhy, openRecordReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries (open-datatype)
 import { untypedThisParam } from '../common.mjs'; // a `this` parameter typed any or unknown, or untyped: one test with the translator
+// untypedJsUnit (common.mjs): a JavaScript unit whose parameter has no declared type, refused as untyped-js by the lint's unit loop and at the head of the translator's emitUnit
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -215,6 +216,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   let currentFn = null;
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
   let objectMethod = null;
+  let literalUnit = null; // the member of a module literal being checked as a unit: `this` is that literal (design/exported-units.md)
   let thisParam = null; // the current free function's declared `this` parameter: its receiver operand, written and read like any parameter
   const RECEIVER_WRITE = 'a write through the declared `this` of a free function rebuilds a nonoptional data record; a class, array, dictionary or optional receiver (or a container on the path) has no such value: take the value as a parameter and return the new one';
   let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
@@ -226,6 +228,17 @@ export function lintFile(file, ranges = null, opts = {}) {
   const aliasCalls = new Map(); // alias declarations bound to a call's result or a loop element -> what they hold, for the message
   const aliasMsg = (name, decl, tail = true) => aliasCalls.has(decl) ? `\`${name}\` holds ${aliasCalls.get(decl)}, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name` : `\`${name}\` is another name for a value this function was handed${tail ? '; change it through that name, or copy it first' : ''}`;
   const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
+  // the receiver rules of a literal method, one node `x` (target: what it assigns, if anything) inside a method of the
+  // literal `e`: `this` is read only as a direct scalar data field or a sibling method, and never written. One reading for
+  // a method of a local literal and for a unit of a module literal (design/exported-units.md)
+  const literalThisRules = (x, target, e) => {
+    const rootOf = (y) => { while (ts.isPropertyAccessExpression(y) || ts.isElementAccessExpression(y) || ts.isParenthesizedExpression(y)) y = y.expression; return y; };
+    const sibling = (name) => e.properties.some((q) => ts.isMethodDeclaration(q) && q.name?.text === name);
+    if (ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword && !nonNull(tOf(x)).every(isPrim) && !sibling(x.name.text)) v(x, 'object-method-mutation', 'literal this reads scalar fields; reference-valued receiver state needs a class');
+    if (x.kind === K.ThisKeyword && !(x.parent && ts.isPropertyAccessExpression(x.parent) && x.parent.expression === x)) v(x, 'object-method-mutation', 'keep literal this as a direct data-field read; use a class for aliases or rebinding');
+    if (target && rootOf(target).kind === K.ThisKeyword) v(target, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
+    if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text) && rootOf(x.expression.expression).kind === K.ThisKeyword && !(x.expression.expression.kind === K.ThisKeyword && sibling(x.expression.name.text))) v(x, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); // `this.add(x)` naming a sibling method is a call of it, not a mutator on a field
+  };
   const handedCallbacks = new Set(); // stage 5 rank 20: arrows handed to an outside call (opaque values)
   const loopCallbacks = new Set(); // stage 5 rank 19: an array-method callback read as a loop body (the array method runs it once per element, in order, before returning): a cell declared outside it is the loop's state, owned by the enclosing function
   const ownedHere = (decl) => { let i = callbackStack.length - 1; while (i >= 0 && loopCallbacks.has(callbackStack[i])) i--; const cb = i >= 0 ? callbackStack[i] : null; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
@@ -548,7 +561,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   const paramRebindRefusal = (decl) => {
     const name = decl.name.getText(sf);
     if (decl.parent !== currentFn) return `\`${name}\` is a parameter of a callback or a local function; copy it to a local first`;
-    if (callbackStack.length || objectMethod || forEachDepth) return `parameter \`${name}\` is assigned inside a callback or a local function; a callback cannot change it`;
+    if (callbackStack.length || (objectMethod && objectMethod !== literalUnit?.node) || forEachDepth) return `parameter \`${name}\` is assigned inside a callback or a local function; a callback cannot change it`;
     if (decl.dotDotDotToken) return `\`${name}\` is a rest parameter; copy it to a local first`;
     if (currentFn.asteriskToken) return `parameter \`${name}\` of a generator is assigned; copy it to a local first`;
     const u = [...units.values()].find((x) => x.fn === currentFn);
@@ -1405,10 +1418,7 @@ export function lintFile(file, ranges = null, opts = {}) {
             const scan = (x) => {
               const target = ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment ? x.left : (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [K.PlusPlusToken, K.MinusMinusToken].includes(x.operator) ? x.operand : ts.isDeleteExpression(x) ? x.expression : null;
               if (target && ts.isIdentifier(rootOf(target))) { const id = rootOf(target), d = checker.getSymbolAtLocation(id)?.valueDeclaration; if (d && !(d.pos >= p.pos && d.end <= p.end)) v(target, 'closure-mutation', 'a literal method cannot change a captured binding; use a class for shared state'); }
-              if (ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword && !nonNull(tOf(x)).every(isPrim) && !e.properties.some((q) => ts.isMethodDeclaration(q) && q.name?.text === x.name.text)) v(x, 'object-method-mutation', 'literal this reads scalar fields; reference-valued receiver state needs a class');
-              if (x.kind === K.ThisKeyword && !(x.parent && ts.isPropertyAccessExpression(x.parent) && x.parent.expression === x)) v(x, 'object-method-mutation', 'keep literal this as a direct data-field read; use a class for aliases or rebinding');
-              if (target && rootOf(target).kind === K.ThisKeyword) v(target, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
-              if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text) && rootOf(x.expression.expression).kind === K.ThisKeyword) v(x, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
+              literalThisRules(x, target, e);
               ts.forEachChild(x, scan);
             };
             scan(p.body);
@@ -2279,6 +2289,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       checkedDiagSpans.push(st);
       current = st; currentFn = u.fn; thisParam = (u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this') ? u.params[0] : null; // a free function's declared `this` parameter is its receiver operand
       { const why = untypedThisParam(checker, u.fn); if (why) v(u.params[0], 'this-param', why); } // a free function's receiver is read by its declared type; a `this` that names no type is refused, as the translator refuses it
+      { const why = untypedJsUnit(sf, u); if (why) v(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? st, 'untyped-js', why); } // a JavaScript unit's untyped input: refused by name, as the translator refuses it
       if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(st, shape.rule, shape.message); }
       if (!u.body) v(st, 'unsupported-syntax', 'function without a body');
       const sig = checker.getSignatureFromDeclaration(u.fn);
@@ -2297,7 +2308,36 @@ export function lintFile(file, ranges = null, opts = {}) {
       current = null; currentFn = null;
       continue;
     }
+    // the members of an exported or module-const object literal are units whose receiver is the literal: checked as a
+    // unit is, `this` under the literal receiver's rules (design/exported-units.md); the literal's other values are the
+    // module constant's initialiser, read as module constants are
+    for (const lu of literalMemberUnits(st)) {
+      if (!overlaps(sf, lu.node, ranges)) continue;
+      checkedDiagSpans.push(lu.node);
+      current = lu.node; currentFn = lu.fn; literalUnit = lu; objectMethod = lu.isArrow ? null : lu.node; currentClass = null; thisParam = null; // an arrow held by a property has no own `this`: `this` in it is the module's, refused as outside a method
+      { const why = untypedJsUnit(sf, lu); if (why) v(lu.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? lu.node, 'untyped-js', why); }
+      if (lu.fn.asteriskToken) { const shape = generators.shape(lu); if (shape.rule) v(lu.node, shape.rule, shape.message); }
+      const sig = checker.getSignatureFromDeclaration(lu.fn);
+      const rt = sig.getReturnType();
+      const inner = isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;
+      if (!lu.isAsync && isPromiseT(rt)) promiseHandle(lu, lu.node);
+      checkType(inner, lu.typeNode ?? lu.node);
+      for (const p of lu.params) {
+        if (p.dotDotDotToken && !isArrayExpr(p.name)) v(p, 'param-form', 'a rest parameter is an array');
+        if (p.initializer) expr(p.initializer);
+        const names = []; bindingNames(p.name, names);
+        checkType(tOf(p.name), p);
+      }
+      checkStringLiterals(lu.node);
+      const scan = (x) => { const target = ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment ? x.left : (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [K.PlusPlusToken, K.MinusMinusToken].includes(x.operator) ? x.operand : ts.isDeleteExpression(x) ? x.expression : null; if (!lu.isArrow) literalThisRules(x, target, lu.literal); if (!(ts.isFunctionExpression(x) || ts.isFunctionDeclaration(x) || ts.isMethodDeclaration(x))) ts.forEachChild(x, scan); };
+      scan(lu.body);
+      if (ts.isBlock(lu.body)) stmts(lu.body.statements); else expr(lu.body);
+      current = null; currentFn = null; literalUnit = null; objectMethod = null;
+    }
     if (ts.isExportDeclaration(st) || ts.isExportAssignment(st)) continue;
+    // `module.exports = {...}` and `exports.x = {...}`: the CommonJS form of exporting the literal, read as `export default`
+    // and `export const` are (the literal's values are the module constant's initialiser; its members are units, above)
+    if (moduleLiterals(st).some((l) => l.form === 'module-exports' || l.form === 'exports-property')) { if (inScope) checkedDiagSpans.push(st); continue; }
     if (ts.isVariableStatement(st)) {
       if (st.declarationList.flags & ts.NodeFlags.Const) { if (inScope) { checkedDiagSpans.push(st); /* module constants are externals; their initialisers are not checked */ } continue; }
       if (inScope) for (const d of st.declarationList.declarations) {
@@ -2316,6 +2356,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (u.accessor && !opts.accessorBodies) continue; // unreadable accessor bodies retain their opaque unit reading
         checkedDiagSpans.push(u.node);
         current = u.node; currentFn = u.fn; currentClass = st; thisParam = null; // a method's receiver is its class
+        { const why = untypedJsUnit(sf, u); if (why) v(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, 'untyped-js', why); }
         if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(u.node, shape.rule, shape.message); }
         const sig = checker.getSignatureFromDeclaration(u.fn);
         const rt = sig.getReturnType();

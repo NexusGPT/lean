@@ -181,8 +181,9 @@ export function selectUnits(changedFiles, opts = {}) {
     const skipped = (reason) => [{ unit: stub, decision: 'skipped', reason }];
     if (secretPath(file.file)) return skipped('secret-path');
     if (file.binary) return skipped('binary');
-    if (JS.test(file.file) && !file.hasTypes) return skipped('not-typescript');
-    if (!CODE.test(file.file) && !(JS.test(file.file) && file.hasTypes)) return [];
+    // a JavaScript file is read unit by unit as a TypeScript file is (allowJs, checkJs): every unit is listed, and one whose
+    // inputs carry no declared type is refused by the lint by name (untyped-js), its lane B verdict kept in the row
+    if (!CODE.test(file.file) && !JS.test(file.file)) return [];
     // a unit present at the parent and absent at the head is a row of its own, whatever else the file's reading does
     const removed = (file.removed ?? []).map((u) => ({ unit: { ...u, file: file.file }, decision: 'removed', reason: 'present at the parent, absent at the head' }));
     if (file.error) return [...(file.units?.length ? file.units.map((u) => ({ ...u, file: file.file })) : file.removed?.length ? [] : [stub]).map((unit) => ({ unit, decision: 'failed', reason: 'loader' })), ...removed];
@@ -251,8 +252,6 @@ function changedFiles(opts, temps) {
       if (!bytes) throw new Error('No readable side');
       if (bytes.includes(0)) return { ...entry, binary: true };
       const text = bytes.toString('utf8');
-      entry.hasTypes = JS.test(rel) && /@(?:type|param|returns?|typedef)\s*\{/.test(text);
-      if (JS.test(rel) && !entry.hasTypes) return entry;
       if (original && !original.includes(0)) entry.removed = removedUnits(rel, original.toString('utf8'), entry.deleted ? null : text);
       if (entry.deleted) { entry.units = []; return entry; } // a deleted file has no head side to read: its units are removed rows
       fs.mkdirSync(path.dirname(abs), { recursive: true });

@@ -290,8 +290,58 @@ export function topLevelFunctions(sf) {
     const u = unitOf(st);
     if (u) map.set(u.name, u);
     for (const m of classMethodUnits(st)) map.set(m.name, m);
+    for (const m of literalMemberUnits(st)) if (!map.has(m.name)) map.set(m.name, m); // a declared function or class method keeps its name
   }
   return map;
+}
+
+/**
+ * The object literals a module statement exports or binds to a module-level const, with the binding that names each:
+ * `export const X = {...}` and `const X = {...}` (X), `export default {...}` (default), `module.exports = {...}`
+ * (exports), `exports.x = {...}` and `module.exports.x = {...}` (x). Parentheses, `as` and `satisfies` are looked through.
+ * design/exported-units.md.
+ */
+export function moduleLiterals(st) {
+  const strip = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isTypeAssertionExpression(e) || (ts.isSatisfiesExpression && ts.isSatisfiesExpression(e)))) e = e.expression; return e; };
+  const out = [];
+  if (ts.isVariableStatement(st) && (st.declarationList.flags & ts.NodeFlags.Const)) {
+    for (const d of st.declarationList.declarations) { const o = strip(d.initializer); if (ts.isIdentifier(d.name) && o && ts.isObjectLiteralExpression(o)) out.push({ binding: d.name.text, literal: o, form: st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) ? 'export-const' : 'module-const' }); }
+  } else if (ts.isExportAssignment(st) && !st.isExportEquals) {
+    const o = strip(st.expression); if (o && ts.isObjectLiteralExpression(o)) out.push({ binding: 'default', literal: o, form: 'export-default' });
+  } else if (ts.isExpressionStatement(st) && ts.isBinaryExpression(st.expression) && st.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+    const o = strip(st.expression.right), l = st.expression.left;
+    const isModuleExports = (e) => ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'module' && e.name.text === 'exports';
+    if (o && ts.isObjectLiteralExpression(o)) {
+      if (isModuleExports(l)) out.push({ binding: 'exports', literal: o, form: 'module-exports' });
+      else if (ts.isPropertyAccessExpression(l) && ts.isIdentifier(l.name) && ((ts.isIdentifier(l.expression) && l.expression.text === 'exports') || isModuleExports(l.expression))) out.push({ binding: l.name.text, literal: o, form: 'exports-property' });
+    }
+  }
+  return out;
+}
+
+/**
+ * The members of a module literal (moduleLiterals) as units named `<binding>.<key>`: a method, or a function or arrow
+ * held by a property. A getter or setter is not a unit: reading the key runs it, a property read, not a call. The key is a static name:
+ * an identifier, or a string that is one. The receiver of a unit is the literal (`u.literal`, its type the receiver
+ * type): `this.f` is a field of the receiver, `this.m()` the sibling unit `<binding>.m`, as a class method reaches its
+ * class (design/exported-units.md). A generator member is a unit as a generator function is; a member without a body is not.
+ */
+export function literalMemberUnits(st) {
+  const out = [];
+  for (const { binding, literal, form } of moduleLiterals(st)) {
+    for (const p of literal.properties) {
+      const key = p.name && (ts.isIdentifier(p.name) || (ts.isStringLiteral(p.name) && /^[A-Za-z_$][\w$]*$/.test(p.name.text))) ? p.name.text : null;
+      if (!key) continue;
+      let fn = null;
+      if (ts.isMethodDeclaration(p)) fn = p;
+      else if (ts.isPropertyAssignment(p)) { let i = p.initializer; while (i && ts.isParenthesizedExpression(i)) i = i.expression; if (i && (ts.isFunctionExpression(i) || ts.isArrowFunction(i))) fn = i; }
+      if (!fn || !fn.body) continue;
+      out.push({ name: `${binding}.${key}`, node: p, fn, params: fn.parameters, body: fn.body, typeNode: fn.type,
+        isAsync: !!fn.modifiers?.some((x) => x.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: fn.typeParameters,
+        literal, binding, form, method: key, statement: st });
+    }
+  }
+  return out;
 }
 
 /**
@@ -1738,6 +1788,21 @@ export function untypedThisParam(checker, fn) {
   if (!p.type) return '`this` is declared without a type; declare the receiver type (`this: Ctx`)';
   const t = checker.getTypeFromTypeNode(p.type);
   if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return /^(any|unknown)$/.test(p.type.getText()) ? `\`this: ${p.type.getText()}\` names no receiver type; declare the receiver type the function reads (\`this: Ctx\`)` : `\`this: ${p.type.getText()}\` reads as any (the type does not resolve here); make its declaration visible to the file or declare a receiver type that resolves`;
+  return null;
+}
+
+// A unit of a JavaScript file whose inputs carry no declared type: a parameter with neither a TypeScript annotation
+// nor a JSDoc type (`@param {T}`, `@type`). Its values are whatever the caller passes, so the proof lane does not read it
+// (design/exported-units.md: "implicit any becomes an any-type proposal"; lane B still runs it). The refusal text names
+// the first such parameter, or null for a TypeScript file or a unit whose parameters are all typed.
+export function untypedJsUnit(sf, u) {
+  if (!sf || !/\.(js|jsx|mjs|cjs)$/i.test(sf.fileName) || !u?.params) return null;
+  for (const p of u.params) {
+    if (ts.isIdentifier(p.name) && p.name.text === 'this') continue;
+    if (p.type || ts.getJSDocType(p)) continue;
+    const name = ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf);
+    return `parameter \`${name}\` of a JavaScript unit has no declared type; declare it (a JSDoc \`@param {T} ${name}\` or TypeScript) or ask --any-type for a proposed type`;
+  }
   return null;
 }
 
