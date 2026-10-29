@@ -16,13 +16,12 @@
   "use_ops": false
  },
  "b": {
-  "ops.add": "ASK",
-  "ops.scale": "ASK",
-  "ops.shift": "ASK",
-  "ops.viaSibling": "ASK",
-  "ops.label": "ASK",
+  "ops.add": "WITNESS",
+  "ops.scale": "PASS-bounded",
+  "ops.shift": "PASS-bounded",
+  "ops.viaSibling": "WITNESS",
+  "ops.label": "PASS-bounded",
   "useOps": "WITNESS"
  },
- "why": "design/exported-units.md: a method or function-valued property of an exported object literal is a unit <binding>.<key>; its receiver is the literal (the class-method reading), so this.base is a field of the receiver operand and this.add reaches the sibling unit ops.add. Only add changed: add, its sibling caller viaSibling and the module caller useOps differ; scale, shift and label are untouched and listed.",
- "why_b": "Lane B cannot call a literal unit yet: exec/run.mjs pickUnit resolves a free function or a class only, so ops.* answer ASK (parent: unit not exported). The fix is one pickUnit branch (resolve exports[binding][key], call it with the literal as this); exec/ was outside this lane's contract. useOps, a plain function calling ops.add, is a WITNESS."
+ "why": "design/exported-units.md: a method or function-valued property of an exported object literal is a unit <binding>.<key>; its receiver is the literal (the class-method reading), so this.base is a field of the receiver operand and this.add reaches the sibling unit ops.add. Only add changed: add, its sibling caller viaSibling and the module caller useOps differ; scale, shift and label are untouched and listed."
 }

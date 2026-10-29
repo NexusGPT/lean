@@ -1,8 +1,24 @@
 {
  "candidateOnly": [
-  { "file": "candidate.js", "parent": "parent.js", "unit": "exports.create", "verdict": "ASK", "laneA": "untyped-js" },
-  { "file": "candidate.js", "parent": "parent.js", "unit": "exports.join", "verdict": "ASK", "laneA": "untyped-js" },
-  { "file": "candidate.js", "parent": "parent.js", "unit": "exports.twice", "verdict": "PASS-proved" }
+  {
+   "file": "candidate.js",
+   "parent": "parent.js",
+   "unit": "exports.create",
+   "verdict": "WITNESS"
+  },
+  {
+   "file": "candidate.js",
+   "parent": "parent.js",
+   "unit": "exports.join",
+   "verdict": "PASS-bounded",
+   "laneA": "untyped-js"
+  },
+  {
+   "file": "candidate.js",
+   "parent": "parent.js",
+   "unit": "exports.twice",
+   "verdict": "PASS-proved"
+  }
  ],
- "why": "design/exported-units.md: a JavaScript file is listed unit by unit; module.exports = {...} members are units exports.<key>. create and join take untyped parameters, so the proof lane refuses them by name (untyped-js) and lane B decides; twice declares its parameter with JSDoc, so lane A reads it (n * 2 against n + n, proved)."
+ "why": "design/exported-units.md: a JavaScript file is listed unit by unit; module.exports = {...} members are units exports.<key>, run by lane B on the real module object. create changed (the rule reports on 'y'): lane B WITNESS. join is untouched and untyped: lane A refuses it by name (untyped-js), lane B bounds it. twice declares its parameter with JSDoc, so lane A reads it (n * 2 against n + n, proved)."
 }

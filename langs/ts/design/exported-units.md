@@ -58,6 +58,14 @@ has none, is read by the proof lane as a TypeScript unit is. Lane B runs every u
 refused unit keeps lane B's verdict. The census reads JavaScript files only with `--js`, counted apart under
 `languages`, so a TypeScript census stays comparable.
 
+## Lane B
+
+`exec/run.mjs` `pickUnit` resolves `<binding>.<key>` on the literal itself (`exports` is the module's export object,
+`default` its default export, any other binding the module const or export) and calls the member with the literal as
+`this`, as `ops.add(x)` does; `unitShim` lists a module const that holds literal units. Lane B therefore runs the real
+module: `ops.add` and `ops.viaSibling` WITNESS, the untouched members PASS-bounded, the changed ESLint rule `create`
+WITNESS.
+
 ## Soundness
 
 - A literal unit's claim is over every receiver of the literal's type, as a class method's is over every instance: a
