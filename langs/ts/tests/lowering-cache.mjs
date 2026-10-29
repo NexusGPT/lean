@@ -189,6 +189,21 @@ try {
   assert.deepEqual(repeated, [], 'every per-file analysis executes once across admitted units');
   const expected = ['normalization', 'number-mode', 'units', 'exceptions', 'generators', 'classes', 'accessors', 'reach', 'react-slots', 'declarations', 'parameter-mutations', 'class-field-index', 'static-cell-index', 'reference-index', 'hook-bindings'];
   assert.deepEqual([...counts.keys()].sort(), expected.sort(), 'all named analyses are counted');
+  // These scans are lazy: plain numeric functions above never request them.
+  const lazyCounts = {};
+  for (const [analysis, sourceText] of [
+    ['decorations', `/// <reference path=${JSON.stringify(path.join(here, 'pairs/decorators/types.d.ts'))} />\n` + names.map(n => `export function ${n}(handler: object): boolean { return Reflect.getMetadata("role", handler) === "admin"; }`).join('\n')],
+    ['value-names', names.map(n => `export function ${n}(n: number): number { return n++ + n; }`).join('\n')],
+  ]) {
+    const lazy = path.join(tmp, analysis + '.ts'); fs.writeFileSync(lazy, sourceText);
+    const L = loadProgram(lazy, { project: false }), analyses = new Map(); let executions = 0;
+    for (const unit of names) translate(lazy, null, { core: true, heap: true, project: false, only: [unit], loaded: L,
+      fileAnalysis: process.env.LEAN_TEST_ISOLATE_ANALYSES ? undefined : analyses,
+      onAnalysis: name => { if (name === analysis) executions++; } });
+    console.log(`${analysis}: ${executions} executions for ${names.length} units`);
+    lazyCounts[analysis] = executions;
+  }
+  assert.deepEqual(lazyCounts, { decorations: 1, 'value-names': 1 }, 'lazy analyses are also shared');
   startLoweringProfile();
   assert.equal(lowerFile(file, null, { project: false }).units.filter(u => !u.refusal).length, names.length);
   const rows = loweringProfile().filter(r => r.phase.startsWith('analysis '));
