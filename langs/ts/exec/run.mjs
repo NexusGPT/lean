@@ -113,7 +113,7 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) + `\n;module.exports.__lean_callbacks = ${callbackName};\n` };
+  const compiled = { src, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
@@ -536,13 +536,14 @@ export function sandbox(env, root) {
       capture(name, fn) { callbacks.units.get(name).instances.push(fn); return fn; },
     };
     wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks);
+    (env.callbackUnits ??= new Map()).set(mod.exports, callbacks);
     return mod.exports;
   }
   return { load, ctx, react, jsxRuntime: jsxRuntimeFor(env) };
 }
 
 export function pickUnit(exportsObj, spec, env) {
-  const callback = exportsObj.__lean_callbacks?.units.get(spec.unit);
+  const callback = env.callbackUnits?.get(exportsObj)?.units.get(spec.unit);
   if (callback) {
     if (callback.inBody) { env.callbackRefusal = 'callback-in-body'; return null; }
     if (callback.instances.length !== 1) { env.callbackRefusal = callback.instances.length ? 'callback-multiple-instances' : 'callback-not-created'; return null; }

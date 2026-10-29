@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { lintFile } from '../../../lint/lint.mjs';
 import { translate } from '../../../translate/translate.mjs';
+import { acquire, release } from './census-lock.mjs';
 import { census } from '../../../census.mjs';
 const file = new URL('./captures.ts', import.meta.url).pathname;
 const scratch = path.resolve('.lean/cache/callback-units/probes');
@@ -22,13 +23,17 @@ test('captured input is explicit; a later write refuses only the callback', () =
   assert.deepEqual(report.lintedOut.map(r => [r.unit, r.rule]), [['mutable/xs.map()#0', 'captured-mutable']]);
   assert.ok(report.translated.includes('mutable'));
 });
-test('census respects the named finding and keeps the enclosing unit admitted', () => {
+test('census respects the named finding and keeps the enclosing unit admitted', async () => {
   // A tiny dedicated root, outside the census walk's excluded tests directory.
   const root = path.join(scratch, 'census'); fs.mkdirSync(root, { recursive: true });
   fs.copyFileSync(file, path.join(root, 'source.ts'));
+  await acquire();
+  let result;
+  try {
   const disk = spawnSync('df', ['-k', '/'], { encoding: 'utf8' }); process.stdout.write(disk.stdout); process.stderr.write(disk.stderr); console.log(`exit=${disk.status}`);
   assert.equal(disk.status, 0); assert.ok(Number(disk.stdout.trim().split('\n').at(-1).trim().split(/\s+/)[3]) >= 10 * 1024 * 1024);
-  const result = census(root);
+  result = census(root);
+  } finally { release(); }
   const hits = result.records[0].findings.filter(f => f.rule === 'captured-mutable');
   assert.deepEqual(hits.map(f => f.unit), ['mutable/xs.map()#0']);
   assert.equal(result.refused, 1);

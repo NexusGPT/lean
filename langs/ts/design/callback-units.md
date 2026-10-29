@@ -54,6 +54,17 @@ in-body callback is `callback-in-body`: loading the module cannot create that cl
 WITNESS after its arithmetic changes; its sibling is PASS-bounded. Lane A separately proves the sibling and the
 in-body callback over its captured inputs.
 
+The capture table lives in the harness environment, not in enumerable module exports. A red/green reflection test
+checks that registering callbacks adds no observable export. `units.mjs` reports an in-body callback as `top: false`.
+The JavaScript untyped-input check examines the callback's own parameters; an opaque captured input does not become
+an invented untyped callback argument. Control characters in string-literal identities are escaped for CLI transport.
+
+The evidence runner and the dedicated census test share `census-lock.mjs`. Each root takes the machine-wide lock,
+records its child PID, checks free disk space, streams stdout/stderr and releases immediately on exit. A live owner's
+lock causes a 60-second wait; a dead owner's lock can be removed. Langchainjs's syntax prediction remains included,
+but census runs exclude it at the owner's direction pending the separate memory fix. The interrupted Nutshell run
+used only this lane's PID and retains its SIGTERM log; its complete retry is a separate recorded attempt.
+
 Internal rewrites carry their source origin. `normaliseApplyCalls` retains the original SourceFile in a WeakMap.
 The callback name builder joins through TypeScript's original-node link when present; the current reparse preserves
 text length and lines by padding, so its fallback is the unchanged start/end range. The red/green normalization
