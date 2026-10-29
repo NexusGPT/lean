@@ -156,6 +156,15 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
   const reverted = new Map();
   for (const r of rows) {
     if (!rel.has(r.file) || reverted.has(r.file)) continue;
+    // Removing a nested callback changes the enclosing body, whose head verdict covers that identity.
+    if (r.decision === 'removed' && r['covered-by']) {
+      const owner = rows.find(x => x.file === r.file && x.unit === r['covered-by'] && x.verdict !== null);
+      if (owner) {
+        r.verdict = owner.verdict; r.laneA = owner.laneA; r.laneB = owner.laneB;
+        r.reason = `covered-by: ${r['covered-by']}`;
+        r.certificate = { ...owner.certificate, unit: r.unit, 'covered-by': r['covered-by'] };
+      }
+    }
     if (r.verdict === 'WITNESS') { reverted.set(r.file, `WITNESS on ${r.unit}${r.caller ? ' (an unchanged caller)' : ''}: input ${r.witness?.input ?? '?'}`); continue; }
     if (r.verdict === 'ASK' || r.verdict === 'REFUSE' || r.verdict === null) {
       // the control: the parent against itself; an ASK it shares is lean's own limit, not the rewrite's

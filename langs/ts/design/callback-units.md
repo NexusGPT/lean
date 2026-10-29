@@ -139,3 +139,7 @@ A nested callback remains independently listed and linted, including captured-mu
 ## Conformance findings
 
 The measured four-pair conformance run produced six new (pair, unit, cause) findings. `conformance-classes.json` records each exact first counterexample, its cause and class. Four are `2^53: the model is exact, Node rounds to binary64` (callback_units outer and changed route; exported_object_methods ops.add and ops.viaSibling); two are `signed-zero: model collapses -0` (unchanged route; ops.scale). They are added to the known-findings baseline with class fields, following oracle-cost's format. No other cause was baselined. Exact matching against every saved finding leaves zero unclassified; removing one added entry reopens the finding. The numeric defects remain for the number-model lane.
+
+## Conversion identity
+
+The converter's single identity check recognizes a removed nested callback only when its enclosing unit has a head verdict. It copies that verdict with `covered-by`, then applies the existing WITNESS/ASK control rules. An independent lost unit still takes the original refusal text. `convert.test.mjs` records foreach conversion red on the exact identity-loss reason, then green: both rewrites applied and all reported verdicts PASS-bounded. No other converter policy changed.
