@@ -1185,7 +1185,8 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const out = opt('--out', null);
   guard.settle();
   const text = JSON.stringify(res, null, 1);
-  if (out) fs.writeFileSync(out, text); else console.log(text);
-  if (out) console.log(`${res.verdict}${res.reason ? ': ' + res.reason : ''} -> ${out}`);
-  process.exit(res.verdict === 'ASK' ? 2 : 0);
+  if (out) fs.writeFileSync(out, text);
+  // exit once stdout has taken the whole line: on macOS a pipe write is asynchronous, and process.exit right after
+  // console.log dropped a result larger than the pipe buffer (64 KB) when the reader was slow (the same bytes as before)
+  process.stdout.write((out ? `${res.verdict}${res.reason ? ': ' + res.reason : ''} -> ${out}` : text) + '\n', () => process.exit(res.verdict === 'ASK' ? 2 : 0));
 }

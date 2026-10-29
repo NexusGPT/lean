@@ -65,3 +65,10 @@ entry in the v1 trace (`record_rest_any` `Sized`, found by the v1 comparison ove
 reaches the fake once, and `witnessRecord` lists each `keys` entry of the side's trace under `unrecorded` with that
 reason, so a replayer refuses the row instead of meeting an unexplained gap. Red control: the trace with capture had 4
 `keys` entries against 2 without.
+
+## The CLI result reaches its reader whole
+
+`run.mjs` run as a command exits in the callback of its stdout write instead of right after `console.log`. On macOS a
+pipe write is asynchronous, so `process.exit` dropped any result larger than the pipe buffer when the reader was slower
+than the writer. Records made the self-pair fixture's result 68,767 bytes, and the pair step's self-pair row read
+nothing. The bytes written are unchanged. Red control: a reader that sleeps 3 s received 65,536 bytes.

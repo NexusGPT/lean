@@ -164,3 +164,15 @@ test('a key query on a captured fake reaches the fake once, and the record says 
   assert.ok(r.sides.parent.unrecorded.some(u => /key query/.test(u.reason)), JSON.stringify(r.sides.parent.unrecorded));
   assert.ok(!r.sides.parent.events.some(e => e.op === 'keys'));
 });
+
+test('the CLI result reaches a slow pipe reader whole, whatever its size', async () => {
+  const { spawnSync } = await import('node:child_process'); const path = await import('node:path'); const { fileURLToPath } = await import('node:url');
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const f = path.join(here, '../tests/fixtures/self-pair/load-time-work.ts');
+  const q = (x) => `'${x.replace(/'/g, `'\\''`)}'`;
+  // the reader sleeps before it reads: the child finishes writing into a full pipe buffer before anyone drains it
+  const r = spawnSync('sh', ['-c', `${q(process.execPath)} ${q(path.join(here, 'run.mjs'))} --parent ${q(f)} --candidate ${q(f)} --unit label --n 30 --no-project | (sleep 3; cat)`], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(r.stdout.length > 65536, `the fixture's result must exceed one pipe buffer, got ${r.stdout.length}`);
+  assert.equal(JSON.parse(r.stdout).verdict, 'PASS-bounded');
+});
