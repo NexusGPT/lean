@@ -10,6 +10,7 @@ import { inlinePromiseStatementKind } from '../lower.mjs';
 // Usage: node lint.mjs <file.ts> [--changed <ranges.json>] [--json] [--advice] [--any-type] [--project <tsconfig>|--no-project]
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
+import { mutationAnalysis, parameterMutationConflicts, elementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
@@ -513,46 +514,8 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // of a callback or a local function, a rest parameter, a parameter of a generator, a parameter the unit also changes
   // in place (an output: the caller would take back the rebound object), and one a closure reads before a later write
   // or inside a loop that writes it (the closure would keep the old value).
-  const PARAM_MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
-  let mutatedParamSets = null; // unit name -> names of its parameters it changes in place, same-file calls followed (the translator's outputs)
-  const paramRootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
-  const mutatedParams = (name) => {
-    if (!mutatedParamSets) {
-      const all = [...units.values()].filter((u) => u.body);
-      const namesOf = (u) => new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
-      mutatedParamSets = new Map(all.map((u) => {
-        const ps = namesOf(u), out = new Set();
-        const hit = (x) => { const r = paramRootOf(x); if (ts.isIdentifier(r) && ps.has(r.text) && r !== x) out.add(r.text); };
-        const w = (n) => {
-          if (ts.isFunctionLike(n) && n !== u.fn) return;
-          if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) hit(n.left);
-          if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) hit(n.operand);
-          if (ts.isDeleteExpression(n)) hit(n.expression);
-          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && PARAM_MUTATORS.has(n.expression.name.text)) { const r = paramRootOf(n.expression.expression); if (ts.isIdentifier(r) && ps.has(r.text)) out.add(r.text); }
-          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'assign' && n.arguments[0]) { const r = paramRootOf(n.arguments[0]); if (ts.isIdentifier(r) && ps.has(r.text)) out.add(r.text); }
-          ts.forEachChild(n, w);
-        };
-        w(u.body);
-        return [u.name, out];
-      }));
-      for (let changed = true; changed;) {
-        changed = false;
-        for (const u of all) {
-          const ps = namesOf(u), mine = mutatedParamSets.get(u.name);
-          const w = (n) => {
-            if (ts.isFunctionLike(n) && n !== u.fn) return;
-            if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && mutatedParamSets.has(n.expression.text)) {
-              const callee = units.get(n.expression.text), cm = mutatedParamSets.get(callee.name);
-              callee.params.forEach((cp, i) => { const a = n.arguments[i] && paramRootOf(n.arguments[i]); if (ts.isIdentifier(cp.name) && cm.has(cp.name.text) && a && ts.isIdentifier(a) && ps.has(a.text) && !mine.has(a.text)) { mine.add(a.text); changed = true; } });
-            }
-            ts.forEachChild(n, w);
-          };
-          w(u.body);
-        }
-      }
-    }
-    return mutatedParamSets.get(name) ?? new Set();
-  };
+  let parameterMutationRecord = null;
+  const parameterMutations = () => parameterMutationRecord ??= mutationAnalysis(checker, sf, units);
   const paramRebindRefusal = (decl) => {
     const name = decl.name.getText(sf);
     if (decl.parent !== currentFn) return `\`${name}\` is a parameter of a callback or a local function; copy it to a local first`;
@@ -560,7 +523,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (decl.dotDotDotToken) return `\`${name}\` is a rest parameter; copy it to a local first`;
     if (currentFn.asteriskToken) return `parameter \`${name}\` of a generator is assigned; copy it to a local first`;
     const u = [...units.values()].find((x) => x.fn === currentFn);
-    if (!u || mutatedParams(u.name).has(name)) return `parameter \`${name}\` is rebound and also changed in place, which hands the change back to the caller; copy it to a local first`;
+    if (!u || parameterMutationConflicts(parameterMutations().units.get(u.name), 'admissionRisk').includes(decl)) return `parameter \`${name}\` is rebound and also changed in place, which hands the change back to the caller; copy it to a local first`;
     const sym = checker.getSymbolAtLocation(decl.name);
     const symOf = (id) => (id.parent && ts.isShorthandPropertyAssignment(id.parent) && id.parent.name === id ? checker.getShorthandAssignmentValueSymbol(id.parent) : checker.getSymbolAtLocation(id));
     const isTarget = (id) => { let x = id; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; return !!p && ((ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator))); };
@@ -920,19 +883,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // value reading copies the element and would lose the write, so every other shape is refused here (escape
   // element_write_loop_callback) and the translator refuses a unit outside the heap core
   function loopElementWrite(e) {
-    let w = ts.isBinaryExpression(e) && e.operatorToken.kind >= K.FirstAssignment && e.operatorToken.kind <= K.LastAssignment ? e.left : (ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) ? e.operand : ts.isDeleteExpression(e) ? e.expression : null;
-    if (!w && ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) w = ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign' ? e.arguments[0] ?? null : MUT_NAMES.has(e.expression.name.text) ? e.expression.expression : null;
-    if (!w) return null;
-    let r = w; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r) || ts.isAsExpression(r)) r = r.expression;
-    const through = r !== w || !ts.isBinaryExpression(e) || ts.isCallExpression(e); // a field, an element, a mutator: not a rebinding of the name
-    if (!ts.isIdentifier(r) || !through) return null;
-    const d = declOf(r).decl;
-    if (!d || !ts.isParameter(d) || !syncLoopCallback(d.parent, checker)) return null;
-    const call = d.parent.parent; const st = call.parent;
-    if (reduceAccumulator(d, checker, w)) return null; // the accumulator of a reduce the call itself builds, written one step deep: no element of the array (common.mjs)
-    const fieldWrite = (ts.isBinaryExpression(e) && [K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e); // the writes the heap core reads in a loop body (a mutator, Object.assign and delete are not)
-    const carried = fieldWrite && call.expression.name.text === 'forEach' && st && ts.isExpressionStatement(st) && d.parent.parameters.length === 1 && d.parent.parameters[0] === d && ts.isIdentifier(d.name) && plainDataRecord(checker, checker.getTypeAtLocation(d.name));
-    if (carried) return null;
+    const decision = elementMutation(checker, e, { sf, current, heapSelected: null });
+    if (!decision?.admissionRefused) return null;
+    const w = decision.target, r = decision.root, d = decision.sourceDecl, call = decision.sourceCall;
     if (call.expression.name.text === 'reduce' && d.parent.parameters[0] === d) return v(w, 'alias-mutation', `\`${r.text}\` is the accumulator \`reduce\` hands its callback: it holds the array's first element when the call passes no initial value, a value the unit was handed, or what a step returned; a write through it is read only when the call passes an initial value it builds itself out of primitives (\`{}\`, \`[]\`, \`new Map()\`), every step returns the accumulator, and the write is one step deep (\`acc[k] = v\`) (escape reduce_accumulator_element)`);
     return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
   }

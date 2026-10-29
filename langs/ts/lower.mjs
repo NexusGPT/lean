@@ -19,6 +19,8 @@
 // Usage: node lower.mjs --audit [--json] [--md <file>]
 //        node lower.mjs <file.ts> [--no-project]        the record of each unit, as JSON
 import fs from 'node:fs';
+import { elementWritePath, syncLoopCallback, reduceAccumulator, plainDataRecord } from './common.mjs';
+import { asyncGenerator } from './generators.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
@@ -332,6 +334,140 @@ const INLINE_PROMISE_STATEMENTS = new Map([
   [ts.SyntaxKind.ExpressionStatement, 'expression'],
 ]);
 export const inlinePromiseStatementKind = (node) => INLINE_PROMISE_STATEMENTS.get(node.kind) ?? null;
+
+// Permanent exception: admission risk is a source-level conservative test; value outputs describe the actual
+// lowering ABI. One traversal and one fixed point carry both named conditions. Their scopes are deliberately not
+// conflated: doing so would either weaken the gate or add/remove outputs from emitted functions.
+export const MUTATION_DECISIONS = readingById('mutation').decisions;
+for (const decision of ['mutationAnalysis', 'parameterMutationConflicts', 'loopElementBinding', 'elementMutation', 'firstElementMutation']) LOWER_DECISIONS.add(decision);
+const MUTATION_METHODS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
+const mutationRoot = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+const mutationAssignment = (n) => ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment;
+const mutationUpdate = (n) => (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(n.operator);
+const mutationThisParam = (u) => u?.params?.[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this';
+// emission is null during admission; its output answer is then null (not computed). At emission, the established
+// loop lowering and receiver-call binding supply their context. This analysis never guesses which callback is emitted.
+export function mutationAnalysis(checker, sf, units, emission = null) {
+  const all = [...units.values()], records = new Map(), edges = [];
+  for (const u of all) {
+    if (!u.body && !emission) continue;
+    const names = new Set(u.params.filter(p => ts.isIdentifier(p.name)).map(p => p.name.text));
+    const rec = { admissionRisk: new Set(), valueOutputs: emission ? new Set() : null, rebound: [] };
+    records.set(u.name, rec);
+    const rebounds = new Set();
+    const own = (r) => ts.isIdentifier(r) ? r.text : r.kind === ts.SyntaxKind.ThisKeyword && mutationThisParam(u) ? 'this' : null;
+    const hit = (target, admission, output, through = true) => {
+      const r = mutationRoot(target);
+      if (through && r === target) return;
+      if (admission && ts.isIdentifier(r) && names.has(r.text)) rec.admissionRisk.add(r.text);
+      const name = output && own(r);
+      if (name && names.has(name)) rec.valueOutputs.add(name);
+    };
+    const edge = (callee, args, projection, roots) => {
+      if (!callee) return;
+      callee.params.forEach((p, i) => {
+        if (!ts.isIdentifier(p.name) || !args[i]) return;
+        const a = roots ? mutationRoot(args[i]) : args[i];
+        const name = projection === 'admissionRisk' ? (ts.isIdentifier(a) ? a.text : null) : own(a);
+        if (name && names.has(name)) edges.push({ from: callee.name, input: p.name.text, to: u.name, output: name, projection });
+      });
+    };
+    const walk = (n, admission, output) => {
+      if (ts.isFunctionLike(n) && n !== u.fn) admission = false;
+      if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !emission?.isLoopCallback(n)) output = false;
+      if (!admission && !output) return;
+      const target = mutationAssignment(n) ? n.left : mutationUpdate(n) ? n.operand : ts.isDeleteExpression(n) ? n.expression : null;
+      if (target) {
+        hit(target, admission, output);
+        if (output && !ts.isDeleteExpression(n)) { const ew = elementWritePath(checker, target); if (ew && names.has(ew.root.text)) rec.valueOutputs.add(ew.root.text); }
+        if (admission && !ts.isDeleteExpression(n)) {
+          let t = target; while (ts.isParenthesizedExpression(t)) t = t.expression;
+          const d = ts.isIdentifier(t) ? checker.getSymbolAtLocation(t)?.valueDeclaration : null;
+          if (d && ts.isParameter(d) && d.parent === u.fn) rebounds.add(d);
+        }
+      }
+      if (ts.isCallExpression(n)) {
+        const f = n.expression;
+        if (admission && ts.isPropertyAccessExpression(f)) {
+          if (MUTATION_METHODS.has(f.name.text)) hit(f.expression, true, false, false);
+          if (ts.isIdentifier(f.expression) && f.expression.text === 'Object' && f.name.text === 'assign' && n.arguments[0]) hit(n.arguments[0], true, false, false);
+        }
+        if (admission && ts.isIdentifier(f) && units.get(f.text)?.body) edge(units.get(f.text), n.arguments, 'admissionRisk', true);
+        if (output) { const via = emission.receiverCallArgs(n); if ((ts.isIdentifier(f) && units.has(f.text)) || via) edge(via ? via.callee : units.get(f.text), via ? via.args : n.arguments, 'valueOutputs', false); }
+      }
+      if (output && ts.isExpressionStatement(n)) {
+        let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+        if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
+          const f = e.expression;
+          if (MUTATION_METHODS.has(f.name.text)) hit(f.expression, false, true, false);
+          if (ts.isIdentifier(f.expression) && f.expression.text === 'Object' && f.name.text === 'assign' && e.arguments.length >= 2) {
+            const r = mutationRoot(e.arguments[0]); if (ts.isIdentifier(r) && names.has(r.text)) rec.valueOutputs.add(r.text);
+          }
+        }
+      }
+      ts.forEachChild(n, x => walk(x, admission, output));
+    };
+    // A bodyless emission retains the translator's existing handling; this change does not alter ambient admission.
+    walk(u.body, !!u.body, !!emission && !asyncGenerator(u));
+    rec.rebound = [...rebounds];
+  }
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const e of edges) {
+      const source = records.get(e.from)?.[e.projection], dest = records.get(e.to)?.[e.projection];
+      if (source?.has(e.input) && dest && !dest.has(e.output)) { dest.add(e.output); changed = true; }
+    }
+  }
+  return { conditions: MUTATION_DECISIONS, units: records };
+}
+export const parameterMutationConflicts = (record, projection) => record ? record.rebound.filter(d => record[projection]?.has(d.name.text)) : [];
+
+// One binding classification for the source admission and the value-emission backstops. The owned accumulator
+// condition deliberately does not include write depth; the admission condition below additionally checks that depth.
+export function loopElementBinding(checker, id, isLoopCallback = () => false) {
+  const d = checker.getSymbolAtLocation(id)?.valueDeclaration;
+  if (!d) return null;
+  const parameter = ts.isParameter(d), synchronous = parameter && !!d.parent && syncLoopCallback(d.parent, checker);
+  const emitted = parameter && !!d.parent && isLoopCallback(d.parent);
+  const forOf = ts.isVariableDeclaration(d) && !!d.parent && ts.isVariableDeclarationList(d.parent) && !!d.parent.parent && ts.isForOfStatement(d.parent.parent);
+  const ownedAccumulator = parameter && reduceAccumulator(d, checker);
+  return { decl: d, synchronous, emitted, forOf, ownedAccumulator, valueElement: !ownedAccumulator && (synchronous || emitted || forOf) };
+}
+// A shared write classification carries BOTH conditions: a source shape eligible for the heap, and actual planner
+// selection. null selection is the admission phase. false selection means the value emitter must refuse a lost write.
+export function elementMutation(checker, e, { isLoopCallback = () => false, heapSelected = null, sf = e.getSourceFile(), current = null } = {}) {
+  let target = mutationAssignment(e) ? e.left : mutationUpdate(e) ? e.operand : ts.isDeleteExpression(e) ? e.expression : null;
+  let valueWriteForm = true;
+  if (!target && ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
+    const f = e.expression;
+    if (ts.isIdentifier(f.expression) && f.expression.text === 'Object' && f.name.text === 'assign') target = e.arguments[0] ?? null;
+    else if (MUTATION_METHODS.has(f.name.text)) { target = f.expression; valueWriteForm = !['fill', 'copyWithin'].includes(f.name.text); }
+  }
+  if (!target) return null;
+  let root = target; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root) || ts.isNonNullExpression(root) || ts.isAsExpression(root)) root = root.expression;
+  if (!ts.isIdentifier(root)) return null;
+  const binding = loopElementBinding(checker, root, isLoopCallback);
+  const d = originOf(checker, root, sf, current).decl;
+  const sourceParameter = !!d && ts.isParameter(d) && syncLoopCallback(d.parent, checker);
+  const sourceCall = sourceParameter ? d.parent.parent : null;
+  const ownedWrite = sourceParameter && reduceAccumulator(d, checker, target);
+  const fieldWrite = (mutationAssignment(e) && [ts.SyntaxKind.EqualsToken, ts.SyntaxKind.PlusEqualsToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken].includes(e.operatorToken.kind)) || mutationUpdate(e);
+  const heapShapeEligible = !!(sourceParameter && fieldWrite && sourceCall.expression.name.text === 'forEach' && sourceCall.parent && ts.isExpressionStatement(sourceCall.parent) && d.parent.parameters.length === 1 && d.parent.parameters[0] === d && ts.isIdentifier(d.name) && plainDataRecord(checker, checker.getTypeAtLocation(d.name)));
+  const admissionThrough = root !== target || !ts.isBinaryExpression(e) || ts.isCallExpression(e);
+  const valueThrough = root !== target || ts.isCallExpression(e);
+  return {
+    node: e, target, root, name: root.text, binding, sourceCall, sourceDecl: d, ownedWrite, heapShapeEligible, heapSelected,
+    admissionRefused: !!(admissionThrough && sourceParameter && !ownedWrite && !heapShapeEligible),
+    valueRefused: !!(heapSelected !== true && valueWriteForm && valueThrough && binding?.valueElement),
+    conditions: MUTATION_DECISIONS,
+  };
+}
+export function firstElementMutation(checker, u, context) {
+  let hit = null;
+  const walk = n => { if (hit) return; const decision = elementMutation(checker, n, context); if (decision?.valueRefused) { hit = decision; return; } ts.forEachChild(n, walk); };
+  if (u.body) walk(u.body);
+  return hit;
+}
 
 // ---------- the lowering ----------
 const K = ts.SyntaxKind;

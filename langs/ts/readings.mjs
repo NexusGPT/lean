@@ -374,6 +374,62 @@ export const READINGS = [
   },
   {
     id: 'mutation', construct: 'writes: a local rebound, a parameter\'s record or array rebuilt and returned as an output, a field of the receiver as a world cell, a delete of an optional field or a key',
+    decisionExceptions: [
+      {
+        "id": "mutation-admission-vs-value-output",
+        "sites": [
+          {
+            "who": "lint",
+            "rule": "param-assign"
+          },
+          {
+            "who": "translate",
+            "rule": "param-assign"
+          }
+        ],
+        "conditions": {
+          "admissionRisk": "Source-level mutation and rebinding risk, before emission planning.",
+          "valueOutputs": "Mutated operands of the emitted value ABI, including selected callback and receiver bindings."
+        },
+        "reason": "The same facts feed two projections with different purposes and traversal scopes; equating them changes admission or function outputs."
+      },
+      {
+        "id": "element-shape-vs-selected-emission",
+        "sites": [
+          {
+            "who": "lint",
+            "rule": "alias-mutation",
+            "message": "`${}` is the accumulator `reduce` hands its callback: it holds the array's first element when the call passes no initial value, a value the unit was handed, or what a step returned; a write through it is read only when the call passes an initial value it builds itself out of primitives (`{}`, `[]`, `new Map()`), every step returns the accumulator, and the write is one step deep (`acc[k] = v`) (escape reduce_accumulator_element)"
+          },
+          {
+            "who": "lint",
+            "rule": "alias-mutation",
+            "message": "`${}` is the element `${}` hands its callback; a field written through it (`=`, `+=`, `-=`, `*=`, `++`, `--`) is read only in a `forEach` statement of one parameter over plain data records; write the element through its array in an index loop, `for (let i = 0; i < xs.length; i++) xs[i].f = v` (escape element_write_loop_callback)"
+          },
+          {
+            "who": "translate",
+            "rule": "alias-mutation",
+            "message": "alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so a write through it would be lost: write the element through its array in an index loop, `xs[i].f = v` (escape element_write_loop_callback)"
+          },
+          {
+            "who": "translate",
+            "rule": "alias-mutation",
+            "message": "alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, `xs[i].f = v` (escape element_write_loop_callback)"
+          }
+        ],
+        "conditions": {
+          "heapShapeEligible": "The callback field-write shape can be handled by the heap planner.",
+          "heapSelected": "The whole unit was selected for heap emission; otherwise loop-element writes lose identity in the value reader."
+        },
+        "reason": "Admission knows eligible shapes; value emission knows the actual planner selection. Owned reduce accumulators additionally distinguish ownership from safe write depth."
+      }
+    ],
+    decisions: [
+      { id: 'mutation-admission-risk', exception: 'mutation-admission-vs-value-output', condition: 'admissionRisk', reason: 'Source-level rebinding risk follows any mutator expression and nested argument roots, skipping nested functions; it does not define emitted return operands.' },
+      { id: 'mutation-value-outputs', exception: 'mutation-admission-vs-value-output', condition: 'valueOutputs', reason: 'The value ABI follows emitted loop callbacks, statement mutators, declared receivers and receiver calls, direct argument names, and excludes suspended async-generator bodies.' },
+      { id: 'element-heap-shape', exception: 'element-shape-vs-selected-emission', condition: 'heapShapeEligible', reason: 'Admission can permit a field-write shape the heap knows; only the later planner decides whether that whole unit is selected.' },
+      { id: 'element-value-emission', exception: 'element-shape-vs-selected-emission', condition: 'heapSelected', reason: 'A unit actually emitted by the value reader must refuse writes through loop elements even when their syntax is heap-eligible; owned reduce accumulators remain distinct from source write-depth safety.' },
+    ],
     kinds: ['DeleteExpression'],
     uses: (n, ts) => ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment,
     lint: ['alias-mutation', 'param-mutation', 'closure-mutation', 'global-mutation', 'index-assign', 'property-assign', 'receiver-mutation', 'receiver-write', 'opaque-mutation', 'param-assign', 'delete', 'unsupported-operator'],

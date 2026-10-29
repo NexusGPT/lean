@@ -29,6 +29,7 @@ import { inlinePromiseStatementKind } from '../lower.mjs';
 //          [--invariant [N:]E]...      (proof shape: one function, loops as a Dafny method; kept for the fixtures)
 // Exit 0: file written. Exit 1: outside the subset, or not covered by the translator.
 import fs from 'node:fs';
+import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
@@ -659,49 +660,10 @@ export function translate(file, fnName, opts = {}) {
   // refuses a mutation through a local alias). A parameter passed to a same-file function that mutates it is mutated too.
   const mutatedByUnit = new Map(); // unit name -> [param names] in parameter order
   const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
-  function syntacticMutations(u) {
-    if (asyncGenerator(u)) return new Set(); // the suspended body has not run at construction
-    const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
-    const out = new Set();
-    const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
-    const own = (r) => ts.isIdentifier(r) ? r.text : r.kind === K.ThisKeyword && thisParamOf(u) ? 'this' : null; // a free function's declared receiver is its parameter `this`
-    const hit = (x) => { const r = rootOf(x); if (own(r) && params.has(own(r)) && r !== x) out.add(own(r)); };
-    const walk = (n) => {
-      if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !isLoopCallback(n)) return; // a callback cannot mutate an outer value (lint); a loop callback's body is the loop's, run here
-      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) hit(n.left);
-      if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) hit(n.operand);
-      { const w = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? n.left : (ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) ? n.operand : null; const ew = w && elementWritePath(checker, w); if (ew && params.has(ew.root.text)) out.add(ew.root.text); } // a field of a parameter's element (`as T` included): the parameter is an output
-      if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && MUTATORS.has(e.expression.name.text)) { const r = rootOf(e.expression.expression); if (own(r) && params.has(own(r))) out.add(own(r)); } }
-      if (ts.isExpressionStatement(n)) { let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign' && e.arguments.length >= 2) { const r = rootOf(e.arguments[0]); if (ts.isIdentifier(r) && params.has(r.text)) out.add(r.text); } } // Object.assign(t, …) writes t: a parameter t is an output
-      if (ts.isDeleteExpression(n)) hit(n.expression);
-      ts.forEachChild(n, walk);
-    };
-    walk(u.body);
-    return out;
-  }
+  let parameterMutationRecord = null;
   function computeMutations() {
-    const all = [...fns.values()];
-    const sets = new Map(all.map((u) => [u.name, syntacticMutations(u)]));
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const u of all) {
-        if (asyncGenerator(u)) continue;
-        const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
-        const walk = (n) => {
-          if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !isLoopCallback(n)) return;
-          const via = ts.isCallExpression(n) && receiverCallArgs(n); // `h.call(o, a)` / `h.apply(o, [a])`: the callee with its arguments in parameter order
-          if (ts.isCallExpression(n) && ((ts.isIdentifier(n.expression) && fns.has(n.expression.text)) || via)) {
-            const callee = via ? via.callee : fns.get(n.expression.text); const cm = sets.get(callee.name); const argNodes = via ? via.args : n.arguments;
-            const nameOf = (a) => a && ts.isIdentifier(a) ? a.text : a && a.kind === K.ThisKeyword && thisParamOf(u) ? 'this' : null;
-            callee.params.forEach((cp, i) => { if (ts.isIdentifier(cp.name) && cm.has(cp.name.text)) { const a = nameOf(argNodes[i]); if (a && params.has(a) && !sets.get(u.name).has(a)) { sets.get(u.name).add(a); changed = true; } } });
-          }
-          ts.forEachChild(n, walk);
-        };
-        walk(u.body);
-      }
-    }
-    for (const u of all) mutatedByUnit.set(u.name, u.params.filter((p) => ts.isIdentifier(p.name) && sets.get(u.name).has(p.name.text)).map((p) => p.name.text));
+    parameterMutationRecord = mutationAnalysis(checker, sf, fns, { isLoopCallback, receiverCallArgs });
+    for (const u of fns.values()) mutatedByUnit.set(u.name, u.params.filter(p => ts.isIdentifier(p.name) && parameterMutationRecord.units.get(u.name).valueOutputs.has(p.name.text)).map(p => p.name.text));
   }
   const mutatedOf = (u) => mutatedByUnit.get(u.name) ?? [];
   // `h.call(o, a)` and `h.apply(o, [a])` on a same-file function: the callee and the argument nodes in its parameter order
@@ -4511,7 +4473,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const field = worldPath ? chain.shift() : null;
       if (!ts.isIdentifier(root) && !field && !ownThis) fail(target, 'receiver-mutation: a receiver path needs nonoptional data records');
       const rootName = ownThis ? 'this' : root.text;
-      if (ts.isIdentifier(root) && loopElement(root)) fail(target, `alias-mutation: \`${root.text}\` is the element a loop or an array callback walks; this reading copies it, so a write through it would be lost: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); // a dropped write is never silent
+      if (ts.isIdentifier(root) && loopElementBinding(checker, root, isLoopCallback)?.valueElement) fail(target, `alias-mutation: \`${root.text}\` is the element a loop or an array callback walks; this reading copies it, so a write through it would be lost: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); // a dropped write is never silent
       const rootCode = field ? expr(field) : dn(rootName);
       const rootT = field ? typeOf(field) : typeOf(root);
       if (!chain.length) { // a local declared optional and narrowed here (`if (l) l.push(x)`): its value is changed inside the Some
@@ -4546,12 +4508,6 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     // `as T` on an element erased): the root is rebuilt along the path, each element by its index read once, in order,
     // before the leaf: p := p[i := p[i].(f := leaf(p[i].f))]. The parameter is an output, as for `p.f = v`
     // a name bound to the element a loop walks: a for-of binding, or a parameter of a synchronous array callback
-    function loopElement(id) {
-      const d = checker.getSymbolAtLocation(id)?.valueDeclaration;
-      if (!d) return false;
-      if (ts.isParameter(d)) return !!d.parent && !reduceAccumulator(d, checker) && (isLoopCallback(d.parent) || syncLoopCallback(d.parent, checker));
-      return ts.isVariableDeclaration(d) && !!d.parent && ts.isVariableDeclarationList(d.parent) && !!d.parent.parent && ts.isForOfStatement(d.parent.parent);
-    }
     function elementPathUpdate(target, ew, leaf) {
       const steps = [...ew.steps, target];
       const root = ew.root;
@@ -5894,17 +5850,10 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // parameter); the proof shape declares the local first. A parameter both rebound and changed in place would hand the
   // rebound object back to the caller as an output, so it is refused here as in the lint.
   function reassignedParams(u) {
-    const out = new Set();
-    const w = (n) => {
-      if (ts.isFunctionLike(n) && n !== u.fn) return;
-      let t = isAssign(n) ? n.left : isUpdate(n) ? n.operand : null;
-      while (t && ts.isParenthesizedExpression(t)) t = t.expression;
-      const d = t && ts.isIdentifier(t) ? checker.getSymbolAtLocation(t)?.valueDeclaration : null;
-      if (d && ts.isParameter(d) && d.parent === u.fn) out.add(d);
-      ts.forEachChild(n, w);
-    };
-    if (u.body) w(u.body);
-    const both = [...out].filter((d) => mutatedOf(u).includes(d.name.text));
+    parameterMutationRecord ??= mutationAnalysis(checker, sf, fns);
+    const record = parameterMutationRecord.units.get(u.name);
+    const out = record?.rebound ?? [];
+    const both = parameterMutationConflicts(record, 'valueOutputs');
     if (both.length) fail(u.node, `param-assign: parameter \`${both[0].name.text}\` is rebound and also changed in place`);
     return [...out].filter((d) => !d.initializer).map((d) => d.name.text); // a defaulted parameter is already a local (sigParams)
   }
@@ -6006,26 +5955,10 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // `r.tags.push(x)`, `Object.assign(r, s)`, `delete r.f`. The value reading binds a copy of the element, so it would
   // drop the write; the heap core reads it as the step on the element (design/element-writes.md). A unit outside the
   // core that holds one is refused by name, never translated without its write
-  function loopElementWriteOf(u) {
-    const elementBinding = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; if (!d) return false; if (ts.isParameter(d)) return !!d.parent && !reduceAccumulator(d, checker) && (isLoopCallback(d.parent) || syncLoopCallback(d.parent, checker)); return ts.isVariableDeclaration(d) && !!d.parent && ts.isVariableDeclarationList(d.parent) && !!d.parent.parent && ts.isForOfStatement(d.parent.parent); };
-    let hit = null;
-    const w = (n) => {
-      if (hit) return;
-      let t = null, through = false;
-      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) t = n.left;
-      else if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) t = n.operand;
-      else if (ts.isDeleteExpression(n)) t = n.expression;
-      else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) { if (ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'assign') t = n.arguments[0] ?? null; else if (MUT.has(n.expression.name.text)) t = n.expression.expression; through = true; }
-      if (t) { let r = t; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r) || ts.isAsExpression(r)) r = r.expression; if (ts.isIdentifier(r) && (through || r !== t) && elementBinding(r)) { hit = { node: n, name: r.text }; return; } }
-      ts.forEachChild(n, w);
-    };
-    if (u.body) w(u.body);
-    return hit;
-  }
   function emitUnit(u) {
     currentUnit = u;
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
-    { const lw = loopElementWriteOf(u); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
+    { const lw = firstElementMutation(checker, u, { isLoopCallback, heapSelected: false, sf, current: u.node }); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
     tempCount = 0; // a unit's temporaries are numbered from its own start: an edit elsewhere in the file leaves its text unchanged, so the theorem's identity shortcut still reads it
     faultMode = false;
     loopCount = 0; labelIds.clear();
