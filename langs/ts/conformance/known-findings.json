@@ -1,5 +1,5 @@
 {
- "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause",
+ "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause Four rows added on 29 Oct at the merge of lane copy-override-readings (pair array_copy_identity, class array identity).",
  "findings": [
   {
    "kind": "disagree",
@@ -1890,6 +1890,53 @@
    "laneA": "proved",
    "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copy_identity",
+   "unit": "spreadSame",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model",
+   "side": "candidate"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copy_identity",
+   "unit": "sliceSame",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model",
+   "side": "candidate"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copy_identity",
+   "unit": "concatSame",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model",
+   "side": "candidate"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copy_identity",
+   "unit": "bothCopied",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "proved",
+   "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model"
   }
  ]
 }
