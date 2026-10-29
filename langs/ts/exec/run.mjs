@@ -300,11 +300,12 @@ async function observeJsx(v, env) {
 
 // the breadcrumb: the phase the harness is in, the input, and the file being loaded, so that a run whose event loop
 // drains before a verdict names what was pending
-export const crumb = { phase: 'start', input: null, loading: null, side: null };
+export const crumb = { phase: 'start', input: null, loading: null, side: null, timedOut: 0 }; // timedOut: calls that hit their own --ms bound so far (the unit bound admits each one its budget)
 // a listener of the breadcrumb (worker.mjs sends each step to the process that holds the bound, so a killed run names where it was)
 let crumbListener = null;
 export const onCrumb = (f) => { crumbListener = f; };
-const tellCrumb = () => { if (crumbListener) crumbListener({ phase: crumb.phase, input: crumb.input, side: crumb.side, loading: crumb.loading }); };
+const tellCrumb = () => { if (crumbListener) crumbListener({ phase: crumb.phase, input: crumb.input, side: crumb.side, loading: crumb.loading, timedOut: crumb.timedOut }); };
+const callTimedOut = () => { crumb.timedOut++; tellCrumb(); }; // a call that hit its own bound: paid for by that bound, reported to the process that holds the unit's
 const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; crumb.side = null; tellCrumb(); };
 export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
 // a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
@@ -771,11 +772,11 @@ async function observeWindow(side, spec, args, ms) {
     outcome = { returned: isJsxValue(outcomeValue) ? renderTree(outcomeValue) : render(outcomeValue) };
     if (returnedPromise) outcome.promise = returnedPromise;
   } catch (e) {
-    if (e && e.message === '__timeout__') return { harness: 'timeout' };
+    if (e && e.message === '__timeout__') { callTimedOut(); return { harness: 'timeout' }; }
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
     if (e instanceof Suspended || (e && typeof e.then === 'function')) return { harness: `suspense: ${e instanceof Suspended ? e.message.slice(10) : 'a thenable thrown during render'}` }; // ASK:suspense, never a crash and never a thrown-value outcome
     if (e instanceof RenderLoop) return { harness: e.message }; // ASK:render-loop: React would throw or never settle
-    if (e instanceof CallTimeout) return { harness: 'timeout' };
+    if (e instanceof CallTimeout) { callTimedOut(); return { harness: 'timeout' }; }
     if (e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message))) return { harness: 'stack overflow' }; // whichever realm threw it: the host's (a fake, a patched intrinsic) or the sandbox's (the unit's own recursion)
     outcomeSite = env.siteState?.completed ?? env.siteState?.current?.site ?? null;
     outcome = { threw: render(e) };
@@ -1049,28 +1050,30 @@ const leanHeadForRecords = () => {
 export async function runPair(opts) {
   if (!opts.recordHead) opts = { ...opts, recordHead: leanHeadForRecords() }; // the lean head every record names, read once per process
   if (opts.inProcess || !parentHolds(opts.parent, opts.unit)) return runPairInProcess(opts);
-  // the unit's CPU bound stretches with the load factor its calls' wall allowances stretch with (readLoadFactor, the
-  // in-process watchdogs): a call that spins burns its whole allowance as CPU, so under a load average of k per core a
-  // unit's spinning inputs cost k times their nominal CPU; a bound read at load 1 would then kill a unit the per-call
-  // bounds are handling (for_desugar chunks: half the drawn sizes spin, 2 s each, two sides, 30 inputs)
-  const stretch = readLoadFactor();
-  const seconds = unitSecondsValue(opts.unitSeconds) * stretch;
+  // the unit's CPU bound covers its real work; a call that hits its own --ms bound is paid for by that bound, so the
+  // unit's allowance grows by ms for each such call the worker reports (for_desugar chunks: half the drawn sizes spin,
+  // 2 s each, two sides, 30 inputs: 60 s of bounded calls beside the work, against a 120 s bound). CPU time does not
+  // stretch with load: a spinning call under a load of k per core takes k times the wall but burns the same CPU
+  const seconds = unitSecondsValue(opts.unitSeconds);
+  const callMs = Number(opts.ms ?? 2000);
   const { unitSeconds, inProcess, ...rest } = opts;
   return new Promise((resolve) => {
     let last = null, done = false;
     const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
     const end = (res) => { if (done) return; done = true; clearTimeout(timer); cpuWatch.stop(); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
     const started = Date.now();
-    let cpuSeen = 0;
+    let cpuSeen = 0, timedOut = 0;
+    const allowance = () => seconds + timedOut * callMs / 1000; // the bound plus the budget of every call that hit its own
     const killAt = (why) => {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
-      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its ${why} bound of ${seconds} s per unit (--unit-seconds${stretch > 1 ? `, stretched ${stretch.toFixed(1)} times by the load average, as its calls' allowances are` : ''}) after ${Math.round((Date.now() - started) / 1000)} s of wall time and ${Math.round(cpuSeen)} s of CPU time; the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, cpuSeconds: Math.round(cpuSeen), wallSeconds: Math.round((Date.now() - started) / 1000), killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
+      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its ${why} bound of ${seconds} s per unit (--unit-seconds${timedOut ? ` plus ${timedOut} call(s) at their own ${callMs} ms bound` : ''}) after ${Math.round((Date.now() - started) / 1000)} s of wall time and ${Math.round(cpuSeen)} s of CPU time; the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, cpuSeconds: Math.round(cpuSeen), wallSeconds: Math.round((Date.now() - started) / 1000), killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
     };
-    let timer = setTimeout(() => killAt(psUnavailable ? 'wall-clock' : `far wall-clock guard (${FAR_GUARD} times the CPU-time)`), seconds * 1000 * (psUnavailable ? 1 : FAR_GUARD));
+    const wallGuard = () => setTimeout(() => killAt(psUnavailable ? 'wall-clock' : `far wall-clock guard (${FAR_GUARD} times the CPU-time)`), Math.max(0, allowance() * 1000 * (psUnavailable ? 1 : FAR_GUARD) - (Date.now() - started)));
+    let timer = wallGuard();
     const cpuWatch = watchCpu(child.pid, seconds, { onSample: (cpu) => { cpuSeen = cpu; }, onBound: (cpu) => { cpuSeen = cpu; killAt('CPU-time'); },
-      onUnavailable: () => { clearTimeout(timer); timer = setTimeout(() => killAt('wall-clock'), Math.max(0, seconds * 1000 - (Date.now() - started))); } });
+      onUnavailable: () => { clearTimeout(timer); timer = setTimeout(() => killAt('wall-clock'), Math.max(0, allowance() * 1000 - (Date.now() - started))); } });
     child.on('message', (m) => {
-      if (m && m.crumb) { last = m.crumb; return; }
+      if (m && m.crumb) { last = m.crumb; if (m.crumb.timedOut > timedOut) { timedOut = m.crumb.timedOut; const w = cpuWatched.get(child.pid); if (w) w.bound = allowance(); clearTimeout(timer); timer = wallGuard(); } return; }
       if (!m || !Object.hasOwn(m, 'result')) return;
       if (m.drained && guarded) { done = true; clearTimeout(timer); cpuWatch.stop(); Object.assign(crumb, { phase: last?.phase ?? crumb.phase, input: last?.input ?? null, loading: last?.loading ?? null }); return; } // the child's event loop drained before a verdict: the caller's loop drains as the in-process run's did, and its guard names what was pending
       end(m.result);

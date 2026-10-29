@@ -79,11 +79,12 @@ threads, which is why the main thread's own time is the measure.
 
 The in-process watchdogs (the per-call `--ms` allowance, the drive timeouts) are wall clocks stretched by the load
 factor, the load average per core read once at the unit's start: a call starved by other processes keeps its CPU
-share. A call that spins burns its whole allowance as CPU, so under a load factor of k the unit's spinning inputs cost
-k times their nominal CPU; the parent therefore stretches the unit's CPU bound by the same factor, read at the same
-moment, and the ASK names the stretch. Without it, for_desugar `chunks` (half its drawn sizes spin, 2 s each, two
-sides, 30 inputs: 60 s nominal) was killed at 120 s of CPU under a load factor above 2 while every per-call bound was
-doing its work.
+share. CPU time itself does not stretch: a spinning call under a load of k per core takes k times the wall and burns
+the same CPU. The unit's bound covers the unit's real work; a call that hits its own `--ms` bound is paid for by that
+bound, so the worker reports each such call in its breadcrumb and the parent grows the unit's allowance by `ms` for
+every one (the far wall guard follows). Without it, for_desugar `chunks` (half its drawn sizes spin, 2 s each, two
+sides, 30 inputs: 60 s of bounded calls beside the work) lived at the 120 s bound and was killed on some runs while
+every per-call bound was doing its work; the ASK names the calls counted.
 
 The worker's heap is a quarter of the machine's memory, never below V8's default (`--max-old-space-size`): a spinning
 call allocates for its whole allowance (the chunking loop pushing empty slices reached 4 GB in 16 s), and an exhausted
