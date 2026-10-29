@@ -117,7 +117,7 @@ The remaining one-decider rows are outside that reviewed set; they are not claim
 
 The number-special sites call numberSpecial with a named form: non-finite literal text or a global special-value name. The existing positive-Infinity opaque reading remains the preceding lint decision.
 
-Math.min/max now consume the same nonemptyMathArgs predicate. It preserves the admission rule and strengthens the emitter from nonzero argument count to a dominating nonempty-sequence proof. This candidate remains subject to the per-unit census comparison before adoption.
+Math.min/max now consume the same nonemptyMathArgs predicate. It preserves the admission rule and strengthens the emitter from nonzero argument count to a dominating nonempty-sequence proof. Adopted after the measured native census and per-file comparisons remained unchanged. The lane report records the two lead-approved, unmeasured LangChain files and the separate census fix; no claim covers those files.
 
 optionalCallShape owns one record with sourcePathAdmission and emittedCalleeShape, sharing type, absence and signature facts. The permanent optional-source-vs-emitted-callee exception preserves their different domains: the directly walked source path is restricted to locals/plain records, while lowered declared fields can be reached through indirect class receiver paths. Required callees need no optional-branch signature. Both consumers read their named condition; the five private translator refusals collapse into one shared refusal. The Nexus comparison exposed this distinction before adoption; the regression fixture exercises both conditions.
 
