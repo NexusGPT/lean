@@ -1398,6 +1398,16 @@ export function translate(file, fnName, opts = {}) {
     if (copySource(checker, src, site).kind !== 'copy') return code;
     return `${helper('Copy', [d])}(${outerParens(code)})`;
   }
+  // the array twin of the one copy reading: an array-making form whose reading is its source's text (`[...x]`,
+  // `x.concat()`) is that text inside Copy_<seq<A>>, the identity on values, so the copy keeps every element and the
+  // order while its text is not its source's: theorem.py treats equal texts as one function (equal by identity) and
+  // skips the identity guard, and a new array is another object (a push on it does not show on x, `===` differs).
+  // A form whose reading already differs from its source's text (`x.slice()`, `x.map(...)`, `[...x, y]`) needs no mark.
+  function arrayCopyOf(src, code, n) {
+    const d = dtype(typeOf(n), n);
+    if (!d.startsWith('seq<') || !checker.isArrayType(baseOf(typeOf(src)))) return code; // a source that is no array (a Set's items, a Map's entries, an Any) is read through a conversion, already another text
+    return `${helper('Copy', [d])}(${outerParens(code)})`;
+  }
   // the open record's two slots and the rest's carrier: MoreBuilt for a value a literal made (no key beyond the declared
   // ones), MoreFrom for a value from the outside, its source a name standing for the keys and values its type does not name
   const OPEN_REST = 'open_rest_', OPEN_INDEX = 'open_index_';
@@ -2303,6 +2313,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
           else cur.push(expr(e, et));
         }
         if (cur.length || !segs.length) segs.push(`[${cur.join(', ')}]`);
+        if (n.elements.length === 1 && ts.isSpreadElement(n.elements[0])) return arrayCopyOf(n.elements[0].expression, segs[0], n); // `[...x]`: a new array (13.2.4.1 ArrayCreate) whose text would be its source's
         return segs.length === 1 ? segs[0] : `(${segs.join(' + ')})`;
       }
       case K.ObjectLiteralExpression: return objectLit(n, expected);
@@ -4243,7 +4254,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         case 'includes': return `(${expr(n.arguments[0], elemType(recv))} in ${R})`;
         case 'indexOf': return `${helper('IndexOf', [A()])}(${R}, ${expr(n.arguments[0], elemType(recv))})`;
         case 'slice': return `${helper('Slice', [A()])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '0'}, ${n.arguments[1] ? expr(n.arguments[1]) : `|${R}|`})`;
-        case 'concat': return `(${[R, ...n.arguments.map(seqOf)].join(' + ')})`;
+        case 'concat': return n.arguments.length ? `(${[R, ...n.arguments.map(seqOf)].join(' + ')})` : arrayCopyOf(recv, R, n); // `x.concat()`: a new array (23.1.3.1 ArraySpeciesCreate) holding x's elements
         case 'join':
           return A() === 'string' && n.arguments.length <= 1 && (!n.arguments[0] || typeOf(n.arguments[0]).flags & TF.StringLike)
             ? `${helper('Join', ['string'])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '","'})`
@@ -4255,8 +4266,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         // the stage 5 library rows (translate/library.json, `lane: ordinary`; design/library-rows.md)
         case 'pop': case 'shift': case 'splice': return mutatorValue(n, name, recv, R, A());
         case 'fill': return fillValue(n, R, A());
-        case 'toSorted': return cb ? `${external(`sort_${mangle(A())}`, [`seq<${A()}>`, `(${A()}, ${A()}) -> ${NUM}`], `seq<${A()}>`)}(${R}, ${lambda(cb, 2)})` : `${external(`sort_default_${mangle(A())}`, [`seq<${A()}>`], `seq<${A()}>`)}(${R})`; // 23.1.3.34: the sort of a copy, the same function as [...xs].sort
-        case 'toReversed': return `${helper('Reverse', [A()])}(${R})`; // 23.1.3.33
+        case 'toSorted': { const C = arrayCopyOf(recv, R, n); return cb ? `${external(`sort_${mangle(A())}`, [`seq<${A()}>`, `(${A()}, ${A()}) -> ${NUM}`], `seq<${A()}>`)}(${C}, ${lambda(cb, 2)})` : `${external(`sort_default_${mangle(A())}`, [`seq<${A()}>`], `seq<${A()}>`)}(${C})`; } // 23.1.3.34: ArrayCreate, then the sort: the sort of a copy, the same text as [...xs].sort(), never that of xs.sort(), which sorts xs and returns xs itself
+        case 'toReversed': return `${helper('Reverse', [A()])}(${arrayCopyOf(recv, R, n)})`; // 23.1.3.33: the reverse of a copy (xs.reverse() reverses xs and returns xs itself)
         case 'findLast': return foundValue(`${helper('Find', [A()])}(${helper('Reverse', [A()])}(${R}), ${lambda1(cb, 1)})`, et(), typeOf(n), n); // 23.1.3.11: the first match from the end
         case 'findLastIndex': case 'lastIndexOf': { // 23.1.3.12, 23.1.3.20: the index of the first match from the end, counted from the start
           const v = `lx${tempCount++}_`, k = `lk${tempCount++}_`;
