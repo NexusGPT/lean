@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { inlinePromiseStatementKind } from '../lower.mjs';
 // lean-ts lint, version 2: refuses any function outside the TypeScript subset (see langs/ts/subset.md).
 // Version 2 admits real idioms the translator can model: imports and module constants as externals,
 // arrow-const functions, async functions whose awaited calls are externals, null as "absent", literal
@@ -9,11 +10,22 @@
 // Usage: node lint.mjs <file.ts> [--changed <ranges.json>] [--json] [--advice] [--any-type] [--project <tsconfig>|--no-project]
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
+import { mutationAnalysis, parameterMutationConflicts, elementMutation } from '../lower.mjs';
 import path from 'node:path';
-import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
+import { normaliseApplyCalls, applyCall } from '../common.mjs';
+import { originOf } from '../common.mjs';
+import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
-import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
+import { elementWritePath, plainDataRecord } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
+import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the translator
+import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
+import { absenceCarried, absenceHome, payloadRead, payloadStatement, strandedLetReads } from '../common.mjs'; // a value that may be absent: one test with the translator (design/opaque-values.md)
+import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
+import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
+import { spreadReadWhy, openRecordReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries (open-datatype)
+import { untypedThisParam } from '../common.mjs'; // a `this` parameter typed any or unknown, or untyped: one test with the translator
+// untypedJsUnit (common.mjs): a JavaScript unit whose parameter has no declared type, refused as untyped-js by the lint's unit loop and at the head of the translator's emitUnit
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
@@ -28,10 +40,13 @@ const LIBRARY_RESULT_MORE = {
   'Array.from': 'fresh', 'Array.of': 'fresh', 'Object.keys': 'fresh', 'Object.values': 'fresh', 'Object.entries': 'fresh', 'Object.fromEntries': 'fresh', 'Object.create': 'fresh', 'JSON.parse': 'fresh', 'Promise.all': 'fresh', 'Promise.allSettled': 'fresh',
   'Array.prototype.find': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
 };
-import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText } from '../library-rows.mjs';
-import { reactHook, arrowOf, closureReads } from '../react.mjs';
+import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText, memberRow, freshRegexFlags, regexNeverAdvanced, incompleteType, onWritePath, writesThroughIncomplete } from '../library-rows.mjs';
+import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
+import { optionalCallShape } from '../lower.mjs';
+import { lintFindings } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
+import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -90,6 +105,7 @@ export function exceptionUnitsOf(sf, checker, units = topLevelFunctions(sf)) {
       if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
         const callee = byDecl.get(checker.getResolvedSignature(n)?.declaration);
         if (callee) edges.get(callee).add(u.name);
+        { const f = n.expression; if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(f) && (f.name.text === 'call' || f.name.text === 'apply') && ts.isIdentifier(f.expression)) { const d = checker.getSymbolAtLocation(f.expression)?.valueDeclaration; const named = d && byDecl.get(d); if (named) edges.get(named).add(u.name); } } // `h.call(o, a)` / `h.apply(o, [a])` calls h here: its throw is this unit's
         if (syncLoopCall(n, checker)) for (const a of n.arguments) if (ts.isIdentifier(a)) { const d = checker.getSymbolAtLocation(a)?.valueDeclaration; const named = d && byDecl.get(d); if (named) edges.get(named).add(u.name); } // stage 5 rank 20: a throwing unit handed to an array method runs here, so its throw is this unit's
       }
       if (ts.isPropertyAccessExpression(n)) {
@@ -194,17 +210,29 @@ function forInDelete(s, checker, sf) {
   return hit;
 }
 
-export function lintFile(file, ranges = null, opts = {}) {
+// the lint's findings: the lowering's record of the file (lower.mjs), whose first phase is admissionFindings below and whose
+// last is the translator's reading of every unit it admitted, so a unit the translator refuses is never advised as admitted
+export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
+export function admissionFindings(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
-  const { sf, checker, diagnostics } = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
+  const given = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
+  const { sf, checker, diagnostics } = normaliseApplyCalls(given); // an exact apply/call is read as the direct call (common.mjs applyCall)
+  const ownText = given.sf.text; // what the owner wrote: the normalised text has the same length, so a finding quotes this at the same positions
   const out = [];
   const units = topLevelFunctions(sf);
+  const callbackInputs = new Map([...units.values()].filter(u => u.form === 'callback').map(u => [u.node, callbackEnvironment(checker, u)]));
+  const originOf = (checker, id, sf, node) => {
+    const o = sourceOriginOf(checker, id, sf, node);
+    return callbackInputs.get(node)?.some(c => c.decl === o.decl) ? { ...o, kind: 'local' } : o;
+  };
+  const unitByNode = new Map([...units.values()].map(u => [u.node, u]));
   const exceptionUnits = exceptionUnitsOf(sf, checker, units);
   const generators = generatorReading(checker, sf, units);
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
   let objectMethod = null;
+  let literalUnit = null; // the member of a module literal being checked as a unit: `this` is that literal (design/exported-units.md)
   let thisParam = null; // the current free function's declared `this` parameter: its receiver operand, written and read like any parameter
   const RECEIVER_WRITE = 'a write through the declared `this` of a free function rebuilds a nonoptional data record; a class, array, dictionary or optional receiver (or a container on the path) has no such value: take the value as a parameter and return the new one';
   let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
@@ -216,6 +244,17 @@ export function lintFile(file, ranges = null, opts = {}) {
   const aliasCalls = new Map(); // alias declarations bound to a call's result or a loop element -> what they hold, for the message
   const aliasMsg = (name, decl, tail = true) => aliasCalls.has(decl) ? `\`${name}\` holds ${aliasCalls.get(decl)}, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name` : `\`${name}\` is another name for a value this function was handed${tail ? '; change it through that name, or copy it first' : ''}`;
   const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
+  // the receiver rules of a literal method, one node `x` (target: what it assigns, if anything) inside a method of the
+  // literal `e`: `this` is read only as a direct scalar data field or a sibling method, and never written. One reading for
+  // a method of a local literal and for a unit of a module literal (design/exported-units.md)
+  const literalThisRules = (x, target, e) => {
+    const rootOf = (y) => { while (ts.isPropertyAccessExpression(y) || ts.isElementAccessExpression(y) || ts.isParenthesizedExpression(y)) y = y.expression; return y; };
+    const sibling = (name) => e.properties.some((q) => ts.isMethodDeclaration(q) && q.name?.text === name);
+    if (ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword && !nonNull(tOf(x)).every(isPrim) && !sibling(x.name.text)) v(x, 'object-method-mutation', 'literal this reads scalar fields; reference-valued receiver state needs a class');
+    if (x.kind === K.ThisKeyword && !(x.parent && ts.isPropertyAccessExpression(x.parent) && x.parent.expression === x)) v(x, 'object-method-mutation', 'keep literal this as a direct data-field read; use a class for aliases or rebinding');
+    if (target && rootOf(target).kind === K.ThisKeyword) v(target, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
+    if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text) && rootOf(x.expression.expression).kind === K.ThisKeyword && !(x.expression.expression.kind === K.ThisKeyword && sibling(x.expression.name.text))) v(x, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state'); // `this.add(x)` naming a sibling method is a call of it, not a mutator on a field
+  };
   const handedCallbacks = new Set(); // stage 5 rank 20: arrows handed to an outside call (opaque values)
   const loopCallbacks = new Set(); // stage 5 rank 19: an array-method callback read as a loop body (the array method runs it once per element, in order, before returning): a cell declared outside it is the loop's state, owned by the enclosing function
   const ownedHere = (decl) => { let i = callbackStack.length - 1; while (i >= 0 && loopCallbacks.has(callbackStack[i])) i--; const cb = i >= 0 ? callbackStack[i] : null; return !cb || (decl && decl.pos >= cb.pos && decl.end <= cb.end); };
@@ -239,16 +278,17 @@ export function lintFile(file, ranges = null, opts = {}) {
   // Object.assign writes into its first argument while the value reading returns a fresh record and leaves the target unchanged (research element 16); a fresh literal target is a copy and keeps its reading
   const objectCallRefusal = (e, r, name) => {
     if (!(ts.isIdentifier(r) && r.text === 'Object')) return null;
-    if (name === 'create' && e.arguments.length === 1 && e.arguments[0].kind === K.NullKeyword) return v(e, 'prototype', '`Object.create(null)` makes an object without a prototype; a plain object\'s reads and `in` go through Object.prototype and the ordinary lane has one dictionary for both; write `{}` and test own keys with `Object.prototype.hasOwnProperty.call(d, k)`');
+    if (nullPrototypeCreate(checker, e, sf, current)) return v(e, 'prototype', NULL_PROTOTYPE_WHY); // one decision with the translator (lower.mjs)
     if (OBJECT_PROTOTYPE_FUNCTIONS.has(name)) return v(e, 'prototype', `\`Object.${name}\` reaches the prototype chain or the property descriptors; no transition models it`);
     if (name === 'freeze' || name === 'seal' || name === 'preventExtensions') return v(e, 'freeze', `\`Object.${name}\` makes a later write throw in strict code; the value reading has no fault for that write, so no transition models it yet`);
     if (name === 'assign' && !(e.arguments[0] && ts.isObjectLiteralExpression(unparenX(e.arguments[0])))) return v(e, 'assign-target', '`Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources into a new object');
+    if (name === 'assign') for (const s of e.arguments.slice(1)) { const cs = copySource(checker, s); const why = cs.kind === 'refuse' ? cs.why : null; if (why) return v(e, 'spread-source', `\`Object.assign\` onto a literal copies every own key of \`${s.getText(sf).slice(0, 40)}\`: ${why}; the call is read as a function of its arguments' values, which hold declared fields alone, so write the copy as a spread \`{ ...x }\` (escape spread_source)`); } // the spread's twin: one test (common.mjs copySourceWhy)
     return null;
   };
   // site: the label of the advised rewrite as decided at this site ({ label, precondition }), for the rules that decide it
   const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
-    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
+    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
   };
   // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
   // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
@@ -383,8 +423,17 @@ export function lintFile(file, ranges = null, opts = {}) {
 
   // ---------- types (as the checker resolved them; syntax matters less in v2) ----------
   const seenTypes = new Set();
+  // The checker exposes a graph: intersections can lead through signatures back
+  // to the same type. Expand each identity/site/depth once, keeping the existing
+  // depth cutoff and the finding's original site. This table dies with this lint.
+  const visitedTypes = new Map();
   function checkType(t, n, depth = 0) {
-    if (depth > 6) return;
+    if (!t || depth > 6) return; // absent checker type: no structural type finding (opaque)
+    let sites = visitedTypes.get(t);
+    if (!sites) visitedTypes.set(t, sites = new Map());
+    const bit = 1 << depth, seen = sites.get(n) ?? 0;
+    if (seen & bit) return;
+    sites.set(n, seen | bit);
     const f = t.flags;
     if (f & (TF.Any | TF.Unknown)) return; // opaque: every operation on it is an uninterpreted external
     if (f & (TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.StringLike | TF.Undefined | TF.Null | TF.Void | TF.Never)) return;
@@ -431,7 +480,8 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (name === 'undefined') return;
     if (name === 'arguments' && originOf(checker, id, sf, current).kind === 'global') return v(id, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter', restParamsSite(id));
     const o = originOf(checker, id, sf, current);
-    if (!asCallee && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id))) return v(id, 'exception-callback', 'call the throwing unit directly, or pass it to a call; a stored function value has no fault channel'); // stage 5 rank 20: as a call argument it is an opaque value (outside) or a loop body (array method)
+    const viaCall = id.parent && ts.isPropertyAccessExpression(id.parent) && id.parent.expression === id && (id.parent.name.text === 'call' || id.parent.name.text === 'apply') && ts.isCallExpression(id.parent.parent) && id.parent.parent.expression === id.parent; // `h.call(o, a)` / `h.apply(o, [a])` calls h here (ECMA-262 20.2.3.1 and 20.2.3.3): the call of the unit, its fault routed as a direct call's
+    if (!asCallee && !viaCall && o.kind === 'unit' && exceptionUnits.has(name) && !enclosingOpaqueTry(id) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id))) return v(id, 'exception-callback', 'call the throwing unit directly, or pass it to a call; a stored function value has no fault channel'); // stage 5 rank 20: as a call argument it is an opaque value (outside) or a loop body (array method)
     if (o.kind === 'unit' && units.get(name)?.fn.asteriskToken && !asyncGenerator(units.get(name)) && !(id.parent && ts.isCallExpression(id.parent) && id.parent.expression === id)) return v(id, 'generator-use', 'consume a pure generator directly in for-of, spread, Array.from or yield*');
     if (o.kind === 'local' && localMethodLiteral(tOf(id)) && id.parent && ts.isCallExpression(id.parent) && id.parent.arguments.includes(id)) return v(id, 'object-method-mutation', 'pass a fresh literal handler or keep calls on the local object; sharing a named method object needs a heap');
     if (o.kind === 'local' || o.kind === 'unit') return;
@@ -442,7 +492,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
     if (o.kind === 'global' && infinitySign(checker, id, sf, current) > 0) return; // the global Infinity is the value Number.POSITIVE_INFINITY is: a unit naming either is one opaque unit in the translator
-    if (o.kind === 'global' && ['NaN', 'Infinity'].includes(name)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
+    if (numberSpecial('global', name, o.kind)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
     if ((Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined)) return v(id, (Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined), `\`${name}\` is outside the subset`);
     if (PURE_GLOBALS.has(name)) return;
     if (libGlobalRoot(checker, id, sf, current)) return; // a lib or runtime global: a world read
@@ -493,54 +543,16 @@ export function lintFile(file, ranges = null, opts = {}) {
   // of a callback or a local function, a rest parameter, a parameter of a generator, a parameter the unit also changes
   // in place (an output: the caller would take back the rebound object), and one a closure reads before a later write
   // or inside a loop that writes it (the closure would keep the old value).
-  const PARAM_MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
-  let mutatedParamSets = null; // unit name -> names of its parameters it changes in place, same-file calls followed (the translator's outputs)
-  const paramRootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
-  const mutatedParams = (name) => {
-    if (!mutatedParamSets) {
-      const all = [...units.values()].filter((u) => u.body);
-      const namesOf = (u) => new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
-      mutatedParamSets = new Map(all.map((u) => {
-        const ps = namesOf(u), out = new Set();
-        const hit = (x) => { const r = paramRootOf(x); if (ts.isIdentifier(r) && ps.has(r.text) && r !== x) out.add(r.text); };
-        const w = (n) => {
-          if (ts.isFunctionLike(n) && n !== u.fn) return;
-          if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) hit(n.left);
-          if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) hit(n.operand);
-          if (ts.isDeleteExpression(n)) hit(n.expression);
-          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && PARAM_MUTATORS.has(n.expression.name.text)) { const r = paramRootOf(n.expression.expression); if (ts.isIdentifier(r) && ps.has(r.text)) out.add(r.text); }
-          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'assign' && n.arguments[0]) { const r = paramRootOf(n.arguments[0]); if (ts.isIdentifier(r) && ps.has(r.text)) out.add(r.text); }
-          ts.forEachChild(n, w);
-        };
-        w(u.body);
-        return [u.name, out];
-      }));
-      for (let changed = true; changed;) {
-        changed = false;
-        for (const u of all) {
-          const ps = namesOf(u), mine = mutatedParamSets.get(u.name);
-          const w = (n) => {
-            if (ts.isFunctionLike(n) && n !== u.fn) return;
-            if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && mutatedParamSets.has(n.expression.text)) {
-              const callee = units.get(n.expression.text), cm = mutatedParamSets.get(callee.name);
-              callee.params.forEach((cp, i) => { const a = n.arguments[i] && paramRootOf(n.arguments[i]); if (ts.isIdentifier(cp.name) && cm.has(cp.name.text) && a && ts.isIdentifier(a) && ps.has(a.text) && !mine.has(a.text)) { mine.add(a.text); changed = true; } });
-            }
-            ts.forEachChild(n, w);
-          };
-          w(u.body);
-        }
-      }
-    }
-    return mutatedParamSets.get(name) ?? new Set();
-  };
+  let parameterMutationRecord = null;
+  const parameterMutations = () => parameterMutationRecord ??= mutationAnalysis(checker, sf, units);
   const paramRebindRefusal = (decl) => {
     const name = decl.name.getText(sf);
     if (decl.parent !== currentFn) return `\`${name}\` is a parameter of a callback or a local function; copy it to a local first`;
-    if (callbackStack.length || objectMethod || forEachDepth) return `parameter \`${name}\` is assigned inside a callback or a local function; a callback cannot change it`;
+    if (callbackStack.length || (objectMethod && objectMethod !== literalUnit?.node) || forEachDepth) return `parameter \`${name}\` is assigned inside a callback or a local function; a callback cannot change it`;
     if (decl.dotDotDotToken) return `\`${name}\` is a rest parameter; copy it to a local first`;
     if (currentFn.asteriskToken) return `parameter \`${name}\` of a generator is assigned; copy it to a local first`;
     const u = [...units.values()].find((x) => x.fn === currentFn);
-    if (!u || mutatedParams(u.name).has(name)) return `parameter \`${name}\` is rebound and also changed in place, which hands the change back to the caller; copy it to a local first`;
+    if (!u || parameterMutationConflicts(parameterMutations().units.get(u.name), 'admissionRisk').includes(decl)) return `parameter \`${name}\` is rebound and also changed in place, which hands the change back to the caller; copy it to a local first`;
     const sym = checker.getSymbolAtLocation(decl.name);
     const symOf = (id) => (id.parent && ts.isShorthandPropertyAssignment(id.parent) && id.parent.name === id ? checker.getShorthandAssignmentValueSymbol(id.parent) : checker.getSymbolAtLocation(id));
     const isTarget = (id) => { let x = id; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; return !!p && ((ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator))); };
@@ -604,7 +616,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.VariableStatement: {
         const list = s.declarationList;
         if (!(list.flags & (ts.NodeFlags.Let | ts.NodeFlags.Const))) v(s, 'var', '`var` is outside the subset; use let or const');
-        for (const d of list.declarations) varDecl(d);
+        for (const d of list.declarations) { if (absenceCarried(checker, d) && !absenceHome(checker, d)) v(d, 'definite-assignment', 'this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested function), and here its absence is not carried (a try, a switch, an async or nested function); assign it where it is declared or give it a start value'); for (const r of strandedLetReads(checker, d)) v(r, 'definite-assignment', `\`${r.text}\` may be read here before its first assignment (TypeScript does not check this read), and lean tests it only in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions; assign it before this read or give it a start value`); varDecl(d); }
         return;
       }
       case K.ExpressionStatement: return exprStmt(s.expression);
@@ -635,6 +647,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       case K.ForInStatement: { // `for (const k in o)`: a loop over the keys of o, each a string
         const init = s.initializer;
         if (!(ts.isVariableDeclarationList(init) && init.declarations.length === 1 && ts.isIdentifier(init.declarations[0].name))) return v(s, 'for-in', 'for-in takes `const k`');
+        if (!forInKeyOrder(checker, s.expression, currentFn)) v(s.expression, 'key-order', 'a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this object is not fixed in the function (a parameter, a spread, a class instance, an any value, or a local passed elsewhere); loop over a const local a plain literal makes in this function, or over a Record<string, T> dictionary, or name the keys in an array');
         { const del = forInDelete(s, checker, sf); if (del) v(del, 'for-in-delete', 'a for-in skips a key deleted before its visit (ECMA-262 14.7.5.9), and the reading visits the keys the object held at the start; delete only the current key inside the loop, or delete after the loop'); }
         expr(s.expression); loopDepth++; stmt(s.statement); loopDepth--; return;
       }
@@ -860,25 +873,48 @@ export function lintFile(file, ranges = null, opts = {}) {
     expr(d.initializer);
   }
   const outsideWriteStatement = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; return !!x.parent && ts.isExpressionStatement(x.parent); };
+  // heap shapes (translate/heap.mjs, design/heap-stage5.md "Heap shapes"): a write through a node a parameter holds is a
+  // step on the explicit object graph, which the heap core reads exactly. A node a parameter holds is reached from a
+  // parameter of this unit by field steps only (`p.headers`, `p.a.b`, a `!` on the way); a const local bound to such a
+  // path is another name for that node; a same-file call that returns such a path of its own parameters (or of `this`),
+  // given the caller's parameter nodes, returns one. The value reading copies a node, so a unit outside the heap core
+  // keeps no value-reading lemma for these shapes (heap.mjs guard: its identity shape is unreadable): the proof lane
+  // answers through the core or not at all. A node that came from the outside (a module object, an import, a global
+  // registry) is no parameter's node and stays refused (escape heap_shapes_outside_node).
+  const plainNode = (t) => !!t && !(t.flags & TF.Union) && (plainDataRecord(checker, t) || (checker.isArrayType(t) && ((x) => !!x && (!!(x.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) || plainDataRecord(checker, x)))(checker.getTypeArguments(t)[0]))); // a plain data record, or an array of primitives or of plain data records: the shapes the heap core holds as cells
+  const primDict = (t) => !!t && !(t.flags & TF.Union) && !!(t.flags & TF.Object) && !checker.getPropertiesOfType(t).length && !t.getCallSignatures().length && !checker.getIndexInfoOfType(t, ts.IndexKind.Number) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && !!(checker.getIndexInfoOfType(t, ts.IndexKind.String).type.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike)) && !(checker.getIndexInfoOfType(t, ts.IndexKind.String).type.flags & TF.Union && checker.getIndexInfoOfType(t, ts.IndexKind.String).type.types.some((x) => x.flags & (TF.Undefined | TF.Null))); // Record<string, T> of a primitive: the heap core's dictionary cell
+  // Record<string, T> of a plain data record: its values are nodes, each reached by its key (DictGet_ then field steps)
+  const recDict = (t) => !!t && !(t.flags & TF.Union) && !!(t.flags & TF.Object) && !checker.getPropertiesOfType(t).length && !t.getCallSignatures().length && !checker.getIndexInfoOfType(t, ts.IndexKind.Number) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && plainDataRecord(checker, checker.getIndexInfoOfType(t, ts.IndexKind.String).type);
+  const quietKey = (k) => { k = unparenX(k); return (ts.isIdentifier(k) || ts.isStringLiteral(k) || ts.isNoSubstitutionTemplateLiteral(k)) && nonNull(tOf(k)).every(isStr); }; // a name or a literal: the key is read once and calls nothing
+  const heldNodePath = (x) => { // the parameter of this unit whose node x is, and the field (or dictionary key) steps from it, or null
+    let steps = 0; x = unparenX(x);
+    for (;;) { if (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) { x = x.expression; continue; } if (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; continue; } if (ts.isElementAccessExpression(x) && !x.questionDotToken && recDict(tOf(x.expression)) && quietKey(x.argumentExpression)) { steps++; x = x.expression; continue; } break; }
+    if (!ts.isIdentifier(x) || !currentFn) return null;
+    const o = declOf(x); if (o.kind !== 'local' || !isParam(o.decl) || o.decl.parent !== currentFn || !ownedHere(o.decl)) return null;
+    return { decl: o.decl, steps };
+  };
+  const heldAlias = (decl) => !!decl && !!currentFn && ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !!decl.initializer && !!(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && !aliasCalls.has(decl) && decl.pos >= currentFn.pos && decl.end <= currentFn.end && ownedHere(decl) && (heldNodePath(decl.initializer)?.steps ?? 0) >= 1 && plainNode(tOf(decl.name)); // `const names = b.names`: another name for a node a parameter holds
+  const returnsHeldPath = (u) => { // every return of the unit is a field path of one of its own parameters, or of `this` in a method
+    if (!u?.body || u.fn.asteriskToken || u.fn.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return false;
+    const held = (x) => { x = unparenX(x); while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; if (ts.isConditionalExpression(x)) return held(x.whenTrue) && held(x.whenFalse); let steps = 0; while (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; } if (!steps) return false; if (x.kind === K.ThisKeyword) return !!u.cls; if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.valueDeclaration; return !!d && ts.isParameter(d) && d.parent === u.fn; };
+    if (!ts.isBlock(u.body)) return held(u.body);
+    let ok = true, any = false; const w = (n) => { if (!ok || ts.isFunctionLike(n)) return; if (ts.isReturnStatement(n)) { any = true; if (!n.expression || !held(n.expression)) ok = false; } ts.forEachChild(n, w); }; ts.forEachChild(u.body, w); return ok && any;
+  };
+  const heldCall = (x) => { // a call whose result is a node the caller's parameters (or its receiver) hold: `pick(b, true)`, `this.current()`
+    x = unparenX(x); if (!ts.isCallExpression(x) || x.questionDotToken || !currentFn) return false;
+    const callee = sameFileCallee(x, currentClass); if (!callee || !returnsHeldPath(callee) || !plainNode(tOf(x))) return false;
+    if (ts.isPropertyAccessExpression(unparenX(x.expression)) && !(currentClass && !thisParam)) return false; // `this.m()` in a method of this file's class
+    return x.arguments.every((a) => ts.isSpreadElement(a) ? false : nonNull(tOf(a)).every((t) => !(t.flags & TF.Object)) || !!heldNodePath(a)); // every object handed in is a parameter's node
+  };
   // a write through a parameter of a synchronous array-method callback (`rows.forEach((r) => { r.n = 0; })`): that
   // parameter is the array's element at each step, so the write is the heap step `rows[i].n = 0` (common.mjs
   // elementWritePath). The heap core carries it in a `forEach` statement over a plain data record (plainDataRecord); the
   // value reading copies the element and would lose the write, so every other shape is refused here (escape
   // element_write_loop_callback) and the translator refuses a unit outside the heap core
   function loopElementWrite(e) {
-    let w = ts.isBinaryExpression(e) && e.operatorToken.kind >= K.FirstAssignment && e.operatorToken.kind <= K.LastAssignment ? e.left : (ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) ? e.operand : ts.isDeleteExpression(e) ? e.expression : null;
-    if (!w && ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) w = ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign' ? e.arguments[0] ?? null : MUT_NAMES.has(e.expression.name.text) ? e.expression.expression : null;
-    if (!w) return null;
-    let r = w; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r) || ts.isAsExpression(r)) r = r.expression;
-    const through = r !== w || !ts.isBinaryExpression(e) || ts.isCallExpression(e); // a field, an element, a mutator: not a rebinding of the name
-    if (!ts.isIdentifier(r) || !through) return null;
-    const d = declOf(r).decl;
-    if (!d || !ts.isParameter(d) || !syncLoopCallback(d.parent, checker)) return null;
-    const call = d.parent.parent; const st = call.parent;
-    if (reduceAccumulator(d, checker, w)) return null; // the accumulator of a reduce the call itself builds, written one step deep: no element of the array (common.mjs)
-    const fieldWrite = (ts.isBinaryExpression(e) && [K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e); // the writes the heap core reads in a loop body (a mutator, Object.assign and delete are not)
-    const carried = fieldWrite && call.expression.name.text === 'forEach' && st && ts.isExpressionStatement(st) && d.parent.parameters.length === 1 && d.parent.parameters[0] === d && ts.isIdentifier(d.name) && plainDataRecord(checker, checker.getTypeAtLocation(d.name));
-    if (carried) return null;
+    const decision = elementMutation(checker, e, { sf, current, heapSelected: null });
+    if (!decision?.admissionRefused) return null;
+    const w = decision.target, r = decision.root, d = decision.sourceDecl, call = decision.sourceCall;
     if (call.expression.name.text === 'reduce' && d.parent.parameters[0] === d) return v(w, 'alias-mutation', `\`${r.text}\` is the accumulator \`reduce\` hands its callback: it holds the array's first element when the call passes no initial value, a value the unit was handed, or what a step returned; a write through it is read only when the call passes an initial value it builds itself out of primitives (\`{}\`, \`[]\`, \`new Map()\`), every step returns the accumulator, and the write is one step deep (\`acc[k] = v\`) (escape reduce_accumulator_element)`);
     return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
   }
@@ -928,7 +964,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           // these writes on its process fake; the other outside roots (globalThis, window) keep property-assign
           if (ts.isIdentifier(root) && root.text === 'process' && outsideRoot(checker, root, sf, current)) {
             if (op !== K.EqualsToken || !outsideWriteStatement(e)) { v(l, 'property-assign', `a field of \`${root.text}\` is written by a plain \`=\` statement; read the old value into a local first`); return expr(e.right); }
-            if (nonNull(tOf(e.right)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length)) { v(l, 'property-assign', `a function installed into \`${root.text}\` is called by the outside later; no transition reads that call`); return expr(e.right); }
+            if (installsFunction(checker, e.right)) { v(l, 'property-assign', INSTALLS_FUNCTION_WHY(root.text)); return expr(e.right); } // one decision with the translator (lower.mjs)
             if (l.expression !== root) expr(l.expression);
             return expr(e.right);
           }
@@ -945,11 +981,24 @@ export function lintFile(file, ranges = null, opts = {}) {
             return expr(e.right);
           }
           const throughElement = (() => { let x = l.expression; while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x)) { if (ts.isElementAccessExpression(x)) return true; x = x.expression; } return false; })();
+          if (throughElement && heldNodePath(l.expression)) { if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field'); expr(l.expression); return expr(e.right); } // a field of a record a dictionary of a parameter's node holds by key (`s.chats[id].unread = 0`): a heap step on that record
+          if (!throughElement && heldCall(root)) { if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field'); expr(l.expression); return expr(e.right); } // a field of the node a same-file call returns (`pick(b, true).status = v`, `this.current().n = 0`): a heap step on that node
           if (throughElement) v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`: a field of an element is written when the path from a parameter takes field and array-element steps only, each index a number that calls nothing (name it first: \`const k = ...\`), and \`!\` or \`as T\` stand only on an element, T its own type`);
           else if (!(ts.isIdentifier(root) || (root.kind === K.ThisKeyword && thisParam)) || o.kind !== 'local') v(l, 'property-assign', `assignment into \`${root.getText(sf)}\`, which this function does not own; records it owns are updated in place`);
-          else if (aliasHere(o.decl, l)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl));
-          else if (!ownedHere(o.decl)) v(l, 'closure-mutation', 'a callback cannot change an outer record');
+          else if (aliasHere(o.decl, l) && !heldAlias(o.decl)) v(l, 'alias-mutation', aliasMsg(root.text, o.decl)); // a const name for a node a parameter holds: the write is a step on that node (heap shapes)
+          else if (!ownedHere(o.decl) && !(op === K.EqualsToken && cellWrite(checker, l, currentFn?.body))) v(l, 'closure-mutation', 'a callback cannot change an outer record'); // `r.current = v` in a function React holds is a ref cell step (react.mjs, cellWrite)
           else if (op !== K.EqualsToken && op !== K.PlusEqualsToken && op !== K.MinusEqualsToken && op !== K.AsteriskEqualsToken) v(l, 'property-assign', 'only =, +=, -=, *= on a field');
+        }
+        else if (ts.isElementAccessExpression(l) && !l.questionDotToken && (heldNodePath(l.expression)?.steps ?? 0) >= 1 && recDict(tOf(l.expression))) { // a record stored under a key of a dictionary of records a parameter's node holds: DictSet_ of the reference; a key that may be `__proto__` would replace the prototype instead
+          if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
+          else if (!nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
+          else if (protoKeyWrite(checker, l.argumentExpression, e.right) !== 'free') v(l, 'prototype', 'a key that may be \'__proto__\' with an object value replaces the dictionary\'s prototype (the setter of Object.prototype.__proto__) and makes no key; use a literal key, or a Map');
+          expr(l.expression); expr(l.argumentExpression);
+        }
+        else if (ts.isElementAccessExpression(l) && !l.questionDotToken && (heldNodePath(l.expression)?.steps ?? 0) >= 1 && primDict(tOf(l.expression))) { // a key of a dictionary a parameter's node holds (`r.headers[k] = v`, Record<string, T> of a primitive): DictSet_ on that node (heap.mjs); a primitive written to `__proto__` is ignored by its setter, as the core reads it
+          if (op !== K.EqualsToken) v(l, 'index-assign', 'compound assignment on an element is outside the subset');
+          else if (!nonNull(tOf(l.argumentExpression)).every(isStr)) v(l, 'dynamic-key', 'a dictionary key is a string');
+          expr(l.expression); expr(l.argumentExpression);
         }
         else if (ts.isElementAccessExpression(l)) v(l, 'index-assign', 'write a record field by name, or use a local Record<string, T> dictionary');
         else v(l, 'unsupported-syntax', 'assignment target');
@@ -963,7 +1012,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (ts.isPropertyAccessExpression(e.operand) && e.operand.expression.kind === K.ThisKeyword && currentClass) return; // a field of the receiver: a world transition
       if (ts.isPropertyAccessExpression(e.operand) && sameFileStatic(e.operand)?.kind === 'field') return; // a static field of a same-file class: a world cell
       if (ts.isPropertyAccessExpression(e.operand) && elementWritePath(checker, e.operand)) { const ep = elementWritePath(checker, e.operand); const po = declOf(ep.root); if (po.kind === 'local' && isParam(po.decl) && po.decl.parent === currentFn && !aliasLocals.has(po.decl) && ownedHere(po.decl)) return expr(e.operand.expression); } // a field of a parameter's element: a heap step on that element
-      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && !aliasHere(o.decl, e) && ownedHere(o.decl)) return; return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
+      if (ts.isPropertyAccessExpression(e.operand)) { let r = e.operand; while (ts.isPropertyAccessExpression(r)) r = r.expression; const o = r.kind === K.ThisKeyword && thisParam ? { kind: 'local', decl: thisParam } : ts.isIdentifier(r) ? declOf(r) : { kind: null }; if (o.kind === 'local' && (!aliasHere(o.decl, e) || heldAlias(o.decl)) && ownedHere(o.decl)) return; if (heldCall(r)) return expr(r); if (heldNodePath(e.operand.expression)) return expr(e.operand.expression); return v(e, 'property-assign', `update of a field of \`${r.getText(sf)}\`, which this function does not own`); }
       if (!ts.isIdentifier(e.operand)) return v(e, 'unsupported-syntax', 'increment of a non-name');
       const o = declOf(e.operand);
       if (moduleState(checker, e.operand, sf)) checkIdent(e.operand);
@@ -981,15 +1030,26 @@ export function lintFile(file, ranges = null, opts = {}) {
         const ownedTarget = ts.isIdentifier(t0) && declOf(t0).kind === 'local' && ownedHere(declOf(t0).decl) && !aliasHere(declOf(t0).decl, e);
         const plainRecord = (x) => { const t = tOf(x); if (!isRecordish(t) || nonNull(t).length !== 1 || t.flags & (TF.Null | TF.Undefined)) return false; return checker.getPropertiesOfType(t).every((p) => !(p.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor | ts.SymbolFlags.Method))); };
         const targetProps = ownedTarget && plainRecord(t0) ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
-        const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
+        // a source's keys must be known exactly: Object.assign copies every own enumerable key of the source, and a value of a
+        // declared record type may carry keys its type does not name (structural typing), so only a literal source is read
+        const exactSource = (x) => { x = unparenX(x); return ts.isObjectLiteralExpression(x) && x.properties.every((p) => (ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) || ts.isShorthandPropertyAssignment(p)); };
+        const sourcesFit = !!targetProps && e.arguments.slice(1).every((s) => exactSource(s) && plainRecord(s) && checker.getPropertiesOfType(tOf(s)).every((p) => targetProps.has(p.name)));
+        if (ownedTarget && targetProps && e.arguments.slice(1).some((s) => !exactSource(s) && isRecordish(tOf(s)))) return v(e, 'assign-target', '`Object.assign` copies every own key of its source, and a value of a record type may carry keys its type does not name; pass a literal of the fields it copies (`Object.assign(t, { a: s.a })`) or write them by name');
         if (ownedTarget && sourcesFit) { checkIdent(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
+        // a node a parameter holds (`p.headers`, or a const name for it) as the target, and literal sources: the copy is a
+        // sequence of field writes on that node in the literal's key order, after every value is evaluated (heap.mjs)
+        const heldTarget = !ownedTarget && ((heldNodePath(t0)?.steps ?? 0) >= 1 || (ts.isIdentifier(t0) && declOf(t0).kind === 'local' && heldAlias(declOf(t0).decl))) && plainDataRecord(checker, tOf(t0));
+        const fields = heldTarget ? new Set(checker.getPropertiesOfType(tOf(t0)).map((p) => p.name)) : null;
+        const literalSources = !!fields && e.arguments.slice(1).every((s) => { s = unparenX(s); return ts.isObjectLiteralExpression(s) && s.properties.every((p) => ((ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) || ts.isShorthandPropertyAssignment(p)) && fields.has(p.name.text)); });
+        if (heldTarget && literalSources) { expr(t0); return e.arguments.slice(1).forEach((a) => expr(a)); }
       }
       { const refused = objectCallRefusal(e, r, name); if (refused) return refused; }
       // a Date setter changes the Date in place; the value reading returns the number and leaves the Date unchanged (research element 16)
       // a Date setter is a method call like any other: a world transition (the Date's state lives in the world since the clock-read lane), so no refusal and no rebinding
       if (moduleState(checker, r, sf) && MUT_NAMES.has(name)) { checkIdent(r); return argsOf(e); }
-      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && !aliasHere(declOf(r).decl, e);
-      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name)) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
+      const heldRow = ts.isIdentifier(r) && declOf(r).kind === 'local' && heldAlias(declOf(r).decl) && ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse'].includes(name) && isArrayExpr(r); // an in-place row of the library table on a const name for an array a parameter's node holds: a step on that node (heap shapes)
+      const localOwned = ts.isIdentifier(r) && declOf(r).kind === 'local' && ownedHere(declOf(r).decl) && (!aliasHere(declOf(r).decl, e) || heldRow);
+      if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name) && !heldRow) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
       if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
       if (nonNull(rt).some(isAny)) {
         // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
@@ -1020,7 +1080,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       if ((name === 'shift' || name === 'reverse' || name === 'splice' || name === 'sort' || name === 'pop') && isArrayExpr(r)) { // the in-place rows of the library table, as statements whose result is dropped
         if (!localOwned && !pathOwned) v(e, 'param-mutation', `${name} on \`${r.getText(sf)}\`, which is not a local array`);
         if (name === 'pop' && e.arguments.length) v(e, 'unsupported-call', 'pop takes no argument');
-        if (name === 'sort') { const cb = e.arguments[0]; if (e.arguments.length !== 1 || !ts.isArrowFunction(cb) || cb.parameters.length !== 2) return v(e, 'unsupported-call', 'sort as a statement needs one comparator, an arrow of two parameters (the default order compares strings)'); return callback(cb, 2); }
+        if (name === 'sort') { const cb = e.arguments[0]; if (e.arguments.length !== 1 || !ts.isArrowFunction(cb) || cb.parameters.length !== 2) return v(e, 'unsupported-call', memberRow('sort-default-statement').message()); return callback(cb, 2); }
         if ((name === 'shift' || name === 'reverse') && e.arguments.length) v(e, 'unsupported-call', `${name} takes no argument`);
         if (name === 'splice' && (e.arguments.length < 2 || e.arguments.some(ts.isSpreadElement))) v(e, 'unsupported-call', 'splice as a statement needs a start, a count and plain items');
         return e.arguments.forEach((a) => expr(a));
@@ -1061,7 +1121,12 @@ export function lintFile(file, ranges = null, opts = {}) {
   const promiseReadings = opts.promiseReadings ?? new Set();
   let opaquePromiseDepth = 0;
   function opaquePromise(read) { opaquePromiseDepth++; try { return read(); } finally { opaquePromiseDepth--; } }
+  // a named handler whose value no outside call can take (a function held outside the unit) has one reading, the exact
+  // one: its findings stand instead of the outside-call fallback, which the translator cannot read (design/named-then.md)
+  const handlerArity = (form) => (form.kind === 'finally' ? 0 : 1);
+  const valuelessHandler = (form) => ['then', 'catch', 'finally'].includes(form.kind) && !!form.handler && !namedPromiseHandler(checker, form.handler, sf, current, handlerArity(form)).value;
   function readPromise(e, form) {
+    if (valuelessHandler(form)) { const start = out.length; readExactPromise(e, form); if (out.length === start) promiseReadings.add(`${e.pos}:${e.end}`); return true; }
     if (form.kind !== 'executor' && (['race', 'allSettled', 'any'].includes(form.kind) || !promiseConsumed(e, checker, sf))) return false;
     const start = out.length, aliases = new Set(aliasLocals), types = new Set(seenTypes), selected = new Set(promiseReadings);
     readExactPromise(e, form);
@@ -1071,12 +1136,12 @@ export function lintFile(file, ranges = null, opts = {}) {
     for (const [target, saved] of [[aliasLocals, aliases], [seenTypes, types], [promiseReadings, selected]]) { target.clear(); for (const value of saved) target.add(value); }
     return false;
   }
-  function unsafePromiseCallee(u, seen = new Set()) {
+  function unsafePromiseCallee(u, seen = new Set(), throws = true) { // throws false: a then, catch or finally handler's throw rejects the derived promise (the translator's faultHandlerBody), so only a mutation is unsafe
     if (!u || !u.body || seen.has(u.name)) return false; // a declared function without a body is refused on its own (unsupported-syntax)
     seen.add(u.name); let unsafe = false;
     const w = (x) => {
-      if (ts.isThrowStatement(x) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;
-      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), seen)) unsafe = true;
+      if ((throws && ts.isThrowStatement(x)) || (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment) || (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text))) unsafe = true;
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), seen, throws)) unsafe = true;
       ts.forEachChild(x, w);
     };
     w(u.body); return unsafe;
@@ -1086,28 +1151,25 @@ export function lintFile(file, ranges = null, opts = {}) {
     try { return callback(cb, null); } finally { promiseCallbacks.delete(cb); }
   }
   function promiseHandler(a, arity) {
-    if (ts.isIdentifier(a)) {
-      const o = declOf(a), u = units.get(a.text);
-      const sg = checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call)[0];
-      if (!sg || sg.typeParameters?.length || checker.getSignaturesOfType(tOf(a), ts.SignatureKind.Call).length !== 1 || sg.parameters.some((p) => p.valueDeclaration && ts.isParameter(p.valueDeclaration) && (p.valueDeclaration.dotDotDotToken || p.valueDeclaration.initializer || p.valueDeclaration.questionToken)) || sg.parameters.length > arity || (o.kind !== 'unit' && o.kind !== 'import' && o.kind !== 'other')) return v(a, 'promise-handler', 'use an arrow or a named same-file or imported function with at most one plain parameter');
+    if (ts.isIdentifier(a) || !namedPromiseHandler(checker, a, sf, current, arity).value) { // a name, or a member path holding an outside function
+      const named = namedPromiseHandler(checker, a, sf, current, arity), u = named.origin === 'unit' ? units.get(a.text) : null;
+      if (!named.admit) return v(a, named.rule, named.message);
       if (u) {
-        if (unsafePromiseCallee(u) || u.params.some((p) => p.initializer || p.dotDotDotToken || p.questionToken || !ts.isIdentifier(p.name))) return v(a, 'promise-handler', 'inline a handler that throws or mutates so its fault and state are visible');
+        if (unsafePromiseCallee(u, new Set(), false) || u.params.some((p) => p.initializer || p.dotDotDotToken || p.questionToken || !ts.isIdentifier(p.name))) return v(a, 'promise-handler', 'inline a handler that mutates so its state is visible');
       }
-      const rt = sg.getReturnType();
-      if (isAny(rt) || (!isNativePromise(rt, checker) && checker.getPropertyOfType(rt, 'then'))) return v(a, 'promise-thenable', 'give a named handler a plain or native Promise return type');
       return checkIdent(a, true);
     }
     if (!ts.isArrowFunction(a) || a.typeParameters?.length || a.parameters.length > arity || a.parameters.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken)) return v(a, 'promise-handler', 'use an arrow with plain parameters');
-    promiseBody(a.body);
+    promiseBody(a.body, true);
     const values = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) promiseValueType(x.expression); ts.forEachChild(x, values); };
     if (ts.isBlock(a.body)) values(a.body); else promiseValueType(a.body);
     promiseCallback(a);
   }
-  function promiseBody(body) {
+  function promiseBody(body, handler = false) { // handler: a then, catch or finally handler, whose throw rejects the derived promise
     const w = (x) => {
       if (ts.isFunctionLike(x)) return;
-      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text))) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
-      if (ts.isStatement(x) && ![K.Block, K.VariableStatement, K.ExpressionStatement, K.IfStatement, K.ReturnStatement, K.ThrowStatement, K.EmptyStatement].includes(x.kind)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
+      if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), new Set(), !handler)) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
+      if (ts.isStatement(x) && !inlinePromiseStatementKind(x)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
       ts.forEachChild(x, w);
     };
     w(body);
@@ -1160,7 +1222,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
 
   function checkStringLiterals(n) {
-    if ((ts.isStringLiteral(n) || ts.isTemplateLiteralToken(n) || ts.isJsxText(n)) && /[\uD800-\uDFFF]/.test(n.text)) v(n, 'string-code-unit', 'use BMP scalar literals within the string model; astral and surrogate strings need lane B');
+    if ((ts.isStringLiteral(n) || ts.isTemplateLiteralToken(n) || ts.isJsxText(n)) && loneSurrogate(n.text)) v(n, 'string-code-unit', LONE_SURROGATE_WHY); // one decision with the translator (lower.mjs)
     ts.forEachChild(n, checkStringLiterals);
   }
   // value steps keep the statement ownership checks and reject conditional execution
@@ -1192,7 +1254,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const target = update ? e.operand : e.left;
     const rule = update ? 'update-expression' : 'assignment-expression';
     if (update && !isNum(tOf(target))) return v(e, rule, 'increment a numeric local or numeric field');
-    if (!update && ![K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) return v(e, rule, 'write this assignment as a statement');
+    if (!update && valueAssignmentWhy(e.operatorToken.kind)) return v(e, rule, valueAssignmentWhy(e.operatorToken.kind)); // one decision with the translator (lower.mjs)
     if (!update && e.operatorToken.kind !== K.EqualsToken && !isNum(tOf(target)) && !(e.operatorToken.kind === K.PlusEqualsToken && isStr(tOf(target)) && isStr(tOf(e.right)))) return v(e, rule, 'use numeric compound assignment or string += with a string value');
     let root = target;
     while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root)) root = root.expression;
@@ -1231,6 +1293,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
 
   function expr(e) {
+    { const why = typeAssertion(checker, e); if (why) v(e, 'type-assertion', why); } // a value whose type nothing checked, in a slot that reads it as its declared type
     switch (e.kind) {
       case K.Identifier: return checkIdent(e);
       case K.NumericLiteral: case K.BigIntLiteral: case K.StringLiteral: case K.TrueKeyword: case K.FalseKeyword: case K.NullKeyword: return;
@@ -1250,7 +1313,11 @@ export function lintFile(file, ranges = null, opts = {}) {
         // passes it through an uninterpreted conversion, the same on both sides
         return expr(e.expression);
       }
-      case K.NonNullExpression: return expr(e.expression); // absence becomes an uninterpreted value
+      case K.NonNullExpression: { // `x!` on a value that may be absent is a payload read: carried where the unit's own flow tests it, refused elsewhere
+        const id = payloadRead(checker, e);
+        if (id && !payloadStatement(checker, e, id)) v(e, 'non-null-assertion', '`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)');
+        return expr(e.expression);
+      }
       case K.PrefixUnaryExpression:
         if (e.operator === K.ExclamationToken || e.operator === K.MinusToken) return expr(e.operand);
         if (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) return operatorValue(e);
@@ -1308,8 +1375,9 @@ export function lintFile(file, ranges = null, opts = {}) {
         return;
       case K.ObjectLiteralExpression:
         if (e.properties.some(ts.isGetAccessorDeclaration) && !e.properties.every((p) => (ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p) || ts.isMethodDeclaration(p) || ts.isGetAccessorDeclaration(p)) && p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)))) return v(e, 'unsupported-syntax', 'literal getters need fixed named fields; use a class for spread or computed accessors');
+        { const why = spreadReadWhy(checker, e); if (why) v(e, 'spread-source', why); } // common.mjs spreadReadWhy: one spread, carried with its rest (open-datatype)
         e.properties.forEach((p) => {
-          if (ts.isSpreadAssignment(p)) { if (localMethodLiteral(tOf(p.expression))) return v(p, 'object-method-mutation', 'spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly'); return expr(p.expression); }
+          if (ts.isSpreadAssignment(p)) { if (localMethodLiteral(tOf(p.expression))) return v(p, 'object-method-mutation', 'spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly'); const cs = copySource(checker, p.expression, p); if (cs.kind === 'refuse') return v(p, 'spread-source', `\`{ ...${p.expression.getText(sf).slice(0, 40)} }\` copies every own key: ${cs.why} (escape spread_source)`); return expr(p.expression); } // a copy carries everything its source carries: built keys, or an uninterpreted copy of the source (common.mjs copySource)
           if (ts.isShorthandPropertyAssignment(p)) return checkIdent(p.name);
           if (ts.isPropertyAssignment(p)) {
             if (literalProtoMember(p)) return v(p, 'prototype', '`__proto__:` in a literal sets the object\'s prototype, not a key; the value reading has only plain objects (prototype Object.prototype); write the key computed as `[\'__proto__\']` for an own key, or leave it out');
@@ -1329,10 +1397,7 @@ export function lintFile(file, ranges = null, opts = {}) {
             const scan = (x) => {
               const target = ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment ? x.left : (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [K.PlusPlusToken, K.MinusMinusToken].includes(x.operator) ? x.operand : ts.isDeleteExpression(x) ? x.expression : null;
               if (target && ts.isIdentifier(rootOf(target))) { const id = rootOf(target), d = checker.getSymbolAtLocation(id)?.valueDeclaration; if (d && !(d.pos >= p.pos && d.end <= p.end)) v(target, 'closure-mutation', 'a literal method cannot change a captured binding; use a class for shared state'); }
-              if (ts.isPropertyAccessExpression(x) && x.expression.kind === K.ThisKeyword && !nonNull(tOf(x)).every(isPrim) && !e.properties.some((q) => ts.isMethodDeclaration(q) && q.name?.text === x.name.text)) v(x, 'object-method-mutation', 'literal this reads scalar fields; reference-valued receiver state needs a class');
-              if (x.kind === K.ThisKeyword && !(x.parent && ts.isPropertyAccessExpression(x.parent) && x.parent.expression === x)) v(x, 'object-method-mutation', 'keep literal this as a direct data-field read; use a class for aliases or rebinding');
-              if (target && rootOf(target).kind === K.ThisKeyword) v(target, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
-              if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && MUT_NAMES.has(x.expression.name.text) && rootOf(x.expression.expression).kind === K.ThisKeyword) v(x, 'object-method-mutation', 'literal method fields are immutable; use a class for mutable receiver state');
+              literalThisRules(x, target, e);
               ts.forEachChild(x, scan);
             };
             scan(p.body);
@@ -1401,6 +1466,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (op === K.InKeyword) { // required properties and dictionaries are exact (an own key or a name of Object.prototype); open-record absence stays uninterpreted
       const pr = inPrototypeReach(checker, sf, e); // the made object reaches this unit (common.mjs prototypeReach); other units keep the reading
       if (pr) return v(e, 'prototype', `this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pr.maker.getStart(sf))}), and ${pr.why}; \`in\` reads the prototype; test an own key with \`Object.prototype.hasOwnProperty.call(o, k)\``);
+      { const why = openRecordIn(checker, e.left, tOf(e.right)); if (why) return v(e, 'dynamic-key', why); } // an open record (common.mjs openRecordIn)
       expr(e.left); expr(e.right); return;
     }
     if (op === K.CommaToken) return commaValue(e);
@@ -1422,7 +1488,7 @@ export function lintFile(file, ranges = null, opts = {}) {
       // against a literal (a negated number included) === is true only on the literal's primitive arm holding its value
       const eqLit = (x) => { x = unparenX(x); return litSide(x) || (ts.isPrefixUnaryExpression(x) && x.operator === K.MinusToken && ts.isNumericLiteral(x.operand)); };
       if (!nul(e.left) && !nul(e.right) && (mixed(lt) || mixed(rt)) && !eqLit(e.left) && !eqLit(e.right)) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal; narrow it before comparing it with another value');
-      else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt)) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields');
+      else if (!nul(e.left) && !nul(e.right) && !litSide(e.left) && !litSide(e.right) && !prim(lt) && !prim(rt) && !(plainNode(lt) && plainNode(rt))) v(e, 'reference-equality', '=== on arrays and records compares references; compare fields'); // two plain data records or arrays: node identity, which the heap core reads as Ref equality (heap.mjs); outside the core the identity guard withholds the value reading's lemma
     }
   }
 
@@ -1472,45 +1538,6 @@ export function lintFile(file, ranges = null, opts = {}) {
   // callee is present. The callee is a local function value, a function field of a record path rooted at a local (each
   // link a plain record, the last one optional under `?.`), or a function field of `this` in a class; the expression
   // around it holds no assignment, update or comma, whose value reading evaluates every operand before any branch
-  const sameFileClassT = (t) => !!t.symbol?.declarations?.some((d) => (ts.isClassDeclaration(d) || ts.isClassExpression(d)) && d.getSourceFile() === sf);
-  const valueStepIn = (n) => { if (!n || ts.isFunctionLike(n)) return false; if ((ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) || ts.isCommaListExpression(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind === K.CommaToken)) return true; let found = false; ts.forEachChild(n, (c) => { if (!found && valueStepIn(c)) found = true; }); return found; };
-  function optionalCallRefusal(e) {
-    let top = e;
-    for (let p = e.parent; p && !ts.isStatement(p) && !ts.isFunctionLike(p) && !ts.isVariableDeclaration(p) && !ts.isParameter(p) && !ts.isCaseClause(p) && !ts.isSourceFile(p); p = p.parent) top = p;
-    const root = ts.isBinaryExpression(top) && top.operatorToken.kind >= K.FirstAssignment && top.operatorToken.kind <= K.LastAssignment && top.parent && ts.isExpressionStatement(top.parent) ? top.right : top;
-    if (valueStepIn(root)) return 'write the optional call in its own statement; an assignment, update or comma beside it evaluates every operand before the call decides';
-    let f = e.expression;
-    const plainRecord = (t) => nonNull(t).length === 1 && isRecordish(nonNull(t)[0]) && !isAny(nonNull(t)[0]) && !sameFileClassT(nonNull(t)[0]) && !localMethodLiteral(nonNull(t)[0]);
-    const fnType = (t) => { const parts = nonNull(t); if (parts.length !== 1 || isAny(parts[0])) return false; const sg = checker.getSignaturesOfType(parts[0], ts.SignatureKind.Call); return sg.length === 1 && !sg[0].typeParameters?.length; }; // one signature, not generic: its result is the present branch's
-    if (ts.isIdentifier(f)) {
-      if (declOf(f).kind !== 'local') return 'an optional call reads a local function value; bind an imported or global callee to a local first';
-      return fnType(tOf(f)) ? null : 'an optional call needs a callee typed as one nongeneric function or undefined; narrow an opaque or overloaded value first';
-    }
-    if (!ts.isPropertyAccessExpression(f)) return 'an optional call reads a named callee; bind a computed callee to a local first';
-    const recv = f.expression, name = f.name.text;
-    if (recv.kind === K.ThisKeyword) {
-      if (!currentClass || objectMethod || thisParam) return 'an optional call on `this` reads a field of a class receiver';
-      if (units.has(`${currentClass.name?.text}.${name}`)) return null; // a method of the class: never absent
-      const p = checker.getPropertyOfType(tOf(recv), name);
-      return p && fnType(checker.getTypeOfSymbolAtLocation(p, f)) && !p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)) ? null : 'an optional call on `this` reads a function field of the class';
-    }
-    // the receiver: a path of plain records from a local; `?.` before the field allows an absent last record
-    let link = recv;
-    for (;;) {
-      if (ts.isPropertyAccessExpression(link) && link.questionDotToken) return 'an optional call reads a field of a nonoptional record path; narrow the path first';
-      if (ts.isIdentifier(link)) { if (declOf(link).kind !== 'local') return 'an optional call reads a function field of a record held in a local or a parameter'; break; }
-      if (!ts.isPropertyAccessExpression(link)) return 'an optional call reads a function field of a record path; bind the receiver to a local first';
-      link = link.expression;
-    }
-    for (let x = recv; ts.isPropertyAccessExpression(x); x = x.expression) if (!plainRecord(tOf(x.expression)) || nonNull(tOf(x.expression)).length !== (tOf(x.expression).types?.length ?? 1)) return 'an optional call reads a field of a nonoptional record path; narrow the path first';
-    const rt = tOf(recv);
-    if (!plainRecord(rt)) return 'an optional call reads a function field of a plain record; narrow an opaque, class or union receiver first';
-    if (isOptional(rt) && !f.questionDotToken) return 'an optional call reads a field of a present record';
-    const p = checker.getPropertyOfType(nonNull(rt)[0], name);
-    if (!p || !fnType(checker.getTypeOfSymbolAtLocation(p, f))) return 'an optional call reads a declared function field of the record';
-    return null;
-  }
-  const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
   function call(e) {
     conditionalEffect(e);
     const generatorDecl = checker.getResolvedSignature(e)?.declaration;
@@ -1525,7 +1552,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (moduleLoader(checker, e, sf, current)) return argsOf(e);
     { const md = metadataCall(checker, e, sf); if (md) { if (!(ts.isIdentifier(f.expression) && f.expression.text === 'Reflect')) expr(f.expression); return e.arguments.forEach((a) => expr(a)); } } // a metadata API of the decorator table (translate/decorators.json): the one admitted use of Reflect, a cell of the world
     { const ok = ownKeyTest(checker, e, sf); if (ok) { if (ok.refuse) return v(e, 'prototype', ok.refuse); expr(ok.obj); return expr(ok.key); } } // the own-key test on a dictionary or a record of required fields
-    if (e.questionDotToken) { const why = optionalCallRefusal(e); if (why) v(e, 'optional-chain', why); }
+    if (e.questionDotToken) { const shape = optionalCallShape(checker, e, sf, { current, currentClass, objectMethod, thisParam, units }).sourcePathAdmission; if (shape.why) v(e, 'optional-chain', shape.why); }
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
       const o = declOf(f);
@@ -1554,7 +1581,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         void 0; // Math.random is a world transition (version 3)
         if (name === 'floor' || name === 'trunc') { floorDepth++; e.arguments.forEach(expr); floorDepth--; return; }
         if (name === 'max' || name === 'min') {
-          if (!nonemptyMathArgs(e)) v(e, 'math-empty', 'Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback');
+          if (!nonemptyMathArgs(checker, e)) v(e, 'math-empty', 'Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback');
           if (e.arguments.some(ts.isSpreadElement) || e.arguments.length !== 2) { const numeric = (a) => { if (ts.isSpreadElement(a) && ts.isArrayLiteralExpression(a.expression)) return a.expression.elements.every(numeric); const t = ts.isSpreadElement(a) ? checker.getTypeArguments(tOf(a.expression))[0] : tOf(a); return !!t && (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & TF.NumberLike)); }; if (!e.arguments.every(numeric)) v(e, 'spread', 'Math sequence arguments must be numbers; narrow opaque values before spreading'); }
           return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
         }
@@ -1654,6 +1681,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       expr(recv);
       if (parts.every(isPromiseT) && ['then', 'catch', 'finally'].includes(name)) return argsOf(e); // a promise chain: an outside call; its handlers are opaque callbacks
       if (parts.every(isRecordish)) return argsOf(e); // a method of a record type (an interface with methods, a class instance): uninterpreted, keyed by the type
+      if (name === 'toString' && !e.arguments.length) return v(e, 'unsupported-call', memberRow('tostring-object').message(checker.typeToString(rt)));
+      if (parts.length > 1) return v(e, 'unsupported-call', memberRow('method-on-union').message(name, checker.typeToString(rt)));
       return v(e, 'unsupported-call', `method .${name}() on ${checker.typeToString(rt)} is outside the subset`);
     }
     if (e.expression.kind === K.SuperKeyword && currentClass && currentFn && ts.isConstructorDeclaration(currentFn)) return argsOf(e); // `super(args)` in a constructor: the parent's constructor on this handle, a transition
@@ -1671,11 +1700,11 @@ export function lintFile(file, ranges = null, opts = {}) {
     const admit = () => { expr(recv); e.arguments.forEach((a) => expr(a)); return true; };
     if (arr && ARRAY_VALUE_MUTATORS.has(name)) {
       if (!noSpread() || (name !== 'splice' && e.arguments.length)) return refuse('unsupported-call', name === 'splice' ? 'splice as a value takes plain arguments' : `${name} takes no argument`);
-      if (e.flags & ts.NodeFlags.OptionalChain) return refuse('unsupported-call', `.${name}() in an optional chain changes a receiver that may be absent; check it first`);
+      if (e.flags & ts.NodeFlags.OptionalChain) return refuse('unsupported-call', memberRow('optional-chain-mutator').message(name));
       if (freshArray(checker, recv, isGlobal)) return admit(); // nobody else holds the receiver: only the value is read
       const r = unparenX(recv);
       const o = ts.isIdentifier(r) ? declOf(r) : null;
-      if (!o || o.kind !== 'local') return refuse('unsupported-call', `.${name}() as a value changes \`${recv.getText(sf).slice(0, 40)}\`; call it on a local array or on a fresh one`);
+      if (!o || o.kind !== 'local') return refuse('unsupported-call', memberRow('world-field-mutator').message(name, recv.getText(sf).slice(0, 40)));
       if (isParam(o.decl)) return refuse('param-mutation', `.${name}() as a value changes the parameter \`${r.text}\`; copy it to a local first`);
       if (aliasHere(o.decl, e)) return refuse('alias-mutation', `\`${r.text}\` is another name for a value this function was handed; copy it first`);
       if (!ownedHere(o.decl) || callbackStack.length || forEachDepth) return refuse('closure-mutation', `.${name}() as a value inside a callback changes \`${r.text}\`; use a for-of loop`);
@@ -1713,7 +1742,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (LOCALE_READS.has(name) && (str || parts.every((t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike))))) {
       if (str && name === 'toLocaleString') return false;
       if (!str && name !== 'toLocaleString') return false;
-      if (callbackStack.length) return refuse('unsupported-call', `.${name}() reads the host's locale (a world read); call it outside the callback`);
+      if (callbackStack.length && !callbackStack.every((c) => loopCallbacks.has(c))) return refuse('unsupported-call', memberRow('locale-in-callback').message(name)); // every enclosing callback is a loop body, so the transitions run in index order
       if (!noSpread()) return refuse('unsupported-call', `.${name}() takes plain arguments`);
       return admit();
     }
@@ -1723,7 +1752,10 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (e.arguments.length !== 1 || !noSpread()) return refuse('unsupported-call', 'matchAll takes one pattern');
       if (ts.isRegularExpressionLiteral(a)) return a.text.slice(a.text.lastIndexOf('/') + 1).includes('g') ? admit() : refuse('unsupported-call', 'matchAll needs the g flag; without it the call throws a TypeError');
       if (isStr(tOf(a))) return admit();
-      return refuse('unsupported-call', "matchAll starts at its pattern's lastIndex, which another call may have moved; pass a regular expression literal with the g flag, or a string");
+      const fresh = freshRegexFlags(a, isGlobal); // `new RegExp(source, "g")`: a new object, lastIndex 0
+      if (fresh !== null) return fresh.includes('g') && !fresh.includes('y') ? admit() : refuse('unsupported-call', 'matchAll needs the g flag (and not y); without it the call throws a TypeError');
+      if (ts.isIdentifier(a) && regexNeverAdvanced(checker, a, sf, isGlobal) !== null) return admit(); // a const g pattern nothing in the file advances: lastIndex stays 0 (library-rows.mjs, row matchall-named)
+      return refuse('unsupported-call', memberRow('matchall-named').message());
     }
     if (str && name === 'search') return e.arguments.length === 1 && noSpread() ? admit() : refuse('unsupported-call', 'search takes one pattern');
     return false;
@@ -1824,6 +1856,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           else if (!(o.kind === 'global' && ['String', 'Number', 'Boolean', 'parseInt', 'parseFloat', 'isNaN', 'isFinite'].includes(f.text))) found = true;
         } else if (ts.isPropertyAccessExpression(f)) {
           const r = f.expression, t = nonNull(tOf(r));
+          if (LOCALE_READS.has(f.name.text) && t.length && t.every((x) => !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike)))) { found = true; return; } // a locale read is a world transition: the callback is a loop body (library-rows.mjs, LIBRARY_MEMBER_ROWS)
           const pureGlobal = ts.isIdentifier(r) && ['Math', 'JSON', 'Object', 'Array', 'String', 'Number', 'Boolean'].includes(r.text) && declOf(r).kind === 'global' && !(r.text === 'Math' && f.name.text === 'random');
           if (!pureGlobal && !t.every((x) => isArrayLike(checker, x) || isStr(x) || isNum(x) || isSetT(x) || isMapT(x))) found = true;
           if (['map', 'filter', 'find', 'findIndex', 'some', 'every', 'flatMap', 'reduce', 'forEach'].includes(f.name.text) && n.arguments[0]) found ||= callbackNeedsLoop(n.arguments[0], seen);
@@ -1906,11 +1939,13 @@ export function lintFile(file, ranges = null, opts = {}) {
   // JSX: an element is a value (a tag, a record of attributes, a list of children). A tag names a component or an
   // intrinsic element; a handler attribute is a callback value keyed by its text; every other attribute and every child
   // expression is an ordinary expression
-  // a deferred handler captures values; a mutable render binding would need a shared cell
+  // a deferred handler captures values; a mutable render binding would need a shared cell. The capture table (react.mjs,
+  // captureKind) names the kinds carried as they are: a hook result whose methods are requests, a record read, a ref cell
   function reactCapture(e) {
     const cb = arrowOf(checker, e);
     if (!cb) return;
     for (const id of closureReads(checker, cb)) {
+      if (captureKind(checker, id, cb, currentFn?.body)) continue; // a carried capture kind: a hook result's requests, a record read, a ref cell read (react.mjs, the capture table)
       const sym = checker.getSymbolAtLocation(id), d = sym?.valueDeclaration;
       let unsafe = d && (d.pos > cb.pos || (ts.isVariableDeclaration(d) && !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)));
       const root = (n) => { while (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isParenthesizedExpression(n)) n = n.expression; return n; };
@@ -1971,73 +2006,6 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (ts.isIdentifier(r) && r.text === 'Math' && ['floor', 'trunc', 'abs'].includes(f.name.text)) return false;
     return !nonNull(tOf(r)).some((t) => isArrayLike(checker, t) || isStr(t) || isSetT(t) || isMapT(t));
   }
-  // a directly enclosing conditional proves a sole array spread nonempty on the chosen branch
-  // Math.min/max over a spread is read on a nonempty list (MinSeq/MaxSeq require it): the spread's length is the length of
-  // a name (the name itself, `xs.map(f)`, `xs.slice()`, `[...xs]`), and a test that dominates the call says that length is
-  // not zero: a conditional, an if, `&&` / `||`, or an earlier `if (...) return` (or throw, break, continue) in the same
-  // statement list, in any equivalent form (`xs.length`, `> 0`, `>= 1`, `!== 0`, `0 < xs.length`, `!xs.length` and
-  // `=== 0` on the other branch); the name is not written between the test and the call
-  function nonemptyMathArgs(e) {
-    const filled = (a) => !ts.isSpreadElement(a) || (ts.isArrayLiteralExpression(a.expression) && a.expression.elements.some(filled));
-    if (e.arguments.some(filled)) return true;
-    if (e.arguments.length !== 1 || !ts.isSpreadElement(e.arguments[0])) return false;
-    const lengthName = (x) => { // the name whose length the value's length is
-      x = unparenX(x);
-      if (ts.isIdentifier(x)) return isArrayExpr(x) ? checker.getSymbolAtLocation(x) : null;
-      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && !x.expression.questionDotToken && isArrayExpr(x.expression.expression) && ((x.expression.name.text === 'map' && x.arguments.length === 1) || (x.expression.name.text === 'slice' && !x.arguments.length))) return lengthName(x.expression.expression);
-      if (ts.isArrayLiteralExpression(x) && x.elements.length === 1 && ts.isSpreadElement(x.elements[0])) return lengthName(x.elements[0].expression);
-      return null;
-    };
-    const sym = lengthName(e.arguments[0].expression);
-    if (!sym) return false;
-    const isLen = (x) => { x = unparenX(x); return ts.isPropertyAccessExpression(x) && x.name.text === 'length' && !x.questionDotToken && ts.isIdentifier(unparenX(x.expression)) && checker.getSymbolAtLocation(unparenX(x.expression)) === sym; };
-    // the test c, known to be `truth`, says the length is above zero
-    const implies = (c, truth) => {
-      c = unparenX(c);
-      if (ts.isPrefixUnaryExpression(c) && c.operator === K.ExclamationToken) return implies(c.operand, !truth);
-      if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.AmpersandAmpersandToken) return truth && (implies(c.left, true) || implies(c.right, true));
-      if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.BarBarToken) return !truth && (implies(c.left, false) || implies(c.right, false));
-      if (isLen(c)) return truth;
-      if (!ts.isBinaryExpression(c)) return false;
-      let op = c.operatorToken.kind, lit = unparenX(c.right);
-      if (!isLen(c.left)) { if (!isLen(c.right)) return false; lit = unparenX(c.left); op = { [K.LessThanToken]: K.GreaterThanToken, [K.LessThanEqualsToken]: K.GreaterThanEqualsToken, [K.GreaterThanToken]: K.LessThanToken, [K.GreaterThanEqualsToken]: K.LessThanEqualsToken }[op] ?? op; }
-      if (!ts.isNumericLiteral(lit)) return false;
-      const n = Number(lit.text);
-      if (truth) return (op === K.GreaterThanToken && n >= 0) || (op === K.GreaterThanEqualsToken && n >= 1) || ((op === K.ExclamationEqualsEqualsToken || op === K.ExclamationEqualsToken) && n === 0);
-      return (op === K.LessThanEqualsToken && n >= 0) || (op === K.LessThanToken && n >= 1) || ((op === K.EqualsEqualsEqualsToken || op === K.EqualsEqualsToken) && n === 0);
-    };
-    const writes = (node, from, to) => { // a write of the name inside node between two positions
-      let hit = false;
-      const w = (x) => {
-        if (hit || x.end <= from || x.pos >= to) return;
-        if (ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym) {
-          let top = x; while (top.parent && (ts.isParenthesizedExpression(top.parent) || ts.isNonNullExpression(top.parent))) top = top.parent;
-          const p = top.parent;
-          if (p && ts.isBinaryExpression(p) && p.left === top && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) hit = true;
-          if (p && ts.isPropertyAccessExpression(p) && p.expression === top && (MUT_NAMES.has(p.name.text) || (p.name.text === 'length' && p.parent && ts.isBinaryExpression(p.parent) && p.parent.left === p))) hit = true;
-        }
-        ts.forEachChild(x, w);
-      };
-      w(node);
-      return hit;
-    };
-    // a statement that never completes normally: a jump, or a block ending in one (the statements before it cannot reach the end)
-    const exits = (st) => { if (ts.isBlock(st)) return st.statements.length > 0 && exits(st.statements[st.statements.length - 1]); return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
-    // a loop around the call runs it again after the statements that follow it: a write of the list anywhere in the loop can empty it for the next pass
-    let loopEnd = 0;
-    for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
-      const upto = Math.max(e.pos, loopEnd);
-      if (ts.isConditionalExpression(p) && child !== p.condition && implies(p.condition, p.whenTrue === child) && !writes(p, p.condition.end, upto)) return true;
-      if (ts.isIfStatement(p) && child !== p.expression && implies(p.expression, p.thenStatement === child) && !writes(p, p.expression.end, upto)) return true;
-      if (ts.isBinaryExpression(p) && child === p.right && ((p.operatorToken.kind === K.AmpersandAmpersandToken && implies(p.left, true)) || (p.operatorToken.kind === K.BarBarToken && implies(p.left, false))) && !writes(p, p.left.end, upto)) return true;
-      if ((ts.isBlock(p) || ts.isSourceFile(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) && p.statements) {
-        const k = p.statements.indexOf(child);
-        for (let i = k - 1; i >= 0; i--) { const g = p.statements[i]; if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement) && implies(g.expression, false) && !writes(p, g.end, upto)) return true; }
-      }
-      if (ts.isIterationStatement(p, false)) loopEnd = Math.max(loopEnd, p.end);
-    }
-    return false;
-  }
   const argsOf = (e) => (e.arguments ?? []).forEach((a) => ts.isSpreadElement(a) ? (outsideSpread(e) ? spreadArray(a) : v(a, 'spread', 'spread arguments need an outside callee or a supported sequence operation')) : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
     const name = e.name.text;
@@ -2072,9 +2040,19 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (cs.length === 1 && isRecordish(cs[0]) && (checker.getPropertyOfType(cs[0], name) || hasStringIndex(cs[0]))) continue;
         return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)}: constrain the type parameter to one record declaring it`);
       }
-      if (!isRecordish(t)) return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
-      if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length) return v(e, 'unsupported-member', `property .${name} is not declared on ${checker.typeToString(t)}`);
+      if (!isRecordish(t)) {
+        if (['push', 'unshift', 'pop', 'shift', 'splice'].includes(name) && isArrayLike(checker, t) && e.parent && ts.isPropertyAccessExpression(e.parent) && e.parent.expression === e && ['apply', 'call', 'bind'].includes(e.parent.name.text)) { const a = e.parent.parent && ts.isCallExpression(e.parent.parent) && e.parent.parent.expression === e.parent ? applyCall(e.parent.parent, checker) : null; return v(e, 'unsupported-member', memberRow('push-apply-value').message(name, a?.why ?? null)); } // an exact apply/call was read as the direct call before the lint ran (common.mjs normaliseApplyCalls); what is left is a bound value, a borrowed method on another value, or a list that is not an array
+        if ((name === 'index' || name === 'groups') && /^RegExp(Exec|Match)Array$/.test(t.symbol?.name ?? '')) return v(e, 'unsupported-member', memberRow(name === 'index' ? 'match-index' : 'match-groups').message());
+        return v(e, 'unsupported-member', `property .${name} on ${checker.typeToString(t)} is outside the subset`);
+      }
+      if (!checker.getPropertyOfType(t, name) && openRecordType(checker, t) && !worldRootedRead(e)) { const w = onWritePath(e) ? { rule: 'dynamic-key', why: OPEN_RECORD_WHY(checker.typeToString(t)) } : openRecordReadWhy(checker, t, name); if (w) return v(e, w.rule, w.why); return; } // an undeclared name on an open record: a read of its dictionary of undeclared keys (common.mjs openRecordReadWhy); a write stays refused
+      if (!checker.getPropertyOfType(t, name) && !hasStringIndex(t) && checker.getPropertiesOfType(t).length && !(incompleteType(checker, t) && !onWritePath(e) && !writesThroughIncomplete(checker, currentFn))) return v(e, 'unsupported-member', memberRow('incomplete-type-member').message(name, checker.typeToString(t))); // a type that reaches an unresolved module has unknown members (library-rows.mjs, incompleteType)
     }
+  }
+  // a read rooted at an outside or lib global (`process.env[k]`, `process.env.K`): a read of the world, which holds every key
+  function worldRootedRead(e) {
+    let r = e.expression; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isAsExpression(r) || ts.isNonNullExpression(r)) r = r.expression;
+    return ts.isIdentifier(r) && ((outsideRoot(checker, r, sf, current) && r.text !== 'require') || libGlobalRoot(checker, r, sf, current));
   }
   // an open key (a string, a number, an unknown) on a plain record of data fields, or a number-keyed dictionary, reads as one
   // uninterpreted lookup of the value and the key; a key call, a method, a getter, a class instance or a symbol stays out
@@ -2111,9 +2089,18 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (keys?.some((k) => ['constructor', 'prototype', '__proto__'].includes(k))) return v(e, 'prototype', 'this bracket key reaches the prototype chain; read a declared data field');
     if (parts.some(isAny)) return; // opaque: uninterpreted
     const dict = parts.every((t) => hasStringIndex(t) && !checker.getPropertiesOfType(t).length);
+    // a literal key naming a member of Object.prototype (`d["toString"]`) reads that member on a dictionary that does not
+    // own it: the translator reads it as a value per name, a function of the key (translate.mjs protoValue), so it is a
+    // dictionary key like any other (`constructor` and `__proto__` stay refused above)
     if (dict && (isStr(at) || isAny(at))) return;
     if (parts.every(isRecordish)) {
       if (parts.length !== 1 || parts.length !== (rt.flags & TF.Union ? rt.types.length : 1)) return v(e, 'dynamic-key', 'narrow the record receiver before indexing it');
+      // a record that declares fields and an index signature: its value reading holds the declared fields alone, so a key
+      // the type does not declare reads an entry the reading dropped (a copy of the declared fields would read alike)
+      // (a read rooted at an outside or lib global, `process.env[k]`, is a read of the world, which holds every key)
+      const openIndex = !worldRootedRead(e) && openRecordType(checker, parts[0]);
+      const INDEX_WHY = OPEN_RECORD_WHY(checker.typeToString(rt));
+      if (!keys && openIndex) { const w = onWritePath(e) ? { rule: 'dynamic-key', why: INDEX_WHY } : openRecordReadWhy(checker, parts[0], null) ?? (parts.length !== 1 ? { rule: 'dynamic-key', why: INDEX_WHY } : null); if (w) return v(e, w.rule, w.why); let keyCall = false; const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); }; visitKey(e.argumentExpression); if (keyCall) return v(e, 'dynamic-key', 'bind the computed key before reading the record; a key call may mutate its receiver'); return; } // a computed key on an open record: its field by name, else its dictionary of undeclared keys (common.mjs openRecordReadWhy)
       if (!keys) { const why = openKeyRefusal(e, parts[0], at); return why ? v(e, 'dynamic-key', why) : undefined; } // an open key: an uninterpreted lookup of the record value and the key
       let keyCall = false;
       const visitKey = (n) => { if (ts.isCallExpression(n) || ts.isNewExpression(n)) keyCall = true; ts.forEachChild(n, visitKey); };
@@ -2121,6 +2108,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (keyCall) return v(e, 'dynamic-key', 'bind the computed key before reading the record; a key call may mutate its receiver');
       if (localMethodLiteral(parts[0]) && keys.some((k) => checker.getPropertyOfType(parts[0], k)?.declarations?.some(ts.isGetAccessorDeclaration))) return v(e, 'dynamic-key', 'read a literal getter by its declared property name');
       const missing = keys.filter((k) => !checker.getPropertyOfType(parts[0], k));
+      if (missing.length && openIndex && keys.length === 1 && !onWritePath(e)) { const w = openRecordReadWhy(checker, parts[0], keys[0]); return w ? v(e, w.rule, w.why) : undefined; } // one undeclared literal key on an open record: its dictionary of undeclared keys (common.mjs openRecordReadWhy)
+      if (missing.length && openIndex) return v(e, 'dynamic-key', INDEX_WHY);
       if (missing.length) return v(e, 'dynamic-key', `key ${missing.map((k) => JSON.stringify(k)).join(', ')} is not declared on ${checker.typeToString(rt)}`);
       if (keys.some((k) => nonNull(checker.getTypeOfSymbolAtLocation(checker.getPropertyOfType(parts[0], k), e)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length))) return v(e, 'dynamic-key', 'call a method by its declared name; computed record reads select data fields');
       return;
@@ -2172,6 +2161,8 @@ export function lintFile(file, ranges = null, opts = {}) {
       if (!inScope) continue;
       checkedDiagSpans.push(st);
       current = st; currentFn = u.fn; thisParam = (u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this') ? u.params[0] : null; // a free function's declared `this` parameter is its receiver operand
+      { const why = untypedThisParam(checker, u.fn); if (why) v(u.params[0], 'this-param', why); } // a free function's receiver is read by its declared type; a `this` that names no type is refused, as the translator refuses it
+      { const why = untypedJsUnit(sf, u); if (why) v(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? st, 'untyped-js', why); } // a JavaScript unit's untyped input: refused by name, as the translator refuses it
       if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(st, shape.rule, shape.message); }
       if (!u.body) v(st, 'unsupported-syntax', 'function without a body');
       const sig = checker.getSignatureFromDeclaration(u.fn);
@@ -2190,7 +2181,36 @@ export function lintFile(file, ranges = null, opts = {}) {
       current = null; currentFn = null;
       continue;
     }
+    // the members of an exported or module-const object literal are units whose receiver is the literal: checked as a
+    // unit is, `this` under the literal receiver's rules (design/exported-units.md); the literal's other values are the
+    // module constant's initialiser, read as module constants are
+    for (const lu of literalMemberUnits(st)) {
+      if (!overlaps(sf, lu.node, ranges)) continue;
+      checkedDiagSpans.push(lu.node);
+      current = lu.node; currentFn = lu.fn; literalUnit = lu; objectMethod = lu.isArrow ? null : lu.node; currentClass = null; thisParam = null; // an arrow held by a property has no own `this`: `this` in it is the module's, refused as outside a method
+      { const why = untypedJsUnit(sf, lu); if (why) v(lu.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? lu.node, 'untyped-js', why); }
+      if (lu.fn.asteriskToken) { const shape = generators.shape(lu); if (shape.rule) v(lu.node, shape.rule, shape.message); }
+      const sig = checker.getSignatureFromDeclaration(lu.fn);
+      const rt = sig.getReturnType();
+      const inner = isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt;
+      if (!lu.isAsync && isPromiseT(rt)) promiseHandle(lu, lu.node);
+      checkType(inner, lu.typeNode ?? lu.node);
+      for (const p of lu.params) {
+        if (p.dotDotDotToken && !isArrayExpr(p.name)) v(p, 'param-form', 'a rest parameter is an array');
+        if (p.initializer) expr(p.initializer);
+        const names = []; bindingNames(p.name, names);
+        checkType(tOf(p.name), p);
+      }
+      checkStringLiterals(lu.node);
+      const scan = (x) => { const target = ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment ? x.left : (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [K.PlusPlusToken, K.MinusMinusToken].includes(x.operator) ? x.operand : ts.isDeleteExpression(x) ? x.expression : null; if (!lu.isArrow) literalThisRules(x, target, lu.literal); if (!(ts.isFunctionExpression(x) || ts.isFunctionDeclaration(x) || ts.isMethodDeclaration(x))) ts.forEachChild(x, scan); };
+      scan(lu.body);
+      if (ts.isBlock(lu.body)) stmts(lu.body.statements); else expr(lu.body);
+      current = null; currentFn = null; literalUnit = null; objectMethod = null;
+    }
     if (ts.isExportDeclaration(st) || ts.isExportAssignment(st)) continue;
+    // `module.exports = {...}` and `exports.x = {...}`: the CommonJS form of exporting the literal, read as `export default`
+    // and `export const` are (the literal's values are the module constant's initialiser; its members are units, above)
+    if (moduleLiterals(st).some((l) => l.form === 'module-exports' || l.form === 'exports-property')) { if (inScope) checkedDiagSpans.push(st); continue; }
     if (ts.isVariableStatement(st)) {
       if (st.declarationList.flags & ts.NodeFlags.Const) { if (inScope) { checkedDiagSpans.push(st); /* module constants are externals; their initialisers are not checked */ } continue; }
       if (inScope) for (const d of st.declarationList.declarations) {
@@ -2209,6 +2229,7 @@ export function lintFile(file, ranges = null, opts = {}) {
         if (u.accessor && !opts.accessorBodies) continue; // unreadable accessor bodies retain their opaque unit reading
         checkedDiagSpans.push(u.node);
         current = u.node; currentFn = u.fn; currentClass = st; thisParam = null; // a method's receiver is its class
+        { const why = untypedJsUnit(sf, u); if (why) v(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, 'untyped-js', why); }
         if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(u.node, shape.rule, shape.message); }
         const sig = checker.getSignatureFromDeclaration(u.fn);
         const rt = sig.getReturnType();
@@ -2230,6 +2251,26 @@ export function lintFile(file, ranges = null, opts = {}) {
     }
     else if (ts.isExpressionStatement(st) && (ts.isStringLiteral(st.expression) || ts.isNoSubstitutionTemplateLiteral(st.expression))) continue; // a directive ("use client", "use strict") is not code
     else v(st, 'toplevel-effect', 'code at module level runs on import; it is outside the subset');
+  }
+  // Callbacks use the same signature/body checks as other units, including contextual parameter types.
+  for (const u of units.values()) if (u.form === 'callback' && overlaps(sf, u.node, ranges)) {
+    checkedDiagSpans.push(u.node);
+    current = u.node; currentFn = u.fn; currentClass = null; literalUnit = null; objectMethod = null; thisParam = null;
+    for (const c of callbackInputs.get(u.node) ?? []) if (c.mutable) v(c.use, 'captured-mutable', `captured binding \`${c.use.text}\` may be written after this callback is created; capture a stable value`);
+    const why = callbackUntypedJsUnit(sf, u, checker);
+    if (why) v(u.node, 'untyped-js', why);
+    if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(u.node, shape.rule, shape.message); }
+    const sig = checker.getSignatureFromDeclaration(u.fn), rt = sig.getReturnType();
+    if (!u.isAsync && isPromiseT(rt)) promiseHandle(u, u.node);
+    checkType(isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt, u.typeNode ?? u.node);
+    for (const p of u.params) {
+      if (p.dotDotDotToken && !isArrayExpr(p.name)) v(p, 'param-form', 'a rest parameter is an array');
+      if (p.initializer) expr(p.initializer);
+      checkType(tOf(p.name), p);
+    }
+    checkStringLiterals(u.node);
+    if (ts.isBlock(u.body)) stmts(u.body.statements); else expr(u.body);
+    current = null; currentFn = null;
   }
   // only a finally that reads an alias or a shadowed binding needs these refusals
   const finallyGate = (n) => {
@@ -2294,7 +2335,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     if (IMPLICIT_ANY.has(d.code)) continue; // implicit any: opaque, admitted
     if (d.code === 18046 && !ownUnknown(d)) continue; // an unknown the unit did not write: opaque, admitted
     if (d.code === 2683 || d.code === 7041) { // an implicit receiver: an input the function does not declare, which the translator refuses
-      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: sf.text.slice(d.start, d.start + (d.length ?? 4)) });
+      out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: ownText.slice(d.start, d.start + (d.length ?? 4)) });
       continue;
     }
     if (d.code === 2339 || d.code === 2551) {
@@ -2353,14 +2394,14 @@ export function lintFile(file, ranges = null, opts = {}) {
     walkAdvice(sf);
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
-  for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
+  for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
   // the unit each finding sits in, and the advice for its rule
   const unitSpans = [...units.values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
   for (const st of sf.statements) for (const m of classMethodUnits(st)) unitSpans.push([m.name, lineOf(sf, m.node.getStart(sf)), lineOf(sf, m.node.getEnd())]);
   // the label of the advised rewrite: decided at the site for the three deciding rules (labelDecided), else the rule's own;
   // a rule with no advice entry suggests nothing, so its label is migration
   for (const f of out) {
-    const u = unitSpans.find(([, a, b]) => a <= f.line && f.line <= b); f.unit = u ? u[0] : null;
+    f.unit = findingUnit(sf, units, f)?.name ?? null;
     const a = ADVICE[f.rule], site = f.site; delete f.site;
     f.label = site?.label ?? a?.label ?? 'migration'; f.labelDecided = !!site;
     if (f.label === 'conditional') f.precondition = site?.precondition ?? a.precondition;

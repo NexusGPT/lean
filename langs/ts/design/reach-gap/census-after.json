@@ -1,0 +1,4127 @@
+{
+ "kinds": [
+  [
+   "objlit-exported",
+   "a direct method or function-valued property of an object literal that is exported (export const X = {...}, export default {...}, module.exports = {...}, exports.x = {...})"
+  ],
+  [
+   "objlit-module-const",
+   "the same, of an object literal bound to a module-level const that is not exported"
+  ],
+  [
+   "objlit-other",
+   "a method or function-valued property of any other object literal (nested literal, local literal, argument, let)"
+  ],
+  [
+   "exports-assign",
+   "the right side of module.exports = f, exports.x = f, module.exports.x = f"
+  ],
+  [
+   "prop-assign",
+   "the right side of any other property assignment a.b = f, a[k] = f"
+  ],
+  [
+   "class-field",
+   "a class field initialised with a function or arrow"
+  ],
+  [
+   "class-other",
+   "a class member not listed (a class expression, a nested or unnamed class, a computed or private name)"
+  ],
+  [
+   "callback",
+   "an argument of a call or new"
+  ],
+  [
+   "iife",
+   "the callee of a call (an immediately invoked function)"
+  ],
+  [
+   "nested",
+   "a function declaration or a variable initialiser inside another function"
+  ],
+  [
+   "top-other",
+   "a module-level declaration not listed (let or var, several declarators, an anonymous default export)"
+  ],
+  [
+   "other",
+   "anything else (a return value, an array element, a JSX attribute, a default parameter, a conditional)"
+  ]
+ ],
+ "rows": [
+  {
+   "name": "agent-nexus",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+   "ts": {
+    "files": 2074,
+    "unreadable": 0,
+    "functions": 4563,
+    "listed": 2950,
+    "unlisted": 1613,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 6,
+     "objlit-module-const": 7,
+     "objlit-other": 203,
+     "exports-assign": 0,
+     "prop-assign": 13,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 1268,
+     "iife": 3,
+     "nested": 96,
+     "top-other": 0,
+     "other": 17
+    },
+    "examples": {
+     "objlit-exported": [
+      "packages/cli/src/commands/apps/_shared/rollback-target-refusals.ts:36",
+      "packages/cli/src/commands/apps/_shared/rollback-target-refusals.ts:37",
+      "packages/cli/src/commands/apps/_shared/rollback-target-refusals.ts:38"
+     ],
+     "objlit-module-const": [
+      "packages/cli/src/commands/workspace-mount/assert-ours-to-kill.ts:32",
+      "packages/cli/src/commands/workspace-mount/install/run-install-plan.ts:33",
+      "packages/cli/src/commands/workspace-mount/install/run-install-plan.ts:34"
+     ],
+     "objlit-other": [
+      "packages/cli/scripts/bundle-skills.ts:174",
+      "packages/cli/scripts/bundle-skills.ts:175",
+      "packages/cli/scripts/check-skills-lock.ts:220"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "packages/cli/src/commands/json-one-document/capture.ts:21",
+      "packages/cli/src/commands/json-one-document/capture.ts:22",
+      "packages/cli/src/commands/json-one-document/capture.ts:23"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "packages/cli/scripts/bundle-skills.ts:119",
+      "packages/cli/scripts/bundle-skills.ts:123",
+      "packages/cli/scripts/bundle-skills.ts:150"
+     ],
+     "iife": [
+      "packages/cli/src/commands/json-one-document/classify-error.ts:23",
+      "packages/cli/src/skills-corpus/command.ts:104",
+      "packages/sdk/src/http-client.ts:1396"
+     ],
+     "nested": [
+      "packages/cli/scripts/id-thread-sweep.ts:546",
+      "packages/cli/scripts/skills-drift/bundle-delta.ts:74",
+      "packages/cli/scripts/skills-drift/bundle-delta.ts:148"
+     ],
+     "top-other": [],
+     "other": [
+      "packages/cli/scripts/skills-drift/self-test.ts:32",
+      "packages/cli/scripts/skills-drift/upstream.ts:115",
+      "packages/cli/src/commands/json-one-document/capture.ts:42"
+     ]
+    }
+   },
+   "js": {
+    "files": 5,
+    "unreadable": 0,
+    "functions": 51,
+    "listed": 29,
+    "unlisted": 22,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 12,
+     "iife": 0,
+     "nested": 9,
+     "top-other": 0,
+     "other": 1
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/assert-declarations.mjs:141",
+      "scripts/assert-declarations.mjs:151",
+      "scripts/assert-declarations.mjs:152"
+     ],
+     "iife": [],
+     "nested": [
+      "packages/config/lib/strip-comments.mjs:195",
+      "packages/config/lib/strip-comments.mjs:197",
+      "packages/config/lib/strip-comments.mjs:202"
+     ],
+     "top-other": [],
+     "other": [
+      "packages/config/lib/strip-comments.mjs:522"
+     ]
+    }
+   }
+  },
+  {
+   "name": "apps-starter",
+   "root": "/Users/assem/Documents/GitHub/apps-starter",
+   "ts": {
+    "files": 28,
+    "unreadable": 0,
+    "functions": 975,
+    "listed": 152,
+    "unlisted": 823,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 25,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 507,
+     "iife": 5,
+     "nested": 66,
+     "top-other": 0,
+     "other": 220
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "src/app/App.tsx:45",
+      "src/app/App.tsx:648",
+      "src/app/App.tsx:652"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/app/App.tsx:32",
+      "src/app/App.tsx:63",
+      "src/app/App.tsx:75"
+     ],
+     "iife": [
+      "src/app/App.tsx:675",
+      "src/app/App.tsx:856",
+      "src/app/App.tsx:899"
+     ],
+     "nested": [
+      "src/app/App.tsx:33",
+      "src/app/App.tsx:125",
+      "src/app/App.tsx:252"
+     ],
+     "top-other": [],
+     "other": [
+      "src/app/App.tsx:35",
+      "src/app/App.tsx:87",
+      "src/app/App.tsx:138"
+     ]
+    }
+   },
+   "js": {
+    "files": 42,
+    "unreadable": 0,
+    "functions": 1224,
+    "listed": 286,
+    "unlisted": 938,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 3,
+     "objlit-module-const": 0,
+     "objlit-other": 163,
+     "exports-assign": 0,
+     "prop-assign": 1,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 713,
+     "iife": 1,
+     "nested": 57,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [
+      "server/jobs.mjs:37",
+      "server/jobs.mjs:63",
+      "server/jobs.mjs:82"
+     ],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "journeys/extra/copilot.mjs:39",
+      "journeys/extra/copilot.mjs:62",
+      "journeys/extra/editor.mjs:70"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "server/store-remote.mjs:207"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "journeys/extra/copilot.mjs:19",
+      "journeys/extra/copilot.mjs:39",
+      "journeys/extra/copilot.mjs:39"
+     ],
+     "iife": [
+      "server/pdf/render.mjs:35"
+     ],
+     "nested": [
+      "journeys/extra/copilot.mjs:24",
+      "journeys/extra/grid-view.mjs:259",
+      "journeys/extra/plumbing.mjs:101"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "apps-ui",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+   "ts": {
+    "files": 269,
+    "unreadable": 0,
+    "functions": 4000,
+    "listed": 1060,
+    "unlisted": 2940,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 129,
+     "exports-assign": 0,
+     "prop-assign": 4,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 1734,
+     "iife": 8,
+     "nested": 340,
+     "top-other": 0,
+     "other": 725
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "demo/src/App.tsx:616",
+      "demo/src/App.tsx:629",
+      "demo/src/sections/blocks.tsx:113"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "src/record-core/NotionEditor.tsx:83",
+      "src/record-core/RecordPage.tsx:74",
+      "src/record-core/RecordPage.tsx:85"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "demo/src/App.tsx:40",
+      "demo/src/App.tsx:42",
+      "demo/src/App.tsx:51"
+     ],
+     "iife": [
+      "src/blocks/ai/CodeBlock.tsx:134",
+      "src/blocks/nav/CommandSearch.tsx:442",
+      "src/blocks/procession/Procession.tsx:442"
+     ],
+     "nested": [
+      "demo/src/App.tsx:52",
+      "demo/src/App.tsx:313",
+      "demo/src/App.tsx:385"
+     ],
+     "top-other": [],
+     "other": [
+      "demo/src/App.tsx:55",
+      "demo/src/App.tsx:67",
+      "demo/src/App.tsx:133"
+     ]
+    }
+   },
+   "js": {
+    "files": 17,
+    "unreadable": 0,
+    "functions": 193,
+    "listed": 28,
+    "unlisted": 165,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 5,
+     "exports-assign": 0,
+     "prop-assign": 2,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 136,
+     "iife": 0,
+     "nested": 12,
+     "top-other": 10,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "demo/scripts/verify-goo-drag.mjs:82",
+      "demo/scripts/verify-melt-consumers.mjs:52",
+      "demo/scripts/verify-melt-consumers.mjs:66"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "demo/scripts/verify-fx-guard.mjs:19",
+      "demo/scripts/verify-melt-consumers.mjs:125"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "demo/scripts/fx-at-rest.mjs:42",
+      "demo/scripts/fx-at-rest.mjs:52",
+      "demo/scripts/fx-at-rest.mjs:83"
+     ],
+     "iife": [],
+     "nested": [
+      "demo/scripts/fx-zero-diff.mjs:96",
+      "demo/scripts/fx-zero-diff.mjs:146",
+      "demo/scripts/melt-frames.mjs:21"
+     ],
+     "top-other": [
+      "demo/scripts/verify-fx.mjs:71",
+      "demo/scripts/verify-fx.mjs:75",
+      "demo/scripts/verify-fx.mjs:79"
+     ],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "blocks",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks",
+   "ts": {
+    "files": 121,
+    "unreadable": 0,
+    "functions": 788,
+    "listed": 266,
+    "unlisted": 522,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 96,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 276,
+     "iife": 0,
+     "nested": 67,
+     "top-other": 0,
+     "other": 83
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "apps/api/src/application/commands/StreamChatMessage.ts:125",
+      "apps/api/src/application/commands/StreamChatMessage.ts:129",
+      "apps/api/src/application/commands/StreamChatMessage.ts:136"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "apps/api/src/application/commands/ExportProject.ts:71",
+      "apps/api/src/application/commands/ExportProject.ts:75",
+      "apps/api/src/application/commands/SendChatMessage.ts:100"
+     ],
+     "iife": [],
+     "nested": [
+      "apps/web/src/components/StatusBar.tsx:52",
+      "apps/web/src/components/StatusBar.tsx:80",
+      "apps/web/src/components/StatusBar.tsx:87"
+     ],
+     "top-other": [],
+     "other": [
+      "apps/web/src/components/StatusBar.tsx:66",
+      "apps/web/src/contexts/HeaderActionsContext.tsx:48",
+      "apps/web/src/features/chat/ChatList.tsx:98"
+     ]
+    }
+   },
+   "js": {
+    "files": 2,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "blog-studio-lambda",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blog-studio-lambda",
+   "ts": {
+    "files": 100,
+    "unreadable": 0,
+    "functions": 1874,
+    "listed": 493,
+    "unlisted": 1381,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 29,
+     "exports-assign": 0,
+     "prop-assign": 4,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 773,
+     "iife": 8,
+     "nested": 159,
+     "top-other": 0,
+     "other": 408
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "src/app/App.tsx:40",
+      "src/app/App.tsx:442",
+      "src/app/App.tsx:446"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "src/app/pages/NotionEditor.tsx:79",
+      "src/ui/record-core/RecordPage.tsx:62",
+      "src/ui/record-core/RecordPage.tsx:73"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/app/App.tsx:27",
+      "src/app/App.tsx:58",
+      "src/app/App.tsx:75"
+     ],
+     "iife": [
+      "src/app/App.tsx:627",
+      "src/app/App.tsx:670",
+      "src/app/ObjectView.tsx:173"
+     ],
+     "nested": [
+      "src/app/App.tsx:28",
+      "src/app/App.tsx:77",
+      "src/app/App.tsx:93"
+     ],
+     "top-other": [],
+     "other": [
+      "src/app/App.tsx:30",
+      "src/app/App.tsx:80",
+      "src/app/App.tsx:95"
+     ]
+    }
+   },
+   "js": {
+    "files": 23,
+    "unreadable": 0,
+    "functions": 839,
+    "listed": 167,
+    "unlisted": 672,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 3,
+     "objlit-module-const": 0,
+     "objlit-other": 105,
+     "exports-assign": 0,
+     "prop-assign": 1,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 522,
+     "iife": 0,
+     "nested": 41,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [
+      "server/jobs.mjs:37",
+      "server/jobs.mjs:63",
+      "server/jobs.mjs:82"
+     ],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "journeys/run.mjs:47",
+      "journeys/run.mjs:59",
+      "journeys/run.mjs:74"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "server/store-remote.mjs:141"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "journeys/run.mjs:39",
+      "journeys/run.mjs:53",
+      "journeys/run.mjs:103"
+     ],
+     "iife": [],
+     "nested": [
+      "journeys/run.mjs:542",
+      "journeys/run.mjs:588",
+      "journeys/run.mjs:790"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "car-select-api",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/car-select-api",
+   "ts": {
+    "files": 8,
+    "unreadable": 0,
+    "functions": 82,
+    "listed": 29,
+    "unlisted": 53,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 53,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/index.ts:83",
+      "src/index.ts:116",
+      "src/index.ts:129"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 2,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "claude-chat-clean",
+   "root": "/Users/assem/Documents/GitHub/claude-chat-clean",
+   "ts": {
+    "files": 2,
+    "unreadable": 0,
+    "functions": 256,
+    "listed": 75,
+    "unlisted": 181,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 157,
+     "iife": 0,
+     "nested": 22,
+     "top-other": 0,
+     "other": 2
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "hooks/feed.ts:29",
+      "hooks/feed.ts:45",
+      "hooks/feed.ts:124"
+     ],
+     "iife": [],
+     "nested": [
+      "hooks/feed.ts:289",
+      "hooks/feed.ts:322",
+      "hooks/feed.ts:364"
+     ],
+     "top-other": [],
+     "other": [
+      "hooks/register.tsx:566",
+      "hooks/register.tsx:599"
+     ]
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "claude-skills",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
+   "ts": {
+    "files": 131,
+    "unreadable": 0,
+    "functions": 440,
+    "listed": 261,
+    "unlisted": 179,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 35,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 105,
+     "iife": 0,
+     "nested": 15,
+     "top-other": 0,
+     "other": 24
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "packages/cli/src/commands/init.ts:15",
+      "packages/cli/src/commands/init.ts:32",
+      "packages/cli/src/commands/init.ts:40"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "packages/cli/src/api-client.ts:100",
+      "packages/cli/src/api-client.ts:112",
+      "packages/cli/src/commands/info.ts:22"
+     ],
+     "iife": [],
+     "nested": [
+      "src/app/[scope]/[slug]/diff/page.tsx:39",
+      "src/app/[scope]/[slug]/versions/page.tsx:32",
+      "src/app/cli/auth/page.tsx:15"
+     ],
+     "top-other": [],
+     "other": [
+      "src/app/[scope]/[slug]/diff/page.tsx:76",
+      "src/app/[scope]/[slug]/diff/page.tsx:95",
+      "src/app/explore/explore-client.tsx:49"
+     ]
+    }
+   },
+   "js": {
+    "files": 2,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "cue-status-page",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/cue-status-page",
+   "ts": {
+    "files": 31,
+    "unreadable": 0,
+    "functions": 177,
+    "listed": 49,
+    "unlisted": 128,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 27,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 49,
+     "iife": 2,
+     "nested": 10,
+     "top-other": 0,
+     "other": 40
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "src/components/IssueModal.tsx:672",
+      "src/components/IssueModal.tsx:673",
+      "src/components/IssueModal.tsx:674"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "app/page.tsx:57",
+      "middleware.ts:6",
+      "middleware.ts:30"
+     ],
+     "iife": [
+      "src/components/IssueCard.tsx:607",
+      "src/components/IssueModal.tsx:1182"
+     ],
+     "nested": [
+      "src/components/Board.tsx:35",
+      "src/components/Board.tsx:41",
+      "src/components/Board.tsx:135"
+     ],
+     "top-other": [],
+     "other": [
+      "src/components/Board.tsx:130",
+      "src/components/Board.tsx:361",
+      "src/components/Board.tsx:362"
+     ]
+    }
+   },
+   "js": {
+    "files": 4,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "driftbench",
+   "root": "/Users/assem/Documents/GitHub/driftbench",
+   "ts": {
+    "files": 395,
+    "unreadable": 0,
+    "functions": 6270,
+    "listed": 2568,
+    "unlisted": 3702,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 1,
+     "objlit-module-const": 0,
+     "objlit-other": 262,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 3134,
+     "iife": 1,
+     "nested": 274,
+     "top-other": 1,
+     "other": 29
+    },
+    "examples": {
+     "objlit-exported": [
+      "packages/cli/src/io.ts:11"
+     ],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "examples/acme/faults/sales.ts:26",
+      "examples/acme/faults/sales.ts:35",
+      "examples/acme/faults/sales.ts:92"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "examples/acme/faults/sales.ts:50",
+      "examples/acme/faults/sales.ts:59",
+      "examples/acme/faults/sales.ts:71"
+     ],
+     "iife": [
+      "packages/vitest/src/index.ts:67"
+     ],
+     "nested": [
+      "examples/acme/src/agent.ts:97",
+      "packages/adapters/src/anthropic/index.ts:103",
+      "packages/adapters/src/anthropic/messages.ts:87"
+     ],
+     "top-other": [
+      "tools/browser/viewer-journey.ts:73"
+     ],
+     "other": [
+      "examples/acme/faults/sales.ts:21",
+      "examples/acme/faults/sales.ts:87",
+      "examples/acme/src/agent.ts:84"
+     ]
+    }
+   },
+   "js": {
+    "files": 10,
+    "unreadable": 0,
+    "functions": 113,
+    "listed": 63,
+    "unlisted": 50,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 4,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 45,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 1
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "tools/guard/guard.mjs:563",
+      "tools/guard/guard.mjs:564",
+      "tools/release/check.mjs:217"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "examples/acme/families/price-sheet/oracle.mjs:37",
+      "examples/acme/families/price-sheet/oracle.mjs:38",
+      "examples/acme/families/price-sheet/oracle.mjs:42"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": [
+      "tools/guard/guard.mjs:370"
+     ]
+    }
+   }
+  },
+  {
+   "name": "ftp-server-orange",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/ftp-server-orange",
+   "ts": {
+    "files": 16,
+    "unreadable": 0,
+    "functions": 111,
+    "listed": 70,
+    "unlisted": 41,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 2,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 38,
+     "iife": 0,
+     "nested": 1,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "src/routes/upload.ts:14",
+      "src/routes/upload.ts:15"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/cli/manage-users.ts:57",
+      "src/cli/manage-users.ts:70",
+      "src/cli/manage-users.ts:76"
+     ],
+     "iife": [],
+     "nested": [
+      "src/cli/manage-users.ts:74"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 1,
+    "unreadable": 0,
+    "functions": 4,
+    "listed": 0,
+    "unlisted": 4,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 4,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/webhook-receiver.mjs:9",
+      "scripts/webhook-receiver.mjs:11",
+      "scripts/webhook-receiver.mjs:12"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "itsme-backend",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/itsme-backend",
+   "ts": {
+    "files": 5,
+    "unreadable": 0,
+    "functions": 31,
+    "listed": 25,
+    "unlisted": 6,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 6,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/routes/callback.ts:292",
+      "src/routes/jwks.ts:16",
+      "src/server.ts:24"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "langchainjs",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+   "ts": {
+    "files": 1486,
+    "unreadable": 0,
+    "functions": 7757,
+    "listed": 4907,
+    "unlisted": 2850,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 282,
+     "exports-assign": 0,
+     "prop-assign": 25,
+     "class-field": 5,
+     "class-other": 70,
+     "callback": 2003,
+     "iife": 18,
+     "nested": 366,
+     "top-other": 1,
+     "other": 80
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "environment_tests/test-exports-cjs/src/index.ts:20",
+      "environment_tests/test-exports-vercel/src/pages/api/hello-edge.ts:37",
+      "environment_tests/test-exports-vercel/src/pages/api/hello-edge.ts:41"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "libs/langchain-core/src/output_parsers/xml.ts:123",
+      "libs/langchain-core/src/output_parsers/xml.ts:144",
+      "libs/langchain-core/src/output_parsers/xml.ts:154"
+     ],
+     "class-field": [
+      "libs/langchain/src/chat_models/universal.ts:484",
+      "libs/langchain-classic/src/chat_models/universal.ts:406",
+      "libs/langchain-classic/src/retrievers/matryoshka_retriever.ts:169"
+     ],
+     "class-other": [
+      "libs/langchain/src/agents/ReactAgent.ts:779",
+      "libs/langchain/src/agents/ReactAgent.ts:793",
+      "libs/langchain/src/agents/ReactAgent.ts:815"
+     ],
+     "callback": [
+      "environment_tests/scripts/test-runner.ts:65",
+      "environment_tests/scripts/test-runner.ts:72",
+      "environment_tests/scripts/test-runner.ts:98"
+     ],
+     "iife": [
+      "libs/langchain/src/agents/ReactAgent.ts:1508",
+      "libs/langchain-core/src/language_models/stream.ts:322",
+      "libs/langchain-core/src/language_models/stream.ts:396"
+     ],
+     "nested": [
+      "environment_tests/test-exports-vite/src/chain.ts:10",
+      "examples/src/langchain-classic/models/chat/integration_anthropic_pdf.ts:12",
+      "examples/src/langchain-classic/models/chat/integration_anthropic_pdf.ts:19"
+     ],
+     "top-other": [
+      "libs/langchain/src/tools/headless.ts:211"
+     ],
+     "other": [
+      "examples/src/langchain-classic/guides/expression_language/how_to_routing_runnable_branch.ts:63",
+      "examples/src/langchain-classic/guides/expression_language/how_to_routing_runnable_branch.ts:68",
+      "examples/src/langchain-classic/use_cases/sql/large_db_high_cardinality.ts:93"
+     ]
+    }
+   },
+   "js": {
+    "files": 46,
+    "unreadable": 0,
+    "functions": 75,
+    "listed": 38,
+    "unlisted": 37,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 1,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 26,
+     "iife": 0,
+     "nested": 2,
+     "top-other": 0,
+     "other": 8
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "environment_tests/test-exports-cjs/src/require.js:32"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "dependency_range_tests/scripts/langchain/node/update_resolutions_latest.js:29",
+      "dependency_range_tests/scripts/langchain/node/update_resolutions_latest.js:30",
+      "dependency_range_tests/scripts/langchain/node/update_resolutions_lowest.js:29"
+     ],
+     "iife": [],
+     "nested": [
+      "libs/langchain-classic/src/util/p-retry/index.js:154",
+      "libs/langchain-core/src/utils/p-retry/index.js:164"
+     ],
+     "top-other": [],
+     "other": [
+      "libs/langchain-classic/src/util/p-retry/index.js:195",
+      "libs/langchain-classic/src/util/p-retry/index.js:196",
+      "libs/langchain-classic/src/util/p-retry/index.js:197"
+     ]
+    }
+   }
+  },
+  {
+   "name": "linear-status-page",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/linear-status-page",
+   "ts": {
+    "files": 31,
+    "unreadable": 0,
+    "functions": 177,
+    "listed": 49,
+    "unlisted": 128,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 27,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 49,
+     "iife": 2,
+     "nested": 10,
+     "top-other": 0,
+     "other": 40
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "src/components/IssueModal.tsx:672",
+      "src/components/IssueModal.tsx:673",
+      "src/components/IssueModal.tsx:674"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "app/page.tsx:57",
+      "middleware.ts:6",
+      "middleware.ts:30"
+     ],
+     "iife": [
+      "src/components/IssueCard.tsx:607",
+      "src/components/IssueModal.tsx:1182"
+     ],
+     "nested": [
+      "src/components/Board.tsx:35",
+      "src/components/Board.tsx:41",
+      "src/components/Board.tsx:135"
+     ],
+     "top-other": [],
+     "other": [
+      "src/components/Board.tsx:130",
+      "src/components/Board.tsx:361",
+      "src/components/Board.tsx:362"
+     ]
+    }
+   },
+   "js": {
+    "files": 4,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "lucca-unofficial-api",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/lucca-unofficial-api",
+   "ts": {
+    "files": 15,
+    "unreadable": 0,
+    "functions": 40,
+    "listed": 29,
+    "unlisted": 11,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 11,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/index.ts:23",
+      "src/index.ts:29",
+      "src/index.ts:38"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "n8n",
+   "root": "/Users/assem/Documents/GitHub/n8n",
+   "ts": {
+    "files": 3071,
+    "unreadable": 0,
+    "functions": 10356,
+    "listed": 5054,
+    "unlisted": 5302,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 3,
+     "objlit-module-const": 7,
+     "objlit-other": 1359,
+     "exports-assign": 0,
+     "prop-assign": 22,
+     "class-field": 6,
+     "class-other": 5,
+     "callback": 3074,
+     "iife": 10,
+     "nested": 575,
+     "top-other": 17,
+     "other": 224
+    },
+    "examples": {
+     "objlit-exported": [
+      "packages/design-system/src/locale/lang/en.ts:14",
+      "packages/design-system/src/locale/lang/en.ts:18",
+      "packages/design-system/src/locale/lang/en.ts:24"
+     ],
+     "objlit-module-const": [
+      "packages/editor-ui/src/components/Node/NodeCreator/composables/useActionsGeneration.ts:32",
+      "packages/editor-ui/src/components/RunDataAi/useAiContentParsers.ts:34",
+      "packages/editor-ui/src/components/RunDataAi/useAiContentParsers.ts:85"
+     ],
+     "objlit-other": [
+      "packages/@n8n/chat/vite.config.mts:35",
+      "packages/@n8n/client-oauth2/src/ClientOAuth2.ts:103",
+      "packages/@n8n/client-oauth2/src/ClientOAuth2.ts:106"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "packages/cli/src/ActiveWorkflowManager.ts:282",
+      "packages/cli/src/ActiveWorkflowManager.ts:310",
+      "packages/cli/src/ActiveWorkflowManager.ts:339"
+     ],
+     "class-field": [
+      "packages/cli/src/ExternalSecrets/providers/vault.ts:334",
+      "packages/cli/src/environments/sourceControl/sourceControlExport.service.ee.ts:234",
+      "packages/editor-ui/src/plugins/jsplumb/N8nPlusEndpointType.ts:97"
+     ],
+     "class-other": [
+      "packages/@n8n/nodes-langchain/nodes/vector_store/shared/createVectorStoreNode.ts:195",
+      "packages/@n8n/nodes-langchain/nodes/vector_store/shared/createVectorStoreNode.ts:283",
+      "packages/cli/src/databases/entities/AbstractEntity.ts:36"
+     ],
+     "callback": [
+      "packages/@n8n/chat/src/plugins/chat.ts:18",
+      "packages/@n8n/chat/src/plugins/chat.ts:19",
+      "packages/@n8n/chat/src/plugins/chat.ts:38"
+     ],
+     "iife": [
+      "packages/core/src/NodeExecuteFunctions.ts:3332",
+      "packages/core/src/NodeExecuteFunctions.ts:3395",
+      "packages/core/src/NodeExecuteFunctions.ts:3463"
+     ],
+     "nested": [
+      "packages/@n8n/chat/src/composables/useI18n.ts:8",
+      "packages/@n8n/chat/src/composables/useI18n.ts:16",
+      "packages/@n8n/chat/src/plugins/chat.ts:27"
+     ],
+     "top-other": [
+      "packages/design-system/src/locale/format.ts:8",
+      "packages/editor-ui/src/composables/useGlobalLinkActions.ts:13",
+      "packages/nodes-base/nodes/Brevo/GenericFunctions.ts:54"
+     ],
+     "other": [
+      "packages/@n8n/nodes-langchain/nodes/code/Code.node.ts:112",
+      "packages/@n8n/nodes-langchain/nodes/memory/MemoryManager/MemoryManager.node.ts:43",
+      "packages/@n8n/nodes-langchain/nodes/memory/MemoryManager/MemoryManager.node.ts:56"
+     ]
+    }
+   },
+   "js": {
+    "files": 40,
+    "unreadable": 0,
+    "functions": 52,
+    "listed": 9,
+    "unlisted": 43,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 24,
+     "exports-assign": 1,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 14,
+     "iife": 0,
+     "nested": 4,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "packages/@n8n_io/eslint-config/local-rules.js:46",
+      "packages/@n8n_io/eslint-config/local-rules.js:48",
+      "packages/@n8n_io/eslint-config/local-rules.js:84"
+     ],
+     "exports-assign": [
+      "packages/@n8n_io/eslint-config/shared.js:4"
+     ],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "jest.config.js:25",
+      "packages/@n8n/chat/scripts/postbuild.js:23",
+      "packages/@n8n_io/eslint-config/local-rules.js:57"
+     ],
+     "iife": [],
+     "nested": [
+      "packages/@n8n_io/eslint-config/local-rules.js:191",
+      "packages/@n8n_io/eslint-config/local-rules.js:283",
+      "packages/@n8n_io/eslint-config/local-rules.js:291"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nano-banana",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nano-banana",
+   "ts": {
+    "files": 2,
+    "unreadable": 0,
+    "functions": 15,
+    "listed": 11,
+    "unlisted": 4,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 3,
+     "iife": 0,
+     "nested": 1,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/index.ts:182",
+      "src/index.ts:236",
+      "src/index.ts:253"
+     ],
+     "iife": [],
+     "nested": [
+      "src/index.ts:100"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus-agent-api",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-agent-api",
+   "ts": {
+    "files": 18,
+    "unreadable": 0,
+    "functions": 29,
+    "listed": 14,
+    "unlisted": 15,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 13,
+     "iife": 0,
+     "nested": 1,
+     "top-other": 0,
+     "other": 1
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/allowlist/projector.ts:46",
+      "src/allowlist/redactor.ts:25",
+      "src/allowlist/redactor.ts:43"
+     ],
+     "iife": [],
+     "nested": [
+      "src/routes/seed.ts:26"
+     ],
+     "top-other": [],
+     "other": [
+      "src/middleware/rate-limit.ts:19"
+     ]
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus-app-starter",
+   "root": "/Users/assem/Documents/GitHub/nexus-app-starter",
+   "ts": {
+    "files": 191,
+    "unreadable": 0,
+    "functions": 2519,
+    "listed": 723,
+    "unlisted": 1796,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 51,
+     "exports-assign": 0,
+     "prop-assign": 4,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 1057,
+     "iife": 8,
+     "nested": 206,
+     "top-other": 0,
+     "other": 470
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "src/app/App.tsx:42",
+      "src/app/App.tsx:500",
+      "src/app/App.tsx:504"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "src/ui/record-core/NotionEditor.tsx:83",
+      "src/ui/record-core/RecordPage.tsx:72",
+      "src/ui/record-core/RecordPage.tsx:83"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/app/App.tsx:29",
+      "src/app/App.tsx:60",
+      "src/app/App.tsx:72"
+     ],
+     "iife": [
+      "src/app/App.tsx:527",
+      "src/app/App.tsx:709",
+      "src/app/App.tsx:746"
+     ],
+     "nested": [
+      "src/app/App.tsx:30",
+      "src/app/App.tsx:126",
+      "src/app/App.tsx:181"
+     ],
+     "top-other": [],
+     "other": [
+      "src/app/App.tsx:32",
+      "src/app/App.tsx:84",
+      "src/app/App.tsx:129"
+     ]
+    }
+   },
+   "js": {
+    "files": 43,
+    "unreadable": 0,
+    "functions": 1274,
+    "listed": 243,
+    "unlisted": 1031,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 3,
+     "objlit-module-const": 0,
+     "objlit-other": 228,
+     "exports-assign": 0,
+     "prop-assign": 1,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 738,
+     "iife": 0,
+     "nested": 60,
+     "top-other": 0,
+     "other": 1
+    },
+    "examples": {
+     "objlit-exported": [
+      "server/jobs.mjs:37",
+      "server/jobs.mjs:63",
+      "server/jobs.mjs:82"
+     ],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "journeys/extra/calendar-view.mjs:113",
+      "journeys/extra/calendar-view.mjs:137",
+      "journeys/extra/calendar-view.mjs:170"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "server/store-remote.mjs:153"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "journeys/extra/calendar-view.mjs:30",
+      "journeys/extra/calendar-view.mjs:51",
+      "journeys/extra/calendar-view.mjs:180"
+     ],
+     "iife": [],
+     "nested": [
+      "journeys/extra/copilot.mjs:24",
+      "journeys/extra/grid-view.mjs:214",
+      "journeys/extra/grid-view.mjs:318"
+     ],
+     "top-other": [],
+     "other": [
+      "journeys/extra/map-view.mjs:47"
+     ]
+    }
+   }
+  },
+  {
+   "name": "nexus-automations",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-automations",
+   "ts": {
+    "files": 36,
+    "unreadable": 0,
+    "functions": 299,
+    "listed": 97,
+    "unlisted": 202,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 18,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 166,
+     "iife": 2,
+     "nested": 13,
+     "top-other": 0,
+     "other": 3
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "automations/_template/index.ts:15",
+      "automations/changelog-owners-backfill/index.ts:23",
+      "automations/claude-hello/index.ts:9"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "automations/changelog-owners-backfill/index.ts:49",
+      "automations/changelog-owners-backfill/index.ts:62",
+      "automations/changelog-owners-backfill/index.ts:63"
+     ],
+     "iife": [
+      "server/changelog-owners.ts:133",
+      "server/index.ts:32"
+     ],
+     "nested": [
+      "automations/changelog-owners-backfill/index.ts:25",
+      "automations/daily-changelog/index.ts:44",
+      "automations/daily-changelog/index.ts:97"
+     ],
+     "top-other": [],
+     "other": [
+      "scripts/seed-changelog.ts:48",
+      "server/changelog-auth.ts:106",
+      "server/changelog-owners.ts:136"
+     ]
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus-chat-embed",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-chat-embed",
+   "ts": {
+    "files": 72,
+    "unreadable": 0,
+    "functions": 405,
+    "listed": 236,
+    "unlisted": 169,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 6,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 131,
+     "iife": 1,
+     "nested": 7,
+     "top-other": 0,
+     "other": 24
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [
+      "src/voice/voice-call-client.ts:242",
+      "src/voice/voice-call-client.ts:246",
+      "src/voice/voice-call-client.ts:253"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/App.tsx:49",
+      "src/App.tsx:69",
+      "src/App.tsx:77"
+     ],
+     "iife": [
+      "src/chat/use-chat-turn.ts:408"
+     ],
+     "nested": [
+      "src/chat/use-chat-turn.ts:453",
+      "src/host/bridge.ts:284",
+      "src/host/bridge.ts:305"
+     ],
+     "top-other": [],
+     "other": [
+      "src/App.tsx:110",
+      "src/chat/use-chat-turn.ts:268",
+      "src/chat/use-chat-turn.ts:609"
+     ]
+    }
+   },
+   "js": {
+    "files": 7,
+    "unreadable": 0,
+    "functions": 125,
+    "listed": 10,
+    "unlisted": 115,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 92,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 23,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "scripts/mutation-battery.mjs:487",
+      "scripts/mutation-battery.mjs:506",
+      "scripts/mutation-battery.mjs:528"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/assert-bundle-budget.mjs:157",
+      "scripts/assert-bundle-budget.mjs:161",
+      "scripts/assert-bundle-budget.mjs:193"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus-landing",
+   "root": "/Users/assem/Documents/GitHub/nexus-landing",
+   "ts": {
+    "files": 385,
+    "unreadable": 0,
+    "functions": 3859,
+    "listed": 1318,
+    "unlisted": 2541,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 173,
+     "exports-assign": 0,
+     "prop-assign": 2,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 1559,
+     "iife": 12,
+     "nested": 385,
+     "top-other": 0,
+     "other": 410
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "app/dieteren-workshop/Deck.tsx:429",
+      "app/dieteren-workshop/Deck.tsx:456",
+      "app/dieteren-workshop/Deck.tsx:468"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "components/customer-support/lab/variations/arch/iso/FleetFountain.tsx:219",
+      "components/landing/IsoStack/IsoStackDraft.tsx:175"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "app/(site)/blog/BlogClient.tsx:27",
+      "app/(site)/blog/BlogClient.tsx:35",
+      "app/(site)/blog/BlogClient.tsx:37"
+     ],
+     "iife": [
+      "app/dieteren-workshop/scene.ts:1770",
+      "app/dieteren-workshop/scene.ts:4095",
+      "app/orange-workshop/scene.ts:3491"
+     ],
+     "nested": [
+      "app/(site)/enterprise-cli/page.tsx:75",
+      "app/(site)/enterprise-cli/page.tsx:124",
+      "app/dieteren-workshop/Deck.tsx:123"
+     ],
+     "top-other": [],
+     "other": [
+      "app/(site)/blog/BlogClient.tsx:94",
+      "app/(site)/blog/BlogClient.tsx:121",
+      "app/(site)/blog/BlogClient.tsx:131"
+     ]
+    }
+   },
+   "js": {
+    "files": 54,
+    "unreadable": 0,
+    "functions": 320,
+    "listed": 70,
+    "unlisted": 250,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 219,
+     "iife": 22,
+     "nested": 5,
+     "top-other": 4,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/build-competitive-report 2.mjs:60",
+      "scripts/build-competitive-report 2.mjs:273",
+      "scripts/build-competitive-report 2.mjs:327"
+     ],
+     "iife": [
+      "shot-all 2.cjs:9",
+      "shot-all.cjs:9",
+      "shot-back 2.cjs:4"
+     ],
+     "nested": [
+      "scripts/transform-compare-batch2.js:133",
+      "shot-crops 2.cjs:43",
+      "shot-crops.cjs:43"
+     ],
+     "top-other": [
+      "tm-copilots 2.mjs:9",
+      "tm-copilots.mjs:9",
+      "tm-stats 2.mjs:16"
+     ],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus-learning-landing",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning-landing",
+   "ts": {
+    "files": 63,
+    "unreadable": 0,
+    "functions": 308,
+    "listed": 170,
+    "unlisted": 138,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 89,
+     "iife": 0,
+     "nested": 21,
+     "top-other": 0,
+     "other": 28
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "app/admin/funnel/page.tsx:33",
+      "app/admin/funnel/page.tsx:36",
+      "app/admin/funnel/page.tsx:39"
+     ],
+     "iife": [],
+     "nested": [
+      "app/admin/requests/page.tsx:20",
+      "components/form/CallNow.tsx:30",
+      "components/form/StepForm.tsx:87"
+     ],
+     "top-other": [],
+     "other": [
+      "components/InsightTag.tsx:20",
+      "components/InsightTag.tsx:24",
+      "components/InsightTag.tsx:44"
+     ]
+    }
+   },
+   "js": {
+    "files": 8,
+    "unreadable": 0,
+    "functions": 15,
+    "listed": 3,
+    "unlisted": 12,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 8,
+     "iife": 0,
+     "nested": 2,
+     "top-other": 2,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/cleanup-test-data.mjs:76",
+      "scripts/e2e-smoke.mjs:47",
+      "scripts/e2e-smoke.mjs:56"
+     ],
+     "iife": [],
+     "nested": [
+      "scripts/measure-fold.mjs:26",
+      "scripts/measure-fold.mjs:31"
+     ],
+     "top-other": [
+      "scripts/migrate.mjs:24",
+      "scripts/migrate.mjs:25"
+     ],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus-learning",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+   "ts": {
+    "files": 696,
+    "unreadable": 0,
+    "functions": 4903,
+    "listed": 2356,
+    "unlisted": 2547,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 3,
+     "objlit-other": 529,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 1724,
+     "iife": 1,
+     "nested": 143,
+     "top-other": 0,
+     "other": 147
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [
+      "apps/web/lib/mdx-allowlist.ts:32",
+      "apps/web/lib/mdx-allowlist.ts:34",
+      "apps/web/lib/mdx-allowlist.ts:38"
+     ],
+     "objlit-other": [
+      "apps/web/app/(learner)/calendar/page.tsx:193",
+      "apps/web/app/(learner)/calendar/page.tsx:194",
+      "apps/web/app/(learner)/calendar/page.tsx:195"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "apps/web/app/(learner)/actions.ts:40",
+      "apps/web/app/(learner)/assignments/[uid]/page.tsx:65",
+      "apps/web/app/(learner)/calendar/actions.ts:52"
+     ],
+     "iife": [
+      "packages/storage/src/engine.ts:28"
+     ],
+     "nested": [
+      "apps/web/app/(learner)/calendar/page.tsx:116",
+      "apps/web/app/(learner)/calendar/page.tsx:131",
+      "apps/web/app/(learner)/calendar/page.tsx:202"
+     ],
+     "top-other": [],
+     "other": [
+      "apps/web/app/(learner)/calendar/page.tsx:257",
+      "apps/web/app/(learner)/calendar/page.tsx:260",
+      "apps/web/app/(learner)/calendar/page.tsx:282"
+     ]
+    }
+   },
+   "js": {
+    "files": 37,
+    "unreadable": 0,
+    "functions": 422,
+    "listed": 163,
+    "unlisted": 259,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 196,
+     "iife": 0,
+     "nested": 56,
+     "top-other": 0,
+     "other": 7
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "apps/web/scripts/bundle-budget.mjs:54",
+      "apps/web/scripts/bundle-budget.mjs:72",
+      "apps/web/scripts/bundle-budget.mjs:73"
+     ],
+     "iife": [],
+     "nested": [
+      "apps/web/scripts/scan-ui-strings.mjs:60",
+      "apps/web/scripts/scan-ui-strings.mjs:70",
+      "apps/web/scripts/scan-ui-strings.mjs:97"
+     ],
+     "top-other": [],
+     "other": [
+      "apps/web/scripts/bundle-budget.mjs:69",
+      "scripts/fresh-profile.mjs:74",
+      "scripts/fresh-profile.mjs:162"
+     ]
+    }
+   }
+  },
+  {
+   "name": "nexus-linkedin-dashboard",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+   "ts": {
+    "files": 297,
+    "unreadable": 0,
+    "functions": 2054,
+    "listed": 1045,
+    "unlisted": 1009,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 232,
+     "exports-assign": 0,
+     "prop-assign": 2,
+     "class-field": 0,
+     "class-other": 4,
+     "callback": 685,
+     "iife": 1,
+     "nested": 64,
+     "top-other": 0,
+     "other": 21
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "app/api/cron/reminders/route.ts:23",
+      "components/primitives/clipboard.ts:21",
+      "content/alerts.ts:46"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "lib/net/shim.ts:112",
+      "lib/net/shim.ts:135"
+     ],
+     "class-field": [],
+     "class-other": [
+      "lib/booking/calendar/client.ts:149",
+      "lib/booking/calendar/client.ts:153",
+      "lib/linkedin/client/client.ts:124"
+     ],
+     "callback": [
+      "app/(admin)/(linkedin)/explorer/creatives/[id]/page.tsx:70",
+      "app/(admin)/(linkedin)/performance/page.tsx:49",
+      "app/(admin)/(linkedin)/performance/page.tsx:54"
+     ],
+     "iife": [
+      "lib/read-models/deployment.ts:193"
+     ],
+     "nested": [
+      "app/(admin)/(linkedin)/audience/page.tsx:21",
+      "app/(admin)/(linkedin)/performance/page.tsx:23",
+      "app/(admin)/availability/page.tsx:35"
+     ],
+     "top-other": [],
+     "other": [
+      "components/performance/Crosshair.tsx:48",
+      "components/primitives/SegmentedControl.tsx:31",
+      "components/requests/CopyLink.tsx:29"
+     ]
+    }
+   },
+   "js": {
+    "files": 23,
+    "unreadable": 0,
+    "functions": 375,
+    "listed": 101,
+    "unlisted": 274,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 6,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 247,
+     "iife": 4,
+     "nested": 15,
+     "top-other": 1,
+     "other": 1
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "eslint-rules/env-reads.mjs:145",
+      "eslint-rules/env-reads.mjs:196",
+      "eslint-rules/outbound.mjs:241"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "design/booking-artboards.mjs:48",
+      "design/booking-artboards.mjs:81",
+      "design/booking-artboards.mjs:237"
+     ],
+     "iife": [
+      "evals/results/0020/0020-A-1-sql.cjs:9",
+      "evals/results/0020/0020-A-1-walk.cjs:15",
+      "evals/results/0020/0020-A-1-walk.cjs:50"
+     ],
+     "nested": [
+      "design/build.mjs:109",
+      "design/build.mjs:111",
+      "design/build.mjs:158"
+     ],
+     "top-other": [
+      "evals/results/0026/seed-google-states.mjs:60"
+     ],
+     "other": [
+      "design/build.mjs:156"
+     ]
+    }
+   }
+  },
+  {
+   "name": "nexus-meeting-recorder",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder",
+   "ts": {
+    "files": 59,
+    "unreadable": 0,
+    "functions": 118,
+    "listed": 53,
+    "unlisted": 65,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 8,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 53,
+     "iife": 0,
+     "nested": 4,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "apps/api/src/_testing/clerk-test-keys.ts:14",
+      "apps/web/src/features/meetings/meetings-page.tsx:8",
+      "apps/web/src/router.tsx:8"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "apps/api/src/_common/config/env.schema.ts:12",
+      "apps/api/src/_common/config/env.schema.ts:12",
+      "apps/api/src/_common/config/env.service.ts:12"
+     ],
+     "iife": [],
+     "nested": [
+      "apps/api/src/app.e2e-spec.ts:42",
+      "apps/web/src/features/meetings/meetings-library.tsx:20",
+      "packages/intelligence/src/notes/transcript.ts:21"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 4,
+    "unreadable": 0,
+    "functions": 33,
+    "listed": 11,
+    "unlisted": 22,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 22,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "design/tokens/build.mjs:16",
+      "design/tokens/build.mjs:29",
+      "design/tokens/build.mjs:31"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus-tokens",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-tokens",
+   "ts": {
+    "files": 17,
+    "unreadable": 0,
+    "functions": 68,
+    "listed": 44,
+    "unlisted": 24,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 20,
+     "iife": 1,
+     "nested": 3,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/ramp/generate.ts:76",
+      "src/ramp/generate.ts:100",
+      "src/ramp/generate.ts:116"
+     ],
+     "iife": [
+      "src/semantic/resolve.ts:85"
+     ],
+     "nested": [
+      "src/ramp/generate.ts:186",
+      "src/ramp/generate.ts:220",
+      "src/semantic/resolve.ts:47"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 1,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus-ui",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-ui",
+   "ts": {
+    "files": 402,
+    "unreadable": 0,
+    "functions": 849,
+    "listed": 353,
+    "unlisted": 496,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 72,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 300,
+     "iife": 0,
+     "nested": 28,
+     "top-other": 0,
+     "other": 96
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "apps/www/src/app/SiteHeader.tsx:26",
+      "apps/www/src/app/SiteHeader.tsx:32",
+      "apps/www/src/app/SiteHeader.tsx:37"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "apps/www/src/app/App.tsx:33",
+      "apps/www/src/app/SiteFooter.tsx:17",
+      "apps/www/src/app/SiteHeader.tsx:58"
+     ],
+     "iife": [],
+     "nested": [
+      "apps/www/src/app/landing/InstallPill.tsx:51",
+      "apps/www/src/app/theme.ts:50",
+      "apps/www/src/docs/components/CodeBlock.tsx:51"
+     ],
+     "top-other": [],
+     "other": [
+      "apps/www/src/app/SiteHeader.tsx:76",
+      "apps/www/src/app/SiteHeader.tsx:92",
+      "apps/www/src/app/landing/ControlsCard.tsx:22"
+     ]
+    }
+   },
+   "js": {
+    "files": 10,
+    "unreadable": 0,
+    "functions": 87,
+    "listed": 26,
+    "unlisted": 61,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 60,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 1,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/checks/barrel-completeness.mjs:39",
+      "scripts/checks/barrel-completeness.mjs:83",
+      "scripts/checks/barrel-completeness.mjs:85"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [
+      "scripts/checks/run.mjs:30"
+     ],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "nexus",
+   "root": "/Users/assem/Documents/GitHub/nexus",
+   "ts": {
+    "files": 9759,
+    "unreadable": 0,
+    "functions": 42169,
+    "listed": 20771,
+    "unlisted": 21398,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 10,
+     "objlit-module-const": 18,
+     "objlit-other": 2584,
+     "exports-assign": 0,
+     "prop-assign": 117,
+     "class-field": 61,
+     "class-other": 0,
+     "callback": 14115,
+     "iife": 63,
+     "nested": 1248,
+     "top-other": 0,
+     "other": 3182
+    },
+    "examples": {
+     "objlit-exported": [
+      "apps/backend/src/tools/tools-connector/index.ts:39",
+      "apps/backend/src/tools/tools-connector/index.ts:40",
+      "apps/frontend/src/common/components/Chat/ChatMessage/constants.ts:17"
+     ],
+     "objlit-module-const": [
+      "apps/backend/src/vibe-cards/infrastructure/persistence/card-audit-event.ts:71",
+      "apps/backend/src/vibe-cards/infrastructure/persistence/card-audit-event.ts:75",
+      "apps/backend/src/vibe-cards/infrastructure/persistence/card-audit-event.ts:76"
+     ],
+     "objlit-other": [
+      "apps/backend/scripts/bundle-agent-runners.ts:147",
+      "apps/backend/src/_common/logger/logger.factory.ts:78",
+      "apps/backend/src/_common/logger/logger.factory.ts:82"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "apps/backend/src/_common/decorators/measure-execution-time.decorator.ts:5",
+      "apps/backend/src/_common/providers/eleven-labs/index.ts:24",
+      "apps/backend/src/_common/providers/eleven-labs/index.ts:36"
+     ],
+     "class-field": [
+      "apps/backend/src/_common/providers/docxtemplater/index.ts:126",
+      "apps/backend/src/_common/providers/docxtemplater/index.ts:153",
+      "apps/backend/src/_common/providers/pinecone/pinecone.service.ts:50"
+     ],
+     "class-other": [],
+     "callback": [
+      "apps/backend/scripts/build-agent-runner.ts:40",
+      "apps/backend/scripts/bundle-agent-runners.ts:140",
+      "apps/backend/scripts/bundle-agent-runners.ts:148"
+     ],
+     "iife": [
+      "apps/backend/src/__governance__/module-graph.ts:32",
+      "apps/backend/src/_common/streaming/middleware/stream-provider-tracing.middleware.ts:81",
+      "apps/backend/src/_common/utils/is-loopback-url.util.ts:9"
+     ],
+     "nested": [
+      "apps/backend/src/__governance__/prisma-write-blocks.ts:262",
+      "apps/backend/src/__governance__/s3-write-acls.ts:137",
+      "apps/backend/src/_common/adapters/redis-io.adapter.ts:134"
+     ],
+     "top-other": [],
+     "other": [
+      "apps/backend/src/_common/decorators/measure-execution-time.decorator.ts:2",
+      "apps/backend/src/_common/gateways/middlewares/verify-clerk-jwt.middleware.ts:62",
+      "apps/backend/src/_common/gateways/middlewares/verify-clerk-jwt.middleware.ts:91"
+     ]
+    }
+   },
+   "js": {
+    "files": 311,
+    "unreadable": 0,
+    "functions": 33291,
+    "listed": 1916,
+    "unlisted": 31375,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 9798,
+     "exports-assign": 139,
+     "prop-assign": 1186,
+     "class-field": 5,
+     "class-other": 3335,
+     "callback": 5830,
+     "iife": 435,
+     "nested": 9127,
+     "top-other": 146,
+     "other": 1374
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "apps/embed/vite.config.js:22",
+      "ds-bundle/_ds_bundle.js:37",
+      "ds-bundle/_ds_bundle.js:57"
+     ],
+     "exports-assign": [
+      "ds-bundle/_ds_bundle.js:94",
+      "ds-bundle/_ds_bundle.js:405",
+      "ds-bundle/_ds_bundle.js:79156"
+     ],
+     "prop-assign": [
+      "apps/frontend/src/modules/Workflow/layout/worker/layout.worker.js:1042",
+      "ds-bundle/_ds_bundle.js:3199",
+      "ds-bundle/_ds_bundle.js:3227"
+     ],
+     "class-field": [
+      "packages/prisma-db/client/runtime/edge-esm.js:7",
+      "packages/prisma-db/client/runtime/edge.js:7",
+      "packages/prisma-db/client/runtime/library.js:31"
+     ],
+     "class-other": [
+      "ds-bundle/_ds_bundle.js:2097",
+      "ds-bundle/_ds_bundle.js:2102",
+      "ds-bundle/_ds_bundle.js:2751"
+     ],
+     "callback": [
+      "apps/backend/scripts/assert-build-assets.mjs:27",
+      "apps/backend/scripts/assert-build-assets.mjs:43",
+      "apps/frontend/scripts/dev.mjs:137"
+     ],
+     "iife": [
+      "ds-bundle/_ds_bundle.js:3",
+      "ds-bundle/_ds_bundle.js:474",
+      "ds-bundle/_ds_bundle.js:561"
+     ],
+     "nested": [
+      "apps/frontend/src/modules/Workflow/layout/worker/layout.worker.js:155",
+      "apps/frontend/src/modules/Workflow/layout/worker/layout.worker.js:222",
+      "apps/frontend/src/modules/Workflow/layout/worker/layout.worker.js:237"
+     ],
+     "top-other": [
+      "packages/prisma-db/client/query_engine_bg.js:1",
+      "packages/prisma-db/client/query_engine_bg.js:1",
+      "packages/prisma-db/client/query_engine_bg.js:1"
+     ],
+     "other": [
+      "ds-bundle/_ds_bundle.js:14",
+      "ds-bundle/_ds_bundle.js:22",
+      "ds-bundle/_ds_bundle.js:147"
+     ]
+    }
+   }
+  },
+  {
+   "name": "nutshell",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+   "ts": {
+    "files": 2266,
+    "unreadable": 0,
+    "functions": 13872,
+    "listed": 6884,
+    "unlisted": 6988,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 2,
+     "objlit-module-const": 4,
+     "objlit-other": 1715,
+     "exports-assign": 0,
+     "prop-assign": 9,
+     "class-field": 35,
+     "class-other": 1,
+     "callback": 4032,
+     "iife": 33,
+     "nested": 520,
+     "top-other": 0,
+     "other": 637
+    },
+    "examples": {
+     "objlit-exported": [
+      "adapters/claude-cli/src/live/claude-launch-controls.ts:143",
+      "core/claude-wire/src/claude-supported-models.ts:80"
+     ],
+     "objlit-module-const": [
+      "apps/desktop/main/src/updates.ts:89",
+      "apps/desktop/main/src/updates.ts:90",
+      "apps/desktop/main/src/updates.ts:91"
+     ],
+     "objlit-other": [
+      "adapters/carried-claude/src/carried-claude-code.ts:67",
+      "adapters/carried-claude/src/carried-claude-code.ts:91",
+      "adapters/claude-cli/src/account/ask-anthropic-for-usage-over-https.ts:25"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "adapters/claude-cli/src/live/claude-process.ts:112",
+      "adapters/claude-cli/src/live/live-shell.ts:50",
+      "apps/desktop/main/src/proof.ts:100"
+     ],
+     "class-field": [
+      "adapters/claude-cli/src/live/live-state.ts:196",
+      "core/projects/src/wait-for-first-offers.ts:5",
+      "extensions/nexus/src/common/tracks/reader/state.ts:152"
+     ],
+     "class-other": [
+      "core/concurrency/src/announcer.ts:52"
+     ],
+     "callback": [
+      "adapters/carried-claude/src/carried-claude-code.ts:74",
+      "adapters/carried-claude/src/installed-copy.ts:30",
+      "adapters/carried-claude/src/staged-program.ts:23"
+     ],
+     "iife": [
+      "adapters/carried-claude/src/carried-claude-code.ts:71",
+      "adapters/claude-cli/src/sessions/reported-models-cache.ts:187",
+      "apps/cli/src/app-start.ts:69"
+     ],
+     "nested": [
+      "adapters/claude-cli/src/account/claude-account.ts:51",
+      "adapters/claude-cli/src/account/claude-account.ts:84",
+      "adapters/claude-cli/src/account/refresh-usage-from-anthropic.ts:19"
+     ],
+     "top-other": [],
+     "other": [
+      "adapters/claude-cli/src/account/check-claude-code-at.ts:46",
+      "adapters/claude-cli/src/sessions/claude-provider-ports.ts:85",
+      "adapters/claude-cli/src/skills/claude-skills-policy.ts:35"
+     ]
+    }
+   },
+   "js": {
+    "files": 12,
+    "unreadable": 0,
+    "functions": 90,
+    "listed": 11,
+    "unlisted": 79,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 2,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 35,
+     "iife": 4,
+     "nested": 22,
+     "top-other": 0,
+     "other": 16
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "docs/design/system/components/chat/Rail.jsx:59",
+      "docs/design/system/components/chat/Rail.jsx:116"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "docs/design/system/components/chat/ChatHeader.jsx:25",
+      "docs/design/system/components/chat/Hero.jsx:23",
+      "docs/design/system/components/chat/Hero.jsx:26"
+     ],
+     "iife": [
+      "docs/design/system/components/chat/Hero.jsx:46",
+      "docs/design/system/foundations/_card.js:3",
+      "docs/design/system/foundations/_foundation.js:1"
+     ],
+     "nested": [
+      "docs/design/system/components/chat/Hero.jsx:20",
+      "docs/design/system/components/chat/Rail.jsx:37",
+      "docs/design/system/components/chat/Rail.jsx:43"
+     ],
+     "top-other": [],
+     "other": [
+      "docs/design/system/components/chat/ChatHeader.jsx:47",
+      "docs/design/system/components/chat/ChatHeader.jsx:51",
+      "docs/design/system/components/chat/Hero.jsx:20"
+     ]
+    }
+   }
+  },
+  {
+   "name": "odoo-unofficial-api",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/odoo-unofficial-api",
+   "ts": {
+    "files": 14,
+    "unreadable": 0,
+    "functions": 94,
+    "listed": 49,
+    "unlisted": 45,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 45,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/index.ts:20",
+      "src/index.ts:26",
+      "src/index.ts:35"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "orange-checkout-automation",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-checkout-automation",
+   "ts": {
+    "files": 38,
+    "unreadable": 0,
+    "functions": 410,
+    "listed": 78,
+    "unlisted": 332,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 18,
+     "objlit-other": 5,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 281,
+     "iife": 0,
+     "nested": 28,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [
+      "src/index.ts:11",
+      "src/index.ts:12",
+      "src/index.ts:13"
+     ],
+     "objlit-other": [
+      "src/routes/pricing.ts:112",
+      "src/routes/pricing.ts:124",
+      "src/routes/scan.ts:233"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/smoke-consent.ts:22",
+      "src/helpers/click.ts:7",
+      "src/helpers/click.ts:9"
+     ],
+     "iife": [],
+     "nested": [
+      "src/pricing/compute.ts:13",
+      "src/pricing/compute.ts:16",
+      "src/pricing/compute.ts:80"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 1,
+    "unreadable": 0,
+    "functions": 34,
+    "listed": 1,
+    "unlisted": 33,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 31,
+     "iife": 1,
+     "nested": 1,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scrapers/explore-configurator.js:10",
+      "scrapers/explore-configurator.js:14",
+      "scrapers/explore-configurator.js:16"
+     ],
+     "iife": [
+      "scrapers/explore-configurator.js:34"
+     ],
+     "nested": [
+      "scrapers/explore-configurator.js:213"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "orange-identity-card-collection",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-identity-card-collection",
+   "ts": {
+    "files": 17,
+    "unreadable": 0,
+    "functions": 74,
+    "listed": 22,
+    "unlisted": 52,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 13,
+     "iife": 0,
+     "nested": 21,
+     "top-other": 0,
+     "other": 18
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/components/IdentityForm.tsx:66",
+      "src/components/IdentityForm.tsx:81",
+      "src/components/IdentityForm.tsx:85"
+     ],
+     "iife": [],
+     "nested": [
+      "src/App.tsx:30",
+      "src/App.tsx:36",
+      "src/App.tsx:42"
+     ],
+     "top-other": [],
+     "other": [
+      "src/App.tsx:108",
+      "src/components/IdentityForm.tsx:111",
+      "src/components/IdentityForm.tsx:114"
+     ]
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "pipedream",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream",
+   "ts": {
+    "files": 599,
+    "unreadable": 0,
+    "functions": 2232,
+    "listed": 276,
+    "unlisted": 1956,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 1334,
+     "exports-assign": 0,
+     "prop-assign": 2,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 439,
+     "iife": 4,
+     "nested": 70,
+     "top-other": 2,
+     "other": 105
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "components/amplenote/actions/create-note/create-note.ts:29",
+      "components/amplenote/actions/create-task/create-task.ts:30",
+      "components/amplenote/actions/list-notes/list-notes.ts:24"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "packages/sdk/src/browser/index.ts:338",
+      "platform/lib/index.ts:192"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "components/amplenote/app/amplenote.app.ts:15",
+      "components/amplenote/common/utils.ts:41",
+      "components/amplenote/common/utils.ts:53"
+     ],
+     "iife": [
+      "packages/connect-react/src/components/ControlObject.tsx:67",
+      "packages/connect-react/src/components/ControlObject.tsx:121",
+      "packages/sdk/src/browser/index.ts:203"
+     ],
+     "nested": [
+      "components/expensify/common/utils.ts:3",
+      "components/mailbluster/sources/common/base.ts:72",
+      "packages/connect-react/src/components/ConfigureFilePicker/ConfigureFilePickerModal.tsx:35"
+     ],
+     "top-other": [
+      "components/formatting/common/numbers/formatNumber.ts:1",
+      "components/formatting/common/text/buildRegExp.ts:3"
+     ],
+     "other": [
+      "components/apitemplate_io/actions/create-image/create-image.ts:28",
+      "components/apitemplate_io/actions/create-pdf/create-pdf.ts:27",
+      "components/clientary/app/clientary.app.ts:101"
+     ]
+    }
+   },
+   "js": {
+    "files": 22852,
+    "unreadable": 0,
+    "functions": 70349,
+    "listed": 15425,
+    "unlisted": 54924,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 43234,
+     "exports-assign": 1,
+     "prop-assign": 2,
+     "class-field": 0,
+     "class-other": 1,
+     "callback": 8388,
+     "iife": 8,
+     "nested": 198,
+     "top-other": 3,
+     "other": 3089
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "components/_0codekit/_0codekit.app.mjs:8",
+      "components/_0codekit/_0codekit.app.mjs:11",
+      "components/_0codekit/_0codekit.app.mjs:24"
+     ],
+     "exports-assign": [
+      "components/supersaas/common/utils/makeEventSummary.js:4"
+     ],
+     "prop-assign": [
+      "components/servicem8/servicem8.app.mjs:132",
+      "components/servicem8/servicem8.app.mjs:141"
+     ],
+     "class-field": [],
+     "class-other": [
+      "components/error/error.app.mjs:33"
+     ],
+     "callback": [
+      "components/_1crm/_1crm.app.mjs:23",
+      "components/_1crm/actions/common/base.mjs:32",
+      "components/_1crm/actions/common/base.mjs:33"
+     ],
+     "iife": [
+      "components/github/sources/common/common-polling-pr-notifications.mjs:16",
+      "components/github/sources/new-mention/new-mention.mjs:56",
+      "components/hubstaff/sources/new-schedule/new-schedule.mjs:23"
+     ],
+     "nested": [
+      "components/_2markdown/actions/pdf-to-markdown/pdf-to-markdown.mjs:57",
+      "components/albus/actions/ask-question/ask-question.mjs:39",
+      "components/algolia/common/utils.mjs:4"
+     ],
+     "top-other": [
+      "components/microsoft_onedrive/common/httpRequest.mjs:3",
+      "components/pipedream_utils/common/numbers/formatNumber.mjs:1",
+      "components/pipedream_utils/common/text/buildRegExp.mjs:2"
+     ],
+     "other": [
+      "components/_1crm/actions/update-contact/update-contact.mjs:21",
+      "components/_1crm/actions/update-lead/update-lead.mjs:21",
+      "components/_46elks/_46elks.app.mjs:14"
+     ]
+    }
+   }
+  },
+  {
+   "name": "pyka",
+   "root": "/Users/assem/promo-app",
+   "ts": {
+    "files": 303,
+    "unreadable": 0,
+    "functions": 3951,
+    "listed": 1437,
+    "unlisted": 2514,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 2,
+     "objlit-module-const": 204,
+     "objlit-other": 29,
+     "exports-assign": 0,
+     "prop-assign": 6,
+     "class-field": 0,
+     "class-other": 3,
+     "callback": 1698,
+     "iife": 12,
+     "nested": 230,
+     "top-other": 1,
+     "other": 329
+    },
+    "examples": {
+     "objlit-exported": [
+      "src/ui/filter.ts:13",
+      "src/ui/filter.ts:14"
+     ],
+     "objlit-module-const": [
+      "_captures/plan/client.tsx:20",
+      "src/views/Account.tsx:17",
+      "src/views/Account.tsx:17"
+     ],
+     "objlit-other": [
+      "src/search/match.ts:112",
+      "src/search/match.ts:118",
+      "src/server/db.ts:125"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "_fix/timing/crit.ts:10",
+      "_fix/timing/entry.ts:13",
+      "scripts/explain-cold.mts:7"
+     ],
+     "class-field": [],
+     "class-other": [
+      "src/ui/map/html-marker.ts:54",
+      "src/ui/map/html-marker.ts:55",
+      "src/ui/map/html-marker.ts:60"
+     ],
+     "callback": [
+      "_captures/plan/harness.tsx:52",
+      "_captures/plan/harness.tsx:61",
+      "_captures/plan/harness.tsx:81"
+     ],
+     "iife": [
+      "src/engine/compare.ts:569",
+      "src/engine/search.ts:108",
+      "src/search/query.ts:216"
+     ],
+     "nested": [
+      "_captures/plan/harness.tsx:119",
+      "_fix/timing/entry.ts:26",
+      "_fix/timing/superset.ts:12"
+     ],
+     "top-other": [
+      "scripts/home-lists-parity.mts:16"
+     ],
+     "other": [
+      "scripts/explain-cold.mts:18",
+      "scripts/explain-cold.mts:18",
+      "scripts/explain-cold.mts:19"
+     ]
+    }
+   },
+   "js": {
+    "files": 190,
+    "unreadable": 0,
+    "functions": 2361,
+    "listed": 560,
+    "unlisted": 1801,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 114,
+     "exports-assign": 0,
+     "prop-assign": 33,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 1437,
+     "iife": 16,
+     "nested": 144,
+     "top-other": 50,
+     "other": 7
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "_captures/plan/serve.mjs:51",
+      "_captures/plan/serve.mjs:51",
+      "_fix/pf/jev-boot.mjs:27"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "_captures/product-flow/hydrate-probe.mjs:11",
+      "_fix/timing/picks.mjs:6",
+      "docs/design/compare/blind/style/data.js:39"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "_captures/clerk-live.mjs:9",
+      "_captures/clerk-live.mjs:10",
+      "_captures/clerk-live.mjs:40"
+     ],
+     "iife": [
+      "_captures/home-redesign/blind-style/render.js:4",
+      "_captures/round2/gestalt/dumpfn.js:1",
+      "_captures/round2/tables-and-lists/cards.js:1"
+     ],
+     "nested": [
+      "_captures/fix-r2/S/checks/m8-chrome.mjs:39",
+      "_captures/fix-r2/S/checks/m8-chrome.mjs:40",
+      "_captures/fix-r2/S/checks/m8-chrome.mjs:41"
+     ],
+     "top-other": [
+      "_captures/intermarche/drive.mjs:27",
+      "_captures/intermarche/drive.mjs:65",
+      "_captures/list-v2/drive.mjs:112"
+     ],
+     "other": [
+      "jev-boot.mjs:76",
+      "scripts/ingest-names.mjs:29",
+      "scripts/ingest-okay.mjs:267"
+     ]
+    }
+   }
+  },
+  {
+   "name": "snitch",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch",
+   "ts": {
+    "files": 212,
+    "unreadable": 0,
+    "functions": 1764,
+    "listed": 803,
+    "unlisted": 961,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 108,
+     "exports-assign": 0,
+     "prop-assign": 8,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 641,
+     "iife": 9,
+     "nested": 56,
+     "top-other": 0,
+     "other": 139
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "apps/admin/components/providers/api-context.tsx:62",
+      "apps/admin/components/providers/clerk-api-provider.tsx:29",
+      "apps/admin/components/views/action-pack.tsx:217"
+     ],
+     "exports-assign": [],
+     "prop-assign": [
+      "apps/extension/src/lib/idb.ts:22",
+      "apps/extension/src/lib/idb.ts:37",
+      "apps/extension/src/lib/idb.ts:38"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "apps/admin/app/api/test-auth/route.ts:35",
+      "apps/admin/app/api/test-auth/route.ts:47",
+      "apps/admin/app/api/test-auth/route.ts:63"
+     ],
+     "iife": [
+      "apps/extension/src/background.ts:160",
+      "apps/extension/src/background.ts:1054",
+      "apps/extension/src/background.ts:1064"
+     ],
+     "nested": [
+      "apps/admin/components/discovery/coverage.tsx:19",
+      "apps/admin/components/discovery/curation.tsx:42",
+      "apps/admin/components/discovery/curation.tsx:50"
+     ],
+     "top-other": [],
+     "other": [
+      "apps/admin/components/auth/test-sign-in.tsx:41",
+      "apps/admin/components/discovery/curation.tsx:65",
+      "apps/admin/components/discovery/curation.tsx:74"
+     ]
+    }
+   },
+   "js": {
+    "files": 22,
+    "unreadable": 0,
+    "functions": 35,
+    "listed": 12,
+    "unlisted": 23,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 21,
+     "iife": 0,
+     "nested": 1,
+     "top-other": 1,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "infra/capture-sim/redaction-normalize.mjs:26",
+      "infra/verify/assert-executed-tests.mjs:35",
+      "infra/verify/assert-executed-tests.mjs:93"
+     ],
+     "iife": [],
+     "nested": [
+      "infra/verify/assert-executed-tests.mjs:68"
+     ],
+     "top-other": [
+      "infra/verify/assert-executed-tests.mjs:91"
+     ],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "status",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status",
+   "ts": {
+    "files": 106,
+    "unreadable": 0,
+    "functions": 687,
+    "listed": 410,
+    "unlisted": 277,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 4,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 252,
+     "iife": 1,
+     "nested": 17,
+     "top-other": 0,
+     "other": 3
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "scripts/migrate-remote.ts:96",
+      "scripts/retention-plan.ts:46",
+      "scripts/retention-plan.ts:48"
+     ],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/build-examples.ts:299",
+      "scripts/build-examples.ts:441",
+      "scripts/build-examples.ts:477"
+     ],
+     "iife": [
+      "scripts/build-examples.ts:567"
+     ],
+     "nested": [
+      "scripts/manifest-to-sql.ts:214",
+      "scripts/migrate-remote.ts:54",
+      "src/api/incidents.ts:89"
+     ],
+     "top-other": [],
+     "other": [
+      "src/domain/migration-retry.ts:353",
+      "src/probe/http.ts:29",
+      "src/tick.ts:119"
+     ]
+    }
+   },
+   "js": {
+    "files": 8,
+    "unreadable": 0,
+    "functions": 24,
+    "listed": 13,
+    "unlisted": 11,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 10,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 1,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "scripts/build-pages.mjs:157",
+      "scripts/negative-control.mjs:102",
+      "scripts/stamp.mjs:30"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [
+      "scripts/cpu-report.mjs:64"
+     ],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "theirstack-unofficial-api",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/theirstack-unofficial-api",
+   "ts": {
+    "files": 9,
+    "unreadable": 0,
+    "functions": 23,
+    "listed": 11,
+    "unlisted": 12,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 11,
+     "iife": 0,
+     "nested": 1,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/index.ts:18",
+      "src/index.ts:24",
+      "src/index.ts:33"
+     ],
+     "iife": [],
+     "nested": [
+      "src/services/jobs.service.ts:24"
+     ],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "workday-unofficial-api",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/workday-unofficial-api",
+   "ts": {
+    "files": 15,
+    "unreadable": 0,
+    "functions": 103,
+    "listed": 54,
+    "unlisted": 49,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 45,
+     "iife": 0,
+     "nested": 3,
+     "top-other": 0,
+     "other": 1
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "src/index.ts:20",
+      "src/index.ts:27",
+      "src/index.ts:33"
+     ],
+     "iife": [],
+     "nested": [
+      "src/middleware/query-parser.ts:66",
+      "src/services/jobs.service.ts:66",
+      "src/services/jobs.service.ts:403"
+     ],
+     "top-other": [],
+     "other": [
+      "src/services/jobs.service.ts:72"
+     ]
+    }
+   },
+   "js": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  }
+ ],
+ "totals": {
+  "ts": {
+   "files": 23359,
+   "listed": 55252,
+   "unlisted": 63450,
+   "listable": 0,
+   "kinds": {
+    "objlit-exported": 24,
+    "objlit-module-const": 261,
+    "objlit-other": 9338,
+    "exports-assign": 0,
+    "prop-assign": 224,
+    "class-field": 107,
+    "class-other": 83,
+    "callback": 40609,
+    "iife": 205,
+    "nested": 5071,
+    "top-other": 22,
+    "other": 7506
+   }
+  },
+  "js": {
+   "files": 23781,
+   "listed": 19185,
+   "unlisted": 92201,
+   "listable": 0,
+   "kinds": {
+    "objlit-exported": 9,
+    "objlit-module-const": 0,
+    "objlit-other": 53776,
+    "exports-assign": 141,
+    "prop-assign": 1226,
+    "class-field": 5,
+    "class-other": 3336,
+    "callback": 18737,
+    "iife": 491,
+    "nested": 9756,
+    "top-other": 219,
+    "other": 4505
+   }
+  }
+ }
+}

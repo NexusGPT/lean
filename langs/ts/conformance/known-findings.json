@@ -1,0 +1,781 @@
+{
+ "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause Four rows added on 29 Oct at the merge of lane copy-override-readings (pair array_copy_identity, class array identity). Re-baselined on the admission head of 2026-10-29 (the doubles merge, all 204 pairs, --jobs 4): 118 entries not seen in a pair that ran were retired (70 an integer past 2^53: the model is exact, Node rounds to binary64, 43 signed zero: Node -0, the model 0, 3 real arithmetic: the model is exact, Node rounds to binary64, 2 aliased arguments: one object at two places of the input): the faithful number reading makes a unit's inexact operations uninterpreted, so those units no longer execute against Node; 2 added (signed zero on a pass-through unit: proof_hunt_13/spreadCopy, reach_absent/Changed.f). The retired entries are in the git history of this file at e2c729a0.",
+ "findings": [
+  {
+   "kind": "disagree",
+   "pair": "heap_enumerated",
+   "unit": "writeThenRead",
+   "cause": "aliased arguments: one object at two places of the input",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 0, parent: result: model 9007199254740991 against 1"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operands_arguments",
+   "unit": "first",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992",
+   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operands_arguments",
+   "unit": "second",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992",
+   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "adapters",
+   "unit": "pick",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "adapters",
+   "unit": "shift",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "computed_literal_keys",
+   "unit": "byStatus",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result.active: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "computed_literal_keys",
+   "unit": "counts",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result.active: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "computed_literal_keys",
+   "unit": "partial",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result.b: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "dynamic_reads",
+   "unit": "optional",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "dynamic_reads",
+   "unit": "undefinedValues",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 15, parent: result[1]: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "built",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: .a: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "clear",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument box after the call: .count: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "copyBag",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "copyRec",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "markRead",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument box after the call: .count: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_3",
+   "unit": "rename",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument box after the call: .count: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_optional",
+   "unit": "display",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument u after the call: .visits: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_optional",
+   "unit": "forget",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument u after the call: .visits: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_optional",
+   "unit": "greeting",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument u after the call: .visits: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_optional",
+   "unit": "pad",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap_shapes",
+   "unit": "off",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument b after the call: .count: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_conditional",
+   "unit": "caption",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .qty: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_conditional",
+   "unit": "count",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .qty: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_literals",
+   "unit": "clear",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_literals",
+   "unit": "reset",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument t after the call: .size: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_literals",
+   "unit": "title",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument t after the call: .size: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_module",
+   "unit": "key",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .id: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_module",
+   "unit": "tagged",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument i after the call: .id: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_template",
+   "unit": "badge",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument u after the call: .age: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_template",
+   "unit": "handle",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument u after the call: .age: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_tuples",
+   "unit": "make",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: .1: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "heap5_tuples",
+   "unit": "tagOf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument t after the call: .id: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "inline_callee",
+   "unit": "nameOf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: argument user after the call: .visits: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "inline_callee",
+   "unit": "rename",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "lint_misfires",
+   "unit": "blockShadow",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "logic_values",
+   "unit": "kind",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "map_block",
+   "unit": "labels",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 20, parent: argument seen after the call[0]: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "map_block",
+   "unit": "labelsInner",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 20, parent: argument seen after the call[0]: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "map_block",
+   "unit": "sizes",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 20, parent: argument seen after the call[0]: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mixed_logic_values",
+   "unit": "nullishNumber",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutation",
+   "unit": "addTag",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument user after the call: .visits: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutation",
+   "unit": "countOnly",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutation",
+   "unit": "rename",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result: .visits: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "mutation",
+   "unit": "tagTwice",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: argument user after the call: .visits: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "andAbsence",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "boundary",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "boundaryResult",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "coalesce",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "nullableDefault",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "nullEcho",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "nullOnly",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "null_undefined",
+   "unit": "untouched",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "numbers_bits",
+   "unit": "numericIdentity",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0/1 (0) against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "open_datatype",
+   "unit": "assignCopy",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "open_datatype",
+   "unit": "copyRec",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "open_datatype",
+   "unit": "restOf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 16, parent: result.a: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "assignedCoalesce",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "assignedNullable",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "localPostfix",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "operators_values",
+   "unit": "path",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "param_rebind",
+   "unit": "drained",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "promise_module_nullish",
+   "unit": "widened",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_8",
+   "unit": "bigInt",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_8",
+   "unit": "negZero",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "rename_parameter",
+   "unit": "width",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "withheld",
+   "first": "input 11, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "signed_zero",
+   "unit": "normalized",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "signed_zero",
+   "unit": "plusZero",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "spread_outside",
+   "unit": "appendAbsent",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: argument xs after the call[0]: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "this_receiver",
+   "unit": "sameOf",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: result.n: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "small_forms",
+   "unit": "build",
+   "cause": "value",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model dictionary entry \"vh6y1\" has no match"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_2",
+   "unit": "bang",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "added": "600dd759: pair unchanged; lane A translates x! since merge fea80f88 (opaque-values), refused before",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copy_identity",
+   "unit": "spreadSame",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model",
+   "side": "candidate"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copy_identity",
+   "unit": "sliceSame",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model",
+   "side": "candidate"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copy_identity",
+   "unit": "concatSame",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model",
+   "side": "candidate"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copy_identity",
+   "unit": "bothCopied",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "proved",
+   "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_13",
+   "unit": "spreadCopy",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result.x: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "reach_absent",
+   "unit": "Changed.f",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "unlisted",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "scope": [
+  "is_base"
+ ],
+ "equal": {
+  "is_base": false
+ },
+ "why": "class 12, instanceof against a same-file class named by its name while its heritage changed. Failing on 1e55e21: Equal_is_base proved and the proof-hunt row isBase (lane B WITNESS).",
+ "b": {
+  "isBase": "WITNESS"
+ }
+}

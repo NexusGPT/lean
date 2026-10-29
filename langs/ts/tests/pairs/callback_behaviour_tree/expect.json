@@ -1,0 +1,10 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "A function the rendered tree holds and lane B never fires (a render prop, not on[A-Z]) is an escaped function: shown by its handle and driven at the end of the observation (design/callbacks.md), no longer keyed by its text when the descriptor reader stops at a statement. List: the held function rewritten with a renamed local and an early return, PASS-bounded (it was ASK held-handler on 92eebd9). ListDiffers: toUpperCase against toLowerCase, WITNESS by the drive. Lane A refuses the unresolved component by design, so the pair checks lane B alone.",
+ "b": {
+  "List": "PASS-bounded",
+  "ListDiffers": "WITNESS"
+ }
+}

@@ -1,3 +1,3 @@
-export function same(a: number[], b: number[]): boolean {
+export function same(a: Date[], b: Date[]): boolean {
   return a === b;
 }

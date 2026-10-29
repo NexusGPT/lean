@@ -5,7 +5,7 @@
   ],
   "equal": {
     "choose": true,
-    "wrong": false
+    "wrong": "witness"
   },
   "why": "Nested if statements keep the conditions and selected result. The wrong rewrite returns 30 instead of 3 at zero.",
   "b": {

@@ -1,0 +1,178 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Environment } from './fake.mjs';
+import { captureEnvironment, snapshot, witnessRecord } from './record.mjs';
+
+test('capture preserves answers, throws, clock, rng and the original trace', () => {
+  function exercise(env, capture) {
+    if (capture) captureEnvironment(env);
+    const x = env.fake('arg0', { kind: 'service', members: { foo: { kind: 'method', returns: { kind: 'number' } } } });
+    const args = capture ? snapshot(env, [x, -0]) : null;
+    const result = [];
+    for (let k = 0; k < 20; k++) { try { result.push(x.foo(k)); } catch (e) { result.push(e.message); } }
+    result.push(Number(x), env.clock('Date.now'), env.clock('Date.now'), env.rng(), env.rng());
+    return { env, args, result: result.map(x => x?.__isFake ? x.__fakePath : x), trace: JSON.stringify(env.trace) };
+  }
+  const a = exercise(new Environment(17), false), b = exercise(new Environment(17), true);
+  assert.deepEqual(b.result, a.result); assert.equal(b.trace, a.trace);
+  const r = witnessRecord({ seed: 1, leanHead: 'test-head', input: 0, sides: { parent: b, candidate: b } });
+  assert.equal(r.schema, 'witness-record/v2');
+  assert.equal(r.sides.parent.clock.length, 2);
+  assert.equal(r.sides.parent.random.length, 2);
+  assert.equal(r.sides.parent.events.filter(e => e.op === 'call').length, 20);
+  assert.ok(r.sides.parent.events.some(e => e.outcome?.kind === 'throw'));
+  assert.doesNotThrow(() => JSON.stringify(r));
+});
+
+test('captures load answers before the v1 trace is cleared and keeps cycles', () => {
+  const env = new Environment(1); captureEnvironment(env); env.loading = true;
+  env.module('port').ready(); env.loading = false; env.trace.length = 0;
+  const a = {}; a.self = a;
+  const args = snapshot(env, [a, a]);
+  const r = witnessRecord({ seed: 1, leanHead: 'head', input: 0, sides: { parent: { env, args }, candidate: { env, args } } });
+  assert.ok(r.sides.parent.events.some(e => e.phase === 'load'));
+  assert.ok(r.sides.parent.imports.includes('port'));
+  assert.equal(r.sides.parent.args.v[1].t, 'ref');
+});
+
+test('runPair emits a separate v2 record including the head and drawn input', async () => {
+  const { runPair } = await import('./run.mjs');
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'witness-record-test-'));
+  try {
+    fs.writeFileSync(path.join(d, 'parent.ts'), 'export function f(x: number) { return Date.now() + Math.random() + x; }');
+    fs.writeFileSync(path.join(d, 'candidate.ts'), 'export function f(x: number) { return Date.now() + Math.random() + x + 1; }');
+    const r = await runPair({ parent: path.join(d, 'parent.ts'), candidate: path.join(d, 'candidate.ts'), unit: 'f', project: false, n: 1 });
+    assert.equal(r.verdict, 'WITNESS');
+    assert.equal(r.witnesses[0].record?.schema, 'witness-record/v2');
+    assert.match(r.witnesses[0].record.leanHead, /^[a-f0-9]{40}$/);
+    assert.equal(r.witnesses[0].record.sides.parent.clock.length, 1);
+    assert.equal(r.witnesses[0].record.sides.parent.random.length, 1);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
+test('pr report passes the same v2 record through the checked row', async () => {
+  const { prReport, reportJSON } = await import('../pr.mjs');
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path'); const { spawnSync } = await import('node:child_process');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'witness-report-test-'));
+  const git = (...args) => { const r = spawnSync('git', ['-C', d, ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr); return r.stdout.trim(); };
+  try {
+    git('init'); git('config', 'user.name', 'record test'); git('config', 'user.email', 'test@example.invalid');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { return x; }'); git('add', 'a.ts'); git('commit', '-m', 'before');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { return x + 1; }');
+    const rows = await prReport({ repo: d, base: 'HEAD', project: false, n: 1, dafnySeconds: 1, fresh: true });
+    const row = reportJSON(rows).rows.find(r => r.unit === 'f');
+    assert.equal(row.verdict, 'WITNESS');
+    assert.equal(row.witness.record?.schema, 'witness-record/v2');
+    assert.deepEqual(JSON.parse(JSON.stringify(reportJSON(rows))).rows.find(r => r.unit === 'f').witness.record, row.witness.record);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
+test('PASS-bounded carries every draw, per-parameter generator counts and explicit reach status', async () => {
+  const { runPair } = await import('./run.mjs'); const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'bounded-record-test-'));
+  try {
+    for (const side of ['parent', 'candidate']) fs.writeFileSync(path.join(d, side + '.ts'), 'export function f(x: number) { return x + Date.now(); }');
+    const r = await runPair({ parent: path.join(d, 'parent.ts'), candidate: path.join(d, 'candidate.ts'), unit: 'f', project: false, n: 3 });
+    assert.equal(r.verdict, 'PASS-bounded');
+    assert.equal(r.record?.schema, 'witness-record/v2');
+    assert.equal(r.record.draws.length, 3);
+    assert.equal(r.record.drawDomain.parameters[0].count, 3);
+    assert.equal(r.record.reach.status, 'not recorded');
+    // a certificate draw is accounting: which fakes answered how often, never a second transcript
+    assert.ok(r.record.draws.every(d => d.sides.parent.ops.clock === 1 && d.sides.parent.events === 1 && !('timeline' in d.sides.parent)));
+    assert.equal(r.bound.record, undefined);
+    assert.equal(JSON.stringify(r).split('"kind":"unit"').length - 1, 1);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
+test('lane-A-refused PR rows retain the bounded lane B certificate', async () => {
+  const { prReport } = await import('../pr.mjs');
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path'); const { spawnSync } = await import('node:child_process');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'refused-record-test-'));
+  const git = (...args) => { const r = spawnSync('git', ['-C', d, ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr); };
+  try {
+    git('init'); git('config', 'user.name', 'test'); git('config', 'user.email', 'test@example.invalid');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { var y = x; return y; }'); git('add', '.'); git('commit', '-m', 'before');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { var y = x; return y * 1; }');
+    const r = (await prReport({ repo: d, base: 'HEAD', project: false, n: 3, dafnySeconds: 1, fresh: true })).find(r => r.unit === 'f');
+    assert.match(r.coverage, /^refused:/); assert.equal(r.laneB, 'PASS-bounded');
+    assert.equal(r.certificate?.lanes.B.record.schema, 'witness-record/v2');
+    assert.equal(r.certificate.lanes.B.record.drawDomain.parameters[0].count, 3);
+    assert.equal(JSON.stringify(r).split('"kind":"unit"').length - 1, 1);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
+test('method programs carry constructor inputs and every command snapshot', async () => {
+  const { runPair } = await import('./run.mjs'); const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'program-record-test-'));
+  try {
+    const src = 'export class C { n: number; constructor(x: number) { this.n = x; } step(x: number) { this.n += x; return this.n; } }';
+    fs.writeFileSync(path.join(d, 'parent.ts'), src); fs.writeFileSync(path.join(d, 'candidate.ts'), src.replace('this.n += x', 'this.n += x + 1'));
+    const r = await runPair({ parent: path.join(d, 'parent.ts'), candidate: path.join(d, 'candidate.ts'), unit: 'C.step', project: false, n: 1 });
+    assert.equal(r.verdict, 'WITNESS'); const w = r.witnesses[0]; assert.match(w.input, /^program /);
+    assert.equal(w.record.invocation.kind, 'program');
+    assert.equal(w.record.sides.parent.commands.length, w.program.length);
+    assert.equal(w.record.sides.parent.args.t, 'array');
+    assert.ok(r.record.programRuns.some(p => p.commands === w.record.sides.parent.commands.length && p.sides.parent.events === w.record.sides.parent.events.length));
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
+test('capture never invokes user accessors or proxy traps', () => {
+  const env = new Environment(1); captureEnvironment(env); let hits = 0;
+  const value = { get [Symbol.toStringTag]() { hits++; return 'Object'; } };
+  const proxy = new Proxy({}, { get() { hits++; return 1; }, ownKeys() { hits++; return []; } });
+  snapshot(env, [value, proxy]);
+  assert.equal(hits, 0);
+});
+
+test('a worker stopped at its bound retains an explicit incomplete unit record', async () => {
+  const { runPair } = await import('./run.mjs'); const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'stopped-record-test-'));
+  try {
+    for (const side of ['parent','candidate']) fs.writeFileSync(path.join(d, side + '.ts'), 'export function f() { while (true) {} }');
+    const r = await runPair({ parent: path.join(d,'parent.ts'), candidate: path.join(d,'candidate.ts'), unit: 'f', unitSeconds: 0.01, project: false });
+    assert.equal(r.kind, 'spin-bound'); assert.equal(r.record?.version, 2); assert.equal(r.record.drawDomain.status, 'not recorded');
+  } finally { fs.rmSync(d,{recursive:true,force:true}); }
+});
+
+test('checked rows carry the unit certificate once, bounded and asked alike', async () => {
+  const { prReport, reportJSON } = await import('../pr.mjs');
+  const fs = await import('node:fs'); const os = await import('node:os'); const path = await import('node:path'); const { spawnSync } = await import('node:child_process');
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'checked-record-test-'));
+  const git = (...args) => { const r = spawnSync('git', ['-C', d, ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr); };
+  try {
+    git('init'); git('config', 'user.name', 'test'); git('config', 'user.email', 'test@example.invalid');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { return x + Date.now(); }'); git('add', '.'); git('commit', '-m', 'before');
+    fs.writeFileSync(path.join(d, 'a.ts'), 'export function f(x: number) { return Date.now() + x; }');
+    const row = reportJSON(await prReport({ repo: d, base: 'HEAD', project: false, n: 3, dafnySeconds: 1, fresh: true })).rows.find(r => r.unit === 'f');
+    assert.equal(row.certificate.lanes.B.record?.invocation.kind, 'unit', JSON.stringify(row.certificate.lanes.B).slice(0, 300));
+    assert.equal(JSON.stringify(row).split('"kind":"unit"').length - 1, 1);
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+});
+
+test('a key query on a captured fake reaches the fake once, and the record says it is unrecorded', () => {
+  const run = capture => {
+    const env = new Environment(3); if (capture) captureEnvironment(env);
+    const x = env.fake('arg0', { kind: 'record', fields: { size: { kind: 'number' } } });
+    const keys = Object.keys(x); const spread = { ...x };
+    return { env, trace: JSON.stringify(env.trace), keys: JSON.stringify(keys), spread: Object.keys(spread).length };
+  };
+  const a = run(false), b = run(true);
+  assert.equal(b.trace, a.trace); assert.equal(b.keys, a.keys); assert.equal(b.spread, a.spread);
+  const r = witnessRecord({ seed: 1, leanHead: 'h', input: 0, sides: { parent: { env: b.env, args: null }, candidate: { env: b.env, args: null } } });
+  assert.ok(r.sides.parent.unrecorded.some(u => /key query/.test(u.reason)), JSON.stringify(r.sides.parent.unrecorded));
+  assert.ok(!r.sides.parent.events.some(e => e.op === 'keys'));
+});
+
+test('the CLI result reaches a slow pipe reader whole, whatever its size', async () => {
+  const { spawnSync } = await import('node:child_process'); const path = await import('node:path'); const { fileURLToPath } = await import('node:url');
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const f = path.join(here, '../tests/fixtures/self-pair/load-time-work.ts');
+  const q = (x) => `'${x.replace(/'/g, `'\\''`)}'`;
+  // the reader sleeps before it reads: the child finishes writing into a full pipe buffer before anyone drains it
+  const r = spawnSync('sh', ['-c', `${q(process.execPath)} ${q(path.join(here, 'run.mjs'))} --parent ${q(f)} --candidate ${q(f)} --unit label --n 30 --no-project | (sleep 3; cat)`], { encoding: 'utf8', maxBuffer: 1 << 26 });
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(r.stdout.length > 65536, `the fixture's result must exceed one pipe buffer, got ${r.stdout.length}`);
+  assert.equal(JSON.parse(r.stdout).verdict, 'PASS-bounded');
+});

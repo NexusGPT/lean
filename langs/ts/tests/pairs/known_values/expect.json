@@ -1,0 +1,12 @@
+{
+ "scope": ["quote", "order_total", "per_seat", "free_seats"],
+ "equal": {"quote": false, "order_total": true, "per_seat": false, "free_seats": true},
+ "why": "Known values (design/known-values.md): the pair's .lean/values.json lists the plans the price table holds, by function and parameter for quote and by type name (PlanId) for orderTotal's record field, and a seat count for perSeat beside a value its type does not admit (dropped, named in bound.values.rejected). Lane B draws the listed values first, the boundary walk under them, then its own draws. quote is the unreached_body quote (the candidate discounts above five seats): without the file every drawn plan throws at the guard and lane B says ASK (pair unreached_body); with it the listed plans reach the body and the change is a WITNESS (['pro', 6]). orderTotal is untouched; its order.plan is listed by type name, so lane B reaches the body (PASS-bounded where it was ASK); its lemma is proved (the module-cell read is keyed by the code it reaches, which is the same on both sides), and check.mjs withholds the proof as ASK:obligation because the unit reads the module cell PRICES without a transition (the state-completeness audit), so the verdict is ASK with lane B's PASS-bounded in the certificate. perSeat is a refactor of its guard (seats <= 0 against 0 >= seats): proved, PASS-bounded. freeSeats is untouched and reads no module cell: proved. A listed value never changes what a verdict says: the PASS-bounded rows stay bounded and the certificate names the values file by its hash.",
+ "b": {"quote": "WITNESS", "orderTotal": "PASS-bounded", "perSeat": "PASS-bounded", "freeSeats": "PASS-bounded"},
+ "check": {
+  "quote": {"verdict": "WITNESS"},
+  "orderTotal": {"verdict": "ASK", "laneA": "ASK:obligation", "reason": "obligation: module PRICES: read without a transition"},
+  "perSeat": {"verdict": "PASS-bounded"},
+  "freeSeats": {"verdict": "PASS-proved"}
+ }
+}

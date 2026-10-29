@@ -1,0 +1,7 @@
+{
+  "scope": ["cloned", "both_cloned", "cloned_alias"],
+  "equal": { "cloned": false, "both_cloned": true, "cloned_alias": false },
+  "why": "cloned: structuredClone(p) keeps every own key of p (HTML 2.7.3), the declared fields by hand keep x and y only; lane B draws p with an undeclared key; must not prove. bothCloned: one copy on each side: proved. clonedAlias: a copy against the source itself, another identity: not proved, witnessed on the graph.",
+  "heap": true,
+  "b": { "cloned": "WITNESS", "bothCloned": "PASS-bounded", "clonedAlias": "WITNESS" }
+}

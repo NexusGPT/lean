@@ -1,0 +1,15 @@
+{
+ "scope": [
+  "big_int",
+  "neg_zero"
+ ],
+ "equal": {
+  "neg_zero": "witness",
+  "big_int": "witness"
+ },
+ "why": "class 8, the number envelope: the real reading proved Equal_neg_zero and Equal_big_int (no signed zero, no 2^53 bound). The doubles reading (design/doubles.md) reads both over binary64 and finds each a counterexample the replay confirms in Node: x = -0 for negZero, x = 2^54 - 2 for bigInt. Lane B witnesses both at -0 (signed-zero)",
+ "b": {
+  "negZero": "WITNESS",
+  "bigInt": "WITNESS"
+ }
+}

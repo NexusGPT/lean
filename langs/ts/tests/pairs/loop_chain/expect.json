@@ -11,7 +11,7 @@
  "equal": {
   "labels": true,
   "doubled": true,
-  "positives": true,
+  "positives": false,
   "large": false,
   "numbered": false,
   "open_names": true,

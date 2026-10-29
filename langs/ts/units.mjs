@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// lean units: the units of one TypeScript file (top-level functions, arrow consts, class methods) with their lines.
+// lean units: the units of one TypeScript file (top-level functions, arrow consts, class methods, members of an exported or
+// module-const object literal) with their lines.
 //   node units.mjs <file.ts> [--project <tsconfig>|--no-project]   -> JSON list [{name, form, top, start, end, lines}]
 // Syntax only when --no-project; the names match what check.mjs, run.mjs and translate.mjs take as --unit.
 import fs from 'node:fs';
@@ -13,6 +14,6 @@ const { sf } = loadProgram(path.resolve(file), { project });
 const out = [];
 for (const [name, u] of topLevelFunctions(sf)) {
   const start = lineOf(sf, u.node.getStart(sf)), end = lineOf(sf, u.node.getEnd());
-  out.push({ name, form: u.cls ? 'method' : 'function', top: !u.cls, start, end, lines: end - start + 1 });
+  out.push({ name, form: u.form === 'callback' ? 'callback' : u.cls ? 'method' : u.literal ? 'literal-method' : 'function', top: !u.cls && !u.literal && !u.enclosingUnit, start, end, lines: end - start + 1 });
 }
 process.stdout.write(JSON.stringify(out));

@@ -1,0 +1,10 @@
+{
+ "scope": [],
+ "equal": {},
+ "why": "Certified-rung fixture; node --test langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs checks both decisions and refusals.",
+ "rung": null,
+ "laneBOnly": true,
+ "b": {
+  "f": "WITNESS"
+ }
+}

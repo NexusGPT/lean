@@ -32,7 +32,7 @@
   "streamed": true,
   "interleave": true,
   "untouched": true,
-  "producer_step": false,
+  "producer_step": "witness",
   "deferred": false,
   "deferred_consumer": false,
   "first_value": true,

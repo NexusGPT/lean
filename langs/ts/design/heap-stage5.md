@@ -453,3 +453,74 @@ counter and length integers (`|Items_|`) and reads its item through a total `Ite
 on the parent, `0` on the candidate), and the ordinary lane's proof of them is its signed-zero gap.
 Pair `heap5_reach`: `mean` (untouched, a pure loop then a guarded division: proved), `whole` (`~~x` for `x | 0`:
 proved), `half` (WITNESS). At the previous commit the pair's Dafny had seven resolution errors (the real-file loop).
+
+### 2026-10-28: heap shapes (lane heap-shapes)
+
+Five writes the value reading cannot carry, read by the core as steps on a node a parameter holds (a node reached from
+a parameter of the unit by field steps only, `r.headers`, `b.a.c`, a `!` on the way). Lint predicates in the mutation
+region of `lint.mjs` (`heldNodePath`, `heldAlias`, `heldCall`, `plainNode`, `primDict`); readings in `heap.mjs`.
+(1) `Object.assign(t, { a: x, b })` with literal sources onto a record (`assignLiterals`): the target, every value in
+source order, then one `Set_` per key in the literal's key order (ECMA-262 20.1.2.1: the arguments are evaluated first,
+then each source's own keys are copied in order by [[Set]]). A literal's keys are its text, so the copy writes exactly
+those fields; a key the record does not declare, a value of another shape, a spread or computed member stays out.
+(2) `pick(b, true).status = v`, `this.current().n = 0`: the core reads the call (a core unit returning a reference)
+then `Set_` on the node it returns. The lint admits it when every return of the callee is a field path of its own
+parameters (or of `this`) and every object the caller hands it is a node of the caller's parameters.
+(3) `r.headers[k] = v` on a `Record<string, T>` of a primitive: `DictSet_` on the node (a new key goes last).
+(4) `const names = b.names; names.splice(names.indexOf(n) >>> 0, 1)`: a const name for a node is that node's
+reference, so the library rows, field writes and `++` through it are steps on it; `>>> 0` is the numbers reading's
+`JsUshr` (a missing item's -1 becomes 4294967295 and `Splice_`'s clamp deletes nothing, as JavaScript does).
+(5) `a === b` on two plain data records or arrays: Dafny equality of `Ref`s, JavaScript's object identity.
+```dafny
+function sign(hw_: HWorld, r: Ref, token: string): (HWorld, ())
+{ var o0_ := Get_R_d61ddd12_headers(hw_, r); var v1_ := "lean";
+  var hw_ := Set_R_5f5303ed_auth(hw_, o0_, token); var hw_ := Set_R_5f5303ed_agent(hw_, o0_, v1_); (hw_, ()) }
+```
+Soundness: each reading is a total prelude step on a `Ref`, exact on every well-formed heap whatever shares what (the
+lemma never assumes two names are two nodes). Outside the core the value reading copies a node, so the lint's new
+admissions would let a dropped write prove equal there: the identity guard (`layer1Risk`, `identitySkeleton`) names
+Object.assign onto a node below an input, a write through a call's result, a write through a const name bound to a
+path below an input, and `===` between two objects (here, or in a same-file callee: a caller's lemma unfolds a callee
+that has none, `refUnits`), and leaves the identity shape unreadable, so the theorem withholds that lemma
+(ASK:identity) and lane B decides. A module object, an import, a Map's value or a call of another file is no
+parameter's node: those writes keep alias-mutation, assign-target, index-assign or property-assign (escape
+`heap_shapes_outside_node`). The core's record cell holds no key order, so a literal source's key order is not
+observed when the target lacks an optional key (the stage 4 field write's own gap).
+Out: a dictionary behind a const name, a compound dictionary write, a mutator through a call's result, `===` against
+an optional or any other object type, a const name for the parameter itself (`const a = values`: alias-mutation, as
+the census-report fixture keeps it), a name for an element (escape `parameter_mutation`). Open: outside the core the ordinary translator throws on (3) (`newValue`,
+translate.mjs, a TypeError, so the whole file loses lane A; never a proof), a guard line there is the lead's.
+Pair `heap_shapes`: `sign` (WITNESS), `stamp` (proved, canonical heap), `finish` (WITNESS), `close` (proved), `cacheOff`
+(proved), `tag` (WITNESS: the key order), `off` (WITNESS: no `>>> 0`), `drop` (proved), `pin` (copy, WITNESS), `share`
+(alias, proved), the rest untouched. Moving a field write across a splice is equal and timed out (not proved).
+Census with the rule report (`census.mjs --report`), units stopped by each rule as the first one, base 6661006 against
+this lane; nexus tree 26,520 units, inside 23,753 -> 23,753; n8n tree 6,337 units, inside 4,314 -> 4,315:
+```text
+nexus  alias-mutation 144 -> 144, assign-target 13 -> 13, index-assign 95 -> 95, property-assign 48 -> 48, reference-equality 22 -> 22
+n8n    alias-mutation 93 -> 93,   assign-target 120 -> 120, index-assign 86 -> 85, property-assign 76 -> 76, reference-equality 1 -> 1
+```
+The real instances sit on shapes the core holds no cell for: a dictionary of records (`state.chats[id]`, 62 of nexus's
+alias-mutation findings), receiver state (`this.state.turns`), index signatures of any (`IDataObject`), Map values, a
+call result that is an element (`this.activeExecutions[id]`), a non-literal Object.assign source. Each reading admits
+exactly what the core carries; the measured reach waits on those shapes, not on these readings. Heap core census
+(`design/heap-core-census.mjs`, 39 roots, modules unresolved), base against this lane: core 579 -> 579, units 53,918;
+outside the core, exposed 32,906 -> 32,945 and determinate 16,593 -> 16,554 (the guard's new classes: identity
+comparison 42, in a callee 38, write through a call's result 31; nested write through an input 1,246 -> 1,260, since
+Object.assign onto a node below an input now counts as one).
+Round 2 (same day). (a) A false proof on the base, closed: the same-shape Object.assign row read only the source's
+declared fields, so `Object.assign(t, s)` proved equal to `t.a = s.a; t.b = s.b` (Equal_copy_into proved, canonical
+heap), while a source of the declared type may carry more keys (structural typing) and Object.assign copies them.
+Object.assign is now read only from a literal source (shape 1); a record-typed source is assign-target by name (escape
+`assign_record_source`). A literal target, `Object.assign({}, a)`, copies the same extra keys as `{ ...a }` does: the
+spread readings share that assumption, left as it was.
+(b) Shape 6, a dictionary of records (`Record<string, T>`, T a plain data record) a parameter's node holds: the value
+under a key is a node, `DictGet_` then a field step (`s.chats[id].unread = 0`, `const chat = s.chats[id]; chat.title =
+t`), and a record stored under a key is `DictSet_` of its reference; the cell's values are `Is<T>` (WF), the canonical
+walk follows them in key order as a Map's. A key the unit has not written may be missing (JavaScript throws a
+TypeError) or a name of Object.prototype (it reads a function): the read marks the world, so a proof holds only where
+the unit wrote the key. A record stored under a key that may be `__proto__` would replace the prototype: the lint
+names it `prototype` (escape `heap_shapes_dict_proto_key`) and the core marks it. Pair `heap_shapes`: `seed` (the
+nested write dropped: WITNESS), `later` (a read through the key moved across a write of another cell: proved),
+`named` (proved), `retitle` (two writes through an unwritten key swapped: not proved, and lane B witnesses the
+TypeError thrown by the other statement). The real instances (`state.chats[id]` in reducers) test `if (!chat)`, a
+truthiness of a reference, which the core does not read.

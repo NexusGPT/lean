@@ -21,12 +21,12 @@
   "parse_numeric"
  ],
  "equal": {
-  "flags": false,
+  "flags": "witness",
   "coerce": true,
-  "zero_guard": false,
+  "zero_guard": "witness",
   "untouched": true,
   "unsigned": true,
-  "negative_zero": false,
+  "negative_zero": "witness",
   "infinity_sign": false,
   "nan_test": false,
   "boolean_number": true,
@@ -36,9 +36,9 @@
   "real_remainder": true,
   "parse_prefix": true,
   "string_number": true,
-  "divide": false,
-  "observe_divide": false,
-  "observe_module": false,
+  "divide": "witness",
+  "observe_divide": "witness",
+  "observe_module": "witness",
   "parse_numeric": false
  },
  "why": "finite bitwise coercions and rounding are exact; changed masks, dropped zero guard and special values remain distinguishable. x|0 and ~~x wrap identically; Math.trunc would require an int32 bound. Parsing and string coercion retain opaque admission.",

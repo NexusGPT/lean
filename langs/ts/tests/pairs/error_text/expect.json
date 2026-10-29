@@ -1,0 +1,15 @@
+{
+ "scope": [
+  "engine_only",
+  "user_text"
+ ],
+ "equal": {
+  "engine_only": false,
+  "user_text": false
+ },
+ "b": {
+  "engineOnly": "PASS-bounded",
+  "userText": "WITNESS"
+ },
+ "why": "owner 29 Oct (row f0d879ac): an error is observed by its class and own fields; a program-built message counts; an engine-made message never. engineOnly: both sides throw the engine's SyntaxError on a non-positive input and only the engine's text differs, so lane B observes {$error: 'SyntaxError'} on both and finds no witness (PASS-bounded). userText: the program built both messages, 'negative' against 'below zero', a real difference (WITNESS)."
+}

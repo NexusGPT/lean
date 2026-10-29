@@ -19,9 +19,20 @@
   "type": "PASS-bounded"
  },
  "check": {
-  "label": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
-  "map": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
-  "type": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
-  "print": { "verdict": "WITNESS" }
+  "label": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "map": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "type": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "print": {
+   "verdict": "WITNESS"
+  }
  }
 }

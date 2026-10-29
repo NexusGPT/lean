@@ -1,0 +1,30 @@
+{
+ "scope": [
+  "normalized",
+  "magnitude",
+  "plus_zero",
+  "doubled",
+  "positive",
+  "flipped",
+  "untouched"
+ ],
+ "equal": {
+  "normalized": "witness",
+  "magnitude": "witness",
+  "plus_zero": "witness",
+  "doubled": true,
+  "positive": "witness",
+  "flipped": "witness",
+  "untouched": true
+ },
+ "why": "the sign of zero (design/signed-zero.md). Lane A's model holds no -0 input, as it holds no NaN (special-numbers.md); proof-hunt class 8, which goes to the doubles lane. normalized: x and x === 0 ? 0 : x are one function on the model and differ at x = -0, which lane B draws and witnesses. magnitude: Math.abs(x) and x < 0 ? -x : x differ only at x = -0 (0 against -0), witnessed by lane B. plus_zero: x + 0 and x differ only at x = -0 (0 against -0), witnessed by lane B. check.mjs runs lane B first, so each verdict is WITNESS. A -0 an operation makes from the model's inputs makes an ordinary unit opaque, keyed by its source (signed-zero), or, inside the heap core, marks the world. doubled (x * 2 against x + x, equal on every double), positive and flipped (a negation under a test that n is nonzero: never -0) and untouched are proved.",
+ "b": {
+  "normalized": "WITNESS",
+  "magnitude": "WITNESS",
+  "plusZero": "WITNESS",
+  "doubled": "PASS-bounded",
+  "positive": "PASS-bounded",
+  "flipped": "PASS-bounded",
+  "untouched": "PASS-bounded"
+ }
+}

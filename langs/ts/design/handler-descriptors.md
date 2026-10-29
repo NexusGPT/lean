@@ -75,3 +75,56 @@ proof; lane B's own verdict is unchanged.
 
 A handler with a branch, a loop, `await`, `try`, an assignment, `let`, a destructured or defaulted parameter, an
 async arrow, a call on a call result, or an updater over the event: opaque by text and captures (`fn_`), as before.
+
+### Capture kinds (2026-10-28)
+
+The construct: a React closure (a JSX attribute value, an effect, a `useCallback` or `useMemo` argument) captures a
+render binding the lint called changing because the unit calls a mutating method on it or writes through it. A
+closure captures the binding, not a copy: it sees what the binding refers to when it runs. The binding is stale only
+when the render itself changes the value after the closure is made, which a value reading would miss.
+
+The capture table (`react.mjs`, `captureKind`) names the kinds carried as they are. The lint's `react-handler-capture`
+block skips a capture with an entry; `readHandler` attaches the entry of every capture (and of the captures a render
+`const` the handler reads stands for) to the descriptor, so lane B's interpreter reads the same kinds.
+
+- hook result: `const x = useH(...)`, H imported from outside React, the unit only calls its methods, reads its fields
+  or lists it as a dependency. `x.push(p)` is a request to the outside, not a write to a value the unit owns: the
+  handle the closure holds never changes. Lane A keeps the step `ReactCall("member:push", [ReactAtom(router)], ...)`,
+  the receiver the value the hook's transition returned. Lane B keys it by the hook and its call ordinal in the unit
+  (`import:next/router:useRouter()#0`).
+- record read: a binding element of the props, of a state value, or of a pure `const` destructuring, at any depth
+  (`({ item: { id } })`), never written through. The interpreter follows the binding chain from its root.
+- ref cell: `const r = useRef(...)` from React, used only as `r.current`, as a `ref` attribute or as a dependency;
+  every write through it lies inside a function React holds (a JSX attribute value, an effect or `useCallback`
+  argument, a const every reference of which is held so), the closure's own writes included, never in the render
+  itself or in `useMemo`. A write in the render stays refused: the lint admits `r.current = v` there as an update of a local record,
+  so a closure keyed by its captured record would miss it. A write `r.current = v` inside a held function is a cell
+  step of the component machine: it writes the box without a re-render (`cellWrite`). The lint admits it there, a
+  `useCallback` argument included. Lane A reads the holding function's statements as steps, the write a cell step, and
+  puts adjacent writes of distinct independent cells in the cells' hook order (design/ref-cell.md); lane B's interpreter
+  steps it: the predicted slots put the next
+  value in the box, a read of a cell the same handler writes is not interpreted (the box already holds the value
+  after), and the held handler's key carries the cell, what it held before and the next value. Lane B finds the box by
+  a static slot numbering of the unit's statement-level hooks, confirmed
+  against the slots the run placed for `useState`; the key carries the cell's ordinal and what it holds at the key's
+  moment, and `.current` stays a read when the handler runs. A fired handler that hands the cell to a call is not
+  interpreted.
+
+For `handler_capture`'s `NavReorder` (two pure render consts in another order) both sides render
+`ReactHandler([ReactCall("member:push", [ReactAtom(...(router))], [ReactAtom(ext_Any_of_string_string(path))], true)])`.
+
+Soundness. A hook result name is the hook's import and its ordinal: two instances of one hook never share it, and a
+reordered hook call changes it (a difference, never a false equality); lane B's trace records the hook call with its
+arguments. A cell key carries its content, so another initial value or another write before the key is a different
+key. A capture handed to a call (`keep(router)`), written through (`x.f = v`, `x.items.push(v)`), declared after the
+closure or bound by `let` has no entry and keeps the changing-local check.
+
+Stays refused: a capture with no entry. Escape `fixtures/escapes/ts/handler_capture_unknown.ts`: a non-hook outside
+value's `push` in a callback, and a hook result handed on as a value, both named `react-handler-capture`. The pair
+`handler_capture_unknown` shows lane B on the first: ASK naming the escape, never a WITNESS or a pass.
+
+Measured with `node langs/ts/census.mjs` on the nexus bench tree, base 6661006 against this reading:
+`react-handler-capture` stops 259 units before and 68 after, `closure-mutation` 99 before and 140 after, and the units
+inside the subset go from 23753 to 23853 of 26520 (100 units entered). Every entered unit was put through
+`translate.mjs --tolerant`; none failed on a cell write. n8n has no unit under this rule (4314 of 6337 inside, unchanged
+at the previous round).

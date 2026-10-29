@@ -26,7 +26,7 @@ The two sides are compared by unit name, read for syntax only, so a head that fa
 A unit renamed at the head is a removed row for the old name and an ordinary row for the new one.
 
 selectUnits(changedFiles, opts) returns [{unit, decision, reason}].
-Each input holds file, binary, hasTypes, units and optional error.
+Each input holds file, binary, units and optional error.
 Each unit holds name, start, end and findings in lint order.
 Selection does no IO, changes no input and runs no lane.
 Both preview and the run use this selection.
@@ -40,7 +40,7 @@ failed:timeout means a timeout left no usable verdict.
 failed:translation-defect names the proof harness failure.
 failed:harness names an exception caught outside a lane.
 A bounded or stronger verdict survives a proof lane timeout.
-skipped:not-typescript covers JavaScript without declared types.
+A JavaScript file is listed unit by unit (design/exported-units.md); a unit whose parameters carry no declared type is refused:untyped-js.
 skipped:binary and skipped:secret-path name excluded files.
 skipped:budget names a unit left after a budget stop.
 Preview prints a decision, reason and coverage for every row.

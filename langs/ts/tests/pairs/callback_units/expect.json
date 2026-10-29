@@ -1,0 +1,22 @@
+{
+  "scope": [
+    "app_get",
+    "outer",
+    "app_get___changed___1",
+    "app_get___same___1",
+    "outer_xs_map___0"
+  ],
+  "equal": {
+    "app_get": true,
+    "outer": true,
+    "app_get___changed___1": false,
+    "app_get___same___1": true,
+    "outer_xs_map___0": true
+  },
+  "b": {
+    "app.get('/changed')#1": "WITNESS",
+    "app.get('/same')#1": "PASS-bounded",
+    "outer/xs.map()#0": "PASS-bounded"
+  },
+  "why": "Module callbacks have independent verdicts. Nested callbacks are listed and linted separately, while their verdict is covered by the enclosing unit."
+}

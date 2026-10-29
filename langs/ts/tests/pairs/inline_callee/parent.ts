@@ -27,6 +27,7 @@ export function nameOf(user: User): string {
 }
 
 // a method that advances through a helper method on the same instance
+/** @sealed */
 export class Counter {
   count = 0;
   step = 1;

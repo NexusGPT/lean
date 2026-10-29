@@ -99,7 +99,7 @@ async function loadCandidate(file, env, options, ms, sources = new Map()) {
         ts.forEachChild(n, literals);
       }
       literals(sf);
-      const names = [...new Set([...topLevelFunctions(sf).values()].map(u => u.className ?? u.name))];
+      const names = [...new Set([...topLevelFunctions(sf).values()].map(u => u.className ?? u.name))].filter((name) => /^[A-Za-z_$][\w$]*$/.test(name)); // the module's own bindings: a callback or a literal member (`describe()#1`, `ops.add`) is reached through its holder, never by name
       let js = ts.transpileModule(src, { compilerOptions: compile, fileName: abs }).outputText;
       let unitSlot = '__lean_units'; while (src.includes(unitSlot)) unitSlot += '_';
       js += `\nexport const ${unitSlot} = {${names.map(name => `${JSON.stringify(name)}: typeof ${name} === 'undefined' ? undefined : ${name}`).join(',')}};\n`;

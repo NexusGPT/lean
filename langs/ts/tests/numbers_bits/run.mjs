@@ -26,7 +26,7 @@ for (const real of [false, true]) {
     check('ceil_number',[a],Math.ceil(a)); check('round_number',[a],Math.round(a)); check('trunc_number',[a],Math.trunc(a)); check('sign_number',[a],Math.sign(a)); check('remainder',[a],a%2.5);
   }
   const source = path.join(here,real ? 'real.ts' : 'probe.ts');
-  const result = translate(source,null,{core:true,project:false});
+  const result = translate(source,null,{core:true,project:false,exactNumbers:true});
   const dest = real ? out.replace(/\.dfy$/,'.real.dfy') : out;
   fs.writeFileSync(dest,result.main + `\nmethod Main() {\n${lines.join('\n')}\n}\n`);
   const r = spawnSync('dafny',['run','--no-verify','--target:py',dest],{encoding:'utf8'});

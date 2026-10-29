@@ -31,7 +31,7 @@
   "where_x": true,
   "lower_name": true,
   "sorted_names": true,
-  "last_at": true,
+  "last_at": "real-only",
   "csv": true,
   "big_text": true
  },

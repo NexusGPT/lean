@@ -1,0 +1,17 @@
+{
+ "scope": [
+  "applied",
+  "make_scale",
+  "scaled"
+ ],
+ "equal": {
+  "make_scale": true,
+  "scaled": false,
+  "applied": false
+ },
+ "why": "class 7, a module constant holding a function value, called or passed by name, read as call_args_<name> keyed by its name alone. makeScale is untouched (proved). Failing on 1e55e21: Equal_scaled, Equal_applied proved and the proof-hunt rows scaled, applied (lane B WITNESS).",
+ "b": {
+  "scaled": "WITNESS",
+  "applied": "WITNESS"
+ }
+}

@@ -108,13 +108,16 @@ try {
   const intakeTable = intakeBody.split('## Intake')[1]?.split('## Verdicts')[0] ?? '';
   ok(intakeRun.code === 0 && intakeBody.startsWith(MARKER) && intakeBody.length <= MAX_BODY, 'intake comment has marker and fits the cap');
   ok(intakeBody.indexOf('## Intake') < intakeBody.indexOf('## Verdicts'), 'intake comes before verdicts');
-  ok((intakeTable.match(/^\| \x60/gm) ?? []).length === 6, 'intake comment has all six units');
-  ok(['checked', 'refused:alias-mutation', 'failed:loader', 'skipped:not-typescript', 'skipped:binary', 'skipped:secret-path'].every((c) => intakeTable.includes(c)), 'intake comment has all six coverage values');
+  ok((intakeTable.match(/^\| \x60/gm) ?? []).length === 6, 'intake has six rows: four units, two artifact hunks');
+  ok(['checked', 'refused:alias-mutation', 'failed:loader', 'refused:untyped-js', 'artifact:binary', 'artifact:secret-path'].every((c) => intakeTable.includes(c)), 'intake comment has unit, artifact and unassigned coverage values');
+  const terminalRows = ['crash', 'timeout', 'lost-worker', 'incomplete-artifact', 'snapshot-cap'].map(state => ({ file: 'failed.ts', unit: state, lines: [1, 1], verdict: 'ASK', coverage: `failed:${state}`, reason: state }));
+  const terminalBody = commentBody('# lean report', { rows: terminalRows });
+  ok(terminalRows.every(r => terminalBody.includes(r.coverage)) && blockingRows(terminalRows, 'ask').length === terminalRows.length, 'terminal failures retain their vocabulary and block as ASK');
   const longIntake = commentBody('# lean report', { rows: Array.from({ length: 4000 }, (_, i) => ({ file: `source${i}.ts`, unit: 'f', coverage: 'checked' })) });
   ok(longIntake.length <= MAX_BODY && longIntake.includes('longer than one comment holds'), 'long intake respects the character cap');
   const cappedIntake = commentBody('# lean report\n\none verdict', { capped: true, rows: [{ file: 'later.ts', unit: 'later', coverage: 'checked' }] });
   ok(cappedIntake.includes('later.ts') && cappedIntake.includes('intake lists the change set'), 'the verdict cap keeps the intake rows');
-  console.log('intake comment: ' + (failed.length ? 'FAIL' : '6 checks pass'));
+  console.log('intake comment: ' + (failed.length ? 'FAIL' : 'pass'));
   if (!process.argv.includes('--intake-only')) {
   // the pure parts
   ok(inPaths('src/a/b.ts', '') && inPaths('src/a/b.ts', 'src/**') && !inPaths('lib/b.ts', 'src/**,test/**') && inPaths('lib/b.ts', 'src/**\nlib/*.ts'), 'paths globs');

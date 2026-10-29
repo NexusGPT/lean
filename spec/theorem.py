@@ -24,9 +24,68 @@ class Refusal(Exception):
     pass
 
 
+def _lex(text):
+    """One class per character of Dafny text: 'c' code, 'k' comment, 's' string or character literal (quotes included).
+    A string is "..." with backslash escapes or @"..." with "" for a quote; a character literal is '.' or '\\...';
+    a prime after an identifier character is part of the name. A line comment ends at the line break and a block
+    comment at the first */. A comment mark inside a literal is text, and a quote inside a comment is text."""
+    n, i, out = len(text), 0, []
+    while i < n:
+        ch, two = text[i], text[i:i + 2]
+        if two == '//':
+            j = text.find('\n', i)
+            j = n if j < 0 else j
+            out += ['k'] * (j - i)
+            i = j
+        elif two == '/*':
+            j = text.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            out += ['k'] * (j - i)
+            i = j
+        elif ch == '"' or two == '@"':
+            verbatim = two == '@"'
+            j = i + (2 if verbatim else 1)
+            while j < n:
+                if verbatim:
+                    if text[j] == '"':
+                        if text[j + 1:j + 2] == '"':
+                            j += 2
+                            continue
+                        break
+                elif text[j] == '\\':
+                    j += 2
+                    continue
+                elif text[j] == '"':
+                    break
+                j += 1
+            j = min(j + 1, n)
+            out += ['s'] * (j - i)
+            i = j
+        elif ch == "'" and not (i > 0 and (text[i - 1].isalnum() or text[i - 1] in "_'?")):
+            m = re.compile(r"'(?:\\[^']*|[^\\'])'").match(text, i)
+            if m:
+                out += ['s'] * (m.end() - i)
+                i = m.end()
+            else:
+                out.append('c')
+                i += 1
+        else:
+            out.append('c')
+            i += 1
+    return out
+
+
 def strip_comments(text):
-    text = re.sub(r'/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text, flags=re.S)
-    return re.sub(r'//[^\n]*', lambda m: ' ' * len(m.group(0)), text)
+    """The text with every comment replaced by blanks of the same length (a line break is kept); literals are kept."""
+    kinds = _lex(text)
+    return ''.join(' ' if k == 'k' and c != '\n' else c for c, k in zip(text, kinds))
+
+
+def code_only(text):
+    """The text with every comment and every string or character literal replaced by blanks of the same length: what
+    is left is the code, the one place a brace or a parenthesis is structure. Offsets match the text."""
+    kinds = _lex(text)
+    return ''.join(' ' if k != 'c' and c != '\n' else c for c, k in zip(text, kinds))
 
 
 def balanced(text, start):
@@ -63,6 +122,7 @@ def parse_functions(text, suffix, label):
     """Return {base_name: {'params': [(name, type)], 'ret': type}} for every
     function named <base>_<suffix>. Refuses a function without a body."""
     clean = strip_comments(text)
+    code = code_only(clean)  # braces are structure only in code, never inside a string or character literal
     found = {}
     for m in re.finditer(r'\bfunction\s+(?:method\s+)?(?:\{[^}]*\}\s*)?([A-Za-z_][A-Za-z0-9_]*)\s*(<[^>]*>)?\s*\(', clean):
         name = m.group(1)
@@ -89,7 +149,7 @@ def parse_functions(text, suffix, label):
             raise Refusal(f'{label}: function {name} has no return type')
         ret = re.sub(r'\s+', ' ', rm.group(1))
         # the body: a "{" before the next top-level declaration keyword
-        tail = rest[rm.end():]
+        tail = code[close_i:][rm.end():]
         nxt = re.search(r'\n\s*(function|lemma|method|predicate|datatype|type|const|ghost|module|include)\b', tail)
         region = tail[: nxt.start()] if nxt else tail
         region = re.sub(r'\{\s*:[^}]*\}', '', region)
@@ -105,11 +165,21 @@ def parse_functions(text, suffix, label):
     return found
 
 
-def split_helpers(funcs_defined, scoped, suffix, label):
+def nested_units(text):
+    """The `// NESTED:` header of a translation: the units nested in another emitted unit (a callback passed as an
+    argument), by their Dafny base names. One the scope lists is a function of its own; one it does not list is covered by
+    the unit that encloses it (the lambda is read inside that unit's body): neither a helper nor an unscoped function."""
+    m = re.search(r'^// NESTED: (.*)$', text, flags=re.M)
+    return {x.strip() for x in m.group(1).split(',') if x.strip()} if m else set()
+
+
+def split_helpers(funcs_defined, scoped, suffix, label, nested=()):
     """Functions named <scoped>_<x>_<suffix> are private helpers. Return the
-    helper names; refuse a helper that no scoped function reaches."""
-    helpers = [b for b in funcs_defined if b not in scoped and any(b.startswith(f + '_') for f in scoped)]
-    reached, todo = set(), list(scoped)
+    helper names; refuse a helper that no scoped function reaches. A nested unit is never a helper."""
+    helpers = [b for b in funcs_defined if b not in scoped and b not in nested and any(b.startswith(f + '_') for f in scoped)]
+    # a nested unit (a callback emitted as a unit, `// NESTED`) is reached through its enclosing unit's body; its own
+    # helpers (a loop body, a branch) are reached from it, so the walk starts from the scoped and the nested units alike
+    reached, todo = set(), list(scoped) + [n for n in nested if n in funcs_defined]
     while todo:
         cur = todo.pop()
         body = funcs_defined[cur]['body']
@@ -366,9 +436,10 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             raise Refusal(f'scope lists {f}, which the parent does not define')
         if f not in cf:
             raise Refusal(f'scope lists {f}, which the candidate does not define')
-    hp = split_helpers(pf, list(funcs), 'parent', 'parent')
-    hc = split_helpers(cf, list(funcs), 'candidate', 'candidate')
-    unscoped = sorted(set(cf) - set(funcs) - set(hc))
+    nested_p, nested_c = nested_units(parent_text), nested_units(cand_text)
+    hp = split_helpers(pf, list(funcs), 'parent', 'parent', nested_p)
+    hc = split_helpers(cf, list(funcs), 'candidate', 'candidate', nested_c)
+    unscoped = sorted(set(cf) - set(funcs) - set(hc) - nested_c)  # a nested unit the scope does not list is covered by the unit that encloses it
     if unscoped:
         raise Refusal('candidate defines functions that the scope does not list: ' + ', '.join(unscoped))
     slot_layout_differs = set()
@@ -519,7 +590,10 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             codes = set(re.findall(r'\bFn\("([0-9a-f]+)"', fn.get('body', '')))
             if not codes:
                 continue
-            owner = next((f for f in sorted(funcs, key=len, reverse=True) if base == f or base.startswith(f + '_')), base)  # a loop or branch helper (<unit>_<x>) carries its unit's list
+            # a unit with its own FN list (a nested callback the translator emits as a unit, listed in `// NESTED`) is its own
+            # owner; a loop or branch helper (<unit>_<x>) carries its unit's list; the scope's units are the outermost owners
+            owners = set(funcs) | {k[:-len(suffix)] for k in listed if k.endswith(suffix)}
+            owner = next((f for f in sorted(owners, key=len, reverse=True) if base == f or base.startswith(f + '_')), base)
             allowed = listed.get(owner + suffix, set())
             outside = sorted(codes - allowed)
             if outside:
@@ -769,7 +843,7 @@ def _enclosing_span(text, pos):
     """The span of the innermost balanced `(...)` or `{...}` holding `pos` (the whole text when none): a `var`'s scope
     cannot reach past it."""
     stack = []
-    for i, ch in enumerate(text):
+    for i, ch in enumerate(code_only(text)):
         if ch in '({':
             stack.append(i)
         elif ch in ')}':
@@ -876,18 +950,19 @@ def equal_by_position(ptext, ctext, pparams, cparams):
 
 def _body_span(clean, start):
     """From a function's start offset in `clean`: the offset of its body's opening brace and the one after its close."""
-    i = clean.find('(', start)
-    i = balanced(clean, i)  # after the parameter list
+    code = code_only(clean)  # a brace inside a string, a character literal or a comment is not structure
+    i = code.find('(', start)
+    i = balanced(code, i)  # after the parameter list
     depth = 0
-    while i < len(clean):
-        if clean[i] == '{':
-            if clean[i + 1:i + 2] == ':':  # an attribute {:...}
-                i = clean.find('}', i) + 1
+    while i < len(code):
+        if code[i] == '{':
+            if code[i + 1:i + 2] == ':':  # an attribute {:...}
+                i = code.find('}', i) + 1
                 continue
             j = i; depth = 0
-            while j < len(clean):
-                if clean[j] == '{': depth += 1
-                elif clean[j] == '}':
+            while j < len(code):
+                if code[j] == '{': depth += 1
+                elif code[j] == '}':
                     depth -= 1
                     if depth == 0:
                         return i, j + 1

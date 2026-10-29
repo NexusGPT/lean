@@ -4,13 +4,14 @@
 // two sides' observations (outcome, the instance's fields, the trace, the reachable graph) are compared; the first
 // divergence is shrunk by deleting commands while a divergence stays, and the shrunk program is the WITNESS. A clean
 // run is PASS-bounded with the program and command counts in the certificate (bound.programs).
+import { snapshot, witnessRecord } from './record.mjs';
 import { Environment, renderDrawn, makeRng } from './fake.mjs';
-import { specOf } from './spec.mjs';
+import { specOf, argsFor } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
 import { loadProgram, topLevelFunctions } from '../common.mjs';
 import { exploreRaces, hiddenStateOf } from './program.mjs';
 
-export async function runPrograms({ files, roots, spec, seed, ms, rt, project, programs = 12, maxLen = 5 }) {
+export async function runPrograms({ files, roots, spec, seed, ms, rt, project, recordHead, programs = 12, maxLen = 5 }) {
   const className = spec.className;
   const members = spec.receiver?.members ?? {};
   const methodNames = Object.entries(members).filter(([, m]) => m.kind === 'method').map(([n]) => n);
@@ -41,12 +42,12 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, p
       try { exportsObj = rt.sandbox(env, roots[name]).load(files[name]); } catch (e) { return { harness: `${name}: load failed: ${String(e && e.message).slice(0, 160)}` }; }
       const Cls = (exportsObj.__lean_units ?? {})[className] ?? exportsObj[className];
       if (typeof Cls !== 'function') return { harness: `${name}: class ${className} not exported` };
-      let inst = null;
-      if (ctorSpec) { const args = inputsFor(ctorSpec, seed, 0, env); try { inst = rt.guardedCall(env, () => Reflect.construct(Cls, args), ms); } catch (e) { return { harness: `${name}: constructor threw ${String(e && e.message).slice(0, 120)}` }; } }
+      let inst = null, constructorArgs;
+      if (ctorSpec) { const args = inputsFor(ctorSpec, seed, 0, env); constructorArgs = snapshot(env, args); try { inst = rt.guardedCall(env, () => Reflect.construct(Cls, argsFor(ctorSpec, args)), ms); } catch (e) { return { harness: `${name}: constructor threw ${String(e && e.message).slice(0, 120)}` }; } }
       if (!inst) return { harness: `${name}: no constructor unit to build an instance` };
       await new Promise((r) => setImmediate(r));
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the constructor did is the program's starting state, not a command
-      sides[name] = { env, Cls, inst };
+      sides[name] = { env, Cls, inst, args: constructorArgs, commands: [] };
     }
     const steps = [];
     for (let k = 0; k < program.length; k++) {
@@ -55,15 +56,16 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, p
         const s = sides[name]; const args = inputsFor(specs[c.method], seed, c.index, s.env);
         const method = s.Cls.prototype[c.method];
         if (typeof method !== 'function') return { harness: `${name}: ${c.method} is not a method` };
-        const side = { env: s.env, unit: { call: (a) => method.apply(s.inst, a), receiver: { __own: () => ({ ...s.inst }) } } };
+        const side = { env: s.env, unit: { call: (a) => method.apply(s.inst, argsFor(specs[c.method], a)), receiver: { __own: () => ({ ...s.inst }) } } };
         obs[`${name}Args`] = renderDrawn(args); // the command's arguments as drawn, before the call writes them
+        s.commands.push({ method: c.method, args: snapshot(s.env, args) });
         obs[name] = await rt.observe(side, specs[c.method], args, ms);
       }
       if (obs.parent.harness || obs.candidate.harness) return { harness: `command ${k} (${c.method}): ${obs.parent.harness ? 'parent ' + obs.parent.harness : 'candidate ' + obs.candidate.harness}` };
       steps.push({ method: c.method, args: obs.parentArgs });
-      if (JSON.stringify(obs.parent) !== JSON.stringify(obs.candidate)) return { diverged: k, steps, parent: obs.parent, candidate: obs.candidate, where: rt.firstDifference(obs.parent, obs.candidate) };
+      if (JSON.stringify(obs.parent) !== JSON.stringify(obs.candidate)) return { record: witnessRecord({ seed, leanHead: recordHead ?? 'unknown', input: null, sides, invocation: { kind: 'program', className } }), diverged: k, steps, parent: obs.parent, candidate: obs.candidate, where: rt.firstDifference(obs.parent, obs.candidate) };
     }
-    return { steps };
+    return { steps, record: witnessRecord({ seed, leanHead: recordHead ?? 'unknown', input: null, sides, invocation: { kind: 'program', className } }) };
   };
   let commands = 0, ran = 0;
   for (let p = 0; p < programs; p++) {
@@ -73,7 +75,7 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, p
     if (r.diverged === undefined) continue;
     program = program.slice(0, r.diverged + 1); let last = r; // the divergence and what led to it
     for (let i = program.length - 2; i >= 0; i--) { const trial = program.filter((_, j) => j !== i); const t = await run(trial); if (t.diverged !== undefined) { program = trial; last = t; } } // greedy deletion: a command whose removal keeps a divergence was not needed
-    return { verdict: 'WITNESS', program: last.steps, divergence: { command: last.diverged, method: last.steps[last.diverged].method, where: last.where, parent: last.parent, candidate: last.candidate }, seed, programIndex: p, programs: ran, commands, methods: cmds };
+    return { verdict: 'WITNESS', record: last.record, program: last.steps, divergence: { command: last.diverged, method: last.steps[last.diverged].method, where: last.where, parent: last.parent, candidate: last.candidate }, seed, programIndex: p, programs: ran, commands, methods: cmds };
   }
   return { verdict: 'PASS-bounded', programs: ran, commands, methods: cmds };
 }
@@ -95,7 +97,7 @@ export async function runClassRaces({ files, roots, spec, seed, ms, rt, project 
     const exportsObj = rt.sandbox(env, roots[name]).load(files[name]);
     const Cls = (exportsObj.__lean_units ?? {})[className] ?? exportsObj[className];
     if (typeof Cls !== 'function') throw new Error(`${name}: class ${className} not exported`);
-    const inst = rt.guardedCall(env, () => Reflect.construct(Cls, ctorSpec ? inputsFor(ctorSpec, seed, 0, env) : []), ms);
+    const inst = rt.guardedCall(env, () => Reflect.construct(Cls, ctorSpec ? argsFor(ctorSpec, inputsFor(ctorSpec, seed, 0, env)) : []), ms);
     await new Promise((r) => setImmediate(r));
     env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the constructor did is the starting state
     const method = Cls.prototype[member];
@@ -106,7 +108,7 @@ export async function runClassRaces({ files, roots, spec, seed, ms, rt, project 
       set(t, k, v) { if (typeof k === 'string') env.access?.(`this.${k}`, 'w'); return Reflect.set(t, k, v); },
     });
     const args = [inputsFor(spec, seed, p, env), inputsFor(spec, seed, p, env)];
-    return { env, start: [() => method.apply(self, args[0]), () => method.apply(self, args[1])], own: () => ({ ...inst }) };
+    return { env, start: [() => method.apply(self, argsFor(spec, args[0])), () => method.apply(self, argsFor(spec, args[1]))], own: () => ({ ...inst }) };
   };
   return exploreRaces({ mount, seed, ms, rt, hidden });
 }

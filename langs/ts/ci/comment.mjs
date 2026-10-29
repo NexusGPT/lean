@@ -47,7 +47,7 @@ export function inPaths(file, patterns) {
 export function blockingRows(rows, block = 'none') {
   const kinds = BLOCKING[block];
   if (!kinds) throw new Error(`--block must be one of ${Object.keys(BLOCKING).join(', ')}`);
-  return rows.filter((r) => kinds.includes(r.verdict));
+  return rows.filter((r) => !r['covered-by'] && kinds.includes(r.verdict)); // a nested row inherits its enclosing unit's verdict: that unit's row blocks, once
 }
 
 // the comment: the marker, the table, one line on what produced it; cut at a line boundary if it is too long

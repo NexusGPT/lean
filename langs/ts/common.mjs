@@ -51,12 +51,11 @@ export function loadProgram(file, opts = {}) {
   let configFile = null;
   if (typeof want === 'string') configFile = path.resolve(want);
   else if (want) configFile = ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? null;
-  let options = { ...COMPILER_OPTIONS };
+  let options = { ...COMPILER_OPTIONS, ...projectless(abs) };
   let roots = [abs];
   if (configFile && fs.existsSync(configFile)) {
-    const raw = ts.readConfigFile(configFile, ts.sys.readFile);
-    if (!raw.error) {
-      const parsed = ts.parseJsonConfigFileContent(raw.config, ts.sys, path.dirname(configFile));
+    const parsed = parseProjectConfig(configFile);
+    if (parsed) {
       // the project's own options decide resolution; ours decide strictness and emit
       options = { ...parsed.options, strict: true, noEmit: true, skipLibCheck: true, noImplicitReturns: true, allowJs: true, checkJs: true };
       if (options.jsx === undefined) options.jsx = ts.JsxEmit.ReactJSX; // a project without a jsx setting still parses .tsx
@@ -67,10 +66,12 @@ export function loadProgram(file, opts = {}) {
         if (!options.lib.length) options.lib = ['lib.es2022.d.ts'];
       }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
+      delete options.rootDir; // an emit layout: nothing is emitted, and a workspace package read from its source lies outside it
       options.configFilePath = configFile; // automatic @types inclusion starts from the config's directory
       workspaceResolution(options, configFile);
-      // the file alone is the root: the compiler follows its imports, which is what a translation needs
-      roots = [abs];
+      // the file is the root: the compiler follows its imports, which is what a translation needs; the project's own
+      // declaration files join it (the globals they declare are part of every file's program)
+      roots = [abs, ...projectDeclarations(parsed, abs)];
     } else configFile = null;
   }
   if (!configFile) roots = [...roots, path.join(here, 'ambient.d.ts')]; // structuredClone and the like, declared for a file read without its project
@@ -92,43 +93,89 @@ export function loadMany(files, opts = {}) {
   return out;
 }
 
-// loadManyChunks: the same, one Map per chunk of one project, so a caller can lint a chunk and let it go
+// One GiB is a last-resort source/declaration guard, not a chunking target.
+// Keep the normal project/1200-root grouping: a smaller byte target repeats
+// large shared declaration closures. Type-graph expansion is bounded in the lint.
+// An indivisible import closure is still read whole and reported, never truncated.
+export const PROGRAM_SOURCE_BUDGET_BYTES = 1024 * 1024 * 1024;
+const CHUNK_OVER_BUDGET = Symbol('compiler source budget');
+
+// loadManyChunks: the same, one Map per byte-bounded chunk of one project.
 export function* loadManyChunks(files, opts = {}) {
   const groups = new Map(); // configFile|'' -> [abs]
   for (const f of files) {
     const abs = path.resolve(f);
     const cfg = opts.project === false ? null : (ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? null);
-    const k = cfg ?? ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(abs);
+    // a file without a project groups with the files that see the same installed declarations
+    const k = cfg ?? `\0${typeRootsFrom(path.dirname(abs)).join('\0')}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(abs);
   }
-  const CHUNK = opts.chunk ?? 1200; // a program over thousands of roots exhausts the heap; chunks share nothing but cost little
-  const chunks = [];
-  for (const [cfg, absList] of groups) for (let i = 0; i < absList.length; i += CHUNK) chunks.push([cfg, absList.slice(i, i + CHUNK)]);
-  for (const [cfg, absList] of chunks) {
-    const out = new Map();
-    // options exactly as loadProgram computes them, with the whole group as roots
-    const first = loadProgramOptions(absList[0], cfg || null);
-    let program;
-    try { program = ts.createProgram(absList, first.options); } catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); yield out; continue; }
-    const checker = program.getTypeChecker();
+  const budget = opts.sourceByteBudget ?? PROGRAM_SOURCE_BUDGET_BYTES;
+  if (!Number.isSafeInteger(budget) || budget <= 0) throw new Error('sourceByteBudget must be a positive integer');
+  const cap = opts.chunk ?? 1200; // preserve the original project grouping; bytes are a final guard
+  if (cap !== Infinity && (!Number.isSafeInteger(cap) || cap <= 0)) throw new Error('chunk must be a positive integer');
+  for (const [cfg, absList] of groups) {
+    let roots = [], bytes = 0;
     for (const abs of absList) {
-      const sf = program.getSourceFile(abs);
-      if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
-      let diagnostics;
-      try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; } catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}` }); continue; }
-      out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: cfg || null });
+      let size = 0; try { size = fs.statSync(abs).size; } catch { /* loadChunk reports unreadable sources */ }
+      if (roots.length && (bytes + size > budget || roots.length >= cap)) { yield* boundedChunks(cfg, roots, opts, budget); roots = []; bytes = 0; }
+      roots.push(abs); bytes += size;
     }
-    opts.log?.(`project ${cfg || '(none)'}: ${absList.length} files`);
-    yield out;
+    if (roots.length) yield* boundedChunks(cfg, roots, opts, budget);
   }
+}
+function* boundedChunks(cfg, roots, opts, budget) {
+  const loaded = loadChunk(cfg, roots, opts, budget);
+  if (loaded !== CHUNK_OVER_BUDGET) { yield loaded; return; }
+  const half = Math.ceil(roots.length / 2);
+  opts.log?.(`split project ${cfg || '(none)'}: ${roots.length} roots exceed ${budget} source/declaration bytes`);
+  yield* boundedChunks(cfg, roots.slice(0, half), opts, budget);
+  yield* boundedChunks(cfg, roots.slice(half), opts, budget);
+}
+
+// End the compiler/checker construction frame before the generator suspends.
+// The caller owns the returned Map and clears it before requesting another chunk.
+function loadChunk(cfg, absList, opts, budget) {
+  const out = new Map();
+  const project = cfg && !cfg.startsWith('\0') ? cfg : null; // a projectless group is keyed by its type roots (census-env), not a config
+  const first = loadProgramOptions(absList[0], project);
+  const host = ts.createCompilerHost(first.options);
+  const getSourceFile = host.getSourceFile;
+  const seen = new Set(); let bytes = 0;
+  host.getSourceFile = (...args) => {
+    const sf = getSourceFile.apply(host, args);
+    if (sf && !seen.has(sf.fileName)) {
+      seen.add(sf.fileName); bytes += Buffer.byteLength(sf.text);
+      if (bytes > budget && absList.length > 1) throw CHUNK_OVER_BUDGET;
+    }
+    return sf;
+  };
+  let program;
+  try { program = ts.createProgram([...absList, ...first.declarations.filter((d) => !absList.includes(d))], first.options, host); } // the project's own declaration files join the program (census-env)
+  catch (e) { if (e === CHUNK_OVER_BUDGET) return e; for (const a of absList) out.set(a, { error: String(e.message) }); return out; }
+  const sourceBytes = program.getSourceFiles().filter(s => !s.isDeclarationFile).reduce((n, s) => n + Buffer.byteLength(s.text), 0);
+  const declarationBytes = program.getSourceFiles().filter(s => s.isDeclarationFile).reduce((n, s) => n + Buffer.byteLength(s.text), 0);
+  const closure = sourceBytes + declarationBytes > budget ? { sourceBytes, declarationBytes, totalBytes: sourceBytes + declarationBytes, budgetBytes: budget } : null;
+  const checker = program.getTypeChecker();
+  for (const abs of absList) {
+    const sf = program.getSourceFile(abs);
+    if (!sf) { out.set(abs, { error: `cannot read ${abs}`, ...(closure ? { closure } : {}) }); continue; }
+    let diagnostics;
+    try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; }
+    catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}`, ...(closure ? { closure } : {}) }); continue; }
+    out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: project, ...(closure ? { closure } : {}) });
+  }
+  opts.log?.(`project ${project || '(none)'}: ${absList.length} files, ${sourceBytes} source + ${declarationBytes} declaration bytes${closure ? ' (indivisible closure over budget)' : ''}`);
+  return out;
 }
 
 // the compiler options loadProgram uses for a file under a config (shared by loadProgram and loadMany)
 export function loadProgramOptions(abs, configFile) {
-  let options = { ...COMPILER_OPTIONS };
+  let options = { ...COMPILER_OPTIONS, ...projectless(abs) };
+  let declarations = [];
   if (configFile && fs.existsSync(configFile)) {
-    const raw = ts.readConfigFile(configFile, ts.sys.readFile);
-    if (!raw.error) {
-      const parsed = ts.parseJsonConfigFileContent(raw.config, ts.sys, path.dirname(configFile));
+    const parsed = parseProjectConfig(configFile);
+    if (parsed) {
+      declarations = projectDeclarations(parsed, abs);
       options = { ...parsed.options, strict: true, noEmit: true, skipLibCheck: true, noImplicitReturns: true, allowJs: true, checkJs: true };
       if (Array.isArray(options.lib)) {
         const libDir = path.join(here, 'vendor', 'typescript', 'lib');
@@ -136,11 +183,74 @@ export function loadProgramOptions(abs, configFile) {
         if (!options.lib.length) options.lib = ['lib.es2022.d.ts'];
       }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
+      delete options.rootDir;
       options.configFilePath = configFile;
       workspaceResolution(options, configFile);
     }
   }
-  return { options };
+  return { options, declarations };
+}
+
+// The declaration files a project's own `include`/`files` name (outside node_modules): ambient globals the project
+// declares for itself (an `interface AbortSignal` in a both.d.ts), part of the program of every file it holds.
+export function projectDeclarations(parsed, abs) {
+  return parsed.fileNames.filter((f) => /\.d\.[mc]?ts$/.test(f) && !/[\\/]node_modules[\\/]/.test(f) && path.resolve(f) !== abs).map((f) => path.resolve(f));
+}
+
+// The `node_modules/@types` folders TypeScript's default type roots name for a directory: every ancestor's, nearest first.
+export function typeRootsFrom(dir) {
+  const out = [];
+  for (let d = dir; ; d = path.dirname(d)) { const t = path.join(d, 'node_modules', '@types'); if (fs.existsSync(t)) out.push(t); if (path.dirname(d) === d) break; }
+  return out;
+}
+
+// A file read without a project resolves as the compiler resolves for a bundler (node_modules, package exports), not by
+// the Classic walk that never reads node_modules; where an install provides declaration packages, they are visible as
+// TypeScript makes them visible by default (every package under the type roots above the file). With no install above
+// the file nothing changes: no type roots, no declaration packages.
+export function projectless(abs) {
+  const typeRoots = typeRootsFrom(path.dirname(abs));
+  const o = { moduleResolution: ts.ModuleResolutionKind.Bundler };
+  if (typeRoots.length) { o.typeRoots = typeRoots; o.types = undefined; }
+  return o;
+}
+
+// A tsconfig as TypeScript reads it ({options, errors}), or null when the file itself does not parse. An `extends` that
+// names a package of the repository's own workspace reads that package's folder, as the package manager's workspace
+// link would, when no node_modules entry provides it: the inherited options (target, lib, moduleResolution) are the
+// project's, not the compiler's defaults. An installed entry always wins; a package from outside the workspace is
+// never invented.
+const projectConfigs = new Map(); // tsconfig -> parsed
+export function parseProjectConfig(configFile) {
+  const key = `${configFile}\0${fs.statSync(configFile).mtimeMs}`; // a rewritten tsconfig is read again
+  if (projectConfigs.has(key)) return projectConfigs.get(key);
+  const raw = ts.readConfigFile(configFile, ts.sys.readFile);
+  const parsed = raw.error ? null : ts.parseJsonConfigFileContent(raw.config, workspaceLinkHost(path.dirname(configFile)), path.dirname(configFile));
+  projectConfigs.set(key, parsed);
+  return parsed;
+}
+
+// A file-system host on which `<any>/node_modules/<workspace package>/<rest>` that does not exist reads
+// `<the package's folder>/<rest>` (the link pnpm, npm and yarn workspaces create). Used to read configurations only.
+export function workspaceLinkHost(fromDir) {
+  const ws = workspacePaths(fromDir);
+  if (!ws || !ws.packages.length) return ts.sys;
+  const marker = `${path.sep}node_modules${path.sep}`;
+  const linked = (p) => {
+    const i = p.lastIndexOf(marker); if (i < 0) return null;
+    const rest = p.slice(i + marker.length).split(path.sep).join('/');
+    for (const [name, dir] of ws.packages) if (rest === name || rest.startsWith(name + '/')) return path.join(dir, rest.slice(name.length));
+    return null;
+  };
+  const via = (p, test) => { if (test(p)) return p; const l = linked(p); return l && test(l) ? l : null; };
+  return {
+    ...ts.sys,
+    fileExists: (p) => !!via(p, ts.sys.fileExists),
+    // a node_modules folder inside the workspace exists for the link even before any install
+    directoryExists: (p) => !!via(p, ts.sys.directoryExists) || (path.basename(p) === 'node_modules' && (p + path.sep).startsWith(ws.root + path.sep)),
+    readFile: (p, enc) => { const q = via(p, ts.sys.fileExists); return q ? ts.sys.readFile(q, enc) : undefined; },
+    realpath: (p) => { const q = via(p, (x) => ts.sys.fileExists(x) || ts.sys.directoryExists(x)); return q ? (ts.sys.realpath ? ts.sys.realpath(q) : q) : p; },
+  };
 }
 
 // A project's module resolution, as TypeScript reads its tsconfig, plus the workspace's own packages (shared by
@@ -290,8 +400,59 @@ export function topLevelFunctions(sf) {
     const u = unitOf(st);
     if (u) map.set(u.name, u);
     for (const m of classMethodUnits(st)) map.set(m.name, m);
+    for (const m of literalMemberUnits(st)) if (!map.has(m.name)) map.set(m.name, m); // a declared function or class method keeps its name
   }
+  for (const u of callbackUnits(sf, map)) map.set(u.name, u);
   return map;
+}
+
+/**
+ * The object literals a module statement exports or binds to a module-level const, with the binding that names each:
+ * `export const X = {...}` and `const X = {...}` (X), `export default {...}` (default), `module.exports = {...}`
+ * (exports), `exports.x = {...}` and `module.exports.x = {...}` (x). Parentheses, `as` and `satisfies` are looked through.
+ * design/exported-units.md.
+ */
+export function moduleLiterals(st) {
+  const strip = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isTypeAssertionExpression(e) || (ts.isSatisfiesExpression && ts.isSatisfiesExpression(e)))) e = e.expression; return e; };
+  const out = [];
+  if (ts.isVariableStatement(st) && (st.declarationList.flags & ts.NodeFlags.Const)) {
+    for (const d of st.declarationList.declarations) { const o = strip(d.initializer); if (ts.isIdentifier(d.name) && o && ts.isObjectLiteralExpression(o)) out.push({ binding: d.name.text, literal: o, form: st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) ? 'export-const' : 'module-const' }); }
+  } else if (ts.isExportAssignment(st) && !st.isExportEquals) {
+    const o = strip(st.expression); if (o && ts.isObjectLiteralExpression(o)) out.push({ binding: 'default', literal: o, form: 'export-default' });
+  } else if (ts.isExpressionStatement(st) && ts.isBinaryExpression(st.expression) && st.expression.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+    const o = strip(st.expression.right), l = st.expression.left;
+    const isModuleExports = (e) => ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'module' && e.name.text === 'exports';
+    if (o && ts.isObjectLiteralExpression(o)) {
+      if (isModuleExports(l)) out.push({ binding: 'exports', literal: o, form: 'module-exports' });
+      else if (ts.isPropertyAccessExpression(l) && ts.isIdentifier(l.name) && ((ts.isIdentifier(l.expression) && l.expression.text === 'exports') || isModuleExports(l.expression))) out.push({ binding: `exports.${l.name.text}`, literal: o, form: 'exports-property' }); // named as code reaches it (`exports.x.m`), never as a module-level `x`, which may be a class or a function of its own
+    }
+  }
+  return out;
+}
+
+/**
+ * The members of a module literal (moduleLiterals) as units named `<binding>.<key>`: a method, or a function or arrow
+ * held by a property. A getter or setter is not a unit: reading the key runs it, a property read, not a call. The key is a static name:
+ * an identifier, or a string that is one. The receiver of a unit is the literal (`u.literal`, its type the receiver
+ * type): `this.f` is a field of the receiver, `this.m()` the sibling unit `<binding>.m`, as a class method reaches its
+ * class (design/exported-units.md). A generator member is a unit as a generator function is; a member without a body is not.
+ */
+export function literalMemberUnits(st) {
+  const out = [];
+  for (const { binding, literal, form } of moduleLiterals(st)) {
+    for (const p of literal.properties) {
+      const key = p.name && (ts.isIdentifier(p.name) || (ts.isStringLiteral(p.name) && /^[A-Za-z_$][\w$]*$/.test(p.name.text))) ? p.name.text : null;
+      if (!key) continue;
+      let fn = null;
+      if (ts.isMethodDeclaration(p)) fn = p;
+      else if (ts.isPropertyAssignment(p)) { let i = p.initializer; while (i && ts.isParenthesizedExpression(i)) i = i.expression; if (i && (ts.isFunctionExpression(i) || ts.isArrowFunction(i))) fn = i; }
+      if (!fn || !fn.body) continue;
+      out.push({ name: `${binding}.${key}`, node: p, fn, params: fn.parameters, body: fn.body, typeNode: fn.type,
+        isAsync: !!fn.modifiers?.some((x) => x.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: fn.typeParameters,
+        literal, binding, form, method: key, statement: st });
+    }
+  }
+  return out;
 }
 
 /**
@@ -856,10 +1017,53 @@ export function protoKeyWrite(checker, key, value) {
   const free = (ts.isTemplateExpression(k) && (!PROTO_KEY.startsWith(k.head.text) || !PROTO_KEY.endsWith(k.templateSpans[k.templateSpans.length - 1].literal.text)))
     || (ts.isStringLiteralLike(k) && k.text !== PROTO_KEY)
     || (kt.flags & TF.Union ? kt.types : [kt]).every(partFree);
-  if (free) return 'free';
+  if (free || protoKeyGuarded(checker, k)) return 'free';
   const vt = checker.getTypeAtLocation(value);
   const primitive = (t) => !!(t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.EnumLike | TF.ESSymbolLike | TF.Undefined | TF.Void | TF.Never));
   return (vt.flags & TF.Union ? vt.types : [vt]).every(primitive) ? 'primitive' : 'prototype';
+}
+
+// A key the code tests against '__proto__' before the write is never that name at the write: the key is one name
+// (a const, or a parameter the function never assigns) and the write sits in the branch of `k !== '__proto__'` (or
+// `!=`, either order, alone or one conjunct of `&&`), in the else branch of `k === '__proto__'` (or one disjunct of
+// `||`), or after `if (k === '__proto__') <return | throw | break | continue>` in the same block. The write then
+// makes or replaces an own key as for any other name. No other test counts (TypeScript does not narrow a string
+// by `!==`, so the guard is read off the syntax).
+function protoKeyGuarded(checker, key) {
+  const K = ts.SyntaxKind;
+  const un = (x) => { while (x && ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  if (!ts.isIdentifier(key)) return false;
+  const sym = checker.getSymbolAtLocation(key);
+  const decl = sym?.valueDeclaration;
+  if (!decl) return false;
+  const fn = (x) => { for (let p = x.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; };
+  const home = fn(decl);
+  if (!home || home !== fn(key)) return false; // the guard and the write are in the function that binds the key
+  const constant = ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !!(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const);
+  const param = ts.isParameter(decl) && ts.isIdentifier(decl.name) && decl.parent === home;
+  if (!constant && !param) return false;
+  if (param) { // a parameter assigned anywhere in its function may hold another key at the write
+    let hit = false;
+    const w = (x) => { if (hit) return; if (ts.isIdentifier(x) && x !== decl.name && checker.getSymbolAtLocation(x) === sym) { const p = x.parent; if ((ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator)) || ts.isArrayLiteralExpression(p) || ts.isShorthandPropertyAssignment(p)) hit = true; } ts.forEachChild(x, w); };
+    if (home.body) w(home.body);
+    if (hit) return false;
+  }
+  const isKey = (x) => { x = un(x); return !!x && ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym; };
+  const isProto = (x) => { x = un(x); return !!x && ts.isStringLiteralLike(x) && x.text === PROTO_KEY; };
+  const compare = (c, ops) => { c = un(c); return ts.isBinaryExpression(c) && ops.includes(c.operatorToken.kind) && ((isKey(c.left) && isProto(c.right)) || (isProto(c.left) && isKey(c.right))); };
+  const notProto = (c) => { c = un(c); if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.AmpersandAmpersandToken) return notProto(c.left) || notProto(c.right); return compare(c, [K.ExclamationEqualsEqualsToken, K.ExclamationEqualsToken]); };
+  const isProtoTest = (c) => { c = un(c); if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.BarBarToken) return isProtoTest(c.left) || isProtoTest(c.right); return compare(c, [K.EqualsEqualsEqualsToken, K.EqualsEqualsToken]); };
+  const exits = (st) => { if (!st) return false; if (ts.isBlock(st)) return exits(st.statements[st.statements.length - 1]); return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
+  for (let c = key, p = key.parent; p && p !== home; c = p, p = p.parent) {
+    if (ts.isIfStatement(p) && c === p.thenStatement && notProto(p.expression)) return true;
+    if (ts.isIfStatement(p) && c === p.elseStatement && isProtoTest(p.expression)) return true;
+    if (ts.isBlock(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) {
+      const i = p.statements.indexOf(c);
+      for (let j = 0; j < i; j++) { const s = p.statements[j]; if (ts.isIfStatement(s) && !s.elseStatement && isProtoTest(s.expression) && exits(s.thenStatement)) return true; }
+    }
+    if (ts.isFunctionLike(p)) return false;
+  }
+  return false;
 }
 
 // The reach of a made prototype (design/narrow-in.md). An object whose prototype is not Object.prototype can be the right
@@ -1223,4 +1427,955 @@ export function reduceAccumulator(param, checker, write = null) {
   const target = bare(write);
   if (ts.isIdentifier(target)) return target.text === name;
   return (ts.isPropertyAccessExpression(target) || ts.isElementAccessExpression(target)) && ts.isIdentifier(bare(target.expression)) && bare(target.expression).text === name;
+}
+
+// An OPEN record type: an object type that declares fields and carries an index signature (string or number) beside
+// them (`interface H { accept?: string; [name: string]: string | undefined }`, IncomingHttpHeaders, ProcessEnv). The
+// value reading holds its declared fields alone (a datatype of them), so a read of a key the type does not declare
+// reads an entry that reading dropped: `h.other` and `({ accept: h.accept }).other` would read alike. Shared by the
+// lint (dot and bracket reads) and the translator (its backstop at the member read): such a read is refused.
+export function openRecordType(checker, t) {
+  const TF = ts.TypeFlags;
+  if (!t || !(t.flags & TF.Object)) return false;
+  if (!checker.getPropertiesOfType(t).length) return false;
+  return !!(checker.getIndexInfoOfType(t, ts.IndexKind.String) || checker.getIndexInfoOfType(t, ts.IndexKind.Number));
+}
+// `k in r` on a type that may be open: refused unless the key is a string literal every open member declares (the
+// datatype answers a declared key; an entry of the index is not in it, so `"x" in h` and `"x" in { accept: h.accept }`
+// would answer alike); the text of the refusal, or null
+export function openRecordIn(checker, keyNode, objType) {
+  const TF = ts.TypeFlags;
+  const parts = objType && objType.flags & TF.Union ? objType.types : objType ? [objType] : [];
+  const open = parts.filter((p) => openRecordType(checker, p));
+  if (!open.length) return null;
+  let k = keyNode; while (ts.isParenthesizedExpression(k)) k = k.expression;
+  if (ts.isStringLiteralLike(k) && open.every((p) => checker.getPropertyOfType(p, k.text))) return null;
+  // since open-datatype: an open record with a string index carries its undeclared keys (the datatype's open_index_), so
+  // an undeclared literal key and a computed key are read there; a computed key stays refused where a declared field is
+  // optional (a missing field and a field holding undefined read alike, and `in` tells them apart), on a union of
+  // records, and on a number index alone
+  if (parts.length === 1 && open.length === 1 && openRecordReadWhy(checker, open[0], ts.isStringLiteralLike(k) ? k.text : null) === null && (ts.isStringLiteralLike(k) || !checker.getPropertiesOfType(open[0]).some((p) => p.flags & ts.SymbolFlags.Optional))) return null;
+  return `${OPEN_RECORD_WHY(checker.typeToString(objType))}; \`in\` answers only a declared key`;
+}
+// A key an open record's type does not declare, by dot, bracket or `in` (design/open-datatype.md): the datatype of a type
+// with fields and a string index signature carries the undeclared keys as a dictionary (its open_index_ slot), so the
+// read is the dictionary's read; null when it is read, else { rule, why }: a number index alone has no such slot
+// (dynamic-key), a name of Object.prototype is read through the prototype, not the own keys (prototype)
+export function openRecordReadWhy(checker, t, keyName) {
+  if (!openRecordType(checker, t)) return null;
+  if (!checker.getIndexInfoOfType(t, ts.IndexKind.String)) return { rule: 'dynamic-key', why: OPEN_RECORD_WHY(checker.typeToString(t)) };
+  if (keyName !== null && (OBJECT_PROTO_NAMES.includes(keyName) || keyName === '__proto__')) return { rule: 'prototype', why: `${keyName} names a member of Object.prototype, which a record reads through its prototype; read a declared field or an entry under another name` };
+  return null;
+}
+export const OPEN_RECORD_WHY = (typeText) => `${typeText} declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own`;
+// a non-null assertion on a value whose type admits null or undefined: `x!` checks nothing at run time, so the absent
+// value flows on (`u.name!` is undefined) or the read through it throws a TypeError (`u.name!.length`); the proof lane
+// carries neither exactly (an absent value read as one of the type, a throw no caller nor effect order sees), so the
+// lint refuses it as non-null-assertion and the translator reads it with the same test
+export function nonNullOnAbsent(checker, n) {
+  if (!ts.isNonNullExpression(n)) return false;
+  let t = null; try { t = checker.getTypeAtLocation(n.expression); } catch { return false; }
+  return !!t && !!(t.flags & ts.TypeFlags.Union) && t.types.some((x) => !!(x.flags & (ts.TypeFlags.Undefined | ts.TypeFlags.Null)));
+}
+
+// a definite-assignment assertion (`let v!: number`) turns off TypeScript's check that the variable is assigned before
+// it is read, and a read before the first assignment gives undefined; the translator gives such a variable an
+// uninterpreted start value of its type, which would prove `return v` equal to `return v + 0` (undefined against NaN).
+// It is read safely only when nothing in its block mentions it before the declaration and the first statement after
+// it that mentions it is a plain assignment `v = e;` whose value does not read it; otherwise it may be read first, and
+// the lint (definite-assignment) and the translator refuse it with this test
+export function definiteAssignmentRead(checker, d) {
+  if (!ts.isVariableDeclaration(d) || !d.exclamationToken || !ts.isIdentifier(d.name)) return false;
+  const sym = checker.getSymbolAtLocation(d.name);
+  const list = d.parent, st = list?.parent, block = st?.parent;
+  if (!sym || !st || !ts.isVariableStatement(st) || !block?.statements) return true;
+  const mentions = (n) => { let hit = false; const w = (x) => { if (hit) return; if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym) { hit = true; return; } ts.forEachChild(x, w); }; w(n); return hit; };
+  if (list.declarations.slice(list.declarations.indexOf(d) + 1).some(mentions)) return true;
+  const at = block.statements.indexOf(st);
+  if (block.statements.slice(0, at).some(mentions)) return true; // a function declared before it may read it when called
+  for (const s of block.statements.slice(at + 1)) {
+    if (!mentions(s)) continue;
+    const e = ts.isExpressionStatement(s) ? s.expression : null;
+    return !(e && ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(e.left) && checker.getSymbolAtLocation(e.left) === sym && !mentions(e.right));
+  }
+  return false;
+}
+
+// The key order of a for-in, shared by the lint and the translator (design/forin-order.md). ECMA-262 14.7.5.9 visits
+// the own enumerable keys in OrdinaryOwnPropertyKeys order (10.1.11): array indexes ascending, then the other keys in
+// creation order. A record datatype forgets creation order, so a record's keys are read only where the unit fixes them:
+// the iterated value is a plain literal, or a `const` local without a type that a plain literal initialises and whose
+// every other use keeps its own keys (a field read, a write of a field it has, a nested read or write, a key
+// enumeration). Returns { free: true } when the order is a function of the value alone (a string, a number, an array, a
+// Set, a Map, a dictionary: its carrier holds its order), { keys, literal } with the keys in property order, or null
+// when the order is not known (a parameter, a spread, a class instance, an any value): the for-in is refused.
+export function forInKeyOrder(checker, e, unitNode) {
+  const TF = ts.TypeFlags, K = ts.SyntaxKind;
+  while (ts.isParenthesizedExpression(e)) e = e.expression;
+  const t = checker.getTypeAtLocation(e);
+  const parts = (t.flags & TF.Union ? t.types : [t]).filter((p) => !(p.flags & (TF.Null | TF.Undefined | TF.Void)));
+  const freePart = (p) => {
+    if (p.flags & (TF.Any | TF.Unknown)) return false;
+    if (p.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike)) return true;
+    if (isArrayLike(checker, p)) return true;
+    const name = (p.aliasSymbol ?? p.getSymbol?.())?.getName?.();
+    if (p.flags & TF.Object && ['Set', 'Map', 'ReadonlySet', 'ReadonlyMap'].includes(name)) return true;
+    return !!(p.flags & TF.Object) && !!checker.getIndexInfoOfType(p, ts.IndexKind.String) && !checker.getPropertiesOfType(p).length; // a dictionary
+  };
+  if (parts.length && parts.every(freePart)) return { free: true };
+  let literal = e, sym = null;
+  if (ts.isIdentifier(e)) {
+    sym = checker.getSymbolAtLocation(e); const d = sym?.valueDeclaration;
+    if (!d || !unitNode || !(d.pos >= unitNode.pos && d.end <= unitNode.end) || !ts.isVariableDeclaration(d) || d.type || !d.initializer || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) return null;
+    literal = d.initializer; while (ts.isParenthesizedExpression(literal)) literal = literal.expression;
+  }
+  if (!ts.isObjectLiteralExpression(literal)) return null;
+  const created = [];
+  for (const p of literal.properties) {
+    if (!(ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p))) return null; // a spread, a method, an accessor
+    let key;
+    if (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) || ts.isNoSubstitutionTemplateLiteral(p.name)) key = p.name.text;
+    else if (ts.isNumericLiteral(p.name) && !Number.isNaN(Number(p.name.text))) key = String(Number(p.name.text)); // ToPropertyKey of a number is its ToString
+    else return null; // a computed or private name
+    if (key === '__proto__' && ts.isPropertyAssignment(p)) return null; // sets the prototype, no own key
+    if (!created.includes(key)) created.push(key); // a repeated key keeps its first place (10.1.9)
+  }
+  if (sym) {
+    const d = sym.valueDeclaration; let safe = true;
+    const assigns = (op) => op >= K.FirstAssignment && op <= K.LastAssignment;
+    const own = (x) => { // x names the local: the use keeps the object's own keys
+      const c = x.parent;
+      if (ts.isForInStatement(c) && c.expression === x) return true;
+      if (ts.isTypeQueryNode(c)) return true;
+      if (ts.isCallExpression(c) && c.arguments.length === 1 && c.arguments[0] === x && ts.isPropertyAccessExpression(c.expression) && ts.isIdentifier(c.expression.expression) && c.expression.expression.text === 'Object' && ['keys', 'values', 'entries'].includes(c.expression.name.text) && originOf(checker, c.expression.expression, x.getSourceFile(), unitNode).kind === 'global') return true; // Object.keys, values, entries read the keys
+      if (!((ts.isPropertyAccessExpression(c) || ts.isElementAccessExpression(c)) && c.expression === x)) return false; // passed, returned, spread, aliased: another place may change its keys
+      const top = c.parent;
+      if (ts.isDeleteExpression(top) || (ts.isCallExpression(top) && top.expression === c)) return false; // a delete removes a key; a method call runs with `this` the object
+      let pattern = top; while (pattern && (ts.isArrayLiteralExpression(pattern) || ts.isObjectLiteralExpression(pattern) || ts.isPropertyAssignment(pattern) || ts.isShorthandPropertyAssignment(pattern) || ts.isSpreadElement(pattern) || ts.isSpreadAssignment(pattern))) pattern = pattern.parent;
+      const destructured = pattern !== top && pattern && ((ts.isBinaryExpression(pattern) && assigns(pattern.operatorToken.kind) && pattern.left.pos <= c.pos && c.end <= pattern.left.end) || ((ts.isForOfStatement(pattern) || ts.isForInStatement(pattern)) && pattern.initializer.pos <= c.pos && c.end <= pattern.initializer.end));
+      const written = (ts.isBinaryExpression(top) && top.left === c && assigns(top.operatorToken.kind)) || ((ts.isPrefixUnaryExpression(top) || ts.isPostfixUnaryExpression(top)) && [K.PlusPlusToken, K.MinusMinusToken].includes(top.operator)) || ((ts.isForInStatement(top) || ts.isForOfStatement(top)) && top.initializer === c) || destructured;
+      if (!written) return true;
+      return ts.isPropertyAccessExpression(c) && created.includes(c.name.text); // a write of a key the literal made keeps its place; a new or computed key may create one
+    };
+    const walk = (x) => { if (!safe) return; if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym && !own(x)) safe = false; ts.forEachChild(x, walk); };
+    walk(unitNode);
+    if (!safe) return null;
+  }
+  const isIndex = (k) => /^(0|[1-9][0-9]*)$/.test(k) && Number(k) < 4294967295;
+  const keys = [...created.filter(isIndex).sort((a, b) => Number(a) - Number(b)), ...created.filter((k) => !isIndex(k))];
+  return { keys, literal };
+}
+// A copy of every own key: `{ ...x }` (CopyDataProperties, ECMA-262 13.2.5.5 and 7.3.25) and `Object.assign({}, x)`
+// (20.1.2.1) copy every own enumerable key x holds, and a value of a record type may hold keys its type does not name (a
+// value of a wider type passes for it). The readings hold a record's declared fields alone, so such a copy is read only
+// when the unit built x's keys itself: x is an object literal of named members (its keys are its text), or a const of
+// the same function whose initializer is one and which the function uses only to read or write a declared field
+// (`o.f`, `o.f = v`) or to spread again. The spread of a record comes first in its literal (a later one writes over the
+// members before it, an own key holding undefined included), and a built copy holds no key the literal's record type
+// does not declare. A dictionary (no declared field, a string index) carries every key it holds and is no record here.
+// One test for the lint (spread-source), the value reading (objectLit) and the heap core: the reason, or null.
+export function copySourceWhy(checker, src, site = null) {
+  const TF = ts.TypeFlags;
+  const bare = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const record = (y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0;
+  let t = null; try { t = checker.getTypeAtLocation(bare(src)); } catch { return 'the copied value has no type'; }
+  if (!t || !(t.flags & TF.Union ? t.types : [t]).some(record)) return null; // a dictionary, an array, a primitive: not a record copy
+  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent) && site.parent.properties.slice(0, site.parent.properties.indexOf(site)).some((q) => !(ts.isSpreadAssignment(q) || ts.isShorthandPropertyAssignment(q) || (ts.isPropertyAssignment(q) && (ts.isIdentifier(q.name) || ts.isStringLiteral(q.name) || ts.isComputedPropertyName(q.name)))))) return 'a spread after a method or accessor member: the merge of the members before it takes values, and a method is a function the reading does not hold as a value; write the spread before that member';
+  const keys = new Set();
+  const built = (x, depth) => {
+    x = bare(x); if (depth > 8) return false;
+    if (ts.isObjectLiteralExpression(x)) return x.properties.every((p, i) => {
+      if (ts.isShorthandPropertyAssignment(p)) { keys.add(p.name.text); return true; }
+      if (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) && p.name.text !== '__proto__') { keys.add(p.name.text); return true; }
+      return ts.isSpreadAssignment(p) && i === 0 && built(p.expression, depth + 1);
+    });
+    if (!ts.isIdentifier(x)) return false;
+    const sym = checker.getSymbolAtLocation(x); const d = sym?.valueDeclaration;
+    if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !d.initializer || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) return false;
+    let fn = d.parent; while (fn && !ts.isFunctionLike(fn)) fn = fn.parent; if (!fn) return false; // a module constant: other code may add keys to it
+    let q = x; while (q && q !== fn) q = q.parent; if (!q) return false; // read in another function than the one that built it
+    if (!built(d.initializer, depth + 1)) return false;
+    let only = true;
+    const w = (n) => {
+      if (!only) return;
+      if (ts.isShorthandPropertyAssignment(n) && checker.getShorthandAssignmentValueSymbol(n) === sym) { only = false; return; } // `{ o }` hands the object on
+      if (ts.isIdentifier(n) && n !== d.name && checker.getSymbolAtLocation(n) === sym) {
+        const p = n.parent;
+        const field = ts.isPropertyAccessExpression(p) && p.expression === n && !(ts.isCallExpression(p.parent) && p.parent.expression === p) && !ts.isDeleteExpression(p.parent);
+        if (!field && !(ts.isSpreadAssignment(p) && p.expression === n)) only = false;
+      }
+      ts.forEachChild(n, w);
+    };
+    w(fn);
+    return only;
+  };
+  if (!built(src, 0)) return COPY_NOT_BUILT;
+  const lit = site && ts.isSpreadAssignment(site) ? site.parent : null;
+  const ctx = lit ? checker.getContextualType(lit) : null;
+  const target = ctx && (ctx.flags & TF.Union ? ctx.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [ctx]);
+  if (target && target.length === 1 && record(target[0]) && !checker.getIndexInfoOfType(target[0], ts.IndexKind.String)) {
+    const extra = [...keys].find((k) => !checker.getPropertyOfType(target[0], k));
+    if (extra) return `the copy holds the key \`${extra}\`, which ${checker.typeToString(target[0])} does not declare`;
+  }
+  return null;
+}
+const COPY_NOT_BUILT = 'a value of a record type may carry keys its type does not name, and the copy takes them all; spread a literal, or a const this function builds from a literal, or copy the fields by name (`{ a: x.a, b: x.b }`)';
+// The invariant a record copy keeps: a copy carries everything its source carries, known or not. A source the unit built
+// is read by its keys ('built'); any other record source is an uninterpreted copy of it, `Spread_T(x)`, updated by the
+// members written after it ('copy'): two sides copying the same value prove, and a copy of the declared fields by hand
+// never does, since nothing says what the copy holds beyond its source (a field of the copy equal to the source's would
+// make the copy equal to the hand copy: a record value holds its declared fields alone). The term needs the spread first
+// in its literal after named members and spreads only ('refuse', with the reason); a built copy holding a key the target
+// type does not declare is a copy too.
+// A source that is no record (a dictionary, an array, a primitive) is 'plain'. One test for the lint, objectLit, the core.
+// `this.m()` inside an instance method of class C runs the m the receiver's chain finds first (ECMA-262 10.1.8.1 [[Get]],
+// then Call), and the receiver of C's method may be an instance of any subclass, one another file declares included. The
+// call is C's own m only when no subclass can hold another m: m is an ECMAScript private name (#m is no property and
+// is never looked up on the chain), m is TypeScript-private (a subclass redeclaring it fails to compile, TS2415), or the
+// file declares C or m final with the TSDoc tag @sealed (or @final): a fact TypeScript does not check, so it is an
+// assumption the certificate names ('sealed receiver'). A same-file class below C redeclaring m defeats every one of
+// these. Returns { why } when the call is C's own m, null when a subclass may override it.
+export function sealedMember(checker, sf, cls, name) {
+  const own = cls.members.find((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword));
+  const below = (c) => { for (let cur = c, seen = new Set(); cur && !seen.has(cur); ) { seen.add(cur); const ext = cur.heritageClauses?.find((h) => h.token === ts.SyntaxKind.ExtendsKeyword)?.types[0]?.expression; if (!ext) return false; const d = checker.getSymbolAtLocation(ext)?.valueDeclaration; if (d === cls) return true; cur = d && ts.isClassDeclaration(d) ? d : null; } return false; };
+  let redeclared = false;
+  const w = (n) => { if (redeclared) return; if (ts.isClassLike(n) && n !== cls && below(n) && n.members.some((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword))) redeclared = true; ts.forEachChild(n, w); };
+  w(sf);
+  if (redeclared) return null;
+  if (own && ts.isPrivateIdentifier(own.name)) return { why: `#${name} is a private name` };
+  if (own && own.modifiers?.some((x) => x.kind === ts.SyntaxKind.PrivateKeyword)) return { why: `${name} is private (TS2415 forbids a subclass redeclaring it)` };
+  const tagged = (n) => !!n && ts.getJSDocTags(n).some((t) => t.tagName.text === 'sealed' || t.tagName.text === 'final');
+  if (tagged(cls)) return { why: `${cls.name?.text} is declared @sealed`, assumed: true };
+  if (tagged(own)) return { why: `${name} is declared @sealed`, assumed: true };
+  return null;
+}
+export function copySource(checker, src, site = null) {
+  const TF = ts.TypeFlags; let x = src; while (ts.isParenthesizedExpression(x)) x = x.expression;
+  let t = null; try { t = checker.getTypeAtLocation(x); } catch { return { kind: 'refuse', why: 'the copied value has no type' }; }
+  const record = !!t && (t.flags & TF.Union ? t.types : [t]).some((y) => !!(y.flags & (TF.Object | TF.Intersection)) && !checker.isArrayType(y) && !checker.isTupleType(y) && !y.getCallSignatures().length && checker.getPropertiesOfType(y).length > 0);
+  if (!record) return { kind: 'plain' };
+  if (site && ts.isSpreadAssignment(site) && ts.isObjectLiteralExpression(site.parent)) { // a dictionary literal (Record<string, T>): its reading holds every key a spread copies (a map merge)
+    let ctx = null; try { ctx = checker.getContextualType(site.parent); } catch { ctx = null; }
+    const parts = ctx ? (ctx.flags & TF.Union ? ctx.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [ctx]) : [];
+    if (parts.length === 1 && (parts[0].flags & TF.Object) && checker.getIndexInfoOfType(parts[0], ts.IndexKind.String) && !checker.getPropertiesOfType(parts[0]).length) return { kind: 'plain' };
+  }
+  const why = copySourceWhy(checker, src, site);
+  return why === null ? { kind: 'built' } : why === COPY_NOT_BUILT || why.startsWith('the copy holds the key') ? { kind: 'copy' } : { kind: 'refuse', why }; // a built copy holding a key the target does not declare carries it, as any copy carries what its source carries
+}
+// A type assertion checks nothing at run time (ECMA-262 has none; the emit drops `e as T`, `<T>e`, and the assertion
+// TypeScript makes when a value typed any or unknown fills a slot of another type, `const n: number = x`). The value
+// keeps its run-time type. So a value whose static type is not the type of its value, HELD below, is read with its
+// real type: the source's type for `e as T` from a source not assignable to T, the opaque Any for a source typed any or
+// unknown (or holding one, `any[]`); an operation on a held value is then an operation on that real value (on Any, an
+// uninterpreted application, so `v` and `v + 0` are different terms). A held value may go where its reading carries it
+// (an operand, a receiver, a test, a held local, the unit's own result, an argument to an outside call); in a slot
+// whose reading needs the asserted type (a same-file callee's parameter, a field, an element) the unit is refused,
+// rule type-assertion. Shared by the lint (every expression) and the translator (typeOf reads `assertionHeld`,
+// convertToD asks `typeAssertion` before it converts). The checker's error type (an unresolved import) is the
+// environment's and never held.
+const opaqueT = (t) => !!t && !!(t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) && t.intrinsicName !== 'error';
+function holdsOpaque(checker, t, depth = 0, seen = new Set()) {
+  const TF = ts.TypeFlags;
+  if (!t || depth > 3 || seen.has(t)) return false;
+  seen.add(t);
+  if (t.flags & (TF.Any | TF.Unknown)) return t.intrinsicName !== 'error';
+  if (t.flags & (TF.Union | TF.Intersection)) return t.types.some((x) => holdsOpaque(checker, x, depth, seen));
+  if (!(t.flags & TF.Object)) return false;
+  const args = t.objectFlags & ts.ObjectFlags.Reference ? checker.getTypeArguments(t) : [];
+  if (args.some((x) => holdsOpaque(checker, x, depth + 1, seen))) return true;
+  for (const kind of [ts.IndexKind.String, ts.IndexKind.Number]) { const info = checker.getIndexInfoOfType(t, kind); if (info && holdsOpaque(checker, info.type, depth + 1, seen)) return true; }
+  const props = checker.getPropertiesOfType(t);
+  if (props.length > 40) return false;
+  for (const p of props) {
+    const d = p.valueDeclaration ?? p.declarations?.[0];
+    if (d && (ts.isMethodDeclaration(d) || ts.isMethodSignature(d))) continue;
+    let pt = null; try { pt = checker.getTypeOfSymbol(p); } catch { continue; }
+    if (holdsOpaque(checker, pt, depth + 1, seen)) return true;
+  }
+  return false;
+}
+const tAt = (checker, n) => { try { return checker.getTypeAtLocation(n); } catch { return null; } };
+const isConstAssertion = (n) => !!n.type && ts.isTypeReferenceNode(n.type) && n.type.typeName.getText() === 'const';
+// the writes of a local variable of a function: its initializer and every `name = value`
+const localWrites = new WeakMap();
+function writesOf(checker, sym) {
+  const d = sym?.valueDeclaration;
+  if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name)) return null;
+  let fn = d.parent; while (fn && !ts.isFunctionLike(fn) && !ts.isSourceFile(fn)) fn = fn.parent;
+  if (!fn || ts.isSourceFile(fn)) return null; // a module variable is a cell of the world, never held
+  let m = localWrites.get(fn);
+  if (!m) {
+    m = new Map();
+    const walk = (x) => {
+      if (ts.isBinaryExpression(x) && x.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(x.left)) { const s = checker.getSymbolAtLocation(x.left); if (s) { if (!m.has(s)) m.set(s, []); m.get(s).push(x.right); } }
+      ts.forEachChild(x, walk);
+    };
+    walk(fn); localWrites.set(fn, m);
+  }
+  return [...(d.initializer ? [d.initializer] : []), ...(m.get(sym) ?? [])];
+}
+// a real type an operation reads exactly as written: one primitive family (numbers, strings or booleans, literals
+// included), so `k + 1` on a number asserted to `1 | 2` is the number's own sum; any other real type (Any, a union of
+// families, an object) makes the operation one on the opaque value
+const primitiveFamily = (t) => { const TF = ts.TypeFlags; const ps = t.flags & TF.Union ? t.types : [t]; return [TF.NumberLike, TF.StringLike, TF.BooleanLike].some((f) => ps.every((x) => x.flags & f)); };
+// the real type of a held value (a TypeScript type; the any type for an opaque one), or null when the value is not held
+export function assertionHeld(checker, n, seen = new Map()) {
+  if (!n) return null;
+  if (seen.has(n)) return seen.get(n); // a node met again: its answer, or null while it is being decided (a cycle)
+  seen.set(n, null);
+  const r = heldOf(checker, n, seen);
+  seen.set(n, r);
+  return r;
+}
+function heldOf(checker, n, seen) {
+  const any = () => checker.getAnyType();
+  const opaqueOperand = (x) => { const h = assertionHeld(checker, x, seen); return !!h && !primitiveFamily(h); };
+  if (ts.isParenthesizedExpression(n) || ts.isNonNullExpression(n) || ts.isSatisfiesExpression(n)) return assertionHeld(checker, n.expression, seen);
+  if (ts.isAwaitExpression(n)) return assertionHeld(checker, n.expression, seen) ? any() : null;
+  if (ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)) {
+    if (isConstAssertion(n)) return assertionHeld(checker, n.expression, seen);
+    const from = tAt(checker, n.expression), to = tAt(checker, n);
+    if (!from || !to || opaqueT(to)) return null;
+    const inner = assertionHeld(checker, n.expression, seen);
+    if (inner) return inner;
+    if (holdsOpaque(checker, from)) return any();
+    if (from !== to && !checker.isTypeAssignableTo(from, to)) return primitiveFamily(from) ? from : any(); // a source of one primitive family is read as itself; any other as the opaque value
+    return null;
+  }
+  if (ts.isIdentifier(n)) {
+    let sym = null; try { sym = checker.getSymbolAtLocation(n); } catch { return null; }
+    const ws = writesOf(checker, sym);
+    if (!ws) return null;
+    const declared = tAt(checker, sym.valueDeclaration.name);
+    if (!declared || opaqueT(declared)) return null;
+    const heldWrites = ws.map((w) => assertionHeld(checker, w, seen));
+    const real = ws.map((w, i) => heldWrites[i] ?? (opaqueT(tAt(checker, w)) ? any() : null));
+    if (!real.some(Boolean)) return null;
+    return real.length === 1 ? real[0] : any();
+  }
+  if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) return opaqueOperand(n.expression) ? any() : null;
+  if (ts.isCallExpression(n)) return (ts.isPropertyAccessExpression(n.expression) || ts.isElementAccessExpression(n.expression)) && opaqueOperand(n.expression.expression) ? any() : null;
+  if (ts.isBinaryExpression(n)) {
+    const k = n.operatorToken.kind;
+    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return null;
+    if ([ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken, ts.SyntaxKind.InstanceOfKeyword, ts.SyntaxKind.InKeyword].includes(k)) return null; // a boolean whatever its operands are
+    return opaqueOperand(n.left) || opaqueOperand(n.right) ? any() : null;
+  }
+  if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) return opaqueOperand(n.operand) ? any() : null;
+  if (ts.isConditionalExpression(n)) return opaqueOperand(n.whenTrue) || opaqueOperand(n.whenFalse) ? any() : null;
+  return null;
+}
+// a unit of the file: a top-level function, an arrow or function const at top level, a method of a top-level class
+function unitFunction(fn) {
+  if (!fn) return false;
+  if (ts.isFunctionDeclaration(fn)) return ts.isSourceFile(fn.parent);
+  if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) { const d = fn.parent; return !!d && ts.isVariableDeclaration(d) && d.initializer === fn && ts.isVariableDeclarationList(d.parent) && ts.isVariableStatement(d.parent.parent) && ts.isSourceFile(d.parent.parent.parent); }
+  if (ts.isMethodDeclaration(fn) || ts.isConstructorDeclaration(fn) || ts.isGetAccessorDeclaration(fn) || ts.isSetAccessorDeclaration(fn)) return !!fn.parent && ts.isClassDeclaration(fn.parent) && ts.isSourceFile(fn.parent.parent);
+  return false;
+}
+const enclosingFn = (n) => { let p = n.parent; while (p && !ts.isFunctionLike(p) && !ts.isSourceFile(p)) p = p.parent; return p && ts.isFunctionLike(p) ? p : null; };
+const importRooted = (checker, e) => {
+  let r = e; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isCallExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r)) r = r.expression;
+  if (!ts.isIdentifier(r)) return false;
+  let s = null; try { s = checker.getSymbolAtLocation(r); } catch { return false; }
+  const d = s?.declarations?.[0];
+  return !!d && (ts.isImportSpecifier(d) || ts.isImportClause(d) || ts.isNamespaceImport(d) || ts.isImportEqualsDeclaration(d));
+};
+// where a held value's reading carries it: no conversion to the asserted type happens there
+function carried(checker, n) {
+  const p = n.parent;
+  if (!p) return true;
+  if (ts.isVariableDeclaration(p) && p.initializer === n) return ts.isIdentifier(p.name) && !!writesOf(checker, checker.getSymbolAtLocation(p.name));
+  if (ts.isBinaryExpression(p)) {
+    const k = p.operatorToken.kind;
+    if (k === ts.SyntaxKind.EqualsToken && p.right === n) { const s = ts.isIdentifier(p.left) ? checker.getSymbolAtLocation(p.left) : null; return !!writesOf(checker, s); } // a write to a local: the local is held in turn
+    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return false; // a compound write reads the target's declared type
+    return true; // an operand: an operation on the real value
+  }
+  if (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p) || ts.isTypeOfExpression(p) || ts.isExpressionStatement(p) || ts.isTemplateSpan(p)) return true;
+  if (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isSatisfiesExpression(p) || ts.isAwaitExpression(p) || ts.isAsExpression(p) || ts.isTypeAssertionExpression(p)) return true; // the wrapper is held in turn
+  if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === n) return true;
+  if (ts.isConditionalExpression(p)) return true; // the condition is a truth test; a branch makes the whole held
+  if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isSwitchStatement(p) || ts.isCaseClause(p)) && p.expression === n) return true; // a test, or a switch over the real value
+  if (ts.isCallExpression(p)) {
+    if (p.expression === n) return false; // calling a held value
+    if (p.expression.getText() === 'Array.isArray') return true; // a test of the run-time value
+    return importRooted(checker, p.expression); // the outside receives the value as it is
+  }
+  if (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === n)) return unitFunction(ts.isReturnStatement(p) ? enclosingFn(p) : p); // the unit's own result
+  return false;
+}
+// a same-file unit whose result is a held value: a caller would read it with the asserted type
+function returnsHeld(checker, fn) {
+  if (!fn || !fn.body) return false;
+  if (!ts.isBlock(fn.body)) return !!assertionHeld(checker, fn.body);
+  let hit = false;
+  const walk = (x) => { if (hit || (x !== fn.body && ts.isFunctionLike(x))) return; if (ts.isReturnStatement(x) && x.expression && (assertionHeld(checker, x.expression) || (opaqueT(tAt(checker, x.expression)) && (() => { const ct = checker.getContextualType(x.expression); return !!ct && !opaqueT(ct); })()))) hit = true; ts.forEachChild(x, walk); };
+  walk(fn.body);
+  return hit;
+}
+// the refusal text for a held value (or an any or unknown value in a slot of another type) where its reading does not
+// carry it, or for a call of a same-file unit whose result is held; null otherwise
+export function typeAssertion(checker, n) {
+  if (!n || !ts.isExpression(n)) return null;
+  if (ts.isCallExpression(n)) {
+    let decl = null; try { decl = checker.getResolvedSignature(n)?.declaration ?? null; } catch { /* unresolved */ }
+    if (decl && decl.getSourceFile() === n.getSourceFile() && ts.isFunctionLike(decl) && unitFunction(decl) && returnsHeld(checker, decl)) return `\`${n.getText().slice(0, 60)}\` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type`;
+  }
+  if (ts.isParenthesizedExpression(n.parent) || ts.isNonNullExpression(n.parent) || ts.isSatisfiesExpression(n.parent)) return null; // the outermost wrapper owns the report
+  const held = assertionHeld(checker, n);
+  if (!held) {
+    const t = tAt(checker, n);
+    if (!opaqueT(t)) return null;
+    if ((ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)) && !opaqueT(tAt(checker, n.expression)) && ts.isCallExpression(n.parent) && n.parent.expression !== n) {
+      // `e as any` of a typed value handed to a callee outside the file: the value is the typed source's, widened on purpose
+      let decl = null; try { decl = checker.getResolvedSignature(n.parent)?.declaration ?? null; } catch { /* unresolved */ }
+      if (!decl || decl.getSourceFile() !== n.getSourceFile()) return null;
+    }
+    let ct = null; try { ct = checker.getContextualType(n); } catch { return null; }
+    if (!ct) return null;
+    const parts = ct.flags & ts.TypeFlags.Union ? ct.types : [ct];
+    if (parts.some((x) => x.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.TypeParameter | ts.TypeFlags.Void))) return null;
+  }
+  if (carried(checker, n)) return null;
+  return `\`${n.getText().slice(0, 60)}\` holds a value whose type nothing checked (an \`as\` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (\`typeof x === "number"\`, a field test), or keep it in a local, an operation or the result`;
+}
+
+/** A named promise handler (`p.then(h)`, `p.catch(h)`, `p.finally(h)`, `h` a name or a member path): one decision the lint
+ * and the translator take (design/named-then.md). Admitted, the handler is called with the settled argument: a unit of
+ * this file by its own function (`origin: 'unit'`), an import or another file's function as one transition named by its
+ * name (`'outside'`), a module constant holding a function value as one transition named by the code its initializer
+ * reaches (`'binding'`, design/reach-keys.md), so a changed maker is another transition. Refused, `rule` and `message`
+ * name it. `value` says whether the name has a reading as a passed value at all: a binding outside the unit (a module
+ * constant, an import, another file, a global, or a member of one) that holds a function has none (the translator reads
+ * such a name as a bodiless constant, which a function is not), so its only reading is the exact one. */
+export function namedPromiseHandler(checker, a, sf, current, arity) {
+  const sigs = checker.getSignaturesOfType(checker.getTypeAtLocation(a), ts.SignatureKind.Call);
+  const root = ts.isIdentifier(a) ? a : ts.isPropertyAccessExpression(a) && ts.isIdentifier(a.expression) ? a.expression : null;
+  const o = root ? originOf(checker, root, sf, current) : { kind: null };
+  const value = !(sigs.length > 0 && ['module', 'import', 'other', 'global'].includes(o.kind));
+  const refused = (rule, message) => ({ admit: false, value, rule, message });
+  if (!ts.isIdentifier(a)) return refused('promise-handler', 'call the member inside an arrow, `(v) => obj.m(v)`: a member named as a handler is called without its receiver');
+  const sg = sigs[0];
+  const plain = (p) => !(p.valueDeclaration && ts.isParameter(p.valueDeclaration) && (p.valueDeclaration.dotDotDotToken || p.valueDeclaration.initializer || p.valueDeclaration.questionToken));
+  if (!sg || sg.typeParameters?.length || sigs.length !== 1 || !sg.parameters.every(plain) || sg.parameters.length > arity || !['unit', 'import', 'other', 'module'].includes(o.kind)) return refused('promise-handler', 'use an arrow or a named same-file, module constant or imported function with at most one plain parameter');
+  const rt = sg.getReturnType();
+  const nativePromise = !!rt.symbol && rt.symbol === checker.resolveName('Promise', undefined, ts.SymbolFlags.Type, false);
+  if ((rt.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) || (!nativePromise && checker.getPropertyOfType(rt, 'then'))) return refused('promise-thenable', 'give a named handler a plain or native Promise return type');
+  return { admit: true, value, origin: o.kind === 'unit' ? 'unit' : o.kind === 'module' ? 'binding' : 'outside', sig: sg };
+}
+
+// A record whose own keys the unit fixed (design/open-datatype.md): an object literal whose every member is a named
+// property, a shorthand or a spread of such a record, or a `const` local of the unit that such a literal initialises.
+// Any other record value (a parameter, an import, a call result, a field of either) may carry keys its type does not
+// name, which a spread and Object.assign copy (ECMA-262 CopyDataProperties). The value reading carries them in the
+// datatype's rest; the heap core builds a node of the declared fields only, so it takes a spread of a built record alone.
+export function builtRecord(checker, e, unitNode, seen = new Set()) {
+  while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression?.(e)) e = e.expression;
+  if (ts.isIdentifier(e)) {
+    const d = checker.getSymbolAtLocation(e)?.valueDeclaration;
+    if (!d || seen.has(d) || !unitNode || !(d.pos >= unitNode.pos && d.end <= unitNode.end) || !ts.isVariableDeclaration(d) || !d.initializer || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) return false;
+    seen.add(d); return builtRecord(checker, d.initializer, unitNode, seen);
+  }
+  if (!ts.isObjectLiteralExpression(e)) return false;
+  return e.properties.every((p) => ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p) || (ts.isSpreadAssignment(p) && builtRecord(checker, p.expression, unitNode, seen)));
+}
+// The spreads of a record literal the value reading carries (design/open-datatype.md), shared by the lint (rule
+// spread-source) and the translator (objectLit). One spread first is the source updated by the later members, its rest
+// included; any other layout is one uninterpreted construction of the member values in order, keyed by the layout,
+// which holds each source whole, rest included. Both are functions of the values (an any value is opaque, a union
+// holds its member, an index entry is a key of its dictionary), except where a key given before a spread names an
+// optional field of the source's type: the member survives only if the source lacks the key, and a missing optional
+// field and one holding undefined are one value in the reading (None). Returns the text of that refusal, or null. A dictionary literal is not judged here.
+export function spreadReadWhy(checker, lit) {
+  const TF = ts.TypeFlags;
+  const spreads = lit.properties.filter(ts.isSpreadAssignment);
+  if (!spreads.length || (spreads.length === 1 && lit.properties[0] === spreads[0])) return null;
+  const t = checker.getTypeAtLocation(lit);
+  if (t && t.flags & TF.Object && checker.getIndexInfoOfType(t, ts.IndexKind.String) && !checker.getPropertiesOfType(t).length) return null;
+  if (lit.properties.some((p) => !(ts.isSpreadAssignment(p) || ts.isShorthandPropertyAssignment(p) || (ts.isPropertyAssignment(p) && !ts.isArrowFunction(p.initializer) && !ts.isFunctionExpression(p.initializer))))) return 'a method or a function value beside a later spread is not read; spread first, or build the record in steps';
+  const parts = (x) => (x.flags & TF.Union ? x.types : [x]).filter((y) => !(y.flags & (TF.Undefined | TF.Null | TF.Void | TF.BooleanLiteral | TF.Boolean)));
+  const keysOf = (x) => new Set(parts(x).flatMap((y) => (y.flags & (TF.Object | TF.Intersection) ? checker.getPropertiesOfType(y).map((q) => q.name) : [])));
+  const optional = (x, k) => parts(x).some((y) => { const q = y.flags & (TF.Object | TF.Intersection) ? checker.getPropertyOfType(y, k) : null; return !!q && !!(q.flags & ts.SymbolFlags.Optional); });
+  const before = new Set(); let unknownBefore = false;
+  for (const p of lit.properties) {
+    if (ts.isSpreadAssignment(p)) {
+      const st = checker.getTypeAtLocation(p.expression);
+      const hit = [...before].find((k) => optional(st, k));
+      // a key given before a spread (named or computed) is carried by the uninterpreted merge of the values up to the last spread (heap-3's reading, translate.mjs objectLit): a function of the sources whole, so no field of it is proved and a missing optional field against one holding undefined is never told apart wrongly; the earlier refusal here is lifted (28 Oct)
+      void hit;
+      for (const k of keysOf(st)) before.add(k);
+      continue;
+    }
+    const name = p.name && (ts.isIdentifier(p.name) || ts.isStringLiteralLike(p.name) || ts.isNumericLiteral(p.name)) ? p.name.text : null;
+    if (name === null) unknownBefore = true; else before.add(name);
+  }
+}
+// a function's declared `this` parameter (TypeScript's this parameter) whose type names no receiver: `any`, `unknown`, or
+// no annotation at all. The receiver is then any object the caller binds, so the function is not a method of a type the
+// reading could key its receiver on; the refusal text, or null when the function declares no `this` or declares a type
+export function untypedThisParam(checker, fn) {
+  const p = fn?.parameters?.[0];
+  if (!p || !ts.isIdentifier(p.name) || p.name.text !== 'this') return null;
+  if (!p.type) return '`this` is declared without a type; declare the receiver type (`this: Ctx`)';
+  const t = checker.getTypeFromTypeNode(p.type);
+  if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return /^(any|unknown)$/.test(p.type.getText()) ? `\`this: ${p.type.getText()}\` names no receiver type; declare the receiver type the function reads (\`this: Ctx\`)` : `\`this: ${p.type.getText()}\` reads as any (the type does not resolve here); make its declaration visible to the file or declare a receiver type that resolves`;
+  return null;
+}
+
+// A unit of a JavaScript file whose inputs carry no declared type: a parameter with neither a TypeScript annotation
+// nor a JSDoc type (`@param {T}`, `@type`). Its values are whatever the caller passes, so the proof lane does not read it
+// (design/exported-units.md: "implicit any becomes an any-type proposal"; lane B still runs it). The refusal text names
+// the first such parameter, or null for a TypeScript file or a unit whose parameters are all typed.
+export function untypedJsUnit(sf, u) {
+  if (!sf || !/\.(js|jsx|mjs|cjs)$/i.test(sf.fileName) || !u?.params) return null;
+  for (const p of u.params) {
+    if (ts.isIdentifier(p.name) && p.name.text === 'this') continue;
+    if (p.type || ts.getJSDocType(p)) continue;
+    const name = ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf);
+    return `parameter \`${name}\` of a JavaScript unit has no declared type; declare it (a JSDoc \`@param {T} ${name}\` or TypeScript) or ask --any-type for a proposed type`;
+  }
+  return null;
+}
+
+// A method called through Function.prototype.apply or call is the direct call on its `this`: `r.m.apply(r, b)` is
+// `r.m(...b)` and `r.m.call(r, x, y)` is `r.m(x, y)` (ECMA-262 20.2.3.1 and 20.2.3.3: the function runs with thisArg as
+// `this` and the elements of b, or the remaining arguments, as its arguments; spreading an array lists the elements
+// CreateListFromArrayLike lists). applyCall returns { receiver, method, args, spread, via, exact, why } for a call
+// through `.apply`/`.call` (the lib's own members of Function), or null. `exact` holds when the direct call is the
+// same transition: (1) the receiver is the method's own base, one path (a name, `this`, property names, literal or
+// name indexes; casts and `!` aside) every step of which is a plain property (no getter), so reading it twice or once
+// is one value; or (2) the method is an Array.prototype method of the lib reached through a base that is such a path,
+// `[]` or `Array.prototype`, and `this` is such a path to an array or tuple: an array reaches the same intrinsic, so
+// `[].push.call(c, x)` is `c.push(x)` (`receiver` is then `this`). apply also needs b a non-nullable array or tuple
+// (apply on undefined passes nothing where a spread throws; an array-like that is not an array iterates otherwise).
+// `why` names what fails. normaliseApplyCalls rewrites every exact one before the lint and the translator read the
+// source, so every analysis that knows a method by its callee (a mutator by its name) sees the direct call.
+export function applyCall(n, checker) {
+  if (!ts.isCallExpression(n) || n.questionDotToken || n.typeArguments) return null;
+  const via = n.expression;
+  if (!ts.isPropertyAccessExpression(via) || via.questionDotToken || !ts.isIdentifier(via.name) || !['apply', 'call'].includes(via.name.text)) return null;
+  const callee = via.expression;
+  if (!ts.isPropertyAccessExpression(callee) || callee.questionDotToken || !ts.isIdentifier(callee.name)) return null;
+  const libOf = (s, names) => !!s?.declarations?.length && s.declarations.every((d) => LIB_FILE.test(d.getSourceFile().fileName) && ts.isInterfaceDeclaration(d.parent) && names.includes(d.parent.name.text));
+  if (!libOf(checker.getSymbolAtLocation(via.name), ['CallableFunction', 'NewableFunction', 'Function'])) return null;
+  const method = callee.name.text, base = callee.expression, kind = via.name.text;
+  const [thisArg, ...rest] = n.arguments;
+  if (!thisArg || ts.isSpreadElement(thisArg)) return { receiver: base, method, args: [], spread: null, via: kind, exact: false, why: 'no receiver operand' };
+  const strip = (x) => { while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isTypeAssertionExpression(x) || ts.isSatisfiesExpression(x)) x = x.expression; return x; };
+  const plain = (x) => { const s = checker.getSymbolAtLocation(x); return !s || !(s.flags & (ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor)); };
+  const keyOf = (k) => { k = strip(k); return ts.isStringLiteral(k) || ts.isNumericLiteral(k) ? `${k.kind}:${k.text}` : null; };
+  const samePath = (a, b) => { // one path, read with no effect: the same value however often it is read
+    if (b === undefined) b = a;
+    a = strip(a); b = strip(b);
+    if (a.kind !== b.kind) return false;
+    if (a.kind === ts.SyntaxKind.ThisKeyword) return true;
+    if (ts.isIdentifier(a)) { const s = checker.getSymbolAtLocation(a); return a.text === b.text && !!s && s === checker.getSymbolAtLocation(b); }
+    if (ts.isPropertyAccessExpression(a)) return !a.questionDotToken && !b.questionDotToken && ts.isIdentifier(a.name) && ts.isIdentifier(b.name) && a.name.text === b.name.text && plain(a.name) && samePath(a.expression, b.expression);
+    if (ts.isElementAccessExpression(a)) {
+      const ka = keyOf(a.argumentExpression), sameKey = ka ? ka === keyOf(b.argumentExpression) : ts.isIdentifier(strip(a.argumentExpression)) && samePath(a.argumentExpression, b.argumentExpression);
+      return !a.questionDotToken && !b.questionDotToken && sameKey && samePath(a.expression, b.expression);
+    }
+    return false;
+  };
+  const arrayT = (x) => { const t = checker.getTypeAtLocation(x); return !(t.flags & (TF.Any | TF.Unknown | TF.Union | TF.Never)) && (checker.isArrayType(t) || checker.isTupleType(t)); };
+  let list = null;
+  if (kind === 'apply') {
+    if (rest.length > 1 || (rest[0] && ts.isSpreadElement(rest[0]))) return { receiver: base, method, args: [], spread: null, via: kind, exact: false, why: '`apply` takes one list' };
+    list = rest[0] ?? null;
+  }
+  const out = { method, args: kind === 'call' ? rest : [], spread: list, via: kind };
+  if (list && !arrayT(list)) return { ...out, receiver: thisArg, exact: false, why: `the list \`${list.getText().slice(0, 40)}\` is not an array type: apply lists its length and indexes (CreateListFromArrayLike) where a spread iterates, so a string or a Set differ, and apply on null or undefined passes nothing where a spread throws` };
+  const rootOf = (x) => { x = strip(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) x = strip(x.expression); return x; };
+  const worldRoot = (x) => { // a field of `this` or a module binding is a cell of the world: each read is a transition (lane B traces it), so the apply form's two reads are not the direct call's one
+    const r = rootOf(x);
+    if (r.kind === ts.SyntaxKind.ThisKeyword) return 'a field of the receiver `this`';
+    if (!ts.isIdentifier(r)) return null;
+    const d = checker.getSymbolAtLocation(r)?.valueDeclaration;
+    for (let p = d?.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return null;
+    return 'a module binding';
+  };
+  const libRoot = (x) => { const r = rootOf(x); const d = ts.isIdentifier(r) ? checker.getSymbolAtLocation(r)?.valueDeclaration : null; return !!d && LIB_FILE.test(d.getSourceFile().fileName); }; // `Array.prototype`: a constant of the language, read with no effect
+  { const w = worldRoot(thisArg) ?? (libRoot(base) ? null : worldRoot(base)); if (w) return { ...out, receiver: thisArg, exact: false, why: `the receiver \`${thisArg.getText().slice(0, 40)}\` is ${w}, a cell of the world read once per mention: the apply form reads it twice, the direct call once` }; }
+  if (samePath(base, thisArg)) return { ...out, receiver: base, exact: true, own: true };
+  const intrinsic = libOf(checker.getSymbolAtLocation(callee.name), ['Array', 'ReadonlyArray']) && (samePath(base) || (ts.isArrayLiteralExpression(strip(base)) && !strip(base).elements.length));
+  if (intrinsic && samePath(thisArg) && arrayT(thisArg) && !/\n/.test(thisArg.getText())) return { ...out, receiver: thisArg, exact: true, own: false };
+  return { ...out, receiver: thisArg, exact: false, why: intrinsic ? `\`this\` (\`${thisArg.getText().slice(0, 40)}\`) is not an array reached by a plain path` : `\`this\` (\`${thisArg.getText().slice(0, 40)}\`) is another value than the method's base \`${base.getText().slice(0, 40)}\`` };
+}
+
+// normaliseApplyCalls(loaded): the loaded program with every exact apply/call (applyCall) written as the direct call.
+// The text keeps its length and its line breaks: only the span before the list (or the first remaining argument)
+// changes, to `r.m(` and, for apply, `...`, padded with blanks, so every other position, line and unit is the same and
+// a diagnostic or a finding elsewhere reports where it did. A nested form is rewritten on the next round.
+export function normaliseApplyCalls(loaded) {
+  let cur = loaded;
+  for (let round = 0; round < 4; round++) {
+    const { sf, checker, program } = cur;
+    if (!/\.(apply|call)\s*\(/.test(sf.text)) return cur;
+    const edits = [];
+    const walk = (x) => { const a = applyCall(x, checker); if (a?.exact) edits.push({ x, a }); ts.forEachChild(x, walk); };
+    walk(sf);
+    if (!edits.length) return cur;
+    let text = sf.text; let last = Infinity;
+    for (const { x, a } of edits.sort((p, q) => q.x.pos - p.x.pos)) { // from the end; a call inside an earlier edit's span waits for the next round
+      const callee = x.expression.expression;
+      const from = a.own ? callee.end : callee.getStart(sf); // after `r.m`, or the whole borrowed callee
+      const close = x.end - 1; // the closing parenthesis
+      const to = a.via === 'apply' ? (a.spread ? a.spread.getStart(sf) : close) : (a.args.length ? a.args[0].getStart(sf) : close);
+      if (x.end > last || text[close] !== ')') continue;
+      const span = text.slice(from, to); const lines = (span.match(/\n/g) ?? []).length;
+      const head = (a.own ? '(' : `${a.receiver.getText(sf)}.${a.method}(`) + '\n'.repeat(lines); const tail = a.via === 'apply' && a.spread ? '...' : '';
+      if (head.length + tail.length > span.length) continue;
+      text = text.slice(0, from) + head + ' '.repeat(span.length - head.length - tail.length) + tail + text.slice(to);
+      last = x.getStart(sf);
+    }
+    if (text === sf.text) return cur;
+    const options = program.getCompilerOptions();
+    const host = ts.createCompilerHost(options, true);
+    const getSourceFile = host.getSourceFile;
+    host.getSourceFile = (name, lang, onError, create) => {
+      if (path.resolve(name) === path.resolve(sf.fileName)) return ts.createSourceFile(name, text, lang, true, sf.scriptKind);
+      return program.getSourceFile(name) ?? getSourceFile.call(host, name, lang, onError, create);
+    };
+    const roots = [...new Set([sf.fileName, ...program.getRootFileNames().filter((f) => f.endsWith('.d.ts'))])];
+    const next = ts.createProgram({ rootNames: roots, options, host, oldProgram: program });
+    const nsf = next.getSourceFile(sf.fileName);
+    if (!nsf) return cur;
+    unitSourceOrigin.set(nsf, unitSourceOrigin.get(sf) ?? sf); // a rewrite carries the source the user wrote
+    const diagnostics = [...next.getSyntacticDiagnostics(nsf), ...next.getSemanticDiagnostics(nsf)];
+    cur = { ...cur, program: next, sf: nsf, checker: next.getTypeChecker(), diagnostics };
+  }
+  return cur;
+}
+// Absence (design/opaque-values.md). A `let` declared without an initializer holds undefined until a write; TypeScript
+// checks that a read follows a write only for a plain read in the declaring function: it assumes the variable assigned
+// under `v!`, for every read when the declaration says `let v!: T`, and for a read inside a nested function, and it
+// does not see a write a nested function makes. Such a let is an option (None until written) in the proof lane, its
+// definedness carried by the flow. A read whose value must be present (`x!` on a value that may be undefined, a read
+// TypeScript did not check) is a payload read: the translator tests the option before the statement holding it, and
+// where the option is absent the unit's result is an opaque value of its own text; it does so only in the unit's own
+// statement flow, so the lint refuses a payload read anywhere else (definite-assignment for a let, non-null-assertion
+// for `x!`).
+const fnOf = (n) => { let p = n.parent; while (p && !ts.isFunctionLike(p) && !ts.isSourceFile(p) && !ts.isClassStaticBlockDeclaration(p)) p = p.parent; return p ?? null; };
+// the declaration of a let without initializer named by this identifier, or null
+function bareLetDecl(checker, id) {
+  if (!ts.isIdentifier(id)) return null;
+  let s = null; try { s = checker.getSymbolAtLocation(id); } catch { return null; }
+  const d = s?.valueDeclaration;
+  if (!d || !ts.isVariableDeclaration(d) || d.initializer || !ts.isIdentifier(d.name) || d.name === id) return null;
+  const list = d.parent;
+  if (!ts.isVariableDeclarationList(list) || !(list.flags & ts.NodeFlags.Let) || !ts.isVariableStatement(list.parent)) return null;
+  if (d.type) { let t = null; try { t = checker.getTypeFromTypeNode(d.type); } catch { return null; } if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return null; } // an any or unknown let is one opaque value
+  return d;
+}
+const writeTarget = (id) => { let x = id; while (ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; return !!p && ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && p.operatorToken.kind <= ts.SyntaxKind.LastAssignment; };
+// every reference to the let's symbol in its function, as { node, write, unchecked }
+function letRefs(checker, d) {
+  const sym = checker.getSymbolAtLocation(d.name), home = fnOf(d), out = [];
+  if (!sym || !home) return out;
+  const w = (x) => {
+    if (ts.isIdentifier(x) && x !== d.name) {
+      let s = null; try { s = checker.getSymbolAtLocation(x); } catch { /* none */ }
+      if (s === sym) {
+        const write = writeTarget(x) && x.parent.operatorToken?.kind === ts.SyntaxKind.EqualsToken;
+        const nested = fnOf(x) !== home;
+        let p = x; while (ts.isParenthesizedExpression(p.parent)) p = p.parent;
+        out.push({ node: x, write, nested, unchecked: !write && (!!d.exclamationToken || nested || ts.isNonNullExpression(p.parent)) });
+      }
+    }
+    ts.forEachChild(x, w);
+  };
+  w(home);
+  return out;
+}
+// a let whose definedness TypeScript does not fix at some read (an unchecked read, or a write inside a nested function):
+// the proof lane carries it as an option that starts absent
+export function absenceCarried(checker, d) {
+  if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name)) return false;
+  if (d.initializer || !ts.isVariableDeclarationList(d.parent) || !(d.parent.flags & ts.NodeFlags.Let) || !ts.isVariableStatement(d.parent.parent)) return false;
+  if (d.type) { let t = null; try { t = checker.getTypeFromTypeNode(d.type); } catch { return false; } if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return false; }
+  return letRefs(checker, d).some((r) => r.unchecked || (r.write && r.nested));
+}
+// a payload read: the value read must be present, and nothing TypeScript checked says it is. `x!` on a local or a
+// parameter whose type admits undefined, or a read of an absence-carried let TypeScript did not check whose type here
+// excludes absence; returns the identifier read, or null
+export function payloadRead(checker, n) {
+  const TF = ts.TypeFlags;
+  const admits = (t) => !!t && !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
+  if (ts.isNonNullExpression(n)) {
+    let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    let t = null; try { t = checker.getTypeAtLocation(e); } catch { return null; }
+    if (ts.isIdentifier(e) && bareLetDecl(checker, e) && absenceCarried(checker, bareLetDecl(checker, e))) return e;
+    return admits(t) ? e : null;
+  }
+  if (!ts.isIdentifier(n) || writeTarget(n)) return null;
+  let p = n; while (ts.isParenthesizedExpression(p.parent)) p = p.parent;
+  if (ts.isNonNullExpression(p.parent)) return null; // the assertion owns it
+  const d = bareLetDecl(checker, n);
+  if (!d || !absenceCarried(checker, d)) return null;
+  const r = letRefs(checker, d).find((x) => x.node === n);
+  if (!r || !r.unchecked) return null;
+  let t = null; try { t = checker.getTypeAtLocation(n); } catch { return null; }
+  return admits(t) || (t.flags & (TF.Undefined | TF.Void)) ? null : n; // a read typed with its absence carries the option as it is
+}
+// the statement whose start tests a payload read, or null when the read is not in the unit's own statement flow: the
+// identifier is a parameter or a local of the unit, the read sits in a return, an expression statement, a declaration or
+// an if condition reached through blocks and if branches only (no loop, try, switch, label or nested function), the
+// unit is neither async nor a generator and returns a value, and the statement does not write the variable
+// The faithful number reading (translate/faithful.mjs, design/doubles.md) rewrites a number operation whose operands the
+// model does not hold exactly into a call of `Math.__lean_<op>(...)`, an uninterpreted function of its operands. To every
+// reader that classifies calls (an effect, a throw, a render-pure argument, a payload position, a loop body) that call
+// IS the operator it replaced: pure, total, reading only its operands. One predicate names it; a reader that treats a
+// call as an effect, an outside call or an impurity asks it first.
+export const faithfulOp = (n) => !!n && ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Math' && n.expression.name.text.startsWith('__lean_');
+export function payloadStatement(checker, n, id) {
+  const unit = fnOf(n);
+  if (!unit || !ts.isFunctionLike(unit) || !unit.body || !ts.isBlock(unit.body)) return null;
+  if (unit.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword) || unit.asteriskToken) return null;
+  if (ts.isConstructorDeclaration(unit) || ts.isSetAccessorDeclaration(unit)) return null;
+  let sig = null; try { sig = checker.getSignatureFromDeclaration(unit); } catch { return null; }
+  const rt = sig ? checker.getReturnTypeOfSignature(sig) : null;
+  if (!rt || rt.flags & (ts.TypeFlags.Void | ts.TypeFlags.Undefined | ts.TypeFlags.Never)) return null;
+  let s = null;
+  if (ts.isIdentifier(id)) {
+    try { s = checker.getSymbolAtLocation(id); } catch { return null; }
+    const d = s?.valueDeclaration;
+    if (!d || fnOf(d) !== unit || !(ts.isParameter(d) || ts.isVariableDeclaration(d)) || !ts.isIdentifier(d.name)) return null;
+  } else if (!pureReadOf(checker, id, unit, true)) return null; // `m.get(k)!`, `xs.find(p)!`: the operand is read before the statement, so it must read only
+  let st = n; while (st && !ts.isStatement(st)) { if (ts.isFunctionLike(st)) return null; st = st.parent; }
+  if (!st || !(ts.isReturnStatement(st) || ts.isExpressionStatement(st) || ts.isVariableStatement(st) || (ts.isIfStatement(st) && n.pos >= st.expression.pos && n.end <= st.expression.end))) return null;
+  for (let p = st.parent; p !== unit.body; p = p.parent) if (!p || !(ts.isBlock(p) || ts.isIfStatement(p))) return null;
+  const head = ts.isIfStatement(st) ? st.expression : st;
+  let writes = false;
+  const w = (x) => { if (writes) return; if (ts.isIdentifier(x) && writeTarget(x)) { let t = null; try { t = checker.getSymbolAtLocation(x); } catch { /* none */ } if (t === s) writes = true; } if (ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) { let o = x.operand; while (ts.isParenthesizedExpression(o)) o = o.expression; if (ts.isIdentifier(o) && checker.getSymbolAtLocation(o) === s && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(x.operator)) writes = true; } ts.forEachChild(x, w); };
+  w(head);
+  if (!ts.isIdentifier(id) && !pureReadOf(checker, head, unit, false)) return null; // the statement neither writes nor calls out, so reading the operand first reads the same value
+  return writes ? null : st;
+}
+// an expression that only reads: identifiers of the unit or the module, literals, operators other than writes, property
+// reads that are not accessors, and calls of the reading methods get, has, at, find, findLast, findIndex, includes,
+// indexOf on a Map or an array (a callback an arrow with an expression body that only reads); `top` asks for one such call
+function pureReadOf(checker, e, unit, top) {
+  const READS = new Set(['get', 'has', 'at', 'find', 'findLast', 'findIndex', 'includes', 'indexOf']);
+  let ok = true;
+  const w = (x) => {
+    if (!ok) return;
+    if (ts.isArrowFunction(x)) { if (ts.isBlock(x.body) || x.parameters.some((p) => !ts.isIdentifier(p.name))) ok = false; else w(x.body); return; }
+    if (faithfulOp(x)) { for (const a of x.arguments) w(a); return; } // an uninterpreted number operation: the operator it stands for, pure
+    if (ts.isFunctionLike(x) || ts.isNewExpression(x) || ts.isAwaitExpression(x) || ts.isYieldExpression(x) || ts.isDeleteExpression(x) || ts.isTaggedTemplateExpression(x) || ts.isClassExpression(x)) { ok = false; return; }
+    if (ts.isBinaryExpression(x) && x.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && x.operatorToken.kind <= ts.SyntaxKind.LastAssignment) { ok = false; return; }
+    if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(x.operator)) { ok = false; return; }
+    if (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) {
+      let ps = null; try { ps = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(x) ? x.name : x.argumentExpression); } catch { /* none */ }
+      if (ps?.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d))) { ok = false; return; }
+    }
+    if (ts.isCallExpression(x)) {
+      const c = x.expression;
+      if (!ts.isPropertyAccessExpression(c) || !READS.has(c.name.text) || x.questionDotToken || c.questionDotToken) { ok = false; return; }
+      let rt = null; try { rt = checker.getTypeAtLocation(c.expression); } catch { ok = false; return; }
+      const nm = (rt?.aliasSymbol ?? rt?.getSymbol?.())?.getName?.();
+      if (!(isArrayLike(checker, rt) || nm === 'Map' || nm === 'ReadonlyMap')) { ok = false; return; }
+      w(c.expression); x.arguments.forEach(w); return;
+    }
+    ts.forEachChild(x, w);
+  };
+  let e0 = e; while (ts.isParenthesizedExpression(e0)) e0 = e0.expression;
+  if (top && !ts.isCallExpression(e0)) return false;
+  w(e);
+  return ok;
+}
+// where an absence-carried let's option is carried: declared in a unit's own flow (no try, catch or switch around it, the
+// unit neither async nor a generator); the translator's fault and promise paths do not carry it
+export function absenceHome(checker, d) {
+  const fn = fnOf(d);
+  if (!fn || !unitFunction(fn) || fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword) || fn.asteriskToken) return false;
+  for (let p = d.parent; p && p !== fn; p = p.parent) if (ts.isTryStatement(p) || ts.isCatchClause(p) || ts.isSwitchStatement(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) return false;
+  return true;
+}
+// the payload reads of an absence-carried let that are not `x!` (a read TypeScript did not check whose type excludes
+// absence) and that no statement test reaches: the lint names each
+export function strandedLetReads(checker, d) {
+  if (!absenceCarried(checker, d)) return [];
+  return letRefs(checker, d).map((r) => r.node).filter((x) => payloadRead(checker, x) === x && !payloadStatement(checker, x, x));
+}
+// A callback's identity comes from its call, not its position among unrelated calls.
+// This is also the prediction's inventory; topLevelFunctions supplies its existing units.
+const unitSourceOrigin = new WeakMap();
+// An arrow function has no `this` or type parameters of its own: inside a class member it reads the member's receiver
+// (`this.total` is the class's accessor) and the member's and the class's type parameters; a callback unit under one
+// therefore carries the member's class context (cls, className, isStatic) and the type parameters in scope, so the
+// translator reads `this.x` and `T` in it as in the member. A function expression binds its own `this`: no class context.
+const lexicalGenerics = (fn, scope) => {
+  const own = fn.typeParameters ?? [];
+  if (!ts.isArrowFunction(fn) || !scope) return own.length ? own : undefined;
+  const outer = [...(scope.typeParameters ?? []), ...(ts.isClassLike(scope.parent) ? scope.parent.typeParameters ?? [] : [])];
+  const all = [...outer, ...own];
+  return all.length ? all : undefined;
+};
+const lexicalClass = (fn, scope) => {
+  if (!ts.isArrowFunction(fn) || !scope || !scope.parent || !ts.isClassLike(scope.parent) || !scope.parent.name) return {};
+  if (!(ts.isMethodDeclaration(scope) || ts.isGetAccessorDeclaration(scope) || ts.isSetAccessorDeclaration(scope) || ts.isConstructorDeclaration(scope) || ts.isPropertyDeclaration(scope))) return {};
+  return { cls: scope.parent, className: scope.parent.name.text, isStatic: !!scope.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword) };
+};
+export function callbackUnits(sf, existing) {
+  const source = unitSourceOrigin.get(sf);
+  const sourceUnits = source ? [...topLevelFunctions(source).values()].filter(u => u.form === 'callback') : [];
+  const byOriginal = new Map(sourceUnits.map(u => [u.fn, u]));
+  // normaliseApplyCalls reparses length/line-preserving padded text, so it has no per-node original links. Its
+  // unchanged ranges are the fallback; transforms retaining TypeScript's original link use that link first.
+  const byRange = new Map(sourceUnits.map(u => [`${u.fn.getStart(source)}:${u.fn.end}`, u]));
+  const byFn = new Map([...existing.values()].filter((u) => u.form !== 'callback').map((u) => [u.fn, u]));
+  const candidates = [], groups = new Map();
+  const literal = (n) => ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)
+    ? `'${JSON.stringify(n.text).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'")}'`
+    : ts.isNumericLiteral(n) || ts.isBigIntLiteral(n) || [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(n.kind)
+      || ts.isPrefixUnaryExpression(n) && [ts.SyntaxKind.MinusToken, ts.SyntaxKind.PlusToken].includes(n.operator) && ts.isNumericLiteral(n.operand) ? n.getText(sf) : null;
+  const visit = (fn) => {
+    if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
+      let arg = fn;
+      while (arg.parent && (ts.isParenthesizedExpression(arg.parent) || ts.isAsExpression(arg.parent) || ts.isSatisfiesExpression(arg.parent) || ts.isTypeAssertionExpression(arg.parent) || ts.isNonNullExpression(arg.parent))) arg = arg.parent;
+      const call = arg.parent;
+      if ((ts.isCallExpression(call) || ts.isNewExpression(call)) && call.arguments?.includes(arg)) {
+        let scope = null;
+        for (let p = call.parent; p && p !== sf; p = p.parent) {
+          if (ts.isFunctionLike(p) || ts.isClassStaticBlockDeclaration(p) || ts.isPropertyDeclaration(p)) { scope = p; break; }
+        }
+        const index = call.arguments.indexOf(arg);
+        const key = `${call.expression.getText(sf)}(${call.arguments.slice(0, index).map(literal).filter((x) => x !== null).join(',')})#${index}`;
+        const u = { name: key, node: fn, fn, params: fn.parameters, body: fn.body, typeNode: fn.type, isAsync: !!fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: lexicalGenerics(fn, scope), form: 'callback', ...lexicalClass(fn, scope), call, argumentIndex: index, scope, orderNamed: false };
+        candidates.push(u); byFn.set(fn, u);
+        if (!groups.has(scope)) groups.set(scope, new Map());
+        const group = groups.get(scope);
+        if (!group.has(key)) group.set(key, []);
+        group.get(key).push(u);
+      }
+    }
+    ts.forEachChild(fn, visit);
+  };
+  visit(sf);
+  for (const group of groups.values()) for (const us of group.values()) if (us.length > 1) us.forEach((u, i) => { u.name += `@${i + 1}`; u.orderNamed = true; });
+  const out = [];
+  for (const u of candidates) {
+    const parent = u.scope && byFn.get(u.scope);
+    if (u.scope && (!parent || parent.form === 'callback' && !out.includes(parent))) continue;
+    u.enclosingUnit = parent ?? null;
+    if (parent) u.name = `${parent.name}/${u.name}`;
+    if (source) {
+      const origin = byOriginal.get(ts.getOriginalNode(u.fn)) ?? byRange.get(`${u.fn.getStart(sf)}:${u.fn.end}`);
+      if (!origin) throw new Error('callback origin lost by internal rewrite');
+      u.name = origin.name; u.orderNamed = origin.orderNamed;
+    }
+    out.push(u);
+  }
+  return out;
+}
+
+// The checker supplies a callback's input type from the receiving signature. Unknown/any is not a type promise.
+export function callbackUntypedJsUnit(sf, u, checker) {
+  if (u.form !== 'callback') return untypedJsUnit(sf, u);
+  return untypedJsUnit(sf, { ...u, params: u.fn.parameters.filter(p => {
+    const t = checker.getTypeAtLocation(p.name);
+    return !!(t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown));
+  }) });
+}
+
+// Findings belong to the named unit, otherwise to the smallest containing source range. Columns distinguish units
+// sharing one line and keep an import-time call's finding outside the callback argument it contains.
+export function findingUnit(sf, units, finding) {
+  const values = [...units.values()];
+  if (finding.unit) return values.find(u => u.name === finding.unit) ?? null;
+  const lines = sf.getLineStarts();
+  const start = (lines[finding.line - 1] ?? sf.end) + (finding.col ?? 1) - 1;
+  const end = (lines[(finding.endLine ?? finding.line) - 1] ?? sf.end) + (finding.endCol ?? finding.col ?? 1) - 1;
+  return values.filter(u => u.node.getStart(sf) <= start && end <= u.node.getEnd())
+    .sort((a, b) => (a.node.getEnd() - a.node.getStart(sf)) - (b.node.getEnd() - b.node.getStart(sf)))[0] ?? null;
+}
+
+const callbackWrites = new WeakMap();
+// A closure input is a binding owned by an enclosing unit. A module binding retains its module-state reading.
+// Symbol identity, not spelling, joins uses and writes; writes in a loop or another closure can happen later even
+// when their source precedes creation. Const bindings are stable; a mutable binding must have no possible later write.
+export function callbackEnvironment(checker, u) {
+  if (u.form !== 'callback') return [];
+  const sf = u.fn.getSourceFile(), owners = new Set();
+  for (let p = u.enclosingUnit; p; p = p.enclosingUnit) owners.add(p.fn);
+  const enclosing = n => { for (let p = n.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; };
+  if (!callbackWrites.has(checker)) callbackWrites.set(checker, new WeakMap());
+  const byFile = callbackWrites.get(checker);
+  let writes = byFile.get(sf);
+  if (!writes) {
+    writes = new Map(); byFile.set(sf, writes);
+    const target = n => {
+      if (ts.isIdentifier(n)) {
+        const d = checker.getSymbolAtLocation(n)?.valueDeclaration;
+        if (d) { if (!writes.has(d)) writes.set(d, []); writes.get(d).push(n); }
+      } else if (ts.isArrayLiteralExpression(n)) n.elements.forEach(target);
+      else if (ts.isObjectLiteralExpression(n)) n.properties.forEach(p => target(ts.isPropertyAssignment(p) ? p.initializer : ts.isShorthandPropertyAssignment(p) ? p.name : p.expression));
+      else if (ts.isParenthesizedExpression(n) || ts.isSpreadElement(n) || ts.isSpreadAssignment(n)) target(n.expression);
+      else if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken) target(n.left);
+    };
+    const scan = n => {
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment) target(n.left);
+      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(n.operator)) target(n.operand);
+      if ((ts.isForOfStatement(n) || ts.isForInStatement(n)) && !ts.isVariableDeclarationList(n.initializer)) target(n.initializer);
+      ts.forEachChild(n, scan);
+    };
+    scan(sf);
+  }
+  const captures = new Map();
+  const visit = n => {
+    if (ts.isTypeNode(n)) return;
+    if (ts.isIdentifier(n)) {
+      const sym = ts.isShorthandPropertyAssignment(n.parent) ? checker.getShorthandAssignmentValueSymbol(n.parent) : checker.getSymbolAtLocation(n);
+      const decl = sym?.valueDeclaration;
+      if (decl && (ts.isParameter(decl) || ts.isVariableDeclaration(decl) || ts.isBindingElement(decl)) && owners.has(enclosing(decl)) && !captures.has(decl)) {
+        const loop = w => { for (let p = u.fn.parent; p; p = p.parent) if (ts.isIterationStatement(p, false) && p.pos <= w.pos && w.end <= p.end) return true; return false; };
+        const mutable = !(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && (writes.get(decl) ?? []).some(w => w.getStart(sf) >= u.fn.getStart(sf) || enclosing(w) !== enclosing(decl) || loop(w));
+        captures.set(decl, { decl, sym, use: n, mutable });
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(u.fn);
+  return [...captures.values()];
+}
+
+// Artifact filenames are an encoding of identity, never a replacement for the unit/certificate name.
+export const artifactName = unit => encodeURIComponent(unit);
+
+// Unit names contain the call's literals and callee source. Only commas outside brackets and quotes separate units.
+export function parseUnitList(text) {
+  const out = []; let start = 0, depth = 0, quote = null, escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === quote) quote = null;
+    } else if (c === "'" || c === '"' || c === '`') quote = c;
+    else if ('([{'.includes(c)) depth++;
+    else if (')]}'.includes(c)) depth--;
+    else if (c === ',' && depth === 0) { out.push(text.slice(start, i).trim()); start = i + 1; }
+  }
+  out.push(text.slice(start).trim());
+  return out.filter(Boolean).map(token => {
+    if (token.startsWith('"')) { try { const name = JSON.parse(token); if (typeof name === 'string') return name; } catch { /* raw source name */ } }
+    return token;
+  });
+}
+
+// Inverse transport for raw source names. Keep ordinary lists unchanged; JSON-quote a name when its source
+// comments/quotes/brackets would consume a separator, or when a newline would break a one-line HEAP header.
+export function formatUnitList(names) {
+  return names.map(name => {
+    const probe = parseUnitList(`${name},__unit_list_end__`);
+    return !/[\r\n\u2028\u2029]/.test(name) && probe.length === 2 && probe[0] === name && probe[1] === '__unit_list_end__' ? name : JSON.stringify(name).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  }).join(',');
+}
+
+// Execution/check requests for a nested callback are requests for its enclosing unit's verdict.
+export function enclosingUnitName(file, name) {
+  if (!file || !fs.existsSync(file)) return null;
+  const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+  return topLevelFunctions(sf).get(name)?.enclosingUnit?.name ?? null;
 }

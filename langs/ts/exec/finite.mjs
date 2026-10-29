@@ -9,7 +9,7 @@ import path from 'node:path';
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { reactHook } from '../react.mjs';
 import { Environment, render, BudgetError } from './fake.mjs';
-import { witnessPatch } from '../patch.mjs';
+import { witnessPatch, kidsOf } from '../patch.mjs';
 import { interpretFire } from './handlers-interp.mjs';
 // the runtime helpers (sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop) come from
 // run.mjs through the `rt` argument: run.mjs imports this file, so a static import back would be a cycle
@@ -65,7 +65,7 @@ export function finiteDomain(file, unit, { project = false, maxAssignments = 64 
 // a unit call under the context's watchdog (as run.mjs does): an endless click handler is a timeout, never a hang
 class CallTimeout extends Error { constructor() { super('__timeout__'); } }
 // the watchdog call and the await of a unit promise come from the runtime (run.mjs): they open the recording window of the library table
-const erase = (v) => (Array.isArray(v) ? v.map(erase) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : erase(x)])), children: v.children.map(erase), ...(Object.hasOwn(v, 'rendered') ? { rendered: erase(v.rendered) } : {}) } : v); // a deep child's output is part of the tree
+const erase = (v) => (Array.isArray(v) ? v.map(erase) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : erase(x)])), children: kidsOf(v.children).map(erase), ...(Object.hasOwn(v, 'rendered') ? { rendered: erase(v.rendered) } : {}) } : v); // a deep child's output is part of the tree
 
 // explore the product of parent and candidate over every click order from every prop assignment
 export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1, ms = 2000, maxPairs = 500, rt, handlers = null }) {

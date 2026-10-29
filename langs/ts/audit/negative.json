@@ -1,0 +1,1082 @@
+[
+  {
+    "partition": "pass",
+    "name": "ordinary",
+    "source": "function f(){} const g=()=>0;",
+    "language": "TS",
+    "goal": "script",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 2,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass",
+    "name": "ordinary",
+    "source": "function f(){} const g=()=>0;",
+    "language": "TS",
+    "goal": "module",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 2,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass",
+    "name": "ordinary",
+    "source": "function f(){} const g=()=>0;",
+    "language": "TSX",
+    "goal": "script",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 2,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass",
+    "name": "ordinary",
+    "source": "function f(){} const g=()=>0;",
+    "language": "TSX",
+    "goal": "module",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 2,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass",
+    "name": "ordinary",
+    "source": "function f(){} const g=()=>0;",
+    "language": "JS",
+    "goal": "script",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 2,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass",
+    "name": "ordinary",
+    "source": "function f(){} const g=()=>0;",
+    "language": "JS",
+    "goal": "module",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 2,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass",
+    "name": "ordinary",
+    "source": "function f(){} const g=()=>0;",
+    "language": "JSX",
+    "goal": "script",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 2,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass",
+    "name": "ordinary",
+    "source": "function f(){} const g=()=>0;",
+    "language": "JSX",
+    "goal": "module",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 2,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass-explicit",
+    "name": "parenthesized",
+    "source": "const f = (function(){});",
+    "language": "TS",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass-explicit",
+    "name": "parenthesized",
+    "source": "const f = (function(){});",
+    "language": "TS",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass-explicit",
+    "name": "parenthesized",
+    "source": "const f = (function(){});",
+    "language": "TSX",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass-explicit",
+    "name": "parenthesized",
+    "source": "const f = (function(){});",
+    "language": "TSX",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass-explicit",
+    "name": "parenthesized",
+    "source": "const f = (function(){});",
+    "language": "JS",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass-explicit",
+    "name": "parenthesized",
+    "source": "const f = (function(){});",
+    "language": "JS",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass-explicit",
+    "name": "parenthesized",
+    "source": "const f = (function(){});",
+    "language": "JSX",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "pass-explicit",
+    "name": "parenthesized",
+    "source": "const f = (function(){});",
+    "language": "JSX",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "fail",
+    "name": "missing-parameter-close",
+    "source": "function f( {",
+    "language": "TS",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 13
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-parameter-close",
+    "source": "function f( {",
+    "language": "TS",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 24
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-parameter-close",
+    "source": "function f( {",
+    "language": "TSX",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 13
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-parameter-close",
+    "source": "function f( {",
+    "language": "TSX",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 24
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-parameter-close",
+    "source": "function f( {",
+    "language": "JS",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 13
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-parameter-close",
+    "source": "function f( {",
+    "language": "JS",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 24
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-parameter-close",
+    "source": "function f( {",
+    "language": "JSX",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 13
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-parameter-close",
+    "source": "function f( {",
+    "language": "JSX",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 24
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-arrow-body",
+    "source": "const f = () => ;",
+    "language": "TS",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1109,
+        "start": 16
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-arrow-body",
+    "source": "const f = () => ;",
+    "language": "TS",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1109,
+        "start": 27
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-arrow-body",
+    "source": "const f = () => ;",
+    "language": "TSX",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1109,
+        "start": 16
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-arrow-body",
+    "source": "const f = () => ;",
+    "language": "TSX",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1109,
+        "start": 27
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-arrow-body",
+    "source": "const f = () => ;",
+    "language": "JS",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1109,
+        "start": 16
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-arrow-body",
+    "source": "const f = () => ;",
+    "language": "JS",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1109,
+        "start": 27
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-arrow-body",
+    "source": "const f = () => ;",
+    "language": "JSX",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1109,
+        "start": 16
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "missing-arrow-body",
+    "source": "const f = () => ;",
+    "language": "JSX",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1109,
+        "start": 27
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedToken"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 1
+  },
+  {
+    "partition": "fail",
+    "name": "object-recovery",
+    "source": "const o = { f( { return 0; };",
+    "language": "TS",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 24
+      },
+      {
+        "code": 1005,
+        "start": 25
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedKeyword"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "fail",
+    "name": "object-recovery",
+    "source": "const o = { f( { return 0; };",
+    "language": "TS",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 35
+      },
+      {
+        "code": 1005,
+        "start": 36
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedKeyword"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "fail",
+    "name": "object-recovery",
+    "source": "const o = { f( { return 0; };",
+    "language": "TSX",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 24
+      },
+      {
+        "code": 1005,
+        "start": 25
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedKeyword"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "fail",
+    "name": "object-recovery",
+    "source": "const o = { f( { return 0; };",
+    "language": "TSX",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 35
+      },
+      {
+        "code": 1005,
+        "start": 36
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedKeyword"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "fail",
+    "name": "object-recovery",
+    "source": "const o = { f( { return 0; };",
+    "language": "JS",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 24
+      },
+      {
+        "code": 1005,
+        "start": 25
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedKeyword"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "fail",
+    "name": "object-recovery",
+    "source": "const o = { f( { return 0; };",
+    "language": "JS",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 35
+      },
+      {
+        "code": 1005,
+        "start": 36
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedKeyword"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "fail",
+    "name": "object-recovery",
+    "source": "const o = { f( { return 0; };",
+    "language": "JSX",
+    "goal": "script",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 24
+      },
+      {
+        "code": 1005,
+        "start": 25
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedKeyword"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "fail",
+    "name": "object-recovery",
+    "source": "const o = { f( { return 0; };",
+    "language": "JSX",
+    "goal": "module",
+    "verdict": "parse-failed",
+    "error": null,
+    "typescriptParseDiagnostics": [
+      {
+        "code": 1005,
+        "start": 35
+      },
+      {
+        "code": 1005,
+        "start": 36
+      }
+    ],
+    "babelErrors": [
+      "UnexpectedKeyword"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "duplicate-strict-parameters",
+    "source": "\"use strict\"; function f(x,x){}",
+    "language": "TS",
+    "goal": "script",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "ParamDupe"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "duplicate-strict-parameters",
+    "source": "\"use strict\"; function f(x,x){}",
+    "language": "TS",
+    "goal": "module",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "ParamDupe"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "duplicate-strict-parameters",
+    "source": "\"use strict\"; function f(x,x){}",
+    "language": "TSX",
+    "goal": "script",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "ParamDupe"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "duplicate-strict-parameters",
+    "source": "\"use strict\"; function f(x,x){}",
+    "language": "TSX",
+    "goal": "module",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "ParamDupe"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "duplicate-strict-parameters",
+    "source": "\"use strict\"; function f(x,x){}",
+    "language": "JS",
+    "goal": "script",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "ParamDupe"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "duplicate-strict-parameters",
+    "source": "\"use strict\"; function f(x,x){}",
+    "language": "JS",
+    "goal": "module",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "ParamDupe"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "duplicate-strict-parameters",
+    "source": "\"use strict\"; function f(x,x){}",
+    "language": "JSX",
+    "goal": "script",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "ParamDupe"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "duplicate-strict-parameters",
+    "source": "\"use strict\"; function f(x,x){}",
+    "language": "JSX",
+    "goal": "module",
+    "verdict": "listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "ParamDupe"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "getter-parameters",
+    "source": "const o = {get x(a){return a;}};",
+    "language": "TS",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "BadGetterArity"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "getter-parameters",
+    "source": "const o = {get x(a){return a;}};",
+    "language": "TS",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "BadGetterArity"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "getter-parameters",
+    "source": "const o = {get x(a){return a;}};",
+    "language": "TSX",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "BadGetterArity"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "getter-parameters",
+    "source": "const o = {get x(a){return a;}};",
+    "language": "TSX",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "BadGetterArity"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "getter-parameters",
+    "source": "const o = {get x(a){return a;}};",
+    "language": "JS",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "BadGetterArity"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "getter-parameters",
+    "source": "const o = {get x(a){return a;}};",
+    "language": "JS",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "BadGetterArity"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "getter-parameters",
+    "source": "const o = {get x(a){return a;}};",
+    "language": "JSX",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "BadGetterArity"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "getter-parameters",
+    "source": "const o = {get x(a){return a;}};",
+    "language": "JSX",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "BadGetterArity"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "invalid-assignment-target",
+    "source": "for(function(){} in {}){}",
+    "language": "TS",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "InvalidLhs"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "invalid-assignment-target",
+    "source": "for(function(){} in {}){}",
+    "language": "TS",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "InvalidLhs"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "invalid-assignment-target",
+    "source": "for(function(){} in {}){}",
+    "language": "TSX",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "InvalidLhs"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "invalid-assignment-target",
+    "source": "for(function(){} in {}){}",
+    "language": "TSX",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "InvalidLhs"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "invalid-assignment-target",
+    "source": "for(function(){} in {}){}",
+    "language": "JS",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "InvalidLhs"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "invalid-assignment-target",
+    "source": "for(function(){} in {}){}",
+    "language": "JS",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "InvalidLhs"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "invalid-assignment-target",
+    "source": "for(function(){} in {}){}",
+    "language": "JSX",
+    "goal": "script",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "InvalidLhs"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  },
+  {
+    "partition": "early",
+    "name": "invalid-assignment-target",
+    "source": "for(function(){} in {}){}",
+    "language": "JSX",
+    "goal": "module",
+    "verdict": "not listed",
+    "error": null,
+    "typescriptParseDiagnostics": [],
+    "babelErrors": [
+      "InvalidLhs"
+    ],
+    "functionLikeRecoveryNodes": 1,
+    "listedDespiteParseErrors": 0
+  }
+]

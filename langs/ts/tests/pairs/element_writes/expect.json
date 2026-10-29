@@ -11,7 +11,7 @@
  "equal": {
   "mark": true,
   "stamp": false,
-  "settle": true,
+  "settle": false,
   "clear": true,
   "crown": true,
   "bump": true,

@@ -10,7 +10,8 @@ export function block(node: Block, tools?: Map<string, string>): string | null {
     case "paragraph": return node.text ?? "";
     case "collection-mention": {
       if (node.attrs?.isNotFound === true || node.attrs?.isActive === false) return null;
-      const id = node.attrs?.collectionId as string | undefined;
+      const raw = node.attrs?.collectionId;
+      const id = typeof raw === "string" ? raw : undefined;
       if (tools && id && tools.has(id)) return `[Knowledge: use ${tools.get(id)}]`;
       if (tools) return null;
       return "%%" + (node.attrs?.name || "") + "%%";

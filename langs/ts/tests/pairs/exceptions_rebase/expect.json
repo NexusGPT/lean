@@ -13,7 +13,7 @@
     "guard_read": true,
     "build": false,
     "ignored_new": false,
-    "method_call": true,
+    "method_call": false,
     "ignored_method": false,
     "untouched": true
   },

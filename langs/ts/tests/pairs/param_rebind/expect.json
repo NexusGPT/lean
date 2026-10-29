@@ -7,8 +7,8 @@
   "bumped"
  ],
  "equal": {
-  "offset_of": false,
-  "weight_of": true,
+  "offset_of": "witness",
+  "weight_of": false,
   "spread": true,
   "drained": true,
   "bumped": true

@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { ts, topLevelFunctions } from '../../../common.mjs';
+const parse = s => ts.createSourceFile('callbacks.ts', s, ts.ScriptTarget.Latest, true);
+const names = s => [...topLevelFunctions(parse(s)).keys()];
+test('one inventory lists module and enclosing-unit callbacks', () => {
+  assert.deepEqual(names(fs.readFileSync(new URL('./listing.ts', import.meta.url), 'utf8')), [
+    'describe', 'defineConfig', 'outer', "app.get('/a')#1", "router.post('/b')#1", "describe('parses')#1",
+    "describe('parses')#1/app.get('/nested')#1", 'defineConfig()#0', 'outer/xs.map()#0',
+  ]);
+});
+test('identity survives unrelated insertion and canonicalizes quotes; collisions alone get ordinal suffixes', () => {
+  const a = names(`f('a',()=>1); f("b",()=>2);`);
+  assert.deepEqual(names(`f('new',()=>3); f("a",()=>1); f('b',()=>2);`).slice(1), a);
+  assert.deepEqual(names(`f('a',()=>1); f('a',()=>2); f(()=>3); f(()=>4);`), ["f('a')#1@1", "f('a')#1@2", 'f()#0@1', 'f()#0@2']);
+});
+test('quoted literal identities escape control characters for command-line transport', () => {
+  const listed = names(String.raw`f('\0', () => 1); f('\t', () => 2);`);
+  assert.deepEqual(listed, [String.raw`f('\u0000')#1`, String.raw`f('\t')#1`]);
+});
+test('units CLI reports callback form and actual module placement', () => {
+  const run = spawnSync(process.execPath, ['langs/ts/units.mjs', new URL('./listing.ts', import.meta.url).pathname, '--no-project'], { encoding: 'utf8' });
+  assert.equal(run.status, 0, `${run.stderr}\nexit=${run.status}`);
+  const rows = JSON.parse(run.stdout), module = rows.find(r => r.name === "app.get('/a')#1"), body = rows.find(r => r.name === 'outer/xs.map()#0');
+  assert.equal(module.form, 'callback'); assert.equal(module.top, true);
+  assert.equal(body.form, 'callback'); assert.equal(body.top, false);
+});

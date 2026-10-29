@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto';
 import { generator } from './gen.mjs';
 
 export class BudgetError extends Error {}
+const EMPTY_LIST = Symbol('an empty list');
 const depthOf = (path) => (path.match(/[.\[(]/g) || []).length;
 export function makeRng(seed) {
   // the seed is scrambled first: two xorshift states from nearby seeds give nearly the same first outputs, so every
@@ -109,6 +110,7 @@ export class Environment {
     // while a module loads (schemas, decorators, constants), and for a module's own members, the answer is always
     // a handle: varied answers are for what the unit itself asks at run time
     if (this.loading || (path.startsWith('module:') && !path.includes('('))) return this.fake(path);
+    if (path.startsWith('drive#')) return this.drawn(path); // a read through a drive's argument draws like the argument
     const h = createHash('sha256').update(`${this.seed}:answer:${path}`).digest();
     const u = h.readUInt32BE(0) / 4294967296;
     const d = depthOf(path);
@@ -121,6 +123,22 @@ export class Environment {
     else if (u < 0.90) v = 0;
     else if (u < 0.95) v = false;
     else v = true;
+    this.cache.set(path, v);
+    return v;
+  }
+  // A drawn argument of a drive (exec/run.mjs driveWindow) and every answer read through it: about two times in five a
+  // fake (an object of the world, whose reads draw again), otherwise a value of the unit's own pools (the strings and
+  // numbers its source compares against, spec.mjs) or a plain edge (null, undefined, true, false, 0, '', an empty
+  // list); chosen by the seed and the path only, so both sides are handed the same values, and another input (another
+  // seed) hands other ones: a callback that compares against a constant meets that constant on some input.
+  drawn(path) {
+    if (this.cache.has(path)) return this.cache.get(path);
+    if (this.loading || depthOf(path) > 8) return this.fake(path);
+    const sh = this.shapes ?? {};
+    const pool = [...(sh.strings ?? []), ...(sh.literals ?? []), null, undefined, true, false, 0, '', EMPTY_LIST];
+    const u = createHash('sha256').update(`${this.seed}:drawn:${path}`).digest().readUInt32BE(0) / 4294967296;
+    let v = u < 0.4 ? this.fake(path) : pool[Math.min(pool.length - 1, Math.floor(((u - 0.4) / 0.6) * pool.length))];
+    if (v === EMPTY_LIST) v = [];
     this.cache.set(path, v);
     return v;
   }
@@ -137,10 +155,10 @@ export class Environment {
         if (prop === '__isFake') return true;
         if (prop === '__fakePath') return path;
         if (prop === 'then') return undefined; // never thenable
-        if (prop === 'catch' || prop === 'finally') { return (h) => { env.record('call', `${path}.${prop}`, [typeof h === 'function' ? `fn:${fnHash(h)}` : String(h)]); return receiver; }; } // a promise-shaped chain on a fake: the handler is recorded, the fake flows on
-        if (prop === Symbol.toPrimitive) return (h) => (h === 'number' ? env.primitive('number', path) : h === 'string' ? env.primitive('string', path) : env.primitive('number', path));
-        if (prop === 'valueOf') return () => env.primitive('number', path);
-        if (prop === 'toString') return () => env.primitive('string', path);
+        if (prop === 'catch' || prop === 'finally') { return (h) => { env.record('call', `${path}.${prop}`, [typeof h === 'function' ? render(h) : String(h)]); return receiver; }; } // a promise-shaped chain on a fake: the handler is recorded by its handle (and driven like every escaped function), the fake flows on
+        if (prop === Symbol.toPrimitive) return fakeMember(`${path}[Symbol.toPrimitive]`, (h) => (h === 'number' ? env.primitive('number', path) : h === 'string' ? env.primitive('string', path) : env.primitive('number', path)));
+        if (prop === 'valueOf') return fakeMember(`${path}.valueOf`, () => env.primitive('number', path));
+        if (prop === 'toString') return fakeMember(`${path}.toString`, () => env.primitive('string', path));
         if (prop === Symbol.iterator) return function* () { const n = depthOf(path) > 8 ? 0 : 2; for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
         if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return env.member(path, prop, tspec); }
@@ -166,7 +184,7 @@ export class Environment {
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
         // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
-        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return namePromise(env, env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r, `${path}()#${k}`, { reason: error }); } throw error; }
+        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); programBuilt.add(error); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return namePromise(env, env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r, `${path}()#${k}`, { reason: error }); } throw error; }
         // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
         if (!env.loading) {
           const cbs = [];
@@ -255,9 +273,23 @@ export function namePromise(env, p, path, settled) {
 // the name of a promise the world or the input made, or null (not a promise, or one the unit made)
 export const promiseName = (v) => (v && (typeof v === 'object' || typeof v === 'function') && typeof v.then === 'function' ? promiseNames.get(v)?.label ?? null : null);
 
-// An Error of the sandbox's own realm (a TypeError the engine raises for `null.size`) is not an `instanceof` the host's
-// Error; the internal [[ErrorData]] slot is what the tag reads, in either realm.
+// An error is observed by its class and own fields, and by its message only when the PROGRAM built it (owner, 29 Oct):
+// an error the engine raises (`null.size`, a failed JSON.parse, a bad RegExp) carries a message ECMA-262 leaves to the
+// implementation, V8 prints source text into it (its CallPrinter: `n.toUpperCase is not a function`), so the text is no
+// outcome; a message a `new Error(m)` wrote is program data. The sandbox hands the unit its Error classes wrapped in
+// programConstructor (exec/run.mjs sandbox): an error made through them, `new`, called, or as the `super()` of a class
+// extending them, is marked program-built; every other value with the internal [[ErrorData]] slot was raised by the
+// engine, in either realm (the context's intrinsics raise `TypeError`s of their own realm; a host built-in handed to the
+// unit, JSON or RegExp, raises the host's). The fake world's own faults (a drawn `fault:` error) are lean's text and are
+// marked too. The wrapper forwards everything else: `instanceof`, the prototype chain, the statics; `Error.prototype.constructor`
+// stays the engine's own class, so `e.constructor === Error` inside the unit reads false where a bare engine reads true.
+export const programBuilt = new WeakSet();
 const isError = (v) => v instanceof Error || Object.prototype.toString.call(v) === '[object Error]';
+export const programConstructor = (C) => new Proxy(C, {
+  construct(t, args, nt) { const e = Reflect.construct(t, args, nt); if (isError(e)) programBuilt.add(e); return e; },
+  apply(t, self, args) { const e = Reflect.apply(t, self, args); if (isError(e)) programBuilt.add(e); return e; },
+});
+const engineRaised = (v) => !programBuilt.has(v);
 // A V8 stack frame line: four spaces, `at`, then a location the engine writes (`file:line:column`, `<anonymous>`,
 // `native`, `index N`, `unknown location`). A stack names the file and the columns of the copy that ran, which differ
 // between a parent and a candidate by construction; the header (class and message) is the Error's behaviour, the frames
@@ -283,7 +315,8 @@ export function withoutFrames(s) {
   return kept.length === lines.length ? s : kept.join('\n');
 }
 
-// A rendering of a value for the trace and for outcome comparison: fakes by path, objects structurally, functions by name.
+// A rendering of a value for the trace and for outcome comparison: fakes by path, objects structurally, a function by its
+// handle (escapeHandle below: never its text; what it does is the drive's observation, exec/run.mjs driveWindow).
 // With `share` (renderDrawn), an object reached more than once is named: its first sight is `{ $ref: k, value }`, every
 // later sight `{ $ref: k }`, so two positions holding one object show the same name; without it, nothing changes.
 export function render(v, depth = 0, seen = new Set(), share = null) {
@@ -295,7 +328,7 @@ export function render(v, depth = 0, seen = new Set(), share = null) {
   if (t === 'string') return withoutRoots(withoutFrames(v));
   if (t === 'bigint') return { $bigint: v.toString() };
   if (t === 'symbol') return { $symbol: String(v) };
-  if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : { $fn: v.name || 'anonymous', src: fnHash(v) };
+  if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : escapeHandle(v);
   if (v.__isFake) return { $fake: v.__fakePath };
   if (depth > 6) return { $deep: true };
   if (share && share.multi.has(v)) { if (share.ids.has(v)) return { $ref: share.ids.get(v) }; share.ids.set(v, share.ids.size); return { $ref: share.ids.get(v), value: renderBody(v, depth, seen, share) }; }
@@ -303,12 +336,17 @@ export function render(v, depth = 0, seen = new Set(), share = null) {
   seen.add(v);
   return renderBody(v, depth, seen, share);
 }
+
+// an element tree rendered element by element: the depth bound of render restarts at every element, so a deep tree keeps its
+// shape where render alone cuts a deep element's children to one {$deep} object; a value inside a prop keeps the bound. The one
+// definition, read by lane B's outcome (exec/run.mjs) and the op-tree patch (patch.mjs): the two print the same tree.
+export const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 function renderBody(v, depth, seen, share) {
   if (Array.isArray(v)) return v.map((x) => render(x, depth + 1, seen, share));
   if (v instanceof Date) return { $date: Number.isNaN(v.getTime()) ? 'invalid' : v.toISOString() };
   if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [render(k, depth + 1, seen, share), render(x, depth + 1, seen, share)]) };
   if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen, share)) };
-  if (isError(v)) return { $error: v.constructor?.name ?? 'Error', message: typeof v.message === 'string' ? withoutRoots(v.message) : v.message }; // class and message; the stack is never part of the rendering (design/stack-text.md)
+  if (isError(v)) return { $error: v.constructor?.name ?? 'Error', ...(engineRaised(v) ? {} : { message: typeof v.message === 'string' ? withoutRoots(v.message) : v.message }) }; // the class and its own fields; a program-built message is program data; an engine-made message is implementation-defined (ECMA-262) and no outcome (owner 29 Oct, row f0d879ac); the stack never (design/stack-text.md)
   if (v instanceof RegExp) return { $regex: String(v) };
   if (typeof v.then === 'function') { const n = promiseNames.get(v); return n ? { $promise: n.label, settled: Object.hasOwn(n, 'reason') ? { rejected: render(n.reason, depth + 1, seen, share) } : render(n.value, depth + 1, seen, share) } : { $promise: true }; } // a promise the world or the input made is named by its creation; one the unit made is anonymous
   const out = {};
@@ -338,7 +376,105 @@ export function renderDrawn(args) {
 }
 
 export function stable(v) { return JSON.stringify(render(v)); }
-// the hash of a function's own source text, comments and whitespace folded
+
+// ----- escaped functions: a handle per side, driven, never read (design/callbacks.md) -----
+// A function value of the unit that reaches an observation (an argument of a request, a field it sets, a value it
+// returns or throws, a prop of its tree, a cleanup, a handler handed to `.catch`) is shown as a HANDLE: its side's
+// number for that function object, in order of first sight after the module loaded, so two positions holding one
+// function show one number and the same code on both sides numbers its functions alike. What the function does is
+// observed by calling it (exec/run.mjs driveWindow): every function first seen inside an observation window is driven
+// once at its end, on the same drawn arguments on both sides, and the drive's result, requests and throw are the
+// observation. A function's side is its realm (each side's sandbox has its own Function.prototype) or, for a function
+// lean's harness makes for one side (a state setter, a dispatch), the side that made it. A function of no side is
+// lean's own or the host's (a built-in handed on: `Math.max`): it is named, never driven, the same code on both sides.
+const realmEnvs = new WeakMap();  // a sandbox realm's Function.prototype -> its environment
+const hostOwners = new WeakMap(); // a function the harness made for one environment -> that environment
+let windowEnv = null;             // the environment whose observation window is open: the side of a function whose realm chain leaves the sandbox (a class extending a host built-in such as Error)
+export function bindRealm(fnProto, env) { if (fnProto) realmEnvs.set(fnProto, env); }
+export function ownFunction(fn, env) { if (typeof fn === 'function') hostOwners.set(fn, env); return fn; }
+const nativeText = (f) => { try { return /\{\s*\[native code\]\s*\}\s*$/.test(Function.prototype.toString.call(f)); } catch { return true; } };
+function sideOf(fn) {
+  const own = hostOwners.get(fn); if (own) return own;
+  let p; try { p = Object.getPrototypeOf(fn); } catch { return null; }
+  for (let i = 0; p && i < 16; i++) { const e = realmEnvs.get(p); if (e) return e; try { p = Object.getPrototypeOf(p); } catch { return null; } }
+  return windowEnv?.escapes?.window && !nativeText(fn) ? windowEnv : null;
+}
+const escapesOf = (env) => (env.escapes ??= { ids: new Map(), list: [], window: null });
+// a function the fake world itself hands the unit (a fake's valueOf, toString or Symbol.toPrimitive; a drawn coercible
+// object's methods, a drawn thenable's then: exec/repr.mjs) is the world's, rendered by its name on every rendering: it is
+// never the unit's own function, so it takes no handle. Inside an observation window it was numbered as an escape
+// (sideOf's window fallback reads a host-realm closure as the window's), and outside one it read as host:toString, so
+// the render-purity check saw two different trees of one state.
+const worldFns = new WeakMap();
+export const worldFunction = (name, fn) => { worldFns.set(fn, name); return fn; };
+const fakeMember = worldFunction;
+export function escapeHandle(fn) {
+  const world = worldFns.get(fn); if (world) return { $fn: `fake:${world}` };
+  const env = sideOf(fn);
+  if (!env) return { $fn: `host:${fn.name || 'anonymous'}` };
+  const reg = escapesOf(env);
+  let k = reg.ids.get(fn);
+  if (k === undefined) { k = reg.list.length; reg.ids.set(fn, k); reg.list.push({ fn, driven: false }); }
+  if (reg.window && !reg.window.seen.has(k)) { reg.window.seen.add(k); reg.window.order.push(k); }
+  return { $fn: `#${k}` };
+}
+// the numbering starts after the module loaded: what the module handed out while loading is not the unit's (a decorator
+// given its class), and a module whose top level hands out one function more must not renumber the unit's functions
+export function resetEscapes(env) { if (env.escapes && !env.escapes.window) env.escapes = null; }
+// an observation window: every function first rendered between open and close is driven at its close
+export function openEscapes(env) { escapesOf(env).window = { seen: new Set(), order: [] }; windowEnv = env; }
+export function closeEscapes(env) { const reg = escapesOf(env); const w = reg.window; reg.window = null; if (windowEnv === env) windowEnv = null; return w ? w.order : []; }
+export const escapeEntry = (env, k) => env.escapes?.list[k] ?? null;
+// a stretch of the run whose functions the observation never shows (the render-purity check's second render): numbered, not driven
+export function pauseEscapes(env) { const reg = escapesOf(env); const w = reg.window; reg.window = null; return w; }
+export function resumeEscapes(env, w) { escapesOf(env).window = w; }
+// a rendering with its handles renamed by first sight: two renderings of runs that made their own closures compare by
+// where each function stands, not by which object it is (the two renders of one state)
+export function canonHandles(v) {
+  const names = new Map();
+  const walk = (x) => (Array.isArray(x) ? x.map(walk) : x && typeof x === 'object' ? (typeof x.$fn === 'string' && x.$fn.startsWith('#') && Object.keys(x).length === 1 ? { $fn: `#${names.has(x.$fn) ? names.get(x.$fn) : (names.set(x.$fn, names.size), names.size - 1)}` } : Object.fromEntries(Object.entries(x).map(([k, y]) => [k, walk(y)]))) : x);
+  return walk(JSON.parse(JSON.stringify(v)));
+}
+// the internal key of a handle for a reader (a witness names where the driven function is): its text hash, never compared
+export const escapeKey = (env, k) => { const e = escapeEntry(env, k); return e ? fnHash(e.fn) : null; };
+
+// Undecided is not a difference. A drive that could not run (exec/run.mjs driveWindow: the budget spent, a timeout, a
+// stop of the harness) is `{ $fn, undriven: why }`; from the first such record on either side the two sides' drives are
+// undecided, never a difference. `undecidedDrives(a, b)` -> the reasons when the two observations differ only there (each
+// observation of a sequence is read the same way), else null; `undrivenOf(o)` -> the first reason an observation holds.
+const undrivenList = (ds) => (Array.isArray(ds) ? ds.filter((d) => d && d.undriven).map((d) => d.undriven) : []);
+export function undrivenOf(o) {
+  if (!o || typeof o !== 'object') return null;
+  if (Array.isArray(o)) { for (const x of o) { const r = undrivenOf(x); if (r) return r; } return null; }
+  return undrivenList(o.drives)[0] ?? null;
+}
+function maskDrives(x, y) {
+  const cut = (ds, i) => (Array.isArray(ds) ? [...ds.slice(0, i), { undecided: true }] : ds);
+  const first = (ds) => (Array.isArray(ds) ? ds.findIndex((d) => d && d.undriven) : -1);
+  const i = first(x?.drives), j = first(y?.drives);
+  if (i < 0 && j < 0) return [x, y];
+  const at = Math.min(...[i, j].filter((n) => n >= 0));
+  return [{ ...x, drives: cut(x.drives, at) }, { ...y, drives: cut(y.drives, at) }];
+}
+export function undecidedDrives(a, b) {
+  const pair = (x, y) => (Array.isArray(x) && Array.isArray(y) && x.length === y.length ? x.map((v, i) => maskDrives(v, y[i])) : [maskDrives(x, y)]);
+  const pairs = pair(a, b);
+  const reasons = [...new Set([a, b].flatMap((o) => (Array.isArray(o) ? o : [o]).flatMap((v) => undrivenList(v?.drives))))];
+  if (!reasons.length) return null;
+  return pairs.every(([x, y]) => JSON.stringify(x) === JSON.stringify(y)) ? reasons : null;
+}
+
+// The detector of a text-only witness (tests/run.mjs, the proof-hunt step): a WITNESS must rest on an observable the
+// specification defines (outcome, trace, tree, a drive); with every `src` of a `$fn` rendering removed, the two
+// observations must still differ. True when they differ and stop differing once function text is removed.
+export function restsOnFunctionText(parent, candidate) {
+  const strip = (v) => (Array.isArray(v) ? v.map(strip) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).filter(([k]) => !(k === 'src' && Object.hasOwn(v, '$fn'))).map(([k, x]) => [k, strip(x)])) : typeof v === 'string' && /^fn:[0-9a-f]{12}$/.test(v) ? 'fn' : v); // `fn:<hash>`: the trace form a fake's `.catch` handler had
+  const a = JSON.stringify(parent ?? null), b = JSON.stringify(candidate ?? null);
+  return a !== b && JSON.stringify(strip(JSON.parse(a))) === JSON.stringify(strip(JSON.parse(b)));
+}
+
+// the hash of a function's own source text, comments and whitespace folded: an internal key only (escapeKey), never
+// part of an observation
 const functionSources = new Map();
 export function rememberFunctionSource(marked, original) { functionSources.set(marked, original); }
 export function withSite(record, site) { return Object.defineProperty(record, 'site', { value: site ?? null }); }

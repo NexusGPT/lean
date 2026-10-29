@@ -1,0 +1,27 @@
+{
+ "scope": [
+  "ops_add",
+  "ops_scale",
+  "ops_shift",
+  "ops_via_sibling",
+  "ops_label",
+  "use_ops"
+ ],
+ "equal": {
+  "ops_add": false,
+  "ops_scale": true,
+  "ops_shift": true,
+  "ops_via_sibling": false,
+  "ops_label": true,
+  "use_ops": false
+ },
+ "b": {
+  "ops.add": "WITNESS",
+  "ops.scale": "PASS-bounded",
+  "ops.shift": "PASS-bounded",
+  "ops.viaSibling": "WITNESS",
+  "ops.label": "PASS-bounded",
+  "useOps": "WITNESS"
+ },
+ "why": "design/exported-units.md: a method or function-valued property of an exported object literal is a unit <binding>.<key>; its receiver is the literal (the class-method reading), so this.base is a field of the receiver operand and this.add reaches the sibling unit ops.add. Only add changed: add, its sibling caller viaSibling and the module caller useOps differ; scale, shift and label are untouched and listed."
+}

@@ -1,3 +1,3 @@
-export function sameAgain(a: number[], b: number[]): boolean {
+export function sameAgain(a: Date[], b: Date[]): boolean {
   return a === b;
 }

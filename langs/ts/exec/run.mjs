@@ -2,7 +2,7 @@
 // Lane B: bounded differential execution of one unit, parent against candidate.
 //
 //   node run.mjs --parent <file.ts> --candidate <file.ts> --unit <name|Class.method> [--n 200] [--seed 1]
-//                [--out result.json] [--project <tsconfig>|--no-project] [--ms 2000]
+//                [--out result.json] [--project <tsconfig>|--no-project] [--ms 2000] [--unit-seconds 120]
 //
 // Both files are compiled with the vendored TypeScript compiler and loaded in their own sandbox (node:vm) with the
 // same fakes (fake.mjs): relative imports inside the same package are compiled and loaded too; every other import,
@@ -16,20 +16,23 @@
 //   REFUSE       a repository-owned local source link failed (kind: load)
 //   ASK          a side could not be loaded or run (the reason), or the unit is not found
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
-import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
-import { specOf } from './spec.mjs';
-import { inputsFor, aliasInputs } from './gen.mjs';
+import { fork, spawnSync, execFile } from 'node:child_process';
+import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
+import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName } from '../common.mjs';
+import { Environment, render, renderTree, renderDrawn, programConstructor, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles } from './fake.mjs';
+import { specOf, findValues, readValues, argsFor } from './spec.mjs';
+import { inputsFor, aliasInputs, knownInput, knownLength, walkLength } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
 import { Graph } from './graph.mjs';
 import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
 import { witnessPatch, statementMarks } from '../patch.mjs';
-import { descriptorsOf, interpretFire, newHandlerStats, keyHandlers, handlerDifference, heldTextOnly } from './handlers-interp.mjs';
+import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
 import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
 import { stylesLayer, projectConfig } from './styles.mjs';
@@ -85,9 +88,25 @@ function compileWithSites(src, tsName, abs) {
   const sites = [];
   let stateName = '__lean_site';
   while (src.includes(stateName)) stateName += '_';
+  let callbackName = '__lean_callbacks';
+  while (src.includes(callbackName)) callbackName += '_';
+  const sf = ts.createSourceFile(tsName, src, ts.ScriptTarget.Latest, true, tsName.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const callbacks = [...topLevelFunctions(sf).values()].filter(u => u.form === 'callback');
+  const callbackAt = new Map(callbacks.filter(u => !u.enclosingUnit).map(u => [u.fn.pos, u.name]));
+  // Capture an argument at its evaluation point, returning that very function. The callee, receiver, other arguments
+  // and their evaluation order are unchanged. The one inventory supplies the name, before other transforms add marks.
+  const callbackMarks = context => {
+    const f = context.factory;
+    const visit = n => {
+      const value = ts.visitEachChild(n, visit, context);
+      return callbackAt.has(n.pos) && (ts.isArrowFunction(n) || ts.isFunctionExpression(n))
+        ? f.createCallExpression(f.createPropertyAccessExpression(f.createIdentifier(callbackName), 'capture'), undefined, [f.createStringLiteral(callbackAt.get(n.pos)), value]) : value;
+    };
+    return tree => ts.visitNode(tree, visit);
+  };
   const emit = (before) => ts.transpileModule(src, { compilerOptions: COMPILE, fileName: tsName, transformers: { before } }).outputText;
   const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
-  const marked = emit([statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
+  const marked = emit([callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
     const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
@@ -96,7 +115,7 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, sites, stateName, js: marked + unitShim(src, tsName) };
+  const compiled = { src, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
@@ -108,7 +127,7 @@ function unitShim(src, abs) {
   for (const st of sf.statements) {
     if (ts.isFunctionDeclaration(st) && st.name) names.push(st.name.text);
     else if (ts.isClassDeclaration(st) && st.name) names.push(st.name.text);
-    else if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) names.push(d.name.text);
+    else if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer) || (st.declarationList.flags & ts.NodeFlags.Const && literalMemberUnits(st).some((u) => u.binding === d.name.text)))) names.push(d.name.text); // a module const object literal holds literal units (design/exported-units.md)
   }
   return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n`;
 }
@@ -238,6 +257,7 @@ function reactRuntime(env) {
       if (!(i in slots)) { slots[i] = typeof initial === 'function' ? initial() : initial; env.record('hook', key, [render(slots[i])]); }
       const value = slots[i];
       const setter = (next) => { const v = typeof next === 'function' ? next(slots[i]) : next; if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; // no trace record: the slots after the handler are the observation (observeJsx), so the order of setter calls inside one handler, React's batching, is not
+      ownFunction(setter, env); // a setter handed on is this side's function: its handle is numbered and it is driven like the unit's own (design/callbacks.md)
       (env.setterIndex ??= new WeakMap()).set(setter, i); // the slot a setter writes: the loader's __lean_s mark turns it into position -> slot on the current frame
       return [value, setter];
     },
@@ -247,7 +267,7 @@ function reactRuntime(env) {
     useId: () => { const i = slot++; const slots = (env.hookSlots ??= []); if (!(i in slots)) slots[i] = `:r${i}:`; return slots[i]; }, // a stable id per slot
     createContext: (defaultValue) => { const ctx = { __leanContext: `context#${env.contextCount = (env.contextCount ?? 0) + 1}`, displayName: undefined, _defaultValue: defaultValue }; ctx.Provider = { __leanProvider: ctx }; ctx.Consumer = { __leanConsumer: ctx }; return ctx; }, // React's own context: a provider element of it gives its value to everything rendered below it; the default is never read, since the nearest provider of a unit's root is outside the unit
     useContext: (ctx) => { const i = slot++; const slots = (env.hookSlots ??= []); if (ctx && ctx.__leanContext) { env.record('get', `react:context:${i}`); slots[i] = readContext(env, ctx, env.deepFrame ?? 'unit'); return slots[i]; } if (!(i in slots)) slots[i] = env.fake(`react:context:${ctx && ctx.__fakePath ? ctx.__fakePath : ctx && ctx.displayName ? ctx.displayName : 'anonymous'}`); env.record('get', `react:context:${i}`); return slots[i]; }, // the provided value is outside the unit: one fake per context, the same on every render
-    useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = (action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; return [slots[i], dispatch]; },
+    useReducer: (reducer, initialArg, init) => { const i = slot++; const key = `react:state:${i}`; const slots = (env.hookSlots ??= []); if (!(i in slots)) { slots[i] = init ? init(initialArg) : initialArg; env.record('hook', key, [render(slots[i])]); } const dispatch = ownFunction((action) => { const v = reducer(slots[i], action); if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }, env); return [slots[i], dispatch]; },
     useLayoutEffect: (fn, deps) => effectSlot(fn, deps, 'react:layout-effect'), // as useEffect: after the render, in registration order (layout effects run first in React; one component, one order)
   };
   runtime.__beginRender = () => { slot = 0; env.deepSeq = 0; }; // a render starts at slot 0 (React's call-order keying); the deep children restart their order too
@@ -259,7 +279,6 @@ function reactRuntime(env) {
 }
 // a rendered tree, observed to its last element: render's depth bound (six object levels) restarts at every element, so
 // an element is never cut because of where it sits; a value inside a prop keeps the bound
-const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 const isJsxValue = (v) => (Array.isArray(v) ? v.some(isJsxValue) : !!v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el'));
 // the layer a front-end verdict names (research 18, 19: every verdict names its layer and its admitted set)
 export const FRONT_END_OBSERVATION = Object.freeze({ layer: 'element tree', renders: 'one', handlers: 'each invoked once on a fake event, its result and requests recorded', effects: 'run once after the render, in registration order; cleanups recorded as pending', schedule: 'synchronous; microtasks drained after the call; timers recorded as pending, never fired' });
@@ -281,13 +300,18 @@ async function observeJsx(v, env) {
 
 // the breadcrumb: the phase the harness is in, the input, and the file being loaded, so that a run whose event loop
 // drains before a verdict names what was pending
-export const crumb = { phase: 'start', input: null, loading: null };
-const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; };
+export const crumb = { phase: 'start', input: null, loading: null, side: null };
+// a listener of the breadcrumb (worker.mjs sends each step to the process that holds the bound, so a killed run names where it was)
+let crumbListener = null;
+export const onCrumb = (f) => { crumbListener = f; };
+const tellCrumb = () => { if (crumbListener) crumbListener({ phase: crumb.phase, input: crumb.input, side: crumb.side, loading: crumb.loading }); };
+const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; crumb.side = null; tellCrumb(); };
 export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
 // a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
 // will settle, no timer or handle left), the run reports ASK naming what was pending, writes it to --out, and exits 2
+let guarded = false; // a caller armed the guard: a run drained in the child drains it too (runPair), so its guard answers as before
 export function verdictGuard(out, shape = (r) => r) {
-  let owed = true;
+  let owed = true; guarded = true;
   const drained = () => {
     if (!owed) return; owed = false;
     const res = shape({ verdict: 'ASK', reason: `harness: the run ended before a verdict; ${crumbText()}` });
@@ -413,6 +437,7 @@ function routeCall(env, Cls, member, args, spec, run) {
 
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
+  captureEnvironment(env);
   const cache = new Map();
   env.siteState = { current: null, completed: null, fault: null, files: Object.create(null) };
   const react = reactRuntime(env);
@@ -440,7 +465,9 @@ export function sandbox(env, root) {
     requestAnimationFrame: (fn) => env.arm('frame', fn, 16), requestIdleCallback: (fn) => env.arm('idle', fn, 1),
     clearTimeout: (id) => env.clearTimer(id, 'clearTimeout'), clearInterval: (id) => env.clearTimer(id, 'clearInterval'), clearImmediate: (id) => env.clearTimer(id, 'clearImmediate'), cancelAnimationFrame: (id) => env.clearTimer(id, 'cancelAnimationFrame'), cancelIdleCallback: (id) => env.clearTimer(id, 'cancelIdleCallback'), queueMicrotask: (fn) => Promise.resolve().then(fn),
     Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
-    Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, Error, TypeError, RangeError, SyntaxError, RegExp, parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,
+    Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, RegExp,
+    Error: programConstructor(Error), TypeError: programConstructor(TypeError), RangeError: programConstructor(RangeError), SyntaxError: programConstructor(SyntaxError), ReferenceError: programConstructor(ReferenceError), EvalError: programConstructor(EvalError), URIError: programConstructor(URIError), AggregateError: programConstructor(AggregateError), // an error the unit makes is program-built (fake.mjs programConstructor); one the engine raises is observed by its class alone
+    parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
   };
   g.globalThis = g; g.global = g; g.window = undefined;
@@ -448,7 +475,8 @@ export function sandbox(env, root) {
   g.__lean_h = (pos, fn, file) => { if (typeof fn === 'function') (env.handlerPos ??= new WeakMap()).set(fn, { pos, file }); return fn; };
   g.__lean_s = (pos, pair, file) => { const i = Array.isArray(pair) && typeof pair[1] === 'function' ? env.setterIndex?.get(pair[1]) : undefined; if (i !== undefined) { const holder = env.hookFrame ?? env; (holder.statePos ??= new Map()).set(`${file}:${pos}`, i); } return pair; };
   const ctx = vm.createContext(g);
-  env.realm = vm.runInContext('({ Array: [].constructor, Object: ({}).constructor })', ctx); // the context's own intrinsics: an array literal in the unit uses them, not the host's Array; patched while a recording window is open
+  env.realm = vm.runInContext('({ Array: [].constructor, Object: ({}).constructor })', ctx);
+  bindRealm(vm.runInContext('Function.prototype', ctx), env); // a function this side's code made is this side's: its handle is numbered on this environment (fake.mjs escapeHandle) // the context's own intrinsics: an array literal in the unit uses them, not the host's Array; patched while a recording window is open
   env.ctx = ctx; // a unit call runs under this context's watchdog (guardedCall): a synchronous loop that never ends is a timeout, never a hang or a native crash
   // a module is inside the package root only when its real path is the root's real path or starts with it and a separator:
   // a sibling folder that shares the root's name prefix, a link inside the root to a file outside it and a .json outside
@@ -463,7 +491,7 @@ export function sandbox(env, root) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
     const wasLoading = env.loading, wasCrumb = crumb.loading; env.loading = true; crumb.loading = abs;
-    try { return loadInner(abs); } finally { env.loading = wasLoading; crumb.loading = wasCrumb; }
+    try { return loadInner(abs); } finally { env.loading = wasLoading; crumb.loading = wasCrumb; if (!wasLoading) resetEscapes(env); } // the module has loaded: the unit's functions are numbered from here (fake.mjs resetEscapes)
   }
   function loadInner(abs) {
     const src = fs.readFileSync(abs, 'utf8');
@@ -507,34 +535,57 @@ export function sandbox(env, root) {
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
     let wrapper;
-    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName], { parsingContext: ctx, filename: abs }); }
+    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName, compiled.callbackName], { parsingContext: ctx, filename: abs }); }
     catch (e) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); } // the file that failed to compile is named
-    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState);
+    const callbacks = {
+      units: new Map(compiled.callbacks.map(u => [u.name, { inBody: u.inBody, instances: [] }])),
+      capture(name, fn) { callbacks.units.get(name).instances.push(fn); return fn; },
+    };
+    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks);
+    (env.callbackUnits ??= new Map()).set(mod.exports, callbacks);
     return mod.exports;
   }
   return { load, ctx, react, jsxRuntime: jsxRuntimeFor(env) };
 }
 
 export function pickUnit(exportsObj, spec, env) {
+  const callback = env.callbackUnits?.get(exportsObj)?.units.get(spec.unit);
+  if (callback) {
+    if (callback.inBody) return null; // nested callbacks are covered by their enclosing unit before execution
+    if (callback.instances.length !== 1) { env.callbackRefusal = callback.instances.length ? 'callback-multiple-instances' : 'callback-not-created'; return null; }
+    const fn = callback.instances[0];
+    return { call: drawn => fn(...argsFor(spec, drawn)), receiver: null };
+  }
   const units = exportsObj.__lean_units ?? {};
+  if (!spec.isMethod && !(spec.unit in units) && !(spec.unit in exportsObj) && spec.unit.includes('.')) {
+    // a member of an exported or module-const object literal, <binding>.<key> (common.mjs literalMemberUnits): called on the
+    // literal itself, so `this` is the literal (design/exported-units.md)
+    const at = spec.unit.lastIndexOf('.'), binding = spec.unit.slice(0, at), key = spec.unit.slice(at + 1);
+    const [root, ...rest] = binding.split('.'); // `exports` (module.exports = {...}), `exports.x` (exports.x = {...}), `default`, or a module-level const
+    let holder = root === 'exports' ? exportsObj : root === 'default' ? exportsObj.default : (units[root] ?? exportsObj[root]);
+    for (const k of rest) holder = holder && (typeof holder === 'object' || typeof holder === 'function') ? holder[k] : undefined;
+    const m = holder && (typeof holder === 'object' || typeof holder === 'function') ? holder[key] : undefined;
+    if (typeof m !== 'function') return null;
+    return { call: (args) => m.apply(holder, args), receiver: null };
+  }
   if (!spec.isMethod) {
     const f = units[spec.unit] ?? exportsObj[spec.unit];
     if (typeof f !== 'function') return null;
-    return { call: (args) => (spec.thisParam ? f.call(args[0], ...args.slice(1)) : f(...args)), receiver: null }; // a free function with a declared `this` parameter takes its receiver first
+    return { call: (drawn) => { const args = argsFor(spec, drawn); return spec.thisParam ? f.call(args[0], ...args.slice(1)) : f(...args); }, receiver: null }; // a free function with a declared `this` parameter takes its receiver first
   }
   const Cls = units[spec.className] ?? exportsObj[spec.className];
   if (typeof Cls !== 'function') return null;
   if (spec.unit.split('.')[1] === 'constructor') {
     // the constructor unit: the instance it builds is both the receiver observed after the call and the value returned
     const holder = { inst: null };
-    return { call: (args) => { holder.inst = Reflect.construct(Cls, args); return holder.inst; }, receiver: { __own: () => (holder.inst ? { ...holder.inst } : {}) } };
+    return { call: (args) => { holder.inst = Reflect.construct(Cls, argsFor(spec, args)); return holder.inst; }, receiver: { __own: () => (holder.inst ? { ...holder.inst } : {}) } };
   }
   const member = spec.member ?? spec.unit.split('.')[1];
   const descriptor = Object.getOwnPropertyDescriptor(spec.isStatic ? Cls : Cls.prototype, member);
   const method = descriptor?.value;
   if (typeof method !== 'function' && !spec.accessor && !spec.isStatic) return null;
   if (spec.isStatic && spec.accessor) return { call: (args) => spec.accessor === 'get' ? Reflect.get(Cls, member, Cls) : (Reflect.set(Cls, member, args[0], Cls), undefined), receiver: null };
-  if (spec.isStatic) { const sm = Cls[member]; return typeof sm === 'function' ? { call: (args) => sm.apply(Cls, args), receiver: null } : null; }
+  if (spec.isStatic) { const sm = Cls[member]; return typeof sm === 'function' ? { call: (args) => sm.apply(Cls, argsFor(spec, args)), receiver: null } : null; }
   // the receiver: real prototype methods, every field a fake
   const base = Object.create(Cls.prototype);
   const self = new Proxy(base, {
@@ -550,7 +601,7 @@ export function pickUnit(exportsObj, spec, env) {
     },
     set(t, p, v) { const d = Object.getOwnPropertyDescriptor(Cls.prototype, p); if (d?.set) { d.set.call(self, v); return true; } env.record('set', `this.${String(p)}`, [render(v)]); t[p] = v; return true; },
   });
-  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : routeCall(env, Cls, member, args, spec, (a) => method.apply(self, a)), receiver: self }; // a handler runs through the guards and pipes its listed decorators registered
+  return { call: (args) => spec.accessor === 'get' ? self[member] : spec.accessor === 'set' ? (self[member] = args[0], undefined) : routeCall(env, Cls, member, args, spec, (a) => method.apply(self, argsFor(spec, a))), receiver: self }; // a handler runs through the guards and pipes its listed decorators registered
 }
 
 // a synchronous call under the vm's watchdog: JavaScript cannot be preempted, so an unbounded loop (an input aliased
@@ -560,27 +611,132 @@ function guardedCall(env, fn, ms) {
   if (!env.ctx) return fn();
   env.ctx.__leanCall = fn;
   const w = openWindow(env);
-  try { return vm.runInContext('__leanCall()', env.ctx, { timeout: Math.max(1, ms) }); }
+  const t0 = Date.now(), u0 = cpuNow();
+  try { const r = vm.runInContext('__leanCall()', env.ctx, { timeout: Math.max(1, wallAllowance(ms)) }); if (Date.now() - t0 > ms && cpuSpentMs(u0) > ms) throw new CallTimeout(ms); return r; } // past the bound both ways: a timeout, as on an idle machine
   catch (e) { if (e && e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') throw new CallTimeout(ms); throw e; }
   finally { delete env.ctx.__leanCall; closeWindow(w); }
 }
 const callUnit = (env, fn) => { const w = openWindow(env); try { return fn(); } finally { closeWindow(w); } }; // an effect or a cleanup called directly: unit code, inside a window
 async function withTimeout(p, ms) {
   let timer;
-  const t = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('__timeout__')), ms); });
+  const t = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('__timeout__')), wallAllowance(ms)); });
   try { return await Promise.race([p, t]); } finally { clearTimeout(timer); }
+}
+
+// ----- escaped functions, driven (design/callbacks.md) -----
+// Every function of the unit first rendered inside an observation window (fake.mjs openEscapes: a request's argument at
+// any depth, a field it set, the value it returned or threw, a prop of its tree, a cleanup, a `.catch` handler) is
+// called once at the window's end, as the world it reached may call it: on three drawn arguments `drive#<handle>.arg0..2`
+// (fake.mjs drawn: a fake or a value of the unit's own pools, by the seed and the path) with a fake `this`, the same on
+// both sides, since a handle is numbered by first sight on each side, and other values on other inputs; then called again,
+// up to DRIVE_CALLS times in all, each time on its own drawn arguments (state it carries between calls). A class is constructed
+// on them, then each method of its prototype is called on the instance with them. An awaited result is awaited; an
+// iterator is stepped up to four times. The observation is the drive's own: what it returned or threw, the requests it
+// made, the work it armed, and the hook slots it left; then the trace, the pending work, the armed timers and the slots
+// are put back, so a drive is never part of the window's own observation. A function a drive hands out is driven in
+// turn, up to DRIVE_DEPTH; past MAX_DRIVES per window, or when the drive itself stops (its time limit, a budget, the
+// stack), the record is `undriven` with why, and the two sides compare as undecided there (fake.mjs undecidedDrives):
+// never a WITNESS, lane B's verdict carries the gap as ASK callback-undriven.
+export const MAX_DRIVES = 64, DRIVE_DEPTH = 3, DRIVE_ARGS = 3, DRIVE_STEPS = 4, DRIVE_METHODS = 16, DRIVE_CALLS = 3;
+const isClassFn = (f) => { try { return /^class\b/.test(Function.prototype.toString.call(f)); } catch { return false; } };
+const isIterator = (v) => !!v && typeof v === 'object' && !v.__isFake && typeof v.next === 'function' && (typeof v[Symbol.iterator] === 'function' || typeof v[Symbol.asyncIterator] === 'function');
+const driveStop = (e) => (e instanceof CallTimeout || e?.message === '__timeout__' ? 'timeout' : e instanceof BudgetError ? `budget: ${e.message}` : e instanceof Suspended ? 'suspense' : e instanceof RenderLoop ? 'render-loop' : e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message)) ? 'stack overflow' : null);
+async function driveCall(env, thunk, ms) { // one call of a drive: returned or threw, an awaited result awaited, an iterator stepped
+  let v = guardedCall(env, thunk, ms); const named = promiseName(v);
+  if (v && typeof v.then === 'function') v = await awaitUnit(env, v, ms);
+  const out = { returned: render(v) }; if (named) out.promise = named;
+  if (isIterator(v)) { const steps = []; for (let i = 0; i < DRIVE_STEPS; i++) { let r = guardedCall(env, () => v.next(), ms); if (r && typeof r.then === 'function') r = await awaitUnit(env, r, ms); steps.push(render(r)); if (!r || r.done) break; } out.steps = steps; }
+  return out;
+}
+async function driveOne(env, fn, k, ms) {
+  const mark = env.trace.length, pend = env.pending.length, queued = env.timers.queue, slots = env.hookSlots ? env.hookSlots.slice() : null, dirty = env.stateDirty, clock = env.timers.now;
+  env.timers.queue = []; // the drive's own timers only: they fire inside it (below), as the main observation fires the call's
+  const args = Array.from({ length: DRIVE_ARGS }, (_, i) => env.drawn(`drive#${k}.arg${i}`)); // drawn as the world draws (fake.mjs drawn): the same on both sides, other values on other inputs
+  const rec = { $fn: `#${k}`, args: render(args) }; // the driven input, as drawn
+  if (env.siteState) env.siteState.completed = null;
+  try {
+    if (isClassFn(fn)) {
+      const inst = guardedCall(env, () => Reflect.construct(fn, args), ms);
+      rec.constructed = render(inst);
+      const proto = fn.prototype && typeof fn.prototype === 'object' ? fn.prototype : {};
+      const names = Object.getOwnPropertyNames(proto).filter((n) => n !== 'constructor' && typeof Object.getOwnPropertyDescriptor(proto, n)?.value === 'function');
+      if (names.length > DRIVE_METHODS) throw new BudgetError(`a class with more than ${DRIVE_METHODS} methods`);
+      rec.methods = [];
+      for (const n of names) { try { rec.methods.push({ method: n, ...(await driveCall(env, () => Reflect.apply(proto[n], inst, args), ms)) }); } catch (e) { if (driveStop(e)) throw e; rec.methods.push({ method: n, threw: render(e) }); } }
+    } else {
+      const self = env.fake(`drive#${k}.this`);
+      Object.assign(rec, await driveCall(env, () => Reflect.apply(fn, self, args), ms));
+      // called again, as the world that keeps it calls it again: state it carries between calls (a counter, a limit
+      // on the second event) shows on a later call; each call on its own drawn arguments, the same on both sides
+      rec.again = [];
+      for (let j = 1; j < DRIVE_CALLS; j++) {
+        const more = Array.from({ length: DRIVE_ARGS }, (_, i) => env.drawn(`drive#${k}.call${j}.arg${i}`));
+        try { rec.again.push({ args: render(more), ...(await driveCall(env, () => Reflect.apply(fn, self, more), ms)) }); } catch (e) { if (driveStop(e)) throw e; rec.again.push({ args: render(more), threw: render(e) }); break; }
+      }
+    }
+  } catch (e) { const stop = driveStop(e); if (stop) rec.undriven = stop; else rec.threw = render(e); }
+  if (!rec.undriven && env.timers.queue.length) { try { await runTimers(env, ms); } catch (e) { const stop = driveStop(e); if (stop) rec.undriven = stop; else throw e; } } // a timer the driven function armed fires, in due order: its callback's requests are the drive's
+  await new Promise((r) => setImmediate(r)); // the drive's own continuations settle inside it
+  withSite(rec, env.siteState?.completed ?? env.siteState?.current?.site ?? null); // the statement of the driven function the drive completed at: a witness's line
+  if (!rec.undriven) {
+    rec.trace = env.trace.slice(mark);
+    const armed = env.pending.slice(pend).map(({ id, ...rest }) => rest); if (armed.length) rec.pending = render(armed);
+    if (slots) rec.slots = render(env.hookSlots);
+  }
+  env.trace.length = mark; env.pending.length = pend; env.timers.queue = queued; env.timers.now = clock; env.stateDirty = dirty;
+  if (slots) { env.hookSlots.length = 0; env.hookSlots.push(...slots); } // the same array: the setters hold it
+  return rec;
+}
+// a step of the re-render machine (runSequences): every function the tree holds and lane B does not fire as an
+// `on[A-Z]` command is driven now, in tree order, keyed by its place (`#held<p>`), never by which closure object the
+// render made, so a re-render that makes new closures, or a memoised one, compares alike; what each does in this state
+// (after the commands so far) is part of the step's observation. The drives are put back as every drive is
+const heldOf = (tree) => treeFunctions(tree, (k, x) => !/^on[A-Z]/.test(k) && typeof x === 'function' && !x.__isFake);
+async function withHeldDrives(env, tree, ms, obs) {
+  const held = heldOf(tree); if (!held.length) return obs;
+  const records = activeRecords; activeRecords = null; const out = [];
+  try { for (const [p, h] of held.entries()) out.push(p < MAX_DRIVES ? { label: h.label, ...(await driveOne(env, h.fn, `held${p}`, ms)) } : { label: h.label, $fn: `#held${p}`, undriven: `drive budget spent (${MAX_DRIVES} drives in one observation)` }); }
+  finally { activeRecords = records; }
+  return { ...obs, drives: out };
+}
+// the window's drives, in order of first sight, then what the drives handed out (breadth first)
+export async function driveWindow(env, ms) {
+  const queue = closeEscapes(env).map((k) => ({ k, depth: 0 })), out = []; let spent = 0;
+  if (!queue.length) return out;
+  const records = activeRecords; activeRecords = null; // the library recorder validates the table on the unit's own run; a drive calls the unit's functions on drawn arguments the table's rows are not checked against, and recording every built-in call of every drive costs a stack capture each
+  try { await driveQueue(env, ms, queue, out, spent); } finally { activeRecords = records; }
+  return out;
+}
+async function driveQueue(env, ms, queue, out, spent) {
+  while (queue.length) {
+    const { k, depth } = queue.shift(); const entry = escapeEntry(env, k);
+    if (!entry || entry.driven) continue; // driven in an earlier window of this side (a program's earlier command): once per function object
+    entry.driven = true;
+    if (spent >= MAX_DRIVES || depth >= DRIVE_DEPTH) { out.push({ $fn: `#${k}`, undriven: spent >= MAX_DRIVES ? `drive budget spent (${MAX_DRIVES} drives in one observation)` : `drive depth (a function handed out by ${DRIVE_DEPTH} nested drives)` }); continue; }
+    spent++; openEscapes(env);
+    const rec = await driveOne(env, entry.fn, k, ms);
+    for (const j of closeEscapes(env)) queue.push({ k: j, depth: depth + 1 });
+    out.push(rec);
+  }
 }
 
 // an error raised after the unit returned (a fire-and-forget promise, a timer): recorded as an observation, never a crash
 const lateErrors = [];
-if (!globalThis.__leanLateHooks) { globalThis.__leanLateHooks = true; process.on('unhandledRejection', (e) => lateErrors.push(String(e && e.message || e))); process.on('uncaughtException', (e) => lateErrors.push(String(e && e.message || e))); }
+let runsInFlight = 0; // unit runs in this process (runPairInProcess): an error that escapes one of them is the unit's
+const lateHook = (kind) => (e) => { if (runsInFlight > 0) { lateErrors.push(String(e && e.message || e)); return; } process.stderr.write(`lean: ${kind} outside a unit run: ${e && e.stack ? e.stack : String(e)}\n`); process.exit(1); }; // outside a run the error is the importing script's own: printed, exit 1, never swallowed
+if (!globalThis.__leanLateHooks) { globalThis.__leanLateHooks = true; process.on('unhandledRejection', lateHook('unhandled rejection')); process.on('uncaughtException', lateHook('uncaught exception')); }
 export async function observe(side, spec, args, ms) {
+  try { return await observeWindow(side, spec, args, ms); }
+  finally { if (side.env?.escapes?.window) closeEscapes(side.env); } // a run that stopped before its drives closes its window
+}
+async function observeWindow(side, spec, args, ms) {
   const { env, unit } = side;
   // the heap layer, stage 1: the object graph reachable from the arguments is named before the call (graph.mjs)
   let graph;
   try { graph = new Graph().before(args); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
   let outcomeSite = null;
   if (env.siteState) { env.siteState.completed = null; env.siteState.fault = null; }
+  openEscapes(env); // every function first rendered from here to the drives is driven at the end (driveWindow)
   let outcome, outcomeValue, hasOutcome = false, returnedPromise = null;
   lateErrors.length = 0;
   try {
@@ -596,11 +752,12 @@ export async function observe(side, spec, args, ms) {
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
       const framesAfter = env.childFrames; env.hookSlots = slotsBefore.slice(); env.childFrames = cloneFrames(framesBefore); env.calls = new Map(callsBefore); env.demand = demandBefore; // a deep child's frames start the second render as they started the first
-      const v2 = await commitRender(env, call, ms);
-      await settleRender();
-      const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) }, second = { tree: render(v2), trace: env.trace.slice(traceAfter) };
+      const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) };
+      const paused = pauseEscapes(env); // the second render's functions are new objects the observation never shows: numbered, not driven
+      let second;
+      try { const v2 = await commitRender(env, call, ms); await settleRender(); second = { tree: render(v2), trace: env.trace.slice(traceAfter) }; } finally { resumeEscapes(env, paused); }
       env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.childFrames = framesAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
-      if (JSON.stringify(first) !== JSON.stringify(second)) return { impure: { first, second } };
+      if (JSON.stringify(canonHandles(first)) !== JSON.stringify(canonHandles(second))) return { impure: { first, second } }; // each render makes its own closures: a function is compared by its place (handles renamed by first sight in each render), what it does is driven
     }
     for (const effect of env.reactEffects ?? []) { // the mount's effects, once, in registration order (the pending records of their cleanups are part of the one-render observation)
       const es = (env.effectSlots ?? []).find((x) => x && x.fn === effect);
@@ -608,9 +765,8 @@ export async function observe(side, spec, args, ms) {
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
     if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
-    if (isJsxValue(v) && env.react) v = keyHandlers(v, { env, props: args[0], unit: spec.unit }); // a function the tree holds and lane B never fires is compared by its descriptor, not its text (design/handler-identity.md)
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
-    if (env.timers.queue.length) await runTimers(env, ms); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace
+    if (env.timers.queue.length) await runTimers(env, ms, 50, env.timerPerm ? { perm: env.timerPerm } : {}); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace; on a timer-order input (gen.mjs, repr.mjs) the ties at one instant in another legal order
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
     outcome = { returned: isJsxValue(outcomeValue) ? renderTree(outcomeValue) : render(outcomeValue) };
     if (returnedPromise) outcome.promise = returnedPromise;
@@ -638,7 +794,9 @@ export async function observe(side, spec, args, ms) {
   // object; a fresh object is named by its first sight, so two runs equal up to a renaming serialise the same
   let heap;
   try { heap = graph.after(args, own, outcomeValue, hasOutcome); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
-  return Object.defineProperty({ outcome, heap, receiver, trace: env.trace, pending: env.pending.map(({ id, ...rest }, i) => withSite(rest, env.pending[i].site)) }, 'site', { value: outcomeSite }); // a timer id is an arm counter, not an observation
+  const result = { outcome, heap, receiver, trace: env.trace.slice(), pending: env.pending.map(({ id, ...rest }, i) => withSite(rest, env.pending[i].site)) }; // a timer id is an arm counter, not an observation
+  const drives = await driveWindow(env, ms); if (drives.length) result.drives = drives; // every function the observation shows, driven (design/callbacks.md)
+  return Object.defineProperty(result, 'site', { value: outcomeSite });
 }
 
 // ----- the virtual clock: armed timers fire in due order -----
@@ -647,12 +805,18 @@ export async function observe(side, spec, args, ms) {
 // budget: ASK). The observation holds the fired order (a 'fire' record per timer) and what each callback asked of
 // the environment.
 const PERMS = { 1: [[0]], 2: [[0, 1], [1, 0]], 3: [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] }; // the firing orders of up to three timers due at one instant
-async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0 } = {}) { // until: fire what is due up to this instant (the schedule explorer advances the clock step by step); perm: which order the timers due at one instant fire in (the event loop fixes none for equal instants)
+// a timer may fire before an earlier-armed one due at the same instant only when the event loop leaves their order open:
+// different kinds, never two timeouts or intervals (equal delays fire in arm order in Node; the queue does not keep the
+// delay, so two of them are never swapped). Every caller that picks an order (the timer-order family, the JSX schedule
+// explorer's ticks) runs only orders Node can produce
+const mayPrecede = (a, b) => a.kind !== b.kind && !(['timeout', 'interval'].includes(a.kind) && ['timeout', 'interval'].includes(b.kind));
+async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0, legal = true } = {}) { // until: fire what is due up to this instant (the schedule explorer advances the clock step by step); perm: which order the timers due at one instant fire in (the event loop fixes none for equal instants)
   const t = env.timers; let fired = 0;
   for (;;) {
     const due = t.queue.filter((e) => e.fired === 0 && e.due <= until).sort((a, b) => a.due - b.due || a.order - b.order);
     if (!due.length) break;
-    const ties = due.filter((x) => x.due === due[0].due); const pick = perm && PERMS[ties.length] ? ties[PERMS[ties.length][perm % PERMS[ties.length].length][0]] : due[0];
+    const ties = due.filter((x) => x.due === due[0].due); let pick = perm && PERMS[ties.length] ? ties[PERMS[ties.length][perm % PERMS[ties.length].length][0]] : due[0];
+    if (legal && pick !== due[0] && !ties.every((x) => x === pick || x.order > pick.order || mayPrecede(pick, x))) pick = due[0]; // an order the event loop forbids is never run
     const e = pick; if (e.due > t.now) t.now = e.due;
     const i = t.queue.indexOf(e); t.queue.splice(i, 1); const j = env.pending.findIndex((x) => x.id === e.id); if (j >= 0) env.pending.splice(j, 1);
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
@@ -683,7 +847,12 @@ async function settleEffects(env, ms) {
   await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r));
 }
 const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers), ...(Object.hasOwn(v, 'rendered') ? { rendered: eraseHandlers(v.rendered) } : {}) } : v);
-const treeHandlers = (v, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeHandlers(c, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (/^on[A-Z]/.test(k) && typeof x === 'function') out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeHandlers(c, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); if (Object.hasOwn(v, 'rendered')) treeHandlers(v.rendered, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}>`], out); return out; }; // a deep child's output: its handlers are the page's too
+const treeFunctions = (v, pick, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeFunctions(c, pick, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (pick(k, x)) out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeFunctions(c, pick, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); if (Object.hasOwn(v, 'rendered')) treeFunctions(v.rendered, pick, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}>`], out); return out; }; // a deep child's output: its handlers are the page's too
+// the commands of the re-render machine: every `on[A-Z]` handler of the tree first, in tree order, then every other
+// function the tree holds (a `select`, a render prop handed to a child), which the world may call as well: an escaped
+// function is observed by what it does when called, and what a held function does after a re-render is reached only by
+// calling it, letting React re-render, and calling the new one (design/callbacks.md)
+const treeHandlers = (v) => [...treeFunctions(v, (k, x) => /^on[A-Z]/.test(k) && typeof x === 'function'), ...treeFunctions(v, (k, x) => !/^on[A-Z]/.test(k) && typeof x === 'function' && !x.__isFake)];
 async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth, schedules = false, handlers = null }) { // schedules: the clock is a command (moonshot 9): a tick fires what is due at the next instant, ties in every order, and a handler may arrive before a timer fires
   const mount = async (name) => { // a fresh mount: the same seed gives the same fakes and the same inputs as the pair's run of this input
     const env = new Environment(seed * 7919 + inputIndex); env.shapes = spec;
@@ -697,7 +866,12 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
   const commit = async (s) => commitEffects(s.env, callOf(s), ms, await renderOnce(s)); // render, effects, and again while an effect changes the state
   // run one command path on one side; returns the observation after every command
   const runPath = async (name, labels) => {
-    const s = await mount(name); const obs = [];
+    const s = await mount(name);
+    openEscapes(s.env); // the path is one observation window: every function its observations show is driven after the unmount (design/callbacks.md)
+    try { return await runPathIn(s, labels, name); } finally { if (s.env.escapes?.window) closeEscapes(s.env); } // a path the harness stopped closes its window
+  };
+  const runPathIn = async (s, labels, name) => {
+    const obs = [];
     const harness = (e) => e instanceof BudgetError || e?.message === '__timeout__' || e instanceof Suspended || e instanceof RenderLoop || e instanceof CallTimeout; // the harness's own stops end the sequence run as ASK; anything else a render throws is an observation
     const settle = async () => { let t = await commit(s); if (!schedules && s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and (outside the schedule explorer) the timers they armed
     const tick = async (perm) => { const q = s.env.timers.queue.filter((e) => e.fired === 0); if (!q.length) return null; const next = Math.min(...q.map((e) => e.due)); await runTimers(s.env, ms, 50, { until: next, perm }); return commit(s); }; // the clock advances to the next due instant; the timers due there fire in the chosen order
@@ -708,7 +882,7 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
       if (label.startsWith('tick@')) { // a clock step: the instant it reaches and what fired are the observation
         const perm = Number(label.slice(5)) || 0; const before = s.env.timers.now;
         try { const t2 = await tick(perm); if (t2 !== null) tree = t2; } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; }
-        obs.push({ command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
+        obs.push(await withHeldDrives(s.env, tree, ms, { command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }));
         continue;
       }
       const h = treeHandlers(tree).find((x) => x.label === label);
@@ -717,7 +891,7 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
       try { const r = guardedCall(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (harness(e)) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
       if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // a readable descriptor applied to the slots before the handler must give the slots the handler left
       try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
-      obs.push({ command: label, tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) });
+      obs.push(await withHeldDrives(s.env, tree, ms, { command: label, tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }));
     }
     const pendingTimers = s.env.timers.queue.filter((e) => e.fired === 0); const ties = pendingTimers.length ? pendingTimers.filter((e) => e.due === Math.min(...pendingTimers.map((x) => x.due))).length : 0; // read before the unmount clears them: the clock steps the next level may take
     const ticks = schedules && pendingTimers.length && pendingTimers.length <= 3 ? Array.from({ length: Math.min(PERMS[ties]?.length ?? 1, 6) }, (_, k) => `tick@${k}`) : [];
@@ -725,9 +899,10 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
     const from = s.env.trace.length;
     for (const es of s.env.effectSlots ?? []) if (es && es.cleanup) { s.env.record('call', `${es.key}.cleanup`, []); try { await awaitUnit(s.env, Promise.resolve(callUnit(s.env, es.cleanup)), ms); } catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; s.env.record('effect-throw', es.key, [render(e)]); } es.cleanup = null; }
     obs.push({ command: 'unmount', trace: traceWithSites(s.env.trace.slice(from)) });
+    const drives = await driveWindow(s.env, ms); if (drives.length) obs.push({ command: 'drive', drives });
     return { obs, s, handlers: treeHandlers(tree).map((x) => x.label), ticks, timers: pendingTimers.length };
   };
-  let paths = 0; let frontier = [[]]; const done = new Set(); let maxTimers = 0;
+  let paths = 0; let frontier = [[]]; const done = new Set(); let maxTimers = 0; let undriven = null;
   for (let level = 0; level <= depth; level++) {
     const next = [];
     for (const labels of frontier) {
@@ -737,24 +912,190 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
       maxTimers = Math.max(maxTimers, P.timers ?? 0);
       for (let k = 0; k < Math.max(P.obs.length, C.obs.length); k++) {
         const a = JSON.stringify(P.obs[k] ?? null), b = JSON.stringify(C.obs[k] ?? null);
+        if (a !== b && undecidedDrives(P.obs[k] ?? null, C.obs[k] ?? null)) { undriven ??= { sequence: labels, reasons: undecidedDrives(P.obs[k], C.obs[k]) }; continue; } // a drive that could not run: undecided, never a difference
+        if (a === b && !undriven) { const u = undrivenOf(P.obs[k]) ?? undrivenOf(C.obs[k]); if (u) undriven = { sequence: labels, reasons: [u] }; }
         if (a !== b) return { timers: maxTimers, witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null, ...witnessPatch(P.obs[k] ?? null, C.obs[k] ?? null) } }; // the step's tree difference as a patch
       }
       if (level < depth) for (const label of [...(P.handlers ?? []).slice(0, breadth), ...(P.ticks ?? [])]) next.push([...labels, label]);
     }
     frontier = next;
   }
-  return { paths, timers: maxTimers };
+  return { paths, timers: maxTimers, ...(undriven ? { undriven } : {}) };
 }
 
 export const traceWithSites = (records) => records.map((r) => withSite(render(r), r.site));
 export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
+// ----- the bound of a unit: lane B runs in a child process, killed when the bound passes (design/microtask-worker.md) -----
+// The vm watchdog (guardedCall) interrupts only the synchronous call; a unit whose awaits settle in microtasks keeps
+// the host in one microtask drain, where no timer fires and no signal handler runs. So lane B runs each unit in a child
+// process (worker.mjs) under a wall-clock bound: when the bound passes, the child is killed with SIGKILL and the unit's
+// verdict is ASK naming the bound (spin-bound), with the step, the input and the side that was running. The child reads
+// only the lean sources and the trees it is given (Node's permission model: --permission with --allow-fs-read), writes
+// nothing (LEAN_LIBRARY_CASES excepted), and starts no process, worker or addon; the network is the sandbox's fakes
+// only, since this Node's permission model has no network switch: a network deny is the gate's profile, not lean's.
+export const UNIT_SECONDS = 120; // the bound of one unit when no flag and no run budget names one
+// The bound counts the unit's OWN CPU time, so that a verdict does not depend on how loaded the machine is (lane
+// bench-scoring: 15 of 21 clean-lane refusals were units a wall bound killed under a load of 100; the benchmark
+// degraded with the machine). The parent reads the child's CPU time from the OS every CPU_POLL_MS (ps: the one
+// portable read of another process's time) and kills it past the bound. A wall bound FAR_GUARD times longer stays as
+// the far guard, for a child that burns no CPU and never answers; a host whose ps answers nothing keeps the wall bound
+// at the CPU bound, the old rule, said once on stderr.
+export const CPU_POLL_MS = 1000, FAR_GUARD = 10;
+const cpuWatched = new Map(); // pid -> { bound (s), onSample, onBound, onUnavailable }
+let cpuPoll = null, psUnavailable = false;
+const psSeconds = (t) => { const [dd, rest] = t.includes('-') ? t.split('-') : ['0', t]; const parts = rest.split(':').map(Number); return Number(dd) * 86400 + parts.reduce((acc, x) => acc * 60 + x, 0); }; // mm:ss.cc (BSD) or [dd-]hh:mm:ss (procps)
+// The time read is the worker's MAIN THREAD: the unit's JavaScript runs there, while V8's garbage collector and
+// compiler run on helper threads whose time is the engine's, not the unit's (a unit at full speed on an idle machine
+// read 121 s of process time in 90 s of wall time). Linux: /proc/<pid>/task/<pid>/stat, fields 14 and 15 in clock
+// ticks; macOS: `ps -M -p <pid>`, whose first thread row carries the main thread's user and system time; elsewhere the
+// process total (`ps -o time=`).
+let clkTck = 0; // Linux clock ticks per second, read on the first poll (never at load: a preview spawns no process)
+const CLK_TCK = () => clkTck || (clkTck = (() => { try { return Number(execFileSyncQuiet('getconf', ['CLK_TCK'])) || 100; } catch { return 100; } })());
+function execFileSyncQuiet(cmd, args) { const r = spawnSync(cmd, args, { encoding: 'utf8' }); return r.status === 0 ? r.stdout.trim() : ''; }
+function mainThreadSeconds(pid, cb) {
+  if (process.platform === 'linux') {
+    fs.readFile(`/proc/${pid}/task/${pid}/stat`, 'utf8', (err, text) => {
+      if (err) return cb(err, null);
+      const after = text.slice(text.lastIndexOf(')') + 2).split(' '); // fields from 3 on, after the command name
+      cb(null, (Number(after[11]) + Number(after[12])) / CLK_TCK()); // utime and stime are fields 14 and 15 of the stat line
+    });
+    return;
+  }
+  const bsd = process.platform === 'darwin';
+  execFile('ps', bsd ? ['-M', '-p', String(pid)] : ['-o', 'time=', '-p', String(pid)], { encoding: 'utf8' }, (err, out) => {
+    if (err && !out) return cb(err, null);
+    const lines = String(out ?? '').trim().split('\n');
+    if (!bsd) return cb(null, lines.length ? psSeconds(lines[lines.length - 1].trim()) : null);
+    const row = lines.find((l) => new RegExp(`^\\S+\\s+${pid}\\s`).test(l)); // the process's first thread row carries the pid
+    if (!row) return cb(null, null);
+    const m = row.match(/(\d+:\d+(?:\.\d+)?)\s+(\d+:\d+(?:\.\d+)?)\s/); // STIME UTIME
+    cb(null, m ? psSeconds(m[1]) + psSeconds(m[2]) : null);
+  });
+}
+function pollCpu() {
+  const pids = [...cpuWatched.keys()];
+  if (!pids.length) { clearInterval(cpuPoll); cpuPoll = null; return; }
+  for (const pid of pids) mainThreadSeconds(pid, (err, cpu) => {
+    const w = cpuWatched.get(pid); if (!w) return;
+    if (err || cpu === null) { // the reading itself failing (ps absent, refused; a worker already gone is no failure): the wall bound at the CPU bound takes over, once
+      if (err && !/exit code 1|ENOENT/.test(String(err.message)) && !psUnavailable) { psUnavailable = true; process.stderr.write(`lean: no CPU reading of the lane B worker (${String(err.message).slice(0, 120)}); the unit bound is wall-clock on this host\n`); for (const x of cpuWatched.values()) x.onUnavailable(); }
+      return;
+    }
+    w.onSample(cpu);
+    if (cpu >= w.bound) w.onBound(cpu);
+  });
+}
+function watchCpu(pid, bound, handlers) {
+  cpuWatched.set(pid, { bound, ...handlers });
+  if (psUnavailable) handlers.onUnavailable();
+  else if (!cpuPoll) { cpuPoll = setInterval(pollCpu, CPU_POLL_MS); cpuPoll.unref(); }
+  return { stop: () => { cpuWatched.delete(pid); if (!cpuWatched.size && cpuPoll) { clearInterval(cpuPoll); cpuPoll = null; } } };
+}
+// The in-process watchdogs (guardedCall, withTimeout) are wall clocks too: a call's bound of ms is allowed the wall
+// time ms of CPU takes on this machine, read from the load average at the start of the unit (os.loadavg: the
+// 1-minute run queue over the cores), floored at 1 and capped at FAR_GUARD; a call that ran past ms both ways is a
+// timeout whether or not the watchdog interrupted it, as on an idle machine
+let loadFactor = 1;
+export function readLoadFactor() { const cores = os.cpus().length || 1; const load = os.loadavg()[0] || 0; loadFactor = Math.min(FAR_GUARD, Math.max(1, load / cores)); return loadFactor; }
+const wallAllowance = (ms) => Math.round(ms * loadFactor);
+const cpuNow = () => (typeof process.threadCpuUsage === 'function' ? process.threadCpuUsage() : process.cpuUsage()); // the main thread's own time when Node exposes it, else the process's
+const cpuSpentMs = (u0) => { const u = cpuNow(); return (u.user - u0.user + u.system - u0.system) / 1000; };
+let unitSecondsDefault = UNIT_SECONDS;
+export const setUnitSeconds = (s) => { unitSecondsDefault = unitSecondsValue(s); }; // pr.mjs: the run's per-unit bound
+export function unitSecondsValue(s) {
+  if (s === undefined || s === null) return unitSecondsDefault;
+  const n = Number(s);
+  if (String(s).trim() === '' || !Number.isFinite(n) || n <= 0) throw new Error('--unit-seconds must be a positive number');
+  return n;
+}
+const workerFile = path.join(path.dirname(new URL(import.meta.url).pathname), 'worker.mjs');
+const leanSources = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'); // langs/ts: the code, the vendored compiler, the tables
+// the tree a unit's file is given: the nearest folder above it holding .git (the checkout), else its package root
+export function treeOf(file) {
+  let d = path.dirname(path.resolve(file));
+  for (;;) { if (fs.existsSync(path.join(d, '.git'))) return d; const up = path.dirname(d); if (up === d) break; d = up; }
+  return findRoot(file);
+}
+function workerReads(opts) {
+  const read = new Set([leanSources]);
+  for (const f of [opts.parent, opts.candidate]) if (f) read.add(treeOf(f));
+  if (typeof opts.values === 'string') read.add(path.resolve(opts.values));
+  if (typeof opts.project === 'string') read.add(path.dirname(path.resolve(opts.project)));
+  if (process.env.LEAN_LIBRARY_TABLE) read.add(path.resolve(process.env.LEAN_LIBRARY_TABLE));
+  const out = new Set();
+  for (const p of read) { out.add(p); try { out.add(fs.realpathSync(p)); } catch { /* a path that does not exist reads nothing */ } }
+  return [...out];
+}
+function workerFlags(opts) {
+  const flags = ['--permission', ...workerReads(opts).map((p) => `--allow-fs-read=${p}`)];
+  if (process.env.LEAN_LIBRARY_CASES) { const d = path.resolve(process.env.LEAN_LIBRARY_CASES); fs.mkdirSync(d, { recursive: true }); flags.push(`--allow-fs-write=${d}`, `--allow-fs-read=${d}`); }
+  // the worker's heap: a quarter of the machine, never below V8's default; a spinning call allocates for its whole
+  // wall allowance (a chunking loop pushing empty slices reached 4 GB in 16 s), and an exhausted heap aborts the process,
+  // which loses the unit where the per-call bound would have skipped one input
+  const heapMb = Math.max(4096, Math.floor(os.totalmem() / 4 / 1048576));
+  return [...process.execArgv.filter((x) => !/^--(permission|allow-|max-old-space-size)/.test(x)), `--max-old-space-size=${heapMb}`, ...flags];
+}
+const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefined ? ` (input ${c.input})` : ''}${c.side ? `, the ${c.side} side running` : ''}${c.loading ? `, loading ${c.loading}` : ''}` : 'start');
+// a unit whose parent does not hold it runs as today (new-unit.mjs starts its own bounded process); every other unit runs
+// in the child under the bound
+const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit);
+let recordHeadCache = null;
+const leanHeadForRecords = () => {
+  if (recordHeadCache) return recordHeadCache;
+  const head = spawnSync('git', ['-C', path.dirname(new URL(import.meta.url).pathname), 'rev-parse', 'HEAD'], { encoding: 'utf8' });
+  if (head.status !== 0) console.error(`witness record head unavailable (exit ${head.status}): ${head.stderr ?? head.error?.message}`);
+  return recordHeadCache = head.status === 0 ? head.stdout.trim() : 'unknown';
+};
+export async function runPair(opts) {
+  if (!opts.recordHead) opts = { ...opts, recordHead: leanHeadForRecords() }; // the lean head every record names, read once per process
+  if (opts.inProcess || !parentHolds(opts.parent, opts.unit)) return runPairInProcess(opts);
+  // the unit's CPU bound stretches with the load factor its calls' wall allowances stretch with (readLoadFactor, the
+  // in-process watchdogs): a call that spins burns its whole allowance as CPU, so under a load average of k per core a
+  // unit's spinning inputs cost k times their nominal CPU; a bound read at load 1 would then kill a unit the per-call
+  // bounds are handling (for_desugar chunks: half the drawn sizes spin, 2 s each, two sides, 30 inputs)
+  const stretch = readLoadFactor();
+  const seconds = unitSecondsValue(opts.unitSeconds) * stretch;
+  const { unitSeconds, inProcess, ...rest } = opts;
+  return new Promise((resolve) => {
+    let last = null, done = false;
+    const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
+    const end = (res) => { if (done) return; done = true; clearTimeout(timer); cpuWatch.stop(); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
+    const started = Date.now();
+    let cpuSeen = 0;
+    const killAt = (why) => {
+      try { child.kill('SIGKILL'); } catch { /* already gone */ }
+      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its ${why} bound of ${seconds} s per unit (--unit-seconds${stretch > 1 ? `, stretched ${stretch.toFixed(1)} times by the load average, as its calls' allowances are` : ''}) after ${Math.round((Date.now() - started) / 1000)} s of wall time and ${Math.round(cpuSeen)} s of CPU time; the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, cpuSeconds: Math.round(cpuSeen), wallSeconds: Math.round((Date.now() - started) / 1000), killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
+    };
+    let timer = setTimeout(() => killAt(psUnavailable ? 'wall-clock' : `far wall-clock guard (${FAR_GUARD} times the CPU-time)`), seconds * 1000 * (psUnavailable ? 1 : FAR_GUARD));
+    const cpuWatch = watchCpu(child.pid, seconds, { onSample: (cpu) => { cpuSeen = cpu; }, onBound: (cpu) => { cpuSeen = cpu; killAt('CPU-time'); },
+      onUnavailable: () => { clearTimeout(timer); timer = setTimeout(() => killAt('wall-clock'), Math.max(0, seconds * 1000 - (Date.now() - started))); } });
+    child.on('message', (m) => {
+      if (m && m.crumb) { last = m.crumb; return; }
+      if (!m || !Object.hasOwn(m, 'result')) return;
+      if (m.drained && guarded) { done = true; clearTimeout(timer); cpuWatch.stop(); Object.assign(crumb, { phase: last?.phase ?? crumb.phase, input: last?.input ?? null, loading: last?.loading ?? null }); return; } // the child's event loop drained before a verdict: the caller's loop drains as the in-process run's did, and its guard names what was pending
+      end(m.result);
+    });
+    child.on('error', (e) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker failed to start: ${String(e && e.message).slice(0, 200)}` }));
+    child.on('exit', (code, signal) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker exited (${signal ?? `code ${code}`}) before a verdict; pending: ${crumbOf(last)}` }));
+    child.send({ opts: rest });
+  });
+}
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
-export async function runPair(opts) {
-  const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
-  const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
+export async function runPairInProcess(opts) { runsInFlight++; try { return await runPairInFlight(opts); } finally { runsInFlight--; } } // a unit run in flight: the late hooks record what escapes it
+async function runPairInFlight(opts) {
+  readLoadFactor(); // the machine's share of a core for this unit: the wall allowance of every in-process watchdog
+  const owner = enclosingUnitName(opts.candidate, opts.unit);
+  if (owner) return { ...await runPairInFlight({ ...opts, unit: owner }), unit: opts.unit, 'covered-by': owner };
+  const unitRecord = { schema: 'witness-record/v2', version: 2, invocation: { kind: 'unit' }, unit: opts.unit, seed: opts.seed ?? 1, leanHead: opts.recordHead ?? 'unknown', drawDomain: { parameters: [], status: 'not recorded', reason: 'input plan not reached' }, draws: [], reach: { status: 'not recorded', reason: 'sandbox statement markers retain only current/completed sites; no per-line visit accumulator or diff bitmap' } };
+  beginUnitRecord(unitRecord);
+  let res;
+  try { res = annotateWitness(await runPairOnce({ ...opts, unitRecord }), opts.parent, opts.candidate, opts.unit); }
+  finally { finishUnitRecord(unitRecord); }
+  res.record = unitRecord; // one home: lane B's result; check.mjs and pr.mjs pass it to the certificate
+  for (const w of res.witnesses ?? []) if (!w.record) w.record = { schema: 'witness-record/v2', version: 2, seed: unitRecord.seed, leanHead: unitRecord.leanHead, invocation: { kind: 'unrecorded' }, unrecorded: [{ site: 'runPairInFlight: non-single-call witness', reason: 'program/sequence initialization and command arguments not captured at this output boundary' }] };
+  const ud = res?.bound?.undriven; if (ud && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { res.verdict = 'ASK'; res.kind = 'callback-undriven'; res.reason = `callback-undriven: on ${ud.inputs} input(s) a function the unit handed out could not be driven (${ud.first.reasons.join('; ')}, first at input ${ud.first.input}); an undriven callback is undecided, never a difference`; } // no rung found a WITNESS: the gap is the verdict's (design/callbacks.md)
   for (const witness of res.witnesses ?? []) {
-    const hd = handlerDifference(witness.parent?.outcome?.returned, witness.candidate?.outcome?.returned); if (hd) witness.where = { ...(witness.where ?? {}), handler: hd }; // a held handler's keys differ: the prop and the first differing step, or the escape that kept a text key
     if (witness.where?.lines || !witness.parent || !witness.candidate) continue;
     const a = witness.parent, b = witness.candidate;
     if (JSON.stringify(a.threw) !== JSON.stringify(b.threw) && (a.site || b.site)) {
@@ -768,6 +1109,8 @@ export async function runPair(opts) {
   const fe = res?.bound?.frontEnd; if (fe && fe.layers) fe.layers = { ...fe.layers, tree: { verdict: res.verdict, ...fe.layers.tree } }; // the tree layer's verdict is lane B's; the styles layer keeps its own
   return res;
 }
+// the --values flag: a path, `none` for no values file, absent for the nearest `.lean/values.json` above the candidate
+export const valuesOpt = (v) => (v === undefined ? undefined : v === 'none' ? null : v);
 // the depth --deep states: true or a bare flag is one level; a number k is k levels; anything else is a tree of names
 export const deepDepth = (deep) => (deep === true ? 1 : Number.isInteger(Number(deep)) && Number(deep) > 0 ? Number(deep) : 0);
 const componentsText = (k) => (k > 0 ? `same-package function components rendered ${k === 1 ? 'one level down' : `${k} levels down`} on their own hook frames, top down where their elements are placed, each useContext read from the nearest provider element above it (--deep${k === 1 ? '' : '=' + k})` : 'a tree of names: a component tag is its name and props');
@@ -788,8 +1131,10 @@ function layersOf(styles) {
 // the inputs of a unit: its spec (shaped by what both versions read), the enumerated small heaps, and the i-th draw on
 // one side's environment (a heap builder first, then the seeded generator with its sharing); each side draws its own
 // copy, so a replay draws input i on a fresh environment seeded as that side's was and gets the input both runs started from
-export function inputPlan(parent, candidate, unit, { project = true, seed = 1 } = {}) {
-  const spec = specOf(candidate, unit, { project, usageFrom: parent }); // the inputs are shaped by what both versions read and compare against (usage.mjs)
+// `values`: the project's values file (a path; null for none; undefined: the nearest `.lean/values.json` above the candidate)
+export function inputPlan(parent, candidate, unit, { project = true, seed = 1, values = undefined } = {}) {
+  const vfile = values === undefined ? findValues(candidate) : values;
+  const spec = specOf(candidate, unit, { project, usageFrom: parent, values: vfile ? readValues(vfile) : null }); // the inputs are shaped by what both versions read and compare against (usage.mjs), and the values the project lists come first
   const heaps = enumerateHeaps(spec, 2, seed); // the small heaps of the unit's record shapes, enumerated once; a builder makes a fresh copy per side
   spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
   return { spec, heaps, draw: (i, env) => (i < heaps.builders.length ? heaps.builders[i](env) : aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i)) };
@@ -803,13 +1148,17 @@ async function runPairOnce(opts) {
     return runNew(opts);
   }
   let plan; step('inputs');
-  try { plan = inputPlan(parent, candidate, unit, { project, seed }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
+  try { plan = inputPlan(parent, candidate, unit, { project, seed, values: opts.values }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const { spec, heaps } = plan;
+  const unitRecord = opts.unitRecord;
+  unitRecord.drawDomain = { status: 'recorded', parameters: spec.params.map(p => ({ name: p.name, spec: p.spec, optional: !!p.optional, count: 0, families: {} })), requested: n, seed, heaps: heaps.builders.length, known: knownLength(spec), boundaryWalk: spec.shaped ? walkLength(spec) : 0 };
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   setRoots(sideLocations(parent, candidate, roots)); // the directories lean loaded the two copies from render as one token (fake.mjs setRoots)
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
+  const states = []; // every state lane B reached: the input as drawn and, for a rendered unit, the tree it rendered (bound.states)
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
+  const knownRun = spec.known ? { inputs: 0, body: 0 } : null; // the inputs of the known phase (the project's listed values) and how many of them reached the body
   let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
   const mountSides = async (i) => { // a fresh environment per side for input i, the unit picked, the inputs drawn
     const sides = {};
@@ -819,25 +1168,27 @@ async function runPairOnce(opts) {
       let exportsObj;
       try { exportsObj = sandbox(env, roots[name]).load(file); } catch (e) { harnessAsk = `${name}: load failed: ${String(e && e.message).slice(0, 200)}`; break; }
       const u = pickUnit(exportsObj, spec, env);
-      if (!u) { harnessAsk = `${name}: unit ${unit} not exported`; break; }
+      if (!u) { harnessAsk = env.callbackRefusal ?? `${name}: unit ${unit} not exported`; break; }
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       let inputs;
+      captureActive(env, false);
       try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
-      sides[name] = { env, unit: u, inputs, drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
+      sides[name] = { env, unit: u, inputs, args: snapshot(env, inputs), drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }
     return sides;
   };
   // a witness's args: the input as drawn, before either call; `parent` and `candidate` keep what each call left. The two
   // sides draw their own copies from one seed, so their drawn renderings are equal; one that differs is named beside it
-  const drawnOf = (sides) => ({ args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
-  const observeBoth = (sides, record) => (record ? recording(records, async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)]) : (async () => [await observe(sides.parent, spec, sides.parent.inputs, ms), await observe(sides.candidate, spec, sides.candidate.inputs, ms)])());
+  const drawnOf = (sides) => ({ record: witnessRecord({ seed, leanHead: opts.recordHead ?? 'unknown', input: crumb.input, sides, invocation: { kind: 'call', isMethod: spec.isMethod, isStatic: spec.isStatic, accessor: spec.accessor ?? null } }), args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
+  const observeSide = async (sides, name) => { crumb.side = name; tellCrumb(); captureActive(sides[name].env, true); try { return await observe(sides[name], spec, sides[name].inputs, ms); } finally { captureActive(sides[name].env, false); } }; // the side being observed joins the breadcrumb
+  const observeBoth = (sides, record) => (record ? recording(records, async () => [await observeSide(sides, 'parent'), await observeSide(sides, 'candidate')]) : (async () => [await observeSide(sides, 'parent'), await observeSide(sides, 'candidate')])());
   // retained state: for a class unit, programs of method calls on one constructed instance per side run first (programs.mjs); a divergence in a program that calls this unit is its WITNESS, one elsewhere rides in the certificate for the unit it names
   let programRun = null;
   if (spec.isMethod && !spec.isStatic && !spec.accessor && spec.unit.split('.')[1] !== 'constructor') {
     const { runPrograms } = await import('./programs.mjs'); step('programs');
-    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
+    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
   }
   for (let i = 0; i < n; i++) {
     step('lane B', i); let sides = await mountSides(i);
@@ -846,6 +1197,10 @@ async function runPairOnce(opts) {
     if (!treeDone && (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout')) { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
       recorderRetries++; sides = await mountSides(i); if (harnessAsk) break; [oP, oC] = await observeBoth(sides, false);
     }
+    const family = i < heaps.builders.length ? 'enumerated heaps' : knownInput(spec, i) ? 'listed values' : spec.shaped && i - heaps.builders.length - knownLength(spec) < walkLength(spec) ? 'boundary walk' : 'seeded type-directed draw';
+    const drawnRecord = witnessRecord({ seed, leanHead: opts.recordHead ?? 'unknown', input: i, sides, invocation: { kind: 'call', isMethod: spec.isMethod, isStatic: spec.isStatic, accessor: spec.accessor ?? null } });
+    unitRecord.draws.push({ ...drawSummary(drawnRecord), family, completion: { parent: oP.harness ?? (oP.impure ? 'impure' : 'observed'), candidate: oC.harness ?? (oC.impure ? 'impure' : 'observed') } });
+    for (const p of unitRecord.drawDomain.parameters) { p.count++; p.families[family] = (p.families[family] ?? 0) + 1; }
     if (treeDone && (oP.harness || oC.harness || oP.impure || oC.impure)) break; // past the tree layer's witnesses the run only feeds the styles layer: a stop there ends it
     if ((sides.parent.sawJsx || sides.candidate.sawJsx) && oP.outcome && oC.outcome && Object.hasOwn(oP.outcome, 'returned') && Object.hasOwn(oC.outcome, 'returned')) styles.add(i, oP.outcome.returned, oC.outcome.returned);
     if (treeDone) continue;
@@ -860,19 +1215,22 @@ async function runPairOnce(opts) {
       continue;
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
-    if (atGuard(oP, sides.parent) && atGuard(oC, sides.candidate)) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
+    states.push({ input: i, args: sides.parent.drawn, ...(sides.parent.sawJsx && oP.outcome && Object.hasOwn(oP.outcome, 'returned') ? { tree: oP.outcome.returned } : {}) }); // the state reached on input i, as both sides started it
+    const stopped = atGuard(oP, sides.parent) && atGuard(oC, sides.candidate);
+    if (stopped) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
+    if (knownRun && knownInput(spec, i)) { knownRun.inputs++; if (!stopped) knownRun.body++; }
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
-      const held = heldTextOnly(oP, oC); // the sides differ only in a held function lean cannot read: its text is no difference lean can show on a run
-      const via = held ? null : unloadableOnly(oP, oC, sides); // the sides differ only in requests to a module lean could not load: the inlined or changed call is no difference lean can show
-      if (held) (diffs.heldText ??= []).push({ input: i, escapes: held });
+      const undecided = undecidedDrives(oP, oC); // the sides differ only from a drive that could not run on: undecided, never a difference (design/callbacks.md)
+      const via = undecided ? null : unloadableOnly(oP, oC, sides); // the sides differ only in requests to a module lean could not load: the inlined or changed call is no difference lean can show
+      if (undecided) (diffs.undriven ??= []).push({ input: i, reasons: undecided });
       else if (via) (diffs.unloadable ??= []).push({ input: i, ...via });
       else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
-    }
+    } else { const u = undrivenOf(oP) ?? undrivenOf(oC); if (u) (diffs.undriven ??= []).push({ input: i, reasons: [u] }); } // equal, with a callback lean could not drive: the gap is carried
   }
-  const bound = { n, seed, ms, reached, heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: 'from parameter types with boundary values first; positions of one shape sometimes share one object', observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  const bound = { n, seed, ms, reached, states, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
-  if (diffs.heldText && !diffs.length) bound.heldText = { inputs: diffs.heldText.length, first: diffs.heldText[0] }; // runPair turns a PASS into ASK naming the escape
+  if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing' };
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
@@ -888,7 +1246,7 @@ async function runPairOnce(opts) {
     if (programRun.verdict === 'WITNESS') {
       const mine = programRun.program.some((c) => c.method === member);
       bound.programs.divergence = { method: programRun.divergence.method, commands: programRun.program.length, program: programRun.program, mine };
-      if (mine) return { verdict: 'WITNESS', unit, witnesses: [{ input: `program ${programRun.programIndex}`, program: programRun.program, args: programRun.program.map((c) => c.args), parent: programRun.divergence.parent, candidate: programRun.divergence.candidate, where: { ...programRun.divergence.where, command: programRun.divergence.command, method: programRun.divergence.method } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+      if (mine) return { verdict: 'WITNESS', unit, witnesses: [{ record: programRun.record, input: `program ${programRun.programIndex}`, program: programRun.program, args: programRun.program.map((c) => c.args), parent: programRun.divergence.parent, candidate: programRun.divergence.candidate, where: { ...programRun.divergence.where, command: programRun.divergence.command, method: programRun.divergence.method } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
     }
   }
   // races (design/schedules.md): an async unit called twice, the second call arriving while the first is pending, every
@@ -907,7 +1265,7 @@ async function runPairOnce(opts) {
   if (!spec.isMethod && !sawJsx && !harnessAsk && !diffs.length) { // environment programs with retained handles (program.mjs): what the environment may do later with what the unit handed it
     const { runEnvironmentPrograms } = await import('./program.mjs'); step('environment programs');
     let r = null;
-    try { r = await recording(records, () => runEnvironmentPrograms({ files: { parent, candidate }, roots, spec, seed, ms, rt: { sandbox, pickUnit, guardedCall, awaitUnit, runTimers } })); } catch (e) { if (e instanceof BudgetError) r = { verdict: 'ASK', reason: `budget: ${e.message}` }; else throw e; }
+    try { r = await recording(records, () => runEnvironmentPrograms({ files: { parent, candidate }, roots, spec, seed, ms, rt: { sandbox, pickUnit, guardedCall, awaitUnit, runTimers, driveWindow } })); } catch (e) { if (e instanceof BudgetError) r = { verdict: 'ASK', reason: `budget: ${e.message}` }; else throw e; }
     if (r) {
       bound.environmentPrograms = { runs: r.runs ?? 0, maxCommands: r.maxCommands ?? 6, seed: r.seed ?? seed, commands: 'call, invoke, fire, tick, settle, next, throw, return', observation: 'the outcome, the requests since the previous command, the pending count; never the graph' };
       if (r.verdict === 'ASK') bound.environmentPrograms.ask = r.reason;
@@ -931,18 +1289,19 @@ async function runPairOnce(opts) {
     bound.frontEnd.finite = { why: domain ? domain.why : 'no domain' };
   }
   if (sawJsx && sequenceDepth > 0) { // not finite: re-render sequences from a fresh mount, on the first inputs
-    let paths = 0;
+    let paths = 0; const schedulesRun = new WeakMap(), r2Of = (r) => schedulesRun.get(r) ?? null;
     for (let i = 0; i < Math.min(sequenceInputs, n); i++) {
       step('sequences', i);
       const r = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth, handlers: handlerRun }));
       if (r.ask === undefined && !r.witness) { // the schedule explorer (moonshot 9): the same machine with the clock as a command, when the mount armed at most three timers
-      const r2 = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, schedules: true, depth: Math.max(sequenceDepth, 2), breadth: sequenceBreadth, handlers: handlerRun }));
-        if (r2.witness) return { verdict: 'WITNESS', unit, witnesses: [{ ...r2.witness, schedule: true }], bound: { ...bound, schedules: { timers: r2.timers, paths: r2.paths, orders: 'every order of the timers due at one instant, up to three' } }, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
-        if (r2.ask) bound.schedulesAsk = r2.ask; else bound.schedules = { timers: r2.timers ?? 0, paths: r2.paths, orders: 'every order of the timers due at one instant, up to three' };
+      const r2 = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, schedules: true, depth: Math.max(sequenceDepth, 2), breadth: sequenceBreadth, handlers: handlerRun })); schedulesRun.set(r, r2);
+        if (r2.witness) return { verdict: 'WITNESS', unit, witnesses: [{ ...r2.witness, schedule: true }], bound: { ...bound, schedules: { timers: r2.timers, paths: r2.paths, orders: 'every order Node allows of the timers due at one instant (two timeouts or intervals keep their arm order), up to three' } }, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+        if (r2.ask) bound.schedulesAsk = r2.ask; else bound.schedules = { timers: r2.timers ?? 0, paths: r2.paths, orders: 'every order Node allows of the timers due at one instant (two timeouts or intervals keep their arm order), up to three' };
       }
       if (r.ask) return { verdict: 'ASK', reason: `input ${i}: ${r.ask}`, unit, bound };
       if (r.witness) { bound.frontEnd.renders = `one, then command sequences of up to ${sequenceDepth} clicks`; return { verdict: 'WITNESS', unit, witnesses: [{ input: i, sequence: r.witness.sequence, step: r.witness.step, parent: r.witness.parent, candidate: r.witness.candidate, patch: r.witness.patch, patchSummary: r.witness.patchSummary, where: { field: 'sequence', command: r.witness.sequence[r.witness.step] ?? 'unmount' } }], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } }; }
       paths += r.paths ?? 0;
+      for (const x of [r, r2Of(r)]) if (x?.undriven && !bound.undriven) bound.undriven = { inputs: 1, first: { input: i, sequence: x.undriven.sequence, reasons: x.undriven.reasons } }; // a sequence drive that could not run: the gap is carried (runPairInFlight)
     }
     bound.frontEnd.renders = `one, then every command sequence of up to ${sequenceDepth} clicks over at most ${sequenceBreadth} handlers per step, from a fresh mount, on ${Math.min(sequenceInputs, n)} inputs (${paths} paths); effects re-run by Object.is deps with cleanup first; unmount runs every cleanup`;
     bound.frontEnd.notObserved = 'committed DOM, computed styles, layout, pixels, accessibility tree; timers never fire; sequences beyond the depth';
@@ -1032,14 +1391,20 @@ function firstDifference(a, b) {
     let i = 0; while (i < Math.max(a.pending.length, b.pending.length) && JSON.stringify(a.pending[i]) === JSON.stringify(b.pending[i])) i++;
     if (a.pending[i]?.site && b.pending[i]?.site) { parentSite = a.pending[i].site; candidateSite = b.pending[i].site; kind = 'pending arm'; }
   }
+  if (where.field === 'drives') { // the first request the two drives differ on, at the statement that made it; else the drive itself
+    const x = where.parent?.trace ?? [], y = where.candidate?.trace ?? [];
+    let i = 0; while (i < Math.max(x.length, y.length) && JSON.stringify(x[i]) === JSON.stringify(y[i])) i++;
+    if (x[i]?.site || y[i]?.site) { parentSite = x[i]?.site ?? null; candidateSite = y[i]?.site ?? null; kind = 'drive effect'; } else { parentSite = where.parent?.site ?? null; candidateSite = where.candidate?.site ?? null; kind = 'drive completion'; }
+  }
   where.lines = { kind, parent: siteLines(parentSite), candidate: siteLines(candidateSite) };
   return where;
 }
 function differenceField(a, b) {
-  for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending']) {
+  for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives']) {
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
       if (k === 'trace') { let i = 0; while (i < Math.max(a.trace.length, b.trace.length) && JSON.stringify(a.trace[i]) === JSON.stringify(b.trace[i])) i++; return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }
+      if (k === 'drives') { const x = a.drives ?? [], y = b.drives ?? []; let i = 0; while (i < Math.max(x.length, y.length) && JSON.stringify(x[i]) === JSON.stringify(y[i])) i++; const h = (x[i] ?? y[i])?.$fn ?? null; return { field: k, index: i, handle: h, drive: h ? { called: `${h} on the drawn ${Array.from({ length: DRIVE_ARGS }, (_, j) => `drive${h}.arg${j}`).join(', ')}, this drive${h}.this`, args: (x[i] ?? y[i])?.args ?? null } : null, parent: x[i] ?? null, candidate: y[i] ?? null }; } // a function both sides handed out at one position does something else when called: the drive is the input
       if (k === 'heap') { const h = a.heap ?? {}, g = b.heap ?? {}; for (const part of ['roots', 'outcome', 'own']) if (JSON.stringify(h[part]) !== JSON.stringify(g[part])) return { field: 'heap', part }; const n = Math.max((h.heap ?? []).length, (g.heap ?? []).length); for (let j = 0; j < n; j++) if (JSON.stringify((h.heap ?? [])[j]) !== JSON.stringify((g.heap ?? [])[j])) return { field: 'heap', object: j, anchor: j < (h.anchors ?? 0), parent: (h.heap ?? [])[j] ?? null, candidate: (g.heap ?? [])[j] ?? null }; return { field: 'heap' }; }
       return { field: k };
     }
@@ -1075,11 +1440,12 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const guard = verdictGuard(opt('--out', null));
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
   const out = opt('--out', null);
   guard.settle();
   const text = JSON.stringify(res, null, 1);
-  if (out) fs.writeFileSync(out, text); else console.log(text);
-  if (out) console.log(`${res.verdict}${res.reason ? ': ' + res.reason : ''} -> ${out}`);
-  process.exit(res.verdict === 'ASK' ? 2 : 0);
+  if (out) fs.writeFileSync(out, text);
+  // exit once stdout has taken the whole line: on macOS a pipe write is asynchronous, and process.exit right after
+  // console.log dropped a result larger than the pipe buffer (64 KB) when the reader was slow (the same bytes as before)
+  process.stdout.write((out ? `${res.verdict}${res.reason ? ': ' + res.reason : ''} -> ${out}` : text) + '\n', () => process.exit(res.verdict === 'ASK' ? 2 : 0));
 }

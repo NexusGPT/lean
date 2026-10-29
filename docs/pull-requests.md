@@ -25,7 +25,7 @@ Reviewers read the declared scope and the asks, not the diff. A function nobody 
 
 ## Every changed function has a row
 
-The `coverage` column says what lean did with it: `checked` (a verdict exists), `refused:<rule>` (the lint's first rule; lane B's verdict is kept in the row), `failed:loader`, `failed:timeout`, `failed:translation-defect` or `failed:harness` (no usable verdict), `skipped:not-typescript`, `skipped:binary` or `skipped:secret-path` (never read: `.env`, keys, certificates). The intake is one pure function, `selectUnits`, used by the run and by `--preview`, which prints the intake table and runs no lane:
+The `coverage` column says what lean did with it: `checked` (a verdict exists), `refused:<rule>` (the lint's first rule; lane B's verdict is kept in the row), `failed:loader`, `failed:timeout`, `failed:translation-defect` or `failed:harness` (no usable verdict), `skipped:binary` or `skipped:secret-path` (never read: `.env`, keys, certificates). A JavaScript file is read unit by unit like a TypeScript file; a unit whose parameters carry no declared type is `refused:untyped-js`. The intake is one pure function, `selectUnits`, used by the run and by `--preview`, which prints the intake table and runs no lane:
 
 ```
 $ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --preview
@@ -64,3 +64,5 @@ The key stops at one import level and does not see module initialization order.
 [`langs/ts/ci/comment.mjs`](../langs/ts/ci/) posts the table as one comment, updated on every push, and the reusable workflow [`.github/workflows/lean-pr.yml`](../.github/workflows/lean-pr.yml) runs it from a caller of a few lines, pinned by commit. `--block none` only comments; `--block witness` fails the check on any `WITNESS` row; `--block ask` fails on `WITNESS` or `ASK`; a row declared `IN-SCOPE` never blocks; each blocking row is annotated at its file and line. The workflow has been validated offline and has not yet run on a GitHub runner ([`langs/ts/design/ci.md`](../langs/ts/design/ci.md) keeps that status current).
 
 The order that works: a shadow run on the last few dozen merged pull requests, nothing blocking, reading three things (the share of `ASK` and the rules behind it; whether a `WITNESS` lands on a slip that reached production; how often the changed function was the one meant to change). Then a comment on new pull requests. Then the editor rule on new code. `WITNESS` blocking last.
+
+`--block witness` fails the check on a `WITNESS` row and annotates it at its line; `IN-SCOPE` never blocks. Every refusal of a run is also a JSON record in `.lean/runs/<identity>.refusals.json`, and `--inline` posts each as a review comment at its lines, skipping a range that already carries one ([`langs/ts/design/ci.md`](../langs/ts/design/ci.md)).

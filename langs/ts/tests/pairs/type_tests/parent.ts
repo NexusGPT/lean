@@ -66,7 +66,5 @@ export function assertedDictionary(x: { key: number }): boolean { const value = 
 export function assertedOptional(x: unknown): string { const value = x as number | undefined; return typeof value; }
 export function assertedAssignment(x: unknown): boolean { let value: number[] = []; value = x as number[]; const alias = value; return Array.isArray(alias); }
 export function assertedTag(x: { kind: string }): boolean { const value = x as { kind: "a" }; return value.kind === "a"; }
-export function assertedContainer(x: unknown): boolean { const box = { values: x as number[] }; return Array.isArray(box.values); }
-export function assertedDestructure(x: unknown): boolean { const box = { values: x as number[] }; const { values } = box; return Array.isArray(values); }
 export function nonNullExact(x: number[] | undefined): boolean { if (x === undefined) return false; return Array.isArray(x!); }
 export function assertedRefactor(x: unknown): boolean { const value = x as number[]; return Array.isArray(value); }

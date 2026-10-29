@@ -7,7 +7,7 @@
 // command runs on both sides and compares the two observations, and the first failing program is shrunk to a minimal
 // one. The certificate carries the program, the seed and the replay path, and the replay is run once more before the
 // WITNESS is reported. A clean run states the program and command counts (bound.environmentPrograms); never a proof.
-import { Environment, render, BudgetError, promiseName } from './fake.mjs';
+import { Environment, render, BudgetError, promiseName, openEscapes, closeEscapes, undecidedDrives } from './fake.mjs';
 import { inputsFor } from './gen.mjs';
 import { ts, loadProgram } from '../common.mjs';
 
@@ -26,12 +26,15 @@ export async function runEnvironmentPrograms({ files, roots, spec, seed, ms, rt,
   // one command on one side: the thrown or returned value, what was asked of the environment since the last command
   const step = async (s, fn) => {
     const mark = s.env.trace.length; let outcome, named = null;
+    openEscapes(s.env); // a command is an observation window: every function it shows is driven at its end (design/callbacks.md)
     try { const thunk = fn(s); let v = rt.guardedCall(s.env, thunk, ms); named = promiseName(v); if (v && typeof v.then === 'function') v = await rt.awaitUnit(s.env, v, ms); outcome = { returned: render(v) }; if (named) outcome.promise = named; if (retainable(v)) { s.retained.push(v); outcome.retained = s.retained.length - 1; } }
-    catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; outcome = { threw: render(e) }; if (named) outcome.promise = named; } // a returned world promise is named beside its settlement
+    catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') { closeEscapes(s.env); throw e; } outcome = { threw: render(e) }; if (named) outcome.promise = named; } // a returned world promise is named beside its settlement
     await new Promise((r) => setImmediate(r));
-    return { outcome, trace: s.env.trace.slice(mark), pending: s.env.pending.length };
+    const obs = { outcome, trace: s.env.trace.slice(mark), pending: s.env.pending.length };
+    if (rt.driveWindow) { const drives = await rt.driveWindow(s.env, ms); if (drives.length) obs.drives = drives; } else closeEscapes(s.env);
+    return obs;
   };
-  const both = async (real, label, fn) => { const p = await step(real.parent, (s) => fn(real.parent)), c = await step(real.candidate, (s) => fn(real.candidate)); if (JSON.stringify(p) !== JSON.stringify(c)) throw new Divergence(label, p, c); return [p, c]; };
+  const both = async (real, label, fn) => { const p = await step(real.parent, (s) => fn(real.parent)), c = await step(real.candidate, (s) => fn(real.candidate)); if (JSON.stringify(p) !== JSON.stringify(c) && !undecidedDrives(p, c)) throw new Divergence(label, p, c); return [p, c]; }; // a drive that could not run is undecided, never a divergence
   const sync = (m, real) => { m.retained = real.parent.retained.length; m.callables = real.parent.env.knownCallables.length; m.timers = real.parent.env.timers.queue.filter((e) => e.fired === 0).length; m.generators = real.parent.retained.map((v, i) => (isGen(v) ? i : -1)).filter((i) => i >= 0); m.functions = real.parent.retained.map((v, i) => (typeof v === 'function' ? i : -1)).filter((i) => i >= 0); };
   class Call { constructor(idx) { this.idx = idx; } check() { return true; } async run(m, real) { await both(real, `call(${this.idx})`, (s) => { const args = inputsFor(spec, seed, this.idx, s.env); return () => s.unit.call(args); }); sync(m, real); } toString() { return `call(${this.idx})`; } }
   class Invoke { constructor(i, idx) { this.i = i; this.idx = idx; } check(m) { return m.functions.length > 0; } async run(m, real) { const i = m.functions[this.i % m.functions.length]; await both(real, `invoke(${i}, ${this.idx})`, (s) => { const fn = s.retained[i]; const args = Array.from({ length: Math.min(fn.length, 3) }, (_, k) => s.env.fake(`invoke${this.idx}.arg${k}`)); return () => fn(...args); }); sync(m, real); } toString() { return `invoke(${this.i}, ${this.idx})`; } }

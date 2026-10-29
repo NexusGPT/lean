@@ -1,0 +1,6 @@
+{
+  "scope": ["opt_plus", "changed_f", "changed_call", "g", "through_g", "sibling"],
+  "equal": {"opt_plus": true, "changed_call": false, "through_g": true},
+  "b": {"optPlus": "PASS-bounded", "Changed.call": "WITNESS", "throughG": "PASS-bounded"},
+  "why": "The opaque absent result uses the unit's transitive reach. optPlus and throughG keep identical reached code despite sibling edits, so prove. Changed.call keeps its own text but reaches a changed f: this.f(undefined) changes from NaN to undefined, so stays unproved with a lane B witness."
+}

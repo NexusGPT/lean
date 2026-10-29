@@ -11,18 +11,18 @@
  "equal": {
   "drop_last": false,
   "drop_last_copy": true,
-  "cloned": true,
+  "cloned": false,
   "cloned_alias": false,
   "stamp_year": true,
   "bump": true,
   "bump_off": false
  },
- "why": "pop as a statement: dropLast pops twice in the candidate, refuted and witnessed; dropLastCopy pops a slice(0) for a slice(), proved. structuredClone of a flat record: cloned against a literal with the same fields allocates one fresh cell either way, proved; clonedAlias returns the input itself, a different identity, refuted and witnessed on the graph. A Date cell: stampYear with the Date under another name, proved (new Date(n) allocates the time value, getUTCFullYear a bodiless function of it). A Date setter as a statement in the ordinary lane: bump reads the time through a local after the same setter, proved (the setter is a world transition that rebinds the Date, which is an output); bumpOff sets y + 1, unproved and witnessed.",
+ "why": "pop as a statement: dropLast pops twice in the candidate, refuted and witnessed; dropLastCopy pops a slice(0) for a slice(), proved. structuredClone of a record: cloned against a literal of the declared fields is not proved, the clone keeps every own key of p, the undeclared ones included (HTML 2.7.3), and lane B witnesses it with p carrying one (design/conformance-readings.md); clonedAlias returns the input itself, a different identity, refuted and witnessed on the graph. A Date cell: stampYear with the Date under another name, proved (new Date(n) allocates the time value, getUTCFullYear a bodiless function of it). A Date setter as a statement in the ordinary lane: bump reads the time through a local after the same setter, proved (the setter is a world transition that rebinds the Date, which is an output); bumpOff sets y + 1, unproved and witnessed.",
  "heap": true,
  "b": {
   "dropLast": "WITNESS",
   "dropLastCopy": "PASS-bounded",
-  "cloned": "PASS-bounded",
+  "cloned": "WITNESS",
   "clonedAlias": "WITNESS",
   "stampYear": "PASS-bounded",
   "bump": "PASS-bounded",
