@@ -16,20 +16,28 @@ const outcomes = result => {
   }
   return out;
 };
-const rows = [], moved = [], attributionMoves = [], changedRules = [], missing = [], newUnits = [], fileErrors = [];
+const rows = [], moved = [], attributionMoves = [], ruleAttributions = [], changedRules = [], missing = [], newUnits = [], fileErrors = [];
 const attributionClass = 'attribution: a refusal inside a nested callback now belongs to the callback';
 // Classify only exact retained findings that moved from the baseline owner into newly listed nested units.
 // A disappeared diagnostic, changed rule/message, or newly refused old unit is never hidden by this classification.
-function attributionOf(before, after, unit) {
+function attributionOf(before, after, unit, allowRetained = false) {
   if (unit.verdict !== 'refused') return null;
   const old = before.records.find(r => r.file === unit.file), next = after.records.find(r => r.file === unit.file);
   if (!old || !next) return null;
   const findings = old.findings.filter(f => !f.env && (Object.hasOwn(f, 'unit') ? f.unit : old.units.find(u => u.lines[0] <= f.line && f.line <= u.lines[1])?.name) === unit.unit);
-  const moved = findings.map(f => {
-    const retained = next.findings.find(g => !g.env && g.line === f.line && g.rule === f.rule && g.msg === f.msg && g.unit?.startsWith(`${unit.unit}/`) && !old.units.some(u => u.name === g.unit));
+  const sameFinding = (f, g) => !g.env && g.line === f.line && g.rule === f.rule && g.msg === f.msg;
+  const mapped = findings.map(f => {
+    const own = next.findings.find(g => sameFinding(f, g) && g.unit === unit.unit);
+    const retained = own ?? next.findings.find(g => sameFinding(f, g) && g.unit?.startsWith(`${unit.unit}/`) && !old.units.some(u => u.name === g.unit));
     return retained ? { line: f.line, rule: f.rule, code: f.msg.match(/^TS\d+/)?.[0] ?? null, message: f.msg, to: retained.unit } : null;
   });
-  return moved.length && moved.every(Boolean) ? { class: attributionClass, file: unit.file, unit: unit.unit, lines: unit.lines, findings: moved } : null;
+  if (!mapped.length || !mapped.every(Boolean)) return null;
+  const moved = mapped.filter(f => f.to !== unit.unit), kept = mapped.filter(f => f.to === unit.unit);
+  if (!moved.length || !allowRetained && kept.length) return null;
+  const afterOwn = next.findings.filter(g => !g.env && g.unit === unit.unit);
+  if (afterOwn.some(g => !findings.some(f => sameFinding(f, g)))) return null;
+  return { class: attributionClass, file: unit.file, unit: unit.unit, lines: unit.lines, findings: moved, retainedRules: [...new Set(kept.map(f => f.rule))].sort() };
+
 }
 for (const file of fs.readdirSync(path.join(dir, 'prediction')).filter(f => f.endsWith('.json') && f !== 'commands.json')) {
   const prediction = read(path.join(dir, 'prediction', file));
@@ -43,7 +51,11 @@ for (const file of fs.readdirSync(path.join(dir, 'prediction')).filter(f => f.en
       const attribution = b.get(key).verdict === 'inside' ? attributionOf(before, after, u) : null;
       if (attribution) attributionMoves.push({ root: file, ...attribution });
     }
-    else if (u.rule !== b.get(key).rule) changedRules.push({ root: file, before: u, after: b.get(key) });
+    else if (u.rule !== b.get(key).rule) {
+      changedRules.push({ root: file, before: u, after: b.get(key) });
+      const attribution = attributionOf(before, after, u, true);
+      if (attribution) ruleAttributions.push({ root: file, beforeRule: u.rule, afterRule: b.get(key).rule, ...attribution });
+    }
   }
   for (const [key,u] of b) if (!a.has(key)) newUnits.push({ root: file, ...u });
   for (const [phase, result] of [['before', before], ['after', after]]) for (const r of result.records) if (r.error) fileErrors.push({ root: file, phase, ...r });
@@ -56,7 +68,8 @@ for (const file of fs.readdirSync(path.join(dir, 'prediction')).filter(f => f.en
 const refusals = {};
 for (const u of newUnits) { const cohort = u.root.startsWith('bugsjs-') ? 'bugsjs' : 'census'; const key = `${cohort} ${u.language}`; const counts = refusals[key] ??= {}; counts[u.rule ?? 'inside'] = (counts[u.rule ?? 'inside'] ?? 0) + 1; }
 const unexplainedMoves = moved.filter(m => !attributionMoves.some(a => a.root === m.root && a.file === m.before.file && a.unit === m.before.unit));
-const result = { rows, moved, attributionMoves, unexplainedMoves, changedRules, missing, newUnits, fileErrors, refusals };
+const unexplainedRuleChanges = changedRules.filter(m => !ruleAttributions.some(a => a.root === m.root && a.file === m.before.file && a.unit === m.before.unit));
+const result = { rows, moved, attributionMoves, unexplainedMoves, changedRules, ruleAttributions, unexplainedRuleChanges, missing, newUnits, fileErrors, refusals };
 fs.writeFileSync(path.join(dir, 'compare.json'), JSON.stringify(result, null, 1));
-console.log(JSON.stringify({ rootsCompared: rows.filter(r=>r.language==='ts').length, pending: rows.filter(r=>r.status), moved: moved.length, attributionMoves: attributionMoves.length, unexplainedMoves: unexplainedMoves.length, changedRules: changedRules.length, missing: missing.length, newUnits: newUnits.length, fileErrors: fileErrors.length, differences: rows.filter(r=>r.difference), refusals }, null, 2));
-if (unexplainedMoves.length || missing.length || rows.some(r => r.difference)) process.exitCode = 1;
+console.log(JSON.stringify({ rootsCompared: rows.filter(r=>r.language==='ts').length, pending: rows.filter(r=>r.status), moved: moved.length, attributionMoves: attributionMoves.length, unexplainedMoves: unexplainedMoves.length, changedRules: changedRules.length, ruleAttributions: ruleAttributions.length, unexplainedRuleChanges: unexplainedRuleChanges.length, missing: missing.length, newUnits: newUnits.length, fileErrors: fileErrors.length, differences: rows.filter(r=>r.difference), refusals }, null, 2));
+if (unexplainedMoves.length || unexplainedRuleChanges.length || missing.length || rows.some(r => r.difference)) process.exitCode = 1;
