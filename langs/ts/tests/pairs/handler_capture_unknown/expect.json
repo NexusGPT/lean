@@ -2,14 +2,13 @@
  "laneBOnly": true,
  "scope": [],
  "equal": {},
- "why": "a value from an outside call that is no hook, its mutating method called by a held handler, is no capture kind: the lint refuses the unit (react-handler-capture, so check.mjs's lane A is ASK at translation) and lane B keys the handler by its text, so the changed argument is ASK naming the escape, never a WITNESS and never a pass",
+ "why": "a value from an outside call that is no hook, its mutating method called by a held handler, is no capture kind: the lint refuses the unit (react-handler-capture, so check.mjs's lane A is ASK at translation) and lane B keys the handler by its text, so the changed argument is ASK naming the escape, never a WITNESS and never a pass. Since design/callbacks.md the held handler is driven instead of keyed by its text: called, it requests api.push(1) on the parent and api.push(2) on the candidate, a WITNESS by the drive (it was ASK naming the escape); lane A still refuses the unit at translation",
  "b": {
-  "Unknown": "ASK"
+  "Unknown": "WITNESS"
  },
  "check": {
   "Unknown": {
-   "verdict": "ASK",
-   "laneA": "ASK"
+   "verdict": "WITNESS"
   }
  }
 }
