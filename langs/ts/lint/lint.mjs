@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import { mutationAnalysis, parameterMutationConflicts, elementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
+import { primitiveBrand } from '../common.mjs';
 import { originOf } from '../common.mjs';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
@@ -1115,7 +1116,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   const EQ = new Set([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken]);
   const LOGIC = new Set([K.AmpersandAmpersandToken, K.BarBarToken, K.QuestionQuestionToken]);
   const isJsxNode = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isJsxElement(x) || ts.isJsxSelfClosingElement(x) || ts.isJsxFragment(x); };
-  const isPrim = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.Undefined | TF.Null | TF.EnumLike));
+  const isPrim = (t) => !!(t.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.Undefined | TF.Null | TF.EnumLike)) || !!primitiveBrand(t); // a branded primitive is its primitive (common.mjs primitiveBrand): no object to alias (=== on it: eqPrim below)
 
   // the gate selects exact continuations; other existing forms keep their outside-call reading
   const promiseReadings = opts.promiseReadings ?? new Set();
@@ -1481,10 +1482,12 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (CMP.has(op) && (isStr(lt) || isStr(rt)) && !(isStr(lt) && isStr(rt)) && !(isAny(lt) || isAny(rt))) v(e, 'string-order', 'compare two strings, or convert both operands explicitly');
     if (EQ.has(op)) {
       const nul = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined'); };
-      const prim = (t) => nonNull(t).every((x) => isPrim(x) || isAny(x) || !!(x.flags & TF.TypeParameter)); // a type parameter is compared by value
+      // a branded number stays a reference comparison here: its carrier is opaque with an equality, and === is not reflexive on NaN
+      const eqPrim = (x) => { const b = primitiveBrand(x); return isPrim(x) && !(b && b.flags & TF.NumberLike); };
+      const prim = (t) => nonNull(t).every((x) => eqPrim(x) || isAny(x) || !!(x.flags & TF.TypeParameter)); // a type parameter is compared by value
       const litSide = (x) => ts.isStringLiteral(x) || ts.isNumericLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword;
       // a comparison with a primitive on either side is a value comparison; only record against record (or array against array) compares references
-      const mixed = (t) => { const ps = nonNull(t); return ps.some((x) => isPrim(x)) && ps.some((x) => !isPrim(x) && !isAny(x)); };
+      const mixed = (t) => { const ps = nonNull(t); return ps.some((x) => eqPrim(x)) && ps.some((x) => !isPrim(x) && !isAny(x)); };
       // against a literal (a negated number included) === is true only on the literal's primitive arm holding its value
       const eqLit = (x) => { x = unparenX(x); return litSide(x) || (ts.isPrefixUnaryExpression(x) && x.operator === K.MinusToken && ts.isNumericLiteral(x.operand)); };
       if (!nul(e.left) && !nul(e.right) && (mixed(lt) || mixed(rt)) && !eqLit(e.left) && !eqLit(e.right)) v(e, 'mixed-types', 'a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal; narrow it before comparing it with another value');

@@ -39,6 +39,7 @@ import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-for
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { primitiveBrand } from '../common.mjs';
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, openRecordReadWhy } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the lint
@@ -991,8 +992,10 @@ function translateOnce(file, fnName, opts = {}) {
     ].join('\n'));
   };
   // a Map key or a Set item the value reading compares as JavaScript does: a primitive, a literal union or an enum of
-  // them, absent, or a type parameter (the proof is generic in it); an object is compared by reference (SameValueZero)
-  const keyByValue = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.EnumLike | TF.Undefined | TF.Null | TF.TypeParameter)));
+  // them, absent, a type parameter (the proof is generic in it) or a branded primitive (common.mjs primitiveBrand: its
+  // value is the primitive; its carrier is opaque, compared by equality as a type parameter is); an object is compared
+  // by reference (SameValueZero)
+  const keyByValue = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.EnumLike | TF.Undefined | TF.Null | TF.TypeParameter)) || !!primitiveBrand(x));
   const omapT = (Kd, Vd) => { orderedCarrier('map'); return `OMap<${Kd}, ${Vd}>`; };
   // a dictionary (a plain object with a string index signature and no declared key) is the same ordered carrier, its
   // keys held in property order (ECMA-262 10.1.11 OrdinaryOwnPropertyKeys: every array index first, ascending, then
@@ -1471,7 +1474,7 @@ function translateOnce(file, fnName, opts = {}) {
       // opaque: values pass through untouched; reads become accessor externals
       const base = mangle(name ?? checker.typeToString(t));
       name = `Ext_${base || 'T' + hash(checker.typeToString(t))}`;
-      addPrelude(name, `type ${name}`);
+      addPrelude(name, primitiveBrand(t) ? `type ${name}(==)` : `type ${name}`); // a branded primitive's value is the primitive: equality is its own
       return name;
     }
     const fields = props.map((p) => ({ name: p.name, type: checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional) })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
