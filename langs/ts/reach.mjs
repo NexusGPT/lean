@@ -158,7 +158,7 @@ export function makeReach(checker, sf) {
     const dynamic = own.dynamic || code.dynamic;
     const codeTexts = dynamic ? [sf.text] : [...new Set([...code.owners].map(textOf))].sort();
     const declTexts = dynamic ? [sf.text] : [...new Set([...own.owners, ...code.owners].map(textOf))].sort();
-    const r = { decls: declTexts, code: codeTexts, classes: [...codeRoots].filter(isClassLike).map((c) => c.name?.text ?? '?') };
+    const r = { decls: declTexts, code: codeTexts, classes: [...codeRoots].filter(isClassLike).map((c) => c.name?.text ?? '?'), open: dynamic }; // expose the existing whole-file fallback to the absent-result certificate
     cache.set(root, r);
     return r;
   }

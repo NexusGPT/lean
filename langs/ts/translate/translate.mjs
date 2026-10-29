@@ -5123,7 +5123,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   }
   // a payload read (`x!` on a value that may be absent, a read of an absent let TypeScript did not check) in the unit's own
   // statement flow: the option is tested before the statement; where it is absent the unit's result is one opaque value
-  // named by the whole file's text, so two different files never agree there and the same file agrees with itself
+  // named by the unit's reached code, using the same key text and hash as other reach keys (design/opaque-values.md)
   const guardedReads = new Set(), guardedStmts = new WeakSet(), operandNames = new Map();
   function absenceBinding(id) { const sym = checker.getSymbolAtLocation(id); const D = letTypeOf(sym) ?? dtype(symType(sym, id), id); if (!optionalD(D)) fail(id, 'non-null-assertion: the value read is not held as an option here'); return dn(id.text); }
   function absenceGuard(s, u, again) {
@@ -5144,8 +5144,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }))];
     for (const [x] of reads) guardedReads.add(x);
     guardedStmts.add(s);
-    const absent = `${external(`absent_read_${mangle(D)}_${createHash('sha256').update(sf.text).digest('hex').slice(0, 16)}`, [], D)}()`;
-    return `${binds.map((b) => `${b}\n`).join('')}if ${names.map((v) => `!${v}.Some?`).join(' || ')} then\n${indentBlock(wrapLet(retIn(absent)))}\nelse\n${indentBlock(wrapLet(again()))}`;
+    const reach = reachOf(u.node);
+    const absent = `${external(`absent_read_${mangle(D)}_${hash(reachOf.keyText(u.node))}`, [], D)}()`;
+    const absentKey = reach.open ? { by: 'file', reason: 'dynamic code' } : { by: 'reach', declarations: reach.decls.length };
+    return `${binds.map((b) => `${b}\n`).join('')}// ABSENT-KEY ${fname(u.name)}: ${JSON.stringify(absentKey)}\nif ${names.map((v) => `!${v}.Some?`).join(' || ')} then\n${indentBlock(wrapLet(retIn(absent)))}\nelse\n${indentBlock(wrapLet(again()))}`;
   }
   function tr(list, fin, u) {
     if (!list.length) return fin();

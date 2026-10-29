@@ -74,3 +74,30 @@ the closure did not run; the draw needs no change.
 
 See the lane report (harness/lanes/opaque-values.md): the census before and after on both trees, the translation
 sweep of every pair side, and the pair probes.
+
+## Reach-keyed absent results
+
+The whole-file key described above is superseded by the shared reach key. `absenceGuard` now names the opaque result
+`absent_read_<T>_<hash(reachOf.keyText(u.node))>`, using the same `hash` and `reachOf.keyText` as the other reference
+keys. No separate hash or reach analysis is introduced. The reached text includes the unit and its transitive callees,
+module declarations, class members and carried code (design/reach-keys.md). An unrelated edit therefore preserves the
+name, while a change to a reached method changes it. The absent branch still ends at the guard; no absent value is
+passed to an exact operation on T.
+
+`makeReach` exposes its existing dynamic-code fallback as `open`. When `eval`, `Function`, `Reflect` or `Proxy` leaves
+the reach open, `keyText` already returns the whole file. The absent result uses that same file fallback. The
+translator emits an `ABSENT-KEY` record at the guard, and `check.mjs` reads it into the JSON certificate's `absentKey`
+field, separately for parent and candidate. A closed reach records `{ by: "reach", declarations: N }`, where N is
+the number of distinct reached declaration texts. An open reach records `{ by: "file", reason: "dynamic code" }`.
+The field is omitted when neither side emits a guard for the requested unit; a side without a guard is null.
+The certificate reader does not recompute a key, and the metadata does not affect the verdict.
+
+`pairs/reach_absent` tests the invariant: unchanged `optPlus` proves across an unrelated edit; `this.f(v!)` remains
+unproved when f changes from `x + 0` to `x` (lane B witnesses NaN versus undefined); unchanged `g(v!)` proves when
+only g's sibling changes. Its `certificate.test.mjs` tests both JSON records through `check`, including a callee
+using the admitted `Reflect.getMetadata` API, which retains the existing open-reach fallback. Run it with
+`JOBS=2 node --test langs/ts/tests/pairs/reach_absent/certificate.test.mjs`.
+
+This is a text identity for reached code, not a proof of equivalence between different reached texts. The original
+`opaque_values.optPlus` changes its own body from `x! + 1` to `(x! + 1) * 1`, so stays unproved. The new test deliberately
+keeps that body unchanged. Existing refusals and the reach analysis's outside-code assumption remain unchanged.
