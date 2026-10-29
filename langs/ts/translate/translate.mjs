@@ -145,7 +145,7 @@ export function translate(file, fnName, opts = {}) {
       }
       ts.forEachChild(n, walk);
     };
-    if (!asyncGenerator(u) && !accessorOpaque.has(u.name)) walk(u.body);
+    if (u.body && !asyncGenerator(u) && !accessorOpaque.has(u.name)) walk(u.body); // a bodiless declaration still reaches the subset gate, but has no callees to walk
     visiting.delete(u); visitStack.pop();
     order.push(u);
   }
@@ -658,7 +658,7 @@ export function translate(file, fnName, opts = {}) {
   const mutatedByUnit = new Map(); // unit name -> [param names] in parameter order
   const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   function syntacticMutations(u) {
-    if (asyncGenerator(u)) return new Set(); // the suspended body has not run at construction
+    if (!u.body || asyncGenerator(u)) return new Set(); // a declaration without an implementation has no body to inspect; a suspended body has not run at construction
     const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
     const out = new Set();
     const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
@@ -684,7 +684,7 @@ export function translate(file, fnName, opts = {}) {
     while (changed) {
       changed = false;
       for (const u of all) {
-        if (asyncGenerator(u)) continue;
+        if (!u.body || asyncGenerator(u)) continue;
         const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
         const walk = (n) => {
           if ((ts.isArrowFunction(n) || ts.isFunctionExpression(n)) && !isLoopCallback(n)) return;
@@ -1095,6 +1095,13 @@ export function translate(file, fnName, opts = {}) {
     }
     if (f & TF.Intersection) return recordType(t, n, depth);
     if (f & TF.Object) {
+      if (isSetT(t) || isMapT(t)) {
+        // A spelling is not a library type: local classes can be named Set or Map, with no type arguments at all.
+        // Until those names have a distinct reading at every dispatch site, refuse instead of inventing a carrier.
+        const arity = isMapT(t) ? 2 : 1;
+        if (!t.symbol.declarations?.some((d) => loaded.program.isSourceFileDefaultLibrary(d.getSourceFile())) || checker.getTypeArguments(t).length !== arity)
+          fail(n, `builtin-type: ${t.symbol.name} needs a standard-library declaration and ${arity} type argument(s) for its collection reading`);
+      }
       if (checker.isTupleType(t)) {
         const ds = checker.getTypeArguments(t).map((a) => dtype(a, n, depth + 1));
         const lit = checker.getTypeArguments(t).every((a) => a.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral));
