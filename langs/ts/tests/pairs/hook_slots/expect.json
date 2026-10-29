@@ -7,9 +7,9 @@
   "layout"
  ],
  "equal": {
-  "counter": false,
+  "counter": true,
   "mutant": false,
-  "updater": false,
+  "updater": true,
   "lazy": true,
   "layout": "withheld"
  },

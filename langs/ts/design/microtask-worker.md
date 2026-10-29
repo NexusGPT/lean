@@ -68,3 +68,24 @@ untouched (proved).
 
 See the lane report (`harness/lanes/microtask-worker.md`): the per-unit cost of the child process and the pair step
 before and after.
+
+## The bound is the unit's own CPU time (2026-10-29)
+
+The parent reads the worker's main-thread CPU time (Linux: `/proc/<pid>/task/<pid>/stat`; macOS: `ps -M -p <pid>`,
+first row; elsewhere the process total) once a second and kills the child when it passes `--unit-seconds`; a wall
+clock of ten times the bound stays as the far guard, and where no CPU reading exists the wall clock is the bound as
+before. A unit at full speed on an idle machine read 121 s of process time in 90 s of wall time through V8's helper
+threads, which is why the main thread's own time is the measure.
+
+The in-process watchdogs (the per-call `--ms` allowance, the drive timeouts) are wall clocks stretched by the load
+factor, the load average per core read once at the unit's start: a call starved by other processes keeps its CPU
+share. A call that spins burns its whole allowance as CPU, so under a load factor of k the unit's spinning inputs cost
+k times their nominal CPU; the parent therefore stretches the unit's CPU bound by the same factor, read at the same
+moment, and the ASK names the stretch. Without it, for_desugar `chunks` (half its drawn sizes spin, 2 s each, two
+sides, 30 inputs: 60 s nominal) was killed at 120 s of CPU under a load factor above 2 while every per-call bound was
+doing its work.
+
+The worker's heap is a quarter of the machine's memory, never below V8's default (`--max-old-space-size`): a spinning
+call allocates for its whole allowance (the chunking loop pushing empty slices reached 4 GB in 16 s), and an exhausted
+heap aborts the process, which loses the unit (ASK:harness, SIGABRT) where the per-call bound would have skipped one
+input.

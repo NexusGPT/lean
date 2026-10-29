@@ -1029,7 +1029,11 @@ function workerReads(opts) {
 function workerFlags(opts) {
   const flags = ['--permission', ...workerReads(opts).map((p) => `--allow-fs-read=${p}`)];
   if (process.env.LEAN_LIBRARY_CASES) { const d = path.resolve(process.env.LEAN_LIBRARY_CASES); fs.mkdirSync(d, { recursive: true }); flags.push(`--allow-fs-write=${d}`, `--allow-fs-read=${d}`); }
-  return [...process.execArgv.filter((x) => !/^--(permission|allow-)/.test(x)), ...flags];
+  // the worker's heap: a quarter of the machine, never below V8's default; a spinning call allocates for its whole
+  // wall allowance (a chunking loop pushing empty slices reached 4 GB in 16 s), and an exhausted heap aborts the process,
+  // which loses the unit where the per-call bound would have skipped one input
+  const heapMb = Math.max(4096, Math.floor(os.totalmem() / 4 / 1048576));
+  return [...process.execArgv.filter((x) => !/^--(permission|allow-|max-old-space-size)/.test(x)), `--max-old-space-size=${heapMb}`, ...flags];
 }
 const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefined ? ` (input ${c.input})` : ''}${c.side ? `, the ${c.side} side running` : ''}${c.loading ? `, loading ${c.loading}` : ''}` : 'start');
 // a unit whose parent does not hold it runs as today (new-unit.mjs starts its own bounded process); every other unit runs
@@ -1045,7 +1049,12 @@ const leanHeadForRecords = () => {
 export async function runPair(opts) {
   if (!opts.recordHead) opts = { ...opts, recordHead: leanHeadForRecords() }; // the lean head every record names, read once per process
   if (opts.inProcess || !parentHolds(opts.parent, opts.unit)) return runPairInProcess(opts);
-  const seconds = unitSecondsValue(opts.unitSeconds);
+  // the unit's CPU bound stretches with the load factor its calls' wall allowances stretch with (readLoadFactor, the
+  // in-process watchdogs): a call that spins burns its whole allowance as CPU, so under a load average of k per core a
+  // unit's spinning inputs cost k times their nominal CPU; a bound read at load 1 would then kill a unit the per-call
+  // bounds are handling (for_desugar chunks: half the drawn sizes spin, 2 s each, two sides, 30 inputs)
+  const stretch = readLoadFactor();
+  const seconds = unitSecondsValue(opts.unitSeconds) * stretch;
   const { unitSeconds, inProcess, ...rest } = opts;
   return new Promise((resolve) => {
     let last = null, done = false;
@@ -1055,7 +1064,7 @@ export async function runPair(opts) {
     let cpuSeen = 0;
     const killAt = (why) => {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
-      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its ${why} bound of ${seconds} s per unit (--unit-seconds) after ${Math.round((Date.now() - started) / 1000)} s of wall time and ${Math.round(cpuSeen)} s of CPU time; the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, cpuSeconds: Math.round(cpuSeen), wallSeconds: Math.round((Date.now() - started) / 1000), killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
+      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its ${why} bound of ${seconds} s per unit (--unit-seconds${stretch > 1 ? `, stretched ${stretch.toFixed(1)} times by the load average, as its calls' allowances are` : ''}) after ${Math.round((Date.now() - started) / 1000)} s of wall time and ${Math.round(cpuSeen)} s of CPU time; the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, cpuSeconds: Math.round(cpuSeen), wallSeconds: Math.round((Date.now() - started) / 1000), killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
     };
     let timer = setTimeout(() => killAt(psUnavailable ? 'wall-clock' : `far wall-clock guard (${FAR_GUARD} times the CPU-time)`), seconds * 1000 * (psUnavailable ? 1 : FAR_GUARD));
     const cpuWatch = watchCpu(child.pid, seconds, { onSample: (cpu) => { cpuSeen = cpu; }, onBound: (cpu) => { cpuSeen = cpu; killAt('CPU-time'); },
