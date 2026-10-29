@@ -211,11 +211,11 @@ try {
   const fileAnalysis = new Map(), counts = new Map();
   for (const unit of names) translate(file, null, { core: true, heap: true, project: false, only: [unit], loaded, fileAnalysis,
     onAnalysis: (name) => counts.set(name, (counts.get(name) ?? 0) + 1) });
-  assert.equal(ts.performance.getCount('beforeProgram'), 1, 'one Program and checker for the file, none per unit');
+  assert.equal(ts.performance.getCount('beforeProgram'), 2, 'one Program and checker for the file as written and one for its faithful number reading (translate/faithful.mjs, a --core translation), none per unit');
   console.log('analysis executions: ' + JSON.stringify(Object.fromEntries(counts)));
   const repeated = [...counts].filter(([, count]) => count !== 1);
   assert.deepEqual(repeated, [], 'every per-file analysis executes once across admitted units');
-  const expected = ['normalization', 'number-mode', 'units', 'exceptions', 'generators', 'classes', 'accessors', 'reach', 'react-slots', 'declarations', 'parameter-mutations', 'class-field-index', 'static-cell-index', 'reference-index', 'hook-bindings'];
+  const expected = ['accessors', 'class-field-index', 'classes', 'declarations', 'exceptions', 'faithful', 'generators', 'hook-bindings', 'normalization', 'number-mode', 'parameter-mutations', 'reach', 'react-slots', 'reference-index', 'static-cell-index', 'units', 'units-as-written'];
   assert.deepEqual([...counts.keys()].sort(), expected.sort(), 'all named analyses are counted');
   // These scans are lazy: plain numeric functions above never request them.
   const lazyCounts = {};
