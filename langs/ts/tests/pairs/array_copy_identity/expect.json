@@ -1,0 +1,7 @@
+{
+  "scope": ["spread_same", "slice_same", "from_same", "concat_same", "spread_back", "both_copied"],
+  "equal": { "spread_same": false, "slice_same": false, "from_same": false, "concat_same": false, "spread_back": false, "both_copied": true },
+  "why": "each copy form makes a new array, so `b === a` is true in the parent (b is a) and false in the candidate (b is a copy); must not prove, lane B witnesses. spreadBack: the copy itself against its source, another identity; must not prove (lane B compares a returned array of primitives by value, so it does not separate the two: PASS-bounded). bothCopied: one copy on each side under another local name: proved.",
+  "heap": true,
+  "b": { "spreadSame": "WITNESS", "sliceSame": "WITNESS", "fromSame": "WITNESS", "concatSame": "WITNESS", "spreadBack": "PASS-bounded", "bothCopied": "PASS-bounded" }
+}

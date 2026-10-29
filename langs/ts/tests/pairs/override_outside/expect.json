@@ -1,0 +1,30 @@
+{
+  "scope": [
+    "greeter_run",
+    "via_override",
+    "sealed_run",
+    "hidden_run",
+    "greeter_base",
+    "quiet_base",
+    "sealed_base",
+    "hidden_base"
+  ],
+  "equal": {
+    "greeter_run": false,
+    "via_override": false,
+    "sealed_run": true,
+    "hidden_run": true,
+    "greeter_base": true,
+    "quiet_base": true,
+    "sealed_base": true,
+    "hidden_base": true
+  },
+  "why": "Greeter.run: the parent runs this.base, which a subclass the file does not see may override (Quiet, a subclass standing for one another file declares, returns 0 from base, so the parent gives 0 and the candidate 2(x+1)); the candidate inlined Greeter's own base; must not prove. viaOverride: the same difference run through a Quiet the unit makes; witnessed. Sealed.run: the class declares @sealed (TSDoc), so this.base is Sealed's own under the named assumption 'sealed receiver': proved. Hidden.run: base is private, which no subclass can redeclare (TS2415), so this.base is Hidden's own: proved. The base methods are the same text on both sides: proved.",
+  "heap": true,
+  "b": {
+    "Greeter.run": "PASS-bounded",
+    "viaOverride": "WITNESS",
+    "Sealed.run": "PASS-bounded",
+    "Hidden.run": "PASS-bounded"
+  }
+}

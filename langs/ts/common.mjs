@@ -1518,6 +1518,27 @@ const COPY_NOT_BUILT = 'a value of a record type may carry keys its type does no
 // in its literal after named members and spreads only ('refuse', with the reason); a built copy holding a key the target
 // type does not declare is a copy too.
 // A source that is no record (a dictionary, an array, a primitive) is 'plain'. One test for the lint, objectLit, the core.
+// `this.m()` inside an instance method of class C runs the m the receiver's chain finds first (ECMA-262 10.1.8.1 [[Get]],
+// then Call), and the receiver of C's method may be an instance of any subclass, one another file declares included. The
+// call is C's own m only when no subclass can hold another m: m is an ECMAScript private name (#m is no property and
+// is never looked up on the chain), m is TypeScript-private (a subclass redeclaring it fails to compile, TS2415), or the
+// file declares C or m final with the TSDoc tag @sealed (or @final): a fact TypeScript does not check, so it is an
+// assumption the certificate names ('sealed receiver'). A same-file class below C redeclaring m defeats every one of
+// these. Returns { why } when the call is C's own m, null when a subclass may override it.
+export function sealedMember(checker, sf, cls, name) {
+  const own = cls.members.find((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword));
+  const below = (c) => { for (let cur = c, seen = new Set(); cur && !seen.has(cur); ) { seen.add(cur); const ext = cur.heritageClauses?.find((h) => h.token === ts.SyntaxKind.ExtendsKeyword)?.types[0]?.expression; if (!ext) return false; const d = checker.getSymbolAtLocation(ext)?.valueDeclaration; if (d === cls) return true; cur = d && ts.isClassDeclaration(d) ? d : null; } return false; };
+  let redeclared = false;
+  const w = (n) => { if (redeclared) return; if (ts.isClassLike(n) && n !== cls && below(n) && n.members.some((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword))) redeclared = true; ts.forEachChild(n, w); };
+  w(sf);
+  if (redeclared) return null;
+  if (own && ts.isPrivateIdentifier(own.name)) return { why: `#${name} is a private name` };
+  if (own && own.modifiers?.some((x) => x.kind === ts.SyntaxKind.PrivateKeyword)) return { why: `${name} is private (TS2415 forbids a subclass redeclaring it)` };
+  const tagged = (n) => !!n && ts.getJSDocTags(n).some((t) => t.tagName.text === 'sealed' || t.tagName.text === 'final');
+  if (tagged(cls)) return { why: `${cls.name?.text} is declared @sealed`, assumed: true };
+  if (tagged(own)) return { why: `${name} is declared @sealed`, assumed: true };
+  return null;
+}
 export function copySource(checker, src, site = null) {
   const TF = ts.TypeFlags; let x = src; while (ts.isParenthesizedExpression(x)) x = x.expression;
   let t = null; try { t = checker.getTypeAtLocation(x); } catch { return { kind: 'refuse', why: 'the copied value has no type' }; }

@@ -69,6 +69,9 @@ of the declared fields alone, so the rest was dropped and a clone against the fi
 | site | construct | reading |
 |---|---|---|
 | translate.mjs:1377 `copyOf` | the one copy reading | `Copy_T(x)` for a record source `copySource` calls 'copy' |
+| translate.mjs:1425 `arrayCopyOf` | the array twin | `Copy_<seq<A>>(x)` for an array source whose reading is its own text |
+| translate.mjs:2335 | `[...x]`, x an array | `arrayCopyOf` |
+| translate.mjs:4285 | `x.concat()` without arguments | `arrayCopyOf` |
 | translate.mjs:2943 | `{ ...x, k: v }`, spread first | `copyOf(x).(k := v)` |
 | translate.mjs:2908 | members, then a spread | `spread_merge_<R>_<layout>(values)`: each source whole, rest included |
 | translate.mjs:2926 | two spreads, or a spread after members | `lit_spread_<R>_<layout>(values)`: each source whole |
@@ -101,11 +104,59 @@ of the declared fields alone, so the rest was dropped and a clone against the fi
 - Copies: Copy_T is the identity on values, so it adds no equality the source value did not have, and removes the
   textual one between a copy and its source; the rest slot is never looked into (open-datatype.md).
 
+## 3. Array copies: a copy's text is never its source's
+
+The invariant: a construct that makes a new object never reads as its source's Dafny text. theorem.py treats a
+candidate whose text equals the parent's as the same function (equal by identity) and skips the identity guard for
+it, so a copy read as its source's text proves `return a` against `return [...a]`, and `b === a` after `const b = a`
+against `const b = [...a]`, though the copy is another object (`===` false, a push on one not shown on the other).
+
+- The heap core allocates every array copy (`Alloc_A_*`), so a heap-core unit never had the defect (measured on the
+  base: `return a` against `[...a]`, `a.slice()`, `Array.from(a)`, `a.concat()` is not proved there).
+- The value reading (async units, units the core refuses) read `[...x]` as `x` and `x.concat()` as `(x)`, which the
+  theorem's text comparison folds into `x`. `arrayCopyOf` (translate.mjs) now reads both as `Copy_<seq<A>>(x)`, the
+  array twin of the record's `Copy_T`: the identity on values (every element, the order and the length are the
+  source's), and another text, so the guard decides: a result that may be the input, or an identity comparison of two
+  references, withholds the lemma (ASK:identity). One copy on each side is the same text again and proves.
+- `x.slice()`, `x.map(...)`, `[...x, y]` and `Array.from(x)` already read as another text than x's and are unchanged.
+- `x.toSorted()` and `x.toReversed()` copy, then sort or reverse (23.1.3.33, 23.1.3.34): their receiver reads through
+  `arrayCopyOf` too, so they keep the text of `[...x].sort()` and `[...x].reverse()` (library_rows `sortedNames` stays
+  proved) and never take the text of `x.sort()`, which sorts x and returns x itself (the lint refuses that one as an
+  in-place mutation today).
+- Lane B compares a returned array of primitives by value, so it does not separate `return a` from `return [...a]`
+  (PASS-bounded); `b === a` it witnesses.
+
+## 4. `this.m()`: the class's own m only on a receiver no subclass can hold
+
+`this.m()` in an instance method or constructor of C runs the m the receiver's chain finds first (10.1.8.1 [[Get]],
+then Call). The method's receiver may be an instance of any subclass, one another file declares included, and a
+same-file subclass too (`new Quiet().run(x)` runs Greeter's run on a Quiet). Lane A read it as C's own unit, so
+`run() { return this.base(x) * 2 }` against `run() { return (x + 1) * 2 }` proved while an override of base makes
+them differ.
+
+- `common.mjs sealedMember(checker, sf, C, m)` is the one test, read by the value reading (`thisRequest`) and the
+  heap core (`thisReplaceable`): the call is C's own m only when no subclass can hold another m: m is a private name
+  (`#m` is no property and is not looked up on the chain), m is TypeScript-private (a subclass redeclaring it does
+  not compile, TS2415), or the file declares C or m final with the TSDoc tag `@sealed` (or `@final`). A same-file
+  class below C redeclaring m defeats each of them.
+- `@sealed` is a fact TypeScript does not check: where the reading takes it the translator writes
+  `// ASSUME <unit>: sealed receiver <C>.<m> (<why>)` beside the unit (check.mjs does not yet lift it into the
+  certificate: a finding for the lead).
+- Otherwise the call is a request of the world, `<T>_<m>_held<key>(wld, self, args)`, named by the code of every
+  class of this file the receiver's type admits (`heldKey`), exactly the reading of a call on a receiver this file
+  did not make (section 1); the unit becomes effectful. In the heap core the call is the existing transition keyed by
+  the code the unit reaches (`HCall_<m>_<key>`).
+- A call of a method the receiver's class inherits from a same-file base (`new Quiet().run(x)`, run declared by
+  Greeter) was an external named by the bare name, one name across a changed base method; it is now the same held
+  request (`inheritedSameFileMethod`), named by heldKey.
+- Cost: a receiver made by `new C` here runs C's unit, and inside it `this.m()` is now a request too, though the
+  receiver is exactly a C; carrying the maker into the callee's reading would recover those proofs (not done here).
+
 ## What stays as it was
 
-- `this.m()` reads the class's own unit for its own receiver; a subclass outside the file that overrides m is not
-  seen there. `super.m()` keeps `inheritedKeyText`.
-- A copy's identity against its source rested on textual equality before this note (theorem.py treats a candidate
-  whose Dafny text is the parent's as the same function); a spread of a record the unit did not build against the
-  source itself now goes to the guard, which withholds it. Array copies (`[...xs]`, `xs.slice()`) are not changed here.
+- `super.m()` keeps `inheritedKeyText`. A static method's `this.m()` keeps its reading (a static unit naming `this`
+  is opaque already). An object literal method's `this.m()` keeps its sibling unit (design/exported-units.md); a
+  getter or setter reached through `this.p` keeps the class's own accessor unit: both are the same question (another
+  object may hold the member) and are not changed here.
+- A record copy's identity against its source goes to the guard (section 2); an array copy now does too (section 3).
 - The census is lint-only and the lint is not changed: the readings refuse nothing new.
