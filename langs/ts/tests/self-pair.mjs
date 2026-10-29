@@ -21,7 +21,6 @@ const positive = (name, fallback) => {
   return value;
 };
 const n = positive('--n', 30), seed = positive('--seed', 1), jobs = positive('--jobs', 1);
-if (jobs > 2) throw new Error('--jobs must be at most 2');
 const out = option('--out', null);
 const sample = option('--sample', process.env.LEAN_SELF_PAIR_SAMPLE || null);
 const sampleRoot = option('--sample-root', process.env.LEAN_SELF_PAIR_SAMPLE_ROOT || null);

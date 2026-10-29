@@ -9,20 +9,30 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ts, dn, artifactName, loadProgram, topLevelFunctions, findingUnit, formatUnitList } from '../common.mjs';
 import { lintFile } from '../lint/lint.mjs';
 import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
+import { cachedRun, stepCacheStats } from './stepcache.mjs'; // the step cache: a command keyed by what it reads (design: the owner's rule, the tests run fast on merges)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
 const lint = path.join(here, '../lint/lint.mjs');
 const translate = path.join(here, '../translate/translate.mjs');
 const theorems = JSON.parse(fs.readFileSync(path.join(here, 'theorems.json'), 'utf8'));
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-ts-'));
+// The run: JOBS pairs at once (default: the CPU count minus one), each pair in a child of this script (`--pair <name>`)
+// that writes its rows to `--result`; the parent replays them in pair order, so the table is the same as a sequential run
+const argvAt = (k) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : null; };
+const PAIR_ONLY = argvAt('--pair');
+const RESULT_FILE = argvAt('--result');
+const JOBS = Math.max(1, Number(process.env.JOBS ?? Math.max(1, os.cpus().length - 1)) || 1);
+const tmp = argvAt('--tmp') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'lean-ts-'));
+const t0 = Date.now();
 
 const run = (cmd, args, env) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26, env: env ? { ...process.env, ...env } : process.env });
+// the same, through the step cache: `files` what the command reads, `outs` what it writes (restored on a hit)
+const crun = (cmd, args, { files = [], outs = [], env = null } = {}) => cachedRun(run, cmd, args, { root, files, outs, env, normalise: [[tmp, '<tmp>'], [path.join(here, 'pairs'), '<pairs>'], [root, '<root>']] });
 const dafny = (file) => {
   const r = run('dafny', ['verify', '--verification-time-limit', '60', file]);
   const text = (r.stdout ?? '') + (r.stderr ?? '');
@@ -49,7 +59,7 @@ const add = (kind, name, check, ok, detail, lsc = '') => rows.push({ kind, name,
 
 // ----- shared fixtures -----
 const sharedDir = path.join(root, 'fixtures/shared');
-for (const name of fs.readdirSync(sharedDir).sort()) {
+if (!PAIR_ONLY) for (const name of fs.readdirSync(sharedDir).sort()) {
   const ts = path.join(sharedDir, name, 'ts.ts');
   if (!fs.existsSync(ts)) continue;
   const th = theorems[name];
@@ -85,7 +95,7 @@ const tflags = (c, withInv) => {
   if (withInv) for (const i of c.invariants ?? []) a.push('--invariant', i);
   return a;
 };
-for (const c of cases) {
+if (!PAIR_ONLY) for (const c of cases) {
   const file = path.join(casesDir, c.file);
   const loaded = loadProgram(file), inventory = topLevelFunctions(loaded.sf);
   const findings = lintFile(file, null, { loaded }).filter(f => findingUnit(loaded.sf, inventory, f)?.name === c.fn);
@@ -107,7 +117,7 @@ for (const c of cases) {
 }
 
 // ----- numbers per file: a float literal makes the file real; --real forces it -----
-{
+if (!PAIR_ONLY) {
   const f = path.join(casesDir, 'float_literal.ts');
   const t = run('node', [translate, f, '--fn', 'drift', '--out', path.join(tmp, 'drift.dfy')]);
   const driftDfy = t.status === 0 && fs.existsSync(path.join(tmp, 'drift.dfy')) ? fs.readFileSync(path.join(tmp, 'drift.dfy'), 'utf8') : '';
@@ -139,25 +149,25 @@ function differential(label, tsFile, entries) {
   const same = r.status === 0 && got.length === want.length && got.every((g, i) => g.trim() === want[i]);
   add('differential', label, `${want.length} inputs, TS vs Dafny`, same, same ? 'same answers' : `want ${want.join('|')} got ${got.join('|')} ${r.status === 0 ? '' : (r.stderr || '').trim().split('\n')[0]}`);
 }
-for (const f of ['sum_positive', 'filter_then_sum']) differential(f, path.join(sharedDir, f, 'ts.ts'), [{ fn: theorems[f].fn, samples: theorems[f].samples }]);
-for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(casesDir, c.file), [{ fn: c.fn, samples: c.samples }]);
+if (!PAIR_ONLY) for (const f of ['sum_positive', 'filter_then_sum']) differential(f, path.join(sharedDir, f, 'ts.ts'), [{ fn: theorems[f].fn, samples: theorems[f].samples }]);
+if (!PAIR_ONLY) for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(casesDir, c.file), [{ fn: c.fn, samples: c.samples }]);
 
 // concrete string helpers, including whitespace, empty separators and replacement tokens
-{
+if (!PAIR_ONLY) {
   const r = run('node', [path.join(here, 'strings/run.mjs'), path.join(tmp, 'string_helpers.dfy')]);
   const text = (r.stdout ?? '') + (r.stderr ?? '');
   add('construct', 'string_helpers', 'concrete Dafny assertions', r.status === 0, text.trim().split('\n').pop());
 }
 
 // concrete numeric helpers, including sign bits, shift masking and real truncation
-{
+if (!PAIR_ONLY) {
   const r = run('node', [path.join(here, 'numbers_bits/run.mjs'), path.join(tmp, 'number_helpers.dfy')]);
   const text = (r.stdout ?? '') + (r.stderr ?? '');
   add('construct', 'number_helpers', 'concrete Dafny execution', r.status === 0, text.trim().split('\n').pop());
 }
 
 // ----- negative controls: a false theorem must NOT verify, in both shapes -----
-{
+if (!PAIR_ONLY) {
   const ts = path.join(root, 'fixtures/shared/sum_positive/ts.ts');
   const out = path.join(tmp, 'neg_sum.dfy');
   run('node', [translate, ts, '--fn', 'sumPositive', '--out', out, '--ensures', 'result > 0', '--invariant', 'total >= 0']);
@@ -178,7 +188,7 @@ for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(c
 }
 
 // ----- --changed: only the changed functions are checked -----
-{
+if (!PAIR_ONLY) {
   const f = path.join(casesDir, 'mixed.ts');
   const unchanged = run('node', [lint, f, '--changed', path.join(casesDir, 'mixed_good.json')]);
   add('changed', 'mixed.ts', 'bad function untouched: accepted', unchanged.status === 0, unchanged.status === 0 ? 'exit 0' : unchanged.stdout.trim().split('\n')[0]);
@@ -193,22 +203,23 @@ const pairsDir = path.join(here, 'pairs');
 // LEAN_PAIRS=a,b runs these pairs only (a merge smoke); the full suite is the gate, this is never it
 const huntA = new Map(); // pair name -> lane A's reading of each lemma, for the proof-hunt step
 const onlyPairs = process.env.LEAN_PAIRS ? new Set(process.env.LEAN_PAIRS.split(',').map((x) => x.trim()).filter(Boolean)) : null;
-for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().filter((n) => !onlyPairs || onlyPairs.has(n)) : []) {
+const pairNames = fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().filter((n) => !onlyPairs || onlyPairs.has(n)) : [];
+function runPairStep(name) {
   const d = path.join(pairsDir, name);
   const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
   const tmpd = path.join(tmp, `pair_${name}`); fs.mkdirSync(tmpd, { recursive: true });
   if (exp.candidateOnly) {
     for (const [i, want] of exp.candidateOnly.entries()) {
       const out = path.join(tmpd, `new_${i}.json`);
-      run('node', [path.join(here, '../check.mjs'), ...(want.parent ? ['--parent', path.join(d, want.parent)] : []), '--candidate', path.join(d, want.file), '--unit', want.unit, '--n', '30', ...(want.project ? [] : ['--no-project']), '--out', out]);
+      crun('node', [path.join(here, '../check.mjs'), ...(want.parent ? ['--parent', path.join(d, want.parent)] : []), '--candidate', path.join(d, want.file), '--unit', want.unit, '--n', '30', ...(want.project ? [] : ['--no-project']), '--out', out], { files: [...(want.parent ? [path.join(d, want.parent)] : []), path.join(d, want.file)], outs: [out] });
       let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
       const ok = got.verdict === want.verdict && (!want.kind || got.kind === want.kind) && (!want.environmentClass || got.environmentClass === want.environmentClass) && (!want.phase || got.phase === want.phase) && (!want.linkKind || got.link?.kind === want.linkKind) && (!want.reason || got.reason?.includes(want.reason)) && (!want.laneA || JSON.stringify(got.certificate?.lanes?.A ?? null).includes(want.laneA)) && (want.inputs === undefined || got.inputs === want.inputs) && (want.faults === undefined || got.faults === want.faults) && (got.verdict !== 'NEW' || (got.loaded === true && got.seed === 1 && Array.isArray(got.fakes) && got.traceShape?.reduce((n, s) => n + s.inputs, 0) === got.inputs && !got.certificate?.lanes?.A));
       add('pair', name, `${want.file} ${want.unit} ${want.verdict}${want.laneA ? ' (lane A ' + want.laneA + ')' : ''}`, ok, JSON.stringify({ verdict: got.verdict, inputs: got.inputs, faults: got.faults, reason: got.reason, ...(want.laneA ? { laneA: String(got.certificate?.lanes?.A?.detail ?? got.certificate?.lanes?.A?.verdict ?? '').slice(-160) } : {}) }));
     }
-    continue;
+    return;
   }
   if (!exp.laneBOnly) { // a pair whose units lane A refuses by design (closures over mutable cells) checks lane B alone
-  const tr = (which, extra) => run('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...(exp.heap !== false ? ['--heap'] : []), ...extra]);
+  const tr = (which, extra) => crun('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...(exp.heap !== false ? ['--heap'] : []), ...extra], { files: [pairFile(d, which)], outs: [path.join(tmpd, `${which}.dfy`), path.join(tmpd, `${which}.pre.dfy`)] });
   // the heap core agreed on the units both sides hold (check.mjs agreeCore): a unit in the core on one side only would change its signature; a unit one side holds alone (a callee inlined away) takes its own side's core
   agreeCore({ files: { parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate') }, dfyOf: (which) => path.join(tmpd, `${which}.dfy`), heap: exp.heap !== false, tr: (which, eff, units) => tr(which, [...(eff ? ['--effectful', eff] : []), ...(units !== undefined ? ['--heap-units', units || '-'] : [])]) });
   const adapters = typeof exp.adapters === 'string' ? JSON.parse(fs.readFileSync(path.join(d, exp.adapters), 'utf8')).adapters : exp.adapters; // a changed signature proves through the adapter the pair's scope file declares, the comment door included (check.mjs reads it from the candidate)
@@ -216,10 +227,10 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   const allAdapters = { ...commentDoor, ...(adapters ?? {}) };
   fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])), summaries: true, ...(Object.keys(allAdapters).length ? { adapters: allAdapters } : {}) }));
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
-  const th = run('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')]);
+  const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] });
   add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
-  if (th.status !== 0) continue;
-  const v = run('dafny', ['verify', '--verification-time-limit', '30', path.join(tmpd, 'theorem.dfy')]);
+  if (th.status !== 0) return;
+  const v = crun('dafny', ['verify', '--verification-time-limit', '30', '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { files: [path.join(tmpd, 'theorem.dfy')] }); // the cores split across the pairs running at once
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
@@ -247,7 +258,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
-    const r = run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', path.join(tmpd, `b_${artifactName(unit)}.json`)]);
+    const r = crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', path.join(tmpd, `b_${artifactName(unit)}.json`)], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate')], outs: [path.join(tmpd, `b_${artifactName(unit)}.json`)] });
     let got = 'no result';
     try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);
@@ -308,7 +319,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   // PASS-proved through its adapter, a changed signature without one is ASK:interface naming the door whatever lane B found
   for (const [unit, want] of Object.entries(exp.check ?? {})) {
     const out = path.join(tmpd, `check_${artifactName(unit)}.json`);
-    run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(typeof exp.adapters === 'string' ? ['--scope', path.join(d, exp.adapters)] : []), '--out', out]);
+    crun('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(typeof exp.adapters === 'string' ? ['--scope', path.join(d, exp.adapters)] : []), '--out', out], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...(typeof exp.adapters === 'string' ? [path.join(d, exp.adapters)] : [])], outs: [out] });
     let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
     const A = got.certificate?.lanes?.A ?? {};
     const ok = got.verdict === want.verdict && (!want.laneA || A.verdict === want.laneA) && (!want.reason || (got.reason ?? '').includes(want.reason)) && (!want.door || A.adapter?.door === want.door);
@@ -365,6 +376,30 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   }
 }
 
+// one pair in this process (`--pair`): its rows and its lane A reading go to the result file, nothing else runs
+if (PAIR_ONLY) {
+  runPairStep(PAIR_ONLY);
+  const A = huntA.get(PAIR_ONLY) ?? null;
+  let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(pairsDir, PAIR_ONLY, 'expect.json'), 'utf8')); } catch { /* a pair without expectations has no hunt */ }
+  const provedBy = A ? Object.fromEntries(Object.keys(exp.b ?? {}).map((u) => [dafnyName(u), A.proved(dafnyName(u))])) : null;
+  fs.writeFileSync(RESULT_FILE, JSON.stringify({ rows, hunt: A ? { adapters: A.adapters, provedBy } : null, cache: stepCacheStats() }));
+  process.exit(0);
+}
+// the pairs at the machine's width: one child per pair, JOBS at a time, the rows replayed in pair order
+const spawnAsync = (args) => new Promise((resolve) => { const c = spawn(process.execPath, args, { cwd: root, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, LEAN_PAIRS: '' } }); c.on('close', (code, signal) => resolve({ code, signal })); c.on('error', () => resolve({ code: null, signal: 'spawn-error' })); });
+const pool = async (items, width, fn) => { const queue = [...items]; await Promise.all(Array.from({ length: Math.min(width, queue.length) }, async () => { while (queue.length) await fn(queue.shift()); })); };
+const childCache = { hits: 0, misses: 0 };
+if (JOBS > 1 && pairNames.length > 1) {
+  await pool(pairNames, JOBS, async (name) => { const result = path.join(tmp, `pair_${name}.result.json`); fs.rmSync(result, { force: true }); await spawnAsync([fileURLToPath(import.meta.url), '--pair', name, '--result', result, '--tmp', tmp]); });
+  for (const name of pairNames) {
+    let res = null; try { res = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}.result.json`), 'utf8')); } catch { /* no result: the worker died */ }
+    if (!res) { add('pair', name, 'pair worker', false, 'the pair worker wrote no result (it died or was killed)'); continue; }
+    for (const r of res.rows) rows.push(r);
+    if (res.hunt) huntA.set(name, { adapters: res.hunt.adapters, proved: (f) => (f in res.hunt.provedBy ? res.hunt.provedBy[f] : null) });
+    childCache.hits += res.cache?.hits ?? 0; childCache.misses += res.cache?.misses ?? 0;
+  }
+} else for (const name of pairNames) runPairStep(name);
+
 // ----- proof hunt: lane A beside lane B on every unit the pair step ran (langs/ts/design/proof-hunt.md) -----
 // check.mjs answers lane B first, so a lane A proof of two different behaviours is hidden whenever lane B witnesses.
 // Here both are read: a unit lane B witnessed whose lemma lane A proved is a hidden false proof and fails, unless the
@@ -405,7 +440,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   if (sel.error) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", false, sel.error);
   else if (sel.pairs && !sel.pairs.length) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", true, `not run: ${sel.why}`);
   else {
-    const r = run('node', [path.join(here, '../conformance/run.mjs'), '--jobs', process.env.JOBS ?? '2', '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')], { LEAN_PAIRS: sel.pairs ? sel.pairs.join(',') : '' });
+    const r = run('node', [path.join(here, '../conformance/run.mjs'), '--jobs', String(JOBS), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')], { LEAN_PAIRS: sel.pairs ? sel.pairs.join(',') : '' });
     // the TOTAL line is the step's last line; when it is missing the step died before it, and its stderr says why
     const last = (r.stdout ?? '').trim().split('\n').pop() ?? '';
     const detail = last.startsWith('| MODEL-CONFORMANCE TOTAL') ? last : `exit ${r.status}${r.signal ? ` (${r.signal})` : ''}, no TOTAL line: ${(r.stderr ?? '').trim().split('\n').slice(-3).join(' ').slice(-300)}`;
@@ -485,7 +520,7 @@ add('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the 
 // Every selected pair's parent, the self-pair fixtures, and an optional challenge
 // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane.
 {
-  const r = run('node', [path.join(here, 'self-pair.mjs'), '--out', path.join(tmp, 'self-pair.json'), '--jobs', String(Math.min(2, Number(process.env.JOBS ?? '2') || 1))]); // the suite's JOBS, at the runner's cap of two
+  const r = run('node', [path.join(here, 'self-pair.mjs'), '--out', path.join(tmp, 'self-pair.json'), '--jobs', String(JOBS)]); // the suite's JOBS
   if (r.stderr) process.stderr.write(r.stderr);
   const text = (r.stdout ?? '') + (r.stderr ?? '');
   add('runtime', 'self-pair', 'every parent against itself: zero WITNESS; refusals counted', r.status === 0, text.trim().split('\n').pop());
@@ -741,6 +776,9 @@ const line = (r) => `| ${cols.map((c) => String(r[c]).padEnd(widths[c])).join(' 
 console.log(`| ${cols.map((c) => c.padEnd(widths[c])).join(' | ')} | res  | lsc accepts | detail`);
 for (const r of rows) console.log(line(r));
 const failed = rows.filter((r) => !r.ok).length;
+const sc = stepCacheStats();
+console.log(`| STEP CACHE | ${sc.on ? `${sc.hits + childCache.hits} hits, ${sc.misses + childCache.misses} misses` : 'off'} | ${sc.dir} |`);
+console.log(`| WALL | ${Math.round((Date.now() - t0) / 1000)} s | JOBS ${JOBS} |`);
 console.log(`| TOTAL | ${rows.length} checks | ${failed === 0 ? 'ALL PASS' : `${failed} FAILED`} |`);
 fs.rmSync(tmp, { recursive: true, force: true });
 process.exit(failed === 0 ? 0 : 1);
